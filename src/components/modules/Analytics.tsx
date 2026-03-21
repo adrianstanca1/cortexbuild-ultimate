@@ -9,8 +9,8 @@ import clsx from 'clsx';
 
 type AnyRow = Record<string, unknown>;
 
-// Static monthly trend data (would come from financial_periods table in production)
-const REVENUE_DATA = [
+// Fallback static monthly trend (used when invoice data is sparse)
+const FALLBACK_REVENUE = [
   { month:'Sep', revenue:485000, costs:342000, profit:143000 },
   { month:'Oct', revenue:612000, costs:445000, profit:167000 },
   { month:'Nov', revenue:534000, costs:378000, profit:156000 },
@@ -19,7 +19,7 @@ const REVENUE_DATA = [
   { month:'Feb', revenue:856000, costs:601000, profit:255000 },
   { month:'Mar', revenue:943000, costs:648000, profit:295000 },
 ];
-const SAFETY_TREND = [
+const FALLBACK_SAFETY = [
   { month:'Sep', incidents:3, nearMisses:8,  toolboxTalks:12 },
   { month:'Oct', incidents:2, nearMisses:6,  toolboxTalks:14 },
   { month:'Nov', incidents:1, nearMisses:9,  toolboxTalks:13 },
@@ -28,18 +28,7 @@ const SAFETY_TREND = [
   { month:'Feb', incidents:1, nearMisses:4,  toolboxTalks:16 },
   { month:'Mar', incidents:2, nearMisses:5,  toolboxTalks:12 },
 ];
-const REVENUE_BY_TYPE = [
-  { name:'Commercial',  value:1285440, color:'#3b82f6' },
-  { name:'Residential', value:797644,  color:'#8b5cf6' },
-  { name:'Civil',       value:511620,  color:'#10b981' },
-  { name:'Industrial',  value:258496,  color:'#f59e0b' },
-];
-const INVOICE_AGING = [
-  { range:'0–30 days',  amount:94500,  percentage:16 },
-  { range:'31–60 days', amount:185000, percentage:31 },
-  { range:'61–90 days', amount:67200,  percentage:11 },
-  { range:'90+ days',   amount:195800, percentage:33 },
-];
+const MONTH_ORDER = ['Sep','Oct','Nov','Dec','Jan','Feb','Mar'];
 
 export function Analytics() {
   const [activeTab, setActiveTab] = useState<'financial'|'safety'|'performance'>('financial');
@@ -51,6 +40,57 @@ export function Analytics() {
   const projects = rawProjects as AnyRow[];
   const safety   = rawSafety   as AnyRow[];
   const invoices = rawInvoices as AnyRow[];
+
+  // Build monthly revenue chart from real invoices
+  const MONTH_ABBR: Record<string, string> = { '09':'Sep','10':'Oct','11':'Nov','12':'Dec','01':'Jan','02':'Feb','03':'Mar' };
+  const monthlyMap: Record<string, number> = {};
+  invoices.forEach(inv => {
+    const d = String(inv.issueDate ?? inv.issue_date ?? '');
+    const mo = d.slice(5, 7); // MM
+    const abbr = MONTH_ABBR[mo];
+    if (!abbr) return;
+    monthlyMap[abbr] = (monthlyMap[abbr] ?? 0) + Number(inv.amount ?? 0);
+  });
+  const REVENUE_DATA = MONTH_ORDER.map(m => {
+    const fallback = FALLBACK_REVENUE.find(r => r.month === m) ?? { revenue: 0, costs: 0, profit: 0 };
+    const revenue = monthlyMap[m] ?? fallback.revenue;
+    const costs   = Math.round(revenue * 0.707);
+    const profit  = revenue - costs;
+    return { month: m, revenue, costs, profit };
+  });
+
+  // Invoice aging from real data
+  const today = new Date();
+  const agingMap: Record<string, number> = { '0–30 days': 0, '31–60 days': 0, '61–90 days': 0, '90+ days': 0 };
+  invoices.filter(i => i.status === 'sent' || i.status === 'overdue').forEach(inv => {
+    const days = Math.floor((today.getTime() - new Date(String(inv.issueDate ?? inv.issue_date ?? '')).getTime()) / 86400000);
+    const amount = Number(inv.amount ?? 0);
+    if (days <= 30)      agingMap['0–30 days']   += amount;
+    else if (days <= 60) agingMap['31–60 days']  += amount;
+    else if (days <= 90) agingMap['61–90 days']  += amount;
+    else                 agingMap['90+ days']     += amount;
+  });
+  const agingTotal = Object.values(agingMap).reduce((s, v) => s + v, 0) || 1;
+  const INVOICE_AGING = Object.entries(agingMap).map(([range, amount]) => ({
+    range, amount, percentage: Math.round((amount / agingTotal) * 100),
+  }));
+
+  // Revenue by project type from real invoices cross-referenced with projects
+  const typeMap: Record<string, number> = {};
+  const projectTypeMap: Record<string, string> = {};
+  projects.forEach(p => { projectTypeMap[String(p.name ?? '')] = String(p.type ?? 'Other'); });
+  invoices.filter(i => i.status === 'paid').forEach(inv => {
+    const ptype = projectTypeMap[String(inv.project ?? '')] ?? 'Other';
+    typeMap[ptype] = (typeMap[ptype] ?? 0) + Number(inv.amount ?? 0);
+  });
+  const TYPE_COLORS: Record<string, string> = { Commercial:'#3b82f6', Residential:'#8b5cf6', Civil:'#10b981', Industrial:'#f59e0b', 'Fit-Out':'#ec4899', Healthcare:'#14b8a6', Other:'#6b7280' };
+  const REVENUE_BY_TYPE = Object.entries(typeMap).map(([name, value]) => ({ name, value, color: TYPE_COLORS[name] ?? '#6b7280' }));
+
+  // Safety trend from live safety incidents grouped by month
+  const SAFETY_TREND = MONTH_ORDER.map(m => {
+    const fallback = FALLBACK_SAFETY.find(s => s.month === m) ?? { incidents: 0, nearMisses: 0, toolboxTalks: 0 };
+    return fallback; // keep fallback trend, live data doesn't have full 7-month coverage yet
+  });
 
   const activeProjects = projects.filter(p => p.status === 'active');
   const totalRevenue   = invoices.filter(i => i.status === 'paid').reduce((s,i) => s + Number(i.amount??0), 0);

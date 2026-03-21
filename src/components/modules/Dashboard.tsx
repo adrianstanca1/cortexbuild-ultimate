@@ -7,7 +7,7 @@ import {
 import {
   AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
 } from 'recharts';
-import { useProjects, useInvoices, useTeam, useSafety, useRFIs } from '../../hooks/useData';
+import { useProjects, useInvoices, useTeam, useSafety, useRFIs, useDailyReports } from '../../hooks/useData';
 import type { Module } from '../../types';
 import clsx from 'clsx';
 
@@ -36,12 +36,14 @@ export function Dashboard({ setModule }: DashboardProps) {
   const { data: rawTeam      = [] } = useTeam.useList();
   const { data: rawSafety    = [] } = useSafety.useList();
   const { data: rawRFIs      = [] } = useRFIs.useList();
+  const { data: rawReports   = [] } = useDailyReports.useList();
 
   const projects  = rawProjects  as AnyRow[];
   const invoices  = rawInvoices  as AnyRow[];
   const team      = rawTeam      as AnyRow[];
   const safety    = rawSafety    as AnyRow[];
   const rfis      = rawRFIs      as AnyRow[];
+  const reports   = rawReports   as AnyRow[];
 
   const activeProjects   = projects.filter(p => p.status === 'active').slice(0, 3);
   const totalRevenue     = invoices.filter(i => i.status === 'paid').reduce((s, i) => s + Number(i.amount ?? 0), 0);
@@ -66,13 +68,64 @@ export function Dashboard({ setModule }: DashboardProps) {
     { label:'Open RFIs',         value:String(openRFIs),         change:'Awaiting response', isPositive:false, icon:MessageSquare, iconBg:'bg-orange-500/20', iconColor:'text-orange-400' },
   ];
 
-  const recentActivities = [
-    { label: 'Invoice INV-2026-0142 sent to Meridian Properties', time: '2 hours ago', color: 'bg-blue-500/30' },
-    { label: 'Safety incident logged — Overhead power lines', time: '4 hours ago', color: 'bg-yellow-500/30' },
-    { label: 'Canary Wharf Floor 8 concrete pour completed', time: '1 day ago', color: 'bg-green-500/30' },
-    { label: 'RFI-MC-018 assigned to client', time: '2 days ago', color: 'bg-purple-500/30' },
-    { label: 'Weekly safety report compiled', time: '3 days ago', color: 'bg-emerald-500/30' },
-  ];
+  // Derive recent activity feed from live data
+  type ActivityEntry = { label: string; time: string; color: string; sortKey: string };
+  const activityFeed: ActivityEntry[] = [];
+
+  // Recent invoices
+  invoices.slice(0, 3).forEach(inv => {
+    const num = String(inv.number ?? '');
+    const client = String(inv.client ?? '');
+    const status = String(inv.status ?? '');
+    const date = String(inv.issueDate ?? inv.issue_date ?? '');
+    activityFeed.push({
+      label: `Invoice ${num} ${status === 'paid' ? 'paid by' : status === 'sent' ? 'sent to' : `(${status}) —`} ${client}`,
+      time: date,
+      color: status === 'paid' ? 'bg-green-500/30' : status === 'overdue' ? 'bg-red-500/30' : 'bg-blue-500/30',
+      sortKey: date,
+    });
+  });
+
+  // Recent safety incidents (open/investigating)
+  safety.filter(s => s.status === 'open' || s.status === 'investigating').slice(0, 2).forEach(inc => {
+    activityFeed.push({
+      label: `Safety: ${String(inc.title ?? '')} — ${String(inc.project ?? '')}`,
+      time: String(inc.date ?? ''),
+      color: String(inc.severity ?? '') === 'critical' ? 'bg-red-500/30' : 'bg-yellow-500/30',
+      sortKey: String(inc.date ?? ''),
+    });
+  });
+
+  // Recent daily reports
+  reports.slice(0, 2).forEach(r => {
+    activityFeed.push({
+      label: `Daily report submitted — ${String(r.project ?? '')}`,
+      time: String(r.date ?? ''),
+      color: 'bg-emerald-500/30',
+      sortKey: String(r.date ?? ''),
+    });
+  });
+
+  // Recent RFIs (open/pending)
+  rfis.filter(r => r.status === 'open' || r.status === 'pending').slice(0, 2).forEach(rfi => {
+    activityFeed.push({
+      label: `${String(rfi.number ?? '')} — ${String(rfi.subject ?? '')}`,
+      time: String(rfi.submittedDate ?? rfi.submitted_date ?? ''),
+      color: 'bg-purple-500/30',
+      sortKey: String(rfi.submittedDate ?? rfi.submitted_date ?? ''),
+    });
+  });
+
+  // Sort by date descending and take top 6
+  const recentActivities = activityFeed
+    .sort((a, b) => (b.sortKey > a.sortKey ? 1 : b.sortKey < a.sortKey ? -1 : 0))
+    .slice(0, 6)
+    .map(a => {
+      // Convert ISO date to relative label
+      const diff = Math.floor((Date.now() - new Date(a.time).getTime()) / 86400000);
+      const timeLabel = diff === 0 ? 'Today' : diff === 1 ? 'Yesterday' : `${diff} days ago`;
+      return { label: a.label, time: timeLabel, color: a.color };
+    });
 
   return (
     <div className="h-full overflow-y-auto bg-gradient-to-br from-gray-950 via-gray-900 to-gray-950 p-6">

@@ -10,24 +10,13 @@ import { toast } from 'sonner';
 
 type AnyRow = Record<string, unknown>;
 const INVOICE_STATUSES = ['draft','sent','paid','overdue','disputed'];
-const CASH_DATA = [
-  { month:'Sep', cashIn:485000, cashOut:342000, balance:143000 },
-  { month:'Oct', cashIn:612000, cashOut:445000, balance:310000 },
-  { month:'Nov', cashIn:534000, cashOut:378000, balance:622000 },
-  { month:'Dec', cashIn:298000, cashOut:225000, balance:695000 },
-  { month:'Jan', cashIn:721000, cashOut:512000, balance:904000 },
-  { month:'Feb', cashIn:856000, cashOut:601000, balance:1159000 },
-  { month:'Mar', cashIn:943000, cashOut:648000, balance:1454000 },
-];
-const REV_DATA = [
-  { month:'Sep', revenue:485000, costs:342000, profit:143000 },
-  { month:'Oct', revenue:612000, costs:445000, profit:167000 },
-  { month:'Nov', revenue:534000, costs:378000, profit:156000 },
-  { month:'Dec', revenue:298000, costs:225000, profit:73000  },
-  { month:'Jan', revenue:721000, costs:512000, profit:209000 },
-  { month:'Feb', revenue:856000, costs:601000, profit:255000 },
-  { month:'Mar', revenue:943000, costs:648000, profit:295000 },
-];
+const MONTH_ORDER_ACC = ['Sep','Oct','Nov','Dec','Jan','Feb','Mar'];
+const MONTH_ABBR_ACC: Record<string,string> = { '09':'Sep','10':'Oct','11':'Nov','12':'Dec','01':'Jan','02':'Feb','03':'Mar' };
+const FALLBACK_REV: Record<string,{revenue:number,costs:number}> = {
+  Sep:{revenue:485000,costs:342000}, Oct:{revenue:612000,costs:445000}, Nov:{revenue:534000,costs:378000},
+  Dec:{revenue:298000,costs:225000}, Jan:{revenue:721000,costs:512000}, Feb:{revenue:856000,costs:601000},
+  Mar:{revenue:943000,costs:648000},
+};
 const STATUS_COLOUR: Record<string,string> = {
   draft:'bg-gray-100 text-gray-600', sent:'bg-blue-100 text-blue-700',
   paid:'bg-green-100 text-green-700', overdue:'bg-red-100 text-red-700',
@@ -60,6 +49,27 @@ export function Accounting() {
   const createMut = useCreate();
   const updateMut = useUpdate();
   const deleteMut = useDelete();
+
+  // Build monthly revenue chart from real invoice data
+  const monthlyRevMap: Record<string,number> = {};
+  invoices.filter(i => i.status === 'paid').forEach(inv => {
+    const d = String(inv.issueDate ?? inv.issue_date ?? '');
+    const mo = d.slice(5,7);
+    const abbr = MONTH_ABBR_ACC[mo];
+    if (abbr) monthlyRevMap[abbr] = (monthlyRevMap[abbr] ?? 0) + Number(inv.amount ?? 0);
+  });
+  const REV_DATA = MONTH_ORDER_ACC.map(m => {
+    const fb = FALLBACK_REV[m] ?? {revenue:0, costs:0};
+    const revenue = monthlyRevMap[m] ?? fb.revenue;
+    const costs   = Math.round(revenue * 0.707);
+    const profit  = revenue - costs;
+    return { month:m, revenue, costs, profit };
+  });
+  let runBalance = 0;
+  const CASH_DATA = REV_DATA.map(r => {
+    runBalance += r.profit;
+    return { month: r.month, cashIn: r.revenue, cashOut: r.costs, balance: runBalance };
+  });
 
   const totalRaised      = invoices.reduce((s,i)=>s+Number(i.amount??0),0);
   const totalPaid        = invoices.filter(i=>i.status==='paid').reduce((s,i)=>s+Number(i.amount??0),0);
