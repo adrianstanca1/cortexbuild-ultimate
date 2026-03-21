@@ -1,7 +1,9 @@
 // Module: AIAssistant — CortexBuild Ultimate
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { Send, Bot, Zap, Check, AlertCircle, DollarSign, FileText, BarChart3 } from 'lucide-react';
+import { toast } from 'sonner';
 import clsx from 'clsx';
+import { aiApi } from '../../services/api';
 
 interface Message {
   id: string;
@@ -23,6 +25,14 @@ export function AIAssistant() {
   const [input, setInput] = useState('');
   const [selectedAgent, setSelectedAgent] = useState<string>('safety');
   const [isTyping, setIsTyping] = useState(false);
+  const [suggestions, setSuggestions] = useState<string[]>([
+    "Show me all projects",
+    "What invoices are overdue?",
+    "Show me open safety incidents",
+    "What's our current budget position?",
+    "Show me open RFIs",
+    "What's in our tender pipeline?",
+  ]);
 
   const agents: Agent[] = [
     { id: 'safety', name: 'Safety Analyser', icon: AlertCircle, active: true, lastUsed: '2 hours ago' },
@@ -33,49 +43,42 @@ export function AIAssistant() {
     { id: 'tender', name: 'Tender Scorer', icon: Check, active: true, lastUsed: '1 week ago' }
   ];
 
-  const suggestedPrompts = [
-    "Analyse this week's safety incidents",
-    "Draft response for RFI-CW-042",
-    "Generate RAMS for scaffold erection",
-    "Summarise Canary Wharf daily report",
-    "Calculate CIS deduction for Apex Electrical",
-    "What's our current cash position?"
-  ];
 
-  const mockResponses: Record<string, string> = {
-    "Analyse this week's safety incidents": "This week has shown a 15% reduction in near-miss incidents compared to the previous week, with the primary concern being fall-from-height risks on elevated work areas. I recommend prioritising working-at-height toolbox talks and conducting secondary inspections of all fall protection equipment. The Canary Wharf site particularly needs attention with 3 near-miss reports.",
-    "Draft response for RFI-CW-042": "RFI-CW-042 Structural beam specification — Response: The UC 305×305×198 specification per the structural drawings should take precedence over the earlier notation. The higher capacity design provides necessary safety margins for the anticipated loading patterns and is recommended by the structural engineer. Approval granted to proceed with UC 305 sections.",
-    "Generate RAMS for scaffold erection": "RAMS document generated for Scaffold Erection Activity. Key hazards identified: (1) Falls from height — controls: full harness systems, guardrails; (2) Collapse of scaffold — controls: design verification, weekly inspections; (3) Falling objects — controls: safety nets, hard hat zones. Document ready for review by HSE team.",
-    "Summarise Canary Wharf daily report": "Canary Wharf Site Summary — Floor 8 steel erection 92% complete. Concrete pour scheduled for Level 7 on schedule. MEP rough-in work progressing well on floors 3-4. No safety incidents. Weather ideal for external works. Weekly target tracking 98% completion.",
-    "Calculate CIS deduction for Apex Electrical": "CIS Deduction Calculation (Apex Electrical, March 2026): Gross Payment: £48,500 | Materials: £12,000 | Labour: £36,500 | CIS Rate (Verified): 20% | Deduction: £7,300 | Net Payment: £41,200. Monthly summary and payment advice prepared for submission.",
-    "What's our current cash position?": "Current Cash Position (as of 21 March 2026): Invoiced to clients: £588.5K | Paid in: £94.5K | Outstanding: £279.2K (including £67.2K overdue). Recommended actions: Chase overdue invoices on WM Council (£67.2K) and issue escalation notice on disputed invoice from Nordic Logistics."
-  };
-
-  const handleSendMessage = (text?: string) => {
+  const handleSendMessage = async (text?: string) => {
     const messageText = text || input;
-    if (!messageText.trim()) return;
+    if (!messageText.trim() || isTyping) return;
 
     const userMessage: Message = {
       id: Date.now().toString(),
       role: 'user',
       content: messageText,
-      timestamp: new Date()
+      timestamp: new Date(),
     };
 
     setMessages(prev => [...prev, userMessage]);
     setInput('');
     setIsTyping(true);
 
-    setTimeout(() => {
-      const response: Message = {
+    try {
+      const result = await aiApi.chat(messageText);
+      setMessages(prev => [...prev, {
         id: (Date.now() + 1).toString(),
         role: 'assistant',
-        content: mockResponses[messageText] || `I'll analyse your request regarding "${messageText}". Based on current project data and safety protocols, here are my insights and recommendations for the CortexBuild team.`,
-        timestamp: new Date()
-      };
-      setMessages(prev => [...prev, response]);
+        content: result.reply,
+        timestamp: new Date(),
+      }]);
+      if (result.suggestions?.length) setSuggestions(result.suggestions);
+    } catch (err) {
+      toast.error('AI assistant error. Please try again.');
+      setMessages(prev => [...prev, {
+        id: (Date.now() + 1).toString(),
+        role: 'assistant',
+        content: 'Sorry, I encountered an error reaching the backend. Please try again.',
+        timestamp: new Date(),
+      }]);
+    } finally {
       setIsTyping(false);
-    }, 1500);
+    }
   };
 
   return (
@@ -119,7 +122,7 @@ export function AIAssistant() {
         {/* Header */}
         <div className="border-b border-gray-800 bg-gradient-to-r from-blue-900/20 to-purple-900/10 px-6 py-4">
           <h1 className="mb-1 text-2xl font-bold text-white">CortexBuild AI</h1>
-          <p className="text-xs text-blue-300">Powered by Claude · Advanced Construction Intelligence</p>
+          <p className="text-xs text-blue-300">Local AI Agents · Advanced Construction Intelligence</p>
         </div>
 
         {/* Messages Area */}
@@ -132,11 +135,11 @@ export function AIAssistant() {
                 Get instant insights on safety, RFIs, RAMS, reports, and more. Our AI agents are ready to assist.
               </p>
               <div className="grid grid-cols-2 gap-2 w-full max-w-md">
-                {suggestedPrompts.map((prompt, idx) => (
+                {suggestions.map((prompt, idx) => (
                   <button
                     key={idx}
                     onClick={() => handleSendMessage(prompt)}
-                    className="rounded-lg border border-gray-700 bg-gray-800/50 px-3 py-2 text-xs text-gray-300 transition hover:border-blue-600 hover:bg-gray-800 hover:text-white"
+                    className="rounded-lg border border-gray-700 bg-gray-800/50 px-3 py-2 text-xs text-gray-300 transition hover:border-orange-500 hover:bg-gray-800 hover:text-white text-left"
                   >
                     {prompt}
                   </button>
@@ -181,6 +184,18 @@ export function AIAssistant() {
             </>
           )}
         </div>
+
+        {/* Suggestion chips — shown when chat is active */}
+        {messages.length > 0 && suggestions.length > 0 && (
+          <div className="border-t border-gray-800 bg-gray-900/30 px-4 py-2 flex gap-2 flex-wrap">
+            {suggestions.map((s, i) => (
+              <button key={i} onClick={() => handleSendMessage(s)}
+                className="rounded-full border border-gray-700 bg-gray-800/50 px-3 py-1 text-xs text-gray-400 transition hover:border-orange-500 hover:text-white">
+                {s}
+              </button>
+            ))}
+          </div>
+        )}
 
         {/* Input Area */}
         <div className="border-t border-gray-800 bg-gray-900/50 p-4">

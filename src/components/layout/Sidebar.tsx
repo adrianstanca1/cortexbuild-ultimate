@@ -16,12 +16,12 @@ interface SidebarProps {
   setCollapsed: (v: boolean) => void;
 }
 
-const groups: { label: string; items: { id: Module; label: string; icon: React.FC<{ className?: string }>; badge?: string; color?: string }[] }[] = [
+const groups: { label: string; items: { id: Module; label: string; icon: React.FC<{ className?: string }>; badge?: string; badgeVariant?: 'amber' | 'blue' | 'green'; }[] }[] = [
   {
     label: 'OVERVIEW', items: [
       { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
       { id: 'analytics', label: 'Analytics & BI', icon: BarChart3 },
-      { id: 'ai-assistant', label: 'AI Assistant', icon: Bot, badge: 'AI', color: 'purple' },
+      { id: 'ai-assistant', label: 'AI Assistant', icon: Bot, badge: 'AI', badgeVariant: 'amber' },
     ]
   },
   {
@@ -39,7 +39,7 @@ const groups: { label: string; items: { id: Module; label: string; icon: React.F
       { id: 'tenders', label: 'Tenders & Bids', icon: TrendingUp },
       { id: 'invoicing', label: 'Invoicing', icon: FileText },
       { id: 'accounting', label: 'Accounting', icon: Calculator },
-      { id: 'cis', label: 'CIS Returns', icon: Receipt, badge: 'UK', color: 'blue' },
+      { id: 'cis', label: 'CIS Returns', icon: Receipt, badge: 'UK', badgeVariant: 'blue' },
       { id: 'procurement', label: 'Procurement', icon: ShoppingCart },
       { id: 'change-orders', label: 'Change Orders', icon: GitPullRequest },
     ]
@@ -57,7 +57,7 @@ const groups: { label: string; items: { id: Module; label: string; icon: React.F
   {
     label: 'SAFETY & COMPLIANCE', items: [
       { id: 'safety', label: 'Safety & HSE', icon: AlertTriangle },
-      { id: 'rams', label: 'RAMS', icon: ShieldCheck, badge: 'UK', color: 'blue' },
+      { id: 'rams', label: 'RAMS', icon: ShieldCheck, badge: 'UK', badgeVariant: 'blue' },
       { id: 'inspections', label: 'Inspections', icon: ClipboardCheck },
       { id: 'punch-list', label: 'Punch List / Snagging', icon: CheckSquare },
       { id: 'risk-register', label: 'Risk Register', icon: Triangle },
@@ -67,13 +67,12 @@ const groups: { label: string; items: { id: Module; label: string; icon: React.F
   {
     label: 'BUSINESS', items: [
       { id: 'crm', label: 'CRM & Clients', icon: Building2 },
-      { id: 'marketplace', label: 'AI Marketplace', icon: Store, badge: 'NEW', color: 'green' },
+      { id: 'marketplace', label: 'AI Marketplace', icon: Store, badge: 'NEW', badgeVariant: 'green' },
       { id: 'settings', label: 'Settings', icon: Settings },
     ]
   },
 ];
 
-// deduplicate items — tenders appears in two groups; keep unique per id
 const seen = new Set<string>();
 const deduped = groups.map(g => ({
   ...g,
@@ -84,75 +83,162 @@ const deduped = groups.map(g => ({
   })
 })).filter(g => g.items.length > 0);
 
+const BADGE_COLORS = {
+  amber: 'bg-amber-500/15 text-amber-300 border-amber-500/25',
+  blue: 'bg-blue-500/15 text-blue-300 border-blue-500/25',
+  green: 'bg-emerald-500/15 text-emerald-300 border-emerald-500/25',
+};
+
 export function Sidebar({ activeModule, setModule, collapsed, setCollapsed }: SidebarProps) {
   return (
-    <aside className={`flex flex-col bg-gray-900 border-r border-gray-800 transition-all duration-300 flex-shrink-0 ${collapsed ? 'w-16' : 'w-64'}`}>
+    <aside
+      className="flex flex-col flex-shrink-0 transition-all duration-300"
+      style={{
+        width: collapsed ? '64px' : '240px',
+        background: 'var(--slate-900)',
+        borderRight: '1px solid var(--slate-800)',
+      }}
+    >
       {/* Logo */}
-      <div className="flex items-center justify-between px-4 h-16 border-b border-gray-800 flex-shrink-0">
-        {!collapsed && (
-          <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-blue-700 rounded-lg flex items-center justify-center shadow-lg shadow-blue-500/30">
-              <Zap className="w-4 h-4 text-white" />
+      <div
+        className="flex items-center justify-between flex-shrink-0"
+        style={{ padding: '0 16px', height: '60px', borderBottom: '1px solid var(--slate-800)' }}
+      >
+        {!collapsed ? (
+          <div className="flex items-center gap-3">
+            <div
+              style={{
+                width: '32px', height: '32px',
+                background: 'linear-gradient(135deg, var(--amber-500), var(--amber-600))',
+                borderRadius: '8px',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                boxShadow: '0 2px 12px rgba(245,158,11,0.3)',
+              }}
+            >
+              <Zap style={{ width: '16px', height: '16px', color: 'var(--slate-950)' }} />
             </div>
             <div>
-              <div className="text-sm font-bold text-white leading-tight">CortexBuild</div>
-              <div className="text-[10px] text-blue-400 font-semibold tracking-wide">ULTIMATE</div>
+              <div style={{ fontFamily: 'var(--font-display)', fontSize: '14px', fontWeight: 700, color: 'var(--slate-50)', lineHeight: 1.1 }}>CortexBuild</div>
+              <div style={{ fontFamily: 'var(--font-mono)', fontSize: '9px', fontWeight: 600, color: 'var(--amber-400)', letterSpacing: '0.15em', textTransform: 'uppercase' }}>Ultimate</div>
             </div>
           </div>
-        )}
-        {collapsed && (
-          <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-blue-700 rounded-lg flex items-center justify-center mx-auto shadow-lg shadow-blue-500/30">
-            <Zap className="w-4 h-4 text-white" />
+        ) : (
+          <div
+            style={{
+              width: '32px', height: '32px', margin: '0 auto',
+              background: 'linear-gradient(135deg, var(--amber-500), var(--amber-600))',
+              borderRadius: '8px',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              boxShadow: '0 2px 12px rgba(245,158,11,0.3)',
+            }}
+          >
+            <Zap style={{ width: '16px', height: '16px', color: 'var(--slate-950)' }} />
           </div>
         )}
-        {!collapsed && (
-          <button onClick={() => setCollapsed(true)} className="text-gray-500 hover:text-gray-300 transition-colors">
-            <ChevronLeft className="w-4 h-4" />
+        {!collapsed ? (
+          <button
+            onClick={() => setCollapsed(true)}
+            style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--slate-500)', padding: '4px', borderRadius: '4px', transition: 'color 0.2s' }}
+            onMouseEnter={e => (e.currentTarget.style.color = 'var(--slate-200)')}
+            onMouseLeave={e => (e.currentTarget.style.color = 'var(--slate-500)')}
+          >
+            <ChevronLeft style={{ width: '16px', height: '16px' }} />
           </button>
-        )}
+        ) : null}
       </div>
 
       {collapsed && (
-        <button onClick={() => setCollapsed(false)} className="flex items-center justify-center py-2 text-gray-500 hover:text-gray-300 transition-colors border-b border-gray-800">
-          <ChevronRight className="w-4 h-4" />
+        <button
+          onClick={() => setCollapsed(false)}
+          style={{
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            padding: '8px', borderBottom: '1px solid var(--slate-800)',
+            background: 'none', border: 'none', cursor: 'pointer',
+            color: 'var(--slate-500)', transition: 'color 0.2s',
+          }}
+          onMouseEnter={e => (e.currentTarget.style.color = 'var(--slate-200)')}
+          onMouseLeave={e => (e.currentTarget.style.color = 'var(--slate-500)')}
+        >
+          <ChevronRight style={{ width: '16px', height: '16px' }} />
         </button>
       )}
 
       {/* Nav */}
-      <nav className="flex-1 overflow-y-auto py-3 space-y-0.5">
+      <nav
+        className="flex-1 overflow-y-auto nav-scroll py-3"
+        style={{ paddingLeft: collapsed ? '8px' : '0', paddingRight: collapsed ? '8px' : '0' }}
+      >
         {deduped.map(group => (
-          <div key={group.label} className="mb-2">
+          <div key={group.label} style={{ marginBottom: '4px' }}>
             {!collapsed && (
-              <div className="px-4 pt-2 pb-1 text-[10px] font-semibold text-gray-600 tracking-widest uppercase">
+              <div style={{
+                padding: '12px 16px 4px',
+                fontFamily: 'var(--font-body)',
+                fontSize: '9px', fontWeight: 700, letterSpacing: '0.14em', textTransform: 'uppercase',
+                color: 'var(--slate-500)',
+              }}>
                 {group.label}
               </div>
             )}
             {group.items.map(item => {
               const Icon = item.icon;
               const active = activeModule === item.id;
-              const badgeColors: Record<string, string> = {
-                purple: 'bg-purple-600 text-white',
-                blue: 'bg-blue-600 text-white',
-                green: 'bg-green-600 text-white',
-              };
               return (
                 <button
                   key={item.id}
                   onClick={() => setModule(item.id)}
                   title={collapsed ? item.label : undefined}
-                  className={`w-full flex items-center gap-3 px-4 py-2 text-sm transition-all duration-100 group relative ${
-                    active
-                      ? 'bg-blue-600/15 text-blue-400'
-                      : 'text-gray-500 hover:bg-gray-800/60 hover:text-gray-200'
-                  }`}
+                  style={{
+                    width: '100%',
+                    display: 'flex', alignItems: 'center', gap: '10px',
+                    padding: collapsed ? '8px 0' : '8px 16px',
+                    justifyContent: collapsed ? 'center' : 'flex-start',
+                    background: active ? 'rgba(245,158,11,0.08)' : 'transparent',
+                    border: 'none',
+                    borderRadius: '8px',
+                    cursor: 'pointer',
+                    transition: 'all 0.15s',
+                    color: active ? 'var(--amber-400)' : 'var(--slate-400)',
+                    position: 'relative',
+                    marginBottom: '1px',
+                  }}
+                  onMouseEnter={e => {
+                    if (!active) {
+                      e.currentTarget.style.background = 'rgba(255,255,255,0.04)';
+                      e.currentTarget.style.color = 'var(--slate-100)';
+                    }
+                  }}
+                  onMouseLeave={e => {
+                    if (!active) {
+                      e.currentTarget.style.background = 'transparent';
+                      e.currentTarget.style.color = 'var(--slate-400)';
+                    }
+                  }}
                 >
-                  {active && <div className="absolute left-0 top-0 bottom-0 w-0.5 bg-blue-500 rounded-r" />}
-                  <Icon className={`w-4 h-4 flex-shrink-0 ${active ? 'text-blue-400' : ''}`} />
+                  {active && (
+                    <div style={{
+                      position: 'absolute', left: '0', top: '6px', bottom: '6px',
+                      width: '3px',
+                      background: 'linear-gradient(180deg, var(--amber-400), var(--amber-600))',
+                      borderRadius: '0 2px 2px 0',
+                    }} />
+                  )}
+                  <span style={{ width: '16px', height: '16px', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                <Icon />
+              </span>
                   {!collapsed && (
                     <>
-                      <span className="truncate text-xs font-medium">{item.label}</span>
+                      <span style={{
+                        fontFamily: 'var(--font-body)', fontSize: '13px', fontWeight: 500,
+                        flex: 1, textAlign: 'left',
+                      }}>
+                        {item.label}
+                      </span>
                       {item.badge && (
-                        <span className={`ml-auto text-[9px] font-bold px-1.5 py-0.5 rounded ${badgeColors[item.color || 'blue']}`}>
+                        <span
+                          className={`badge ${BADGE_COLORS[item.badgeVariant || 'amber']}`}
+                          style={{ flexShrink: 0 }}
+                        >
                           {item.badge}
                         </span>
                       )}
@@ -167,16 +253,27 @@ export function Sidebar({ activeModule, setModule, collapsed, setCollapsed }: Si
 
       {/* User Footer */}
       {!collapsed && (
-        <div className="border-t border-gray-800 p-4">
-          <div className="flex items-center gap-3">
-            <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white text-xs font-bold flex-shrink-0">
+        <div style={{
+          borderTop: '1px solid var(--slate-800)',
+          padding: '16px',
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+            <div
+              style={{
+                width: '32px', height: '32px', borderRadius: '50%',
+                background: 'linear-gradient(135deg, var(--amber-500), var(--amber-600))',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                fontFamily: 'var(--font-display)', fontSize: '11px', fontWeight: 700,
+                color: 'var(--slate-950)', flexShrink: 0,
+              }}
+            >
               AS
             </div>
-            <div className="flex-1 min-w-0">
-              <div className="text-xs font-semibold text-white truncate">Adrian Stanca</div>
-              <div className="text-[10px] text-gray-500 truncate">Company Owner</div>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ fontFamily: 'var(--font-body)', fontSize: '12px', fontWeight: 600, color: 'var(--slate-100)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>Adrian Stanca</div>
+              <div style={{ fontFamily: 'var(--font-body)', fontSize: '10px', color: 'var(--slate-500)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>Company Owner</div>
             </div>
-            <div className="w-2 h-2 rounded-full bg-green-500 flex-shrink-0" title="Online" />
+            <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: 'var(--emerald-500)', flexShrink: 0, boxShadow: '0 0 6px var(--emerald-500)' }} title="Online" />
           </div>
         </div>
       )}

@@ -1,7 +1,5 @@
-import React, { createContext, useContext, useEffect, useState, useCallback } from 'react';
-import type { User, Session } from '@supabase/supabase-js';
-import { supabase, isSupabaseConfigured } from '../lib/supabase';
-import { CURRENT_USER } from '../data/mockData';
+import React, { createContext, useContext, useEffect, useState } from 'react';
+import { getToken, setToken, clearToken, getStoredUser, setStoredUser, API_BASE } from '../lib/supabase';
 
 interface Profile {
   id: string;
@@ -10,126 +8,84 @@ interface Profile {
   role: string;
   company: string;
   phone?: string;
-  avatar_url?: string;
+  avatar?: string;
 }
 
 interface AuthContextValue {
-  user: User | null;
+  user: Profile | null;
   profile: Profile | null;
-  session: Session | null;
   loading: boolean;
+  isAuthenticated: boolean;
   signIn: (email: string, password: string) => Promise<void>;
   signUp: (email: string, password: string, name: string, company: string) => Promise<void>;
   signOut: () => Promise<void>;
   updateProfile: (updates: Partial<Profile>) => Promise<void>;
-  isAuthenticated: boolean;
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null);
 
-// Demo profile when Supabase is not configured
-const DEMO_PROFILE: Profile = {
-  id: 'demo',
-  name: CURRENT_USER.name,
-  email: CURRENT_USER.email,
-  role: CURRENT_USER.role,
-  company: CURRENT_USER.company,
-  phone: CURRENT_USER.phone,
-};
-
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const [user, setUser] = useState<User | null>(null);
-  const [profile, setProfile] = useState<Profile | null>(null);
-  const [session, setSession] = useState<Session | null>(null);
+  const [user, setUser]       = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
 
-  const fetchProfile = useCallback(async (userId: string) => {
-    const { data } = await supabase
-      .from('profiles')
-      .select('*')
-      .eq('id', userId)
-      .single();
-    if (data) setProfile(data as Profile);
+  // On mount, restore session from localStorage
+  useEffect(() => {
+    const token   = getToken();
+    const stored  = getStoredUser();
+    if (token && stored) {
+      setUser(stored as unknown as Profile);
+    }
+    setLoading(false);
   }, []);
 
-  useEffect(() => {
-    if (!isSupabaseConfigured) {
-      // Demo mode — pretend user is logged in
-      setProfile(DEMO_PROFILE);
-      setLoading(false);
-      return;
-    }
-
-    supabase.auth.getSession().then(({ data: { session: s } }) => {
-      setSession(s);
-      setUser(s?.user ?? null);
-      if (s?.user) fetchProfile(s.user.id);
-      setLoading(false);
-    });
-
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, s) => {
-      setSession(s);
-      setUser(s?.user ?? null);
-      if (s?.user) fetchProfile(s.user.id);
-      else setProfile(null);
-      setLoading(false);
-    });
-
-    return () => subscription.unsubscribe();
-  }, [fetchProfile]);
-
   const signIn = async (email: string, password: string) => {
-    if (!isSupabaseConfigured) {
-      setProfile(DEMO_PROFILE);
-      return;
-    }
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
-    if (error) throw new Error(error.message);
+    const res = await fetch(`${API_BASE}/auth/login`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, password }),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.message || 'Login failed');
+    setToken(data.token);
+    setStoredUser(data.user);
+    setUser(data.user as Profile);
   };
 
-  const signUp = async (email: string, password: string, name: string, company: string) => {
-    if (!isSupabaseConfigured) throw new Error('Database not configured');
-    const { error } = await supabase.auth.signUp({
-      email,
-      password,
-      options: { data: { name, company } },
-    });
-    if (error) throw new Error(error.message);
+  const signUp = async (_email: string, _password: string, _name: string, _company: string) => {
+    // Self-registration is handled by admins — contact your admin for access
+    throw new Error('Self-registration is disabled. Contact your administrator for access.');
   };
 
   const signOut = async () => {
-    if (!isSupabaseConfigured) {
-      setProfile(DEMO_PROFILE); // stay in demo mode
-      return;
-    }
-    await supabase.auth.signOut();
+    clearToken();
+    setUser(null);
   };
 
   const updateProfile = async (updates: Partial<Profile>) => {
-    if (!isSupabaseConfigured) {
-      setProfile(prev => prev ? { ...prev, ...updates } : DEMO_PROFILE);
-      return;
-    }
-    if (!user) return;
-    const { error } = await supabase
-      .from('profiles')
-      .update(updates)
-      .eq('id', user.id);
-    if (error) throw new Error(error.message);
-    setProfile(prev => prev ? { ...prev, ...updates } : null);
+    const token = getToken();
+    if (!token || !user) return;
+    const res = await fetch(`${API_BASE}/auth/profile`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+      body: JSON.stringify(updates),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.message || 'Update failed');
+    const updated = { ...user, ...data };
+    setUser(updated);
+    setStoredUser(updated);
   };
 
   return (
     <AuthContext.Provider value={{
       user,
-      profile,
-      session,
+      profile: user,
       loading,
+      isAuthenticated: !!user,
       signIn,
       signUp,
       signOut,
       updateProfile,
-      isAuthenticated: isSupabaseConfigured ? !!user : true, // demo = always authenticated
     }}>
       {children}
     </AuthContext.Provider>

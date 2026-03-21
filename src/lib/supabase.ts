@@ -1,25 +1,28 @@
-import { createClient } from '@supabase/supabase-js';
+// CortexBuild Ultimate — Local API auth helpers (replaces Supabase)
 
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL as string;
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY as string;
+const TOKEN_KEY = 'cortexbuild_token';
+const USER_KEY  = 'cortexbuild_user';
 
-if (!supabaseUrl || !supabaseAnonKey) {
-  console.warn(
-    '[CortexBuild] Supabase env vars not set — running in demo mode with mock data.\n' +
-    'Set VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY to connect to your database.'
-  );
+export function getToken(): string | null {
+  return localStorage.getItem(TOKEN_KEY);
 }
 
-export const supabase = createClient(
-  supabaseUrl || 'https://placeholder.supabase.co',
-  supabaseAnonKey || 'placeholder',
-  {
-    auth: {
-      autoRefreshToken: true,
-      persistSession: true,
-      detectSessionInUrl: true,
-    },
-  }
-);
+export function setToken(token: string): void {
+  localStorage.setItem(TOKEN_KEY, token);
+}
 
-export const isSupabaseConfigured = Boolean(supabaseUrl && supabaseAnonKey);
+export function clearToken(): void {
+  localStorage.removeItem(TOKEN_KEY);
+  localStorage.removeItem(USER_KEY);
+}
+
+export function getStoredUser(): Record<string, unknown> | null {
+  const raw = localStorage.getItem(USER_KEY);
+  try { return raw ? JSON.parse(raw) : null; } catch { return null; }
+}
+
+export function setStoredUser(user: Record<string, unknown>): void {
+  localStorage.setItem(USER_KEY, JSON.stringify(user));
+}
+
+export const API_BASE = '/api';

@@ -1,6 +1,8 @@
-import { useState } from 'react';
-import { FileText, Plus, Search, Download, Eye, Folder, Upload, Edit2, Trash2, X } from 'lucide-react';
+import { useState, useRef } from 'react';
+import { FileText, Plus, Search, Eye, Folder, Upload, Edit2, Trash2, X } from 'lucide-react';
 import { useDocuments } from '../../hooks/useData';
+import { documentsApi } from '../../services/api';
+import { useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 
 type AnyRow = Record<string, unknown>;
@@ -27,6 +29,26 @@ export function Documents() {
   const createMutation = useCreate();
   const updateMutation = useUpdate();
   const deleteMutation = useDelete();
+
+  const qc = useQueryClient();
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [uploading, setUploading] = useState(false);
+
+  async function handleFileUpload(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setUploading(true);
+    try {
+      await documentsApi.uploadFile(file);
+      toast.success('Document uploaded');
+      qc.invalidateQueries({ queryKey: ['documents'] });
+    } catch (err: unknown) {
+      toast.error(err instanceof Error ? err.message : 'Upload failed');
+    } finally {
+      setUploading(false);
+      e.target.value = '';
+    }
+  }
 
   const [subTab, setSubTab] = useState('all');
   function setTab(key: string, filter: string) { setSubTab(key); setStatusFilter(filter); }
@@ -80,9 +102,18 @@ export function Documents() {
           <h1 className="text-2xl font-bold text-gray-900">Documents</h1>
           <p className="text-sm text-gray-500 mt-1">Project document register & version control</p>
         </div>
-        <button onClick={openCreate} className="flex items-center gap-2 px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 text-sm font-medium">
-          <Plus size={16}/><span>Register Document</span>
-        </button>
+        <div className="flex gap-2">
+          <input ref={fileInputRef} type="file" className="hidden"
+            accept=".pdf,.doc,.docx,.xls,.xlsx,.png,.jpg,.jpeg,.dwg,.zip"
+            onChange={handleFileUpload} />
+          <button onClick={() => fileInputRef.current?.click()} disabled={uploading}
+            className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm font-medium disabled:opacity-50">
+            <Upload size={16}/><span>{uploading ? 'Uploading…' : 'Upload File'}</span>
+          </button>
+          <button onClick={openCreate} className="flex items-center gap-2 px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 text-sm font-medium">
+            <Plus size={16}/><span>Register Document</span>
+          </button>
+        </div>
       </div>
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">

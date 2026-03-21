@@ -10,14 +10,15 @@ const ACTIVITY_TYPES = ['Groundworks','Structural Steel','Concrete Works','Roofi
 const RISK_LEVELS = ['Low','Medium','High','Critical'];
 
 const statusColour: Record<string,string> = {
-  'Draft':'bg-gray-100 text-gray-700','Under Review':'bg-yellow-100 text-yellow-800',
-  'Approved':'bg-green-100 text-green-800','Expired':'bg-red-100 text-red-700','Superseded':'bg-gray-100 text-gray-500',
+  'Draft':'bg-gray-700 text-gray-400','Under Review':'bg-yellow-500/20 text-yellow-400',
+  'Approved':'bg-green-500/20 text-green-400','Expired':'bg-red-500/20 text-red-400','Superseded':'bg-gray-700 text-gray-500',
 };
 const riskColour: Record<string,string> = {
-  'Low':'bg-green-100 text-green-800','Medium':'bg-yellow-100 text-yellow-800','High':'bg-orange-100 text-orange-800','Critical':'bg-red-100 text-red-800',
+  'Low':'bg-green-500/20 text-green-400','Medium':'bg-yellow-500/20 text-yellow-400',
+  'High':'bg-orange-500/20 text-orange-400','Critical':'bg-red-500/20 text-red-400',
 };
 
-const emptyForm = { title:'',activity_type:'',project_id:'',risk_level:'Medium',status:'Draft',reviewed_by:'',approved_by:'',valid_from:'',valid_until:'',hazards:'',controls:'',ppe_required:'',notes:'' };
+const emptyForm = { title:'',activity_type:'',project_id:'',risk_level:'Medium',status:'Draft',reviewed_by:'',approved_by:'',valid_from:'',valid_until:'',hazards:'',controls:'',ppe_required:'',version:'1',created_by:'',review_date:'',notes:'' };
 
 export function RAMS() {
   const { useList, useCreate, useUpdate, useDelete } = useRAMS;
@@ -28,7 +29,6 @@ export function RAMS() {
   const deleteMutation = useDelete();
 
   const [subTab, setSubTab] = useState('all');
-  function setTab(key: string, filter: string) { setSubTab(key); setStatusFilter(filter); }
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('All');
   const [showModal, setShowModal] = useState(false);
@@ -36,33 +36,53 @@ export function RAMS() {
   const [form, setForm] = useState({ ...emptyForm });
   const [expanded, setExpanded] = useState<string | null>(null);
 
+  function setTab(key: string, filter: string) { setSubTab(key); setStatusFilter(filter); }
+
   const filtered = rams.filter(r => {
-    const title = String(r.title??'').toLowerCase();
-    const activity = String(r.activity_type??'').toLowerCase();
+    const title = String(r.title ?? '').toLowerCase();
+    const activity = String(r.activity_type ?? r.activityType ?? '').toLowerCase();
     const matchSearch = title.includes(search.toLowerCase()) || activity.includes(search.toLowerCase());
     const matchStatus = statusFilter === 'All' || r.status === statusFilter;
     return matchSearch && matchStatus;
   });
 
-  const approvedCount = rams.filter(r=>r.status==='Approved').length;
-  const reviewCount = rams.filter(r=>r.status==='Under Review').length;
-  const expiredCount = rams.filter(r=>r.status==='Expired').length;
+  const approvedCount = rams.filter(r => r.status === 'Approved').length;
+  const reviewCount = rams.filter(r => r.status === 'Under Review').length;
+  const expiredCount = rams.filter(r => r.status === 'Expired').length;
   const expiringSoon = rams.filter(r => {
-    if (!r.valid_until || r.status !== 'Approved') return false;
-    const diff = (new Date(String(r.valid_until)).getTime() - Date.now()) / 86400000;
+    const until = r.valid_until ?? r.validUntil;
+    if (!until || r.status !== 'Approved') return false;
+    const diff = (new Date(String(until)).getTime() - Date.now()) / 86400000;
     return diff >= 0 && diff <= 30;
   }).length;
 
   function openCreate() { setEditing(null); setForm({ ...emptyForm }); setShowModal(true); }
   function openEdit(r: AnyRow) {
     setEditing(r);
-    setForm({ title:String(r.title??''),activity_type:String(r.activity_type??''),project_id:String(r.project_id??''),risk_level:String(r.risk_level??'Medium'),status:String(r.status??'Draft'),reviewed_by:String(r.reviewed_by??''),approved_by:String(r.approved_by??''),valid_from:String(r.valid_from??''),valid_until:String(r.valid_until??''),hazards:String(r.hazards??''),controls:String(r.controls??''),ppe_required:String(r.ppe_required??''),notes:String(r.notes??'') });
+    setForm({
+      title: String(r.title ?? ''),
+      activity_type: String(r.activity_type ?? r.activityType ?? ''),
+      project_id: String(r.project_id ?? r.projectId ?? ''),
+      risk_level: String(r.risk_level ?? r.riskLevel ?? 'Medium'),
+      status: String(r.status ?? 'Draft'),
+      reviewed_by: String(r.reviewed_by ?? r.reviewedBy ?? ''),
+      approved_by: String(r.approved_by ?? r.approvedBy ?? ''),
+      valid_from: String(r.valid_from ?? r.validFrom ?? ''),
+      valid_until: String(r.valid_until ?? r.validUntil ?? ''),
+      hazards: String(r.hazards ?? ''),
+      controls: String(r.controls ?? ''),
+      ppe_required: String(r.ppe_required ?? r.ppeRequired ?? ''),
+      version: String(r.version ?? '1'),
+      created_by: String(r.created_by ?? r.createdBy ?? ''),
+      review_date: String(r.review_date ?? r.reviewDate ?? ''),
+      notes: String(r.notes ?? ''),
+    });
     setShowModal(true);
   }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (editing) { await updateMutation.mutateAsync({ id:String(editing.id), data:form }); toast.success('RAMS updated'); }
+    if (editing) { await updateMutation.mutateAsync({ id: String(editing.id), data: form }); toast.success('RAMS updated'); }
     else { await createMutation.mutateAsync(form); toast.success('RAMS created'); }
     setShowModal(false);
   }
@@ -73,103 +93,115 @@ export function RAMS() {
   }
 
   async function approve(r: AnyRow) {
-    await updateMutation.mutateAsync({ id:String(r.id), data:{ status:'Approved' } });
+    await updateMutation.mutateAsync({ id: String(r.id), data: { status: 'Approved' } });
     toast.success('RAMS approved');
   }
+
+  const inputCls = 'w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-orange-500';
+  const labelCls = 'block text-sm font-medium text-gray-300 mb-1';
 
   return (
     <div className="p-6 space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">RAMS</h1>
-          <p className="text-sm text-gray-500 mt-1">Risk Assessment & Method Statements</p>
+          <h1 className="text-2xl font-bold text-white">RAMS</h1>
+          <p className="text-sm text-gray-400 mt-1">Risk Assessment & Method Statements</p>
         </div>
         <button onClick={openCreate} className="flex items-center gap-2 px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 text-sm font-medium">
-          <Plus size={16}/><span>New RAMS</span>
+          <Plus size={16} /><span>New RAMS</span>
         </button>
       </div>
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         {[
-          { label:'Approved', value:approvedCount, icon:CheckCircle, colour:'text-green-600', bg:'bg-green-50' },
-          { label:'Under Review', value:reviewCount, icon:Clock, colour:'text-yellow-600', bg:'bg-yellow-50' },
-          { label:'Expired', value:expiredCount, icon:AlertTriangle, colour:'text-red-600', bg:'bg-red-50' },
-          { label:'Expiring Soon', value:expiringSoon, icon:FileCheck, colour:expiringSoon>0?'text-orange-600':'text-gray-600', bg:expiringSoon>0?'bg-orange-50':'bg-gray-50' },
-        ].map(kpi=>(
-          <div key={kpi.label} className="bg-white rounded-xl border border-gray-200 p-4">
+          { label: 'Approved', value: approvedCount, icon: CheckCircle, colour: 'text-green-400', bg: 'bg-green-500/10' },
+          { label: 'Under Review', value: reviewCount, icon: Clock, colour: 'text-yellow-400', bg: 'bg-yellow-500/10' },
+          { label: 'Expired', value: expiredCount, icon: AlertTriangle, colour: 'text-red-400', bg: 'bg-red-500/10' },
+          { label: 'Expiring Soon', value: expiringSoon, icon: FileCheck, colour: expiringSoon > 0 ? 'text-orange-400' : 'text-gray-400', bg: expiringSoon > 0 ? 'bg-orange-500/10' : 'bg-gray-800' },
+        ].map(kpi => (
+          <div key={kpi.label} className="bg-gray-900 rounded-xl border border-gray-800 p-4">
             <div className="flex items-center gap-3">
-              <div className={`p-2 rounded-lg ${kpi.bg}`}><kpi.icon size={20} className={kpi.colour}/></div>
-              <div><p className="text-xs text-gray-500">{kpi.label}</p><p className="text-xl font-bold text-gray-900">{kpi.value}</p></div>
+              <div className={`p-2 rounded-lg ${kpi.bg}`}><kpi.icon size={20} className={kpi.colour} /></div>
+              <div><p className="text-xs text-gray-500">{kpi.label}</p><p className="text-xl font-bold text-white">{kpi.value}</p></div>
             </div>
           </div>
         ))}
       </div>
 
-      <div className="flex gap-1 border-b border-gray-200">
+      <div className="flex gap-1 border-b border-gray-800">
         {([
-          { key:'all', label:'All RAMS', filter:'All', count:rams.length, cls:'' },
-          { key:'review', label:'Under Review', filter:'Under Review', count:reviewCount, cls:'bg-amber-100 text-amber-700' },
-          { key:'approved', label:'Approved', filter:'Approved', count:approvedCount, cls:'bg-green-100 text-green-700' },
-          { key:'expired', label:'Expired', filter:'Expired', count:expiredCount, cls:'bg-red-100 text-red-700' },
-        ]).map(t=>(
-          <button key={t.key} onClick={()=>setTab(t.key, t.filter)}
-            className={`flex items-center gap-2 px-4 py-2.5 text-sm font-medium border-b-2 -mb-px transition-colors ${subTab===t.key?'border-orange-600 text-orange-600':'border-transparent text-gray-500 hover:text-gray-700'}`}>
+          { key: 'all', label: 'All RAMS', filter: 'All', count: rams.length, cls: '' },
+          { key: 'review', label: 'Under Review', filter: 'Under Review', count: reviewCount, cls: 'bg-amber-500/20 text-amber-400' },
+          { key: 'approved', label: 'Approved', filter: 'Approved', count: approvedCount, cls: 'bg-green-500/20 text-green-400' },
+          { key: 'expired', label: 'Expired', filter: 'Expired', count: expiredCount, cls: 'bg-red-500/20 text-red-400' },
+        ]).map(t => (
+          <button key={t.key} onClick={() => setTab(t.key, t.filter)}
+            className={`flex items-center gap-2 px-4 py-2.5 text-sm font-medium border-b-2 -mb-px transition-colors ${subTab === t.key ? 'border-orange-500 text-orange-500' : 'border-transparent text-gray-400 hover:text-gray-200'}`}>
             {t.label}
-            <span className={`text-xs px-1.5 py-0.5 rounded-full ${t.cls||'bg-gray-100 text-gray-600'}`}>{t.count}</span>
+            <span className={`text-xs px-1.5 py-0.5 rounded-full ${t.cls || 'bg-gray-800 text-gray-400'}`}>{t.count}</span>
           </button>
         ))}
       </div>
 
-      <div className="flex flex-wrap gap-3 items-center bg-white rounded-xl border border-gray-200 p-4">
+      <div className="flex flex-wrap gap-3 items-center bg-gray-900 rounded-xl border border-gray-800 p-4">
         <div className="relative flex-1 min-w-48">
-          <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"/>
-          <input value={search} onChange={e=>setSearch(e.target.value)} placeholder="Search title or activity…" className="w-full pl-9 pr-4 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"/>
+          <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500" />
+          <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search title or activity…" className={inputCls + ' pl-9'} />
         </div>
-        <select value={statusFilter} onChange={e=>setStatusFilter(e.target.value)} className="text-sm border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-orange-500">
-          {['All',...STATUS_OPTIONS].map(s=><option key={s}>{s}</option>)}
+        <select value={statusFilter} onChange={e => setStatusFilter(e.target.value)} className="bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-orange-500">
+          {['All', ...STATUS_OPTIONS].map(s => <option key={s}>{s}</option>)}
         </select>
       </div>
 
       {isLoading ? (
-        <div className="flex justify-center py-20"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-600"/></div>
+        <div className="flex justify-center py-20"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-500" /></div>
       ) : (
-        <div className="bg-white rounded-xl border border-gray-200 divide-y divide-gray-100">
-          {filtered.length === 0 && <div className="text-center py-16 text-gray-400"><Shield size={40} className="mx-auto mb-3 opacity-30"/><p>No RAMS documents found</p></div>}
+        <div className="bg-gray-900 rounded-xl border border-gray-800 divide-y divide-gray-800">
+          {filtered.length === 0 && <div className="text-center py-16 text-gray-500"><Shield size={40} className="mx-auto mb-3 opacity-30" /><p>No RAMS documents found</p></div>}
           {filtered.map(r => {
-            const id = String(r.id??'');
+            const id = String(r.id ?? '');
             const isExp = expanded === id;
+            const validUntil = r.valid_until ?? r.validUntil;
+            const version = r.version;
+            const activityType = r.activity_type ?? r.activityType;
+            const riskLevel = r.risk_level ?? r.riskLevel;
             return (
               <div key={id}>
-                <div className="flex items-center gap-4 p-4 hover:bg-gray-50 cursor-pointer" onClick={()=>setExpanded(isExp?null:id)}>
-                  <div className={`p-2 rounded-lg flex-shrink-0 ${riskColour[String(r.risk_level??'')] ? 'bg-opacity-20' : 'bg-gray-50'}`}>
-                    <Shield size={20} className={riskColour[String(r.risk_level??'')]?.split(' ')[1] ?? 'text-gray-400'}/>
+                <div className="flex items-center gap-4 p-4 hover:bg-gray-800/50 cursor-pointer" onClick={() => setExpanded(isExp ? null : id)}>
+                  <div className={`p-2 rounded-lg flex-shrink-0 ${riskColour[String(riskLevel ?? '')] ? '' : 'bg-gray-800'}`}>
+                    <Shield size={20} className={riskColour[String(riskLevel ?? '')]?.split(' ')[1] ?? 'text-gray-400'} />
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="font-semibold text-gray-900 truncate">{String(r.title??'Untitled')}</p>
-                    <p className="text-sm text-gray-500">{String(r.activity_type??'')} {r.valid_until?`· Expires ${r.valid_until}`:''}</p>
+                    <div className="flex items-center gap-2">
+                      <p className="font-semibold text-white truncate">{String(r.title ?? 'Untitled')}</p>
+                      {!!version && <span className="text-xs bg-gray-700 text-gray-400 px-2 py-0.5 rounded-full">v{String(version)}</span>}
+                    </div>
+                    <p className="text-sm text-gray-400">{String(activityType ?? '')} {validUntil ? `· Expires ${validUntil}` : ''}</p>
                   </div>
                   <div className="hidden md:flex items-center gap-2">
-                    <span className={`text-xs px-2 py-1 rounded-full font-medium ${riskColour[String(r.risk_level??'')] ?? 'bg-gray-100 text-gray-700'}`}>{String(r.risk_level??'')}</span>
-                    <span className={`text-xs px-2 py-1 rounded-full font-medium ${statusColour[String(r.status??'')] ?? 'bg-gray-100 text-gray-700'}`}>{String(r.status??'')}</span>
+                    <span className={`text-xs px-2 py-1 rounded-full font-medium ${riskColour[String(riskLevel ?? '')] ?? 'bg-gray-700 text-gray-400'}`}>{String(riskLevel ?? '')}</span>
+                    <span className={`text-xs px-2 py-1 rounded-full font-medium ${statusColour[String(r.status ?? '')] ?? 'bg-gray-700 text-gray-400'}`}>{String(r.status ?? '')}</span>
                   </div>
                   <div className="flex items-center gap-1">
-                    {r.status === 'Under Review' && <button onClick={e=>{e.stopPropagation();approve(r);}} className="p-1.5 text-green-600 hover:bg-green-50 rounded text-xs" title="Approve"><CheckCircle size={14}/></button>}
-                    <button onClick={e=>{e.stopPropagation();openEdit(r);}} className="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded"><Edit2 size={14}/></button>
-                    <button onClick={e=>{e.stopPropagation();handleDelete(id);}} className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded"><Trash2 size={14}/></button>
-                    <button className="p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded" title="Download"><Download size={14}/></button>
-                    {isExp?<ChevronUp size={16} className="text-gray-400"/>:<ChevronDown size={16} className="text-gray-400"/>}
+                    {r.status === 'Under Review' && <button onClick={e => { e.stopPropagation(); approve(r); }} className="p-1.5 text-green-400 hover:bg-green-500/20 rounded" title="Approve"><CheckCircle size={14} /></button>}
+                    <button onClick={e => { e.stopPropagation(); openEdit(r); }} className="p-1.5 text-gray-500 hover:text-blue-400 hover:bg-blue-500/20 rounded"><Edit2 size={14} /></button>
+                    <button onClick={e => { e.stopPropagation(); handleDelete(id); }} className="p-1.5 text-gray-500 hover:text-red-400 hover:bg-red-500/20 rounded"><Trash2 size={14} /></button>
+                    <button className="p-1.5 text-gray-500 hover:text-gray-300 hover:bg-gray-700 rounded" title="Download"><Download size={14} /></button>
+                    {isExp ? <ChevronUp size={16} className="text-gray-500" /> : <ChevronDown size={16} className="text-gray-500" />}
                   </div>
                 </div>
                 {isExp && (
-                  <div className="px-6 pb-4 bg-gray-50 space-y-3 text-sm">
-                    {!!r.hazards && <div><p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">Hazards Identified</p><p className="text-gray-700 whitespace-pre-wrap">{String(r.hazards)}</p></div>}
-                    {!!r.controls && <div><p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">Control Measures</p><p className="text-gray-700 whitespace-pre-wrap">{String(r.controls)}</p></div>}
-                    {!!r.ppe_required && <div><p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">PPE Required</p><p className="text-gray-700">{String(r.ppe_required)}</p></div>}
-                    <div className="flex gap-6">
-                      {!!r.reviewed_by && <div><p className="text-xs text-gray-400">Reviewed By</p><p>{String(r.reviewed_by)}</p></div>}
-                      {!!r.approved_by && <div><p className="text-xs text-gray-400">Approved By</p><p>{String(r.approved_by)}</p></div>}
-                      {!!r.valid_from && <div><p className="text-xs text-gray-400">Valid From</p><p>{String(r.valid_from)}</p></div>}
-                      {!!r.valid_until && <div><p className="text-xs text-gray-400">Valid Until</p><p>{String(r.valid_until)}</p></div>}
+                  <div className="px-6 pb-4 bg-gray-800/30 space-y-3 text-sm border-t border-gray-800">
+                    {!!(r.hazards) && <div className="pt-3"><p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">Hazards Identified</p><p className="text-gray-300 whitespace-pre-wrap">{String(r.hazards)}</p></div>}
+                    {!!(r.controls) && <div><p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">Control Measures</p><p className="text-gray-300 whitespace-pre-wrap">{String(r.controls)}</p></div>}
+                    {!!(r.ppe_required ?? r.ppeRequired) && <div><p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">PPE Required</p><p className="text-gray-300">{String(r.ppe_required ?? r.ppeRequired)}</p></div>}
+                    <div className="flex gap-6 flex-wrap pb-2">
+                      {!!(r.reviewed_by ?? r.reviewedBy) && <div><p className="text-xs text-gray-500">Reviewed By</p><p className="text-gray-300">{String(r.reviewed_by ?? r.reviewedBy)}</p></div>}
+                      {!!(r.approved_by ?? r.approvedBy) && <div><p className="text-xs text-gray-500">Approved By</p><p className="text-gray-300">{String(r.approved_by ?? r.approvedBy)}</p></div>}
+                      {!!(r.created_by ?? r.createdBy) && <div><p className="text-xs text-gray-500">Created By</p><p className="text-gray-300">{String(r.created_by ?? r.createdBy)}</p></div>}
+                      {!!(r.valid_from ?? r.validFrom) && <div><p className="text-xs text-gray-500">Valid From</p><p className="text-gray-300">{String(r.valid_from ?? r.validFrom)}</p></div>}
+                      {!!(r.valid_until ?? r.validUntil) && <div><p className="text-xs text-gray-500">Valid Until</p><p className="text-gray-300">{String(r.valid_until ?? r.validUntil)}</p></div>}
+                      {!!(r.review_date ?? r.reviewDate) && <div><p className="text-xs text-gray-500">Review Date</p><p className="text-gray-300">{String(r.review_date ?? r.reviewDate)}</p></div>}
                     </div>
                   </div>
                 )}
@@ -180,69 +212,81 @@ export function RAMS() {
       )}
 
       {showModal && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
-            <div className="flex items-center justify-between p-6 border-b sticky top-0 bg-white z-10">
-              <h2 className="text-lg font-semibold">{editing?'Edit RAMS':'New RAMS Document'}</h2>
-              <button onClick={()=>setShowModal(false)} className="p-2 hover:bg-gray-100 rounded-lg"><X size={18}/></button>
+        <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
+          <div className="bg-gray-900 rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto border border-gray-700">
+            <div className="flex items-center justify-between p-6 border-b border-gray-800 sticky top-0 bg-gray-900 z-10">
+              <h2 className="text-lg font-semibold text-white">{editing ? 'Edit RAMS' : 'New RAMS Document'}</h2>
+              <button onClick={() => setShowModal(false)} className="p-2 hover:bg-gray-800 rounded-lg text-gray-400"><X size={18} /></button>
             </div>
             <form onSubmit={handleSubmit} className="p-6 space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 <div className="col-span-2">
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Document Title *</label>
-                  <input required value={form.title} onChange={e=>setForm(f=>({...f,title:e.target.value}))} className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500"/>
+                  <label className={labelCls}>Document Title *</label>
+                  <input required value={form.title} onChange={e => setForm(f => ({ ...f, title: e.target.value }))} className={inputCls} />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Activity Type</label>
-                  <select value={form.activity_type} onChange={e=>setForm(f=>({...f,activity_type:e.target.value}))} className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500">
-                    <option value="">Select…</option>{ACTIVITY_TYPES.map(a=><option key={a}>{a}</option>)}
+                  <label className={labelCls}>Activity Type</label>
+                  <select value={form.activity_type} onChange={e => setForm(f => ({ ...f, activity_type: e.target.value }))} className={inputCls}>
+                    <option value="">Select…</option>{ACTIVITY_TYPES.map(a => <option key={a}>{a}</option>)}
                   </select>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Risk Level</label>
-                  <select value={form.risk_level} onChange={e=>setForm(f=>({...f,risk_level:e.target.value}))} className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500">
-                    {RISK_LEVELS.map(r=><option key={r}>{r}</option>)}
+                  <label className={labelCls}>Risk Level</label>
+                  <select value={form.risk_level} onChange={e => setForm(f => ({ ...f, risk_level: e.target.value }))} className={inputCls}>
+                    {RISK_LEVELS.map(r => <option key={r}>{r}</option>)}
                   </select>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
-                  <select value={form.status} onChange={e=>setForm(f=>({...f,status:e.target.value}))} className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500">
-                    {STATUS_OPTIONS.map(s=><option key={s}>{s}</option>)}
+                  <label className={labelCls}>Status</label>
+                  <select value={form.status} onChange={e => setForm(f => ({ ...f, status: e.target.value }))} className={inputCls}>
+                    {STATUS_OPTIONS.map(s => <option key={s}>{s}</option>)}
                   </select>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Reviewed By</label>
-                  <input value={form.reviewed_by} onChange={e=>setForm(f=>({...f,reviewed_by:e.target.value}))} className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500"/>
+                  <label className={labelCls}>Version</label>
+                  <input value={form.version} onChange={e => setForm(f => ({ ...f, version: e.target.value }))} placeholder="e.g. 1.0" className={inputCls} />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Approved By</label>
-                  <input value={form.approved_by} onChange={e=>setForm(f=>({...f,approved_by:e.target.value}))} className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500"/>
+                  <label className={labelCls}>Created By</label>
+                  <input value={form.created_by} onChange={e => setForm(f => ({ ...f, created_by: e.target.value }))} className={inputCls} />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Valid From</label>
-                  <input type="date" value={form.valid_from} onChange={e=>setForm(f=>({...f,valid_from:e.target.value}))} className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500"/>
+                  <label className={labelCls}>Review Date</label>
+                  <input type="date" value={form.review_date} onChange={e => setForm(f => ({ ...f, review_date: e.target.value }))} className={inputCls} />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Valid Until</label>
-                  <input type="date" value={form.valid_until} onChange={e=>setForm(f=>({...f,valid_until:e.target.value}))} className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500"/>
+                  <label className={labelCls}>Reviewed By</label>
+                  <input value={form.reviewed_by} onChange={e => setForm(f => ({ ...f, reviewed_by: e.target.value }))} className={inputCls} />
+                </div>
+                <div>
+                  <label className={labelCls}>Approved By</label>
+                  <input value={form.approved_by} onChange={e => setForm(f => ({ ...f, approved_by: e.target.value }))} className={inputCls} />
+                </div>
+                <div>
+                  <label className={labelCls}>Valid From</label>
+                  <input type="date" value={form.valid_from} onChange={e => setForm(f => ({ ...f, valid_from: e.target.value }))} className={inputCls} />
+                </div>
+                <div>
+                  <label className={labelCls}>Valid Until</label>
+                  <input type="date" value={form.valid_until} onChange={e => setForm(f => ({ ...f, valid_until: e.target.value }))} className={inputCls} />
                 </div>
                 <div className="col-span-2">
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Hazards Identified</label>
-                  <textarea rows={3} value={form.hazards} onChange={e=>setForm(f=>({...f,hazards:e.target.value}))} className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500 resize-none"/>
+                  <label className={labelCls}>Hazards Identified</label>
+                  <textarea rows={3} value={form.hazards} onChange={e => setForm(f => ({ ...f, hazards: e.target.value }))} className={inputCls + ' resize-none'} />
                 </div>
                 <div className="col-span-2">
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Control Measures</label>
-                  <textarea rows={3} value={form.controls} onChange={e=>setForm(f=>({...f,controls:e.target.value}))} className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500 resize-none"/>
+                  <label className={labelCls}>Control Measures</label>
+                  <textarea rows={3} value={form.controls} onChange={e => setForm(f => ({ ...f, controls: e.target.value }))} className={inputCls + ' resize-none'} />
                 </div>
                 <div className="col-span-2">
-                  <label className="block text-sm font-medium text-gray-700 mb-1">PPE Required</label>
-                  <input value={form.ppe_required} onChange={e=>setForm(f=>({...f,ppe_required:e.target.value}))} placeholder="e.g. Hard hat, Hi-vis, Safety boots, Gloves" className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500"/>
+                  <label className={labelCls}>PPE Required</label>
+                  <input value={form.ppe_required} onChange={e => setForm(f => ({ ...f, ppe_required: e.target.value }))} placeholder="e.g. Hard hat, Hi-vis, Safety boots, Gloves" className={inputCls} />
                 </div>
               </div>
               <div className="flex gap-3 pt-2">
-                <button type="button" onClick={()=>setShowModal(false)} className="flex-1 px-4 py-2 border border-gray-200 rounded-lg text-sm text-gray-700 hover:bg-gray-50">Cancel</button>
-                <button type="submit" disabled={createMutation.isPending||updateMutation.isPending} className="flex-1 px-4 py-2 bg-orange-600 text-white rounded-lg text-sm font-medium hover:bg-orange-700 disabled:opacity-50">
-                  {editing?'Update RAMS':'Create RAMS'}
+                <button type="button" onClick={() => setShowModal(false)} className="flex-1 px-4 py-2 border border-gray-700 rounded-lg text-sm text-gray-300 hover:bg-gray-800">Cancel</button>
+                <button type="submit" disabled={createMutation.isPending || updateMutation.isPending} className="flex-1 px-4 py-2 bg-orange-600 text-white rounded-lg text-sm font-medium hover:bg-orange-700 disabled:opacity-50">
+                  {editing ? 'Update RAMS' : 'Create RAMS'}
                 </button>
               </div>
             </form>

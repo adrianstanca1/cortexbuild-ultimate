@@ -46,66 +46,184 @@ export function Header({ activeModule, onMenuToggle }: HeaderProps) {
   const notifications = 4;
 
   return (
-    <header className="h-16 flex items-center justify-between px-6 bg-gray-900 border-b border-gray-800 flex-shrink-0">
-      <div className="flex items-center gap-4">
+    <header
+      style={{
+        height: '60px',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        padding: '0 24px',
+        background: 'var(--slate-900)',
+        borderBottom: '1px solid var(--slate-800)',
+        flexShrink: 0,
+      }}
+    >
+      {/* Left */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
         {onMenuToggle && (
-          <button onClick={onMenuToggle} className="text-gray-400 hover:text-white lg:hidden">
-            <Menu className="w-5 h-5" />
+          <button
+            onClick={onMenuToggle}
+            style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--slate-400)', padding: '6px', borderRadius: '6px', transition: 'color 0.2s' }}
+          >
+            <Menu style={{ width: '20px', height: '20px' }} />
           </button>
         )}
         <div>
-          <h1 className="text-sm font-semibold text-white">{MODULE_LABELS[activeModule]}</h1>
-          <p className="text-[10px] text-gray-500">CortexBuild Ultimate · UK Construction Management</p>
+          <h1
+            style={{
+              fontFamily: 'var(--font-display)',
+              fontSize: '15px',
+              fontWeight: 700,
+              color: 'var(--slate-50)',
+              letterSpacing: '-0.01em',
+              lineHeight: 1.2,
+            }}
+          >
+            {MODULE_LABELS[activeModule]}
+          </h1>
+          <p style={{ fontFamily: 'var(--font-mono)', fontSize: '9px', color: 'var(--slate-500)', letterSpacing: '0.08em', marginTop: '1px' }}>
+            CORTEXBUILD ULTIMATE · UK
+          </p>
         </div>
       </div>
 
-      <div className="flex items-center gap-3">
+      {/* Right */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
         {/* Search */}
         {searchOpen ? (
-          <div className="flex items-center gap-2 bg-gray-800 rounded-lg px-3 py-1.5 border border-gray-700">
-            <Search className="w-4 h-4 text-gray-400" />
-            <input autoFocus className="bg-transparent text-sm text-white outline-none w-48 placeholder-gray-500" placeholder="Search anything..." onBlur={() => setSearchOpen(false)} />
-            <button onClick={() => setSearchOpen(false)}>
-              <X className="w-4 h-4 text-gray-500 hover:text-gray-300" />
+          <div
+            style={{
+              display: 'flex', alignItems: 'center', gap: '8px',
+              background: 'var(--slate-800)',
+              border: '1px solid var(--slate-600)',
+              borderRadius: '8px', padding: '6px 12px',
+            }}
+          >
+            <Search style={{ width: '14px', height: '14px', color: 'var(--slate-400)' }} />
+            <input
+              autoFocus
+              style={{
+                background: 'transparent', border: 'none', outline: 'none',
+                fontFamily: 'var(--font-body)', fontSize: '13px',
+                color: 'var(--slate-100)', width: '180px',
+              }}
+              placeholder="Search anything..."
+              onBlur={() => setSearchOpen(false)}
+            />
+            <button
+              onClick={() => setSearchOpen(false)}
+              style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--slate-500)', padding: '2px' }}
+            >
+              <X style={{ width: '14px', height: '14px' }} />
             </button>
           </div>
         ) : (
-          <button onClick={() => setSearchOpen(true)} className="text-gray-400 hover:text-white transition-colors p-2 hover:bg-gray-800 rounded-lg">
-            <Search className="w-4 h-4" />
+          <button
+            onClick={() => setSearchOpen(true)}
+            style={{
+              background: 'none', border: '1px solid transparent', cursor: 'pointer',
+              color: 'var(--slate-400)', padding: '8px', borderRadius: '8px',
+              transition: 'all 0.2s', display: 'flex', alignItems: 'center',
+            }}
+            onMouseEnter={e => { e.currentTarget.style.background = 'var(--slate-800)'; e.currentTarget.style.color = 'var(--slate-100)'; }}
+            onMouseLeave={e => { e.currentTarget.style.background = 'none'; e.currentTarget.style.color = 'var(--slate-400)'; }}
+          >
+            <Search style={{ width: '15px', height: '15px' }} />
           </button>
         )}
 
         {/* Online status */}
-        <div className={`flex items-center gap-1.5 text-[10px] px-2 py-1 rounded-full ${online ? 'bg-green-500/10 text-green-400' : 'bg-red-500/10 text-red-400'}`}>
-          {online ? <Wifi className="w-3 h-3" /> : <WifiOff className="w-3 h-3" />}
-          <span className="font-medium">{online ? 'Live' : 'Offline'}</span>
+        <div
+          style={{
+            display: 'flex', alignItems: 'center', gap: '5px',
+            padding: '4px 10px', borderRadius: '20px',
+            background: online ? 'rgba(16,185,129,0.1)' : 'rgba(248,113,113,0.1)',
+            border: `1px solid ${online ? 'rgba(16,185,129,0.2)' : 'rgba(248,113,113,0.2)'}`,
+          }}
+        >
+          {online
+            ? <Wifi style={{ width: '11px', height: '11px', color: 'var(--emerald-400)' }} />
+            : <WifiOff style={{ width: '11px', height: '11px', color: 'var(--red-400)' }} />
+          }
+          <span style={{
+            fontFamily: 'var(--font-mono)', fontSize: '9px', fontWeight: 600,
+            color: online ? 'var(--emerald-400)' : 'var(--red-400)',
+            letterSpacing: '0.06em', textTransform: 'uppercase',
+          }}>
+            {online ? 'Live' : 'Offline'}
+          </span>
         </div>
 
         {/* Notifications */}
-        <button className="relative text-gray-400 hover:text-white transition-colors p-2 hover:bg-gray-800 rounded-lg">
-          <Bell className="w-4 h-4" />
+        <button
+          style={{
+            background: 'none', border: '1px solid transparent', cursor: 'pointer',
+            color: 'var(--slate-400)', padding: '8px', borderRadius: '8px',
+            transition: 'all 0.2s', position: 'relative',
+          }}
+          onMouseEnter={e => { e.currentTarget.style.background = 'var(--slate-800)'; e.currentTarget.style.color = 'var(--slate-100)'; }}
+          onMouseLeave={e => { e.currentTarget.style.background = 'none'; e.currentTarget.style.color = 'var(--slate-400)'; }}
+        >
+          <Bell style={{ width: '15px', height: '15px' }} />
           {notifications > 0 && (
-            <span className="absolute top-1 right-1 w-3.5 h-3.5 bg-red-500 rounded-full text-[8px] text-white flex items-center justify-center font-bold">
+            <span
+              style={{
+                position: 'absolute', top: '4px', right: '4px',
+                width: '14px', height: '14px', borderRadius: '50%',
+                background: '#ef4444', color: 'white',
+                fontSize: '8px', fontWeight: 700,
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                fontFamily: 'var(--font-mono)',
+              }}
+            >
               {notifications}
             </span>
           )}
         </button>
 
         {/* Dark mode */}
-        <button className="text-gray-400 hover:text-white transition-colors p-2 hover:bg-gray-800 rounded-lg">
-          <Moon className="w-4 h-4" />
+        <button
+          style={{
+            background: 'none', border: '1px solid transparent', cursor: 'pointer',
+            color: 'var(--slate-400)', padding: '8px', borderRadius: '8px',
+            transition: 'all 0.2s',
+          }}
+          onMouseEnter={e => { e.currentTarget.style.background = 'var(--slate-800)'; e.currentTarget.style.color = 'var(--slate-100)'; }}
+          onMouseLeave={e => { e.currentTarget.style.background = 'none'; e.currentTarget.style.color = 'var(--slate-400)'; }}
+        >
+          <Moon style={{ width: '15px', height: '15px' }} />
         </button>
 
+        {/* Divider */}
+        <div style={{ width: '1px', height: '24px', background: 'var(--slate-700)', margin: '0 4px' }} />
+
         {/* User menu */}
-        <button className="flex items-center gap-2 hover:bg-gray-800 rounded-lg px-2 py-1.5 transition-colors">
-          <div className="w-7 h-7 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white text-[10px] font-bold">
+        <button
+          style={{
+            display: 'flex', alignItems: 'center', gap: '10px',
+            background: 'none', border: '1px solid transparent',
+            cursor: 'pointer', padding: '6px 10px', borderRadius: '8px',
+            transition: 'all 0.2s',
+          }}
+          onMouseEnter={e => { e.currentTarget.style.background = 'var(--slate-800)'; }}
+          onMouseLeave={e => { e.currentTarget.style.background = 'none'; }}
+        >
+          <div
+            style={{
+              width: '28px', height: '28px', borderRadius: '50%',
+              background: 'linear-gradient(135deg, var(--amber-500), var(--amber-600))',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              fontFamily: 'var(--font-display)', fontSize: '10px', fontWeight: 700,
+              color: 'var(--slate-950)',
+            }}
+          >
             AS
           </div>
-          <div className="text-left hidden sm:block">
-            <div className="text-xs font-semibold text-white leading-tight">Adrian Stanca</div>
-            <div className="text-[9px] text-gray-500">CortexBuild Ltd</div>
+          <div style={{ textAlign: 'left' }}>
+            <div style={{ fontFamily: 'var(--font-body)', fontSize: '12px', fontWeight: 600, color: 'var(--slate-100)', lineHeight: 1.2 }}>Adrian Stanca</div>
+            <div style={{ fontFamily: 'var(--font-mono)', fontSize: '9px', color: 'var(--slate-500)' }}>CortexBuild Ltd</div>
           </div>
-          <ChevronDown className="w-3 h-3 text-gray-500" />
+          <ChevronDown style={{ width: '12px', height: '12px', color: 'var(--slate-500)' }} />
         </button>
       </div>
     </header>

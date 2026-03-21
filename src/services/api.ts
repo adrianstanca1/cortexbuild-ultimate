@@ -1,270 +1,258 @@
 /**
- * CortexBuild Ultimate — Universal API Service
- * All CRUD operations are routed through here.
- * Falls back to mock data when Supabase is not configured.
+ * CortexBuild Ultimate — API Service
+ * All CRUD operations route to the local Express.js backend.
  */
-import { supabase, isSupabaseConfigured } from '../lib/supabase';
-import { mockProjects, mockInvoices, mockTeamMembers, mockSafetyIncidents,
-  mockRFIs, mockChangeOrders, mockRAMS, mockCISReturns, mockEquipment,
-  mockSubcontractors, mockTimesheets, mockDocuments, mockTenders,
-  mockDailyReports, mockMeetings, mockMaterials, mockPunchList,
-  mockInspections, mockContacts, mockRiskRegister, mockPurchaseOrders } from '../data/mockData';
-
-// ─── Generic helpers ─────────────────────────────────────────────────────────
+import { getToken, API_BASE } from '../lib/supabase';
 
 type Row = Record<string, unknown>;
 
-async function fetchAll<T>(table: string, fallback: T[]): Promise<T[]> {
-  if (!isSupabaseConfigured) return fallback;
-  const { data, error } = await supabase.from(table).select('*').order('created_at', { ascending: false });
-  if (error) { console.error(table, error.message); return fallback; }
-  return (data as T[]) ?? fallback;
+// ─── snake_case → camelCase normalizer ───────────────────────────────────────
+
+function camelize(s: string): string {
+  return s.replace(/_([a-z])/g, (_, c) => c.toUpperCase());
 }
 
-async function fetchById<T>(table: string, id: string): Promise<T | null> {
-  if (!isSupabaseConfigured) return null;
-  const { data, error } = await supabase.from(table).select('*').eq('id', id).single();
-  if (error) { console.error(table, error.message); return null; }
-  return data as T;
-}
-
-async function insertRow<T>(table: string, row: Row): Promise<T | null> {
-  if (!isSupabaseConfigured) {
-    // Return a fake object with a generated id so the UI still works
-    return { id: crypto.randomUUID(), ...row, created_at: new Date().toISOString() } as unknown as T;
+function toCamel<T>(obj: unknown): T {
+  if (Array.isArray(obj)) return obj.map(toCamel) as unknown as T;
+  if (obj !== null && typeof obj === 'object') {
+    return Object.fromEntries(
+      Object.entries(obj as Record<string, unknown>).map(([k, v]) => [camelize(k), toCamel(v)])
+    ) as unknown as T;
   }
-  const { data, error } = await supabase.from(table).insert(row).select().single();
-  if (error) throw new Error(error.message);
-  return data as T;
+  return obj as T;
 }
 
-async function updateRow<T>(table: string, id: string, updates: Row): Promise<T | null> {
-  if (!isSupabaseConfigured) return { id, ...updates } as unknown as T;
-  const { data, error } = await supabase.from(table).update(updates).eq('id', id).select().single();
-  if (error) throw new Error(error.message);
-  return data as T;
+// ─── Core fetch helper ────────────────────────────────────────────────────────
+
+async function apiFetch<T>(path: string, options?: RequestInit): Promise<T> {
+  const token = getToken();
+  const res = await fetch(`${API_BASE}${path}`, {
+    ...options,
+    headers: {
+      'Content-Type': 'application/json',
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      ...options?.headers,
+    },
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ message: res.statusText }));
+    throw new Error(err.message || 'Request failed');
+  }
+  const data = await res.json();
+  return toCamel<T>(data);
 }
 
-async function deleteRow(table: string, id: string): Promise<void> {
-  if (!isSupabaseConfigured) return;
-  const { error } = await supabase.from(table).delete().eq('id', id);
-  if (error) throw new Error(error.message);
+async function fetchAll<T>(endpoint: string): Promise<T[]> {
+  return apiFetch<T[]>(`/${endpoint}`);
 }
 
-// ─── Projects ─────────────────────────────────────────────────────────────────
+async function insertRow<T>(endpoint: string, row: Row): Promise<T> {
+  return apiFetch<T>(`/${endpoint}`, { method: 'POST', body: JSON.stringify(row) });
+}
+
+async function updateRow<T>(endpoint: string, id: string, data: Row): Promise<T> {
+  return apiFetch<T>(`/${endpoint}/${id}`, { method: 'PUT', body: JSON.stringify(data) });
+}
+
+async function deleteRow(endpoint: string, id: string): Promise<void> {
+  await apiFetch(`/${endpoint}/${id}`, { method: 'DELETE' });
+}
+
+// ─── Entity APIs ──────────────────────────────────────────────────────────────
 
 export const projectsApi = {
-  getAll: () => fetchAll('projects', mockProjects),
-  getById: (id: string) => fetchById('projects', id),
+  getAll: () => fetchAll('projects'),
+  getById: (id: string) => apiFetch(`/projects/${id}`),
   create: (data: Row) => insertRow('projects', data),
   update: (id: string, data: Row) => updateRow('projects', id, data),
   delete: (id: string) => deleteRow('projects', id),
 };
 
-// ─── Invoices ────────────────────────────────────────────────────────────────
-
 export const invoicesApi = {
-  getAll: () => fetchAll('invoices', mockInvoices),
-  getById: (id: string) => fetchById('invoices', id),
+  getAll: () => fetchAll('invoices'),
+  getById: (id: string) => apiFetch(`/invoices/${id}`),
   create: (data: Row) => insertRow('invoices', data),
   update: (id: string, data: Row) => updateRow('invoices', id, data),
   delete: (id: string) => deleteRow('invoices', id),
 };
 
-// ─── Team Members ────────────────────────────────────────────────────────────
-
 export const teamApi = {
-  getAll: () => fetchAll('team_members', mockTeamMembers),
-  getById: (id: string) => fetchById('team_members', id),
-  create: (data: Row) => insertRow('team_members', data),
-  update: (id: string, data: Row) => updateRow('team_members', id, data),
-  delete: (id: string) => deleteRow('team_members', id),
+  getAll: () => fetchAll('team'),
+  getById: (id: string) => apiFetch(`/team/${id}`),
+  create: (data: Row) => insertRow('team', data),
+  update: (id: string, data: Row) => updateRow('team', id, data),
+  delete: (id: string) => deleteRow('team', id),
 };
-
-// ─── Safety Incidents ────────────────────────────────────────────────────────
 
 export const safetyApi = {
-  getAll: () => fetchAll('safety_incidents', mockSafetyIncidents),
-  getById: (id: string) => fetchById('safety_incidents', id),
-  create: (data: Row) => insertRow('safety_incidents', data),
-  update: (id: string, data: Row) => updateRow('safety_incidents', id, data),
-  delete: (id: string) => deleteRow('safety_incidents', id),
+  getAll: () => fetchAll('safety'),
+  getById: (id: string) => apiFetch(`/safety/${id}`),
+  create: (data: Row) => insertRow('safety', data),
+  update: (id: string, data: Row) => updateRow('safety', id, data),
+  delete: (id: string) => deleteRow('safety', id),
 };
 
-// ─── RFIs ────────────────────────────────────────────────────────────────────
-
 export const rfisApi = {
-  getAll: () => fetchAll('rfis', mockRFIs),
-  getById: (id: string) => fetchById('rfis', id),
+  getAll: () => fetchAll('rfis'),
+  getById: (id: string) => apiFetch(`/rfis/${id}`),
   create: (data: Row) => insertRow('rfis', data),
   update: (id: string, data: Row) => updateRow('rfis', id, data),
   delete: (id: string) => deleteRow('rfis', id),
 };
 
-// ─── Change Orders ───────────────────────────────────────────────────────────
-
 export const changeOrdersApi = {
-  getAll: () => fetchAll('change_orders', mockChangeOrders),
-  getById: (id: string) => fetchById('change_orders', id),
-  create: (data: Row) => insertRow('change_orders', data),
-  update: (id: string, data: Row) => updateRow('change_orders', id, data),
-  delete: (id: string) => deleteRow('change_orders', id),
+  getAll: () => fetchAll('change-orders'),
+  getById: (id: string) => apiFetch(`/change-orders/${id}`),
+  create: (data: Row) => insertRow('change-orders', data),
+  update: (id: string, data: Row) => updateRow('change-orders', id, data),
+  delete: (id: string) => deleteRow('change-orders', id),
 };
 
-// ─── RAMS ────────────────────────────────────────────────────────────────────
-
 export const ramsApi = {
-  getAll: () => fetchAll('rams', mockRAMS),
-  getById: (id: string) => fetchById('rams', id),
+  getAll: () => fetchAll('rams'),
+  getById: (id: string) => apiFetch(`/rams/${id}`),
   create: (data: Row) => insertRow('rams', data),
   update: (id: string, data: Row) => updateRow('rams', id, data),
   delete: (id: string) => deleteRow('rams', id),
 };
 
-// ─── CIS Returns ─────────────────────────────────────────────────────────────
-
 export const cisApi = {
-  getAll: () => fetchAll('cis_returns', mockCISReturns),
-  getById: (id: string) => fetchById('cis_returns', id),
-  create: (data: Row) => insertRow('cis_returns', data),
-  update: (id: string, data: Row) => updateRow('cis_returns', id, data),
-  delete: (id: string) => deleteRow('cis_returns', id),
+  getAll: () => fetchAll('cis'),
+  getById: (id: string) => apiFetch(`/cis/${id}`),
+  create: (data: Row) => insertRow('cis', data),
+  update: (id: string, data: Row) => updateRow('cis', id, data),
+  delete: (id: string) => deleteRow('cis', id),
 };
 
-// ─── Equipment / Plant ───────────────────────────────────────────────────────
-
 export const equipmentApi = {
-  getAll: () => fetchAll('equipment', mockEquipment),
-  getById: (id: string) => fetchById('equipment', id),
+  getAll: () => fetchAll('equipment'),
+  getById: (id: string) => apiFetch(`/equipment/${id}`),
   create: (data: Row) => insertRow('equipment', data),
   update: (id: string, data: Row) => updateRow('equipment', id, data),
   delete: (id: string) => deleteRow('equipment', id),
 };
 
-// ─── Subcontractors ──────────────────────────────────────────────────────────
-
 export const subcontractorsApi = {
-  getAll: () => fetchAll('subcontractors', mockSubcontractors),
-  getById: (id: string) => fetchById('subcontractors', id),
+  getAll: () => fetchAll('subcontractors'),
+  getById: (id: string) => apiFetch(`/subcontractors/${id}`),
   create: (data: Row) => insertRow('subcontractors', data),
   update: (id: string, data: Row) => updateRow('subcontractors', id, data),
   delete: (id: string) => deleteRow('subcontractors', id),
 };
 
-// ─── Timesheets ──────────────────────────────────────────────────────────────
-
 export const timesheetsApi = {
-  getAll: () => fetchAll('timesheets', mockTimesheets),
-  getById: (id: string) => fetchById('timesheets', id),
+  getAll: () => fetchAll('timesheets'),
+  getById: (id: string) => apiFetch(`/timesheets/${id}`),
   create: (data: Row) => insertRow('timesheets', data),
   update: (id: string, data: Row) => updateRow('timesheets', id, data),
   delete: (id: string) => deleteRow('timesheets', id),
 };
 
-// ─── Documents ───────────────────────────────────────────────────────────────
-
 export const documentsApi = {
-  getAll: () => fetchAll('documents', mockDocuments),
-  getById: (id: string) => fetchById('documents', id),
+  getAll: () => fetchAll('documents'),
+  getById: (id: string) => apiFetch(`/documents/${id}`),
   create: (data: Row) => insertRow('documents', data),
   update: (id: string, data: Row) => updateRow('documents', id, data),
   delete: (id: string) => deleteRow('documents', id),
-  uploadFile: async (file: File, path: string): Promise<string | null> => {
-    if (!isSupabaseConfigured) return null;
-    const { data, error } = await supabase.storage.from('documents').upload(path, file);
-    if (error) throw new Error(error.message);
-    const { data: urlData } = supabase.storage.from('documents').getPublicUrl(data.path);
-    return urlData.publicUrl;
+  uploadFile: async (file: File, options?: { project?: string; projectId?: string; category?: string }): Promise<Row> => {
+    const token = getToken();
+    const formData = new FormData();
+    formData.append('file', file);
+    if (options?.project)    formData.append('project', options.project);
+    if (options?.projectId)  formData.append('project_id', options.projectId);
+    if (options?.category)   formData.append('category', options.category);
+    const res = await fetch(`${API_BASE}/upload`, {
+      method: 'POST',
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
+      body: formData,
+    });
+    if (!res.ok) throw new Error('Upload failed');
+    return toCamel<Row>(await res.json());
   },
 };
 
-// ─── Tenders ─────────────────────────────────────────────────────────────────
-
 export const tendersApi = {
-  getAll: () => fetchAll('tenders', mockTenders),
-  getById: (id: string) => fetchById('tenders', id),
+  getAll: () => fetchAll('tenders'),
+  getById: (id: string) => apiFetch(`/tenders/${id}`),
   create: (data: Row) => insertRow('tenders', data),
   update: (id: string, data: Row) => updateRow('tenders', id, data),
   delete: (id: string) => deleteRow('tenders', id),
 };
 
-// ─── Daily Reports ───────────────────────────────────────────────────────────
-
 export const dailyReportsApi = {
-  getAll: () => fetchAll('daily_reports', mockDailyReports),
-  getById: (id: string) => fetchById('daily_reports', id),
-  create: (data: Row) => insertRow('daily_reports', data),
-  update: (id: string, data: Row) => updateRow('daily_reports', id, data),
-  delete: (id: string) => deleteRow('daily_reports', id),
+  getAll: () => fetchAll('daily-reports'),
+  getById: (id: string) => apiFetch(`/daily-reports/${id}`),
+  create: (data: Row) => insertRow('daily-reports', data),
+  update: (id: string, data: Row) => updateRow('daily-reports', id, data),
+  delete: (id: string) => deleteRow('daily-reports', id),
 };
 
-// ─── Meetings ────────────────────────────────────────────────────────────────
-
 export const meetingsApi = {
-  getAll: () => fetchAll('meetings', mockMeetings),
-  getById: (id: string) => fetchById('meetings', id),
+  getAll: () => fetchAll('meetings'),
+  getById: (id: string) => apiFetch(`/meetings/${id}`),
   create: (data: Row) => insertRow('meetings', data),
   update: (id: string, data: Row) => updateRow('meetings', id, data),
   delete: (id: string) => deleteRow('meetings', id),
 };
 
-// ─── Materials ───────────────────────────────────────────────────────────────
-
 export const materialsApi = {
-  getAll: () => fetchAll('materials', mockMaterials),
-  getById: (id: string) => fetchById('materials', id),
+  getAll: () => fetchAll('materials'),
+  getById: (id: string) => apiFetch(`/materials/${id}`),
   create: (data: Row) => insertRow('materials', data),
   update: (id: string, data: Row) => updateRow('materials', id, data),
   delete: (id: string) => deleteRow('materials', id),
 };
 
-// ─── Punch List ──────────────────────────────────────────────────────────────
-
 export const punchListApi = {
-  getAll: () => fetchAll('punch_list', mockPunchList),
-  getById: (id: string) => fetchById('punch_list', id),
-  create: (data: Row) => insertRow('punch_list', data),
-  update: (id: string, data: Row) => updateRow('punch_list', id, data),
-  delete: (id: string) => deleteRow('punch_list', id),
+  getAll: () => fetchAll('punch-list'),
+  getById: (id: string) => apiFetch(`/punch-list/${id}`),
+  create: (data: Row) => insertRow('punch-list', data),
+  update: (id: string, data: Row) => updateRow('punch-list', id, data),
+  delete: (id: string) => deleteRow('punch-list', id),
 };
 
-// ─── Inspections ─────────────────────────────────────────────────────────────
-
 export const inspectionsApi = {
-  getAll: () => fetchAll('inspections', mockInspections),
-  getById: (id: string) => fetchById('inspections', id),
+  getAll: () => fetchAll('inspections'),
+  getById: (id: string) => apiFetch(`/inspections/${id}`),
   create: (data: Row) => insertRow('inspections', data),
   update: (id: string, data: Row) => updateRow('inspections', id, data),
   delete: (id: string) => deleteRow('inspections', id),
 };
 
-// ─── Contacts (CRM) ──────────────────────────────────────────────────────────
-
 export const contactsApi = {
-  getAll: () => fetchAll('contacts', mockContacts),
-  getById: (id: string) => fetchById('contacts', id),
+  getAll: () => fetchAll('contacts'),
+  getById: (id: string) => apiFetch(`/contacts/${id}`),
   create: (data: Row) => insertRow('contacts', data),
   update: (id: string, data: Row) => updateRow('contacts', id, data),
   delete: (id: string) => deleteRow('contacts', id),
 };
 
-// ─── Risk Register ───────────────────────────────────────────────────────────
-
 export const riskRegisterApi = {
-  getAll: () => fetchAll('risk_register', mockRiskRegister),
-  getById: (id: string) => fetchById('risk_register', id),
-  create: (data: Row) => insertRow('risk_register', data),
-  update: (id: string, data: Row) => updateRow('risk_register', id, data),
-  delete: (id: string) => deleteRow('risk_register', id),
+  getAll: () => fetchAll('risk-register'),
+  getById: (id: string) => apiFetch(`/risk-register/${id}`),
+  create: (data: Row) => insertRow('risk-register', data),
+  update: (id: string, data: Row) => updateRow('risk-register', id, data),
+  delete: (id: string) => deleteRow('risk-register', id),
 };
 
-// ─── Purchase Orders (Procurement) ───────────────────────────────────────────
-
-
 export const purchaseOrdersApi = {
-  getAll: () => fetchAll('purchase_orders', mockPurchaseOrders),
-  getById: (id: string) => fetchById('purchase_orders', id),
-  create: (data: Row) => insertRow('purchase_orders', data),
-  update: (id: string, data: Row) => updateRow('purchase_orders', id, data),
-  delete: (id: string) => deleteRow('purchase_orders', id),
+  getAll: () => fetchAll('purchase-orders'),
+  getById: (id: string) => apiFetch(`/purchase-orders/${id}`),
+  create: (data: Row) => insertRow('purchase-orders', data),
+  update: (id: string, data: Row) => updateRow('purchase-orders', id, data),
+  delete: (id: string) => deleteRow('purchase-orders', id),
+};
+
+export const aiApi = {
+  chat: (message: string, context?: string) =>
+    apiFetch<{ reply: string; data?: unknown; suggestions: string[] }>('/ai/chat', {
+      method: 'POST',
+      body: JSON.stringify({ message, context }),
+    }),
+};
+
+export const usersApi = {
+  getAll: () => apiFetch<Row[]>('/auth/users'),
+  create: (data: Row) => apiFetch<Row>('/auth/users', { method: 'POST', body: JSON.stringify(data) }),
+  delete: (id: string) => apiFetch<void>(`/auth/users/${id}`, { method: 'DELETE' }),
 };
