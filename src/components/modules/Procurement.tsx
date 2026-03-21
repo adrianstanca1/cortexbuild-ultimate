@@ -36,6 +36,7 @@ function nextPO(pos: AnyRow[]) {
 }
 
 export function Procurement() {
+  const [subTab, setSubTab] = useState<'all'|'pending'|'ordered'|'delivery'|'delivered'>('all');
   const [filterStatus, setFilterStatus]   = useState('all');
   const [filterCategory, setFilterCategory] = useState('all');
   const [search, setSearch]               = useState('');
@@ -65,7 +66,17 @@ export function Procurement() {
   const updateMut = useUpdate();
   const deleteMut = useDelete();
 
+  const SUBTAB_STATUSES: Record<string, string[]> = {
+    pending:  ['pending_approval'],
+    ordered:  ['ordered'],
+    delivery: ['pending_delivery','on_site'],
+    delivered:['delivered'],
+  };
   const filtered = pos.filter(p => {
+    if (subTab !== 'all') {
+      const allowed = SUBTAB_STATUSES[subTab] ?? [];
+      if (!allowed.includes(String(p.status??''))) return false;
+    }
     if (filterStatus !== 'all' && p.status !== filterStatus) return false;
     if (filterCategory !== 'all' && p.category !== filterCategory) return false;
     if (search) {
@@ -150,6 +161,23 @@ export function Procurement() {
             <p className="text-xs text-gray-400 mb-1">{label}</p>
             <p className={`text-2xl font-bold ${col}`}>{value}</p>
           </div>
+        ))}
+      </div>
+
+      {/* Sub-nav */}
+      <div className="flex gap-1 border-b border-gray-700">
+        {([
+          { key:'all'       as const, label:'All Orders',        count:pos.length,          cls:'' },
+          { key:'pending'   as const, label:'Pending Approval',   count:awaitingApproval,    cls:'bg-yellow-900/40 text-yellow-400' },
+          { key:'ordered'   as const, label:'On Order',           count:pos.filter(p=>p.status==='ordered').length, cls:'bg-blue-900/40 text-blue-400' },
+          { key:'delivery'  as const, label:'In Transit / On Site', count:pos.filter(p=>p.status==='pending_delivery'||p.status==='on_site').length, cls:'bg-orange-900/40 text-orange-400' },
+          { key:'delivered' as const, label:'Delivered',          count:delivered,           cls:'bg-green-900/40 text-green-400' },
+        ]).map(t=>(
+          <button key={t.key} onClick={()=>setSubTab(t.key)}
+            className={`flex items-center gap-2 px-4 py-2.5 text-sm font-medium border-b-2 -mb-px transition-colors ${subTab===t.key?'border-blue-500 text-blue-400':'border-transparent text-gray-400 hover:text-gray-200'}`}>
+            {t.label}
+            {t.count > 0 && <span className={`text-xs px-1.5 py-0.5 rounded-full ${t.cls||'bg-gray-800 text-gray-400'}`}>{t.count}</span>}
+          </button>
         ))}
       </div>
 

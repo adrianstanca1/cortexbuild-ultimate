@@ -29,6 +29,7 @@ export function DailyReports() {
   const updateMutation = useUpdate();
   const deleteMutation = useDelete();
 
+  const [subTab, setSubTab] = useState<'today'|'week'|'all'|'drafts'>('today');
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('All');
   const [showModal, setShowModal] = useState(false);
@@ -43,7 +44,14 @@ export function DailyReports() {
     const work = String(r.work_carried_out??'').toLowerCase();
     const matchSearch = date.includes(search) || work.includes(search.toLowerCase());
     const matchStatus = statusFilter === 'All' || r.status === statusFilter;
-    return matchSearch && matchStatus;
+    if (!matchSearch || !matchStatus) return false;
+    if (subTab === 'today') return date === today;
+    if (subTab === 'week') {
+      const diff = (Date.now() - new Date(date).getTime()) / 86400000;
+      return diff >= 0 && diff <= 7;
+    }
+    if (subTab === 'drafts') return r.status === 'Draft';
+    return true; // 'all'
   });
 
   const thisWeekCount = reports.filter(r => {
@@ -109,6 +117,21 @@ export function DailyReports() {
               <div><p className="text-xs text-gray-500">{kpi.label}</p><p className="text-xl font-bold text-gray-900">{kpi.value}</p></div>
             </div>
           </div>
+        ))}
+      </div>
+
+      <div className="border-b border-gray-200 flex gap-1">
+        {([
+          { key:'today' as const,  label:'Today',     count:reports.filter(r=>String(r.report_date??'')===today).length, cls:'' },
+          { key:'week'  as const,  label:'This Week',  count:thisWeekCount, cls:'' },
+          { key:'drafts' as const, label:'Drafts',     count:draftCount, cls:'bg-yellow-100 text-yellow-700' },
+          { key:'all'   as const,  label:'All Reports', count:reports.length, cls:'' },
+        ]).map(t=>(
+          <button key={t.key} onClick={()=>setSubTab(t.key)}
+            className={`flex items-center gap-2 px-4 py-2.5 text-sm font-medium border-b-2 -mb-px transition-colors ${subTab===t.key?'border-orange-500 text-orange-600':'border-transparent text-gray-500 hover:text-gray-700'}`}>
+            {t.label}
+            <span className={`text-xs px-1.5 py-0.5 rounded-full ${t.cls||'bg-gray-100 text-gray-600'}`}>{t.count}</span>
+          </button>
         ))}
       </div>
 
