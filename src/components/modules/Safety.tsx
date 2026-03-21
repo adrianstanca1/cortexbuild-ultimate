@@ -1,53 +1,45 @@
-// Module: Safety — CortexBuild Ultimate (Real Data)
-import { useState } from 'react';
-import { Plus, X, Loader2, Shield, AlertTriangle, CheckCircle2, RefreshCw, Search, Edit2, Trash2, FileText, AlertCircle } from 'lucide-react';
-import { useSafety } from '../../hooks/useData';
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
-import clsx from 'clsx';
-
-const SAFETY_TREND_DATA = [
-  { month:'Sep', incidents:3, nearMisses:8,  toolboxTalks:12 },
-  { month:'Oct', incidents:2, nearMisses:6,  toolboxTalks:14 },
-  { month:'Nov', incidents:1, nearMisses:9,  toolboxTalks:13 },
-  { month:'Dec', incidents:0, nearMisses:5,  toolboxTalks:10 },
-  { month:'Jan', incidents:2, nearMisses:7,  toolboxTalks:15 },
-  { month:'Feb', incidents:1, nearMisses:4,  toolboxTalks:16 },
-  { month:'Mar', incidents:2, nearMisses:5,  toolboxTalks:12 },
-];
+// Module: Safety — CortexBuild Ultimate
+// "HSE Intelligence Hub" Redesign
+import { useState, useMemo } from 'react';
+import {
+  Shield, AlertTriangle, CheckCircle2, AlertCircle, FileText,
+  Plus, X, Loader2, Search, Edit2, Trash2, RefreshCw,
+  TrendingUp, Activity, MapPin, Calendar, ChevronRight,
+  BarChart3, PieChart, Layers, Clock, User
+} from 'lucide-react';
+import { useSafety, useProjects } from '../../hooks/useData';
+import {
+  LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, Legend, ResponsiveContainer,
+  BarChart, Bar, Pie, PieChart as RechartsPie, Cell, AreaChart, Area
+} from 'recharts';
+import type { Module } from '../../types';
 
 type AnyRow = Record<string, unknown>;
 
 const severityConfig: Record<string, { label: string; color: string; bg: string }> = {
-  low:      { label: 'Low',      color: 'text-green-400',  bg: 'bg-green-500/15 border border-green-600/40' },
-  medium:   { label: 'Medium',   color: 'text-yellow-400', bg: 'bg-yellow-500/15 border border-yellow-600/40' },
-  high:     { label: 'High',     color: 'text-orange-400', bg: 'bg-orange-500/15 border border-orange-600/40' },
-  critical: { label: 'Critical', color: 'text-red-400',    bg: 'bg-red-500/15 border border-red-600/40' },
-  // Legacy aliases from mock data
-  minor:    { label: 'Minor',    color: 'text-green-400',  bg: 'bg-green-500/15 border border-green-600/40' },
-  serious:  { label: 'Serious',  color: 'text-orange-400', bg: 'bg-orange-500/15 border border-orange-600/40' },
+  low: { label: 'Low', color: 'var(--emerald-400)', bg: 'rgba(16,185,129,0.1)' },
+  medium: { label: 'Medium', color: 'var(--amber-400)', bg: 'rgba(245,158,11,0.1)' },
+  high: { label: 'High', color: 'var(--orange-400)', bg: 'rgba(251,146,60,0.1)' },
+  critical: { label: 'Critical', color: 'var(--red-400)', bg: 'rgba(248,113,113,0.1)' },
 };
 
 const statusConfig: Record<string, { label: string; color: string }> = {
-  open:              { label: 'Open',             color: 'text-red-400' },
-  investigating:     { label: 'Investigating',    color: 'text-yellow-400' },
-  action_required:   { label: 'Action Required',  color: 'text-orange-400' },
-  closed:            { label: 'Closed',            color: 'text-green-400' },
-  resolved:          { label: 'Resolved',          color: 'text-emerald-400' },
+  open: { label: 'Open', color: 'var(--red-400)' },
+  investigating: { label: 'Investigating', color: 'var(--amber-400)' },
+  closed: { label: 'Closed', color: 'var(--emerald-400)' },
+  resolved: { label: 'Resolved', color: 'var(--emerald-400)' },
 };
 
-const typeConfig: Record<string, { label: string; icon: typeof Shield }> = {
-  near_miss:            { label: 'Near Miss',           icon: AlertTriangle },
-  first_aid:            { label: 'First Aid',           icon: AlertCircle },
-  riddor:               { label: 'RIDDOR',              icon: AlertCircle },
-  dangerous_occurrence: { label: 'Dangerous Occurrence',icon: AlertTriangle },
-  environmental:        { label: 'Environmental',        icon: Shield },
-  // Legacy
-  'near-miss':          { label: 'Near Miss',           icon: AlertTriangle },
-  incident:             { label: 'Incident',            icon: AlertCircle },
-  hazard:               { label: 'Hazard',              icon: AlertTriangle },
-  'toolbox-talk':       { label: 'Toolbox Talk',        icon: FileText },
-  'mewp-check':         { label: 'MEWP Check',          icon: CheckCircle2 },
+const typeConfig: Record<string, { label: string; icon: React.FC<{ className?: string }> }> = {
+  near_miss: { label: 'Near Miss', icon: AlertTriangle },
+  first_aid: { label: 'First Aid', icon: AlertCircle },
+  riddor: { label: 'RIDDOR', icon: FileText },
+  incident: { label: 'Incident', icon: AlertTriangle },
+  hazard: { label: 'Hazard', icon: AlertTriangle },
 };
+
+const COLORS = ['var(--red-400)', 'var(--orange-400)', 'var(--amber-400)', 'var(--emerald-400)'];
+const MONTHS = ['Sep','Oct','Nov','Dec','Jan','Feb','Mar'];
 
 const defaultForm = {
   title: '', type: 'near_miss', severity: 'medium', status: 'open',
@@ -57,8 +49,53 @@ const defaultForm = {
 };
 type FormData = typeof defaultForm;
 
-export function Safety() {
+const buildTrendData = (incidents: AnyRow[]) => {
+  const data = MONTHS.map(m => ({ month: m, incidents: 0, nearMisses: 0, toolboxTalks: 0 }));
+  incidents.forEach(inc => {
+    const d = new Date(String(inc.date ?? ''));
+    const idx = d.getMonth() - 8;
+    if (idx >= 0 && idx < 7) {
+      const t = String(inc.type ?? '');
+      if (['incident','first_aid','riddor'].includes(t)) data[idx].incidents++;
+      else if (['near-miss','near_miss'].includes(t)) data[idx].nearMisses++;
+      else if (['toolbox-talk','toolbox_talk'].includes(t)) data[idx].toolboxTalks++;
+    }
+  });
+  return data;
+};
+
+const buildRiskHeatmap = (incidents: AnyRow[], projects: AnyRow[]) => {
+  const risk: Record<string, any> = {};
+  projects.forEach(p => { risk[String(p.name ?? 'Unknown')] = { name: String(p.name ?? 'Unknown'), critical: 0, high: 0, medium: 0, low: 0, score: 0 }; });
+  incidents.forEach(inc => {
+    const proj = String(inc.project ?? 'Unknown');
+    const sev = String(inc.severity ?? 'low');
+    if (!risk[proj]) risk[proj] = { name: proj, critical: 0, high: 0, medium: 0, low: 0, score: 0 };
+    risk[proj][sev] = (risk[proj][sev] ?? 0) + 1;
+    risk[proj].score += {critical:4,high:3,medium:2,low:1}[sev] ?? 1;
+  });
+  return Object.values(risk).sort((a,b) => b.score - a.score).slice(0, 5);
+};
+
+const buildRootCauseData = (incidents: AnyRow[]) => {
+  const causes: Record<string, number> = {};
+  incidents.forEach(inc => { causes[String(inc.root_cause ?? 'unknown')] = (causes[String(inc.root_cause ?? 'unknown')] ?? 0) + 1; });
+  return Object.entries(causes).map(([name, value]) => ({ name, value }));
+};
+
+const buildForecastData = (trendData: any[]) => {
+  const last = trendData[trendData.length - 1];
+  const avgGrowth = trendData.length > 1 ? (last.incidents - trendData[0].incidents) / trendData.length : 0;
+  return ['Apr','May','Jun'].map((m, i) => ({
+    month: m,
+    projected: Math.round(last.incidents + avgGrowth * (i + 1)),
+    target: Math.max(0, last.incidents - 2)
+  }));
+};
+
+export function Safety({ setModule }: { setModule?: (m: Module) => void }) {
   const { useList, useCreate, useUpdate, useDelete } = useSafety;
+  const { data: rawProjects = [] } = useProjects.useList();
   const { data: raw = [], isLoading, refetch } = useList();
   const incidents = raw as AnyRow[];
   const createM = useCreate(); const updateM = useUpdate(); const deleteM = useDelete();
@@ -72,308 +109,377 @@ export function Safety() {
   const [selectedId, setSelectedId] = useState<string | null>(null);
 
   const TYPE_MAP: Record<string, string[]> = {
-    all:          [],
-    incidents:    ['incident','first_aid','riddor'],
-    near_misses:  ['near-miss','near_miss'],
-    hazards:      ['hazard','dangerous_occurrence','environmental'],
-    mewp:         ['mewp-check','mewp_check'],
-    toolbox:      ['toolbox-talk','toolbox_talk'],
-    riddor:       ['riddor'],
+    all: [], incidents: ['incident','first_aid','riddor'], near_misses: ['near-miss','near_miss'],
+    hazards: ['hazard','dangerous_occurrence','environmental'], mewp: ['mewp-check','mewp_check'],
+    toolbox: ['toolbox-talk','toolbox_talk'], riddor: ['riddor'],
   };
 
   const filtered = incidents
-    .filter(i => {
-      if (categoryTab !== 'all') {
-        const types = TYPE_MAP[categoryTab] ?? [];
-        return types.includes(String(i.type ?? ''));
-      }
-      return true;
-    })
+    .filter(i => categoryTab === 'all' || TYPE_MAP[categoryTab]?.includes(String(i.type ?? '')))
     .filter(i => filter === 'all' || i.status === filter || i.severity === filter)
-    .filter(i => !search || String(i.title).toLowerCase().includes(search.toLowerCase()) ||
-      String(i.project).toLowerCase().includes(search.toLowerCase()));
+    .filter(i => !search || String(i.title).toLowerCase().includes(search.toLowerCase()));
 
   const counts = {
-    open: incidents.filter(i => i.status === 'open' || i.status === 'investigating' || i.status === 'action_required').length,
-    critical: incidents.filter(i => i.severity === 'critical' || i.severity === 'serious').length,
-    riddor: incidents.filter(i => i.riddor_reportable || i.type === 'riddor').length,
-    closed: incidents.filter(i => i.status === 'closed' || i.status === 'resolved').length,
+    open: incidents.filter(i => ['open','investigating'].includes(String(i.status ?? ''))).length,
+    critical: incidents.filter(i => ['critical','serious'].includes(String(i.severity ?? ''))).length,
+    riddor: incidents.filter(i => i.riddor_reportable || String(i.type) === 'riddor').length,
+    closed: incidents.filter(i => ['closed','resolved'].includes(String(i.status ?? ''))).length,
+    total: incidents.length,
   };
 
+  const trendData = useMemo(() => buildTrendData(incidents), [incidents]);
+  const riskHeatmap = useMemo(() => buildRiskHeatmap(incidents, rawProjects as AnyRow[]), [incidents, rawProjects]);
+  const rootCauseData = useMemo(() => buildRootCauseData(incidents), [incidents]);
+  const forecastData = useMemo(() => buildForecastData(trendData), [trendData]);
+  const safetyScore = incidents.length ? Math.max(0, 100 - counts.open * 8 - counts.critical * 15) : 100;
+  const safetyColor = safetyScore >= 80 ? 'var(--emerald-400)' : safetyScore >= 60 ? 'var(--amber-400)' : 'var(--red-400)';
   const selected = incidents.find(i => String(i.id) === selectedId);
 
   const openCreate = () => { setForm(defaultForm); setEditId(null); setShowModal(true); };
   const openEdit = (i: AnyRow) => {
-    setForm({
-      title: String(i.title??''), type: String(i.type??'near_miss'), severity: String(i.severity??'medium'),
+    setForm({ ...defaultForm, title: String(i.title??''), type: String(i.type??'near_miss'), severity: String(i.severity??'medium'),
       status: String(i.status??'open'), project: String(i.project??''), location: String(i.location??''),
       date: String(i.date??new Date().toISOString().split('T')[0]), description: String(i.description??''),
-      immediate_action: String(i.immediate_action??''), injured_party: String(i.injured_party??''),
-      reported_by_name: String(i.reported_by_name??i.reportedBy??''), riddor_reportable: Boolean(i.riddor_reportable),
-    });
+      reported_by_name: String(i.reported_by_name??i.reportedBy??''), riddor_reportable: Boolean(i.riddor_reportable) });
     setEditId(String(i.id)); setShowModal(true);
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (editId) { await updateM.mutateAsync({ id: editId, data: form }); }
-    else { await createM.mutateAsync(form); }
-    setShowModal(false);
-  };
+  const handleSubmit = async (e: React.FormEvent) => { e.preventDefault(); if (editId) await updateM.mutateAsync({ id: editId, data: form }); else await createM.mutateAsync(form); setShowModal(false); };
+  const handleDelete = async (id: string) => { if (!confirm('Delete?')) return; await deleteM.mutateAsync(id); setSelectedId(null); };
 
-  const handleDelete = async (id: string) => {
-    if (!confirm('Delete this incident record?')) return;
-    await deleteM.mutateAsync(id); setSelectedId(null);
-  };
-
-  const inp = "w-full bg-gray-800 border border-gray-700 rounded-xl px-4 py-2.5 text-white text-sm placeholder-gray-600 focus:outline-none focus:border-red-500 transition-colors";
-  const lbl = "block text-xs font-semibold text-gray-400 mb-1.5 uppercase tracking-wide";
+  const inp = "w-full bg-slate-800 border border-slate-600 rounded-lg px-4 py-2.5 text-white text-sm focus:outline-none focus:border-amber-500";
+  const lbl = "block text-xs font-semibold text-slate-400 mb-1.5 uppercase";
 
   return (
-    <div className="min-h-full space-y-6">
+    <div className="module-page" style={{ minHeight: '100%', background: 'var(--slate-950)', padding: '24px' }}>
       {/* Header */}
-      <div className="flex items-start justify-between gap-4 flex-wrap">
-        <div>
-          <h1 className="text-3xl font-bold text-white">Safety</h1>
-          <p className="text-sm text-gray-400 mt-1">{incidents.length} records · {counts.open} open · {counts.riddor} RIDDOR reportable</p>
-        </div>
-        <div className="flex gap-2">
-          <button onClick={() => refetch()} className="p-2 rounded-xl bg-gray-800 text-gray-400 hover:text-white"><RefreshCw className="w-4 h-4" /></button>
-          <button onClick={openCreate} className="flex items-center gap-2 rounded-xl bg-gradient-to-r from-red-600 to-rose-600 px-4 py-2 text-sm font-semibold text-white hover:from-red-500 transition-all shadow-lg shadow-red-500/20">
-            <Plus className="w-4 h-4" /> Report Incident
-          </button>
-        </div>
-      </div>
-
-      {/* KPI Cards */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        {[
-          { label: 'Open Incidents',  value: counts.open,     color: 'text-red-400',    bg: 'from-red-500/10 to-red-600/5',      border: 'border-red-800/40',     icon: AlertCircle },
-          { label: 'Critical / Serious', value: counts.critical, color: 'text-orange-400', bg: 'from-orange-500/10 to-orange-600/5', border: 'border-orange-800/40',  icon: AlertTriangle },
-          { label: 'RIDDOR Reportable', value: counts.riddor,  color: 'text-purple-400', bg: 'from-purple-500/10 to-purple-600/5', border: 'border-purple-800/40',  icon: FileText },
-          { label: 'Closed / Resolved', value: counts.closed, color: 'text-emerald-400',bg: 'from-emerald-500/10 to-emerald-600/5',border: 'border-emerald-800/40',icon: CheckCircle2 },
-        ].map(({ label, value, color, bg, border, icon: Icon }) => (
-          <div key={label} className={clsx('rounded-2xl border bg-gradient-to-br p-5', bg, border)}>
-            <div className="flex items-start justify-between">
-              <div><p className="text-xs text-gray-400 mb-1">{label}</p><p className={clsx('text-3xl font-black', color)}>{value}</p></div>
-              <div className="p-2 rounded-xl bg-gray-800/60"><Icon className={clsx('w-5 h-5', color)} /></div>
+      <div className="card animate-fade-up" style={{ padding: '24px 28px', marginBottom: '20px', background: 'linear-gradient(135deg, rgba(13,17,23,0.95), rgba(8,11,18,0.9))', border: '1px solid var(--slate-700)', position: 'relative', overflow: 'hidden' }}>
+        <div style={{ position: 'absolute', inset: 0, pointerEvents: 'none', opacity: 0.05, backgroundImage: 'linear-gradient(rgba(248,113,113,0.3) 1px, transparent 1px), linear-gradient(90deg, rgba(248,113,113,0.3) 1px, transparent 1px)', backgroundSize: '32px 32px' }} />
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr auto 1fr', alignItems: 'center', gap: '24px', position: 'relative', zIndex: 1 }}>
+          <div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '6px' }}>
+              <span style={{ fontFamily: 'var(--font-display)', fontSize: '1.5rem', fontWeight: 800, color: 'var(--slate-50)', letterSpacing: '-0.03em' }}>HSE Intelligence Hub</span>
+              <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: safetyColor, boxShadow: '0 0 8px currentColor', animation: 'pulse 2s ease-in-out infinite' }} />
+            </div>
+            <p style={{ fontFamily: 'var(--font-mono)', fontSize: '10px', color: 'var(--slate-500)', letterSpacing: '0.08em' }}>
+              REAL-TIME RISK INTELLIGENCE · RIDDOR COMPLIANCE
+            </p>
+          </div>
+          <div style={{ display: 'flex', gap: '12px' }}>
+            <div style={{ textAlign: 'center', padding: '12px 20px', background: 'rgba(245,158,11,0.1)', border: '1px solid rgba(245,158,11,0.3)', borderRadius: '12px' }}>
+              <div style={{ fontFamily: 'var(--font-mono)', fontSize: '10px', color: 'var(--amber-400)', marginBottom: '4px' }}>SAFETY SCORE</div>
+              <div style={{ fontFamily: 'var(--font-display)', fontSize: '28px', fontWeight: 800, color: safetyColor }}>{safetyScore}</div>
             </div>
           </div>
-        ))}
-      </div>
-
-      {/* Category sub-nav */}
-      <div className="flex gap-1 bg-gray-900 border border-gray-800 rounded-xl p-1 overflow-x-auto">
-        {[
-          {id:'all',        label:'All Records'},
-          {id:'incidents',  label:'Incidents'},
-          {id:'near_misses',label:'Near Misses'},
-          {id:'hazards',    label:'Hazards'},
-          {id:'mewp',       label:'MEWP Checks'},
-          {id:'toolbox',    label:'Toolbox Talks'},
-          {id:'riddor',     label:'RIDDOR'},
-        ].map(t => (
-          <button key={t.id} onClick={() => setCategoryTab(t.id)}
-            className={clsx('px-3 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-all',
-              categoryTab===t.id ? 'bg-red-600 text-white' : 'text-gray-400 hover:text-white hover:bg-gray-800')}>
-            {t.label}
-            <span className={clsx('ml-1.5 text-xs', categoryTab===t.id ? 'text-red-200' : 'text-gray-600')}>
-              {t.id==='all' ? incidents.length
-                : incidents.filter(i => (TYPE_MAP[t.id]??[]).includes(String(i.type??''))).length}
-            </span>
-          </button>
-        ))}
-      </div>
-
-      {/* Trend Chart */}
-      <div className="rounded-2xl border border-gray-800 bg-gray-900 p-5">
-        <h3 className="text-sm font-bold text-white mb-0.5">7-Month Safety Trend</h3>
-        <p className="text-xs text-gray-500 mb-4">Incidents, near misses and toolbox talks</p>
-        <ResponsiveContainer width="100%" height={200}>
-          <LineChart data={SAFETY_TREND_DATA}>
-            <CartesianGrid strokeDasharray="3 3" stroke="#1f2937" vertical={false} />
-            <XAxis dataKey="month" stroke="#6b7280" tick={{ fontSize: 11 }} />
-            <YAxis stroke="#6b7280" tick={{ fontSize: 11 }} />
-            <Tooltip contentStyle={{ backgroundColor: '#111827', border: '1px solid #374151', borderRadius: 10, fontSize: 11 }} />
-            <Legend wrapperStyle={{ fontSize: 11 }} />
-            <Line type="monotone" dataKey="incidents"    name="Incidents"      stroke="#ef4444" strokeWidth={2} dot={{ r: 3 }} />
-            <Line type="monotone" dataKey="nearMisses"   name="Near Misses"    stroke="#f59e0b" strokeWidth={2} dot={{ r: 3 }} />
-            <Line type="monotone" dataKey="toolboxTalks" name="Toolbox Talks"  stroke="#22c55e" strokeWidth={2} dot={{ r: 3 }} />
-          </LineChart>
-        </ResponsiveContainer>
-      </div>
-
-      {/* Search + Filters */}
-      <div className="flex flex-wrap gap-3 items-center">
-        <div className="relative flex-1 max-w-sm">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
-          <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search incidents..."
-            className="w-full bg-gray-800 border border-gray-700 rounded-xl pl-9 pr-3 py-2 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-red-500" />
+          <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px' }}>
+            <button onClick={openCreate} style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 18px', background: 'var(--amber-500)', border: 'none', borderRadius: '8px', color: 'var(--slate-950)', fontFamily: 'var(--font-body)', fontSize: '13px', fontWeight: 600, cursor: 'pointer' }}>
+              <Plus style={{ width: '16px', height: '16px' }} /> Report Incident
+            </button>
+            <button onClick={() => refetch()} className="hover-btn" style={{ padding: '10px 14px', background: 'var(--slate-800)', border: '1px solid var(--slate-700)', borderRadius: '8px', color: 'var(--slate-400)', cursor: 'pointer', transition: 'all 0.2s' }}>
+              <RefreshCw style={{ width: '16px', height: '16px' }} />
+            </button>
+          </div>
         </div>
-        {['all','open','investigating','closed'].map(s => (
-          <button key={s} onClick={() => setFilter(s)}
-            className={clsx('rounded-full px-3.5 py-1.5 text-xs font-semibold transition-all capitalize',
-              filter===s ? 'bg-red-600 text-white' : 'bg-gray-800 text-gray-300 hover:bg-gray-700')}>
-            {s==='all' ? 'All' : s}
-          </button>
-        ))}
       </div>
 
-      {isLoading && <div className="flex justify-center py-16"><Loader2 className="w-8 h-8 animate-spin text-red-500" /></div>}
-
-      {/* Incidents List */}
-      <div className="space-y-3">
-        {filtered.map(inc => {
-          const sev = severityConfig[String(inc.severity)] ?? severityConfig.low;
-          const stat = statusConfig[String(inc.status)] ?? statusConfig.open;
-          const typeInfo = typeConfig[String(inc.type)] ?? { label: String(inc.type), icon: Shield };
-          const TypeIcon = typeInfo.icon;
+      {/* KPI Grid */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: '16px', marginBottom: '24px' }}>
+        {[
+          { label: 'Total Incidents', value: counts.total, color: 'var(--slate-400)', icon: Activity },
+          { label: 'Open', value: counts.open, color: 'var(--red-400)', icon: AlertCircle },
+          { label: 'Critical', value: counts.critical, color: 'var(--orange-400)', icon: AlertTriangle },
+          { label: 'RIDDOR', value: counts.riddor, color: 'var(--amber-400)', icon: FileText },
+          { label: 'Closed', value: counts.closed, color: 'var(--emerald-400)', icon: CheckCircle2 },
+        ].map((kpi, i) => {
+          const Icon = kpi.icon;
           return (
-            <div key={String(inc.id)}
-              className={clsx(
-                'rounded-2xl border bg-gray-900 p-5 cursor-pointer transition-all hover:border-gray-700',
-                selectedId === String(inc.id) ? 'border-red-600/50 ring-1 ring-red-500/20' : 'border-gray-800'
-              )}
-              onClick={() => setSelectedId(prev => prev===String(inc.id)?null:String(inc.id))}>
-              <div className="flex items-start justify-between gap-3">
-                <div className="flex items-start gap-3 flex-1 min-w-0">
-                  <div className={clsx('p-2 rounded-xl shrink-0', sev.bg)}>
-                    <TypeIcon className={clsx('w-4 h-4', sev.color)} />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <h3 className="font-semibold text-white text-sm">{String(inc.title)}</h3>
-                      {(inc.riddor_reportable || inc.type === 'riddor') && (
-                        <span className="rounded-full bg-purple-500/20 border border-purple-600/40 px-2 py-0.5 text-xs font-bold text-purple-400">RIDDOR</span>
-                      )}
-                    </div>
-                    <div className="flex flex-wrap gap-x-4 gap-y-1 mt-1 text-xs text-gray-400">
-                      <span>{typeInfo.label}</span>
-                      {!!inc.project && <span>{String(inc.project)}</span>}
-                      {!!inc.date && <span>{String(inc.date)}</span>}
-                      {(inc.reported_by_name || inc.reportedBy) ? <span>By: {String(inc.reported_by_name ?? inc.reportedBy)}</span> : null}
-                    </div>
-                    {selectedId === String(inc.id) && !!inc.description && (
-                      <p className="mt-2 text-xs text-gray-400 leading-relaxed">{String(inc.description)}</p>
-                    )}
-                  </div>
+            <div key={i} className="card animate-fade-up" style={{ padding: '18px 20px', background: 'var(--slate-900)', border: '1px solid var(--slate-800)', animationDelay: `${i * 0.05}s` }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                <div style={{ width: '40px', height: '40px', borderRadius: '8px', background: `${kpi.color}15`, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                  <Icon style={{ width: '20px', height: '20px', color: kpi.color }} />
                 </div>
-                <div className="flex flex-col items-end gap-2 shrink-0">
-                  <span className={clsx('rounded-full px-2.5 py-1 text-xs font-bold', sev.bg, sev.color)}>{sev.label}</span>
-                  <span className={clsx('text-xs font-semibold', stat.color)}>{stat.label}</span>
+                <div>
+                  <div style={{ fontFamily: 'var(--font-mono)', fontSize: '9px', color: kpi.color, textTransform: 'uppercase', letterSpacing: '0.08em' }}>{kpi.label}</div>
+                  <div style={{ fontFamily: 'var(--font-display)', fontSize: '24px', fontWeight: 800, color: 'var(--slate-50)' }}>{kpi.value}</div>
                 </div>
               </div>
-              {selectedId === String(inc.id) && (
-                <div className="flex gap-2 mt-4 pt-4 border-t border-gray-800" onClick={e => e.stopPropagation()}>
-                  <button onClick={() => openEdit(inc)}
-                    className="flex-1 flex items-center justify-center gap-1.5 rounded-xl bg-gray-800 hover:bg-gray-700 py-2 text-xs font-semibold text-white transition-colors">
-                    <Edit2 className="w-3.5 h-3.5" /> Edit Record
-                  </button>
-                  {String(inc.status) !== 'closed' && (
-                    <button onClick={() => updateM.mutateAsync({ id: String(inc.id), data: { status: 'closed' } })}
-                      className="flex-1 flex items-center justify-center gap-1.5 rounded-xl bg-green-600/20 hover:bg-green-600/30 border border-green-600/30 py-2 text-xs font-semibold text-green-400 transition-colors">
-                      <CheckCircle2 className="w-3.5 h-3.5" /> Close Incident
-                    </button>
-                  )}
-                  <button onClick={() => handleDelete(String(inc.id))}
-                    className="rounded-xl bg-gray-800 hover:bg-red-900/20 px-3 py-2 text-red-500 hover:text-red-400 transition-colors">
-                    <Trash2 className="w-3.5 h-3.5" />
-                  </button>
-                </div>
-              )}
             </div>
           );
         })}
-        {!isLoading && filtered.length === 0 && (
-          <div className="text-center py-16 text-gray-500">
-            <Shield className="w-12 h-12 mx-auto mb-3 text-gray-700" />
-            <p className="font-medium">No incidents recorded</p>
-            <button onClick={openCreate} className="mt-3 text-sm text-red-400 hover:text-red-300">+ Report an incident</button>
+      </div>
+
+      {/* Main Charts Grid */}
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px', marginBottom: '24px' }}>
+        {/* Trend Chart */}
+        <div className="card" style={{ padding: '20px', background: 'var(--slate-900)', border: '1px solid var(--slate-800)' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '16px' }}>
+            <TrendingUp style={{ width: '18px', height: '18px', color: 'var(--amber-400)' }} />
+            <span style={{ fontFamily: 'var(--font-display)', fontSize: '14px', fontWeight: 700, color: 'var(--slate-50)' }}>Incident Trends</span>
           </div>
-        )}
+          <div style={{ height: '220px' }}>
+            <ResponsiveContainer width="100%" height="100%">
+              <AreaChart data={trendData}>
+                <defs>
+                  <linearGradient id="gradInc" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="var(--red-400)" stopOpacity={0.3}/>
+                    <stop offset="95%" stopColor="var(--red-400)" stopOpacity={0}/>
+                  </linearGradient>
+                  <linearGradient id="gradNear" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="var(--amber-400)" stopOpacity={0.3}/>
+                    <stop offset="95%" stopColor="var(--amber-400)" stopOpacity={0}/>
+                  </linearGradient>
+                </defs>
+                <CartesianGrid strokeDasharray="3 3" stroke="var(--slate-800)" />
+                <XAxis dataKey="month" stroke="var(--slate-600)" fontSize={11} />
+                <YAxis stroke="var(--slate-600)" fontSize={11} />
+                <RechartsTooltip contentStyle={{ background: 'var(--slate-900)', border: '1px solid var(--slate-700)', fontFamily: 'var(--font-body)' }} />
+                <Legend wrapperStyle={{ fontFamily: 'var(--font-body)', fontSize: '11px' }} />
+                <Area type="monotone" dataKey="incidents" stroke="var(--red-400)" fill="url(#gradInc)" strokeWidth={2} name="Incidents" />
+                <Area type="monotone" dataKey="nearMisses" stroke="var(--amber-400)" fill="url(#gradNear)" strokeWidth={2} name="Near Misses" />
+              </AreaChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+
+        {/* Risk Heatmap */}
+        <div className="card" style={{ padding: '20px', background: 'var(--slate-900)', border: '1px solid var(--slate-800)' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '16px' }}>
+            <Layers style={{ width: '18px', height: '18px', color: 'var(--red-400)' }} />
+            <span style={{ fontFamily: 'var(--font-display)', fontSize: '14px', fontWeight: 700, color: 'var(--slate-50)' }}>Risk by Project</span>
+          </div>
+          <div style={{ height: '220px' }}>
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={riskHeatmap} layout="vertical" barSize={20}>
+                <CartesianGrid strokeDasharray="3 3" stroke="var(--slate-800)" />
+                <XAxis type="number" stroke="var(--slate-600)" fontSize={11} />
+                <YAxis dataKey="name" type="category" stroke="var(--slate-400)" fontSize={11} width={100} />
+                <RechartsTooltip contentStyle={{ background: 'var(--slate-900)', border: '1px solid var(--slate-700)', fontFamily: 'var(--font-body)' }} />
+                <Legend wrapperStyle={{ fontFamily: 'var(--font-body)', fontSize: '11px' }} />
+                <Bar dataKey="critical" stackId="stack" fill="var(--red-400)" name="Critical" />
+                <Bar dataKey="high" stackId="stack" fill="var(--orange-400)" name="High" />
+                <Bar dataKey="medium" stackId="stack" fill="var(--amber-400)" name="Medium" />
+                <Bar dataKey="low" stackId="stack" fill="var(--emerald-400)" name="Low" />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+      </div>
+
+      {/* Secondary Charts Row */}
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px', marginBottom: '24px' }}>
+        {/* Root Cause Pie */}
+        <div className="card" style={{ padding: '20px', background: 'var(--slate-900)', border: '1px solid var(--slate-800)' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '16px' }}>
+            <PieChart style={{ width: '18px', height: '18px', color: 'var(--amber-400)' }} />
+            <span style={{ fontFamily: 'var(--font-display)', fontSize: '14px', fontWeight: 700, color: 'var(--slate-50)' }}>Root Cause Analysis</span>
+          </div>
+          <div style={{ height: '220px' }}>
+            <ResponsiveContainer width="100%" height="100%">
+              <RechartsPie>
+                <Pie data={rootCauseData} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={80} label>
+                  {rootCauseData.map((entry, index) => <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />)}
+                </Pie>
+                <RechartsTooltip contentStyle={{ background: 'var(--slate-900)', border: '1px solid var(--slate-700)', fontFamily: 'var(--font-body)' }} />
+                <Legend wrapperStyle={{ fontFamily: 'var(--font-body)', fontSize: '11px' }} />
+              </RechartsPie>
+            </ResponsiveContainer>
+          </div>
+        </div>
+
+        {/* Risk Forecast */}
+        <div className="card" style={{ padding: '20px', background: 'var(--slate-900)', border: '1px solid var(--slate-800)' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '16px' }}>
+            <BarChart3 style={{ width: '18px', height: '18px', color: 'var(--emerald-400)' }} />
+            <span style={{ fontFamily: 'var(--font-display)', fontSize: '14px', fontWeight: 700, color: 'var(--slate-50)' }}>Risk Forecast</span>
+          </div>
+          <div style={{ height: '220px' }}>
+            <ResponsiveContainer width="100%" height="100%">
+              <LineChart data={forecastData}>
+                <CartesianGrid strokeDasharray="3 3" stroke="var(--slate-800)" />
+                <XAxis dataKey="month" stroke="var(--slate-600)" fontSize={11} />
+                <YAxis stroke="var(--slate-600)" fontSize={11} />
+                <RechartsTooltip contentStyle={{ background: 'var(--slate-900)', border: '1px solid var(--slate-700)', fontFamily: 'var(--font-body)' }} />
+                <Legend wrapperStyle={{ fontFamily: 'var(--font-body)', fontSize: '11px' }} />
+                <Line type="monotone" dataKey="projected" stroke="var(--red-400)" strokeWidth={2} name="Projected" />
+                <Line type="monotone" dataKey="target" stroke="var(--emerald-400)" strokeWidth={2} strokeDasharray="4 4" name="Target" />
+              </LineChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+      </div>
+
+      {/* Category Tabs */}
+      <div style={{ display: 'flex', gap: '8px', marginBottom: '16px', borderBottom: '1px solid var(--slate-800)', paddingBottom: '12px' }}>
+        {['all', 'incidents', 'near_misses', 'hazards', 'toolbox', 'riddor'].map(tab => (
+          <button
+            key={tab}
+            onClick={() => setCategoryTab(tab)}
+            className="hover-tab"
+            style={{
+              padding: '8px 16px',
+              background: categoryTab === tab ? 'var(--amber-500)' : 'transparent',
+              border: 'none',
+              borderRadius: '8px',
+              color: categoryTab === tab ? 'var(--slate-950)' : 'var(--slate-400)',
+              fontFamily: 'var(--font-body)',
+              fontSize: '13px',
+              fontWeight: 600,
+              cursor: 'pointer',
+              transition: 'all 0.2s',
+              textTransform: 'capitalize',
+            }}
+          >
+            {tab.replace(/_/g, ' ')}
+          </button>
+        ))}
+      </div>
+
+      {/* Search & Filter */}
+      <div style={{ display: 'flex', gap: '12px', marginBottom: '20px' }}>
+        <div style={{ flex: 1, position: 'relative' }}>
+          <Search style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', width: '16px', height: '16px', color: 'var(--slate-500)' }} />
+          <input
+            type="text"
+            placeholder="Search incidents..."
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+            style={{ width: '100%', padding: '12px 12px 12px 40px', background: 'var(--slate-800)', border: '1px solid var(--slate-700)', borderRadius: '8px', color: 'var(--slate-100)', fontFamily: 'var(--font-body)', fontSize: '13px' }}
+          />
+        </div>
+        <select
+          value={filter}
+          onChange={e => setFilter(e.target.value)}
+          style={{ padding: '12px 16px', background: 'var(--slate-800)', border: '1px solid var(--slate-700)', borderRadius: '8px', color: 'var(--slate-100)', fontFamily: 'var(--font-body)', fontSize: '13px', cursor: 'pointer' }}
+        >
+          <option value="all">All Status</option>
+          <option value="open">Open</option>
+          <option value="investigating">Investigating</option>
+          <option value="closed">Closed</option>
+          <option value="critical">Critical Severity</option>
+        </select>
+      </div>
+
+      {/* Incident List */}
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginBottom: '24px' }}>
+        {filtered.map((incident, i) => {
+          const typeCfg = typeConfig[String(incident.type ?? 'incident')] || typeConfig.incident;
+          const TypeIcon = typeCfg.icon;
+          const sev = severityConfig[String(incident.severity ?? 'medium')];
+          const stat = statusConfig[String(incident.status ?? 'open')];
+          return (
+            <div key={String(incident.id ?? i)} className="card hover-card" style={{ padding: '16px 20px', background: 'var(--slate-900)', border: `1px solid ${sev.bg.replace('0.1', '0.3')}` }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+                <div style={{ width: '48px', height: '48px', borderRadius: '12px', background: sev.bg, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                  <span style={{ display: 'inline-flex', color: sev.color }}><TypeIcon className="lucide-icon" /></span>
+                </div>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '6px' }}>
+                    <span style={{ fontFamily: 'var(--font-display)', fontSize: '15px', fontWeight: 700, color: 'var(--slate-50)' }}>{String(incident.title ?? 'Untitled')}</span>
+                    <span style={{ padding: '4px 10px', background: stat.color + '15', border: `1px solid ${stat.color}`, borderRadius: '20px', fontSize: '11px', fontWeight: 700, color: stat.color, textTransform: 'uppercase', letterSpacing: '0.08em' }}>{stat.label}</span>
+                    {Boolean(incident.riddor_reportable) && <span style={{ padding: '4px 10px', background: 'var(--amber-500)', borderRadius: '20px', fontSize: '10px', fontWeight: 700, color: 'var(--slate-950)', textTransform: 'uppercase' }}>RIDDOR</span>}
+                  </div>
+                  <div style={{ display: 'flex', gap: '16px', fontFamily: 'var(--font-body)', fontSize: '12px', color: 'var(--slate-400)' }}>
+                    <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}><MapPin style={{ width: '12px', height: '12px' }} />{String(incident.location ?? 'Unknown')}</span>
+                    <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}><Calendar style={{ width: '12px', height: '12px' }} />{String(incident.date ?? '')}</span>
+                    <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}><User style={{ width: '12px', height: '12px' }} />{String(incident.project ?? 'Unknown')}</span>
+                  </div>
+                </div>
+                <div style={{ display: 'flex', gap: '8px' }}>
+                  <button onClick={() => openEdit(incident)} className="hover-btn" style={{ padding: '8px 12px', background: 'var(--slate-800)', border: '1px solid var(--slate-700)', borderRadius: '8px', color: 'var(--slate-400)', cursor: 'pointer' }}>
+                    <Edit2 style={{ width: '14px', height: '14px' }} />
+                  </button>
+                  <button onClick={() => handleDelete(String(incident.id))} className="hover-danger" style={{ padding: '8px 12px', background: 'var(--slate-800)', border: '1px solid var(--slate-700)', borderRadius: '8px', color: 'var(--red-400)', cursor: 'pointer' }}>
+                    <Trash2 style={{ width: '14px', height: '14px' }} />
+                  </button>
+                  <ChevronRight style={{ width: '20px', height: '20px', color: 'var(--slate-500)' }} />
+                </div>
+              </div>
+            </div>
+          );
+        })}
       </div>
 
       {/* Modal */}
       {showModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 overflow-y-auto backdrop-blur-sm">
-          <div className="w-full max-w-2xl rounded-2xl border border-gray-700 bg-gray-900 shadow-2xl my-4">
-            <div className="flex items-center justify-between px-6 pt-6 pb-4 border-b border-gray-800">
-              <div>
-                <h2 className="text-xl font-bold text-white">{editId ? 'Edit Incident' : 'Report Incident'}</h2>
-                <p className="text-xs text-gray-400 mt-0.5">Record a safety incident, near miss or hazard</p>
-              </div>
-              <button onClick={() => setShowModal(false)} className="text-gray-400 hover:text-white p-2 rounded-xl hover:bg-gray-800"><X className="w-5 h-5" /></button>
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.8)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 }}>
+          <div className="card animate-fade-up" style={{ width: '100%', maxWidth: '600px', maxHeight: '90vh', overflow: 'auto', padding: '28px', background: 'var(--slate-900)', border: '1px solid var(--slate-700)' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
+              <h2 style={{ fontFamily: 'var(--font-display)', fontSize: '18px', fontWeight: 700, color: 'var(--slate-50)' }}>{editId ? 'Edit Incident' : 'Report New Incident'}</h2>
+              <button onClick={() => setShowModal(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--slate-400)', padding: '8px' }}>
+                <X style={{ width: '20px', height: '20px' }} />
+              </button>
             </div>
-            <form onSubmit={handleSubmit} className="p-6 grid grid-cols-2 gap-4">
-              <div className="col-span-2">
-                <label className={lbl}>Title *</label>
-                <input required value={form.title} onChange={e => setForm(p=>({...p,title:e.target.value}))} placeholder="Brief description of the incident" className={inp} />
+            <form onSubmit={handleSubmit} style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+              <div style={{ gridColumn: 'span 2' }}>
+                <label className={lbl}>Title</label>
+                <input className={inp} type="text" value={form.title} onChange={e => setForm({...form, title: e.target.value})} required />
               </div>
               <div>
                 <label className={lbl}>Type</label>
-                <select value={form.type} onChange={e => setForm(p=>({...p,type:e.target.value}))} className={inp}>
-                  {Object.entries(typeConfig).slice(0,5).map(([k,v]) => <option key={k} value={k}>{v.label}</option>)}
+                <select className={inp} value={form.type} onChange={e => setForm({...form, type: e.target.value})}>
+                  <option value="near_miss">Near Miss</option>
+                  <option value="incident">Incident</option>
+                  <option value="first_aid">First Aid</option>
+                  <option value="riddor">RIDDOR</option>
+                  <option value="hazard">Hazard</option>
                 </select>
               </div>
               <div>
                 <label className={lbl}>Severity</label>
-                <select value={form.severity} onChange={e => setForm(p=>({...p,severity:e.target.value}))} className={inp}>
-                  {['low','medium','high','critical'].map(s => <option key={s} value={s} className="capitalize">{s.charAt(0).toUpperCase()+s.slice(1)}</option>)}
+                <select className={inp} value={form.severity} onChange={e => setForm({...form, severity: e.target.value})}>
+                  <option value="low">Low</option>
+                  <option value="medium">Medium</option>
+                  <option value="high">High</option>
+                  <option value="critical">Critical</option>
                 </select>
               </div>
               <div>
                 <label className={lbl}>Status</label>
-                <select value={form.status} onChange={e => setForm(p=>({...p,status:e.target.value}))} className={inp}>
-                  {Object.keys(statusConfig).map(s => <option key={s} value={s}>{statusConfig[s].label}</option>)}
+                <select className={inp} value={form.status} onChange={e => setForm({...form, status: e.target.value})}>
+                  <option value="open">Open</option>
+                  <option value="investigating">Investigating</option>
+                  <option value="closed">Closed</option>
+                  <option value="resolved">Resolved</option>
                 </select>
               </div>
               <div>
-                <label className={lbl}>Date</label>
-                <input type="date" value={form.date} onChange={e => setForm(p=>({...p,date:e.target.value}))} className={inp} />
-              </div>
-              <div>
                 <label className={lbl}>Project</label>
-                <input value={form.project} onChange={e => setForm(p=>({...p,project:e.target.value}))} placeholder="Project name" className={inp} />
+                <input className={inp} type="text" value={form.project} onChange={e => setForm({...form, project: e.target.value})} />
               </div>
               <div>
-                <label className={lbl}>Location on Site</label>
-                <input value={form.location} onChange={e => setForm(p=>({...p,location:e.target.value}))} placeholder="e.g. Level 7, Grid C4" className={inp} />
+                <label className={lbl}>Location</label>
+                <input className={inp} type="text" value={form.location} onChange={e => setForm({...form, location: e.target.value})} />
+              </div>
+              <div>
+                <label className={lbl}>Date</label>
+                <input className={inp} type="date" value={form.date} onChange={e => setForm({...form, date: e.target.value})} />
+              </div>
+              <div style={{ gridColumn: 'span 2' }}>
+                <label className={lbl}>Description</label>
+                <textarea className={inp} rows={3} value={form.description} onChange={e => setForm({...form, description: e.target.value})} />
+              </div>
+              <div style={{ gridColumn: 'span 2' }}>
+                <label className={lbl}>Immediate Action Taken</label>
+                <textarea className={inp} rows={2} value={form.immediate_action} onChange={e => setForm({...form, immediate_action: e.target.value})} />
+              </div>
+              <div>
+                <label className={lbl}>Injured Party</label>
+                <input className={inp} type="text" value={form.injured_party} onChange={e => setForm({...form, injured_party: e.target.value})} />
               </div>
               <div>
                 <label className={lbl}>Reported By</label>
-                <input value={form.reported_by_name} onChange={e => setForm(p=>({...p,reported_by_name:e.target.value}))} placeholder="Name" className={inp} />
+                <input className={inp} type="text" value={form.reported_by_name} onChange={e => setForm({...form, reported_by_name: e.target.value})} />
               </div>
-              <div>
-                <label className={lbl}>Injured Party (if any)</label>
-                <input value={form.injured_party} onChange={e => setForm(p=>({...p,injured_party:e.target.value}))} placeholder="Name / N/A" className={inp} />
+              <div style={{ gridColumn: 'span 2', display: 'flex', alignItems: 'center', gap: '10px' }}>
+                <input type="checkbox" id={`riddor-${editId ?? 'new'}`} checked={form.riddor_reportable} onChange={e => setForm({...form, riddor_reportable: e.target.checked})} style={{ width: '18px', height: '18px', cursor: 'pointer' }} />
+                <label htmlFor={`riddor-${editId ?? 'new'}`} style={{ fontFamily: 'var(--font-body)', fontSize: '13px', color: 'var(--slate-300)', cursor: 'pointer' }}>RIDDOR Reportable</label>
               </div>
-              <div className="col-span-2">
-                <label className={lbl}>Description</label>
-                <textarea rows={3} value={form.description} onChange={e => setForm(p=>({...p,description:e.target.value}))}
-                  placeholder="What happened? Include sequence of events..."
-                  className="w-full bg-gray-800 border border-gray-700 rounded-xl px-4 py-2.5 text-white text-sm placeholder-gray-600 focus:outline-none focus:border-red-500 transition-colors resize-none" />
-              </div>
-              <div className="col-span-2">
-                <label className={lbl}>Immediate Action Taken</label>
-                <textarea rows={2} value={form.immediate_action} onChange={e => setForm(p=>({...p,immediate_action:e.target.value}))}
-                  placeholder="Steps taken immediately after the incident..."
-                  className="w-full bg-gray-800 border border-gray-700 rounded-xl px-4 py-2.5 text-white text-sm placeholder-gray-600 focus:outline-none focus:border-red-500 transition-colors resize-none" />
-              </div>
-              <div className="col-span-2 flex items-center gap-3 p-3 rounded-xl bg-purple-500/10 border border-purple-600/30">
-                <input type="checkbox" id="riddor" checked={form.riddor_reportable}
-                  onChange={e => setForm(p=>({...p,riddor_reportable:e.target.checked}))}
-                  className="w-4 h-4 rounded border-gray-600 bg-gray-800 text-purple-500 focus:ring-purple-500" />
-                <label htmlFor="riddor" className="text-sm text-purple-300 cursor-pointer">
-                  <span className="font-bold">RIDDOR reportable</span> — must be reported to HSE within 10 days
-                </label>
-              </div>
-              <div className="col-span-2 flex gap-3 pt-2">
-                <button type="button" onClick={() => setShowModal(false)}
-                  className="flex-1 rounded-xl bg-gray-800 hover:bg-gray-700 py-3 text-sm font-semibold text-gray-300 transition-colors">Cancel</button>
-                <button type="submit" disabled={createM.isPending||updateM.isPending}
-                  className="flex-[2] rounded-xl bg-gradient-to-r from-red-600 to-rose-600 hover:from-red-500 py-3 text-sm font-bold text-white transition-all shadow-lg shadow-red-500/20 disabled:opacity-50 flex items-center justify-center gap-2">
-                  {(createM.isPending||updateM.isPending) && <Loader2 className="w-4 h-4 animate-spin" />}
-                  {editId ? 'Save Changes' : 'Submit Report'}
+              <div style={{ gridColumn: 'span 2', display: 'flex', gap: '12px', marginTop: '8px' }}>
+                <button type="submit" style={{ flex: 1, padding: '12px', background: 'var(--amber-500)', border: 'none', borderRadius: '8px', color: 'var(--slate-950)', fontFamily: 'var(--font-body)', fontSize: '14px', fontWeight: 600, cursor: 'pointer' }}>
+                  {editId ? 'Update Incident' : 'Submit Report'}
+                </button>
+                <button type="button" onClick={() => setShowModal(false)} style={{ padding: '12px 24px', background: 'var(--slate-800)', border: '1px solid var(--slate-700)', borderRadius: '8px', color: 'var(--slate-400)', fontFamily: 'var(--font-body)', fontSize: '14px', fontWeight: 600, cursor: 'pointer' }}>
+                  Cancel
                 </button>
               </div>
             </form>
