@@ -19,7 +19,7 @@ const weatherIcon = (w: string) => {
   return <Cloud size={14} className="text-gray-400"/>;
 };
 
-const emptyForm = { report_date:'',project_id:'',weather:'Sunny',temp_high:'',temp_low:'',workers_on_site:'',work_carried_out:'',delays:'',safety_observations:'',visitors:'',status:'Draft',submitted_by:'' };
+const emptyForm = { date:'',project_id:'',weather:'Sunny',temp_high:'',temp_low:'',workers_on_site:'',activities:'',delays:'',safety_observations:'',visitors:'',status:'Draft',prepared_by:'' };
 
 export function DailyReports() {
   const { useList, useCreate, useUpdate, useDelete } = useDailyReports;
@@ -40,8 +40,8 @@ export function DailyReports() {
   const today = new Date().toISOString().slice(0,10);
 
   const filtered = reports.filter(r => {
-    const date = String(r.report_date??'');
-    const work = String(r.work_carried_out??'').toLowerCase();
+    const date = String(r.date??'');
+    const work = String(r.activities??'').toLowerCase();
     const matchSearch = date.includes(search) || work.includes(search.toLowerCase());
     const matchStatus = statusFilter === 'All' || r.status === statusFilter;
     if (!matchSearch || !matchStatus) return false;
@@ -55,7 +55,7 @@ export function DailyReports() {
   });
 
   const thisWeekCount = reports.filter(r => {
-    const d = new Date(String(r.report_date??''));
+    const d = new Date(String(r.date??''));
     const diff = (Date.now() - d.getTime()) / 86400000;
     return diff >= 0 && diff <= 7;
   }).length;
@@ -65,12 +65,12 @@ export function DailyReports() {
 
   function openCreate() {
     setEditing(null);
-    setForm({ ...emptyForm, report_date:today });
+    setForm({ ...emptyForm, date:today });
     setShowModal(true);
   }
   function openEdit(r: AnyRow) {
     setEditing(r);
-    setForm({ report_date:String(r.report_date??''),project_id:String(r.project_id??''),weather:String(r.weather??'Sunny'),temp_high:String(r.temp_high??''),temp_low:String(r.temp_low??''),workers_on_site:String(r.workers_on_site??''),work_carried_out:String(r.work_carried_out??''),delays:String(r.delays??''),safety_observations:String(r.safety_observations??''),visitors:String(r.visitors??''),status:String(r.status??'Draft'),submitted_by:String(r.submitted_by??'') });
+    setForm({ date:String(r.date??''),project_id:String(r.project_id??''),weather:String(r.weather??'Sunny'),temp_high:String(r.temp_high??''),temp_low:String(r.temp_low??''),workers_on_site:String(r.workers_on_site??''),activities:String(r.activities??''),delays:String(r.delays??''),safety_observations:String(r.safety_observations??''),visitors:String(r.visitors??''),status:String(r.status??'Draft'),prepared_by:String(r.prepared_by??'') });
     setShowModal(true);
   }
 
@@ -122,7 +122,7 @@ export function DailyReports() {
 
       <div className="border-b border-gray-700 flex gap-1">
         {([
-          { key:'today' as const,  label:'Today',     count:reports.filter(r=>String(r.report_date??'')===today).length, cls:'' },
+          { key:'today' as const,  label:'Today',     count:reports.filter(r=>String(r.date??'')===today).length, cls:'' },
           { key:'week'  as const,  label:'This Week',  count:thisWeekCount, cls:'' },
           { key:'drafts' as const, label:'Drafts',     count:draftCount, cls:'bg-yellow-500/20 text-yellow-300' },
           { key:'all'   as const,  label:'All Reports', count:reports.length, cls:'' },
@@ -158,14 +158,14 @@ export function DailyReports() {
               <div key={id}>
                 <div className="flex items-center gap-4 p-4 hover:bg-gray-800 cursor-pointer" onClick={()=>setExpanded(isExp?null:id)}>
                   <div className="w-20 flex-shrink-0 text-center">
-                    <p className="text-sm font-bold text-gray-100">{String(r.report_date??'—')}</p>
+                    <p className="text-sm font-bold text-gray-100">{String(r.date??'—')}</p>
                   </div>
                   <div className="flex items-center gap-1.5 flex-shrink-0">
                     {weatherIcon(String(r.weather??''))}
                     <span className="text-xs text-gray-500">{String(r.weather??'—')}</span>
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm text-gray-300 truncate">{String(r.work_carried_out??'No description')}</p>
+                    <p className="text-sm text-gray-300 truncate">{String(r.activities??'No description')}</p>
                     <div className="flex items-center gap-3 mt-0.5">
                       {!!r.workers_on_site && <span className="text-xs text-gray-500 flex items-center gap-1"><Users size={11}/>{String(r.workers_on_site)} workers</span>}
                       {!!r.delays && <span className="text-xs text-orange-400 flex items-center gap-1"><AlertTriangle size={11}/>Delays noted</span>}
@@ -183,7 +183,7 @@ export function DailyReports() {
                 </div>
                 {isExp && (
                   <div className="px-6 pb-5 bg-gray-800 space-y-3 text-sm">
-                    {!!r.work_carried_out && <div><p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-1">Work Carried Out</p><p className="text-gray-300 whitespace-pre-wrap">{String(r.work_carried_out)}</p></div>}
+                    {!!r.activities && <div><p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-1">Work Carried Out</p><p className="text-gray-300 whitespace-pre-wrap">{String(r.activities)}</p></div>}
                     {!!r.delays && <div><p className="text-xs font-semibold text-orange-500 uppercase tracking-wide mb-1">Delays / Issues</p><p className="text-gray-300">{String(r.delays)}</p></div>}
                     {!!r.safety_observations && <div><p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-1">Safety Observations</p><p className="text-gray-300">{String(r.safety_observations)}</p></div>}
                     {!!r.visitors && <div><p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-1">Visitors</p><p className="text-gray-300">{String(r.visitors)}</p></div>}
@@ -206,7 +206,7 @@ export function DailyReports() {
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-300 mb-1">Report Date *</label>
-                  <input required type="date" value={form.report_date} onChange={e=>setForm(f=>({...f,report_date:e.target.value}))} className="w-full bg-gray-800 border border-gray-700 text-white placeholder-gray-500 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500"/>
+                  <input required type="date" value={form.date} onChange={e=>setForm(f=>({...f,date:e.target.value}))} className="w-full bg-gray-800 border border-gray-700 text-white placeholder-gray-500 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500"/>
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-300 mb-1">Workers on Site</label>
@@ -234,7 +234,7 @@ export function DailyReports() {
                 </div>
                 <div className="col-span-2">
                   <label className="block text-sm font-medium text-gray-300 mb-1">Work Carried Out *</label>
-                  <textarea required rows={4} value={form.work_carried_out} onChange={e=>setForm(f=>({...f,work_carried_out:e.target.value}))} placeholder="Describe all work activities on site today…" className="w-full bg-gray-800 border border-gray-700 text-white placeholder-gray-500 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500 resize-none"/>
+                  <textarea required rows={4} value={form.activities} onChange={e=>setForm(f=>({...f,activities:e.target.value}))} placeholder="Describe all work activities on site today…" className="w-full bg-gray-800 border border-gray-700 text-white placeholder-gray-500 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500 resize-none"/>
                 </div>
                 <div className="col-span-2">
                   <label className="block text-sm font-medium text-gray-300 mb-1">Delays / Issues</label>
@@ -250,7 +250,7 @@ export function DailyReports() {
                 </div>
                 <div className="col-span-2">
                   <label className="block text-sm font-medium text-gray-300 mb-1">Submitted By</label>
-                  <input value={form.submitted_by} onChange={e=>setForm(f=>({...f,submitted_by:e.target.value}))} className="w-full bg-gray-800 border border-gray-700 text-white placeholder-gray-500 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500"/>
+                  <input value={form.prepared_by} onChange={e=>setForm(f=>({...f,prepared_by:e.target.value}))} className="w-full bg-gray-800 border border-gray-700 text-white placeholder-gray-500 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500"/>
                 </div>
               </div>
               <div className="flex gap-3 pt-2">

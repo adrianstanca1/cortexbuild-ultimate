@@ -18,7 +18,7 @@ const cisColour: Record<string,string> = {
   'Higher 30%':'bg-red-500/20 text-red-400','Not Registered':'bg-gray-700 text-gray-400',
 };
 
-const emptyForm = { company_name:'',contact_name:'',trade:'',email:'',phone:'',address:'',status:'Active',cis_status:'Standard 20%',utr_number:'',insurance_expiry:'',rams_status:'Not Submitted',rating:'3',notes:'' };
+const emptyForm = { company:'',contact:'',trade:'',email:'',phone:'',address:'',status:'Active',cis_status:'Standard 20%',utr_number:'',insurance_expiry:'',rams_status:'Not Submitted',rating:'3',notes:'' };
 
 export function Subcontractors() {
   const { useList, useCreate, useUpdate, useDelete } = useSubcontractors;
@@ -38,7 +38,7 @@ export function Subcontractors() {
   const [expanded, setExpanded] = useState<string | null>(null);
 
   const filtered = subs.filter(s => {
-    const name = String(s.company_name ?? '').toLowerCase();
+    const name = String(s.company ?? '').toLowerCase();
     const trade = String(s.trade ?? '').toLowerCase();
     const matchSearch = name.includes(search.toLowerCase()) || trade.includes(search.toLowerCase());
     const matchTrade = tradeFilter === 'All' || s.trade === tradeFilter;
@@ -78,7 +78,7 @@ export function Subcontractors() {
   function openEdit(s: AnyRow) {
     setEditing(s);
     setForm({
-      company_name: String(s.company_name ?? ''), contact_name: String(s.contact_name ?? ''),
+      company: String(s.company ?? ''), contact: String(s.contact ?? ''),
       trade: String(s.trade ?? ''), email: String(s.email ?? ''), phone: String(s.phone ?? ''),
       address: String(s.address ?? ''), status: String(s.status ?? 'Active'),
       cis_status: String(s.cis_status ?? 'Standard 20%'), utr_number: String(s.utr_number ?? ''),
@@ -176,10 +176,10 @@ export function Subcontractors() {
                       <tr key={String(s.id ?? '')} className="hover:bg-gray-800/50">
                         <td className="px-4 py-3">
                           <div className="flex items-center gap-3">
-                            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center text-white text-xs font-bold flex-shrink-0">{String(s.company_name ?? '?').slice(0, 2).toUpperCase()}</div>
+                            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center text-white text-xs font-bold flex-shrink-0">{String(s.company ?? '?').slice(0, 2).toUpperCase()}</div>
                             <div>
-                              <p className="font-medium text-white">{String(s.company_name ?? '')}</p>
-                              {!!s.contact_name && <p className="text-xs text-gray-500">{String(s.contact_name)}</p>}
+                              <p className="font-medium text-white">{String(s.company ?? '')}</p>
+                              {!!s.contact && <p className="text-xs text-gray-500">{String(s.contact)}</p>}
                             </div>
                           </div>
                         </td>
@@ -222,13 +222,13 @@ export function Subcontractors() {
                     <tr key={String(s.id ?? '')} className="hover:bg-gray-800/50">
                       <td className="px-4 py-2.5">
                         <div className="flex items-center gap-2">
-                          <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center text-white text-xs font-bold flex-shrink-0">{String(s.company_name ?? '?').slice(0, 2).toUpperCase()}</div>
-                          <span className="font-medium text-white">{String(s.company_name ?? '')}</span>
+                          <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center text-white text-xs font-bold flex-shrink-0">{String(s.company ?? '?').slice(0, 2).toUpperCase()}</div>
+                          <span className="font-medium text-white">{String(s.company ?? '')}</span>
                         </div>
                       </td>
                       <td className="px-4 py-2.5 text-gray-400">{String(s.trade ?? '—')}</td>
                       <td className="px-4 py-2.5">{s.utr_number ? <span className="font-mono text-sm text-gray-300">{String(s.utr_number)}</span> : <span className="text-red-400 text-xs">Missing</span>}</td>
-                      <td className="px-4 py-2.5 text-gray-400">{String(s.contact_name ?? '—')}</td>
+                      <td className="px-4 py-2.5 text-gray-400">{String(s.contact ?? '—')}</td>
                       <td className="px-4 py-2.5"><span className={`text-xs px-2 py-0.5 rounded-full font-medium ${statusColour[String(s.status ?? '')] ?? 'bg-gray-700 text-gray-400'}`}>{String(s.status ?? '')}</span></td>
                     </tr>
                   ))}
@@ -271,14 +271,14 @@ export function Subcontractors() {
               <div key={id}>
                 <div className="flex items-center gap-4 p-4 hover:bg-gray-800/50 cursor-pointer" onClick={() => setExpanded(isExp ? null : id)}>
                   <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center text-white font-bold text-sm flex-shrink-0">
-                    {String(s.company_name ?? '?').slice(0, 2).toUpperCase()}
+                    {String(s.company ?? '?').slice(0, 2).toUpperCase()}
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 flex-wrap">
-                      <p className="font-semibold text-white truncate">{String(s.company_name ?? 'Unknown')}</p>
+                      <p className="font-semibold text-white truncate">{String(s.company ?? 'Unknown')}</p>
                       {insExpiring30 && <span className="text-xs bg-red-500/20 text-red-400 px-2 py-0.5 rounded-full">Insurance Expiring</span>}
                     </div>
-                    <p className="text-sm text-gray-400">{String(s.trade ?? '')} {s.contact_name ? `· ${s.contact_name}` : ''}</p>
+                    <p className="text-sm text-gray-400">{String(s.trade ?? '')} {s.contact ? `· ${s.contact}` : ''}</p>
                   </div>
                   <div className="hidden md:flex items-center gap-2 flex-wrap">
                     <div className="flex items-center gap-0.5">
@@ -321,11 +321,11 @@ export function Subcontractors() {
               <div className="grid grid-cols-2 gap-4">
                 <div className="col-span-2">
                   <label className={labelCls}>Company Name *</label>
-                  <input required value={form.company_name} onChange={e => setForm(f => ({ ...f, company_name: e.target.value }))} className={inputCls} />
+                  <input required value={form.company} onChange={e => setForm(f => ({ ...f, company: e.target.value }))} className={inputCls} />
                 </div>
                 <div>
                   <label className={labelCls}>Contact Name</label>
-                  <input value={form.contact_name} onChange={e => setForm(f => ({ ...f, contact_name: e.target.value }))} className={inputCls} />
+                  <input value={form.contact} onChange={e => setForm(f => ({ ...f, contact: e.target.value }))} className={inputCls} />
                 </div>
                 <div>
                   <label className={labelCls}>Trade</label>

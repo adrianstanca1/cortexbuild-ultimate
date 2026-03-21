@@ -44,7 +44,7 @@ const MONTHS = ['Sep','Oct','Nov','Dec','Jan','Feb','Mar'];
 const defaultForm = {
   title: '', type: 'near_miss', severity: 'medium', status: 'open',
   project: '', location: '', date: new Date().toISOString().split('T')[0],
-  description: '', immediate_action: '', injured_party: '',
+  description: '', immediate_actions: '', injured_party: '',
   reported_by_name: '', riddor_reportable: false,
 };
 type FormData = typeof defaultForm;
@@ -460,7 +460,7 @@ export function Safety({ setModule }: { setModule?: (m: Module) => void }) {
               </div>
               <div style={{ gridColumn: 'span 2' }}>
                 <label className={lbl}>Immediate Action Taken</label>
-                <textarea className={inp} rows={2} value={form.immediate_action} onChange={e => setForm({...form, immediate_action: e.target.value})} />
+                <textarea className={inp} rows={2} value={form.immediate_actions} onChange={e => setForm({...form, immediate_actions: e.target.value})} />
               </div>
               <div>
                 <label className={lbl}>Injured Party</label>

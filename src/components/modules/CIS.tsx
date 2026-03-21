@@ -16,7 +16,7 @@ const statusColour: Record<string,string> = {
   'Overdue':'bg-red-900/50 text-red-300',
 };
 
-const emptyForm = { subcontractor_name:'',utr_number:'',tax_period:'',gross_payment:'',cis_rate:'20',labour_only:'',materials:'',status:'Draft',payment_date:'',notes:'' };
+const emptyForm = { contractor:'',utr:'',period:'',gross_payment:'',cis_rate:'20',labour_net:'',materials_cost:'',status:'Draft',payment_date:'',notes:'' };
 
 export function CIS() {
   const { useList, useCreate, useUpdate, useDelete } = useCIS;
@@ -35,7 +35,7 @@ export function CIS() {
   const [form, setForm] = useState({ ...emptyForm });
 
   const filtered = returns.filter(r => {
-    const name = String(r.subcontractor_name??'').toLowerCase();
+    const name = String(r.contractor??'').toLowerCase();
     const matchSearch = name.includes(search.toLowerCase());
     const matchStatus = statusFilter === 'All' || r.status === statusFilter;
     return matchSearch && matchStatus;
@@ -44,7 +44,7 @@ export function CIS() {
   const totalGross = returns.reduce((s,r)=>s+Number(r.gross_payment??0),0);
   const totalDeduction = returns.reduce((s,r)=>{
     const gross = Number(r.gross_payment??0);
-    const materials = Number(r.materials??0);
+    const materials = Number(r.materials_cost??0);
     const rate = Number(r.cis_rate??20)/100;
     return s + (gross - materials) * rate;
   },0);
@@ -53,7 +53,7 @@ export function CIS() {
 
   function calcDeduction(r: AnyRow) {
     const gross = Number(r.gross_payment??0);
-    const materials = Number(r.materials??0);
+    const materials = Number(r.materials_cost??0);
     const rate = Number(r.cis_rate??20)/100;
     return (gross - materials) * rate;
   }
@@ -64,13 +64,16 @@ export function CIS() {
   function openCreate() { setEditing(null); setForm({ ...emptyForm }); setShowModal(true); }
   function openEdit(r: AnyRow) {
     setEditing(r);
-    setForm({ subcontractor_name:String(r.subcontractor_name??''),utr_number:String(r.utr_number??''),tax_period:String(r.tax_period??''),gross_payment:String(r.gross_payment??''),cis_rate:String(r.cis_rate??'20'),labour_only:String(r.labour_only??''),materials:String(r.materials??''),status:String(r.status??'Draft'),payment_date:String(r.payment_date??''),notes:String(r.notes??'') });
+    setForm({ contractor:String(r.contractor??''),utr:String(r.utr??''),period:String(r.period??''),gross_payment:String(r.gross_payment??''),cis_rate:String(r.cis_rate??'20'),labour_net:String(r.labour_net??''),materials_cost:String(r.materials_cost??''),status:String(r.status??'Draft'),payment_date:String(r.payment_date??''),notes:String(r.notes??'') });
     setShowModal(true);
   }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    const payload = { ...form, gross_payment:Number(form.gross_payment)||0, cis_rate:Number(form.cis_rate)||20, labour_only:Number(form.labour_only)||0, materials:Number(form.materials)||0 };
+    const rate = Number(form.cis_rate)||20;
+    const gross = Number(form.gross_payment)||0;
+    const matCost = Number(form.materials_cost)||0;
+    const payload = { ...form, gross_payment:gross, cis_rate:rate, labour_net:Number(form.labour_net)||0, materials_cost:matCost, cis_deduction:Math.round((gross - matCost) * (rate/100) * 100)/100 };
     if (editing) { await updateMutation.mutateAsync({ id:String(editing.id), data:payload }); toast.success('CIS return updated'); }
     else { await createMutation.mutateAsync(payload); toast.success('CIS return created'); }
     setShowModal(false);
@@ -88,7 +91,7 @@ export function CIS() {
 
   // Live calculation from form
   const formGross = Number(form.gross_payment)||0;
-  const formMaterials = Number(form.materials)||0;
+  const formMaterials = Number(form.materials_cost)||0;
   const formRate = Number(form.cis_rate)||20;
   const formDeduction = (formGross - formMaterials) * (formRate/100);
   const formNet = formGross - formDeduction;
@@ -172,11 +175,11 @@ export function CIS() {
                 const net = calcNet(r);
                 return (
                   <tr key={String(r.id)} className="hover:bg-gray-800/40 transition-colors">
-                    <td className="px-4 py-3 font-medium text-white">{String(r.subcontractor_name??'—')}</td>
-                    <td className="px-4 py-3 text-gray-400 font-mono text-xs">{String(r.utr_number??'—')}</td>
-                    <td className="px-4 py-3 text-gray-300">{String(r.tax_period??'—')}</td>
+                    <td className="px-4 py-3 font-medium text-white">{String(r.contractor??'—')}</td>
+                    <td className="px-4 py-3 text-gray-400 font-mono text-xs">{String(r.utr??'—')}</td>
+                    <td className="px-4 py-3 text-gray-300">{String(r.period??'—')}</td>
                     <td className="px-4 py-3 text-white font-medium">£{Number(r.gross_payment??0).toLocaleString()}</td>
-                    <td className="px-4 py-3 text-gray-400">£{Number(r.materials??0).toLocaleString()}</td>
+                    <td className="px-4 py-3 text-gray-400">£{Number(r.materials_cost??0).toLocaleString()}</td>
                     <td className="px-4 py-3">
                       <span className="text-xs bg-blue-900/50 text-blue-300 px-2 py-0.5 rounded-full font-medium">{Number(r.cis_rate??20)}%</span>
                     </td>
@@ -229,17 +232,17 @@ export function CIS() {
               <div className="grid grid-cols-2 gap-4">
                 <div className="col-span-2">
                   <label className="block text-xs font-medium text-gray-400 mb-1">Subcontractor Name *</label>
-                  <input required value={form.subcontractor_name} onChange={e=>setForm(f=>({...f,subcontractor_name:e.target.value}))}
+                  <input required value={form.contractor} onChange={e=>setForm(f=>({...f,contractor:e.target.value}))}
                     className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-orange-500"/>
                 </div>
                 <div>
                   <label className="block text-xs font-medium text-gray-400 mb-1">UTR Number</label>
-                  <input value={form.utr_number} onChange={e=>setForm(f=>({...f,utr_number:e.target.value}))} placeholder="10-digit UTR"
+                  <input value={form.utr} onChange={e=>setForm(f=>({...f,utr:e.target.value}))} placeholder="10-digit UTR"
                     className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-orange-500"/>
                 </div>
                 <div>
                   <label className="block text-xs font-medium text-gray-400 mb-1">Tax Period</label>
-                  <select value={form.tax_period} onChange={e=>setForm(f=>({...f,tax_period:e.target.value}))}
+                  <select value={form.period} onChange={e=>setForm(f=>({...f,period:e.target.value}))}
                     className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-orange-500">
                     <option value="">Select…</option>{TAX_PERIOD_OPTIONS.map(p=><option key={p}>{p}</option>)}
                   </select>
@@ -251,7 +254,7 @@ export function CIS() {
                 </div>
                 <div>
                   <label className="block text-xs font-medium text-gray-400 mb-1">Materials (£)</label>
-                  <input type="number" value={form.materials} onChange={e=>setForm(f=>({...f,materials:e.target.value}))}
+                  <input type="number" value={form.materials_cost} onChange={e=>setForm(f=>({...f,materials_cost:e.target.value}))}
                     className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-orange-500"/>
                 </div>
                 <div>
