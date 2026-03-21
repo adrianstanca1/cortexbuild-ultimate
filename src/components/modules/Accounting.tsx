@@ -1,170 +1,245 @@
-// Module: Accounting
-import React, { useState } from 'react';
-import { BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
-import { revenueData } from '../../data/mockData';
-import { TrendingUp } from 'lucide-react';
+// Module: Accounting — CortexBuild Ultimate
+import { useState } from 'react';
+import {
+  BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid,
+  Tooltip, Legend, ResponsiveContainer,
+} from 'recharts';
+import { FileText, AlertCircle, Plus, Edit2, Trash2, X, CheckCircle2, PoundSterling } from 'lucide-react';
+import { useProjects, useInvoices } from '../../hooks/useData';
+import { toast } from 'sonner';
+
+type AnyRow = Record<string, unknown>;
+const INVOICE_STATUSES = ['draft','sent','paid','overdue','disputed'];
+const CASH_DATA = [
+  { month:'Sep', cashIn:485000, cashOut:342000, balance:143000 },
+  { month:'Oct', cashIn:612000, cashOut:445000, balance:310000 },
+  { month:'Nov', cashIn:534000, cashOut:378000, balance:622000 },
+  { month:'Dec', cashIn:298000, cashOut:225000, balance:695000 },
+  { month:'Jan', cashIn:721000, cashOut:512000, balance:904000 },
+  { month:'Feb', cashIn:856000, cashOut:601000, balance:1159000 },
+  { month:'Mar', cashIn:943000, cashOut:648000, balance:1454000 },
+];
+const REV_DATA = [
+  { month:'Sep', revenue:485000, costs:342000, profit:143000 },
+  { month:'Oct', revenue:612000, costs:445000, profit:167000 },
+  { month:'Nov', revenue:534000, costs:378000, profit:156000 },
+  { month:'Dec', revenue:298000, costs:225000, profit:73000  },
+  { month:'Jan', revenue:721000, costs:512000, profit:209000 },
+  { month:'Feb', revenue:856000, costs:601000, profit:255000 },
+  { month:'Mar', revenue:943000, costs:648000, profit:295000 },
+];
+const STATUS_COLOUR: Record<string,string> = {
+  draft:'bg-gray-100 text-gray-600', sent:'bg-blue-100 text-blue-700',
+  paid:'bg-green-100 text-green-700', overdue:'bg-red-100 text-red-700',
+  disputed:'bg-orange-100 text-orange-700',
+};
+function fmt(n:number) {
+  if (n>=1_000_000) return `£${(n/1_000_000).toFixed(2)}M`;
+  if (n>=1_000)     return `£${(n/1_000).toFixed(0)}K`;
+  return `£${n.toLocaleString()}`;
+}
 
 export function Accounting() {
-  const [activeTab, setActiveTab] = useState('pl');
+  const [tab, setTab] = useState<'pl'|'invoices'|'cash'|'budget'|'costs'>('pl');
+  const [showModal, setShowModal] = useState(false);
+  const [editId, setEditId]       = useState<string|null>(null);
+  const [fNum, setFNum]           = useState('');
+  const [fClient, setFClient]     = useState('');
+  const [fProject, setFProject]   = useState('');
+  const [fAmount, setFAmount]     = useState('');
+  const [fStatus, setFStatus]     = useState('draft');
+  const [fDue, setFDue]           = useState('');
+  const [fDesc, setFDesc]         = useState('');
 
-  const budgetData = [
-    { project: 'Canary Wharf', budget: 4200000, spent: 2856000, remaining: 1344000 },
-    { project: 'Manchester', budget: 2800000, spent: 952000, remaining: 1848000 },
-    { project: 'Birmingham', budget: 1600000, spent: 1424000, remaining: 176000 },
-  ];
+  const { useList: useInvList, useCreate, useUpdate, useDelete } = useInvoices;
+  const { useList: useProjList } = useProjects;
+  const { data: rawInv=[], isLoading } = useInvList();
+  const { data: rawProj=[] }           = useProjList();
+  const invoices = rawInv  as AnyRow[];
+  const projects = rawProj as AnyRow[];
+  const createMut = useCreate();
+  const updateMut = useUpdate();
+  const deleteMut = useDelete();
 
-  const costCodes = [
-    { code: 'Labour', budgeted: 2400000, actual: 1680000, variance: 720000 },
-    { code: 'Materials', budgeted: 2800000, actual: 1960000, variance: 840000 },
-    { code: 'Plant', budgeted: 800000, actual: 560000, variance: 240000 },
-    { code: 'Subcontractors', budgeted: 1200000, actual: 780000, variance: 420000 },
-    { code: 'Overheads', budgeted: 600000, actual: 480000, variance: 120000 },
-  ];
+  const totalRaised      = invoices.reduce((s,i)=>s+Number(i.amount??0),0);
+  const totalPaid        = invoices.filter(i=>i.status==='paid').reduce((s,i)=>s+Number(i.amount??0),0);
+  const totalOverdue     = invoices.filter(i=>i.status==='overdue').reduce((s,i)=>s+Number(i.amount??0),0);
+  const totalOutstanding = invoices.filter(i=>i.status==='sent'||i.status==='overdue').reduce((s,i)=>s+Number(i.amount??0),0);
+  const overdueCount     = invoices.filter(i=>i.status==='overdue').length;
 
-  const cashFlowData = [
-    { month: 'Sep', cashIn: 485000, cashOut: 342000, balance: 143000 },
-    { month: 'Oct', cashIn: 612000, cashOut: 445000, balance: 310000 },
-    { month: 'Nov', cashIn: 534000, cashOut: 378000, balance: 622000 },
-    { month: 'Dec', cashIn: 298000, cashOut: 225000, balance: 695000 },
-    { month: 'Jan', cashIn: 721000, cashOut: 512000, balance: 904000 },
-    { month: 'Feb', cashIn: 856000, cashOut: 601000, balance: 1159000 },
-    { month: 'Mar', cashIn: 943000, cashOut: 648000, balance: 1454000 },
-  ];
+  function openCreate() {
+    setEditId(null);
+    setFNum(`INV-2026-${String(invoices.length+145).padStart(4,'0')}`);
+    setFClient(''); setFProject(''); setFAmount(''); setFStatus('draft'); setFDue(''); setFDesc('');
+    setShowModal(true);
+  }
+  function openEdit(inv:AnyRow) {
+    setEditId(String(inv.id));
+    setFNum(String(inv.number??inv.invoice_number??''));
+    setFClient(String(inv.client??''));
+    setFProject(String(inv.project??''));
+    setFAmount(String(inv.amount??''));
+    setFStatus(String(inv.status??'draft'));
+    setFDue(String(inv.dueDate??inv.due_date??''));
+    setFDesc(String(inv.description??''));
+    setShowModal(true);
+  }
+  function handleSave() {
+    if (!fClient||!fAmount) { toast.error('Client and amount required'); return; }
+    const payload = { number:fNum, client:fClient, project:fProject, amount:parseFloat(fAmount)||0, status:fStatus, due_date:fDue, description:fDesc };
+    editId ? updateMut.mutate({id:editId,data:payload}) : createMut.mutate(payload);
+    setShowModal(false);
+  }
 
-  const kpis = [
-    { label: 'Gross Margin %', value: '31.2%', change: 2.1 },
-    { label: 'Turnover YTD', value: '£4.45M', change: 8.5 },
-    { label: 'Profit YTD', value: '£1.29M', change: 12.3 },
-  ];
+  const TABS=[{id:'pl',label:'P&L Chart'},{id:'invoices',label:'Invoices'},{id:'cash',label:'Cash Flow'},{id:'budget',label:'Budget'},{id:'costs',label:'Cost Codes'}] as const;
 
   return (
     <div className="space-y-6">
-      <h1 className="text-3xl font-bold text-white">Accounting & Finance</h1>
+      <div className="flex items-center justify-between">
+        <h1 className="text-3xl font-bold text-white">Accounting &amp; Finance</h1>
+        <button onClick={openCreate} className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded-lg text-white font-medium transition-colors">
+          <Plus className="w-4 h-4"/>New Invoice
+        </button>
+      </div>
 
-      {/* KPI Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        {kpis.map((kpi, idx) => (
-          <div key={idx} className="bg-gray-900 border border-gray-800 rounded-xl p-6">
-            <p className="text-gray-400 text-sm mb-2">{kpi.label}</p>
-            <div className="flex items-end justify-between">
-              <h3 className="text-2xl font-bold text-white">{kpi.value}</h3>
-              <div className="flex items-center gap-1 text-green-400 text-sm">
-                <TrendingUp className="w-4 h-4" />
-                +{kpi.change}%
-              </div>
+      {overdueCount>0 && (
+        <div className="bg-red-900/30 border border-red-700 rounded-xl px-4 py-3 flex items-center gap-3">
+          <AlertCircle className="w-5 h-5 text-red-400 flex-shrink-0"/>
+          <p className="text-red-300 text-sm font-medium">{overdueCount} overdue invoice{overdueCount>1?'s':''} — {fmt(totalOverdue)} outstanding.</p>
+        </div>
+      )}
+
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        {[
+          {label:'Total Raised',  value:fmt(totalRaised),      icon:FileText,      col:'text-blue-400'},
+          {label:'Collected',     value:fmt(totalPaid),        icon:CheckCircle2,  col:'text-green-400'},
+          {label:'Outstanding',   value:fmt(totalOutstanding), icon:PoundSterling, col:'text-yellow-400'},
+          {label:'Overdue',       value:fmt(totalOverdue),     icon:AlertCircle,   col:'text-red-400'},
+        ].map(({label,value,icon:Icon,col})=>(
+          <div key={label} className="bg-gray-900 border border-gray-800 rounded-xl p-5">
+            <div className="flex items-center justify-between mb-3">
+              <p className="text-gray-400 text-sm">{label}</p>
+              <Icon className={`w-5 h-5 ${col}`}/>
             </div>
+            <p className="text-2xl font-bold text-white">{value}</p>
           </div>
         ))}
       </div>
 
-      {/* Tab Navigation */}
-      <div className="flex gap-4 border-b border-gray-800">
-        {[
-          { id: 'pl', label: 'P&L' },
-          { id: 'cash', label: 'Cash Flow' },
-          { id: 'budget', label: 'Budget Tracking' },
-          { id: 'costs', label: 'Cost Codes' },
-        ].map(tab => (
-          <button
-            key={tab.id}
-            onClick={() => setActiveTab(tab.id)}
-            className={`px-4 py-3 font-medium border-b-2 transition ${
-              activeTab === tab.id
-                ? 'border-blue-600 text-blue-400'
-                : 'border-transparent text-gray-400 hover:text-gray-300'
-            }`}
-          >
-            {tab.label}
+      <div className="flex gap-2 flex-wrap">
+        {TABS.map(t=>(
+          <button key={t.id} onClick={()=>setTab(t.id)}
+            className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${tab===t.id?'bg-blue-600 text-white':'bg-gray-800 text-gray-400 hover:bg-gray-700 hover:text-white'}`}>
+            {t.label}
           </button>
         ))}
       </div>
 
-      {/* P&L Tab */}
-      {activeTab === 'pl' && (
-        <div className="space-y-6">
-          <div className="bg-gray-900 border border-gray-800 rounded-xl p-6">
-            <h3 className="text-lg font-bold text-white mb-4">Revenue vs Costs vs Profit</h3>
-            <ResponsiveContainer width="100%" height={400}>
-              <BarChart data={revenueData}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
-                <XAxis dataKey="month" stroke="#9ca3af" />
-                <YAxis stroke="#9ca3af" />
-                <Tooltip contentStyle={{ backgroundColor: '#111827', border: '1px solid #374151' }} />
-                <Legend />
-                <Bar dataKey="revenue" fill="#3b82f6" />
-                <Bar dataKey="costs" fill="#ef4444" />
-                <Bar dataKey="profit" fill="#10b981" />
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            {[
-              { label: 'Total Revenue', value: '£4.45M', color: 'blue' },
-              { label: 'Total Costs', value: '£3.16M', color: 'red' },
-              { label: 'Gross Profit', value: '£1.29M', color: 'green' },
-            ].map((item, idx) => (
-              <div key={idx} className="bg-gray-900 border border-gray-800 rounded-xl p-4">
-                <p className="text-gray-400 text-sm mb-1">{item.label}</p>
-                <p className="text-xl font-bold text-white">{item.value}</p>
-              </div>
-            ))}
-          </div>
+      {tab==='pl' && (
+        <div className="bg-gray-900 border border-gray-800 rounded-xl p-6">
+          <h3 className="text-lg font-bold text-white mb-4">Revenue vs Profit — Last 7 Months</h3>
+          <ResponsiveContainer width="100%" height={360}>
+            <BarChart data={REV_DATA}>
+              <CartesianGrid strokeDasharray="3 3" stroke="#374151"/>
+              <XAxis dataKey="month" stroke="#9ca3af"/>
+              <YAxis stroke="#9ca3af" tickFormatter={(v:number)=>`£${(v/1000).toFixed(0)}K`}/>
+              <Tooltip contentStyle={{backgroundColor:'#111827',border:'1px solid #374151',borderRadius:8}} formatter={(v:number)=>`£${v.toLocaleString()}`}/>
+              <Legend/>
+              <Bar dataKey="revenue" name="Revenue" fill="#3b82f6" radius={[4,4,0,0]}/>
+              <Bar dataKey="costs"   name="Costs"   fill="#ef4444" radius={[4,4,0,0]}/>
+              <Bar dataKey="profit"  name="Profit"  fill="#10b981" radius={[4,4,0,0]}/>
+            </BarChart>
+          </ResponsiveContainer>
         </div>
       )}
 
-      {/* Cash Flow Tab */}
-      {activeTab === 'cash' && (
+      {tab==='invoices' && (
+        <div className="bg-gray-900 border border-gray-800 rounded-xl overflow-hidden">
+          {isLoading ? <div className="p-8 text-center text-gray-400">Loading…</div> : (
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead className="bg-gray-800/60 border-b border-gray-700">
+                  <tr>{['Invoice #','Client','Project','Amount','Status','Due',''].map(h=>(
+                    <th key={h} className="px-4 py-3 text-left text-xs font-semibold text-gray-400 uppercase tracking-wide">{h}</th>
+                  ))}</tr>
+                </thead>
+                <tbody className="divide-y divide-gray-800">
+                  {invoices.map(inv=>(
+                    <tr key={String(inv.id)} className="hover:bg-gray-800/40 transition-colors">
+                      <td className="px-4 py-3 font-mono text-xs text-blue-400 font-bold">{String(inv.number??inv.invoice_number??'—')}</td>
+                      <td className="px-4 py-3 text-white font-medium">{String(inv.client??'—')}</td>
+                      <td className="px-4 py-3 text-gray-400 max-w-[180px] truncate">{String(inv.project??'—')}</td>
+                      <td className="px-4 py-3 text-white font-bold">{fmt(Number(inv.amount??0))}</td>
+                      <td className="px-4 py-3">
+                        <span className={`text-xs px-2 py-1 rounded-full font-medium ${STATUS_COLOUR[String(inv.status??'')]??'bg-gray-100 text-gray-600'}`}>
+                          {String(inv.status??'')}
+                        </span>
+                      </td>
+                      <td className="px-4 py-3 text-gray-400 text-sm">{String(inv.dueDate??inv.due_date??'—')}</td>
+                      <td className="px-4 py-3">
+                        <div className="flex items-center gap-2">
+                          {inv.status!=='paid' && (
+                            <button onClick={()=>updateMut.mutate({id:String(inv.id),data:{status:'paid'}})}
+                              className="text-xs px-2 py-1 bg-green-900/40 hover:bg-green-800 text-green-400 rounded font-medium transition-colors">
+                              Mark Paid
+                            </button>
+                          )}
+                          <button onClick={()=>openEdit(inv)} className="p-1 text-gray-400 hover:text-white rounded"><Edit2 className="w-3.5 h-3.5"/></button>
+                          <button onClick={()=>{if(confirm('Delete?'))deleteMut.mutate(String(inv.id));}} className="p-1 text-gray-400 hover:text-red-400 rounded"><Trash2 className="w-3.5 h-3.5"/></button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+      )}
+
+      {tab==='cash' && (
         <div className="bg-gray-900 border border-gray-800 rounded-xl p-6">
-          <h3 className="text-lg font-bold text-white mb-4">Cash Position</h3>
+          <h3 className="text-lg font-bold text-white mb-4">Cash Position — Last 7 Months</h3>
           <ResponsiveContainer width="100%" height={400}>
-            <LineChart data={cashFlowData}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
-              <XAxis dataKey="month" stroke="#9ca3af" />
-              <YAxis stroke="#9ca3af" />
-              <Tooltip contentStyle={{ backgroundColor: '#111827', border: '1px solid #374151' }} />
-              <Legend />
-              <Line type="monotone" dataKey="cashIn" stroke="#10b981" strokeWidth={2} />
-              <Line type="monotone" dataKey="cashOut" stroke="#ef4444" strokeWidth={2} />
-              <Line type="monotone" dataKey="balance" stroke="#3b82f6" strokeWidth={2} name="Running Balance" />
+            <LineChart data={CASH_DATA}>
+              <CartesianGrid strokeDasharray="3 3" stroke="#374151"/>
+              <XAxis dataKey="month" stroke="#9ca3af"/>
+              <YAxis stroke="#9ca3af" tickFormatter={(v:number)=>`£${(v/1000).toFixed(0)}K`}/>
+              <Tooltip contentStyle={{backgroundColor:'#111827',border:'1px solid #374151',borderRadius:8}} formatter={(v:number)=>`£${v.toLocaleString()}`}/>
+              <Legend/>
+              <Line type="monotone" dataKey="cashIn"  name="Cash In"       stroke="#10b981" strokeWidth={2} dot={false}/>
+              <Line type="monotone" dataKey="cashOut" name="Cash Out"       stroke="#ef4444" strokeWidth={2} dot={false}/>
+              <Line type="monotone" dataKey="balance" name="Running Balance" stroke="#3b82f6" strokeWidth={2.5}/>
             </LineChart>
           </ResponsiveContainer>
         </div>
       )}
 
-      {/* Budget Tracking Tab */}
-      {activeTab === 'budget' && (
+      {tab==='budget' && (
         <div className="bg-gray-900 border border-gray-800 rounded-xl overflow-hidden">
           <div className="overflow-x-auto">
-            <table className="w-full text-sm text-gray-400">
-              <thead>
-                <tr className="bg-gray-800/50 border-b border-gray-800">
-                  <th className="px-6 py-3 text-left font-semibold text-white">Project</th>
-                  <th className="px-6 py-3 text-right font-semibold text-white">Budget</th>
-                  <th className="px-6 py-3 text-right font-semibold text-white">Spent</th>
-                  <th className="px-6 py-3 text-right font-semibold text-white">Remaining</th>
-                  <th className="px-6 py-3 text-right font-semibold text-white">% Used</th>
-                  <th className="px-6 py-3 text-left font-semibold text-white">Status</th>
-                </tr>
+            <table className="w-full text-sm">
+              <thead className="bg-gray-800/60 border-b border-gray-700">
+                <tr>{['Project','Contract Value','Budget','Spent','Remaining','% Used','Status'].map(h=>(
+                  <th key={h} className="px-5 py-3 text-left text-xs font-semibold text-gray-400 uppercase tracking-wide">{h}</th>
+                ))}</tr>
               </thead>
-              <tbody>
-                {budgetData.map((row, idx) => {
-                  const percentUsed = (row.spent / row.budget) * 100;
-                  const status = percentUsed > 80 ? 'red' : percentUsed > 60 ? 'yellow' : 'green';
+              <tbody className="divide-y divide-gray-800">
+                {projects.map(proj=>{
+                  const budget=Number(proj.budget??0), spent=Number(proj.spent??0);
+                  const pct=budget>0?(spent/budget)*100:0;
+                  const rag=pct>90?'red':pct>70?'amber':'green';
                   return (
-                    <tr key={idx} className="border-b border-gray-800 hover:bg-gray-800/30">
-                      <td className="px-6 py-4 font-medium text-white">{row.project}</td>
-                      <td className="px-6 py-4 text-right font-semibold text-white">£{(row.budget / 1000000).toFixed(1)}M</td>
-                      <td className="px-6 py-4 text-right text-white">£{(row.spent / 1000000).toFixed(1)}M</td>
-                      <td className="px-6 py-4 text-right font-semibold text-green-400">£{(row.remaining / 1000000).toFixed(1)}M</td>
-                      <td className="px-6 py-4 text-right font-semibold text-white">{percentUsed.toFixed(1)}%</td>
-                      <td className="px-6 py-4">
-                        <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                          status === 'green' ? 'bg-green-500/20 text-green-400' :
-                          status === 'yellow' ? 'bg-yellow-500/20 text-yellow-400' :
-                          'bg-red-500/20 text-red-400'
-                        }`}>
-                          {status}
+                    <tr key={String(proj.id)} className="hover:bg-gray-800/40 transition-colors">
+                      <td className="px-5 py-4 font-medium text-white">{String(proj.name??'—')}</td>
+                      <td className="px-5 py-4 text-gray-300">{fmt(Number(proj.contractValue??proj.contract_value??0))}</td>
+                      <td className="px-5 py-4 font-semibold text-white">{fmt(budget)}</td>
+                      <td className="px-5 py-4 text-white">{fmt(spent)}</td>
+                      <td className="px-5 py-4 font-semibold text-green-400">{fmt(budget-spent)}</td>
+                      <td className="px-5 py-4 font-bold text-white">{pct.toFixed(1)}%</td>
+                      <td className="px-5 py-4">
+                        <span className={`text-xs px-2 py-1 rounded-full font-medium ${rag==='green'?'bg-green-900/40 text-green-400':rag==='amber'?'bg-yellow-900/40 text-yellow-400':'bg-red-900/40 text-red-400'}`}>
+                          {rag==='green'?'On Budget':rag==='amber'?'Watch':'Over Budget'}
                         </span>
                       </td>
                     </tr>
@@ -176,35 +251,101 @@ export function Accounting() {
         </div>
       )}
 
-      {/* Cost Codes Tab */}
-      {activeTab === 'costs' && (
+      {tab==='costs' && (
         <div className="bg-gray-900 border border-gray-800 rounded-xl overflow-hidden">
           <div className="overflow-x-auto">
-            <table className="w-full text-sm text-gray-400">
-              <thead>
-                <tr className="bg-gray-800/50 border-b border-gray-800">
-                  <th className="px-6 py-3 text-left font-semibold text-white">Cost Code</th>
-                  <th className="px-6 py-3 text-right font-semibold text-white">Budgeted</th>
-                  <th className="px-6 py-3 text-right font-semibold text-white">Actual</th>
-                  <th className="px-6 py-3 text-right font-semibold text-white">Variance</th>
-                  <th className="px-6 py-3 text-right font-semibold text-white">% Spent</th>
-                </tr>
+            <table className="w-full text-sm">
+              <thead className="bg-gray-800/60 border-b border-gray-700">
+                <tr>{['Cost Code','Budgeted','Actual','Variance','% Spent'].map(h=>(
+                  <th key={h} className="px-5 py-3 text-left text-xs font-semibold text-gray-400 uppercase tracking-wide">{h}</th>
+                ))}</tr>
               </thead>
-              <tbody>
-                {costCodes.map((row, idx) => {
-                  const percentSpent = (row.actual / row.budgeted) * 100;
+              <tbody className="divide-y divide-gray-800">
+                {[
+                  {code:'Labour',         budgeted:2400000, actual:1680000},
+                  {code:'Materials',      budgeted:2800000, actual:1960000},
+                  {code:'Plant',          budgeted:800000,  actual:560000 },
+                  {code:'Subcontractors', budgeted:1200000, actual:780000 },
+                  {code:'Overheads',      budgeted:600000,  actual:480000 },
+                ].map(row=>{
+                  const pct=(row.actual/row.budgeted)*100;
                   return (
-                    <tr key={idx} className="border-b border-gray-800 hover:bg-gray-800/30">
-                      <td className="px-6 py-4 font-medium text-white">{row.code}</td>
-                      <td className="px-6 py-4 text-right font-semibold text-white">£{(row.budgeted / 1000000).toFixed(1)}M</td>
-                      <td className="px-6 py-4 text-right text-white">£{(row.actual / 1000000).toFixed(1)}M</td>
-                      <td className="px-6 py-4 text-right font-semibold text-green-400">£{(row.variance / 1000000).toFixed(1)}M</td>
-                      <td className="px-6 py-4 text-right font-semibold text-white">{percentSpent.toFixed(1)}%</td>
+                    <tr key={row.code} className="hover:bg-gray-800/40 transition-colors">
+                      <td className="px-5 py-4 font-medium text-white">{row.code}</td>
+                      <td className="px-5 py-4 font-semibold text-white">{fmt(row.budgeted)}</td>
+                      <td className="px-5 py-4 text-white">{fmt(row.actual)}</td>
+                      <td className="px-5 py-4 font-semibold text-green-400">{fmt(row.budgeted-row.actual)}</td>
+                      <td className="px-5 py-4 font-bold text-white">
+                        <div className="flex items-center gap-2">
+                          <div className="flex-1 h-2 bg-gray-700 rounded-full max-w-[80px]">
+                            <div className="h-full bg-blue-500 rounded-full" style={{width:`${Math.min(pct,100)}%`}}/>
+                          </div>
+                          {pct.toFixed(1)}%
+                        </div>
+                      </td>
                     </tr>
                   );
                 })}
               </tbody>
             </table>
+          </div>
+        </div>
+      )}
+
+      {showModal && (
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-gray-900 border border-gray-700 rounded-2xl w-full max-w-lg shadow-2xl">
+            <div className="flex items-center justify-between px-6 py-4 border-b border-gray-800">
+              <h2 className="text-lg font-bold text-white">{editId?'Edit Invoice':'New Invoice'}</h2>
+              <button onClick={()=>setShowModal(false)} className="text-gray-400 hover:text-white"><X className="w-5 h-5"/></button>
+            </div>
+            <div className="p-6 space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-medium text-gray-400 mb-1">Invoice Number</label>
+                  <input value={fNum} onChange={e=>setFNum(e.target.value)} className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-blue-500"/>
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-gray-400 mb-1">Status</label>
+                  <select value={fStatus} onChange={e=>setFStatus(e.target.value)} className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-blue-500">
+                    {INVOICE_STATUSES.map(s=><option key={s} value={s}>{s}</option>)}
+                  </select>
+                </div>
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-gray-400 mb-1">Client *</label>
+                <input value={fClient} onChange={e=>setFClient(e.target.value)} placeholder="Client name" className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-blue-500"/>
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-gray-400 mb-1">Project</label>
+                <select value={fProject} onChange={e=>setFProject(e.target.value)} className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-blue-500">
+                  <option value="">— Select project —</option>
+                  {projects.map(p=><option key={String(p.id)} value={String(p.name)}>{String(p.name)}</option>)}
+                </select>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-medium text-gray-400 mb-1">Amount (£) *</label>
+                  <input type="number" value={fAmount} onChange={e=>setFAmount(e.target.value)} placeholder="0.00" className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-blue-500"/>
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-gray-400 mb-1">Due Date</label>
+                  <input type="date" value={fDue} onChange={e=>setFDue(e.target.value)} className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-blue-500"/>
+                </div>
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-gray-400 mb-1">Description</label>
+                <textarea value={fDesc} onChange={e=>setFDesc(e.target.value)} rows={2} placeholder="Works description…" className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-white text-sm resize-none focus:outline-none focus:border-blue-500"/>
+              </div>
+            </div>
+            <div className="flex gap-3 px-6 py-4 border-t border-gray-800">
+              <button onClick={handleSave} className="flex-1 bg-blue-600 hover:bg-blue-700 text-white rounded-lg py-2 text-sm font-semibold transition-colors">
+                {editId?'Save Changes':'Create Invoice'}
+              </button>
+              <button onClick={()=>setShowModal(false)} className="flex-1 bg-gray-800 hover:bg-gray-700 text-white rounded-lg py-2 text-sm font-semibold transition-colors">
+                Cancel
+              </button>
+            </div>
           </div>
         </div>
       )}

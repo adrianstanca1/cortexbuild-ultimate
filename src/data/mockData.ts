@@ -202,3 +202,18 @@ export const mockPunchList = punchListItems;
 export const mockInspections = inspections;
 export const mockContacts = contacts;
 export const mockRiskRegister = riskRegister;
+
+// Purchase Orders (Procurement) mock data
+export const purchaseOrders = [
+  { id: 'po1', po_number: 'PO-CW-0089', supplier: 'Tata Steel UK', description: 'UC 305×305×198 Steel Sections (28t)', value: 58800, project: 'Canary Wharf Office Complex', status: 'delivered', order_date: '2026-02-15', delivery_date: '2026-03-12', category: 'Structural Steel', notes: 'Delivered to site — signed off by J. Harrington' },
+  { id: 'po2', po_number: 'PO-BB-0142', supplier: 'Hanson UK', description: 'Ready-Mix Concrete C40/50 (480m³)', value: 69600, project: 'Birmingham Road Bridge', status: 'on_site', order_date: '2026-03-01', delivery_date: '2026-03-18', category: 'Concrete', notes: 'Ongoing delivery — phased pours' },
+  { id: 'po3', po_number: 'PO-MC-0067', supplier: 'CEMEX UK', description: 'CFA Piling Concrete (180m³)', value: 24840, project: 'Manchester City Apartments', status: 'pending_delivery', order_date: '2026-02-20', delivery_date: '2026-03-27', category: 'Concrete', notes: '' },
+  { id: 'po4', po_number: 'PO-MC-0068', supplier: 'Sika Ltd', description: 'Waterproof Membrane Type B (1200m²)', value: 33600, project: 'Manchester City Apartments', status: 'pending_delivery', order_date: '2026-02-25', delivery_date: '2026-04-02', category: 'Waterproofing', notes: '' },
+  { id: 'po5', po_number: 'PO-CW-0090', supplier: 'Hilti UK', description: 'Fastening & Anchoring Systems', value: 15420, project: 'Canary Wharf Office Complex', status: 'delivered', order_date: '2026-03-01', delivery_date: '2026-03-10', category: 'Fixings', notes: '' },
+  { id: 'po6', po_number: 'PO-LS-0051', supplier: 'Kingspan Group', description: 'Insulated Composite Cladding Panels', value: 87500, project: 'Leeds Warehouse Extension', status: 'ordered', order_date: '2026-03-10', delivery_date: '2026-05-01', category: 'Cladding', notes: 'Long lead item — 8 week lead time' },
+  { id: 'po7', po_number: 'PO-BB-0143', supplier: 'Lafarge Cement', description: 'Portland Cement 52.5N (50t)', value: 12750, project: 'Birmingham Road Bridge', status: 'delivered', order_date: '2026-01-30', delivery_date: '2026-02-28', category: 'Concrete', notes: '' },
+  { id: 'po8', po_number: 'PO-CW-0091', supplier: 'Bosch Professional', description: 'Power Tools & Equipment', value: 24890, project: 'Canary Wharf Office Complex', status: 'pending_delivery', order_date: '2026-03-08', delivery_date: '2026-03-22', category: 'Tools', notes: '' },
+  { id: 'po9', po_number: 'PO-SH-0023', supplier: 'Sto UK', description: 'External Insulation Composite System', value: 145000, project: 'Sheffield Hospital Refurb', status: 'pending_approval', order_date: '2026-03-18', delivery_date: '2026-05-15', category: 'Insulation', notes: 'Awaiting client approval on spec' },
+];
+
+export const mockPurchaseOrders = purchaseOrders;

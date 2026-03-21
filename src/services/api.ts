@@ -8,7 +8,7 @@ import { mockProjects, mockInvoices, mockTeamMembers, mockSafetyIncidents,
   mockRFIs, mockChangeOrders, mockRAMS, mockCISReturns, mockEquipment,
   mockSubcontractors, mockTimesheets, mockDocuments, mockTenders,
   mockDailyReports, mockMeetings, mockMaterials, mockPunchList,
-  mockInspections, mockContacts, mockRiskRegister } from '../data/mockData';
+  mockInspections, mockContacts, mockRiskRegister, mockPurchaseOrders } from '../data/mockData';
 
 // ─── Generic helpers ─────────────────────────────────────────────────────────
 
@@ -256,4 +256,15 @@ export const riskRegisterApi = {
   create: (data: Row) => insertRow('risk_register', data),
   update: (id: string, data: Row) => updateRow('risk_register', id, data),
   delete: (id: string) => deleteRow('risk_register', id),
+};
+
+// ─── Purchase Orders (Procurement) ───────────────────────────────────────────
+
+
+export const purchaseOrdersApi = {
+  getAll: () => fetchAll('purchase_orders', mockPurchaseOrders),
+  getById: (id: string) => fetchById('purchase_orders', id),
+  create: (data: Row) => insertRow('purchase_orders', data),
+  update: (id: string, data: Row) => updateRow('purchase_orders', id, data),
+  delete: (id: string) => deleteRow('purchase_orders', id),
 };

@@ -8,7 +8,7 @@ import {
   projectsApi, invoicesApi, teamApi, safetyApi, rfisApi, changeOrdersApi,
   ramsApi, cisApi, equipmentApi, subcontractorsApi, timesheetsApi,
   documentsApi, tendersApi, dailyReportsApi, meetingsApi, materialsApi,
-  punchListApi, inspectionsApi, contactsApi, riskRegisterApi,
+  punchListApi, inspectionsApi, contactsApi, riskRegisterApi, purchaseOrdersApi,
 } from '../services/api';
 
 type Row = Record<string, unknown>;
@@ -90,3 +90,4 @@ export const usePunchList      = makeHooks('punch_list',     punchListApi);
 export const useInspections    = makeHooks('inspections',    inspectionsApi);
 export const useContacts       = makeHooks('contacts',       contactsApi);
 export const useRiskRegister   = makeHooks('risk_register',  riskRegisterApi);
+export const useProcurement   = makeHooks('purchase_orders', purchaseOrdersApi);

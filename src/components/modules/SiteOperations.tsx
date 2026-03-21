@@ -1,130 +1,167 @@
-// Module: SiteOperations
-import React, { useState } from 'react';
-import { Zap, Users, Truck, LogIn } from 'lucide-react';
-import { projects } from '../../data/mockData';
+import { useState } from 'react';
+import { HardHat, Users, Truck, ClipboardList, AlertTriangle, CheckCircle, MapPin, Clock, Building2 } from 'lucide-react';
+import { useProjects, useSafety, useEquipment, useDailyReports } from '../../hooks/useData';
+
+type AnyRow = Record<string, unknown>;
 
 export function SiteOperations() {
-  const activeProjects = projects.filter(p => p.status === 'active');
+  const { data: rawProjects = [] } = useProjects.useList();
+  const { data: rawSafety = [] } = useSafety.useList();
+  const { data: rawEquipment = [] } = useEquipment.useList();
+  const { data: rawReports = [] } = useDailyReports.useList();
+
+  const projects = rawProjects as AnyRow[];
+  const safetyIncidents = rawSafety as AnyRow[];
+  const equipment = rawEquipment as AnyRow[];
+  const reports = rawReports as AnyRow[];
+
+  const activeProjects = projects.filter(p => p.status === 'Active' || p.status === 'active' || p.status === 'In Progress');
+  const today = new Date().toISOString().slice(0,10);
+  const todayReports = (rawReports as AnyRow[]).filter(r => String(r.report_date??'') === today);
+  const openIncidents = safetyIncidents.filter(i => i.status === 'Open' || i.status === 'Investigation');
+  const equipmentInUse = equipment.filter(e => e.status === 'In Use');
+  const faultedEquipment = equipment.filter(e => e.status === 'Fault Reported');
+  const totalWorkersToday = todayReports.reduce((s,r) => s + Number(r.workers_on_site??0), 0);
 
   return (
-    <div className="space-y-6">
-      <h1 className="text-3xl font-bold text-white">Site Operations</h1>
+    <div className="p-6 space-y-6">
+      <div>
+        <h1 className="text-2xl font-bold text-gray-900">Site Operations</h1>
+        <p className="text-sm text-gray-500 mt-1">Live site overview — today's activity across all projects</p>
+      </div>
 
-      {/* Site Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {activeProjects.map(project => (
-          <div key={project.id} className="bg-gray-900 border border-gray-800 rounded-xl p-6">
-            <h3 className="text-lg font-bold text-white mb-1">{project.name}</h3>
-            <p className="text-sm text-gray-400 mb-4">{project.location}</p>
-
-            <div className="space-y-3 text-sm">
-              <div className="flex items-center justify-between">
-                <span className="text-gray-400">Foreman</span>
-                <span className="text-white font-medium">{project.manager}</span>
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="text-gray-400 flex items-center gap-1"><Users className="w-4 h-4" /> Workers On Site</span>
-                <span className="text-white font-semibold">{project.workers}</span>
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="text-gray-400">Progress</span>
-                <span className="text-white font-semibold">{project.progress}%</span>
-              </div>
+      {/* Today summary bar */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        {[
+          { label:'Active Projects', value:activeProjects.length, icon:Building2, colour:'text-blue-600', bg:'bg-blue-50' },
+          { label:'Workers on Site Today', value:totalWorkersToday || '—', icon:Users, colour:'text-green-600', bg:'bg-green-50' },
+          { label:'Open Safety Incidents', value:openIncidents.length, icon:AlertTriangle, colour:openIncidents.length>0?'text-red-600':'text-gray-500', bg:openIncidents.length>0?'bg-red-50':'bg-gray-50' },
+          { label:'Equipment In Use', value:equipmentInUse.length, icon:Truck, colour:'text-orange-600', bg:'bg-orange-50' },
+        ].map(kpi=>(
+          <div key={kpi.label} className="bg-white rounded-xl border border-gray-200 p-4">
+            <div className="flex items-center gap-3">
+              <div className={`p-2 rounded-lg ${kpi.bg}`}><kpi.icon size={20} className={kpi.colour}/></div>
+              <div><p className="text-xs text-gray-500">{kpi.label}</p><p className="text-xl font-bold text-gray-900">{kpi.value}</p></div>
             </div>
-
-            <button className="w-full mt-4 px-4 py-2 bg-blue-600/20 hover:bg-blue-600/30 rounded-lg text-blue-400 text-sm font-medium">
-              View Site Details
-            </button>
           </div>
         ))}
       </div>
 
-      {/* Daily Activities */}
-      <div className="bg-gray-900 border border-gray-800 rounded-xl p-6">
-        <h3 className="text-lg font-bold text-white mb-4">Today's Activities</h3>
-        <ul className="space-y-3">
-          {[
-            '08:00 — Site induction for 3 new groundworkers — Canary Wharf',
-            '09:30 — Steel delivery and unloading — Canary Wharf (28 tonnes UC sections)',
-            '11:00 — Concrete pour starts on Floor 7 — Canary Wharf (120m³)',
-            '13:00 — Lunch break — All sites',
-            '14:00 — MEP first fix inspection — Manchester (Electrical rough-in)',
-            '15:30 — Daily stand-up meeting — All PMs (15 mins)',
-            '16:00 — Weather check — Site operations',
-          ].map((activity, idx) => (
-            <li key={idx} className="flex items-start gap-3">
-              <Zap className="w-4 h-4 text-blue-400 mt-1 flex-shrink-0" />
-              <span className="text-gray-300">{activity}</span>
-            </li>
-          ))}
-        </ul>
-      </div>
-
-      {/* Deliveries Today */}
-      <div className="bg-gray-900 border border-gray-800 rounded-xl p-6">
-        <h3 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
-          <Truck className="w-5 h-5" />
-          Deliveries Today
-        </h3>
-        <div className="space-y-3">
-          {[
-            { time: '09:30', item: 'Steel Sections (28t) — Tata Steel', location: 'Canary Wharf', status: 'arriving' },
-            { time: '10:00', item: 'Ready-Mix Concrete (120m³) — Hanson UK', location: 'Canary Wharf', status: 'arriving' },
-            { time: '14:00', item: 'Electrical Cable & Conduit — Apex Electrical', location: 'Manchester', status: 'pending' },
-          ].map((delivery, idx) => (
-            <div key={idx} className="bg-gray-800/50 rounded-lg p-3 flex justify-between items-start">
-              <div>
-                <p className="text-white font-semibold">{delivery.item}</p>
-                <p className="text-xs text-gray-400 mt-1">{delivery.location}</p>
-              </div>
-              <div className="text-right">
-                <p className="text-white font-mono">{delivery.time}</p>
-                <span className={`text-xs px-2 py-1 rounded-full inline-block mt-1 ${
-                  delivery.status === 'arriving' ? 'bg-green-500/20 text-green-400' : 'bg-yellow-500/20 text-yellow-400'
-                }`}>
-                  {delivery.status}
-                </span>
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      {/* Visitors Log */}
-      <div className="bg-gray-900 border border-gray-800 rounded-xl p-6">
-        <h3 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
-          <LogIn className="w-5 h-5" />
-          Visitors Log (This Week)
-        </h3>
+      {/* Alerts */}
+      {(openIncidents.length > 0 || faultedEquipment.length > 0) && (
         <div className="space-y-2">
-          {[
-            { name: 'Robert Sinclair', company: 'Meridian Properties', date: '2026-03-18', purpose: 'Site inspection' },
-            { name: 'Dr. Helen Shaw', company: 'NHS South Yorkshire', date: '2026-03-17', purpose: 'Pre-contract meeting' },
-            { name: 'Health & Safety Auditor', company: 'HSE', date: '2026-03-15', purpose: 'Annual compliance audit' },
-          ].map((visitor, idx) => (
-            <div key={idx} className="bg-gray-800/50 rounded-lg p-3 flex justify-between items-start">
-              <div>
-                <p className="text-white font-semibold">{visitor.name}</p>
-                <p className="text-xs text-gray-400">{visitor.company} — {visitor.purpose}</p>
-              </div>
-              <p className="text-sm text-gray-400">{new Date(visitor.date).toLocaleDateString()}</p>
+          {openIncidents.length > 0 && (
+            <div className="flex items-center gap-3 bg-red-50 border border-red-200 rounded-xl px-4 py-3">
+              <AlertTriangle size={16} className="text-red-600 flex-shrink-0"/>
+              <p className="text-sm text-red-700"><span className="font-semibold">{openIncidents.length} open safety incident{openIncidents.length>1?'s':''}</span> — requires immediate attention.</p>
             </div>
-          ))}
+          )}
+          {faultedEquipment.length > 0 && (
+            <div className="flex items-center gap-3 bg-orange-50 border border-orange-200 rounded-xl px-4 py-3">
+              <Truck size={16} className="text-orange-600 flex-shrink-0"/>
+              <p className="text-sm text-orange-700"><span className="font-semibold">{faultedEquipment.length} equipment fault{faultedEquipment.length>1?'s':''}</span> — out of service.</p>
+            </div>
+          )}
         </div>
-      </div>
+      )}
 
-      {/* Weather for All Sites */}
-      <div className="bg-gray-900 border border-gray-800 rounded-xl p-6">
-        <h3 className="text-lg font-bold text-white mb-4">Weather Conditions</h3>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          {['London', 'Manchester', 'Birmingham'].map((location, idx) => (
-            <div key={idx} className="bg-gray-800/50 rounded-lg p-4">
-              <p className="text-white font-semibold mb-2">{location}</p>
-              <p className="text-2xl font-bold text-blue-400">14°C</p>
-              <p className="text-sm text-gray-400">Partly Cloudy</p>
-              <p className="text-xs text-gray-500 mt-2">Wind: 12 mph | Humidity: 65%</p>
-            </div>
-          ))}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Active projects */}
+        <div className="bg-white rounded-xl border border-gray-200">
+          <div className="px-5 py-4 border-b border-gray-100 flex items-center gap-2">
+            <Building2 size={16} className="text-blue-500"/>
+            <h2 className="font-semibold text-gray-900 text-sm">Active Projects</h2>
+            <span className="text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full ml-auto">{activeProjects.length}</span>
+          </div>
+          <div className="divide-y divide-gray-50">
+            {activeProjects.length === 0 && <p className="p-5 text-sm text-gray-400 text-center">No active projects</p>}
+            {activeProjects.slice(0,6).map(p=>{
+              const progress = Number(p.progress??p.completion_percentage??0);
+              return (
+                <div key={String(p.id)} className="px-5 py-3">
+                  <div className="flex items-center justify-between mb-1.5">
+                    <p className="font-medium text-gray-900 text-sm truncate">{String(p.name??p.title??'Unnamed')}</p>
+                    <span className="text-xs text-gray-500 ml-2 flex-shrink-0">{progress}%</span>
+                  </div>
+                  <div className="h-1.5 bg-gray-100 rounded-full">
+                    <div className="h-full bg-gradient-to-r from-orange-400 to-orange-600 rounded-full" style={{width:`${Math.min(progress,100)}%`}}/>
+                  </div>
+                  {!!p.location && <p className="text-xs text-gray-400 mt-1 flex items-center gap-1"><MapPin size={9}/>{String(p.location)}</p>}
+                </div>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Today's daily reports */}
+        <div className="bg-white rounded-xl border border-gray-200">
+          <div className="px-5 py-4 border-b border-gray-100 flex items-center gap-2">
+            <ClipboardList size={16} className="text-green-500"/>
+            <h2 className="font-semibold text-gray-900 text-sm">Today's Site Reports</h2>
+            <span className="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded-full ml-auto">{todayReports.length}</span>
+          </div>
+          <div className="divide-y divide-gray-50">
+            {todayReports.length === 0 && <p className="p-5 text-sm text-gray-400 text-center">No reports submitted yet today</p>}
+            {todayReports.map(r=>(
+              <div key={String(r.id)} className="px-5 py-3">
+                <div className="flex items-center justify-between">
+                  <p className="text-sm text-gray-700 truncate">{String(r.work_carried_out??'No description')}</p>
+                  <span className="text-xs text-gray-500 ml-2 flex-shrink-0 flex items-center gap-1"><Users size={10}/>{String(r.workers_on_site??0)}</span>
+                </div>
+                <p className="text-xs text-gray-400 mt-0.5">{String(r.weather??'')} {r.submitted_by?`· ${r.submitted_by}`:''}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Open safety incidents */}
+        <div className="bg-white rounded-xl border border-gray-200">
+          <div className="px-5 py-4 border-b border-gray-100 flex items-center gap-2">
+            <AlertTriangle size={16} className="text-red-500"/>
+            <h2 className="font-semibold text-gray-900 text-sm">Open Safety Incidents</h2>
+            <span className={`text-xs px-2 py-0.5 rounded-full ml-auto font-medium ${openIncidents.length>0?'bg-red-100 text-red-700':'bg-gray-100 text-gray-600'}`}>{openIncidents.length}</span>
+          </div>
+          <div className="divide-y divide-gray-50">
+            {openIncidents.length === 0 && <p className="p-5 text-sm text-gray-400 text-center">No open incidents — site running safely ✓</p>}
+            {openIncidents.slice(0,5).map(i=>{
+              const sev = String(i.severity??'');
+              const sevColour = sev==='Critical'?'bg-red-100 text-red-700':sev==='Serious'?'bg-orange-100 text-orange-700':'bg-yellow-100 text-yellow-700';
+              return (
+                <div key={String(i.id)} className="px-5 py-3">
+                  <div className="flex items-center justify-between">
+                    <p className="text-sm text-gray-700 truncate">{String(i.title??i.description??'Incident')}</p>
+                    <span className={`text-xs px-2 py-0.5 rounded-full font-medium ml-2 flex-shrink-0 ${sevColour}`}>{sev}</span>
+                  </div>
+                  <p className="text-xs text-gray-400 mt-0.5">{String(i.date??i.incident_date??'')} {i.location?`· ${i.location}`:''}</p>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Equipment status */}
+        <div className="bg-white rounded-xl border border-gray-200">
+          <div className="px-5 py-4 border-b border-gray-100 flex items-center gap-2">
+            <Truck size={16} className="text-orange-500"/>
+            <h2 className="font-semibold text-gray-900 text-sm">Equipment Status</h2>
+            <span className="text-xs bg-orange-100 text-orange-700 px-2 py-0.5 rounded-full ml-auto">{equipment.length} total</span>
+          </div>
+          <div className="divide-y divide-gray-50">
+            {equipment.length === 0 && <p className="p-5 text-sm text-gray-400 text-center">No equipment registered</p>}
+            {equipment.slice(0,6).map(e=>{
+              const st = String(e.status??'');
+              const stColour = st==='In Use'?'bg-blue-100 text-blue-700':st==='Fault Reported'?'bg-red-100 text-red-700':st==='Under Service'?'bg-yellow-100 text-yellow-700':'bg-green-100 text-green-700';
+              return (
+                <div key={String(e.id)} className="px-5 py-3 flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium text-gray-800">{String(e.name??'Unknown')}</p>
+                    <p className="text-xs text-gray-400">{String(e.category??'')} · {String(e.ownership??'')}</p>
+                  </div>
+                  <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${stColour}`}>{st}</span>
+                </div>
+              );
+            })}
+          </div>
         </div>
       </div>
     </div>
