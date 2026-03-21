@@ -3,8 +3,17 @@ import { useState } from 'react';
 import { Plus, X, Loader2, Shield, AlertTriangle, CheckCircle2, RefreshCw, Search, Edit2, Trash2, FileText, AlertCircle } from 'lucide-react';
 import { useSafety } from '../../hooks/useData';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
-import { safetyTrendData } from '../../data/mockData';
 import clsx from 'clsx';
+
+const SAFETY_TREND_DATA = [
+  { month:'Sep', incidents:3, nearMisses:8,  toolboxTalks:12 },
+  { month:'Oct', incidents:2, nearMisses:6,  toolboxTalks:14 },
+  { month:'Nov', incidents:1, nearMisses:9,  toolboxTalks:13 },
+  { month:'Dec', incidents:0, nearMisses:5,  toolboxTalks:10 },
+  { month:'Jan', incidents:2, nearMisses:7,  toolboxTalks:15 },
+  { month:'Feb', incidents:1, nearMisses:4,  toolboxTalks:16 },
+  { month:'Mar', incidents:2, nearMisses:5,  toolboxTalks:12 },
+];
 
 type AnyRow = Record<string, unknown>;
 
@@ -54,6 +63,7 @@ export function Safety() {
   const incidents = raw as AnyRow[];
   const createM = useCreate(); const updateM = useUpdate(); const deleteM = useDelete();
 
+  const [categoryTab, setCategoryTab] = useState('all');
   const [filter, setFilter] = useState('all');
   const [search, setSearch] = useState('');
   const [showModal, setShowModal] = useState(false);
@@ -61,7 +71,24 @@ export function Safety() {
   const [form, setForm] = useState<FormData>(defaultForm);
   const [selectedId, setSelectedId] = useState<string | null>(null);
 
+  const TYPE_MAP: Record<string, string[]> = {
+    all:          [],
+    incidents:    ['incident','first_aid','riddor'],
+    near_misses:  ['near-miss','near_miss'],
+    hazards:      ['hazard','dangerous_occurrence','environmental'],
+    mewp:         ['mewp-check','mewp_check'],
+    toolbox:      ['toolbox-talk','toolbox_talk'],
+    riddor:       ['riddor'],
+  };
+
   const filtered = incidents
+    .filter(i => {
+      if (categoryTab !== 'all') {
+        const types = TYPE_MAP[categoryTab] ?? [];
+        return types.includes(String(i.type ?? ''));
+      }
+      return true;
+    })
     .filter(i => filter === 'all' || i.status === filter || i.severity === filter)
     .filter(i => !search || String(i.title).toLowerCase().includes(search.toLowerCase()) ||
       String(i.project).toLowerCase().includes(search.toLowerCase()));
@@ -135,12 +162,35 @@ export function Safety() {
         ))}
       </div>
 
+      {/* Category sub-nav */}
+      <div className="flex gap-1 bg-gray-900 border border-gray-800 rounded-xl p-1 overflow-x-auto">
+        {[
+          {id:'all',        label:'All Records'},
+          {id:'incidents',  label:'Incidents'},
+          {id:'near_misses',label:'Near Misses'},
+          {id:'hazards',    label:'Hazards'},
+          {id:'mewp',       label:'MEWP Checks'},
+          {id:'toolbox',    label:'Toolbox Talks'},
+          {id:'riddor',     label:'RIDDOR'},
+        ].map(t => (
+          <button key={t.id} onClick={() => setCategoryTab(t.id)}
+            className={clsx('px-3 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-all',
+              categoryTab===t.id ? 'bg-red-600 text-white' : 'text-gray-400 hover:text-white hover:bg-gray-800')}>
+            {t.label}
+            <span className={clsx('ml-1.5 text-xs', categoryTab===t.id ? 'text-red-200' : 'text-gray-600')}>
+              {t.id==='all' ? incidents.length
+                : incidents.filter(i => (TYPE_MAP[t.id]??[]).includes(String(i.type??''))).length}
+            </span>
+          </button>
+        ))}
+      </div>
+
       {/* Trend Chart */}
       <div className="rounded-2xl border border-gray-800 bg-gray-900 p-5">
         <h3 className="text-sm font-bold text-white mb-0.5">7-Month Safety Trend</h3>
         <p className="text-xs text-gray-500 mb-4">Incidents, near misses and toolbox talks</p>
         <ResponsiveContainer width="100%" height={200}>
-          <LineChart data={safetyTrendData}>
+          <LineChart data={SAFETY_TREND_DATA}>
             <CartesianGrid strokeDasharray="3 3" stroke="#1f2937" vertical={false} />
             <XAxis dataKey="month" stroke="#6b7280" tick={{ fontSize: 11 }} />
             <YAxis stroke="#6b7280" tick={{ fontSize: 11 }} />
