@@ -3,6 +3,7 @@
 import { Card, CardHeader, CardTitle, CardContent, CardFooter } from '@/components/ui/card'
 import { Table, TableHeader, TableBody, TableRow, TableCell, TableHead } from '@/components/ui/table'
 import { Button } from '@/components/ui/button'
+import { Badge } from '@/components/ui/badge'
 
 // Project type definition
 type Project = {
@@ -54,21 +55,17 @@ const mockProjects: Project[] = [
   },
 ]
 
-// Status badge component
-const StatusBadge = ({ status }: { status: Project['status'] }) => {
-  const variants = {
-    PLANNING: 'bg-blue-100 text-blue-800',
-    ACTIVE: 'bg-green-100 text-green-800',
-    ON_HOLD: 'bg-yellow-100 text-yellow-800',
-    COMPLETED: 'bg-purple-100 text-purple-800',
-    CANCELLED: 'bg-red-100 text-red-800',
+// Status badge using existing Badge component
+const getStatusVariant = (status: Project['status']) => {
+  switch (status) {
+    case 'PLANNING': return 'info';
+    case 'ACTIVE': return 'success';
+    case 'ON_HOLD': return 'warning';
+    case 'COMPLETED': return 'default'; // Using default variant for completed
+    case 'CANCELLED': return 'destructive';
+    default: return 'secondary';
   }
-  return (
-    <span className={`px-2 py-1 text-xs rounded-full font-medium ${variants[status]}`}>
-      {status}
-    </span>
-  )
-}
+};
 
 // Main ProjectsPage component
 export default function ProjectsPage() {
@@ -122,7 +119,9 @@ export default function ProjectsPage() {
                   </TableCell>
                   <TableCell>{project.type}</TableCell>
                   <TableCell>
-                    <StatusBadge status={project.status} />
+                    <Badge variant={getStatusVariant(project.status)} className="px-2 py-1 text-xs rounded-full font-medium">
+                      {project.status}
+                    </Badge>
                   </TableCell>
                   <TableCell>${project.budget.toLocaleString()}</TableCell>
                   <TableCell>
