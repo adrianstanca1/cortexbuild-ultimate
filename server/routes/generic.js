@@ -20,8 +20,8 @@ const ALLOWED_COLUMNS = {
   rams:             ['title','project_id','project','activity','version','status','created_by','approved_by','review_date','hazards','method_statement','ppe','signatures','required'],
   cis_returns:      ['contractor','utr','period','gross_payment','materials_cost','labour_net','cis_deduction','status','verification_status'],
   tenders:          ['title','client','value','deadline','status','probability','type','location','ai_score','notes'],
-  contacts:         ['name','company','role','email','phone','type','value','last_contact','status','projects'],
-  risk_register:    ['title','project_id','project','category','likelihood','impact','owner','status','mitigation','review_date'],
+  contacts:         ['name','company','role','email','phone','type','value','last_contact','status','projects','address','website','notes','rating'],
+  risk_register:    ['title','project_id','project','category','likelihood','impact','risk_score','owner','status','mitigation','review_date','notes','contingency','description'],
   purchase_orders:  ['number','supplier','project_id','project','amount','status','order_date','delivery_date','items','notes'],
   daily_reports:    ['project_id','project','date','prepared_by','weather','temperature','workers_on_site','activities','materials','equipment','issues','photos','progress'],
 };

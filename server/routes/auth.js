@@ -184,4 +184,50 @@ router.delete('/users/:id', authMiddleware, async (req, res) => {
   }
 });
 
+// PUT /api/auth/avatar
+router.put('/avatar', authMiddleware, async (req, res) => {
+  const { avatar } = req.body;
+  if (!avatar) return res.status(400).json({ message: 'Avatar URL required' });
+  try {
+    const { rows } = await pool.query(
+      'UPDATE users SET avatar=$1 WHERE id=$2 RETURNING id,name,email,role,company,phone,avatar',
+      [avatar, req.user.id]
+    );
+    res.json(rows[0]);
+  } catch (err) {
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
+// GET /api/auth/settings — get all user settings
+router.get('/settings', authMiddleware, async (req, res) => {
+  try {
+    const { rows } = await pool.query(
+      'SELECT key, value FROM app_settings WHERE user_id=$1',
+      [req.user.id]
+    );
+    const settings = Object.fromEntries(rows.map(r => [r.key, r.value]));
+    res.json(settings);
+  } catch (err) {
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
+// PUT /api/auth/settings — upsert a setting key
+router.put('/settings', authMiddleware, async (req, res) => {
+  const { key, value } = req.body;
+  if (!key) return res.status(400).json({ message: 'key required' });
+  try {
+    await pool.query(
+      `INSERT INTO app_settings (user_id, key, value)
+       VALUES ($1, $2, $3::jsonb)
+       ON CONFLICT (user_id, key) DO UPDATE SET value=$3::jsonb, updated_at=now()`,
+      [req.user.id, key, JSON.stringify(value)]
+    );
+    res.json({ key, value });
+  } catch (err) {
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
 module.exports = router;

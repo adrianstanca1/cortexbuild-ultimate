@@ -30,6 +30,17 @@ function Toggle({ on, onToggle }: { on: boolean; onToggle: () => void }) {
 export function Settings() {
   const [tab, setTab] = useState<Tab>('company');
 
+  // ── Settings API helpers ────────────────────────────────────────────────────
+  async function saveSetting(key: string, value: unknown) {
+    const token = getToken();
+    const res = await fetch(`${API_BASE}/auth/settings`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+      body: JSON.stringify({ key, value }),
+    });
+    if (!res.ok) throw new Error('Failed to save setting');
+  }
+
   // ── Company state ──────────────────────────────────────────────────────────
   const [company, setCompany] = useState({
     name:'CortexBuild Ltd', reg:'12345678', vat:'GB123456789', utr:'1234567890',
@@ -211,7 +222,7 @@ export function Settings() {
             </div>
           </div>
 
-          <button onClick={()=>toast.success('Company settings saved')}
+          <button onClick={async()=>{try{await saveSetting('company',company);toast.success('Company settings saved');}catch{toast.error('Failed to save');}}}
             className="flex items-center gap-2 px-5 py-2.5 bg-blue-600 hover:bg-blue-700 rounded-lg text-white text-sm font-semibold transition-colors">
             <Save className="w-4 h-4"/>Save Company Settings
           </button>
@@ -427,7 +438,7 @@ export function Settings() {
               </div>
             </div>
           ))}
-          <button onClick={()=>toast.success('Notification preferences saved')}
+          <button onClick={async()=>{try{await saveSetting('notifications',notifs);toast.success('Notification preferences saved');}catch{toast.error('Failed to save');}}}
             className="flex items-center gap-2 px-5 py-2.5 bg-blue-600 hover:bg-blue-700 rounded-lg text-white text-sm font-semibold transition-colors">
             <Save className="w-4 h-4"/>Save Preferences
           </button>

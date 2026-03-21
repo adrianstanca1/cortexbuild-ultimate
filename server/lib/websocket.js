@@ -38,7 +38,7 @@ function initWebSocket(server) {
       return;
     }
 
-    const userId = decodeToken(token).sub;
+    const userId = decodeToken(token).id;
     const userRooms = new Set();
 
     // Register client
