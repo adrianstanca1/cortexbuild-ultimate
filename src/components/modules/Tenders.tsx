@@ -27,6 +27,7 @@ export function Tenders() {
   const updateMutation = useUpdate();
   const deleteMutation = useDelete();
 
+  const [stageGroup, setStageGroup] = useState<'all'|'active'|'won'|'lost'>('all');
   const [search, setSearch] = useState('');
   const [stageFilter, setStageFilter] = useState('All');
   const [view, setView] = useState<'pipeline'|'list'>('pipeline');
@@ -34,12 +35,21 @@ export function Tenders() {
   const [editing, setEditing] = useState<AnyRow | null>(null);
   const [form, setForm] = useState({ ...emptyForm });
 
+  const GROUP_STAGES: Record<string, string[]> = {
+    all: [],
+    active: ['Identified','Pre-Qualification','ITT Issued','Pricing','Submitted','Interview'],
+    won: ['Won'],
+    lost: ['Lost','Withdrawn'],
+  };
+
   const filtered = tenders.filter(t => {
     const name = String(t.project_name??'').toLowerCase();
     const client = String(t.client??'').toLowerCase();
     const matchSearch = name.includes(search.toLowerCase()) || client.includes(search.toLowerCase());
     const matchStage = stageFilter === 'All' || t.stage === stageFilter;
-    return matchSearch && matchStage;
+    const groupStages = GROUP_STAGES[stageGroup] ?? [];
+    const matchGroup = groupStages.length === 0 || groupStages.includes(String(t.stage??''));
+    return matchSearch && matchStage && matchGroup;
   });
 
   const totalValue = tenders.reduce((s,t)=>s+Number(t.value??0),0);
@@ -107,6 +117,26 @@ export function Tenders() {
               <div><p className="text-xs text-gray-500">{kpi.label}</p><p className="text-xl font-bold text-gray-900">{kpi.value}</p></div>
             </div>
           </div>
+        ))}
+      </div>
+
+      {/* Stage group tabs */}
+      <div className="flex gap-1 border-b border-gray-200">
+        {([
+          { key:'all',    label:'All Tenders',  count:tenders.length },
+          { key:'active', label:'In Progress',  count:tenders.filter(t=>GROUP_STAGES.active.includes(String(t.stage??''))).length },
+          { key:'won',    label:'Won',           count:tenders.filter(t=>t.stage==='Won').length },
+          { key:'lost',   label:'Lost / Withdrawn', count:tenders.filter(t=>['Lost','Withdrawn'].includes(String(t.stage??''))).length },
+        ] as const).map(tab=>(
+          <button key={tab.key} onClick={()=>{ setStageGroup(tab.key); setStageFilter('All'); }}
+            className={`flex items-center gap-2 px-4 py-2.5 text-sm font-medium border-b-2 -mb-px transition-colors ${stageGroup===tab.key?'border-orange-600 text-orange-600':'border-transparent text-gray-500 hover:text-gray-700'}`}>
+            {tab.label}
+            <span className={`text-xs px-1.5 py-0.5 rounded-full ${
+              tab.key==='won' ? 'bg-green-100 text-green-700' :
+              tab.key==='lost' ? 'bg-red-100 text-red-700' :
+              'bg-gray-100 text-gray-600'
+            }`}>{tab.count}</span>
+          </button>
         ))}
       </div>
 

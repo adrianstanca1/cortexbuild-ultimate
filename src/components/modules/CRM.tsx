@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { UserCheck, Plus, Search, Phone, Mail, MapPin, Star, Edit2, Trash2, X, ChevronDown, ChevronUp, Building2 } from 'lucide-react';
+import { UserCheck, Plus, Search, Phone, Mail, MapPin, Star, Edit2, Trash2, X, ChevronDown, ChevronUp, Building2, TrendingUp, Users } from 'lucide-react';
 import { useContacts } from '../../hooks/useData';
 import { toast } from 'sonner';
 
@@ -30,6 +30,7 @@ export function CRM() {
   const updateMutation = useUpdate();
   const deleteMutation = useDelete();
 
+  const [subTab, setSubTab] = useState<'contacts'|'pipeline'|'companies'>('contacts');
   const [search, setSearch] = useState('');
   const [typeFilter, setTypeFilter] = useState('All');
   const [statusFilter, setStatusFilter] = useState('All');
@@ -51,6 +52,24 @@ export function CRM() {
   const consultantCount = contacts.filter(c=>c.type==='Consultant').length;
   const activeCount = contacts.filter(c=>c.status==='Active').length;
   const prospectCount = contacts.filter(c=>c.status==='Prospect').length;
+
+  // Pipeline data
+  const pipeline = CONTACT_TYPES.map(type => ({
+    type,
+    contacts: contacts.filter(c=>c.type===type),
+    count: contacts.filter(c=>c.type===type).length,
+  })).filter(g=>g.count>0);
+
+  // Companies grouping
+  const companiesMap = new Map<string, AnyRow[]>();
+  contacts.forEach(c => {
+    const co = String(c.company||'(No Company)');
+    if (!companiesMap.has(co)) companiesMap.set(co, []);
+    companiesMap.get(co)!.push(c);
+  });
+  const companies = Array.from(companiesMap.entries())
+    .map(([name, members]) => ({ name, members, count: members.length }))
+    .sort((a,b) => b.count - a.count);
 
   function openCreate() { setEditing(null); setForm({ ...emptyForm }); setShowModal(true); }
   function openEdit(c: AnyRow) {
@@ -100,7 +119,22 @@ export function CRM() {
         ))}
       </div>
 
-      <div className="flex flex-wrap gap-3 items-center bg-white rounded-xl border border-gray-200 p-4">
+      {/* Sub-tab nav */}
+      <div className="flex gap-1 border-b border-gray-200">
+        {([
+          { key:'contacts', label:'All Contacts', icon:UserCheck, count:contacts.length },
+          { key:'pipeline', label:'By Type',      icon:TrendingUp, count:null },
+          { key:'companies',label:'Companies',    icon:Users,      count:companiesMap.size },
+        ] as const).map(t=>(
+          <button key={t.key} onClick={()=>setSubTab(t.key)}
+            className={`flex items-center gap-2 px-4 py-2.5 text-sm font-medium border-b-2 -mb-px transition-colors ${subTab===t.key?'border-orange-600 text-orange-600':'border-transparent text-gray-500 hover:text-gray-700'}`}>
+            <t.icon size={14}/>{t.label}
+            {t.count!==null && <span className="text-xs px-1.5 py-0.5 rounded-full bg-gray-100 text-gray-600">{t.count}</span>}
+          </button>
+        ))}
+      </div>
+
+      {subTab==='contacts' && <div className="flex flex-wrap gap-3 items-center bg-white rounded-xl border border-gray-200 p-4">
         <div className="relative flex-1 min-w-48">
           <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"/>
           <input value={search} onChange={e=>setSearch(e.target.value)} placeholder="Search name or company…" className="w-full pl-9 pr-4 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"/>
@@ -112,11 +146,84 @@ export function CRM() {
           {['All',...STATUS_OPTIONS].map(s=><option key={s}>{s}</option>)}
         </select>
         <span className="text-sm text-gray-500 ml-auto">{filtered.length} contacts</span>
-      </div>
+      </div>}
 
-      {isLoading ? (
+      {/* ── BY TYPE tab ───────────────────────────────────────── */}
+      {subTab==='pipeline' && (
+        <div className="space-y-4">
+          {pipeline.map(group=>(
+            <div key={group.type} className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+              <div className="flex items-center justify-between px-4 py-3 bg-gray-50 border-b border-gray-200">
+                <div className="flex items-center gap-2">
+                  <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${typeColour[group.type]??'bg-gray-100 text-gray-700'}`}>{group.type}</span>
+                  <span className="text-sm font-semibold text-gray-700">{group.count} contact{group.count!==1?'s':''}</span>
+                </div>
+              </div>
+              <div className="divide-y divide-gray-50">
+                {group.contacts.map(c=>(
+                  <div key={String(c.id??'')} className="flex items-center gap-3 px-4 py-2.5 hover:bg-gray-50">
+                    <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-blue-400 to-indigo-600 flex items-center justify-center text-white text-xs font-bold flex-shrink-0">
+                      {String(c.name??'?').split(' ').map((n:string)=>n[0]).slice(0,2).join('')}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium text-gray-900 truncate">{String(c.name??'')}</p>
+                      {!!c.company && <p className="text-xs text-gray-500 truncate">{String(c.company)}</p>}
+                    </div>
+                    <div className="hidden sm:flex items-center gap-3 text-xs text-gray-500">
+                      {!!c.email && <a href={`mailto:${c.email}`} className="flex items-center gap-1 text-blue-600 hover:underline"><Mail size={11}/>{String(c.email)}</a>}
+                      {!!c.phone && <a href={`tel:${c.phone}`} className="flex items-center gap-1 text-blue-600 hover:underline"><Phone size={11}/>{String(c.phone)}</a>}
+                    </div>
+                    <span className={`text-xs px-2 py-0.5 rounded-full font-medium flex-shrink-0 ${statusColour[String(c.status??'')] ?? 'bg-gray-100 text-gray-600'}`}>{String(c.status??'')}</span>
+                    <button onClick={()=>openEdit(c)} className="p-1 text-gray-400 hover:text-blue-600 rounded flex-shrink-0"><Edit2 size={13}/></button>
+                  </div>
+                ))}
+              </div>
+            </div>
+          ))}
+          {pipeline.length===0 && <div className="text-center py-16 text-gray-400 bg-white rounded-xl border border-gray-200"><TrendingUp size={40} className="mx-auto mb-3 opacity-30"/><p>No contacts yet</p></div>}
+        </div>
+      )}
+
+      {/* ── COMPANIES tab ─────────────────────────────────────── */}
+      {subTab==='companies' && (
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+          {companies.length===0 && (
+            <div className="col-span-3 text-center py-16 text-gray-400 bg-white rounded-xl border border-gray-200"><Building2 size={40} className="mx-auto mb-3 opacity-30"/><p>No companies found</p></div>
+          )}
+          {companies.map(co=>(
+            <div key={co.name} className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+              <div className="flex items-center gap-3 px-4 py-3 border-b border-gray-100">
+                <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-indigo-400 to-purple-600 flex items-center justify-center text-white font-bold text-sm flex-shrink-0">
+                  {co.name.charAt(0)}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="font-semibold text-gray-900 truncate">{co.name}</p>
+                  <p className="text-xs text-gray-500">{co.count} contact{co.count!==1?'s':''}</p>
+                </div>
+              </div>
+              <div className="divide-y divide-gray-50">
+                {co.members.map(c=>(
+                  <div key={String(c.id??'')} className="flex items-center gap-3 px-4 py-2 hover:bg-gray-50">
+                    <div className="w-6 h-6 rounded-full bg-gradient-to-br from-blue-300 to-blue-500 flex items-center justify-center text-white text-xs font-bold flex-shrink-0">
+                      {String(c.name??'?')[0]}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm text-gray-900 truncate">{String(c.name??'')}</p>
+                    </div>
+                    <span className={`text-xs px-1.5 py-0.5 rounded-full font-medium flex-shrink-0 ${typeColour[String(c.type??'')] ?? 'bg-gray-100 text-gray-700'}`}>{String(c.type??'')}</span>
+                    <button onClick={()=>openEdit(c)} className="p-1 text-gray-400 hover:text-blue-600 rounded flex-shrink-0"><Edit2 size={12}/></button>
+                  </div>
+                ))}
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* ── ALL CONTACTS tab ──────────────────────────────────── */}
+      {subTab==='contacts' && isLoading ? (
         <div className="flex justify-center py-20"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-600"/></div>
-      ) : (
+      ) : subTab==='contacts' && (
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
           {filtered.length === 0 && (
             <div className="col-span-3 text-center py-16 text-gray-400 bg-white rounded-xl border border-gray-200">

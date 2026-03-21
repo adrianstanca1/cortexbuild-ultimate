@@ -24,6 +24,7 @@ export function PlantEquipment() {
   const updateMutation = useUpdate();
   const deleteMutation = useDelete();
 
+  const [subTab, setSubTab] = useState<'fleet'|'alerts'|'costs'>('fleet');
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('All');
   const [categoryFilter, setCategoryFilter] = useState('All');
@@ -83,6 +84,18 @@ export function PlantEquipment() {
 
   const uniqueCategories = ['All',...Array.from(new Set(equipment.map(e=>String(e.category??'')).filter(Boolean)))];
 
+  // Maintenance alerts: service/inspection overdue or within 14 days + faults
+  const maintenanceAlerts = equipment.filter(e => {
+    if (e.status === 'Fault Reported') return true;
+    const svc = e.service_due ? (new Date(String(e.service_due)).getTime()-Date.now())/86400000 : null;
+    const ins = e.inspection_due ? (new Date(String(e.inspection_due)).getTime()-Date.now())/86400000 : null;
+    return (svc !== null && svc <= 14) || (ins !== null && ins <= 14);
+  });
+
+  // Hire costs
+  const hiredEquipment = equipment.filter(e=>e.ownership==='Hired');
+  const totalHireDaily = hiredEquipment.reduce((s,e)=>s+Number(e.daily_cost??0),0);
+
   return (
     <div className="p-6 space-y-6">
       <div className="flex items-center justify-between">
@@ -119,7 +132,129 @@ export function PlantEquipment() {
         ))}
       </div>
 
-      <div className="flex flex-wrap gap-3 items-center bg-white rounded-xl border border-gray-200 p-4">
+      {/* Sub-tab nav */}
+      <div className="flex gap-1 border-b border-gray-200">
+        {([
+          { key:'fleet',  label:'Fleet',              icon:Truck,          count:equipment.length },
+          { key:'alerts', label:'Maintenance Alerts',  icon:Wrench,         count:maintenanceAlerts.length },
+          { key:'costs',  label:'Hire Costs',          icon:PoundSterling,  count:null },
+        ] as const).map(t=>(
+          <button key={t.key} onClick={()=>setSubTab(t.key)}
+            className={`flex items-center gap-2 px-4 py-2.5 text-sm font-medium border-b-2 -mb-px transition-colors ${subTab===t.key?'border-orange-600 text-orange-600':'border-transparent text-gray-500 hover:text-gray-700'}`}>
+            <t.icon size={14}/>{t.label}
+            {t.count!==null && <span className={`text-xs px-1.5 py-0.5 rounded-full ${t.key==='alerts'&&t.count>0?'bg-red-100 text-red-700':'bg-gray-100 text-gray-600'}`}>{t.count}</span>}
+          </button>
+        ))}
+      </div>
+
+      {/* ── MAINTENANCE ALERTS tab ─────────────────────────── */}
+      {subTab==='alerts' && (
+        <div className="space-y-4">
+          {maintenanceAlerts.length===0 ? (
+            <div className="text-center py-16 text-gray-400 bg-white rounded-xl border border-gray-200">
+              <CheckCircle size={40} className="mx-auto mb-3 opacity-30 text-green-500"/>
+              <p className="font-medium">All equipment services up to date</p>
+              <p className="text-sm mt-1">No maintenance alerts in the next 14 days</p>
+            </div>
+          ) : (
+            <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+              <div className="px-4 py-3 bg-amber-50 border-b border-amber-100 flex items-center gap-2">
+                <Wrench size={16} className="text-amber-600"/>
+                <span className="text-sm font-medium text-amber-800">{maintenanceAlerts.length} item{maintenanceAlerts.length!==1?'s':''} need attention</span>
+              </div>
+              <table className="w-full text-sm">
+                <thead className="bg-gray-50 border-b border-gray-200">
+                  <tr>{['Equipment','Category','Service Due','Inspection Due','Status','Action'].map(h=><th key={h} className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">{h}</th>)}</tr>
+                </thead>
+                <tbody className="divide-y divide-gray-100">
+                  {maintenanceAlerts.map(e => {
+                    const svcDays = e.service_due ? Math.round((new Date(String(e.service_due)).getTime()-Date.now())/86400000) : null;
+                    const insDays = e.inspection_due ? Math.round((new Date(String(e.inspection_due)).getTime()-Date.now())/86400000) : null;
+                    return (
+                      <tr key={String(e.id??'')} className="hover:bg-gray-50">
+                        <td className="px-4 py-3">
+                          <p className="font-medium text-gray-900">{String(e.name??'')}</p>
+                          {!!e.serial_number && <p className="text-xs text-gray-500">S/N: {String(e.serial_number)}</p>}
+                        </td>
+                        <td className="px-4 py-3 text-gray-600">{String(e.category??'—')}</td>
+                        <td className="px-4 py-3">
+                          {e.service_due ? <span className={svcDays!==null&&svcDays<0?'text-red-600 font-semibold':svcDays!==null&&svcDays<=7?'text-amber-600 font-medium':'text-gray-700'}>{String(e.service_due)}{svcDays!==null&&svcDays<0?' (Overdue)':svcDays!==null?` (${svcDays}d)`:''}</span> : <span className="text-gray-400">—</span>}
+                        </td>
+                        <td className="px-4 py-3">
+                          {e.inspection_due ? <span className={insDays!==null&&insDays<0?'text-red-600 font-semibold':insDays!==null&&insDays<=7?'text-amber-600 font-medium':'text-gray-700'}>{String(e.inspection_due)}{insDays!==null&&insDays<0?' (Overdue)':insDays!==null?` (${insDays}d)`:''}</span> : <span className="text-gray-400">—</span>}
+                        </td>
+                        <td className="px-4 py-3"><span className={`text-xs px-2 py-1 rounded-full font-medium ${statusColour[String(e.status??'')] ?? 'bg-gray-100 text-gray-700'}`}>{String(e.status??'')}</span></td>
+                        <td className="px-4 py-3"><button onClick={()=>openEdit(e)} className="text-xs px-3 py-1 bg-orange-50 text-orange-700 rounded-lg hover:bg-orange-100 font-medium">Update</button></td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* ── HIRE COSTS tab ─────────────────────────────────── */}
+      {subTab==='costs' && (
+        <div className="space-y-6">
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+            {[
+              { label:'Hired Items', value:hiredEquipment.length, sub:'Active hire agreements' },
+              { label:'Daily Hire Cost', value:`£${totalHireDaily.toLocaleString()}`, sub:'All active hires' },
+              { label:'Monthly Projection', value:`£${(totalHireDaily*21).toLocaleString()}`, sub:'21 working days' },
+            ].map(c=>(
+              <div key={c.label} className="bg-white rounded-xl border border-gray-200 p-5">
+                <p className="text-sm text-gray-500 mb-1">{c.label}</p>
+                <p className="text-2xl font-bold text-gray-900">{c.value}</p>
+                <p className="text-xs text-gray-400 mt-0.5">{c.sub}</p>
+              </div>
+            ))}
+          </div>
+          {hiredEquipment.length===0 ? (
+            <div className="text-center py-12 text-gray-400 bg-white rounded-xl border border-gray-200"><PoundSterling size={32} className="mx-auto mb-2 opacity-30"/><p>No hired equipment on record</p></div>
+          ) : (
+            <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+              <table className="w-full text-sm">
+                <thead className="bg-gray-50 border-b border-gray-200">
+                  <tr>{['Equipment','Category','Supplier','Daily Rate','Weekly','Monthly','Status',''].map(h=><th key={h} className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">{h}</th>)}</tr>
+                </thead>
+                <tbody className="divide-y divide-gray-100">
+                  {hiredEquipment.sort((a,b)=>Number(b.daily_cost??0)-Number(a.daily_cost??0)).map(e=>{
+                    const d = Number(e.daily_cost??0);
+                    return (
+                      <tr key={String(e.id??'')} className="hover:bg-gray-50">
+                        <td className="px-4 py-3">
+                          <p className="font-medium text-gray-900">{String(e.name??'')}</p>
+                          {!!e.serial_number && <p className="text-xs text-gray-500">S/N: {String(e.serial_number)}</p>}
+                        </td>
+                        <td className="px-4 py-3 text-gray-600">{String(e.category??'—')}</td>
+                        <td className="px-4 py-3 text-gray-600">{String(e.supplier??'—')}</td>
+                        <td className="px-4 py-3 font-medium text-gray-900">£{d.toLocaleString()}</td>
+                        <td className="px-4 py-3 text-gray-700">£{(d*5).toLocaleString()}</td>
+                        <td className="px-4 py-3 text-gray-700">£{(d*21).toLocaleString()}</td>
+                        <td className="px-4 py-3"><span className={`text-xs px-2 py-1 rounded-full font-medium ${statusColour[String(e.status??'')] ?? 'bg-gray-100 text-gray-700'}`}>{String(e.status??'')}</span></td>
+                        <td className="px-4 py-3"><button onClick={()=>openEdit(e)} className="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded"><Edit2 size={13}/></button></td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+                <tfoot className="bg-gray-50 border-t border-gray-200">
+                  <tr>
+                    <td colSpan={3} className="px-4 py-3 font-semibold text-gray-900">Total ({hiredEquipment.length} items)</td>
+                    <td className="px-4 py-3 font-semibold text-gray-900">£{totalHireDaily.toLocaleString()}</td>
+                    <td className="px-4 py-3 font-semibold text-gray-900">£{(totalHireDaily*5).toLocaleString()}</td>
+                    <td className="px-4 py-3 font-semibold text-gray-900">£{(totalHireDaily*21).toLocaleString()}</td>
+                    <td colSpan={2}/>
+                  </tr>
+                </tfoot>
+              </table>
+            </div>
+          )}
+        </div>
+      )}
+
+      {subTab==='fleet' && <div className="flex flex-wrap gap-3 items-center bg-white rounded-xl border border-gray-200 p-4">
         <div className="relative flex-1 min-w-48">
           <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"/>
           <input value={search} onChange={e=>setSearch(e.target.value)} placeholder="Search equipment…" className="w-full pl-9 pr-4 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"/>
@@ -131,9 +266,9 @@ export function PlantEquipment() {
           {['All',...STATUS_OPTIONS].map(s=><option key={s}>{s}</option>)}
         </select>
         <span className="text-sm text-gray-500 ml-auto">{filtered.length} items</span>
-      </div>
+      </div>}
 
-      {isLoading ? (
+      {subTab==='fleet' && (isLoading ? (
         <div className="flex justify-center py-20"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-600"/></div>
       ) : (
         <div className="bg-white rounded-xl border border-gray-200 divide-y divide-gray-100">
@@ -182,7 +317,7 @@ export function PlantEquipment() {
             );
           })}
         </div>
-      )}
+      ))}
 
       {showModal && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">

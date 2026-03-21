@@ -37,6 +37,7 @@ export function RiskRegister() {
   const updateMutation = useUpdate();
   const deleteMutation = useDelete();
 
+  const [subTab, setSubTab] = useState<'register'|'matrix'|'actions'>('register');
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('All');
   const [categoryFilter, setCategoryFilter] = useState('All');
@@ -125,7 +126,103 @@ export function RiskRegister() {
         ))}
       </div>
 
-      <div className="flex flex-wrap gap-3 items-center bg-white rounded-xl border border-gray-200 p-4">
+      {/* Sub-tab nav */}
+      <div className="flex gap-1 border-b border-gray-200">
+        {([
+          { key:'register', label:'Risk Register', icon:AlertTriangle, count:risks.length },
+          { key:'matrix',   label:'Risk Matrix',   icon:ShieldCheck,   count:null },
+          { key:'actions',  label:'Open Actions',  icon:AlertOctagon,  count:openCount },
+        ] as const).map(t=>(
+          <button key={t.key} onClick={()=>setSubTab(t.key)}
+            className={`flex items-center gap-2 px-4 py-2.5 text-sm font-medium border-b-2 -mb-px transition-colors ${subTab===t.key?'border-orange-600 text-orange-600':'border-transparent text-gray-500 hover:text-gray-700'}`}>
+            <t.icon size={14}/>{t.label}
+            {t.count!==null && <span className={`text-xs px-1.5 py-0.5 rounded-full ${t.key==='actions'&&t.count>0?'bg-red-100 text-red-700':'bg-gray-100 text-gray-600'}`}>{t.count}</span>}
+          </button>
+        ))}
+      </div>
+
+      {/* ── RISK MATRIX tab ─────────────────────────────────── */}
+      {subTab==='matrix' && (
+        <div className="bg-white rounded-xl border border-gray-200 p-6 overflow-x-auto">
+          <h3 className="font-semibold text-gray-900 mb-4">5×5 Risk Matrix</h3>
+          <div className="text-xs text-gray-500 mb-2 ml-16">← Impact →</div>
+          <div className="flex gap-2">
+            <div className="flex flex-col justify-around text-xs text-gray-500 text-right w-14 flex-shrink-0 mb-1">
+              {[...LIKELIHOOD].reverse().map(l=><div key={l} className="h-12 flex items-center justify-end pr-2">{l}</div>)}
+            </div>
+            <div className="flex flex-col gap-1 flex-1 min-w-0">
+              <div className="flex gap-1 mb-1">
+                {IMPACT.map(imp=><div key={imp} className="flex-1 text-center text-xs text-gray-500 truncate">{imp}</div>)}
+              </div>
+              {[...LIKELIHOOD].reverse().map(lik=>(
+                <div key={lik} className="flex gap-1">
+                  {IMPACT.map(imp=>{
+                    const score = (RATINGS[lik]??1)*(RATINGS[imp]??1);
+                    const level = riskLevel(score);
+                    const cellRisks = risks.filter(r=>r.likelihood===lik&&r.impact===imp&&r.status==='Open');
+                    return (
+                      <div key={imp} className={`flex-1 h-12 rounded ${level.bg} flex flex-col items-center justify-center cursor-default relative group`} title={`${lik}×${imp}: Score ${score} (${level.label})`}>
+                        <span className={`text-xs font-bold ${level.colour}`}>{score}</span>
+                        {cellRisks.length>0 && (
+                          <span className="absolute -top-1 -right-1 w-4 h-4 bg-gray-800 text-white text-xs rounded-full flex items-center justify-center font-bold">{cellRisks.length}</span>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              ))}
+            </div>
+          </div>
+          <div className="flex gap-4 mt-4 text-xs">
+            {[{label:'Low (1–3)',colour:'bg-green-100 text-green-700'},{label:'Medium (4–8)',colour:'bg-yellow-100 text-yellow-700'},{label:'High (9–14)',colour:'bg-orange-100 text-orange-700'},{label:'Critical (15–25)',colour:'bg-red-100 text-red-700'}].map(l=>(
+              <div key={l.label} className="flex items-center gap-1.5"><span className={`w-3 h-3 rounded ${l.colour}`}/><span className="text-gray-600">{l.label}</span></div>
+            ))}
+            <div className="flex items-center gap-1.5 ml-auto"><span className="w-4 h-4 bg-gray-800 text-white text-xs rounded-full flex items-center justify-center">N</span><span className="text-gray-600">open risks in cell</span></div>
+          </div>
+        </div>
+      )}
+
+      {/* ── OPEN ACTIONS tab ────────────────────────────────── */}
+      {subTab==='actions' && (
+        <div className="space-y-3">
+          {risks.filter(r=>r.status==='Open').length===0 ? (
+            <div className="text-center py-16 text-gray-400 bg-white rounded-xl border border-gray-200">
+              <ShieldCheck size={40} className="mx-auto mb-3 opacity-30 text-green-500"/>
+              <p className="font-medium">No open risks</p>
+            </div>
+          ) : [...risks.filter(r=>r.status==='Open')].sort((a,b)=>riskScore(String(b.likelihood??''),String(b.impact??''))-riskScore(String(a.likelihood??''),String(a.impact??''))).map(r=>{
+            const score = riskScore(String(r.likelihood??''),String(r.impact??''));
+            const level = riskLevel(score);
+            return (
+              <div key={String(r.id??'')} className="bg-white rounded-xl border border-gray-200 p-4">
+                <div className="flex items-start gap-4">
+                  <div className={`w-14 text-center rounded-lg py-2 flex-shrink-0 ${level.bg}`}>
+                    <p className={`text-sm font-bold ${level.colour}`}>{score}</p>
+                    <p className={`text-xs ${level.colour}`}>{level.label}</p>
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-start justify-between gap-2">
+                      <div>
+                        <p className="font-semibold text-gray-900">{String(r.title??'Untitled')}</p>
+                        <p className="text-sm text-gray-500 mt-0.5">{String(r.category??'')} {r.owner?`· Owner: ${r.owner}`:''} {r.review_date?`· Review: ${r.review_date}`:''}</p>
+                      </div>
+                      <div className="flex gap-2 flex-shrink-0">
+                        <button onClick={()=>mitigate(r)} className="text-xs px-3 py-1 bg-yellow-50 text-yellow-700 rounded-lg hover:bg-yellow-100 font-medium">Mark Mitigated</button>
+                        <button onClick={()=>openEdit(r)} className="text-xs px-3 py-1 bg-orange-50 text-orange-700 rounded-lg hover:bg-orange-100 font-medium">Edit</button>
+                      </div>
+                    </div>
+                    {!!r.mitigation && <p className="text-sm text-gray-600 mt-2 bg-gray-50 rounded-lg px-3 py-2"><span className="font-medium text-gray-700">Mitigation: </span>{String(r.mitigation)}</p>}
+                    {!!r.description && <p className="text-xs text-gray-500 mt-1">{String(r.description)}</p>}
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+
+      {/* ── REGISTER tab ────────────────────────────────────── */}
+      {subTab==='register' && <div className="flex flex-wrap gap-3 items-center bg-white rounded-xl border border-gray-200 p-4">
         <div className="relative flex-1 min-w-48">
           <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"/>
           <input value={search} onChange={e=>setSearch(e.target.value)} placeholder="Search risks…" className="w-full pl-9 pr-4 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"/>
@@ -137,9 +234,9 @@ export function RiskRegister() {
           {['All',...STATUS_OPTIONS].map(s=><option key={s}>{s}</option>)}
         </select>
         <span className="text-sm text-gray-500 ml-auto">{filtered.length} risks</span>
-      </div>
+      </div>}
 
-      {isLoading ? (
+      {subTab==='register' && (isLoading ? (
         <div className="flex justify-center py-20"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-600"/></div>
       ) : (
         <div className="bg-white rounded-xl border border-gray-200 divide-y divide-gray-100">
@@ -184,7 +281,7 @@ export function RiskRegister() {
             );
           })}
         </div>
-      )}
+      ))}
 
       {showModal && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">

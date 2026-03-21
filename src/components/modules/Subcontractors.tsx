@@ -24,6 +24,7 @@ export function Subcontractors() {
   const updateMutation = useUpdate();
   const deleteMutation = useDelete();
 
+  const [subTab, setSubTab] = useState<'directory'|'insurance'|'cis'>('directory');
   const [search, setSearch] = useState('');
   const [tradeFilter, setTradeFilter] = useState('All');
   const [statusFilter, setStatusFilter] = useState('All');
@@ -49,6 +50,21 @@ export function Subcontractors() {
   }).length;
   const avgRating = subs.length > 0 ? (subs.reduce((s,sub)=>s+Number(sub.rating??0),0)/subs.length).toFixed(1) : '—';
   const pendingCount = subs.filter(s=>s.status==='Pending Approval').length;
+
+  // Insurance alerts: expired or expiring within 60 days, or missing
+  const insAlerts = subs.filter(s => {
+    if (!s.insurance_expiry) return true; // no record = alert
+    const diff = (new Date(String(s.insurance_expiry)).getTime()-Date.now())/86400000;
+    return diff < 60;
+  });
+
+  // CIS grouping
+  const cisGroups = CIS_STATUS.map(status => ({
+    status,
+    subs: subs.filter(s=>s.cis_status===status),
+    count: subs.filter(s=>s.cis_status===status).length,
+    totalUTR: subs.filter(s=>s.cis_status===status && !!s.utr_number).length,
+  })).filter(g=>g.count>0);
 
   function openCreate() { setEditing(null); setForm({ ...emptyForm }); setShowModal(true); }
   function openEdit(s: AnyRow) {
@@ -100,7 +116,116 @@ export function Subcontractors() {
         ))}
       </div>
 
-      <div className="flex flex-wrap gap-3 items-center bg-white rounded-xl border border-gray-200 p-4">
+      {/* Sub-tab nav */}
+      <div className="flex gap-1 border-b border-gray-200">
+        {([
+          { key:'directory', label:'Directory',        icon:HardHat,       count:subs.length },
+          { key:'insurance', label:'Insurance Alerts', icon:AlertTriangle,  count:insAlerts.length },
+          { key:'cis',       label:'CIS Status',       icon:PoundSterling,  count:null },
+        ] as const).map(t=>(
+          <button key={t.key} onClick={()=>setSubTab(t.key)}
+            className={`flex items-center gap-2 px-4 py-2.5 text-sm font-medium border-b-2 -mb-px transition-colors ${subTab===t.key?'border-orange-600 text-orange-600':'border-transparent text-gray-500 hover:text-gray-700'}`}>
+            <t.icon size={14}/>{t.label}
+            {t.count!==null && <span className={`text-xs px-1.5 py-0.5 rounded-full ${t.key==='insurance'&&t.count>0?'bg-red-100 text-red-700':'bg-gray-100 text-gray-600'}`}>{t.count}</span>}
+          </button>
+        ))}
+      </div>
+
+      {/* ── INSURANCE ALERTS tab ─────────────────────────────── */}
+      {subTab==='insurance' && (
+        <div className="space-y-4">
+          {insAlerts.length===0 ? (
+            <div className="text-center py-16 text-gray-400 bg-white rounded-xl border border-gray-200">
+              <CheckCircle size={40} className="mx-auto mb-3 opacity-30 text-green-500"/>
+              <p className="font-medium">All insurance records up to date</p>
+              <p className="text-sm mt-1">No alerts in the next 60 days</p>
+            </div>
+          ) : (
+            <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+              <div className="px-4 py-3 bg-red-50 border-b border-red-100 flex items-center gap-2">
+                <AlertTriangle size={16} className="text-red-600"/>
+                <span className="text-sm font-medium text-red-800">{insAlerts.length} subcontractor{insAlerts.length!==1?'s':''} require insurance attention</span>
+              </div>
+              <table className="w-full text-sm">
+                <thead className="bg-gray-50 border-b border-gray-200">
+                  <tr>{['Company','Trade','Expiry','Days Left','Action'].map(h=><th key={h} className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">{h}</th>)}</tr>
+                </thead>
+                <tbody className="divide-y divide-gray-100">
+                  {insAlerts.map(s => {
+                    const hasExpiry = !!s.insurance_expiry;
+                    const expired = hasExpiry && new Date(String(s.insurance_expiry)).getTime() < Date.now();
+                    const daysLeft = hasExpiry ? Math.round((new Date(String(s.insurance_expiry)).getTime()-Date.now())/86400000) : null;
+                    return (
+                      <tr key={String(s.id??'')} className="hover:bg-gray-50">
+                        <td className="px-4 py-3">
+                          <div className="flex items-center gap-3">
+                            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center text-white text-xs font-bold flex-shrink-0">{String(s.company_name??'?').slice(0,2).toUpperCase()}</div>
+                            <div>
+                              <p className="font-medium text-gray-900">{String(s.company_name??'')}</p>
+                              {!!s.contact_name && <p className="text-xs text-gray-500">{String(s.contact_name)}</p>}
+                            </div>
+                          </div>
+                        </td>
+                        <td className="px-4 py-3 text-gray-600">{String(s.trade??'—')}</td>
+                        <td className="px-4 py-3">{hasExpiry ? <span className={expired?'text-red-600 font-semibold':'text-amber-600'}>{String(s.insurance_expiry)}</span> : <span className="text-red-600 font-medium">Not recorded</span>}</td>
+                        <td className="px-4 py-3">
+                          {!hasExpiry ? <span className="text-xs bg-gray-100 text-gray-700 px-2 py-0.5 rounded-full">Unknown</span>
+                           : expired ? <span className="text-xs bg-red-100 text-red-700 px-2 py-0.5 rounded-full">Expired</span>
+                           : <span className="text-xs bg-amber-100 text-amber-700 px-2 py-0.5 rounded-full">{daysLeft}d left</span>}
+                        </td>
+                        <td className="px-4 py-3"><button onClick={()=>openEdit(s)} className="text-xs px-3 py-1 bg-orange-50 text-orange-700 rounded-lg hover:bg-orange-100 font-medium">Update</button></td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* ── CIS STATUS tab ──────────────────────────────────────── */}
+      {subTab==='cis' && (
+        <div className="space-y-4">
+          {cisGroups.map(group=>(
+            <div key={group.status} className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+              <div className="flex items-center justify-between px-4 py-3 bg-gray-50 border-b border-gray-200">
+                <div className="flex items-center gap-3">
+                  <PoundSterling size={16} className="text-gray-500"/>
+                  <span className="font-semibold text-gray-900">{group.status}</span>
+                  <span className="text-sm text-gray-500">{group.count} contractor{group.count!==1?'s':''}</span>
+                </div>
+                <span className="text-xs text-gray-500">{group.totalUTR}/{group.count} UTR numbers on file</span>
+              </div>
+              <table className="w-full text-sm">
+                <thead className="bg-gray-50/50 border-b border-gray-100">
+                  <tr>{['Company','Trade','UTR Number','Contact','Status'].map(h=><th key={h} className="text-left px-4 py-2 text-xs font-semibold text-gray-400 uppercase tracking-wide">{h}</th>)}</tr>
+                </thead>
+                <tbody className="divide-y divide-gray-50">
+                  {group.subs.map(s=>(
+                    <tr key={String(s.id??'')} className="hover:bg-gray-50">
+                      <td className="px-4 py-2.5">
+                        <div className="flex items-center gap-2">
+                          <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center text-white text-xs font-bold flex-shrink-0">{String(s.company_name??'?').slice(0,2).toUpperCase()}</div>
+                          <span className="font-medium text-gray-900">{String(s.company_name??'')}</span>
+                        </div>
+                      </td>
+                      <td className="px-4 py-2.5 text-gray-600">{String(s.trade??'—')}</td>
+                      <td className="px-4 py-2.5">{s.utr_number ? <span className="font-mono text-sm text-gray-800">{String(s.utr_number)}</span> : <span className="text-red-500 text-xs">Missing</span>}</td>
+                      <td className="px-4 py-2.5 text-gray-600">{String(s.contact_name??'—')}</td>
+                      <td className="px-4 py-2.5"><span className={`text-xs px-2 py-0.5 rounded-full font-medium ${statusColour[String(s.status??'')] ?? 'bg-gray-100 text-gray-700'}`}>{String(s.status??'')}</span></td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          ))}
+          {cisGroups.length===0 && <div className="text-center py-16 text-gray-400 bg-white rounded-xl border border-gray-200"><PoundSterling size={40} className="mx-auto mb-3 opacity-30"/><p>No CIS data available</p></div>}
+        </div>
+      )}
+
+      {/* ── DIRECTORY tab ───────────────────────────────────────── */}
+      {subTab==='directory' && <div className="flex flex-wrap gap-3 items-center bg-white rounded-xl border border-gray-200 p-4">
         <div className="relative flex-1 min-w-48">
           <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"/>
           <input value={search} onChange={e=>setSearch(e.target.value)} placeholder="Search company or trade…" className="w-full pl-9 pr-4 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"/>
@@ -112,9 +237,9 @@ export function Subcontractors() {
           {['All',...STATUS_OPTIONS].map(s=><option key={s}>{s}</option>)}
         </select>
         <span className="text-sm text-gray-500 ml-auto">{filtered.length} contractors</span>
-      </div>
+      </div>}
 
-      {isLoading ? (
+      {subTab==='directory' && (isLoading ? (
         <div className="flex justify-center py-20"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-600"/></div>
       ) : (
         <div className="bg-white rounded-xl border border-gray-200 divide-y divide-gray-100">
@@ -164,7 +289,7 @@ export function Subcontractors() {
             );
           })}
         </div>
-      )}
+      ))}
 
       {showModal && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
