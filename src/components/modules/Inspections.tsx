@@ -20,7 +20,7 @@ function scoreColour(score: number) {
   return 'bg-red-500/20 text-red-400';
 }
 
-const emptyForm = { title:'',inspection_type:'Quality Assurance',inspection_date:'',inspector:'',location:'',status:'Scheduled',score:'',findings:'',corrective_actions:'',project_id:'',next_due:'',notes:'' };
+const emptyForm = { title:'',type:'Quality Assurance',date:'',inspector:'',location:'',status:'Scheduled',score:'',findings:'',corrective_actions:'',project_id:'',next_inspection:'',notes:'' };
 
 export function Inspections() {
   const { useList, useCreate, useUpdate, useDelete } = useInspections;
@@ -48,7 +48,7 @@ export function Inspections() {
     const title = String(i.title ?? '').toLowerCase();
     const matchSearch = title.includes(search.toLowerCase());
     const matchStatus = statusFilter === 'All' || i.status === statusFilter;
-    const matchType = typeFilter === 'All' || (i.inspection_type ?? i.inspectionType) === typeFilter;
+    const matchType = typeFilter === 'All' || (i.inspectionType ?? i.type) === typeFilter;
     return matchSearch && matchStatus && matchType;
   });
 
@@ -56,27 +56,27 @@ export function Inspections() {
   const passedCount = inspections.filter(i => i.status === 'Passed').length;
   const failedCount = inspections.filter(i => i.status === 'Failed').length;
   const dueSoon = inspections.filter(i => {
-    const nextDue = i.next_due ?? i.nextDue;
+    const nextDue = i.nextInspection ?? i.next_inspection;
     if (!nextDue) return false;
     const diff = (new Date(String(nextDue)).getTime() - Date.now()) / 86400000;
     return diff >= 0 && diff <= 14;
   }).length;
 
-  function openCreate() { setEditing(null); setForm({ ...emptyForm, inspection_date: today }); setShowModal(true); }
+  function openCreate() { setEditing(null); setForm({ ...emptyForm, date: today }); setShowModal(true); }
   function openEdit(i: AnyRow) {
     setEditing(i);
     setForm({
       title: String(i.title ?? ''),
-      inspection_type: String(i.inspection_type ?? i.inspectionType ?? 'Quality Assurance'),
-      inspection_date: String(i.inspection_date ?? i.inspectionDate ?? ''),
+      type: String(i.inspectionType ?? i.type ?? 'Quality Assurance'),
+      date: String(i.inspectionDate ?? i.date ?? ''),
       inspector: String(i.inspector ?? ''),
       location: String(i.location ?? ''),
       status: String(i.status ?? 'Scheduled'),
       score: String(i.score ?? ''),
       findings: String(i.findings ?? ''),
-      corrective_actions: String(i.corrective_actions ?? i.correctiveActions ?? ''),
-      project_id: String(getField(i,'project_id','projectId')),
-      next_due: String(i.next_due ?? i.nextDue ?? ''),
+      corrective_actions: String(i.correctiveActions ?? i.corrective_actions ?? ''),
+      project_id: String(i.projectId ?? i.project_id ?? ''),
+      next_inspection: String(i.nextInspection ?? i.next_inspection ?? ''),
       notes: String(i.notes ?? ''),
     });
     setShowModal(true);
@@ -182,9 +182,9 @@ export function Inspections() {
             const id = String(i.id ?? '');
             const isExp = expanded === id;
             const score = Number(i.score ?? 0);
-            const inspDate = String(i.inspection_date ?? i.inspectionDate ?? '—');
-            const inspType = String(i.inspection_type ?? i.inspectionType ?? '');
-            const nextDue = String(i.next_due ?? i.nextDue ?? '');
+            const inspDate = String(i.inspectionDate ?? i.date ?? '—');
+            const inspType = String(i.inspectionType ?? i.type ?? '');
+            const nextDue = String(i.nextInspection ?? i.next_inspection ?? '');
             return (
               <div key={id}>
                 <div className="flex items-center gap-4 p-4 hover:bg-gray-800/50 cursor-pointer" onClick={() => setExpanded(isExp ? null : id)}>
@@ -244,7 +244,7 @@ export function Inspections() {
                 </div>
                 <div>
                   <label className={labelCls}>Type</label>
-                  <select value={form.inspection_type} onChange={e => setForm(f => ({ ...f, inspection_type: e.target.value }))} className={inputCls}>
+                  <select value={form.type} onChange={e => setForm(f => ({ ...f, type: e.target.value }))} className={inputCls}>
                     {INSPECTION_TYPES.map(t => <option key={t}>{t}</option>)}
                   </select>
                 </div>
@@ -256,7 +256,7 @@ export function Inspections() {
                 </div>
                 <div>
                   <label className={labelCls}>Inspection Date</label>
-                  <input type="date" value={form.inspection_date} onChange={e => setForm(f => ({ ...f, inspection_date: e.target.value }))} className={inputCls} />
+                  <input type="date" value={form.date} onChange={e => setForm(f => ({ ...f, date: e.target.value }))} className={inputCls} />
                 </div>
                 <div>
                   <label className={labelCls}>Inspector</label>
@@ -272,7 +272,7 @@ export function Inspections() {
                 </div>
                 <div>
                   <label className={labelCls}>Next Due Date</label>
-                  <input type="date" value={form.next_due} onChange={e => setForm(f => ({ ...f, next_due: e.target.value }))} className={inputCls} />
+                  <input type="date" value={form.next_inspection} onChange={e => setForm(f => ({ ...f, next_inspection: e.target.value }))} className={inputCls} />
                 </div>
                 <div className="col-span-2">
                   <label className={labelCls}>Findings</label>

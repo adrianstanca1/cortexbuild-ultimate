@@ -15,7 +15,7 @@ const statusColour: Record<string,string> = {
   'Rejected':'bg-red-500/20 text-red-400','Withdrawn':'bg-gray-700 text-gray-500',
 };
 
-const emptyForm = { co_number:'',title:'',type:'Addition',reason:'',value:'',days_extension:'0',status:'Draft',project_id:'',submitted_date:'',approved_date:'',description:'',schedule_impact:'' };
+const emptyForm = { number:'',title:'',type:'Addition',reason:'',amount:'',days_extension:'0',status:'Draft',project_id:'',submitted_date:'',approved_date:'',description:'',schedule_impact:'' };
 
 export function ChangeOrders() {
   const { useList, useCreate, useUpdate, useDelete } = useChangeOrders;
@@ -38,7 +38,7 @@ export function ChangeOrders() {
   const REJECTED_STATUSES = ['Rejected','Withdrawn'];
   const filtered = orders.filter(o => {
     const title = String(o.title ?? '').toLowerCase();
-    const num = String(getField(o,'co_number','coNumber')).toLowerCase();
+    const num = String(o.number ?? '').toLowerCase();
     const matchSearch = title.includes(search.toLowerCase()) || num.includes(search.toLowerCase());
     let matchStatus = statusFilter === 'All' || o.status === statusFilter;
     if (subTab === 'pending') matchStatus = PENDING_STATUSES.includes(String(o.status ?? ''));
@@ -46,40 +46,40 @@ export function ChangeOrders() {
     return matchSearch && matchStatus;
   });
 
-  const totalValue = orders.filter(o => o.status === 'Approved').reduce((s, o) => s + Number(o.value ?? 0), 0);
-  const pendingValue = orders.filter(o => ['Submitted','Under Review'].includes(String(o.status ?? ''))).reduce((s, o) => s + Number(o.value ?? 0), 0);
+  const totalValue = orders.filter(o => o.status === 'Approved').reduce((s, o) => s + Number(o.amount ?? 0), 0);
+  const pendingValue = orders.filter(o => ['Submitted','Under Review'].includes(String(o.status ?? ''))).reduce((s, o) => s + Number(o.amount ?? 0), 0);
   const approvedCount = orders.filter(o => o.status === 'Approved').length;
   const totalDays = orders.filter(o => o.status === 'Approved').reduce((s, o) => s + Number(o.days_extension ?? o.daysExtension ?? 0), 0);
 
   function nextCONumber() {
-    const nums = orders.map(o => parseInt(String(getField(o,'co_number','coNumber') || '0').replace(/\D/g,''))).filter(n => !isNaN(n));
+    const nums = orders.map(o => parseInt(String(o.number ?? '0').replace(/\D/g,''))).filter(n => !isNaN(n));
     const next = nums.length > 0 ? Math.max(...nums) + 1 : 1;
     return `CO-${String(next).padStart(3,'0')}`;
   }
 
-  function openCreate() { setEditing(null); setForm({ ...emptyForm, co_number: nextCONumber() }); setShowModal(true); }
+  function openCreate() { setEditing(null); setForm({ ...emptyForm, number: nextCONumber() }); setShowModal(true); }
   function openEdit(o: AnyRow) {
     setEditing(o);
     setForm({
-      co_number: String(getField(o,'co_number','coNumber')),
+      number: String(o.number ?? ''),
       title: String(o.title ?? ''),
       type: String(o.type ?? 'Addition'),
       reason: String(o.reason ?? ''),
-      value: String(o.value ?? ''),
-      days_extension: String(o.days_extension ?? o.daysExtension ?? '0'),
+      amount: String(o.amount ?? ''),
+      days_extension: String(o.daysExtension ?? o.days_extension ?? '0'),
       status: String(o.status ?? 'Draft'),
-      project_id: String(getField(o,'project_id','projectId')),
-      submitted_date: String(getField(o,'submitted_date','submittedDate')),
-      approved_date: String(getField(o,'approved_date','approvedDate')),
+      project_id: String(o.projectId ?? o.project_id ?? ''),
+      submitted_date: String(o.submittedDate ?? o.submitted_date ?? ''),
+      approved_date: String(o.approvedDate ?? o.approved_date ?? ''),
       description: String(o.description ?? ''),
-      schedule_impact: String(o.schedule_impact ?? o.scheduleImpact ?? ''),
+      schedule_impact: String(o.scheduleImpact ?? o.schedule_impact ?? ''),
     });
     setShowModal(true);
   }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    const payload = { ...form, value: Number(form.value) || 0, days_extension: Number(form.days_extension) || 0 };
+    const payload = { ...form, amount: Number(form.amount) || 0, days_extension: Number(form.days_extension) || 0 };
     if (editing) { await updateMutation.mutateAsync({ id: String(editing.id), data: payload }); toast.success('Change order updated'); }
     else { await createMutation.mutateAsync(payload); toast.success('Change order created'); }
     setShowModal(false);
@@ -186,16 +186,16 @@ export function ChangeOrders() {
             </thead>
             <tbody className="divide-y divide-gray-800">
               {filtered.map(o => {
-                const coNumber = String(getField(o,'co_number','coNumber') || '—');
+                const coNumber = String(o.number || '—');
                 const daysExt = Number(o.days_extension ?? o.daysExtension ?? 0);
                 const scheduleImpact = String(o.schedule_impact ?? o.scheduleImpact ?? '');
-                const submittedDate = String(getField(o,'submitted_date','submittedDate') || '—');
+                const submittedDate = String(o.submittedDate ?? o.submitted_date ?? '—');
                 return (
                   <tr key={String(o.id)} className="hover:bg-gray-800/50">
                     <td className="px-4 py-3 font-mono text-xs font-bold text-orange-400">{coNumber}</td>
                     <td className="px-4 py-3 font-medium text-white max-w-xs truncate">{String(o.title ?? '—')}</td>
                     <td className="px-4 py-3 text-gray-400 text-sm">{String(o.type ?? '—')}</td>
-                    <td className="px-4 py-3 font-semibold text-white">£{Number(o.value ?? 0).toLocaleString()}</td>
+                    <td className="px-4 py-3 font-semibold text-white">£{Number(o.amount ?? 0).toLocaleString()}</td>
                     <td className="px-4 py-3 text-gray-400 text-sm">{daysExt > 0 ? `+${daysExt}d` : '—'}</td>
                     <td className="px-4 py-3 text-gray-400 text-sm max-w-xs truncate">{scheduleImpact || '—'}</td>
                     <td className="px-4 py-3"><span className={`text-xs px-2 py-1 rounded-full font-medium ${statusColour[String(o.status ?? '')] ?? 'bg-gray-700 text-gray-400'}`}>{String(o.status ?? '')}</span></td>
@@ -227,7 +227,7 @@ export function ChangeOrders() {
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className={labelCls}>CO Number</label>
-                  <input value={form.co_number} onChange={e => setForm(f => ({ ...f, co_number: e.target.value }))} className={inputCls + ' font-mono'} />
+                  <input value={form.number} onChange={e => setForm(f => ({ ...f, number: e.target.value }))} className={inputCls + ' font-mono'} />
                 </div>
                 <div>
                   <label className={labelCls}>Type</label>
@@ -241,7 +241,7 @@ export function ChangeOrders() {
                 </div>
                 <div>
                   <label className={labelCls}>Amount (£)</label>
-                  <input type="number" value={form.value} onChange={e => setForm(f => ({ ...f, value: e.target.value }))} className={inputCls} />
+                  <input type="number" value={form.amount} onChange={e => setForm(f => ({ ...f, amount: e.target.value }))} className={inputCls} />
                 </div>
                 <div>
                   <label className={labelCls}>Extension Days</label>

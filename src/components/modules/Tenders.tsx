@@ -22,7 +22,7 @@ const stageColour: Record<string,string> = {
 
 const PIPELINE_STAGES = ['Identified','Pre-Qualification','ITT Issued','Pricing','Submitted'];
 
-const emptyForm = { project_name:'',client:'',type:'',value:'',submission_date:'',result_date:'',stage:'Identified',probability:'',notes:'' };
+const emptyForm = { title:'',client:'',type:'',value:'',deadline:'',result_date:'',stage:'Identified',probability:'',notes:'' };
 
 export function Tenders() {
   const { useList, useCreate, useUpdate, useDelete } = useTenders;
@@ -48,7 +48,7 @@ export function Tenders() {
   };
 
   const filtered = tenders.filter(t => {
-    const name = String(t.project_name??'').toLowerCase();
+    const name = String(t.title??'').toLowerCase();
     const client = String(t.client??'').toLowerCase();
     const matchSearch = name.includes(search.toLowerCase()) || client.includes(search.toLowerCase());
     const matchStage = stageFilter === 'All' || t.stage === stageFilter;
@@ -66,7 +66,7 @@ export function Tenders() {
   function openCreate() { setEditing(null); setForm({ ...emptyForm }); setShowModal(true); }
   function openEdit(t: AnyRow) {
     setEditing(t);
-    setForm({ project_name:String(t.project_name??''),client:String(t.client??''),type:String(t.type??''),value:String(t.value??''),submission_date:String(t.submission_date??''),result_date:String(t.result_date??''),stage:String(t.stage??'Identified'),probability:String(t.probability??''),notes:String(t.notes??'') });
+    setForm({ title:String(t.title??''),client:String(t.client??''),type:String(t.type??''),value:String(t.value??''),deadline:String(t.deadline??''),result_date:String(t.resultDate??t.result_date??''),stage:String(t.stage??'Identified'),probability:String(t.probability??''),notes:String(t.notes??'') });
     setShowModal(true);
   }
 
@@ -181,10 +181,10 @@ export function Tenders() {
                     {stageValue > 0 && <p className="text-xs text-center text-gray-500 py-1">£{(stageValue/1000).toFixed(0)}k</p>}
                     {stageTenders.map(t=>(
                       <div key={String(t.id)} className="bg-gray-800 border border-gray-700 rounded-lg p-3 hover:border-gray-600 transition-colors cursor-pointer" onClick={()=>openEdit(t)}>
-                        <p className="font-medium text-sm text-white truncate">{String(t.project_name??'Untitled')}</p>
+                        <p className="font-medium text-sm text-white truncate">{String(t.title??'Untitled')}</p>
                         <p className="text-xs text-gray-400 mt-0.5 flex items-center gap-1"><Building2 size={10}/>{String(t.client??'—')}</p>
                         {!!t.value && <p className="text-xs font-semibold text-orange-400 mt-2">£{Number(t.value).toLocaleString()}</p>}
-                        {!!t.submission_date && <p className="text-xs text-gray-500 flex items-center gap-1 mt-1"><Calendar size={10}/>{String(t.submission_date)}</p>}
+                        {!!t.deadline && <p className="text-xs text-gray-500 flex items-center gap-1 mt-1"><Calendar size={10}/>{String(t.deadline)}</p>}
                         {!!t.probability && <div className="mt-2">
                           <div className="flex items-center justify-between mb-0.5">
                             <span className="text-xs text-gray-500">Win prob.</span>
@@ -217,7 +217,7 @@ export function Tenders() {
                   <div className="bg-gray-900 border border-gray-800 border-t-0 rounded-b-lg p-2 space-y-2 min-h-48">
                     {stageTenders.map(t=>(
                       <div key={String(t.id)} className="bg-gray-800 border border-gray-700 rounded-lg p-3 cursor-pointer hover:border-gray-600 transition-colors" onClick={()=>openEdit(t)}>
-                        <p className="font-medium text-sm text-white truncate">{String(t.project_name??'Untitled')}</p>
+                        <p className="font-medium text-sm text-white truncate">{String(t.title??'Untitled')}</p>
                         <p className="text-xs text-gray-400">{String(t.client??'—')}</p>
                         {!!t.value && <p className="text-xs font-semibold text-gray-300 mt-1">£{Number(t.value).toLocaleString()}</p>}
                       </div>
@@ -241,11 +241,11 @@ export function Tenders() {
             <tbody className="divide-y divide-gray-800">
               {filtered.map(t=>(
                 <tr key={String(t.id)} className="hover:bg-gray-800/40 transition-colors">
-                  <td className="px-4 py-3 font-medium text-white">{String(t.project_name??'—')}</td>
+                  <td className="px-4 py-3 font-medium text-white">{String(t.title??'—')}</td>
                   <td className="px-4 py-3 text-gray-400">{String(t.client??'—')}</td>
                   <td className="px-4 py-3 text-gray-400">{String(t.type??'—')}</td>
                   <td className="px-4 py-3 text-white font-medium">£{Number(t.value??0).toLocaleString()}</td>
-                  <td className="px-4 py-3 text-gray-400">{String(t.submission_date??'—')}</td>
+                  <td className="px-4 py-3 text-gray-400">{String(t.deadline??'—')}</td>
                   <td className="px-4 py-3">
                     <span className={`text-xs px-2 py-1 rounded-full font-medium ${stageColour[String(t.stage??'')] ?? 'bg-gray-700 text-gray-300'}`}>
                       {String(t.stage??'')}
@@ -280,7 +280,7 @@ export function Tenders() {
               <div className="grid grid-cols-2 gap-4">
                 <div className="col-span-2">
                   <label className="block text-xs font-medium text-gray-400 mb-1">Project Name *</label>
-                  <input required value={form.project_name} onChange={e=>setForm(f=>({...f,project_name:e.target.value}))}
+                  <input required value={form.title} onChange={e=>setForm(f=>({...f,title:e.target.value}))}
                     className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-orange-500"/>
                 </div>
                 <div>
@@ -314,7 +314,7 @@ export function Tenders() {
                 </div>
                 <div>
                   <label className="block text-xs font-medium text-gray-400 mb-1">Submission Date</label>
-                  <input type="date" value={form.submission_date} onChange={e=>setForm(f=>({...f,submission_date:e.target.value}))}
+                  <input type="date" value={form.deadline} onChange={e=>setForm(f=>({...f,deadline:e.target.value}))}
                     className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-orange-500"/>
                 </div>
                 <div>

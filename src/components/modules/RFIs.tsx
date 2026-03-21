@@ -18,7 +18,7 @@ const priorityColour: Record<string,string> = {
   'High':'bg-orange-500/20 text-orange-400','Critical':'bg-red-500/20 text-red-400',
 };
 
-const emptyForm = { rfi_number:'',title:'',question:'',answer:'',discipline:'',priority:'Medium',status:'Open',assigned_to:'',submitted_by:'',project_id:'',due_date:'',notes:'' };
+const emptyForm = { number:'',subject:'',question:'',response:'',discipline:'',priority:'Medium',status:'Open',assigned_to:'',submitted_by:'',project_id:'',due_date:'',notes:'' };
 
 export function RFIs() {
   const { useList, useCreate, useUpdate, useDelete } = useRFIs;
@@ -38,12 +38,10 @@ export function RFIs() {
   const [form, setForm] = useState({ ...emptyForm });
   const [expanded, setExpanded] = useState<string | null>(null);
 
-  function getField(r: AnyRow, snake: string, camel: string) { return r[camel] ?? r[snake] ?? ''; }
-
   const filtered = rfis.filter(r => {
-    const title = String(getField(r,'title','title')).toLowerCase();
-    const num = String(getField(r,'rfi_number','rfiNumber')).toLowerCase();
-    const matchSearch = title.includes(search.toLowerCase()) || num.includes(search.toLowerCase());
+    const subject = String(r.subject ?? '').toLowerCase();
+    const num = String(r.number ?? '').toLowerCase();
+    const matchSearch = subject.includes(search.toLowerCase()) || num.includes(search.toLowerCase());
     const matchStatus = statusFilter === 'All' || r.status === statusFilter;
     const matchPriority = priorityFilter === 'All' || r.priority === priorityFilter;
     return matchSearch && matchStatus && matchPriority;
@@ -54,26 +52,26 @@ export function RFIs() {
   const answeredCount = rfis.filter(r => ['Answered','Closed'].includes(String(r.status ?? ''))).length;
 
   function nextRFINumber() {
-    const nums = rfis.map(r => parseInt(String(getField(r,'rfi_number','rfiNumber') || '0').replace(/\D/g,''))).filter(n => !isNaN(n));
+    const nums = rfis.map(r => parseInt(String(r.number ?? '0').replace(/\D/g,''))).filter(n => !isNaN(n));
     const next = nums.length > 0 ? Math.max(...nums) + 1 : 1;
     return `RFI-${String(next).padStart(3,'0')}`;
   }
 
-  function openCreate() { setEditing(null); setForm({ ...emptyForm, rfi_number: nextRFINumber() }); setShowModal(true); }
+  function openCreate() { setEditing(null); setForm({ ...emptyForm, number: nextRFINumber() }); setShowModal(true); }
   function openEdit(r: AnyRow) {
     setEditing(r);
     setForm({
-      rfi_number: String(getField(r,'rfi_number','rfiNumber')),
-      title: String(getField(r,'title','title')),
-      question: String(getField(r,'question','question')),
-      answer: String(getField(r,'answer','answer')),
-      discipline: String(getField(r,'discipline','discipline')),
+      number: String(r.number ?? ''),
+      subject: String(r.subject ?? ''),
+      question: String(r.question ?? ''),
+      response: String(r.response ?? ''),
+      discipline: String(r.discipline ?? ''),
       priority: String(r.priority ?? 'Medium'),
       status: String(r.status ?? 'Open'),
-      assigned_to: String(getField(r,'assigned_to','assignedTo')),
-      submitted_by: String(getField(r,'submitted_by','submittedBy')),
-      project_id: String(getField(r,'project_id','projectId')),
-      due_date: String(getField(r,'due_date','dueDate')),
+      assigned_to: String(r.assignedTo ?? r.assigned_to ?? ''),
+      submitted_by: String(r.submittedBy ?? r.submitted_by ?? ''),
+      project_id: String(r.projectId ?? r.project_id ?? ''),
+      due_date: String(r.dueDate ?? r.due_date ?? ''),
       notes: String(r.notes ?? ''),
     });
     setShowModal(true);
@@ -172,10 +170,10 @@ export function RFIs() {
           {filtered.map(r => {
             const id = String(r.id ?? '');
             const isExp = expanded === id;
-            const rfiNumber = String(getField(r,'rfi_number','rfiNumber') || '—');
-            const assignedTo = String(getField(r,'assigned_to','assignedTo') || '');
-            const dueDate = String(getField(r,'due_date','dueDate') || '');
-            const submittedBy = String(getField(r,'submitted_by','submittedBy') || '');
+            const rfiNumber = String(r.number || '—');
+            const assignedTo = String(r.assignedTo ?? r.assigned_to ?? '');
+            const dueDate = String(r.dueDate ?? r.due_date ?? '');
+            const submittedBy = String(r.submittedBy ?? r.submitted_by ?? '');
             return (
               <div key={id}>
                 <div className="flex items-center gap-4 p-4 hover:bg-gray-800/50 cursor-pointer" onClick={() => setExpanded(isExp ? null : id)}>
@@ -183,7 +181,7 @@ export function RFIs() {
                     <p className="text-xs font-bold text-orange-400 font-mono">{rfiNumber}</p>
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="font-semibold text-white truncate">{String(r.title ?? 'Untitled')}</p>
+                    <p className="font-semibold text-white truncate">{String(r.subject ?? 'Untitled')}</p>
                     <p className="text-sm text-gray-400">{String(r.discipline ?? '')} {assignedTo ? `· Assigned: ${assignedTo}` : ''} {submittedBy ? `· By: ${submittedBy}` : ''} {dueDate ? `· Due: ${dueDate}` : ''}</p>
                   </div>
                   <div className="hidden md:flex items-center gap-2">
@@ -200,7 +198,7 @@ export function RFIs() {
                 {isExp && (
                   <div className="px-6 pb-5 bg-gray-800/30 space-y-3 text-sm border-t border-gray-800 pt-3">
                     {!!r.question && <div><p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">Question</p><p className="text-gray-300 leading-relaxed">{String(r.question)}</p></div>}
-                    {!!r.answer && <div><p className="text-xs font-semibold text-green-500 uppercase tracking-wide mb-1">Answer / Response</p><p className="text-gray-300 leading-relaxed">{String(r.answer)}</p></div>}
+                    {!!r.response && <div><p className="text-xs font-semibold text-green-500 uppercase tracking-wide mb-1">Answer / Response</p><p className="text-gray-300 leading-relaxed">{String(r.response)}</p></div>}
                     {!!r.notes && <div><p className="text-xs text-gray-500 mb-1">Notes</p><p className="text-gray-400">{String(r.notes)}</p></div>}
                   </div>
                 )}
@@ -221,7 +219,7 @@ export function RFIs() {
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className={labelCls}>RFI Number</label>
-                  <input value={form.rfi_number} onChange={e => setForm(f => ({ ...f, rfi_number: e.target.value }))} className={inputCls + ' font-mono'} />
+                  <input value={form.number} onChange={e => setForm(f => ({ ...f, number: e.target.value }))} className={inputCls + ' font-mono'} />
                 </div>
                 <div>
                   <label className={labelCls}>Discipline</label>
@@ -231,7 +229,7 @@ export function RFIs() {
                 </div>
                 <div className="col-span-2">
                   <label className={labelCls}>Subject / Title *</label>
-                  <input required value={form.title} onChange={e => setForm(f => ({ ...f, title: e.target.value }))} className={inputCls} />
+                  <input required value={form.subject} onChange={e => setForm(f => ({ ...f, subject: e.target.value }))} className={inputCls} />
                 </div>
                 <div className="col-span-2">
                   <label className={labelCls}>Question</label>
@@ -240,7 +238,7 @@ export function RFIs() {
                 {editing && (
                   <div className="col-span-2">
                     <label className={labelCls}>Answer / Response</label>
-                    <textarea rows={3} value={form.answer} onChange={e => setForm(f => ({ ...f, answer: e.target.value }))} className={inputCls + ' resize-none'} />
+                    <textarea rows={3} value={form.response} onChange={e => setForm(f => ({ ...f, response: e.target.value }))} className={inputCls + ' resize-none'} />
                   </div>
                 )}
                 <div>

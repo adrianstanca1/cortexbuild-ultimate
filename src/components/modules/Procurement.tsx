@@ -30,7 +30,7 @@ const STATUS_ICON: Record<string, typeof Truck> = {
 
 function fmt(n: number) { return `£${Number(n).toLocaleString()}`; }
 function nextPO(pos: AnyRow[]) {
-  const nums = pos.map(p => parseInt(String(p.po_number??'').replace(/\D/g,''))).filter(n => !isNaN(n));
+  const nums = pos.map(p => parseInt(String(p.number??'').replace(/\D/g,''))).filter(n => !isNaN(n));
   const next  = nums.length > 0 ? Math.max(...nums) + 1 : 89;
   return `PO-CW-${String(next).padStart(4,'0')}`;
 }
@@ -82,13 +82,13 @@ export function Procurement() {
     if (search) {
       const q = search.toLowerCase();
       return String(p.supplier??'').toLowerCase().includes(q) ||
-             String(p.description??'').toLowerCase().includes(q) ||
-             String(p.po_number??'').toLowerCase().includes(q);
+             String(p.items??'').toLowerCase().includes(q) ||
+             String(p.number??'').toLowerCase().includes(q);
     }
     return true;
   });
 
-  const totalValue       = pos.reduce((s,p) => s+Number(p.value??0), 0);
+  const totalValue       = pos.reduce((s,p) => s+Number(p.amount??0), 0);
   const pendingDelivery  = pos.filter(p => p.status==='pending_delivery').length;
   const awaitingApproval = pos.filter(p => p.status==='pending_approval').length;
   const delivered        = pos.filter(p => p.status==='delivered').length;
@@ -102,10 +102,10 @@ export function Procurement() {
   }
   function openEdit(po: AnyRow) {
     setEditId(String(po.id));
-    setFPO(String(po.po_number??''));
+    setFPO(String(po.number??''));
     setFSupplier(String(po.supplier??''));
-    setFDesc(String(po.description??''));
-    setFValue(String(po.value??''));
+    setFDesc(String(po.items??''));
+    setFValue(String(po.amount??''));
     setFProject(String(po.project??''));
     setFCategory(String(po.category??'Other'));
     setFStatus(String(po.status??'pending_approval'));
@@ -117,7 +117,7 @@ export function Procurement() {
   function handleSave() {
     if (!fSupplier||!fDesc) { toast.error('Supplier and description required'); return; }
     const payload = {
-      po_number:fPO, supplier:fSupplier, description:fDesc, value:parseFloat(fValue)||0,
+      number:fPO, supplier:fSupplier, items:fDesc, amount:parseFloat(fValue)||0,
       project:fProject, category:fCategory, status:fStatus, order_date:fOrder,
       delivery_date:fDelivery, notes:fNotes,
     };
@@ -218,12 +218,12 @@ export function Procurement() {
                   const isDelivered = po.status === 'delivered';
                   return (
                     <tr key={String(po.id)} className="hover:bg-gray-800/40 transition-colors">
-                      <td className="px-4 py-3 font-mono text-xs text-blue-400 font-bold">{String(po.po_number??'—')}</td>
+                      <td className="px-4 py-3 font-mono text-xs text-blue-400 font-bold">{String(po.number??'—')}</td>
                       <td className="px-4 py-3 text-white font-medium">{String(po.supplier??'—')}</td>
-                      <td className="px-4 py-3 text-gray-300 max-w-[200px] truncate">{String(po.description??'—')}</td>
+                      <td className="px-4 py-3 text-gray-300 max-w-[200px] truncate">{String(po.items??'—')}</td>
                       <td className="px-4 py-3 text-gray-400 text-xs">{String(po.category??'—')}</td>
                       <td className="px-4 py-3 text-gray-400 text-xs max-w-[140px] truncate">{String(po.project??'—')}</td>
-                      <td className="px-4 py-3 text-white font-bold">{fmt(Number(po.value??0))}</td>
+                      <td className="px-4 py-3 text-white font-bold">{fmt(Number(po.amount??0))}</td>
                       <td className="px-4 py-3">
                         <span className={`flex items-center gap-1 text-xs px-2 py-1 rounded-full font-medium w-fit ${STATUS_COLOUR[String(po.status??'')]??'bg-gray-800 text-gray-600'}`}>
                           <StatusIcon className="w-3 h-3"/>

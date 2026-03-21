@@ -99,7 +99,7 @@ export function Teams() {
     const payload = {
       name: form.name,
       role: form.role,
-      trade_type: form.tradeType,
+      trade: form.tradeType,
       email: form.email,
       phone: form.phone,
       daily_rate: Number(form.dailyRate) || 0,

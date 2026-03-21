@@ -18,7 +18,7 @@ const riskColour: Record<string,string> = {
   'High':'bg-orange-500/20 text-orange-400','Critical':'bg-red-500/20 text-red-400',
 };
 
-const emptyForm = { title:'',activity_type:'',project_id:'',risk_level:'Medium',status:'Draft',reviewed_by:'',approved_by:'',valid_from:'',valid_until:'',hazards:'',controls:'',ppe_required:'',version:'1',created_by:'',review_date:'',notes:'' };
+const emptyForm = { title:'',activity:'',project_id:'',risk_level:'Medium',status:'Draft',reviewed_by:'',approved_by:'',valid_from:'',valid_until:'',hazards:'',controls:'',ppe:'',version:'1',created_by:'',review_date:'',notes:'' };
 
 export function RAMS() {
   const { useList, useCreate, useUpdate, useDelete } = useRAMS;
@@ -40,7 +40,7 @@ export function RAMS() {
 
   const filtered = rams.filter(r => {
     const title = String(r.title ?? '').toLowerCase();
-    const activity = String(r.activity_type ?? r.activityType ?? '').toLowerCase();
+    const activity = String(r.activity ?? '').toLowerCase();
     const matchSearch = title.includes(search.toLowerCase()) || activity.includes(search.toLowerCase());
     const matchStatus = statusFilter === 'All' || r.status === statusFilter;
     return matchSearch && matchStatus;
@@ -61,17 +61,17 @@ export function RAMS() {
     setEditing(r);
     setForm({
       title: String(r.title ?? ''),
-      activity_type: String(r.activity_type ?? r.activityType ?? ''),
-      project_id: String(r.project_id ?? r.projectId ?? ''),
-      risk_level: String(r.risk_level ?? r.riskLevel ?? 'Medium'),
+      activity: String(r.activity ?? ''),
+      project_id: String(r.projectId ?? r.project_id ?? ''),
+      risk_level: String(r.riskLevel ?? r.risk_level ?? 'Medium'),
       status: String(r.status ?? 'Draft'),
-      reviewed_by: String(r.reviewed_by ?? r.reviewedBy ?? ''),
-      approved_by: String(r.approved_by ?? r.approvedBy ?? ''),
-      valid_from: String(r.valid_from ?? r.validFrom ?? ''),
-      valid_until: String(r.valid_until ?? r.validUntil ?? ''),
+      reviewed_by: String(r.reviewedBy ?? r.reviewed_by ?? ''),
+      approved_by: String(r.approvedBy ?? r.approved_by ?? ''),
+      valid_from: String(r.validFrom ?? r.valid_from ?? ''),
+      valid_until: String(r.validUntil ?? r.valid_until ?? ''),
       hazards: String(r.hazards ?? ''),
       controls: String(r.controls ?? ''),
-      ppe_required: String(r.ppe_required ?? r.ppeRequired ?? ''),
+      ppe: String(r.ppe ?? ''),
       version: String(r.version ?? '1'),
       created_by: String(r.created_by ?? r.createdBy ?? ''),
       review_date: String(r.review_date ?? r.reviewDate ?? ''),
@@ -163,7 +163,7 @@ export function RAMS() {
             const isExp = expanded === id;
             const validUntil = r.valid_until ?? r.validUntil;
             const version = r.version;
-            const activityType = r.activity_type ?? r.activityType;
+            const activityType = r.activity;
             const riskLevel = r.risk_level ?? r.riskLevel;
             return (
               <div key={id}>
@@ -194,7 +194,7 @@ export function RAMS() {
                   <div className="px-6 pb-4 bg-gray-800/30 space-y-3 text-sm border-t border-gray-800">
                     {!!(r.hazards) && <div className="pt-3"><p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">Hazards Identified</p><p className="text-gray-300 whitespace-pre-wrap">{String(r.hazards)}</p></div>}
                     {!!(r.controls) && <div><p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">Control Measures</p><p className="text-gray-300 whitespace-pre-wrap">{String(r.controls)}</p></div>}
-                    {!!(r.ppe_required ?? r.ppeRequired) && <div><p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">PPE Required</p><p className="text-gray-300">{String(r.ppe_required ?? r.ppeRequired)}</p></div>}
+                    {!!(r.ppe) && <div><p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">PPE Required</p><p className="text-gray-300">{String(r.ppe)}</p></div>}
                     <div className="flex gap-6 flex-wrap pb-2">
                       {!!(r.reviewed_by ?? r.reviewedBy) && <div><p className="text-xs text-gray-500">Reviewed By</p><p className="text-gray-300">{String(r.reviewed_by ?? r.reviewedBy)}</p></div>}
                       {!!(r.approved_by ?? r.approvedBy) && <div><p className="text-xs text-gray-500">Approved By</p><p className="text-gray-300">{String(r.approved_by ?? r.approvedBy)}</p></div>}
@@ -226,7 +226,7 @@ export function RAMS() {
                 </div>
                 <div>
                   <label className={labelCls}>Activity Type</label>
-                  <select value={form.activity_type} onChange={e => setForm(f => ({ ...f, activity_type: e.target.value }))} className={inputCls}>
+                  <select value={form.activity} onChange={e => setForm(f => ({ ...f, activity: e.target.value }))} className={inputCls}>
                     <option value="">Select…</option>{ACTIVITY_TYPES.map(a => <option key={a}>{a}</option>)}
                   </select>
                 </div>
@@ -280,7 +280,7 @@ export function RAMS() {
                 </div>
                 <div className="col-span-2">
                   <label className={labelCls}>PPE Required</label>
-                  <input value={form.ppe_required} onChange={e => setForm(f => ({ ...f, ppe_required: e.target.value }))} placeholder="e.g. Hard hat, Hi-vis, Safety boots, Gloves" className={inputCls} />
+                  <input value={form.ppe} onChange={e => setForm(f => ({ ...f, ppe: e.target.value }))} placeholder="e.g. Hard hat, Hi-vis, Safety boots, Gloves" className={inputCls} />
                 </div>
               </div>
               <div className="flex gap-3 pt-2">

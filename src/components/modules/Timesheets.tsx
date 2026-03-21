@@ -90,9 +90,9 @@ export function Timesheets() {
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     const payload = {
-      worker_name: form.workerName,
+      worker: form.workerName,
       project_id: form.projectId,
-      week_ending: form.weekEnding,
+      week: form.weekEnding,
       regular_hours: Number(form.regularHours) || 0,
       overtime_hours: Number(form.overtimeHours) || 0,
       daywork_hours: Number(form.dayworkHours) || 0,

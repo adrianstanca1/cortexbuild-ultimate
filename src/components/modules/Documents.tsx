@@ -20,7 +20,7 @@ const typeIcon = (t: string) => {
   return icons[t] ?? '📄';
 };
 
-const emptyForm = { title:'',document_type:'Drawing',discipline:'Architecture',revision:'A',status:'Draft',file_url:'',project_id:'',author:'',date_issued:'',description:'' };
+const emptyForm = { name:'',type:'Drawing',discipline:'Architecture',version:'A',status:'Draft',file_url:'',project_id:'',uploaded_by:'',date_issued:'',description:'' };
 
 export function Documents() {
   const { useList, useCreate, useUpdate, useDelete } = useDocuments;
@@ -60,9 +60,9 @@ export function Documents() {
   const [form, setForm] = useState({ ...emptyForm });
 
   const filtered = docs.filter(d => {
-    const title = String(d.title??'').toLowerCase();
+    const title = String(d.name??'').toLowerCase();
     const matchSearch = title.includes(search.toLowerCase());
-    const matchType = typeFilter === 'All' || d.document_type === typeFilter;
+    const matchType = typeFilter === 'All' || d.type === typeFilter;
     const matchStatus = statusFilter === 'All' || d.status === statusFilter;
     return matchSearch && matchType && matchStatus;
   });
@@ -74,7 +74,7 @@ export function Documents() {
   function openCreate() { setEditing(null); setForm({ ...emptyForm, date_issued:new Date().toISOString().slice(0,10) }); setShowModal(true); }
   function openEdit(d: AnyRow) {
     setEditing(d);
-    setForm({ title:String(d.title??''),document_type:String(d.document_type??'Drawing'),discipline:String(d.discipline??'Architecture'),revision:String(d.revision??'A'),status:String(d.status??'Draft'),file_url:String(d.file_url??''),project_id:String(d.project_id??''),author:String(d.author??''),date_issued:String(d.date_issued??''),description:String(d.description??'') });
+    setForm({ name:String(d.name??''),type:String(d.type??'Drawing'),discipline:String(d.discipline??'Architecture'),version:String(d.version??'A'),status:String(d.status??'Draft'),file_url:String(d.fileUrl??d.file_url??''),project_id:String(d.projectId??d.project_id??''),uploaded_by:String(d.uploadedBy??d.uploaded_by??''),date_issued:String(d.dateIssued??d.date_issued??''),description:String(d.description??'') });
     setShowModal(true);
   }
 
@@ -172,11 +172,11 @@ export function Documents() {
             <tbody className="divide-y divide-gray-800">
               {filtered.map(d=>(
                 <tr key={String(d.id)} className="hover:bg-gray-800/50">
-                  <td className="px-4 py-3 text-xl">{typeIcon(String(d.document_type??''))}</td>
-                  <td className="px-4 py-3 font-medium text-white max-w-xs truncate">{String(d.title??'—')}</td>
+                  <td className="px-4 py-3 text-xl">{typeIcon(String(d.type??''))}</td>
+                  <td className="px-4 py-3 font-medium text-white max-w-xs truncate">{String(d.name??'—')}</td>
                   <td className="px-4 py-3 text-gray-400 text-sm">{String(d.discipline??'—')}</td>
-                  <td className="px-4 py-3 font-mono text-xs font-bold text-gray-300">Rev {String(d.revision??'A')}</td>
-                  <td className="px-4 py-3 text-gray-400">{String(d.author??'—')}</td>
+                  <td className="px-4 py-3 font-mono text-xs font-bold text-gray-300">Rev {String(d.version??'A')}</td>
+                  <td className="px-4 py-3 text-gray-400">{String(d.uploadedBy??d.uploaded_by??'—')}</td>
                   <td className="px-4 py-3 text-gray-500 text-sm">{String(d.date_issued??'—')}</td>
                   <td className="px-4 py-3"><span className={`text-xs px-2 py-1 rounded-full font-medium ${statusColour[String(d.status??'')] ?? 'bg-gray-800 text-gray-300'}`}>{String(d.status??'')}</span></td>
                   <td className="px-4 py-3">
@@ -206,11 +206,11 @@ export function Documents() {
               <div className="grid grid-cols-2 gap-4">
                 <div className="col-span-2">
                   <label className="block text-sm font-medium text-gray-300 mb-1">Document Title *</label>
-                  <input required value={form.title} onChange={e=>setForm(f=>({...f,title:e.target.value}))} className="w-full bg-gray-800 border border-gray-700 text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500"/>
+                  <input required value={form.name} onChange={e=>setForm(f=>({...f,name:e.target.value}))} className="w-full bg-gray-800 border border-gray-700 text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500"/>
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-300 mb-1">Type</label>
-                  <select value={form.document_type} onChange={e=>setForm(f=>({...f,document_type:e.target.value}))} className="w-full bg-gray-800 border border-gray-700 text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500">
+                  <select value={form.type} onChange={e=>setForm(f=>({...f,type:e.target.value}))} className="w-full bg-gray-800 border border-gray-700 text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500">
                     {DOC_TYPES.map(t=><option key={t}>{t}</option>)}
                   </select>
                 </div>
@@ -222,7 +222,7 @@ export function Documents() {
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-300 mb-1">Revision</label>
-                  <input value={form.revision} onChange={e=>setForm(f=>({...f,revision:e.target.value}))} placeholder="e.g. A, B, P1" className="w-full bg-gray-800 border border-gray-700 text-white placeholder-gray-500 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500"/>
+                  <input value={form.version} onChange={e=>setForm(f=>({...f,version:e.target.value}))} placeholder="e.g. A, B, P1" className="w-full bg-gray-800 border border-gray-700 text-white placeholder-gray-500 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500"/>
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-300 mb-1">Status</label>
@@ -232,7 +232,7 @@ export function Documents() {
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-300 mb-1">Author</label>
-                  <input value={form.author} onChange={e=>setForm(f=>({...f,author:e.target.value}))} className="w-full bg-gray-800 border border-gray-700 text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500"/>
+                  <input value={form.uploaded_by} onChange={e=>setForm(f=>({...f,uploaded_by:e.target.value}))} className="w-full bg-gray-800 border border-gray-700 text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500"/>
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-300 mb-1">Date Issued</label>

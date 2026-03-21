@@ -17,7 +17,7 @@ const statusColour: Record<string,string> = {
   'Fault Reported':'bg-red-900/50 text-red-300',
 };
 
-const emptyForm = { name:'',category:'',serial_number:'',status:'Available',ownership:'Owned',daily_cost:'',service_due:'',inspection_due:'',mewp_check:'',project_id:'',supplier:'',notes:'' };
+const emptyForm = { name:'',category:'',serial_number:'',status:'Available',ownership:'Owned',daily_rate:'',next_service:'',inspection_due:'',mewp_check:'',project_id:'',supplier:'',notes:'' };
 
 export function PlantEquipment() {
   const { useList, useCreate, useUpdate, useDelete } = useEquipment;
@@ -49,8 +49,8 @@ export function PlantEquipment() {
   const inUseCount = equipment.filter(e=>e.status==='In Use').length;
   const faultCount = equipment.filter(e=>e.status==='Fault Reported').length;
   const servicesDue = equipment.filter(e => {
-    if (!e.service_due) return false;
-    const diff = (new Date(String(e.service_due)).getTime()-Date.now())/86400000;
+    if (!(e.nextService??e.next_service)) return false;
+    const diff = (new Date(String(e.nextService??e.next_service)).getTime()-Date.now())/86400000;
     return diff >= 0 && diff <= 14;
   }).length;
   const inspDue = equipment.filter(e => {
@@ -58,18 +58,18 @@ export function PlantEquipment() {
     const diff = (new Date(String(e.inspection_due)).getTime()-Date.now())/86400000;
     return diff >= 0 && diff <= 14;
   }).length;
-  const hiredCost = equipment.filter(e=>e.ownership==='Hired').reduce((s,e)=>s+Number(e.daily_cost??0),0);
+  const hiredCost = equipment.filter(e=>e.ownership==='Hired').reduce((s,e)=>s+Number(e.dailyRate??e.daily_rate??0),0);
 
   function openCreate() { setEditing(null); setForm({ ...emptyForm }); setShowModal(true); }
   function openEdit(e: AnyRow) {
     setEditing(e);
-    setForm({ name:String(e.name??''),category:String(e.category??''),serial_number:String(e.serial_number??''),status:String(e.status??'Available'),ownership:String(e.ownership??'Owned'),daily_cost:String(e.daily_cost??''),service_due:String(e.service_due??''),inspection_due:String(e.inspection_due??''),mewp_check:String(e.mewp_check??''),project_id:String(e.project_id??''),supplier:String(e.supplier??''),notes:String(e.notes??'') });
+    setForm({ name:String(e.name??''),category:String(e.category??''),serial_number:String(e.serialNumber??e.serial_number??''),status:String(e.status??'Available'),ownership:String(e.ownership??'Owned'),daily_rate:String(e.dailyRate??e.daily_rate??''),next_service:String(e.nextService??e.next_service??''),inspection_due:String(e.inspectionDue??e.inspection_due??''),mewp_check:String(e.mewpCheck??e.mewp_check??''),project_id:String(e.projectId??e.project_id??''),supplier:String(e.supplier??''),notes:String(e.notes??'') });
     setShowModal(true);
   }
 
   async function handleSubmit(ev: React.FormEvent) {
     ev.preventDefault();
-    const payload = { ...form, daily_cost:Number(form.daily_cost)||0 };
+    const payload = { ...form, daily_rate:Number(form.daily_rate)||0 };
     if (editing) { await updateMutation.mutateAsync({ id:String(editing.id), data:payload }); toast.success('Equipment updated'); }
     else { await createMutation.mutateAsync(payload); toast.success('Equipment added'); }
     setShowModal(false);
@@ -90,14 +90,14 @@ export function PlantEquipment() {
   // Maintenance alerts: service/inspection overdue or within 14 days + faults
   const maintenanceAlerts = equipment.filter(e => {
     if (e.status === 'Fault Reported') return true;
-    const svc = e.service_due ? (new Date(String(e.service_due)).getTime()-Date.now())/86400000 : null;
+    const svc = e.nextService??e.next_service ? (new Date(String(e.nextService??e.next_service)).getTime()-Date.now())/86400000 : null;
     const ins = e.inspection_due ? (new Date(String(e.inspection_due)).getTime()-Date.now())/86400000 : null;
     return (svc !== null && svc <= 14) || (ins !== null && ins <= 14);
   });
 
   // Hire costs
   const hiredEquipment = equipment.filter(e=>e.ownership==='Hired');
-  const totalHireDaily = hiredEquipment.reduce((s,e)=>s+Number(e.daily_cost??0),0);
+  const totalHireDaily = hiredEquipment.reduce((s,e)=>s+Number(e.dailyRate??e.daily_rate??0),0);
 
   return (
     <div className="space-y-6">
@@ -191,7 +191,7 @@ export function PlantEquipment() {
                 </thead>
                 <tbody className="divide-y divide-gray-800">
                   {maintenanceAlerts.map(e => {
-                    const svcDays = e.service_due ? Math.round((new Date(String(e.service_due)).getTime()-Date.now())/86400000) : null;
+                    const svcDays = e.nextService??e.next_service ? Math.round((new Date(String(e.nextService??e.next_service)).getTime()-Date.now())/86400000) : null;
                     const insDays = e.inspection_due ? Math.round((new Date(String(e.inspection_due)).getTime()-Date.now())/86400000) : null;
                     return (
                       <tr key={String(e.id??'')} className="hover:bg-gray-800/40 transition-colors">
@@ -201,9 +201,9 @@ export function PlantEquipment() {
                         </td>
                         <td className="px-4 py-3 text-gray-400">{String(e.category??'—')}</td>
                         <td className="px-4 py-3">
-                          {e.service_due
+                          {e.nextService??e.next_service
                             ? <span className={svcDays!==null&&svcDays<0?'text-red-400 font-semibold':svcDays!==null&&svcDays<=7?'text-yellow-400 font-medium':'text-gray-300'}>
-                                {String(e.service_due)}{svcDays!==null&&svcDays<0?' (Overdue)':svcDays!==null?` (${svcDays}d)`:''}
+                                {String(e.nextService??e.next_service)}{svcDays!==null&&svcDays<0?' (Overdue)':svcDays!==null?` (${svcDays}d)`:''}
                               </span>
                             : <span className="text-gray-500">—</span>}
                         </td>
@@ -263,8 +263,8 @@ export function PlantEquipment() {
                   ))}</tr>
                 </thead>
                 <tbody className="divide-y divide-gray-800">
-                  {hiredEquipment.sort((a,b)=>Number(b.daily_cost??0)-Number(a.daily_cost??0)).map(e=>{
-                    const d = Number(e.daily_cost??0);
+                  {hiredEquipment.sort((a,b)=>Number(Number(b.dailyRate??b.daily_rate??0))-Number(Number(a.dailyRate??a.daily_rate??0))).map(e=>{
+                    const d = Number(e.dailyRate??e.daily_rate??0);
                     return (
                       <tr key={String(e.id??'')} className="hover:bg-gray-800/40 transition-colors">
                         <td className="px-4 py-3">
@@ -334,7 +334,7 @@ export function PlantEquipment() {
           {filtered.map(e => {
             const id = String(e.id??'');
             const isExp = expanded === id;
-            const serviceDue = (() => { if (!e.service_due) return false; const d=(new Date(String(e.service_due)).getTime()-Date.now())/86400000; return d>=0&&d<=14; })();
+            const serviceDue = (() => { if (!(e.nextService??e.next_service)) return false; const d=(new Date(String(e.nextService??e.next_service)).getTime()-Date.now())/86400000; return d>=0&&d<=14; })();
             const inspDueFlag = (() => { if (!e.inspection_due) return false; const d=(new Date(String(e.inspection_due)).getTime()-Date.now())/86400000; return d>=0&&d<=14; })();
             return (
               <div key={id}>
@@ -351,7 +351,7 @@ export function PlantEquipment() {
                     <p className="text-sm text-gray-500">{String(e.category??'')} {e.serial_number?`· SN: ${e.serial_number}`:''} · {String(e.ownership??'')}</p>
                   </div>
                   <div className="hidden md:flex items-center gap-2">
-                    {!!e.daily_cost && <span className="text-sm text-gray-400">£{Number(e.daily_cost)}/day</span>}
+                    {!!(e.dailyRate??e.daily_rate) && <span className="text-sm text-gray-400">£{Number(e.dailyRate??e.daily_rate)}/day</span>}
                     <span className={`text-xs px-2 py-1 rounded-full font-medium ${statusColour[String(e.status??'')] ?? 'bg-gray-700 text-gray-300'}`}>
                       {String(e.status??'')}
                     </span>
@@ -377,7 +377,7 @@ export function PlantEquipment() {
                 {isExp && (
                   <div className="px-6 pb-4 bg-gray-800/40 grid grid-cols-2 md:grid-cols-4 gap-4 text-sm border-t border-gray-800">
                     {!!e.supplier && <div className="pt-3"><p className="text-xs text-gray-500 mb-1">Supplier/Hire Co.</p><p className="text-gray-300">{String(e.supplier)}</p></div>}
-                    {!!e.service_due && <div className="pt-3"><p className="text-xs text-gray-500 mb-1">Service Due</p><p className={serviceDue?'text-yellow-400 font-medium':'text-gray-300'}>{String(e.service_due)}</p></div>}
+                    {!!(e.nextService??e.next_service) && <div className="pt-3"><p className="text-xs text-gray-500 mb-1">Service Due</p><p className={serviceDue?'text-yellow-400 font-medium':'text-gray-300'}>{String(e.nextService??e.next_service)}</p></div>}
                     {!!e.inspection_due && <div className="pt-3"><p className="text-xs text-gray-500 mb-1">Inspection Due</p><p className={inspDueFlag?'text-orange-400 font-medium':'text-gray-300'}>{String(e.inspection_due)}</p></div>}
                     {!!e.mewp_check && <div className="pt-3"><p className="text-xs text-gray-500 mb-1">MEWP Check</p><p className="text-gray-300">{String(e.mewp_check)}</p></div>}
                     {!!e.notes && <div className="col-span-2 md:col-span-4 pt-3"><p className="text-xs text-gray-500 mb-1">Notes</p><p className="text-gray-300">{String(e.notes)}</p></div>}
@@ -431,7 +431,7 @@ export function PlantEquipment() {
                 </div>
                 <div>
                   <label className="block text-xs font-medium text-gray-400 mb-1">Daily Cost (£)</label>
-                  <input type="number" value={form.daily_cost} onChange={e=>setForm(f=>({...f,daily_cost:e.target.value}))}
+                  <input type="number" value={form.daily_rate} onChange={e=>setForm(f=>({...f,daily_rate:e.target.value}))}
                     className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-orange-500"/>
                 </div>
                 <div>
@@ -441,7 +441,7 @@ export function PlantEquipment() {
                 </div>
                 <div>
                   <label className="block text-xs font-medium text-gray-400 mb-1">Service Due</label>
-                  <input type="date" value={form.service_due} onChange={e=>setForm(f=>({...f,service_due:e.target.value}))}
+                  <input type="date" value={form.next_service} onChange={e=>setForm(f=>({...f,next_service:e.target.value}))}
                     className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-orange-500"/>
                 </div>
                 <div>
