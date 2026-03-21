@@ -26,9 +26,11 @@ export function Timesheets() {
   const updateMutation = useUpdate();
   const deleteMutation = useDelete();
 
+  const [subTab, setSubTab] = useState<'all'|'pending'|'approved'|'summary'>('all');
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('All');
   const [showModal, setShowModal] = useState(false);
+  function setTab(key: 'all'|'pending'|'approved'|'summary', filter: string) { setSubTab(key); setStatusFilter(filter); }
   const [editing, setEditing] = useState<AnyRow | null>(null);
   const [form, setForm] = useState({ ...emptyForm });
 
@@ -50,6 +52,18 @@ export function Timesheets() {
   const totalPayroll = timesheets.reduce((s,t)=>s+getTotalPay(t),0);
   const pendingCount = timesheets.filter(t=>t.status==='Pending').length;
   const approvedCount = timesheets.filter(t=>t.status==='Approved').length;
+
+  // Summary by worker
+  const workerMap = new Map<string, { hours: number; pay: number; sheets: number }>();
+  timesheets.filter(t=>t.status==='Approved').forEach(t => {
+    const name = String(t.worker_name??'Unknown');
+    const h = getTotalHours(t); const p = getTotalPay(t);
+    const existing = workerMap.get(name) ?? { hours:0, pay:0, sheets:0 };
+    workerMap.set(name, { hours: existing.hours+h, pay: existing.pay+p, sheets: existing.sheets+1 });
+  });
+  const workerSummary = Array.from(workerMap.entries())
+    .map(([name, v]) => ({ name, ...v }))
+    .sort((a,b) => b.pay - a.pay);
 
   function openCreate() { setEditing(null); setForm({ ...emptyForm }); setShowModal(true); }
   function openEdit(t: AnyRow) {
@@ -107,7 +121,69 @@ export function Timesheets() {
         ))}
       </div>
 
-      <div className="flex flex-wrap gap-3 items-center bg-white rounded-xl border border-gray-200 p-4">
+      <div className="flex gap-1 border-b border-gray-200">
+        {([
+          { key:'all'      as const, label:'All Timesheets',   filter:'All',       count:timesheets.length },
+          { key:'pending'  as const, label:'Pending Approval', filter:'Pending',   count:pendingCount },
+          { key:'approved' as const, label:'Approved',         filter:'Approved',  count:approvedCount },
+          { key:'summary'  as const, label:'Payroll Summary',  filter:'Approved',  count:null },
+        ]).map(t=>(
+          <button key={t.key} onClick={()=>setTab(t.key, t.filter)}
+            className={`flex items-center gap-2 px-4 py-2.5 text-sm font-medium border-b-2 -mb-px transition-colors ${subTab===t.key?'border-orange-600 text-orange-600':'border-transparent text-gray-500 hover:text-gray-700'}`}>
+            {t.label}
+            {t.count!==null && <span className={`text-xs px-1.5 py-0.5 rounded-full ${t.key==='pending'&&t.count>0?'bg-amber-100 text-amber-700':'bg-gray-100 text-gray-600'}`}>{t.count}</span>}
+          </button>
+        ))}
+      </div>
+
+      {/* Payroll Summary tab */}
+      {subTab==='summary' && (
+        <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+          <div className="px-4 py-3 border-b border-gray-200 flex items-center justify-between">
+            <h3 className="font-semibold text-gray-900">Approved Payroll Summary</h3>
+            <span className="text-sm text-gray-500">£{Math.round(timesheets.filter(t=>t.status==='Approved').reduce((s,t)=>s+getTotalPay(t),0)).toLocaleString()} total approved</span>
+          </div>
+          {workerSummary.length === 0 ? (
+            <div className="text-center py-12 text-gray-400"><Clock size={32} className="mx-auto mb-2 opacity-30"/><p>No approved timesheets yet</p></div>
+          ) : (
+            <table className="w-full text-sm">
+              <thead className="bg-gray-50 border-b border-gray-200">
+                <tr>{['Worker','Approved Sheets','Total Hours','Total Pay','Avg Hours/Week','Avg Pay/Week'].map(h=><th key={h} className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">{h}</th>)}</tr>
+              </thead>
+              <tbody className="divide-y divide-gray-100">
+                {workerSummary.map(w=>(
+                  <tr key={w.name} className="hover:bg-gray-50">
+                    <td className="px-4 py-3">
+                      <div className="flex items-center gap-3">
+                        <div className="w-8 h-8 rounded-full bg-gradient-to-br from-orange-400 to-orange-600 flex items-center justify-center text-white text-xs font-bold flex-shrink-0">
+                          {w.name.split(' ').map(n=>n[0]).slice(0,2).join('')}
+                        </div>
+                        <span className="font-medium text-gray-900">{w.name}</span>
+                      </div>
+                    </td>
+                    <td className="px-4 py-3 text-gray-700">{w.sheets}</td>
+                    <td className="px-4 py-3 font-medium text-gray-900">{w.hours}h</td>
+                    <td className="px-4 py-3 font-semibold text-green-700">£{Math.round(w.pay).toLocaleString()}</td>
+                    <td className="px-4 py-3 text-gray-600">{w.sheets > 0 ? Math.round(w.hours/w.sheets) : 0}h</td>
+                    <td className="px-4 py-3 text-gray-600">£{w.sheets > 0 ? Math.round(w.pay/w.sheets).toLocaleString() : 0}</td>
+                  </tr>
+                ))}
+              </tbody>
+              <tfoot className="bg-gray-50 border-t border-gray-200">
+                <tr>
+                  <td className="px-4 py-3 font-semibold text-gray-900">Total</td>
+                  <td className="px-4 py-3 font-semibold text-gray-900">{workerSummary.reduce((s,w)=>s+w.sheets,0)}</td>
+                  <td className="px-4 py-3 font-semibold text-gray-900">{workerSummary.reduce((s,w)=>s+w.hours,0)}h</td>
+                  <td className="px-4 py-3 font-semibold text-green-700">£{Math.round(workerSummary.reduce((s,w)=>s+w.pay,0)).toLocaleString()}</td>
+                  <td colSpan={2}/>
+                </tr>
+              </tfoot>
+            </table>
+          )}
+        </div>
+      )}
+
+      {subTab !== 'summary' && <div className="flex flex-wrap gap-3 items-center bg-white rounded-xl border border-gray-200 p-4">
         <div className="relative flex-1 min-w-48">
           <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"/>
           <input value={search} onChange={e=>setSearch(e.target.value)} placeholder="Search worker name…" className="w-full pl-9 pr-4 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"/>
@@ -115,9 +191,9 @@ export function Timesheets() {
         <select value={statusFilter} onChange={e=>setStatusFilter(e.target.value)} className="text-sm border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-orange-500">
           {['All',...STATUS_OPTIONS].map(s=><option key={s}>{s}</option>)}
         </select>
-      </div>
+      </div>}
 
-      {isLoading ? (
+      {subTab !== 'summary' && (isLoading ? (
         <div className="flex justify-center py-20"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-600"/></div>
       ) : (
         <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
@@ -152,7 +228,7 @@ export function Timesheets() {
           </table>
           {filtered.length === 0 && <div className="text-center py-16 text-gray-400"><Clock size={40} className="mx-auto mb-3 opacity-30"/><p>No timesheets found</p></div>}
         </div>
-      )}
+      ))}
 
       {showModal && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">

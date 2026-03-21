@@ -33,6 +33,7 @@ export function Invoicing() {
   const updateMutation = useUpdate();
   const deleteMutation = useDelete();
 
+  const [subTab, setSubTab] = useState<'invoices'|'byproject'|'aged'>('invoices');
   const [filter, setFilter] = useState<string>('all');
   const [search, setSearch] = useState('');
   const [showModal, setShowModal] = useState(false);
@@ -53,6 +54,25 @@ export function Invoicing() {
     paid:    invoices.filter(i => i.status === 'paid').reduce((s, i) => s + Number(i.amount), 0),
     overdue: invoices.filter(i => i.status === 'overdue').reduce((s, i) => s + Number(i.amount), 0),
   };
+
+  // By project breakdown
+  const projectMap = new Map<string, { raised:number; paid:number; overdue:number; count:number }>();
+  invoices.forEach(i => {
+    const proj = String(i.project||i.client||'Unassigned');
+    const e = projectMap.get(proj) ?? { raised:0, paid:0, overdue:0, count:0 };
+    e.raised += Number(i.amount??0);
+    if (i.status==='paid') e.paid += Number(i.amount??0);
+    if (i.status==='overdue') e.overdue += Number(i.amount??0);
+    e.count++;
+    projectMap.set(proj, e);
+  });
+  const byProject = Array.from(projectMap.entries()).map(([name,v])=>({name,...v})).sort((a,b)=>b.raised-a.raised);
+
+  // Aged debt
+  const agedDebt = invoices.filter(i=>i.status==='overdue'||i.status==='sent').map(i => ({
+    ...i,
+    daysAge: i.due_date ? Math.max(0, Math.round((Date.now()-new Date(String(i.due_date)).getTime())/86400000)) : 0,
+  } as AnyRow & { daysAge: number })).sort((a,b)=>b.daysAge-a.daysAge);
 
   const selectedInv = invoices.find(i => i.id === selectedId);
 
@@ -127,8 +147,92 @@ export function Invoicing() {
         </div>
       </div>
 
+      {/* Sub-tab nav */}
+      <div className="flex gap-1 border-b border-gray-700 mb-6">
+        {([
+          { key:'invoices'  as const, label:'Invoices' },
+          { key:'byproject' as const, label:'By Project' },
+          { key:'aged'      as const, label:'Aged Debt', badge:agedDebt.filter(i=>i.status==='overdue').length },
+        ]).map(t=>(
+          <button key={t.key} onClick={()=>setSubTab(t.key)}
+            className={`flex items-center gap-2 px-4 py-2.5 text-sm font-medium border-b-2 -mb-px transition-colors ${subTab===t.key?'border-emerald-500 text-emerald-400':'border-transparent text-gray-400 hover:text-gray-200'}`}>
+            {t.label}
+            {'badge' in t && t.badge!=null && t.badge > 0 && <span className="text-xs px-1.5 py-0.5 rounded-full bg-red-900/60 text-red-400">{t.badge}</span>}
+          </button>
+        ))}
+      </div>
+
+      {/* ── BY PROJECT tab ─── */}
+      {subTab==='byproject' && (
+        <div className="rounded-2xl border border-gray-700 overflow-hidden">
+          <table className="w-full text-sm">
+            <thead className="bg-gray-800 border-b border-gray-700">
+              <tr>{['Project / Client','Invoices','Total Raised','Paid','Outstanding','Overdue'].map(h=><th key={h} className="text-left px-4 py-3 text-xs font-semibold text-gray-400 uppercase tracking-wide">{h}</th>)}</tr>
+            </thead>
+            <tbody className="divide-y divide-gray-800">
+              {byProject.map(row=>(
+                <tr key={row.name} className="hover:bg-gray-800/50">
+                  <td className="px-4 py-3 font-medium text-white">{row.name}</td>
+                  <td className="px-4 py-3 text-gray-400">{row.count}</td>
+                  <td className="px-4 py-3 text-white">{fmt(row.raised)}</td>
+                  <td className="px-4 py-3 text-emerald-400">{fmt(row.paid)}</td>
+                  <td className="px-4 py-3 text-blue-400">{fmt(row.raised-row.paid-row.overdue)}</td>
+                  <td className="px-4 py-3 text-red-400">{row.overdue>0?fmt(row.overdue):'—'}</td>
+                </tr>
+              ))}
+            </tbody>
+            <tfoot className="bg-gray-800/50 border-t border-gray-700">
+              <tr>
+                <td className="px-4 py-3 font-semibold text-white">Total</td>
+                <td className="px-4 py-3 text-gray-400">{invoices.length}</td>
+                <td className="px-4 py-3 font-semibold text-white">{fmt(totals.sent+totals.paid+totals.overdue+totals.draft)}</td>
+                <td className="px-4 py-3 font-semibold text-emerald-400">{fmt(totals.paid)}</td>
+                <td className="px-4 py-3 font-semibold text-blue-400">{fmt(totals.sent)}</td>
+                <td className="px-4 py-3 font-semibold text-red-400">{fmt(totals.overdue)}</td>
+              </tr>
+            </tfoot>
+          </table>
+          {byProject.length===0&&<div className="text-center py-12 text-gray-500"><FileText className="w-8 h-8 mx-auto mb-2 opacity-30"/><p>No invoices yet</p></div>}
+        </div>
+      )}
+
+      {/* ── AGED DEBT tab ─── */}
+      {subTab==='aged' && (
+        <div className="rounded-2xl border border-gray-700 overflow-hidden">
+          <div className="px-4 py-3 bg-gray-800 border-b border-gray-700 flex items-center gap-3">
+            <span className="text-sm font-semibold text-white">Outstanding & Overdue Invoices</span>
+            <span className="text-xs text-gray-400">Sorted by age</span>
+          </div>
+          {agedDebt.length===0 ? (
+            <div className="text-center py-12 text-gray-500"><FileText className="w-8 h-8 mx-auto mb-2 opacity-30"/><p>No outstanding invoices</p></div>
+          ) : (
+            <table className="w-full text-sm">
+              <thead className="bg-gray-800/60 border-b border-gray-700">
+                <tr>{['Invoice','Client / Project','Amount','Due Date','Age','Status'].map(h=><th key={h} className="text-left px-4 py-3 text-xs font-semibold text-gray-400 uppercase tracking-wide">{h}</th>)}</tr>
+              </thead>
+              <tbody className="divide-y divide-gray-800">
+                {agedDebt.map(inv=>(
+                  <tr key={String(inv.id??'')} className="hover:bg-gray-800/50">
+                    <td className="px-4 py-3 font-mono text-gray-300">{String(inv.number??'—')}</td>
+                    <td className="px-4 py-3 text-white">{String(inv.client??inv.project??'—')}</td>
+                    <td className="px-4 py-3 font-semibold text-white">{fmt(Number(inv.amount??0))}</td>
+                    <td className="px-4 py-3 text-gray-400">{String(inv.due_date??'—')}</td>
+                    <td className="px-4 py-3">
+                      <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${(inv.daysAge as number)>30?'bg-red-900/60 text-red-400':(inv.daysAge as number)>14?'bg-amber-900/60 text-amber-400':'bg-gray-700 text-gray-300'}`}>
+                        {(inv.daysAge as number)===0?'Current':`${inv.daysAge}d`}
+                      </span>
+                    </td>
+                    <td className="px-4 py-3"><span className={`text-xs px-2 py-0.5 rounded-full font-semibold uppercase ${inv.status==='overdue'?'bg-red-900/60 text-red-400':'bg-blue-900/40 text-blue-400'}`}>{String(inv.status??'')}</span></td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
+        </div>
+      )}
+
       {/* KPI Cards */}
-      <div className="grid grid-cols-4 gap-4 mb-6">
+      {subTab==='invoices' && <div className="grid grid-cols-4 gap-4 mb-6">
         {[
           { key: 'sent',    label: 'Outstanding',  val: totals.sent,    cls: 'text-blue-400',   border: 'border-blue-800/50' },
           { key: 'paid',    label: 'Collected',    val: totals.paid,    cls: 'text-green-400',  border: 'border-green-800/50' },
@@ -142,8 +246,9 @@ export function Invoicing() {
             <p className={clsx('text-xl font-bold mt-1', cls)}>{fmt(val)}</p>
           </button>
         ))}
-      </div>
+      </div>}
 
+      {subTab==='invoices' && (<>
       {/* Search + Filters */}
       <div className="flex gap-3 mb-5 flex-wrap">
         <div className="relative flex-1 max-w-xs">
@@ -230,6 +335,7 @@ export function Invoicing() {
           </div>
         )}
       </div>
+      </>)}
 
       {/* Create / Edit Modal */}
       {showModal && (

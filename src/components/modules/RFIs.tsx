@@ -28,9 +28,11 @@ export function RFIs() {
   const updateMutation = useUpdate();
   const deleteMutation = useDelete();
 
+  const [subTab, setSubTab] = useState('all');
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('All');
   const [priorityFilter, setPriorityFilter] = useState('All');
+  function setTab(key: string, filter: string) { setSubTab(key); setStatusFilter(filter); }
   const [showModal, setShowModal] = useState(false);
   const [editing, setEditing] = useState<AnyRow | null>(null);
   const [form, setForm] = useState({ ...emptyForm });
@@ -112,6 +114,22 @@ export function RFIs() {
               <div><p className="text-xs text-gray-500">{kpi.label}</p><p className="text-xl font-bold text-gray-900">{kpi.value}</p></div>
             </div>
           </div>
+        ))}
+      </div>
+
+      <div className="flex gap-1 border-b border-gray-200">
+        {([
+          { key:'all',      label:'All RFIs',          filter:'All',              count:rfis.length },
+          { key:'open',     label:'Open',               filter:'Open',             count:openCount },
+          { key:'pending',  label:'Pending Response',   filter:'Pending Response', count:rfis.filter(r=>r.status==='Pending Response').length },
+          { key:'answered', label:'Answered / Closed',  filter:'Answered',         count:answeredCount },
+          { key:'overdue',  label:'Overdue',            filter:'Overdue',          count:overdueCount },
+        ]).map(t=>(
+          <button key={t.key} onClick={()=>setTab(t.key, t.filter)}
+            className={`flex items-center gap-2 px-4 py-2.5 text-sm font-medium border-b-2 -mb-px transition-colors ${subTab===t.key?'border-orange-600 text-orange-600':'border-transparent text-gray-500 hover:text-gray-700'}`}>
+            {t.label}
+            <span className={`text-xs px-1.5 py-0.5 rounded-full ${t.key==='overdue'&&t.count>0?'bg-red-100 text-red-700':t.key==='open'&&t.count>0?'bg-orange-100 text-orange-700':'bg-gray-100 text-gray-600'}`}>{t.count}</span>
+          </button>
         ))}
       </div>
 

@@ -25,9 +25,11 @@ export function Materials() {
   const updateMutation = useUpdate();
   const deleteMutation = useDelete();
 
+  const [subTab, setSubTab] = useState('all');
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('All');
   const [categoryFilter, setCategoryFilter] = useState('All');
+  function setTab(key: string, filter: string) { setSubTab(key); setStatusFilter(filter); }
   const [showModal, setShowModal] = useState(false);
   const [editing, setEditing] = useState<AnyRow | null>(null);
   const [form, setForm] = useState({ ...emptyForm });
@@ -35,7 +37,12 @@ export function Materials() {
   const filtered = materials.filter(m => {
     const name = String(m.name??'').toLowerCase();
     const matchSearch = name.includes(search.toLowerCase());
-    const matchStatus = statusFilter === 'All' || m.status === statusFilter;
+    let matchStatus = statusFilter === 'All' || m.status === statusFilter;
+    if (subTab === 'onsite') matchStatus = ['Delivered','On Site'].includes(String(m.status??''));
+    if (subTab === 'overdue') {
+      if (!m.delivery_date || m.status==='Delivered' || m.status==='On Site') return false;
+      return matchSearch && new Date(String(m.delivery_date)) < new Date();
+    }
     const matchCat = categoryFilter === 'All' || m.category === categoryFilter;
     return matchSearch && matchStatus && matchCat;
   });
@@ -107,6 +114,22 @@ export function Materials() {
               <div><p className="text-xs text-gray-500">{kpi.label}</p><p className="text-xl font-bold text-gray-900">{kpi.value}</p></div>
             </div>
           </div>
+        ))}
+      </div>
+
+      <div className="flex gap-1 border-b border-gray-200">
+        {([
+          { key:'all',       label:'All Materials',      filter:'All',        count:materials.length },
+          { key:'onorder',   label:'On Order',           filter:'On Order',   count:onOrderCount },
+          { key:'transit',   label:'In Transit',         filter:'In Transit', count:materials.filter(m=>m.status==='In Transit').length },
+          { key:'onsite',    label:'Delivered / On Site',filter:'Delivered',  count:deliveredCount },
+          { key:'overdue',   label:'Overdue Deliveries', filter:'All',        count:overdueDeliveries },
+        ]).map(t=>(
+          <button key={t.key} onClick={()=>{ setSubTab(t.key); if(t.key==='overdue'||t.key==='onsite'){ setStatusFilter('All'); }else{ setStatusFilter(t.filter); } }}
+            className={`flex items-center gap-2 px-4 py-2.5 text-sm font-medium border-b-2 -mb-px transition-colors ${subTab===t.key?'border-orange-600 text-orange-600':'border-transparent text-gray-500 hover:text-gray-700'}`}>
+            {t.label}
+            <span className={`text-xs px-1.5 py-0.5 rounded-full ${t.key==='overdue'&&t.count>0?'bg-red-100 text-red-700':'bg-gray-100 text-gray-600'}`}>{t.count}</span>
+          </button>
         ))}
       </div>
 

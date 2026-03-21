@@ -24,6 +24,8 @@ export function CIS() {
   const updateMutation = useUpdate();
   const deleteMutation = useDelete();
 
+  const [subTab, setSubTab] = useState('all');
+  function setTab(key: string, filter: string) { setSubTab(key); setStatusFilter(filter); }
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('All');
   const [showModal, setShowModal] = useState(false);
@@ -121,6 +123,21 @@ export function CIS() {
               <div><p className="text-xs text-gray-500">{kpi.label}</p><p className="text-xl font-bold text-gray-900">{kpi.value}</p></div>
             </div>
           </div>
+        ))}
+      </div>
+
+      <div className="flex gap-1 border-b border-gray-200">
+        {([
+          { key:'all', label:'All Returns', filter:'All', count:returns.length, cls:'' },
+          { key:'draft', label:'Draft', filter:'Draft', count:returns.filter(r=>r.status==='Draft').length, cls:'' },
+          { key:'submitted', label:'Submitted', filter:'Submitted', count:submittedCount, cls:'' },
+          { key:'overdue', label:'Overdue', filter:'Overdue', count:overdueCount, cls:'bg-red-100 text-red-700' },
+        ]).map(t=>(
+          <button key={t.key} onClick={()=>setTab(t.key, t.filter)}
+            className={`flex items-center gap-2 px-4 py-2.5 text-sm font-medium border-b-2 -mb-px transition-colors ${subTab===t.key?'border-orange-600 text-orange-600':'border-transparent text-gray-500 hover:text-gray-700'}`}>
+            {t.label}
+            <span className={`text-xs px-1.5 py-0.5 rounded-full ${t.cls||'bg-gray-100 text-gray-600'}`}>{t.count}</span>
+          </button>
         ))}
       </div>
 

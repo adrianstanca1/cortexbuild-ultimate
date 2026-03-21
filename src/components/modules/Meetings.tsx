@@ -23,8 +23,10 @@ export function Meetings() {
   const updateMutation = useUpdate();
   const deleteMutation = useDelete();
 
+  const [subTab, setSubTab] = useState('upcoming');
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('All');
+  function setTab(key: string, filter: string) { setSubTab(key); setStatusFilter(filter); }
   const [showModal, setShowModal] = useState(false);
   const [editing, setEditing] = useState<AnyRow | null>(null);
   const [form, setForm] = useState({ ...emptyForm });
@@ -33,6 +35,9 @@ export function Meetings() {
   const today = new Date().toISOString().slice(0,10);
 
   const filtered = meetings.filter(m => {
+    if (subTab==='upcoming') return String(m.date??'')>=today && m.status!=='Cancelled' && m.status!=='Completed';
+    if (subTab==='past') return String(m.date??'')<today || m.status==='Completed';
+    if (subTab==='today') return String(m.date??'')===today;
     const title = String(m.title??'').toLowerCase();
     const type = String(m.meeting_type??'').toLowerCase();
     const matchSearch = title.includes(search.toLowerCase()) || type.includes(search.toLowerCase());
@@ -94,6 +99,21 @@ export function Meetings() {
               <div><p className="text-xs text-gray-500">{kpi.label}</p><p className="text-xl font-bold text-gray-900">{kpi.value}</p></div>
             </div>
           </div>
+        ))}
+      </div>
+
+      <div className="flex gap-1 border-b border-gray-200">
+        {([
+          { key:'upcoming', label:'Upcoming',  count:upcomingCount },
+          { key:'today',    label:'Today',     count:todayCount },
+          { key:'past',     label:'Past',      count:completedCount },
+          { key:'all',      label:'All',       count:meetings.length },
+        ]).map(t=>(
+          <button key={t.key} onClick={()=>setTab(t.key,'All')}
+            className={`flex items-center gap-2 px-4 py-2.5 text-sm font-medium border-b-2 -mb-px transition-colors ${subTab===t.key?'border-orange-600 text-orange-600':'border-transparent text-gray-500 hover:text-gray-700'}`}>
+            {t.label}
+            <span className={`text-xs px-1.5 py-0.5 rounded-full ${t.key==='today'&&t.count>0?'bg-blue-100 text-blue-700':'bg-gray-100 text-gray-600'}`}>{t.count}</span>
+          </button>
         ))}
       </div>
 

@@ -28,9 +28,11 @@ export function PunchList() {
   const updateMutation = useUpdate();
   const deleteMutation = useDelete();
 
+  const [subTab, setSubTab] = useState('open');
   const [search, setSearch] = useState('');
-  const [statusFilter, setStatusFilter] = useState('All');
+  const [statusFilter, setStatusFilter] = useState('Open');
   const [priorityFilter, setPriorityFilter] = useState('All');
+  function setTab(key: string, filter: string) { setSubTab(key); setStatusFilter(filter); }
   const [showModal, setShowModal] = useState(false);
   const [editing, setEditing] = useState<AnyRow | null>(null);
   const [form, setForm] = useState({ ...emptyForm });
@@ -40,7 +42,8 @@ export function PunchList() {
     const desc = String(i.description??'').toLowerCase();
     const num = String(i.item_number??'').toLowerCase();
     const matchSearch = desc.includes(search.toLowerCase()) || num.includes(search.toLowerCase());
-    const matchStatus = statusFilter === 'All' || i.status === statusFilter;
+    let matchStatus = statusFilter === 'All' || i.status === statusFilter;
+    if (subTab==='closed') matchStatus = ['Resolved','Closed','Disputed'].includes(String(i.status??''));
     const matchPriority = priorityFilter === 'All' || i.priority === priorityFilter;
     return matchSearch && matchStatus && matchPriority;
   });
@@ -118,6 +121,21 @@ export function PunchList() {
               <div><p className="text-xs text-gray-500">{kpi.label}</p><p className="text-xl font-bold text-gray-900">{kpi.value}</p></div>
             </div>
           </div>
+        ))}
+      </div>
+
+      <div className="flex gap-1 border-b border-gray-200">
+        {([
+          { key:'open',     label:'Open',        filter:'Open',        count:openCount },
+          { key:'progress', label:'In Progress',  filter:'In Progress', count:inProgressCount },
+          { key:'closed',   label:'Resolved / Closed', filter:'Resolved', count:closedCount },
+          { key:'all',      label:'All Items',   filter:'All',         count:items.length },
+        ]).map(t=>(
+          <button key={t.key} onClick={()=>setTab(t.key,t.filter)}
+            className={`flex items-center gap-2 px-4 py-2.5 text-sm font-medium border-b-2 -mb-px transition-colors ${subTab===t.key?'border-orange-600 text-orange-600':'border-transparent text-gray-500 hover:text-gray-700'}`}>
+            {t.label}
+            <span className={`text-xs px-1.5 py-0.5 rounded-full ${t.key==='open'&&t.count>0?'bg-red-100 text-red-700':'bg-gray-100 text-gray-600'}`}>{t.count}</span>
+          </button>
         ))}
       </div>
 

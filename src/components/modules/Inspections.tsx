@@ -24,6 +24,8 @@ export function Inspections() {
   const updateMutation = useUpdate();
   const deleteMutation = useDelete();
 
+  const [subTab, setSubTab] = useState('all');
+  function setTab(key: string, filter: string) { setSubTab(key); setStatusFilter(filter); }
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('All');
   const [typeFilter, setTypeFilter] = useState('All');
@@ -113,6 +115,22 @@ export function Inspections() {
               <div><p className="text-xs text-gray-500">{kpi.label}</p><p className="text-xl font-bold text-gray-900">{kpi.value}</p></div>
             </div>
           </div>
+        ))}
+      </div>
+
+      <div className="flex gap-1 border-b border-gray-200">
+        {([
+          { key:'all', label:'All', filter:'All', count:inspections.length, cls:'' },
+          { key:'scheduled', label:'Scheduled', filter:'Scheduled', count:scheduledCount, cls:'bg-blue-100 text-blue-700' },
+          { key:'passed', label:'Passed', filter:'Passed', count:passedCount, cls:'bg-green-100 text-green-700' },
+          { key:'failed', label:'Failed', filter:'Failed', count:failedCount, cls:'bg-red-100 text-red-700' },
+          { key:'duesoon', label:'Due Soon', filter:'Scheduled', count:dueSoon, cls:'bg-amber-100 text-amber-700' },
+        ]).map(t=>(
+          <button key={t.key} onClick={()=>setTab(t.key, t.filter)}
+            className={`flex items-center gap-2 px-4 py-2.5 text-sm font-medium border-b-2 -mb-px transition-colors ${subTab===t.key?'border-orange-600 text-orange-600':'border-transparent text-gray-500 hover:text-gray-700'}`}>
+            {t.label}
+            <span className={`text-xs px-1.5 py-0.5 rounded-full ${t.cls||'bg-gray-100 text-gray-600'}`}>{t.count}</span>
+          </button>
         ))}
       </div>
 

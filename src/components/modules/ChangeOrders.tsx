@@ -25,17 +25,23 @@ export function ChangeOrders() {
   const updateMutation = useUpdate();
   const deleteMutation = useDelete();
 
+  const [subTab, setSubTab] = useState('all');
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('All');
   const [showModal, setShowModal] = useState(false);
+  function setTab(key: string, filter: string) { setSubTab(key); setStatusFilter(filter); }
   const [editing, setEditing] = useState<AnyRow | null>(null);
   const [form, setForm] = useState({ ...emptyForm });
 
+  const PENDING_STATUSES = ['Draft','Submitted','Under Review'];
+  const REJECTED_STATUSES = ['Rejected','Withdrawn'];
   const filtered = orders.filter(o => {
     const title = String(o.title??'').toLowerCase();
     const num = String(o.co_number??'').toLowerCase();
     const matchSearch = title.includes(search.toLowerCase()) || num.includes(search.toLowerCase());
-    const matchStatus = statusFilter === 'All' || o.status === statusFilter;
+    let matchStatus = statusFilter === 'All' || o.status === statusFilter;
+    if (subTab === 'pending') matchStatus = PENDING_STATUSES.includes(String(o.status??''));
+    if (subTab === 'rejected') matchStatus = REJECTED_STATUSES.includes(String(o.status??''));
     return matchSearch && matchStatus;
   });
 
@@ -100,6 +106,21 @@ export function ChangeOrders() {
               <div><p className="text-xs text-gray-500">{kpi.label}</p><p className="text-xl font-bold text-gray-900">{kpi.value}</p></div>
             </div>
           </div>
+        ))}
+      </div>
+
+      <div className="flex gap-1 border-b border-gray-200">
+        {([
+          { key:'all',      label:'All COs',       filter:'All',          count:orders.length },
+          { key:'pending',  label:'Pending',        filter:'Submitted',    count:orders.filter(o=>['Draft','Submitted','Under Review'].includes(String(o.status??''))).length },
+          { key:'approved', label:'Approved',       filter:'Approved',     count:approvedCount },
+          { key:'rejected', label:'Rejected',       filter:'Rejected',     count:orders.filter(o=>['Rejected','Withdrawn'].includes(String(o.status??''))).length },
+        ]).map(t=>(
+          <button key={t.key} onClick={()=>{ setSubTab(t.key); if(t.key==='pending'){ setStatusFilter('All'); } else { setStatusFilter(t.filter); } }}
+            className={`flex items-center gap-2 px-4 py-2.5 text-sm font-medium border-b-2 -mb-px transition-colors ${subTab===t.key?'border-orange-600 text-orange-600':'border-transparent text-gray-500 hover:text-gray-700'}`}>
+            {t.label}
+            <span className={`text-xs px-1.5 py-0.5 rounded-full ${t.key==='approved'?'bg-green-100 text-green-700':t.key==='rejected'?'bg-red-100 text-red-700':'bg-gray-100 text-gray-600'}`}>{t.count}</span>
+          </button>
         ))}
       </div>
 
