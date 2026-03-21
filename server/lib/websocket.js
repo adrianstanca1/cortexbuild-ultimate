@@ -6,7 +6,7 @@
 const WebSocket = require('ws');
 const jwt = require('jsonwebtoken');
 
-const JWT_SECRET = process.env.JWT_SECRET || 'cortexbuild-secret-key';
+const JWT_SECRET = process.env.JWT_SECRET || 'cortexbuild_secret';
 
 // Message types
 const MESSAGE_TYPES = {
@@ -38,7 +38,9 @@ function initWebSocket(server) {
       return;
     }
 
-    const userId = decodeToken(token).id;
+    const decoded = decodeToken(token);
+    const userId = decoded.id;
+    const userRole = decoded.role;
     const userRooms = new Set();
 
     // Register client
@@ -55,7 +57,7 @@ function initWebSocket(server) {
     ws.on('message', (data) => {
       try {
         const message = JSON.parse(data.toString());
-        handleMessage(ws, userId, message);
+        handleMessage(ws, userId, userRole, message);
       } catch (err) {
         console.error('[WS] Message parse error:', err.message);
         sendError(ws, 'Invalid message format');
@@ -184,7 +186,7 @@ function leaveRoom(userId, roomId) {
 /**
  * Handle incoming message
  */
-function handleMessage(ws, userId, message) {
+function handleMessage(ws, userId, userRole, message) {
   const { type, event, payload, room } = message;
 
   switch (event) {
@@ -232,6 +234,10 @@ function handleMessage(ws, userId, message) {
       break;
 
     case 'broadcast':
+      if (!['super_admin', 'company_owner', 'admin'].includes(userRole)) {
+        sendError(ws, 'Insufficient permissions to broadcast');
+        break;
+      }
       broadcast({
         type: MESSAGE_TYPES.SYSTEM,
         event: 'broadcast',

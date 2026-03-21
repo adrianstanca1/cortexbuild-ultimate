@@ -314,7 +314,6 @@ export default function LoginPage() {
         position: 'relative',
         overflow: 'hidden',
         background: 'linear-gradient(160deg, #090e1a 0%, #0d1117 50%, #080b12 100%)',
-        ...(typeof window !== 'undefined' && window.innerWidth > 900 ? { display: 'flex' } : {}),
       }} className="hero-panel">
 
         {/* Blueprint micro-grid */}

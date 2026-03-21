@@ -173,7 +173,7 @@ router.delete('/users/:id', authMiddleware, async (req, res) => {
   if (!['super_admin','company_owner'].includes(req.user.role)) {
     return res.status(403).json({ message: 'Insufficient permissions' });
   }
-  if (req.params.id === req.user.id) return res.status(400).json({ message: 'Cannot delete your own account' });
+  if (String(req.params.id) === String(req.user.id)) return res.status(400).json({ message: 'Cannot delete your own account' });
 
   try {
     const { rowCount } = await pool.query('DELETE FROM users WHERE id = $1', [req.params.id]);
@@ -188,6 +188,10 @@ router.delete('/users/:id', authMiddleware, async (req, res) => {
 router.put('/avatar', authMiddleware, async (req, res) => {
   const { avatar } = req.body;
   if (!avatar) return res.status(400).json({ message: 'Avatar URL required' });
+  // Only allow https:// URLs to prevent javascript: / data: URI injection
+  if (typeof avatar !== 'string' || !avatar.startsWith('https://')) {
+    return res.status(400).json({ message: 'Avatar must be a valid https:// URL' });
+  }
   try {
     const { rows } = await pool.query(
       'UPDATE users SET avatar=$1 WHERE id=$2 RETURNING id,name,email,role,company,phone,avatar',
@@ -213,10 +217,15 @@ router.get('/settings', authMiddleware, async (req, res) => {
   }
 });
 
+const VALID_SETTING_KEYS = ['notifications', 'theme', 'company', 'language', 'timezone', 'dashboard', 'alerts', 'reports'];
+
 // PUT /api/auth/settings — upsert a setting key
 router.put('/settings', authMiddleware, async (req, res) => {
   const { key, value } = req.body;
   if (!key) return res.status(400).json({ message: 'key required' });
+  if (!VALID_SETTING_KEYS.includes(key)) {
+    return res.status(400).json({ message: `Invalid setting key. Allowed: ${VALID_SETTING_KEYS.join(', ')}` });
+  }
   try {
     await pool.query(
       `INSERT INTO app_settings (user_id, key, value)
