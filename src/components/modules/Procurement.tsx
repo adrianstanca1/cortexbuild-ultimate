@@ -17,7 +17,7 @@ const STATUS_COLOUR: Record<string,string> = {
   ordered:          'bg-blue-500/20 text-blue-300',
   pending_delivery: 'bg-orange-500/20 text-orange-300',
   on_site:          'bg-green-500/20 text-green-300',
-  delivered:        'bg-emerald-100 text-emerald-700',
+  delivered:        'bg-emerald-500/20 text-emerald-300',
 };
 
 const STATUS_ICON: Record<string, typeof Truck> = {

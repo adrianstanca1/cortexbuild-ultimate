@@ -88,10 +88,10 @@ export function Meetings() {
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         {[
-          { label:'Today', value:todayCount, icon:Calendar, colour:'text-orange-600', bg:'bg-orange-50' },
-          { label:'Upcoming', value:upcomingCount, icon:Clock, colour:'text-blue-600', bg:'bg-blue-50' },
-          { label:'Completed', value:completedCount, icon:CheckCircle, colour:'text-green-600', bg:'bg-green-50' },
-          { label:'With Actions', value:actionItems, icon:Users, colour:'text-purple-600', bg:'bg-purple-50' },
+          { label:'Today', value:todayCount, icon:Calendar, colour:'text-orange-400', bg:'bg-orange-500/20' },
+          { label:'Upcoming', value:upcomingCount, icon:Clock, colour:'text-blue-400', bg:'bg-blue-500/20' },
+          { label:'Completed', value:completedCount, icon:CheckCircle, colour:'text-green-400', bg:'bg-green-500/20' },
+          { label:'With Actions', value:actionItems, icon:Users, colour:'text-purple-400', bg:'bg-purple-500/20' },
         ].map(kpi=>(
           <div key={kpi.label} className="bg-gray-900 rounded-xl border border-gray-700 p-4">
             <div className="flex items-center gap-3">
@@ -110,7 +110,7 @@ export function Meetings() {
           { key:'all',      label:'All',       count:meetings.length },
         ]).map(t=>(
           <button key={t.key} onClick={()=>setTab(t.key,'All')}
-            className={`flex items-center gap-2 px-4 py-2.5 text-sm font-medium border-b-2 -mb-px transition-colors ${subTab===t.key?'border-orange-600 text-orange-600':'border-transparent text-gray-500 hover:text-gray-300'}`}>
+            className={`flex items-center gap-2 px-4 py-2.5 text-sm font-medium border-b-2 -mb-px transition-colors ${subTab===t.key?'border-orange-600 text-orange-400':'border-transparent text-gray-500 hover:text-gray-300'}`}>
             {t.label}
             <span className={`text-xs px-1.5 py-0.5 rounded-full ${t.key==='today'&&t.count>0?'bg-blue-500/20 text-blue-300':'bg-gray-800 text-gray-300'}`}>{t.count}</span>
           </button>
@@ -141,7 +141,7 @@ export function Meetings() {
               <div key={id}>
                 <div className="flex items-center gap-4 p-4 hover:bg-gray-800 cursor-pointer" onClick={()=>setExpanded(isExp?null:id)}>
                   <div className={`w-14 text-center flex-shrink-0 rounded-lg py-2 ${isToday?'bg-orange-500/20':'bg-gray-800'}`}>
-                    <p className={`text-xs font-bold ${isToday?'text-orange-700':'text-gray-300'}`}>{String(m.date??'—').slice(5)}</p>
+                    <p className={`text-xs font-bold ${isToday?'text-orange-300':'text-gray-300'}`}>{String(m.date??'—').slice(5)}</p>
                     {!!m.time && <p className="text-xs text-gray-500">{String(m.time)}</p>}
                   </div>
                   <div className="flex-1 min-w-0">
@@ -152,16 +152,16 @@ export function Meetings() {
                     <div className="flex items-center gap-3 mt-0.5">
                       <span className="text-xs text-gray-500">{String(m.meeting_type??'')}</span>
                       {!!m.location && <span className="text-xs text-gray-500 flex items-center gap-1"><MapPin size={10}/>{String(m.location)}</span>}
-                      {!!m.link && <span className="text-xs text-blue-600 flex items-center gap-1"><Video size={10}/>Online</span>}
+                      {!!m.link && <span className="text-xs text-blue-400 flex items-center gap-1"><Video size={10}/>Online</span>}
                     </div>
                   </div>
                   <div className="flex items-center gap-2">
                     <span className={`text-xs px-2 py-1 rounded-full font-medium ${statusColour[String(m.status??'')] ?? 'bg-gray-800 text-gray-300'}`}>{String(m.status??'')}</span>
                   </div>
                   <div className="flex items-center gap-1">
-                    {m.status==='Scheduled' && <button onClick={e=>{e.stopPropagation();markComplete(m);}} className="p-1.5 text-green-600 hover:bg-green-50 rounded" title="Mark Complete"><CheckCircle size={14}/></button>}
-                    <button onClick={e=>{e.stopPropagation();openEdit(m);}} className="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded"><Edit2 size={14}/></button>
-                    <button onClick={e=>{e.stopPropagation();handleDelete(id);}} className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded"><Trash2 size={14}/></button>
+                    {m.status==='Scheduled' && <button onClick={e=>{e.stopPropagation();markComplete(m);}} className="p-1.5 text-green-400 hover:bg-green-500/20 rounded" title="Mark Complete"><CheckCircle size={14}/></button>}
+                    <button onClick={e=>{e.stopPropagation();openEdit(m);}} className="p-1.5 text-gray-400 hover:text-blue-400 hover:bg-blue-500/20 rounded"><Edit2 size={14}/></button>
+                    <button onClick={e=>{e.stopPropagation();handleDelete(id);}} className="p-1.5 text-gray-400 hover:text-red-400 hover:bg-red-500/20 rounded"><Trash2 size={14}/></button>
                     {isExp?<ChevronUp size={16} className="text-gray-400"/>:<ChevronDown size={16} className="text-gray-400"/>}
                   </div>
                 </div>
@@ -170,8 +170,8 @@ export function Meetings() {
                     {!!m.attendees && <div><p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">Attendees</p><p className="text-gray-300">{String(m.attendees)}</p></div>}
                     {!!m.agenda && <div><p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">Agenda</p><p className="text-gray-300 whitespace-pre-wrap">{String(m.agenda)}</p></div>}
                     {!!m.minutes && <div><p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">Minutes</p><p className="text-gray-300 whitespace-pre-wrap">{String(m.minutes)}</p></div>}
-                    {!!m.actions && <div><p className="text-xs font-semibold text-orange-600 uppercase tracking-wide mb-1">Action Items</p><p className="text-gray-300 whitespace-pre-wrap">{String(m.actions)}</p></div>}
-                    {!!m.link && <div><p className="text-xs text-gray-400 mb-1">Meeting Link</p><a href={String(m.link)} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline text-xs">{String(m.link)}</a></div>}
+                    {!!m.actions && <div><p className="text-xs font-semibold text-orange-400 uppercase tracking-wide mb-1">Action Items</p><p className="text-gray-300 whitespace-pre-wrap">{String(m.actions)}</p></div>}
+                    {!!m.link && <div><p className="text-xs text-gray-400 mb-1">Meeting Link</p><a href={String(m.link)} target="_blank" rel="noopener noreferrer" className="text-blue-400 hover:underline text-xs">{String(m.link)}</a></div>}
                   </div>
                 )}
               </div>

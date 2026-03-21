@@ -95,18 +95,18 @@ export function Materials() {
       </div>
 
       {overdueDeliveries > 0 && (
-        <div className="flex items-center gap-3 bg-red-50 border border-red-200 rounded-xl px-4 py-3">
-          <AlertTriangle size={18} className="text-red-600"/>
-          <p className="text-sm text-red-700"><span className="font-semibold">{overdueDeliveries} overdue deliver{overdueDeliveries>1?'ies':'y'}</span> — chase suppliers.</p>
+        <div className="flex items-center gap-3 bg-red-500/10 border border-red-500/30 rounded-xl px-4 py-3">
+          <AlertTriangle size={18} className="text-red-400"/>
+          <p className="text-sm text-red-300"><span className="font-semibold">{overdueDeliveries} overdue deliver{overdueDeliveries>1?'ies':'y'}</span> — chase suppliers.</p>
         </div>
       )}
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         {[
-          { label:'Total Value', value:`£${Math.round(totalValue).toLocaleString()}`, icon:PoundSterling, colour:'text-blue-600', bg:'bg-blue-50' },
-          { label:'On Order', value:onOrderCount, icon:Clock, colour:'text-yellow-600', bg:'bg-yellow-50' },
-          { label:'Delivered / On Site', value:deliveredCount, icon:CheckCircle, colour:'text-green-600', bg:'bg-green-50' },
-          { label:'Overdue Deliveries', value:overdueDeliveries, icon:AlertTriangle, colour:overdueDeliveries>0?'text-red-600':'text-gray-400', bg:overdueDeliveries>0?'bg-red-50':'bg-gray-800' },
+          { label:'Total Value', value:`£${Math.round(totalValue).toLocaleString()}`, icon:PoundSterling, colour:'text-blue-400', bg:'bg-blue-500/20' },
+          { label:'On Order', value:onOrderCount, icon:Clock, colour:'text-yellow-400', bg:'bg-yellow-500/20' },
+          { label:'Delivered / On Site', value:deliveredCount, icon:CheckCircle, colour:'text-green-400', bg:'bg-green-500/20' },
+          { label:'Overdue Deliveries', value:overdueDeliveries, icon:AlertTriangle, colour:overdueDeliveries>0?'text-red-400':'text-gray-400', bg:overdueDeliveries>0?'bg-red-500/20':'bg-gray-800' },
         ].map(kpi=>(
           <div key={kpi.label} className="bg-gray-900 rounded-xl border border-gray-700 p-4">
             <div className="flex items-center gap-3">
@@ -126,7 +126,7 @@ export function Materials() {
           { key:'overdue',   label:'Overdue Deliveries', filter:'All',        count:overdueDeliveries },
         ]).map(t=>(
           <button key={t.key} onClick={()=>{ setSubTab(t.key); if(t.key==='overdue'||t.key==='onsite'){ setStatusFilter('All'); }else{ setStatusFilter(t.filter); } }}
-            className={`flex items-center gap-2 px-4 py-2.5 text-sm font-medium border-b-2 -mb-px transition-colors ${subTab===t.key?'border-orange-600 text-orange-600':'border-transparent text-gray-500 hover:text-gray-300'}`}>
+            className={`flex items-center gap-2 px-4 py-2.5 text-sm font-medium border-b-2 -mb-px transition-colors ${subTab===t.key?'border-orange-600 text-orange-400':'border-transparent text-gray-500 hover:text-gray-300'}`}>
             {t.label}
             <span className={`text-xs px-1.5 py-0.5 rounded-full ${t.key==='overdue'&&t.count>0?'bg-red-500/20 text-red-300':'bg-gray-800 text-gray-300'}`}>{t.count}</span>
           </button>
@@ -167,13 +167,13 @@ export function Materials() {
                     <td className="px-4 py-3 font-semibold text-white">£{Math.round(total).toLocaleString()}</td>
                     <td className="px-4 py-3 text-gray-300">{String(m.supplier??'—')}</td>
                     <td className="px-4 py-3 text-gray-500 font-mono text-xs">{String(m.po_number??'—')}</td>
-                    <td className={`px-4 py-3 text-sm ${isOverdue?'text-red-600 font-medium':'text-gray-300'}`}>{String(m.delivery_date??'—')}</td>
+                    <td className={`px-4 py-3 text-sm ${isOverdue?'text-red-400 font-medium':'text-gray-300'}`}>{String(m.delivery_date??'—')}</td>
                     <td className="px-4 py-3"><span className={`text-xs px-2 py-1 rounded-full font-medium ${statusColour[String(m.status??'')] ?? 'bg-gray-800 text-gray-300'}`}>{String(m.status??'')}</span></td>
                     <td className="px-4 py-3">
                       <div className="flex items-center gap-1">
-                        {m.status==='In Transit' && <button onClick={()=>markDelivered(m)} className="p-1.5 text-green-600 hover:bg-green-50 rounded" title="Mark Delivered"><CheckCircle size={14}/></button>}
-                        <button onClick={()=>openEdit(m)} className="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded"><Edit2 size={14}/></button>
-                        <button onClick={()=>handleDelete(String(m.id))} className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded"><Trash2 size={14}/></button>
+                        {m.status==='In Transit' && <button onClick={()=>markDelivered(m)} className="p-1.5 text-green-400 hover:bg-green-500/20 rounded" title="Mark Delivered"><CheckCircle size={14}/></button>}
+                        <button onClick={()=>openEdit(m)} className="p-1.5 text-gray-400 hover:text-blue-400 hover:bg-blue-500/20 rounded"><Edit2 size={14}/></button>
+                        <button onClick={()=>handleDelete(String(m.id))} className="p-1.5 text-gray-400 hover:text-red-400 hover:bg-red-500/20 rounded"><Trash2 size={14}/></button>
                       </div>
                     </td>
                   </tr>

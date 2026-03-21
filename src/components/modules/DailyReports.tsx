@@ -106,10 +106,10 @@ export function DailyReports() {
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         {[
-          { label:'This Week', value:thisWeekCount, icon:Calendar, colour:'text-blue-600', bg:'bg-blue-50' },
-          { label:'Drafts', value:draftCount, icon:ClipboardList, colour:'text-yellow-600', bg:'bg-yellow-50' },
-          { label:'Worker Days', value:totalWorkerDays, icon:Users, colour:'text-green-600', bg:'bg-green-50' },
-          { label:'Delays Reported', value:delayCount, icon:AlertTriangle, colour:delayCount>0?'text-orange-600':'text-gray-600', bg:delayCount>0?'bg-orange-50':'bg-gray-900' },
+          { label:'This Week', value:thisWeekCount, icon:Calendar, colour:'text-blue-400', bg:'bg-blue-500/20' },
+          { label:'Drafts', value:draftCount, icon:ClipboardList, colour:'text-yellow-400', bg:'bg-yellow-500/20' },
+          { label:'Worker Days', value:totalWorkerDays, icon:Users, colour:'text-green-400', bg:'bg-green-500/20' },
+          { label:'Delays Reported', value:delayCount, icon:AlertTriangle, colour:delayCount>0?'text-orange-400':'text-gray-600', bg:delayCount>0?'bg-orange-500/20':'bg-gray-900' },
         ].map(kpi=>(
           <div key={kpi.label} className="bg-gray-900 rounded-xl border border-gray-700 p-4">
             <div className="flex items-center gap-3">
@@ -128,7 +128,7 @@ export function DailyReports() {
           { key:'all'   as const,  label:'All Reports', count:reports.length, cls:'' },
         ]).map(t=>(
           <button key={t.key} onClick={()=>setSubTab(t.key)}
-            className={`flex items-center gap-2 px-4 py-2.5 text-sm font-medium border-b-2 -mb-px transition-colors ${subTab===t.key?'border-orange-500 text-orange-600':'border-transparent text-gray-500 hover:text-gray-300'}`}>
+            className={`flex items-center gap-2 px-4 py-2.5 text-sm font-medium border-b-2 -mb-px transition-colors ${subTab===t.key?'border-orange-500 text-orange-400':'border-transparent text-gray-500 hover:text-gray-300'}`}>
             {t.label}
             <span className={`text-xs px-1.5 py-0.5 rounded-full ${t.cls||'bg-gray-800 text-gray-300'}`}>{t.count}</span>
           </button>
@@ -168,16 +168,16 @@ export function DailyReports() {
                     <p className="text-sm text-gray-300 truncate">{String(r.work_carried_out??'No description')}</p>
                     <div className="flex items-center gap-3 mt-0.5">
                       {!!r.workers_on_site && <span className="text-xs text-gray-500 flex items-center gap-1"><Users size={11}/>{String(r.workers_on_site)} workers</span>}
-                      {!!r.delays && <span className="text-xs text-orange-600 flex items-center gap-1"><AlertTriangle size={11}/>Delays noted</span>}
+                      {!!r.delays && <span className="text-xs text-orange-400 flex items-center gap-1"><AlertTriangle size={11}/>Delays noted</span>}
                     </div>
                   </div>
                   <div className="flex items-center gap-2">
                     <span className={`text-xs px-2 py-1 rounded-full font-medium ${statusColour[String(r.status??'')] ?? 'bg-gray-800 text-gray-300'}`}>{String(r.status??'')}</span>
                   </div>
                   <div className="flex items-center gap-1">
-                    {r.status==='Draft' && <button onClick={e=>{e.stopPropagation();submitReport(r);}} className="p-1.5 text-blue-600 hover:bg-blue-50 rounded text-xs" title="Submit"><ClipboardList size={14}/></button>}
-                    <button onClick={e=>{e.stopPropagation();openEdit(r);}} className="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded"><Edit2 size={14}/></button>
-                    <button onClick={e=>{e.stopPropagation();handleDelete(id);}} className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded"><Trash2 size={14}/></button>
+                    {r.status==='Draft' && <button onClick={e=>{e.stopPropagation();submitReport(r);}} className="p-1.5 text-blue-400 hover:bg-blue-500/20 rounded text-xs" title="Submit"><ClipboardList size={14}/></button>}
+                    <button onClick={e=>{e.stopPropagation();openEdit(r);}} className="p-1.5 text-gray-400 hover:text-blue-400 hover:bg-blue-500/20 rounded"><Edit2 size={14}/></button>
+                    <button onClick={e=>{e.stopPropagation();handleDelete(id);}} className="p-1.5 text-gray-400 hover:text-red-400 hover:bg-red-500/20 rounded"><Trash2 size={14}/></button>
                     {isExp?<ChevronUp size={16} className="text-gray-400"/>:<ChevronDown size={16} className="text-gray-400"/>}
                   </div>
                 </div>

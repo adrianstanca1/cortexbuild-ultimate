@@ -105,10 +105,10 @@ export function CRM() {
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         {[
-          { label:'Clients', value:clientCount, icon:Building2, colour:'text-blue-600', bg:'bg-blue-50' },
-          { label:'Consultants', value:consultantCount, icon:UserCheck, colour:'text-purple-600', bg:'bg-purple-50' },
-          { label:'Active', value:activeCount, icon:UserCheck, colour:'text-green-600', bg:'bg-green-50' },
-          { label:'Prospects', value:prospectCount, icon:Star, colour:'text-yellow-600', bg:'bg-yellow-50' },
+          { label:'Clients', value:clientCount, icon:Building2, colour:'text-blue-400', bg:'bg-blue-500/20' },
+          { label:'Consultants', value:consultantCount, icon:UserCheck, colour:'text-purple-400', bg:'bg-purple-500/20' },
+          { label:'Active', value:activeCount, icon:UserCheck, colour:'text-green-400', bg:'bg-green-500/20' },
+          { label:'Prospects', value:prospectCount, icon:Star, colour:'text-yellow-400', bg:'bg-yellow-500/20' },
         ].map(kpi=>(
           <div key={kpi.label} className="bg-gray-900 rounded-xl border border-gray-700 p-4">
             <div className="flex items-center gap-3">
@@ -246,8 +246,8 @@ export function CRM() {
                       {!!c.company && <p className="text-sm text-gray-500 truncate flex items-center gap-1"><Building2 size={11}/>{String(c.company)}</p>}
                     </div>
                     <div className="flex gap-1 flex-shrink-0">
-                      <button onClick={e=>{e.stopPropagation();openEdit(c);}} className="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded"><Edit2 size={13}/></button>
-                      <button onClick={e=>{e.stopPropagation();handleDelete(id);}} className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded"><Trash2 size={13}/></button>
+                      <button onClick={e=>{e.stopPropagation();openEdit(c);}} className="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-500/20 rounded"><Edit2 size={13}/></button>
+                      <button onClick={e=>{e.stopPropagation();handleDelete(id);}} className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-500/20 rounded"><Trash2 size={13}/></button>
                     </div>
                   </div>
                   <div className="flex flex-wrap items-center gap-2 mt-3">

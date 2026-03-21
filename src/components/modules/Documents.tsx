@@ -181,10 +181,10 @@ export function Documents() {
                   <td className="px-4 py-3"><span className={`text-xs px-2 py-1 rounded-full font-medium ${statusColour[String(d.status??'')] ?? 'bg-gray-800 text-gray-300'}`}>{String(d.status??'')}</span></td>
                   <td className="px-4 py-3">
                     <div className="flex items-center gap-1">
-                      {d.status==='Under Review' && <button onClick={()=>approve(d)} className="p-1.5 text-green-600 hover:bg-green-50 rounded" title="Approve"><FileText size={14}/></button>}
-                      {!!d.file_url && <a href={String(d.file_url)} target="_blank" rel="noopener noreferrer" className="p-1.5 text-blue-600 hover:bg-blue-50 rounded"><Eye size={14}/></a>}
-                      <button onClick={()=>openEdit(d)} className="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded"><Edit2 size={14}/></button>
-                      <button onClick={()=>handleDelete(String(d.id))} className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded"><Trash2 size={14}/></button>
+                      {d.status==='Under Review' && <button onClick={()=>approve(d)} className="p-1.5 text-green-600 hover:bg-green-500/20 rounded" title="Approve"><FileText size={14}/></button>}
+                      {!!d.file_url && <a href={String(d.file_url)} target="_blank" rel="noopener noreferrer" className="p-1.5 text-blue-600 hover:bg-blue-500/20 rounded"><Eye size={14}/></a>}
+                      <button onClick={()=>openEdit(d)} className="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-500/20 rounded"><Edit2 size={14}/></button>
+                      <button onClick={()=>handleDelete(String(d.id))} className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-500/20 rounded"><Trash2 size={14}/></button>
                     </div>
                   </td>
                 </tr>
