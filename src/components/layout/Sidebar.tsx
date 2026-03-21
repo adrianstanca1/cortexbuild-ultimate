@@ -6,7 +6,7 @@ import {
   Building2, Bot, Settings, ChevronLeft, ChevronRight, Zap,
   MessageSquare, GitPullRequest, CheckSquare, ClipboardCheck,
   Triangle, Layers, Package, ClipboardList, Store,
-  HardHat, TrendingUp, FileCheck
+  HardHat, TrendingUp
 } from 'lucide-react';
 
 interface SidebarProps {
@@ -27,7 +27,6 @@ const groups: { label: string; items: { id: Module; label: string; icon: React.F
   {
     label: 'PROJECT MANAGEMENT', items: [
       { id: 'projects', label: 'Projects', icon: FolderOpen },
-      { id: 'tenders', label: 'Tenders', icon: TrendingUp },
       { id: 'site-ops', label: 'Site Operations', icon: Hammer },
       { id: 'daily-reports', label: 'Daily Reports', icon: ClipboardList },
       { id: 'field-view', label: 'Field View / Maps', icon: MapPin },
@@ -37,12 +36,12 @@ const groups: { label: string; items: { id: Module; label: string; icon: React.F
   },
   {
     label: 'COMMERCIAL & FINANCE', items: [
+      { id: 'tenders', label: 'Tenders & Bids', icon: TrendingUp },
       { id: 'invoicing', label: 'Invoicing', icon: FileText },
       { id: 'accounting', label: 'Accounting', icon: Calculator },
       { id: 'cis', label: 'CIS Returns', icon: Receipt, badge: 'UK', color: 'blue' },
       { id: 'procurement', label: 'Procurement', icon: ShoppingCart },
       { id: 'change-orders', label: 'Change Orders', icon: GitPullRequest },
-      { id: 'tenders', label: 'Tenders & Bids', icon: FileSearch },
     ]
   },
   {
