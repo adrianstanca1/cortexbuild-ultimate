@@ -141,13 +141,13 @@ export default function ProjectsPage() {
                     {new Date(project.startDate).toLocaleDateString()}
                   </TableCell>
                   <TableCell className="flex justify-end items-center gap-2">
-                    <Button variant="ghost" size="xs">
+                    <Button variant="ghost" size="sm">
                       View
                     </Button>
-                    <Button variant="ghost" size="xs">
+                    <Button variant="ghost" size="sm">
                       Edit
                     </Button>
-                    <Button variant="destructive" ghost size="xs">
+                    <Button variant="destructive" size="sm">
                       Delete
                     </Button>
                   </TableCell>
