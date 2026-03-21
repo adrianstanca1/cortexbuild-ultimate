@@ -172,3 +172,33 @@ export const projectProgressData = projects.filter(p => p.status === 'active').m
   budget: p.budget,
   spent: p.spent,
 }));
+
+// Risk register mock data
+export const riskRegister = [
+  { id: 'rr1', title: 'Ground contamination — Manchester site', project: 'Manchester City Apartments', category: 'Environmental', likelihood: 3, impact: 4, status: 'open', owner: 'Sarah Mitchell', mitigation: 'Phase 2 soil survey commissioned', review_date: '2026-04-01' },
+  { id: 'rr2', title: 'Programme delay — steel delivery lead time', project: 'Canary Wharf Office Complex', category: 'Commercial', likelihood: 2, impact: 4, status: 'mitigated', owner: 'James Harrington', mitigation: 'Steel ordered 8 weeks ahead — confirmed delivery', review_date: '2026-04-15' },
+  { id: 'rr3', title: 'Subcontractor insolvency risk', project: 'All Projects', category: 'Commercial', likelihood: 2, impact: 5, status: 'open', owner: 'Claire Watson', mitigation: 'Credit checks completed, payment retention held', review_date: '2026-05-01' },
+  { id: 'rr4', title: 'CDM Principal Contractor compliance', project: 'Sheffield Hospital Refurb', category: 'Regulatory', likelihood: 2, impact: 5, status: 'open', owner: 'Lisa Okafor', mitigation: 'Construction Phase Plan to be submitted pre-commencement', review_date: '2026-04-01' },
+];
+
+// Named aliases for API service compatibility
+export const mockProjects = projects;
+export const mockInvoices = invoices;
+export const mockTeamMembers = teamMembers;
+export const mockSafetyIncidents = safetyIncidents;
+export const mockRFIs = rfis;
+export const mockChangeOrders = changeOrders;
+export const mockRAMS = ramsDocuments;
+export const mockCISReturns = cisReturns;
+export const mockEquipment = equipment;
+export const mockSubcontractors = subcontractors;
+export const mockTimesheets = timesheets;
+export const mockDocuments = documents;
+export const mockTenders = tenders;
+export const mockDailyReports = dailyReports;
+export const mockMeetings = meetings;
+export const mockMaterials = materials;
+export const mockPunchList = punchListItems;
+export const mockInspections = inspections;
+export const mockContacts = contacts;
+export const mockRiskRegister = riskRegister;

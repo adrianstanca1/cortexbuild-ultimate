@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { Toaster } from 'sonner';
 import { Sidebar } from './components/layout/Sidebar';
 import { Header } from './components/layout/Header';
 import { Dashboard } from './components/modules/Dashboard';
@@ -31,9 +32,11 @@ import { Materials } from './components/modules/Materials';
 import { DailyReports } from './components/modules/DailyReports';
 import { Marketplace } from './components/modules/Marketplace';
 import { Settings } from './components/modules/Settings';
+import LoginPage from './components/auth/LoginPage';
 import { type Module } from './types';
+import { useAuth } from './context/AuthContext';
 
-export default function App() {
+function AppShell() {
   const [activeModule, setActiveModule] = useState<Module>('dashboard');
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
 
@@ -93,5 +96,33 @@ export default function App() {
         </main>
       </div>
     </div>
+  );
+}
+
+export default function App() {
+  const { isAuthenticated, loading } = useAuth();
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-950 flex items-center justify-center">
+        <div className="flex flex-col items-center gap-4">
+          <div className="w-12 h-12 border-4 border-orange-500/30 border-t-orange-500 rounded-full animate-spin" />
+          <p className="text-gray-400 text-sm">Loading CortexBuild...</p>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <>
+      <Toaster
+        theme="dark"
+        position="top-right"
+        toastOptions={{
+          style: { background: '#1f2937', border: '1px solid #374151', color: '#f9fafb' },
+        }}
+      />
+      {isAuthenticated ? <AppShell /> : <LoginPage />}
+    </>
   );
 }
