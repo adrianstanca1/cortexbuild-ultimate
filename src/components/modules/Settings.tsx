@@ -1,11 +1,14 @@
 // Module: Settings — CortexBuild Ultimate (Full Subpages)
 import { useState } from 'react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   Save, Bell, Shield, CreditCard, Users, Building2, Plug, Check,
-  AlertTriangle, Mail, Phone, MapPin, Globe, ChevronRight, Trash2,
-  Plus, RefreshCw, Lock, Eye, EyeOff, ToggleLeft, ToggleRight, X, CheckCircle2,
+  AlertTriangle, Trash2,
+  Plus, RefreshCw, Lock, Eye, EyeOff, X, CheckCircle2,
 } from 'lucide-react';
 import { toast } from 'sonner';
+import { usersApi } from '../../services/api';
+import { getToken, API_BASE } from '../../lib/supabase';
 
 type Tab = 'company'|'users'|'billing'|'notifications'|'integrations'|'security';
 
@@ -19,7 +22,7 @@ const PLAN_FEATURES: Record<string, string[]> = {
 function Toggle({ on, onToggle }: { on: boolean; onToggle: () => void }) {
   return (
     <button onClick={onToggle} className={`relative w-10 h-5 rounded-full transition-colors ${on?'bg-blue-600':'bg-gray-700'}`}>
-      <span className={`absolute top-0.5 w-4 h-4 bg-white rounded-full shadow transition-transform ${on?'translate-x-5':'translate-x-0.5'}`}/>
+      <span className={`absolute top-0.5 w-4 h-4 bg-gray-900 rounded-full shadow transition-transform ${on?'translate-x-5':'translate-x-0.5'}`}/>
     </button>
   );
 }
@@ -37,16 +40,25 @@ export function Settings() {
   });
 
   // ── Users state ───────────────────────────────────────────────────────────
-  const [users] = useState([
-    { id:'u1', name:'Adrian Stanca',      email:'adrian.stanca1@gmail.com', role:'super_admin',     status:'active',  lastLogin:'Today'    },
-    { id:'u2', name:'James Harrington',   email:'j.harrington@cortex.co.uk',role:'project_manager', status:'active',  lastLogin:'Yesterday'},
-    { id:'u3', name:'Sarah Mitchell',     email:'s.mitchell@cortex.co.uk',  role:'project_manager', status:'active',  lastLogin:'2 days ago'},
-    { id:'u4', name:'Tom Bradley',        email:'t.bradley@cortex.co.uk',   role:'admin',           status:'active',  lastLogin:'Today'    },
-    { id:'u5', name:'Claire Watson',      email:'c.watson@cortex.co.uk',    role:'field_worker',    status:'active',  lastLogin:'3 days ago'},
-    { id:'u6', name:'Dave Patel',         email:'d.patel@cortex.co.uk',     role:'field_worker',    status:'inactive',lastLogin:'2 weeks ago'},
-  ]);
+  const qc = useQueryClient();
+  const { data: users = [] } = useQuery<Record<string,unknown>[]>({
+    queryKey: ['settings-users'],
+    queryFn: usersApi.getAll,
+  });
+  const createUser = useMutation({
+    mutationFn: (data: Record<string,unknown>) => usersApi.create(data),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ['settings-users'] }); toast.success('User created'); },
+    onError: (e: Error) => toast.error(e.message),
+  });
+  const deleteUser = useMutation({
+    mutationFn: (id: string) => usersApi.delete(id),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ['settings-users'] }); toast.success('User removed'); },
+    onError: (e: Error) => toast.error(e.message),
+  });
   const [showInviteModal, setShowInviteModal] = useState(false);
+  const [inviteName, setInviteName]           = useState('');
   const [inviteEmail, setInviteEmail]         = useState('');
+  const [invitePassword, setInvitePassword]   = useState('');
   const [inviteRole, setInviteRole]           = useState('project_manager');
 
   // ── Billing state ─────────────────────────────────────────────────────────
@@ -80,8 +92,11 @@ export function Settings() {
   });
 
   // ── Security state ────────────────────────────────────────────────────────
-  const [showPass, setShowPass] = useState(false);
-  const [twoFA, setTwoFA]       = useState(false);
+  const [showPass, setShowPass]         = useState(false);
+  const [currentPwd, setCurrentPwd]     = useState('');
+  const [newPwd, setNewPwd]             = useState('');
+  const [confirmPwd, setConfirmPwd]     = useState('');
+  const [twoFA, setTwoFA]               = useState(false);
   const [sessions] = useState([
     { id:'s1', device:'Chrome — MacBook Pro',  location:'London, UK', last:'Now',        current:true  },
     { id:'s2', device:'Safari — iPhone 15',    location:'London, UK', last:'1 hour ago', current:false },
@@ -98,11 +113,11 @@ export function Settings() {
   ];
 
   const ROLE_COLOURS: Record<string,string> = {
-    super_admin:     'bg-red-100 text-red-700',
-    admin:           'bg-orange-100 text-orange-700',
-    project_manager: 'bg-blue-100 text-blue-700',
-    field_worker:    'bg-green-100 text-green-700',
-    client:          'bg-purple-100 text-purple-700',
+    super_admin:     'bg-red-500/20 text-red-300',
+    admin:           'bg-orange-500/20 text-orange-300',
+    project_manager: 'bg-blue-500/20 text-blue-300',
+    field_worker:    'bg-green-500/20 text-green-300',
+    client:          'bg-purple-500/20 text-purple-300',
   };
 
   return (
@@ -131,47 +146,47 @@ export function Settings() {
               <div className="col-span-2">
                 <label className="block text-xs font-medium text-gray-400 mb-1">Company Name</label>
                 <input value={company.name} onChange={e=>setCompany(c=>({...c,name:e.target.value}))}
-                  className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-blue-500"/>
+                  className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-orange-500"/>
               </div>
               <div>
                 <label className="block text-xs font-medium text-gray-400 mb-1">Companies House No.</label>
                 <input value={company.reg} onChange={e=>setCompany(c=>({...c,reg:e.target.value}))}
-                  className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-blue-500"/>
+                  className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-orange-500"/>
               </div>
               <div>
                 <label className="block text-xs font-medium text-gray-400 mb-1">VAT Number</label>
                 <input value={company.vat} onChange={e=>setCompany(c=>({...c,vat:e.target.value}))}
-                  className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-blue-500"/>
+                  className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-orange-500"/>
               </div>
               <div>
                 <label className="block text-xs font-medium text-gray-400 mb-1">UTR Number</label>
                 <input value={company.utr} onChange={e=>setCompany(c=>({...c,utr:e.target.value}))}
-                  className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-blue-500"/>
+                  className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-orange-500"/>
               </div>
               <div>
                 <label className="block text-xs font-medium text-gray-400 mb-1">HMRC Tax Office</label>
                 <input value={company.hmrc_office} onChange={e=>setCompany(c=>({...c,hmrc_office:e.target.value}))}
-                  className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-blue-500"/>
+                  className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-orange-500"/>
               </div>
               <div className="col-span-2">
                 <label className="block text-xs font-medium text-gray-400 mb-1">Registered Address</label>
                 <input value={company.address} onChange={e=>setCompany(c=>({...c,address:e.target.value}))}
-                  className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-blue-500"/>
+                  className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-orange-500"/>
               </div>
               <div>
                 <label className="block text-xs font-medium text-gray-400 mb-1">Phone</label>
                 <input value={company.phone} onChange={e=>setCompany(c=>({...c,phone:e.target.value}))}
-                  className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-blue-500"/>
+                  className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-orange-500"/>
               </div>
               <div>
                 <label className="block text-xs font-medium text-gray-400 mb-1">Email</label>
                 <input value={company.email} onChange={e=>setCompany(c=>({...c,email:e.target.value}))}
-                  className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-blue-500"/>
+                  className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-orange-500"/>
               </div>
               <div>
                 <label className="block text-xs font-medium text-gray-400 mb-1">Website</label>
                 <input value={company.website} onChange={e=>setCompany(c=>({...c,website:e.target.value}))}
-                  className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-blue-500"/>
+                  className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-orange-500"/>
               </div>
             </div>
           </div>
@@ -219,25 +234,31 @@ export function Settings() {
                 <tr>{['User','Email','Role','Status','Last Login',''].map(h=><th key={h} className="px-4 py-3 text-left text-xs font-semibold text-gray-400 uppercase tracking-wide">{h}</th>)}</tr>
               </thead>
               <tbody className="divide-y divide-gray-800">
-                {users.map(u=>(
-                  <tr key={u.id} className="hover:bg-gray-800/40 transition-colors">
+                {users.map(u=>{
+                  const name   = String(u.name ?? '');
+                  const email  = String(u.email ?? '');
+                  const role   = String(u.role ?? '');
+                  const status = String(u.status ?? '');
+                  const id     = String(u.id ?? '');
+                  return (
+                  <tr key={id} className="hover:bg-gray-800/40 transition-colors">
                     <td className="px-4 py-3">
                       <div className="flex items-center gap-3">
                         <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-600 to-purple-600 flex items-center justify-center text-white text-xs font-bold flex-shrink-0">
-                          {u.name.split(' ').map(n=>n[0]).join('').slice(0,2)}
+                          {name.split(' ').map(n=>n[0]).join('').slice(0,2)}
                         </div>
-                        <span className="text-white font-medium">{u.name}</span>
+                        <span className="text-white font-medium">{name}</span>
                       </div>
                     </td>
-                    <td className="px-4 py-3 text-gray-400">{u.email}</td>
-                    <td className="px-4 py-3"><span className={`text-xs px-2 py-1 rounded-full font-medium ${ROLE_COLOURS[u.role]??'bg-gray-100 text-gray-600'}`}>{u.role.replace(/_/g,' ')}</span></td>
-                    <td className="px-4 py-3"><span className={`text-xs px-2 py-1 rounded-full font-medium ${u.status==='active'?'bg-green-100 text-green-700':'bg-gray-100 text-gray-500'}`}>{u.status}</span></td>
-                    <td className="px-4 py-3 text-gray-400 text-xs">{u.lastLogin}</td>
+                    <td className="px-4 py-3 text-gray-400">{email}</td>
+                    <td className="px-4 py-3"><span className={`text-xs px-2 py-1 rounded-full font-medium ${ROLE_COLOURS[role]??'bg-gray-800 text-gray-400'}`}>{role.replace(/_/g,' ')}</span></td>
+                    <td className="px-4 py-3"><span className={`text-xs px-2 py-1 rounded-full font-medium ${status==='active'?'bg-green-500/20 text-green-400':'bg-gray-800 text-gray-500'}`}>{status}</span></td>
+                    <td className="px-4 py-3 text-gray-400 text-xs">{String(u.lastLogin ?? u.createdAt ?? '—')}</td>
                     <td className="px-4 py-3">
-                      <button onClick={()=>toast.success(`Removed ${u.name}`)} className="p-1 text-gray-400 hover:text-red-400 rounded transition-colors"><Trash2 className="w-3.5 h-3.5"/></button>
+                      <button onClick={()=>deleteUser.mutate(id)} className="p-1 text-gray-400 hover:text-red-400 rounded transition-colors"><Trash2 className="w-3.5 h-3.5"/></button>
                     </td>
-                  </tr>
-                ))}
+                  </tr>);
+                })}
               </tbody>
             </table>
           </div>
@@ -251,21 +272,40 @@ export function Settings() {
                 </div>
                 <div className="p-6 space-y-4">
                   <div>
+                    <label className="block text-xs font-medium text-gray-400 mb-1">Full Name</label>
+                    <input value={inviteName} onChange={e=>setInviteName(e.target.value)} placeholder="Jane Smith"
+                      className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-orange-500"/>
+                  </div>
+                  <div>
                     <label className="block text-xs font-medium text-gray-400 mb-1">Email Address</label>
                     <input value={inviteEmail} onChange={e=>setInviteEmail(e.target.value)} placeholder="name@company.co.uk"
-                      className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-blue-500"/>
+                      className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-orange-500"/>
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium text-gray-400 mb-1">Temporary Password</label>
+                    <input type="password" value={invitePassword} onChange={e=>setInvitePassword(e.target.value)} placeholder="Min 8 characters"
+                      className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-orange-500"/>
                   </div>
                   <div>
                     <label className="block text-xs font-medium text-gray-400 mb-1">Role</label>
                     <select value={inviteRole} onChange={e=>setInviteRole(e.target.value)}
-                      className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-blue-500">
+                      className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-orange-500">
                       {['admin','project_manager','field_worker','client'].map(r=><option key={r} value={r}>{r.replace(/_/g,' ')}</option>)}
                     </select>
                   </div>
                 </div>
                 <div className="flex gap-3 px-6 py-4 border-t border-gray-800">
-                  <button onClick={()=>{toast.success(`Invite sent to ${inviteEmail}`);setShowInviteModal(false);}}
-                    className="flex-1 bg-blue-600 hover:bg-blue-700 text-white rounded-lg py-2 text-sm font-semibold transition-colors">Send Invite</button>
+                  <button
+                    onClick={()=>{
+                      if (!inviteName || !inviteEmail || !invitePassword) { toast.error('All fields are required'); return; }
+                      createUser.mutate({ name: inviteName, email: inviteEmail, password: invitePassword, role: inviteRole }, {
+                        onSuccess: () => { setShowInviteModal(false); setInviteName(''); setInviteEmail(''); setInvitePassword(''); setInviteRole('project_manager'); },
+                      });
+                    }}
+                    disabled={createUser.isPending}
+                    className="flex-1 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white rounded-lg py-2 text-sm font-semibold transition-colors">
+                    {createUser.isPending ? 'Creating…' : 'Create User'}
+                  </button>
                   <button onClick={()=>setShowInviteModal(false)} className="flex-1 bg-gray-800 hover:bg-gray-700 text-white rounded-lg py-2 text-sm font-semibold transition-colors">Cancel</button>
                 </div>
               </div>
@@ -324,7 +364,7 @@ export function Settings() {
                     <td className="px-4 py-3 text-gray-400 text-xs">{b.date}</td>
                     <td className="px-4 py-3 text-white">{b.desc}</td>
                     <td className="px-4 py-3 text-white font-bold">£{b.amount}</td>
-                    <td className="px-4 py-3"><span className="text-xs px-2 py-0.5 rounded-full bg-green-100 text-green-700 font-medium">{b.status}</span></td>
+                    <td className="px-4 py-3"><span className="text-xs px-2 py-0.5 rounded-full bg-green-500/20 text-green-400 font-medium">{b.status}</span></td>
                     <td className="px-4 py-3"><button onClick={()=>toast.success('Invoice downloaded')} className="text-xs text-blue-400 hover:text-blue-300">Download</button></td>
                   </tr>
                 ))}
@@ -405,7 +445,7 @@ export function Settings() {
                   <div>
                     <div className="flex items-center gap-2">
                       <h3 className="text-white font-semibold">{int.name}</h3>
-                      {int.connected && <span className="text-xs px-2 py-0.5 rounded-full bg-green-100 text-green-700 font-medium">Connected</span>}
+                      {int.connected && <span className="text-xs px-2 py-0.5 rounded-full bg-green-500/20 text-green-400 font-medium">Connected</span>}
                     </div>
                     <p className="text-xs text-gray-500 mt-0.5">{int.status}</p>
                   </div>
@@ -443,19 +483,38 @@ export function Settings() {
           <div className="bg-gray-900 border border-gray-800 rounded-xl p-6">
             <h3 className="text-base font-bold text-white mb-5 flex items-center gap-2"><Lock className="w-4 h-4 text-blue-400"/>Change Password</h3>
             <div className="space-y-4 max-w-md">
-              {['Current Password','New Password','Confirm New Password'].map(label=>(
+              {([
+                ['Current Password', currentPwd, setCurrentPwd],
+                ['New Password',     newPwd,     setNewPwd],
+                ['Confirm New Password', confirmPwd, setConfirmPwd],
+              ] as [string, string, (v: string) => void][]).map(([label, val, setter])=>(
                 <div key={label}>
                   <label className="block text-xs font-medium text-gray-400 mb-1">{label}</label>
                   <div className="relative">
-                    <input type={showPass?'text':'password'} placeholder="••••••••••••"
-                      className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-blue-500 pr-10"/>
+                    <input type={showPass?'text':'password'} value={val} onChange={e=>setter(e.target.value)} placeholder="••••••••••••"
+                      className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-orange-500 pr-10"/>
                     <button onClick={()=>setShowPass(p=>!p)} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-white">
                       {showPass ? <EyeOff className="w-4 h-4"/> : <Eye className="w-4 h-4"/>}
                     </button>
                   </div>
                 </div>
               ))}
-              <button onClick={()=>toast.success('Password updated successfully')}
+              <button
+                onClick={async () => {
+                  if (!currentPwd || !newPwd || !confirmPwd) { toast.error('All fields required'); return; }
+                  if (newPwd !== confirmPwd) { toast.error('New passwords do not match'); return; }
+                  if (newPwd.length < 8) { toast.error('Password must be at least 8 characters'); return; }
+                  try {
+                    const res = await fetch(`${API_BASE}/auth/password`, {
+                      method: 'PUT',
+                      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${getToken()}` },
+                      body: JSON.stringify({ currentPassword: currentPwd, newPassword: newPwd }),
+                    });
+                    if (!res.ok) { const e = await res.json(); toast.error(e.message || 'Failed'); return; }
+                    toast.success('Password updated successfully');
+                    setCurrentPwd(''); setNewPwd(''); setConfirmPwd('');
+                  } catch { toast.error('Network error'); }
+                }}
                 className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded-lg text-white text-sm font-semibold transition-colors">
                 <Save className="w-4 h-4"/>Update Password
               </button>

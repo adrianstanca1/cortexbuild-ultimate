@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Bell, Search, Moon, Wifi, WifiOff, ChevronDown, Menu, X } from 'lucide-react';
 import { type Module } from '../../types';
+import { NotificationsPanel } from './NotificationsPanel';
 
 const MODULE_LABELS: Record<Module, string> = {
   'dashboard': 'Dashboard',
@@ -33,6 +34,10 @@ const MODULE_LABELS: Record<Module, string> = {
   'daily-reports': 'Daily Reports',
   'marketplace': 'AI Marketplace',
   'settings': 'Settings',
+  'insights': 'AI Insights Engine',
+  'notifications': 'Notifications',
+  'executive-reports': 'Executive Reports',
+  'predictive-analytics': 'Predictive Analytics',
 };
 
 interface HeaderProps {
@@ -43,6 +48,7 @@ interface HeaderProps {
 export function Header({ activeModule, onMenuToggle }: HeaderProps) {
   const [searchOpen, setSearchOpen] = useState(false);
   const [online] = useState(true);
+  const [notificationsOpen, setNotificationsOpen] = useState(false);
   const notifications = 4;
 
   return (
@@ -156,6 +162,7 @@ export function Header({ activeModule, onMenuToggle }: HeaderProps) {
 
         {/* Notifications */}
         <button
+          onClick={() => setNotificationsOpen(true)}
           style={{
             background: 'none', border: '1px solid transparent', cursor: 'pointer',
             color: 'var(--slate-400)', padding: '8px', borderRadius: '8px',
@@ -180,6 +187,7 @@ export function Header({ activeModule, onMenuToggle }: HeaderProps) {
             </span>
           )}
         </button>
+        {notificationsOpen && <NotificationsPanel authToken={null} onClose={() => setNotificationsOpen(false)} />}
 
         {/* Dark mode */}
         <button

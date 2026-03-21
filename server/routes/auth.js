@@ -9,6 +9,50 @@ const SECRET = process.env.JWT_SECRET || 'cortexbuild_secret';
 
 const VALID_ROLES = ['super_admin','company_owner','admin','project_manager','field_worker','client'];
 
+// POST /api/auth/register — public self-registration (creates company_owner account)
+router.post('/register', async (req, res) => {
+  const { name, email, password, company, phone } = req.body;
+
+  if (!name || !email || !password || !company) {
+    return res.status(400).json({ message: 'Name, email, password and company are required' });
+  }
+  if (password.length < 8) {
+    return res.status(400).json({ message: 'Password must be at least 8 characters' });
+  }
+  const emailRe = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  if (!emailRe.test(email)) {
+    return res.status(400).json({ message: 'Invalid email address' });
+  }
+
+  try {
+    // Check for duplicate email
+    const existing = await pool.query('SELECT id FROM users WHERE email = $1', [email.toLowerCase().trim()]);
+    if (existing.rows.length) {
+      return res.status(409).json({ message: 'An account with that email already exists' });
+    }
+
+    const hash = await bcrypt.hash(password, 10);
+    const { rows } = await pool.query(
+      `INSERT INTO users (name, email, password_hash, role, company, phone)
+       VALUES ($1, $2, $3, 'company_owner', $4, $5)
+       RETURNING id, name, email, role, company, phone, created_at`,
+      [name.trim(), email.toLowerCase().trim(), hash, company.trim(), phone || null]
+    );
+    const newUser = rows[0];
+
+    const token = jwt.sign(
+      { id: newUser.id, email: newUser.email, role: newUser.role, name: newUser.name, company: newUser.company },
+      SECRET,
+      { expiresIn: '7d' }
+    );
+
+    res.status(201).json({ token, user: newUser });
+  } catch (err) {
+    console.error('[auth/register]', err);
+    res.status(500).json({ message: 'Server error during registration' });
+  }
+});
+
 // POST /api/auth/login
 router.post('/login', async (req, res) => {
   const { email, password } = req.body;

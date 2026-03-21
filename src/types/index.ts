@@ -40,7 +40,11 @@ export type Module =
   | 'materials'
   | 'daily-reports'
   | 'marketplace'
-  | 'settings';
+  | 'settings'
+  | 'insights'
+  | 'notifications'
+  | 'executive-reports'
+  | 'predictive-analytics';
 
 export type ProjectStatus = 'planning' | 'active' | 'on_hold' | 'completed' | 'archived';
 export type TaskStatus = 'todo' | 'in_progress' | 'review' | 'done' | 'blocked';

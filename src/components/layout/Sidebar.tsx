@@ -6,7 +6,7 @@ import {
   Building2, Bot, Settings, ChevronLeft, ChevronRight, Zap,
   MessageSquare, GitPullRequest, CheckSquare, ClipboardCheck,
   Triangle, Layers, Package, ClipboardList, Store,
-  HardHat, TrendingUp
+  HardHat, TrendingUp, Brain, Bell, FileBarChart, TrendingUp as TrendingUpIcon
 } from 'lucide-react';
 
 interface SidebarProps {
@@ -22,6 +22,8 @@ const groups: { label: string; items: { id: Module; label: string; icon: React.F
       { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
       { id: 'analytics', label: 'Analytics & BI', icon: BarChart3 },
       { id: 'ai-assistant', label: 'AI Assistant', icon: Bot, badge: 'AI', badgeVariant: 'amber' },
+      { id: 'insights', label: 'AI Insights', icon: Brain, badge: 'NEW', badgeVariant: 'green' },
+      { id: 'predictive-analytics', label: 'Predictive', icon: TrendingUpIcon, badge: 'NEW', badgeVariant: 'green' },
     ]
   },
   {
@@ -67,6 +69,7 @@ const groups: { label: string; items: { id: Module; label: string; icon: React.F
   {
     label: 'BUSINESS', items: [
       { id: 'crm', label: 'CRM & Clients', icon: Building2 },
+      { id: 'executive-reports', label: 'Executive Reports', icon: FileBarChart, badge: 'NEW', badgeVariant: 'green' },
       { id: 'marketplace', label: 'AI Marketplace', icon: Store, badge: 'NEW', badgeVariant: 'green' },
       { id: 'settings', label: 'Settings', icon: Settings },
     ]

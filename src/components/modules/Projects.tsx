@@ -297,7 +297,7 @@ function ProjectWorkspace({ project, onBack, onEdit }: WorkspaceProps) {
                     <tr key={String(inv.id)} className="hover:bg-gray-800/40">
                       <td className="px-4 py-3 font-mono text-xs text-blue-400 font-bold">{String(inv.number??inv.invoice_number??'—')}</td>
                       <td className="px-4 py-3 text-white font-bold">£{Number(inv.amount??0).toLocaleString()}</td>
-                      <td className="px-4 py-3"><span className={`text-xs px-2 py-0.5 rounded-full font-medium ${inv.status==='paid'?'bg-green-100 text-green-700':inv.status==='overdue'?'bg-red-100 text-red-700':inv.status==='sent'?'bg-blue-100 text-blue-700':'bg-gray-100 text-gray-600'}`}>{String(inv.status??'')}</span></td>
+                      <td className="px-4 py-3"><span className={`text-xs px-2 py-0.5 rounded-full font-medium ${inv.status==='paid'?'bg-green-500/20 text-green-300':inv.status==='overdue'?'bg-red-500/20 text-red-300':inv.status==='sent'?'bg-blue-500/20 text-blue-300':'bg-gray-800 text-gray-600'}`}>{String(inv.status??'')}</span></td>
                       <td className="px-4 py-3 text-gray-400 text-xs">{String(inv.dueDate??inv.due_date??'—')}</td>
                     </tr>
                   ))}
@@ -355,7 +355,7 @@ function ProjectWorkspace({ project, onBack, onEdit }: WorkspaceProps) {
                     <td className="px-4 py-3 font-mono text-xs text-orange-400">{String(d.revision??d.version??'—')}</td>
                     <td className="px-4 py-3 text-gray-400 text-xs">{String(d.author??d.uploadedBy??'—')}</td>
                     <td className="px-4 py-3 text-gray-400 text-xs">{String(d.date_issued??d.uploadedDate??'—')}</td>
-                    <td className="px-4 py-3"><span className={`text-xs px-2 py-0.5 rounded-full font-medium ${d.status==='approved'?'bg-green-100 text-green-700':d.status==='draft'?'bg-gray-100 text-gray-600':'bg-blue-100 text-blue-700'}`}>{String(d.status??'—')}</span></td>
+                    <td className="px-4 py-3"><span className={`text-xs px-2 py-0.5 rounded-full font-medium ${d.status==='approved'?'bg-green-500/20 text-green-300':d.status==='draft'?'bg-gray-800 text-gray-600':'bg-blue-500/20 text-blue-300'}`}>{String(d.status??'—')}</span></td>
                   </tr>
                 ))}
               </tbody>
@@ -379,7 +379,7 @@ function ProjectWorkspace({ project, onBack, onEdit }: WorkspaceProps) {
                     <tr key={String(r.id)} className="hover:bg-gray-800/40">
                       <td className="px-4 py-3 font-mono text-xs text-blue-400 font-bold">{String(r.rfi_number??r.number??'—')}</td>
                       <td className="px-4 py-3 text-white max-w-[240px] truncate">{String(r.subject??r.title??'—')}</td>
-                      <td className="px-4 py-3"><span className={`text-xs px-2 py-0.5 rounded-full font-medium ${r.priority==='critical'?'bg-red-100 text-red-700':r.priority==='high'?'bg-orange-100 text-orange-700':r.priority==='medium'?'bg-yellow-100 text-yellow-700':'bg-gray-100 text-gray-600'}`}>{String(r.priority??'—')}</span></td>
+                      <td className="px-4 py-3"><span className={`text-xs px-2 py-0.5 rounded-full font-medium ${r.priority==='critical'?'bg-red-500/20 text-red-300':r.priority==='high'?'bg-orange-500/20 text-orange-300':r.priority==='medium'?'bg-yellow-500/20 text-yellow-300':'bg-gray-800 text-gray-600'}`}>{String(r.priority??'—')}</span></td>
                       <td className="px-4 py-3 text-gray-400 text-xs capitalize">{String(r.status??'—')}</td>
                       <td className="px-4 py-3 text-gray-400 text-xs">{String(r.due_date??r.dueDate??'—')}</td>
                     </tr>
@@ -402,7 +402,7 @@ function ProjectWorkspace({ project, onBack, onEdit }: WorkspaceProps) {
                       <td className="px-4 py-3 font-mono text-xs text-blue-400 font-bold">{String(co.co_number??co.number??'—')}</td>
                       <td className="px-4 py-3 text-white max-w-[240px] truncate">{String(co.title??'—')}</td>
                       <td className="px-4 py-3 text-white font-bold">£{Number(co.value??co.amount??0).toLocaleString()}</td>
-                      <td className="px-4 py-3"><span className={`text-xs px-2 py-0.5 rounded-full font-medium ${co.status==='approved'?'bg-green-100 text-green-700':co.status==='rejected'?'bg-red-100 text-red-700':'bg-yellow-100 text-yellow-700'}`}>{String(co.status??'—')}</span></td>
+                      <td className="px-4 py-3"><span className={`text-xs px-2 py-0.5 rounded-full font-medium ${co.status==='approved'?'bg-green-500/20 text-green-300':co.status==='rejected'?'bg-red-500/20 text-red-300':'bg-yellow-500/20 text-yellow-300'}`}>{String(co.status??'—')}</span></td>
                     </tr>
                   ))}
                 </tbody>
@@ -435,7 +435,7 @@ function ProjectWorkspace({ project, onBack, onEdit }: WorkspaceProps) {
                     <tr key={String(s.id)} className="hover:bg-gray-800/40">
                       <td className="px-4 py-3 text-white font-medium max-w-[220px] truncate">{String(s.title??'—')}</td>
                       <td className="px-4 py-3 text-gray-400 text-xs capitalize">{String(s.type??'').replace(/_/g,' ')}</td>
-                      <td className="px-4 py-3"><span className={`text-xs px-2 py-0.5 rounded-full font-medium ${s.severity==='serious'||s.severity==='critical'?'bg-red-100 text-red-700':s.severity==='moderate'?'bg-orange-100 text-orange-700':'bg-green-100 text-green-700'}`}>{String(s.severity??'—')}</span></td>
+                      <td className="px-4 py-3"><span className={`text-xs px-2 py-0.5 rounded-full font-medium ${s.severity==='serious'||s.severity==='critical'?'bg-red-500/20 text-red-300':s.severity==='moderate'?'bg-orange-500/20 text-orange-300':'bg-green-500/20 text-green-300'}`}>{String(s.severity??'—')}</span></td>
                       <td className="px-4 py-3 text-xs capitalize text-gray-300">{String(s.status??'—')}</td>
                       <td className="px-4 py-3 text-gray-400 text-xs">{String(s.date??s.incident_date??'—')}</td>
                     </tr>
@@ -457,7 +457,7 @@ function ProjectWorkspace({ project, onBack, onEdit }: WorkspaceProps) {
                     <p className="text-white font-semibold">{String(rep.date??'—')}</p>
                     <p className="text-gray-400 text-xs">Prepared by {String(rep.preparedBy??rep.prepared_by??'—')} · {String(rep.weather??'—')} {String(rep.temperature??'')}</p>
                   </div>
-                  <span className={`text-xs px-2 py-1 rounded-full font-medium ${rep.status==='approved'?'bg-green-100 text-green-700':'bg-yellow-100 text-yellow-700'}`}>{String(rep.status??'draft')}</span>
+                  <span className={`text-xs px-2 py-1 rounded-full font-medium ${rep.status==='approved'?'bg-green-500/20 text-green-300':'bg-yellow-500/20 text-yellow-300'}`}>{String(rep.status??'draft')}</span>
                 </div>
                 {!!rep.workers_on_site && <p className="text-sm text-gray-300">Workers on site: <span className="text-white font-semibold">{String(rep.workers_on_site)}</span></p>}
                 {!!rep.activities && <p className="text-sm text-gray-400 mt-1 line-clamp-2">{String(rep.activities)}</p>}
@@ -578,7 +578,7 @@ export function Projects() {
           <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400"/>
             <input value={search} onChange={e=>setSearch(e.target.value)} placeholder="Search projects…"
-              className="w-full pl-9 pr-3 py-1.5 bg-gray-800 border border-gray-700 rounded-lg text-white text-sm focus:outline-none focus:border-blue-500"/>
+              className="w-full pl-9 pr-3 py-1.5 bg-gray-800 border border-gray-700 rounded-lg text-white text-sm focus:outline-none focus:border-orange-500"/>
           </div>
         </div>
       </div>
@@ -655,61 +655,61 @@ export function Projects() {
               <div className="grid grid-cols-2 gap-4">
                 <div className="col-span-2">
                   <label className="block text-xs font-medium text-gray-400 mb-1">Project Name *</label>
-                  <input value={form.name} onChange={e=>setForm(f=>({...f,name:e.target.value}))} placeholder="e.g. Canary Wharf Office Complex" className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-blue-500"/>
+                  <input value={form.name} onChange={e=>setForm(f=>({...f,name:e.target.value}))} placeholder="e.g. Canary Wharf Office Complex" className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-orange-500"/>
                 </div>
                 <div>
                   <label className="block text-xs font-medium text-gray-400 mb-1">Client *</label>
-                  <input value={form.client} onChange={e=>setForm(f=>({...f,client:e.target.value}))} placeholder="Client name" className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-blue-500"/>
+                  <input value={form.client} onChange={e=>setForm(f=>({...f,client:e.target.value}))} placeholder="Client name" className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-orange-500"/>
                 </div>
                 <div>
                   <label className="block text-xs font-medium text-gray-400 mb-1">Location</label>
-                  <input value={form.location} onChange={e=>setForm(f=>({...f,location:e.target.value}))} placeholder="City, Postcode" className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-blue-500"/>
+                  <input value={form.location} onChange={e=>setForm(f=>({...f,location:e.target.value}))} placeholder="City, Postcode" className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-orange-500"/>
                 </div>
                 <div>
                   <label className="block text-xs font-medium text-gray-400 mb-1">Type</label>
-                  <select value={form.type} onChange={e=>setForm(f=>({...f,type:e.target.value}))} className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-blue-500">
+                  <select value={form.type} onChange={e=>setForm(f=>({...f,type:e.target.value}))} className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-orange-500">
                     {PROJECT_TYPES.map(t=><option key={t} value={t}>{t}</option>)}
                   </select>
                 </div>
                 <div>
                   <label className="block text-xs font-medium text-gray-400 mb-1">Status</label>
-                  <select value={form.status} onChange={e=>setForm(f=>({...f,status:e.target.value}))} className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-blue-500">
+                  <select value={form.status} onChange={e=>setForm(f=>({...f,status:e.target.value}))} className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-orange-500">
                     {['planning','active','on_hold','completed','archived'].map(s=><option key={s} value={s}>{s}</option>)}
                   </select>
                 </div>
                 <div>
                   <label className="block text-xs font-medium text-gray-400 mb-1">Phase</label>
-                  <select value={form.phase} onChange={e=>setForm(f=>({...f,phase:e.target.value}))} className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-blue-500">
+                  <select value={form.phase} onChange={e=>setForm(f=>({...f,phase:e.target.value}))} className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-orange-500">
                     {PROJECT_PHASES.map(ph=><option key={ph} value={ph}>{ph}</option>)}
                   </select>
                 </div>
                 <div>
                   <label className="block text-xs font-medium text-gray-400 mb-1">Budget (£)</label>
-                  <input type="number" value={form.budget} onChange={e=>setForm(f=>({...f,budget:e.target.value}))} placeholder="0" className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-blue-500"/>
+                  <input type="number" value={form.budget} onChange={e=>setForm(f=>({...f,budget:e.target.value}))} placeholder="0" className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-orange-500"/>
                 </div>
                 <div>
                   <label className="block text-xs font-medium text-gray-400 mb-1">Contract Value (£)</label>
-                  <input type="number" value={form.contract_value} onChange={e=>setForm(f=>({...f,contract_value:e.target.value}))} placeholder="0" className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-blue-500"/>
+                  <input type="number" value={form.contract_value} onChange={e=>setForm(f=>({...f,contract_value:e.target.value}))} placeholder="0" className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-orange-500"/>
                 </div>
                 <div>
                   <label className="block text-xs font-medium text-gray-400 mb-1">Start Date</label>
-                  <input type="date" value={form.start_date} onChange={e=>setForm(f=>({...f,start_date:e.target.value}))} className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-blue-500"/>
+                  <input type="date" value={form.start_date} onChange={e=>setForm(f=>({...f,start_date:e.target.value}))} className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-orange-500"/>
                 </div>
                 <div>
                   <label className="block text-xs font-medium text-gray-400 mb-1">End Date</label>
-                  <input type="date" value={form.end_date} onChange={e=>setForm(f=>({...f,end_date:e.target.value}))} className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-blue-500"/>
+                  <input type="date" value={form.end_date} onChange={e=>setForm(f=>({...f,end_date:e.target.value}))} className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-orange-500"/>
                 </div>
                 <div>
                   <label className="block text-xs font-medium text-gray-400 mb-1">Project Manager</label>
-                  <input value={form.manager} onChange={e=>setForm(f=>({...f,manager:e.target.value}))} placeholder="Full name" className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-blue-500"/>
+                  <input value={form.manager} onChange={e=>setForm(f=>({...f,manager:e.target.value}))} placeholder="Full name" className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-orange-500"/>
                 </div>
                 <div>
                   <label className="block text-xs font-medium text-gray-400 mb-1">Workers on Site</label>
-                  <input type="number" value={form.workers} onChange={e=>setForm(f=>({...f,workers:e.target.value}))} placeholder="0" className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-blue-500"/>
+                  <input type="number" value={form.workers} onChange={e=>setForm(f=>({...f,workers:e.target.value}))} placeholder="0" className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-orange-500"/>
                 </div>
                 <div className="col-span-2">
                   <label className="block text-xs font-medium text-gray-400 mb-1">Description</label>
-                  <textarea value={form.description} onChange={e=>setForm(f=>({...f,description:e.target.value}))} rows={3} placeholder="Project description…" className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-white text-sm resize-none focus:outline-none focus:border-blue-500"/>
+                  <textarea value={form.description} onChange={e=>setForm(f=>({...f,description:e.target.value}))} rows={3} placeholder="Project description…" className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-white text-sm resize-none focus:outline-none focus:border-orange-500"/>
                 </div>
               </div>
             </div>

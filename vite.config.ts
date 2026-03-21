@@ -5,6 +5,11 @@ export default defineConfig({
   plugins: [react()],
   server: {
     allowedHosts: true,
+    proxy: {
+      '/api': { target: 'http://localhost:3001', changeOrigin: true },
+      '/ws':  { target: 'ws://localhost:3001', ws: true },
+      '/uploads': { target: 'http://localhost:3001', changeOrigin: true },
+    },
   },
   build: {
     chunkSizeWarningLimit: 1000,

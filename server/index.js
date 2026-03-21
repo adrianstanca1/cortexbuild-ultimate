@@ -2,12 +2,18 @@ require('dotenv').config({ path: require('path').join(__dirname, '.env') });
 const express    = require('express');
 const cors       = require('cors');
 const path       = require('path');
+const http       = require('http');
 const authMiddleware = require('./middleware/auth');
 const makeRouter     = require('./routes/generic');
 const authRoutes     = require('./routes/auth');
+const { initWebSocket } = require('./lib/websocket');
 
 const app  = express();
+const server = http.createServer(app);
 const PORT = process.env.PORT || 3001;
+
+// Initialize WebSocket server
+initWebSocket(server);
 
 // ─── Middleware ───────────────────────────────────────────────────────────────
 const corsOrigin = process.env.CORS_ORIGIN || '*';
@@ -57,7 +63,8 @@ app.use('/api/daily-reports',   makeRouter('daily_reports'));
 app.use((_req, res) => res.status(404).json({ message: 'Route not found' }));
 
 // ─── Start ────────────────────────────────────────────────────────────────────
-app.listen(PORT, () => {
+server.listen(PORT, () => {
   console.log(`\n🏗  CortexBuild API running on port ${PORT}`);
-  console.log(`   Health: http://localhost:${PORT}/api/health\n`);
+  console.log(`   Health: http://localhost:${PORT}/api/health`);
+  console.log(`   WebSocket: ws://localhost:${PORT}/ws\n`);
 });

@@ -18,9 +18,9 @@ const FALLBACK_REV: Record<string,{revenue:number,costs:number}> = {
   Mar:{revenue:943000,costs:648000},
 };
 const STATUS_COLOUR: Record<string,string> = {
-  draft:'bg-gray-100 text-gray-600', sent:'bg-blue-100 text-blue-700',
-  paid:'bg-green-100 text-green-700', overdue:'bg-red-100 text-red-700',
-  disputed:'bg-orange-100 text-orange-700',
+  draft:'bg-gray-800 text-gray-600', sent:'bg-blue-500/20 text-blue-300',
+  paid:'bg-green-500/20 text-green-300', overdue:'bg-red-500/20 text-red-300',
+  disputed:'bg-orange-500/20 text-orange-300',
 };
 function fmt(n:number) {
   if (n>=1_000_000) return `£${(n/1_000_000).toFixed(2)}M`;
@@ -181,7 +181,7 @@ export function Accounting() {
                       <td className="px-4 py-3 text-gray-400 max-w-[180px] truncate">{String(inv.project??'—')}</td>
                       <td className="px-4 py-3 text-white font-bold">{fmt(Number(inv.amount??0))}</td>
                       <td className="px-4 py-3">
-                        <span className={`text-xs px-2 py-1 rounded-full font-medium ${STATUS_COLOUR[String(inv.status??'')]??'bg-gray-100 text-gray-600'}`}>
+                        <span className={`text-xs px-2 py-1 rounded-full font-medium ${STATUS_COLOUR[String(inv.status??'')]??'bg-gray-800 text-gray-600'}`}>
                           {String(inv.status??'')}
                         </span>
                       </td>
@@ -313,22 +313,22 @@ export function Accounting() {
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-xs font-medium text-gray-400 mb-1">Invoice Number</label>
-                  <input value={fNum} onChange={e=>setFNum(e.target.value)} className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-blue-500"/>
+                  <input value={fNum} onChange={e=>setFNum(e.target.value)} className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-orange-500"/>
                 </div>
                 <div>
                   <label className="block text-xs font-medium text-gray-400 mb-1">Status</label>
-                  <select value={fStatus} onChange={e=>setFStatus(e.target.value)} className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-blue-500">
+                  <select value={fStatus} onChange={e=>setFStatus(e.target.value)} className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-orange-500">
                     {INVOICE_STATUSES.map(s=><option key={s} value={s}>{s}</option>)}
                   </select>
                 </div>
               </div>
               <div>
                 <label className="block text-xs font-medium text-gray-400 mb-1">Client *</label>
-                <input value={fClient} onChange={e=>setFClient(e.target.value)} placeholder="Client name" className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-blue-500"/>
+                <input value={fClient} onChange={e=>setFClient(e.target.value)} placeholder="Client name" className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-orange-500"/>
               </div>
               <div>
                 <label className="block text-xs font-medium text-gray-400 mb-1">Project</label>
-                <select value={fProject} onChange={e=>setFProject(e.target.value)} className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-blue-500">
+                <select value={fProject} onChange={e=>setFProject(e.target.value)} className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-orange-500">
                   <option value="">— Select project —</option>
                   {projects.map(p=><option key={String(p.id)} value={String(p.name)}>{String(p.name)}</option>)}
                 </select>
@@ -336,16 +336,16 @@ export function Accounting() {
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-xs font-medium text-gray-400 mb-1">Amount (£) *</label>
-                  <input type="number" value={fAmount} onChange={e=>setFAmount(e.target.value)} placeholder="0.00" className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-blue-500"/>
+                  <input type="number" value={fAmount} onChange={e=>setFAmount(e.target.value)} placeholder="0.00" className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-orange-500"/>
                 </div>
                 <div>
                   <label className="block text-xs font-medium text-gray-400 mb-1">Due Date</label>
-                  <input type="date" value={fDue} onChange={e=>setFDue(e.target.value)} className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-blue-500"/>
+                  <input type="date" value={fDue} onChange={e=>setFDue(e.target.value)} className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-orange-500"/>
                 </div>
               </div>
               <div>
                 <label className="block text-xs font-medium text-gray-400 mb-1">Description</label>
-                <textarea value={fDesc} onChange={e=>setFDesc(e.target.value)} rows={2} placeholder="Works description…" className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-white text-sm resize-none focus:outline-none focus:border-blue-500"/>
+                <textarea value={fDesc} onChange={e=>setFDesc(e.target.value)} rows={2} placeholder="Works description…" className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-white text-sm resize-none focus:outline-none focus:border-orange-500"/>
               </div>
             </div>
             <div className="flex gap-3 px-6 py-4 border-t border-gray-800">

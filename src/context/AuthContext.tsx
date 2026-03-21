@@ -51,9 +51,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setUser(data.user as Profile);
   };
 
-  const signUp = async (_email: string, _password: string, _name: string, _company: string) => {
-    // Self-registration is handled by admins — contact your admin for access
-    throw new Error('Self-registration is disabled. Contact your administrator for access.');
+  const signUp = async (email: string, password: string, name: string, company: string) => {
+    const res = await fetch(`${API_BASE}/auth/register`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name, email, password, company }),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.message || 'Registration failed');
+    setToken(data.token);
+    setStoredUser(data.user);
+    setUser(data.user as Profile);
   };
 
   const signOut = async () => {

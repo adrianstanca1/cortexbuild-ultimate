@@ -9,15 +9,15 @@ const CONTACT_TYPES = ['Client','Consultant','Subcontractor','Supplier','Statuto
 const STATUS_OPTIONS = ['Active','Inactive','Prospect','Do Not Contact'];
 
 const typeColour: Record<string,string> = {
-  'Client':'bg-blue-100 text-blue-800','Consultant':'bg-purple-100 text-purple-700',
-  'Subcontractor':'bg-orange-100 text-orange-700','Supplier':'bg-green-100 text-green-700',
-  'Statutory Body':'bg-gray-100 text-gray-700','Insurer':'bg-teal-100 text-teal-700',
-  'Solicitor':'bg-red-100 text-red-700','Other':'bg-gray-100 text-gray-600',
+  'Client':'bg-blue-500/20 text-blue-300','Consultant':'bg-purple-500/20 text-purple-300',
+  'Subcontractor':'bg-orange-500/20 text-orange-300','Supplier':'bg-green-500/20 text-green-300',
+  'Statutory Body':'bg-gray-700 text-gray-300','Insurer':'bg-teal-500/20 text-teal-300',
+  'Solicitor':'bg-red-500/20 text-red-300','Other':'bg-gray-700 text-gray-400',
 };
 
 const statusColour: Record<string,string> = {
-  'Active':'bg-green-100 text-green-800','Inactive':'bg-gray-100 text-gray-600',
-  'Prospect':'bg-yellow-100 text-yellow-800','Do Not Contact':'bg-red-100 text-red-700',
+  'Active':'bg-green-500/20 text-green-300','Inactive':'bg-gray-700 text-gray-400',
+  'Prospect':'bg-yellow-500/20 text-yellow-300','Do Not Contact':'bg-red-500/20 text-red-300',
 };
 
 const emptyForm = { name:'',company:'',type:'Client',email:'',phone:'',address:'',status:'Active',rating:'3',notes:'',website:'' };
@@ -95,7 +95,7 @@ export function CRM() {
     <div className="p-6 space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">CRM</h1>
+          <h1 className="text-2xl font-bold text-white">CRM</h1>
           <p className="text-sm text-gray-500 mt-1">Clients, consultants & supply chain contacts</p>
         </div>
         <button onClick={openCreate} className="flex items-center gap-2 px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 text-sm font-medium">
@@ -110,39 +110,39 @@ export function CRM() {
           { label:'Active', value:activeCount, icon:UserCheck, colour:'text-green-600', bg:'bg-green-50' },
           { label:'Prospects', value:prospectCount, icon:Star, colour:'text-yellow-600', bg:'bg-yellow-50' },
         ].map(kpi=>(
-          <div key={kpi.label} className="bg-white rounded-xl border border-gray-200 p-4">
+          <div key={kpi.label} className="bg-gray-900 rounded-xl border border-gray-700 p-4">
             <div className="flex items-center gap-3">
               <div className={`p-2 rounded-lg ${kpi.bg}`}><kpi.icon size={20} className={kpi.colour}/></div>
-              <div><p className="text-xs text-gray-500">{kpi.label}</p><p className="text-xl font-bold text-gray-900">{kpi.value}</p></div>
+              <div><p className="text-xs text-gray-500">{kpi.label}</p><p className="text-xl font-bold text-white">{kpi.value}</p></div>
             </div>
           </div>
         ))}
       </div>
 
       {/* Sub-tab nav */}
-      <div className="flex gap-1 border-b border-gray-200">
+      <div className="flex gap-1 border-b border-gray-700">
         {([
           { key:'contacts', label:'All Contacts', icon:UserCheck, count:contacts.length },
           { key:'pipeline', label:'By Type',      icon:TrendingUp, count:null },
           { key:'companies',label:'Companies',    icon:Users,      count:companiesMap.size },
         ] as const).map(t=>(
           <button key={t.key} onClick={()=>setSubTab(t.key)}
-            className={`flex items-center gap-2 px-4 py-2.5 text-sm font-medium border-b-2 -mb-px transition-colors ${subTab===t.key?'border-orange-600 text-orange-600':'border-transparent text-gray-500 hover:text-gray-700'}`}>
+            className={`flex items-center gap-2 px-4 py-2.5 text-sm font-medium border-b-2 -mb-px transition-colors ${subTab===t.key?'border-orange-600 text-orange-600':'border-transparent text-gray-500 hover:text-gray-300'}`}>
             <t.icon size={14}/>{t.label}
-            {t.count!==null && <span className="text-xs px-1.5 py-0.5 rounded-full bg-gray-100 text-gray-600">{t.count}</span>}
+            {t.count!==null && <span className="text-xs px-1.5 py-0.5 rounded-full bg-gray-800 text-gray-300">{t.count}</span>}
           </button>
         ))}
       </div>
 
-      {subTab==='contacts' && <div className="flex flex-wrap gap-3 items-center bg-white rounded-xl border border-gray-200 p-4">
+      {subTab==='contacts' && <div className="flex flex-wrap gap-3 items-center bg-gray-900 rounded-xl border border-gray-700 p-4">
         <div className="relative flex-1 min-w-48">
           <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"/>
-          <input value={search} onChange={e=>setSearch(e.target.value)} placeholder="Search name or company…" className="w-full pl-9 pr-4 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"/>
+          <input value={search} onChange={e=>setSearch(e.target.value)} placeholder="Search name or company…" className="w-full pl-9 pr-4 py-2 text-sm bg-gray-800 border border-gray-700 text-white placeholder-gray-500 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"/>
         </div>
-        <select value={typeFilter} onChange={e=>setTypeFilter(e.target.value)} className="text-sm border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-orange-500">
+        <select value={typeFilter} onChange={e=>setTypeFilter(e.target.value)} className="text-sm bg-gray-800 border border-gray-700 text-white rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-orange-500">
           {['All',...CONTACT_TYPES].map(t=><option key={t}>{t}</option>)}
         </select>
-        <select value={statusFilter} onChange={e=>setStatusFilter(e.target.value)} className="text-sm border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-orange-500">
+        <select value={statusFilter} onChange={e=>setStatusFilter(e.target.value)} className="text-sm bg-gray-800 border border-gray-700 text-white rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-orange-500">
           {['All',...STATUS_OPTIONS].map(s=><option key={s}>{s}</option>)}
         </select>
         <span className="text-sm text-gray-500 ml-auto">{filtered.length} contacts</span>
@@ -152,35 +152,35 @@ export function CRM() {
       {subTab==='pipeline' && (
         <div className="space-y-4">
           {pipeline.map(group=>(
-            <div key={group.type} className="bg-white rounded-xl border border-gray-200 overflow-hidden">
-              <div className="flex items-center justify-between px-4 py-3 bg-gray-50 border-b border-gray-200">
+            <div key={group.type} className="bg-gray-900 rounded-xl border border-gray-700 overflow-hidden">
+              <div className="flex items-center justify-between px-4 py-3 bg-gray-900 border-b border-gray-700">
                 <div className="flex items-center gap-2">
-                  <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${typeColour[group.type]??'bg-gray-100 text-gray-700'}`}>{group.type}</span>
-                  <span className="text-sm font-semibold text-gray-700">{group.count} contact{group.count!==1?'s':''}</span>
+                  <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${typeColour[group.type]??'bg-gray-800 text-gray-300'}`}>{group.type}</span>
+                  <span className="text-sm font-semibold text-gray-300">{group.count} contact{group.count!==1?'s':''}</span>
                 </div>
               </div>
-              <div className="divide-y divide-gray-50">
+              <div className="divide-y divide-gray-700">
                 {group.contacts.map(c=>(
-                  <div key={String(c.id??'')} className="flex items-center gap-3 px-4 py-2.5 hover:bg-gray-50">
+                  <div key={String(c.id??'')} className="flex items-center gap-3 px-4 py-2.5 hover:bg-gray-800">
                     <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-blue-400 to-indigo-600 flex items-center justify-center text-white text-xs font-bold flex-shrink-0">
                       {String(c.name??'?').split(' ').map((n:string)=>n[0]).slice(0,2).join('')}
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium text-gray-900 truncate">{String(c.name??'')}</p>
+                      <p className="text-sm font-medium text-white truncate">{String(c.name??'')}</p>
                       {!!c.company && <p className="text-xs text-gray-500 truncate">{String(c.company)}</p>}
                     </div>
                     <div className="hidden sm:flex items-center gap-3 text-xs text-gray-500">
                       {!!c.email && <a href={`mailto:${c.email}`} className="flex items-center gap-1 text-blue-600 hover:underline"><Mail size={11}/>{String(c.email)}</a>}
                       {!!c.phone && <a href={`tel:${c.phone}`} className="flex items-center gap-1 text-blue-600 hover:underline"><Phone size={11}/>{String(c.phone)}</a>}
                     </div>
-                    <span className={`text-xs px-2 py-0.5 rounded-full font-medium flex-shrink-0 ${statusColour[String(c.status??'')] ?? 'bg-gray-100 text-gray-600'}`}>{String(c.status??'')}</span>
+                    <span className={`text-xs px-2 py-0.5 rounded-full font-medium flex-shrink-0 ${statusColour[String(c.status??'')] ?? 'bg-gray-800 text-gray-300'}`}>{String(c.status??'')}</span>
                     <button onClick={()=>openEdit(c)} className="p-1 text-gray-400 hover:text-blue-600 rounded flex-shrink-0"><Edit2 size={13}/></button>
                   </div>
                 ))}
               </div>
             </div>
           ))}
-          {pipeline.length===0 && <div className="text-center py-16 text-gray-400 bg-white rounded-xl border border-gray-200"><TrendingUp size={40} className="mx-auto mb-3 opacity-30"/><p>No contacts yet</p></div>}
+          {pipeline.length===0 && <div className="text-center py-16 text-gray-400 bg-gray-900 rounded-xl border border-gray-700"><TrendingUp size={40} className="mx-auto mb-3 opacity-30"/><p>No contacts yet</p></div>}
         </div>
       )}
 
@@ -188,29 +188,29 @@ export function CRM() {
       {subTab==='companies' && (
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
           {companies.length===0 && (
-            <div className="col-span-3 text-center py-16 text-gray-400 bg-white rounded-xl border border-gray-200"><Building2 size={40} className="mx-auto mb-3 opacity-30"/><p>No companies found</p></div>
+            <div className="col-span-3 text-center py-16 text-gray-400 bg-gray-900 rounded-xl border border-gray-700"><Building2 size={40} className="mx-auto mb-3 opacity-30"/><p>No companies found</p></div>
           )}
           {companies.map(co=>(
-            <div key={co.name} className="bg-white rounded-xl border border-gray-200 overflow-hidden">
-              <div className="flex items-center gap-3 px-4 py-3 border-b border-gray-100">
+            <div key={co.name} className="bg-gray-900 rounded-xl border border-gray-700 overflow-hidden">
+              <div className="flex items-center gap-3 px-4 py-3 border-b border-gray-700">
                 <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-indigo-400 to-purple-600 flex items-center justify-center text-white font-bold text-sm flex-shrink-0">
                   {co.name.charAt(0)}
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="font-semibold text-gray-900 truncate">{co.name}</p>
+                  <p className="font-semibold text-white truncate">{co.name}</p>
                   <p className="text-xs text-gray-500">{co.count} contact{co.count!==1?'s':''}</p>
                 </div>
               </div>
-              <div className="divide-y divide-gray-50">
+              <div className="divide-y divide-gray-700">
                 {co.members.map(c=>(
-                  <div key={String(c.id??'')} className="flex items-center gap-3 px-4 py-2 hover:bg-gray-50">
+                  <div key={String(c.id??'')} className="flex items-center gap-3 px-4 py-2 hover:bg-gray-800">
                     <div className="w-6 h-6 rounded-full bg-gradient-to-br from-blue-300 to-blue-500 flex items-center justify-center text-white text-xs font-bold flex-shrink-0">
                       {String(c.name??'?')[0]}
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm text-gray-900 truncate">{String(c.name??'')}</p>
+                      <p className="text-sm text-white truncate">{String(c.name??'')}</p>
                     </div>
-                    <span className={`text-xs px-1.5 py-0.5 rounded-full font-medium flex-shrink-0 ${typeColour[String(c.type??'')] ?? 'bg-gray-100 text-gray-700'}`}>{String(c.type??'')}</span>
+                    <span className={`text-xs px-1.5 py-0.5 rounded-full font-medium flex-shrink-0 ${typeColour[String(c.type??'')] ?? 'bg-gray-800 text-gray-300'}`}>{String(c.type??'')}</span>
                     <button onClick={()=>openEdit(c)} className="p-1 text-gray-400 hover:text-blue-600 rounded flex-shrink-0"><Edit2 size={12}/></button>
                   </div>
                 ))}
@@ -226,7 +226,7 @@ export function CRM() {
       ) : subTab==='contacts' && (
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
           {filtered.length === 0 && (
-            <div className="col-span-3 text-center py-16 text-gray-400 bg-white rounded-xl border border-gray-200">
+            <div className="col-span-3 text-center py-16 text-gray-400 bg-gray-900 rounded-xl border border-gray-700">
               <UserCheck size={40} className="mx-auto mb-3 opacity-30"/><p>No contacts found</p>
             </div>
           )}
@@ -235,14 +235,14 @@ export function CRM() {
             const isExp = expanded === id;
             const rating = Number(c.rating??0);
             return (
-              <div key={id} className="bg-white rounded-xl border border-gray-200 hover:shadow-md transition-shadow">
+              <div key={id} className="bg-gray-900 rounded-xl border border-gray-700 hover:shadow-md transition-shadow">
                 <div className="p-4 cursor-pointer" onClick={()=>setExpanded(isExp?null:id)}>
                   <div className="flex items-start gap-3">
                     <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-400 to-indigo-600 flex items-center justify-center text-white font-bold text-sm flex-shrink-0">
                       {String(c.name??'?').split(' ').map((n:string)=>n[0]).slice(0,2).join('')}
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className="font-semibold text-gray-900 truncate">{String(c.name??'Unknown')}</p>
+                      <p className="font-semibold text-white truncate">{String(c.name??'Unknown')}</p>
                       {!!c.company && <p className="text-sm text-gray-500 truncate flex items-center gap-1"><Building2 size={11}/>{String(c.company)}</p>}
                     </div>
                     <div className="flex gap-1 flex-shrink-0">
@@ -251,8 +251,8 @@ export function CRM() {
                     </div>
                   </div>
                   <div className="flex flex-wrap items-center gap-2 mt-3">
-                    <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${typeColour[String(c.type??'')] ?? 'bg-gray-100 text-gray-700'}`}>{String(c.type??'')}</span>
-                    <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${statusColour[String(c.status??'')] ?? 'bg-gray-100 text-gray-600'}`}>{String(c.status??'')}</span>
+                    <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${typeColour[String(c.type??'')] ?? 'bg-gray-800 text-gray-300'}`}>{String(c.type??'')}</span>
+                    <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${statusColour[String(c.status??'')] ?? 'bg-gray-800 text-gray-300'}`}>{String(c.status??'')}</span>
                     {rating > 0 && (
                       <div className="flex items-center gap-0.5 ml-auto">
                         {[1,2,3,4,5].map(i=><Star key={i} size={10} className={i<=rating?'text-yellow-400 fill-yellow-400':'text-gray-200 fill-gray-200'}/>)}
@@ -267,10 +267,10 @@ export function CRM() {
                   )}
                 </div>
                 {isExp && (
-                  <div className="px-4 pb-4 border-t border-gray-100 pt-3 space-y-2 text-sm">
-                    {!!c.address && <p className="flex items-start gap-2 text-gray-600"><MapPin size={13} className="mt-0.5 flex-shrink-0"/>{String(c.address)}</p>}
-                    {!!c.website && <a href={String(c.website)} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline text-xs block truncate">{String(c.website)}</a>}
-                    {!!c.notes && <p className="text-gray-500 text-xs bg-gray-50 rounded-lg p-2 leading-relaxed">{String(c.notes)}</p>}
+                  <div className="px-4 pb-4 border-t border-gray-700 pt-3 space-y-2 text-sm">
+                    {!!c.address && <p className="flex items-start gap-2 text-gray-300"><MapPin size={13} className="mt-0.5 flex-shrink-0"/>{String(c.address)}</p>}
+                    {!!c.website && <a href={String(c.website)} target="_blank" rel="noopener noreferrer" className="text-blue-400 hover:underline text-xs block truncate">{String(c.website)}</a>}
+                    {!!c.notes && <p className="text-gray-400 text-xs bg-gray-800 rounded-lg p-2 leading-relaxed">{String(c.notes)}</p>}
                   </div>
                 )}
               </div>
@@ -281,62 +281,62 @@ export function CRM() {
 
       {showModal && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-xl max-h-[90vh] overflow-y-auto">
-            <div className="flex items-center justify-between p-6 border-b sticky top-0 bg-white z-10">
-              <h2 className="text-lg font-semibold">{editing?'Edit Contact':'Add Contact'}</h2>
-              <button onClick={()=>setShowModal(false)} className="p-2 hover:bg-gray-100 rounded-lg"><X size={18}/></button>
+          <div className="bg-gray-900 rounded-2xl shadow-2xl w-full max-w-xl max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between p-6 border-b border-gray-700 sticky top-0 bg-gray-900 z-10">
+              <h2 className="text-lg font-semibold text-white">{editing?'Edit Contact':'Add Contact'}</h2>
+              <button onClick={()=>setShowModal(false)} className="p-2 hover:bg-gray-800 rounded-lg"><X size={18}/></button>
             </div>
             <form onSubmit={handleSubmit} className="p-6 space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Full Name *</label>
-                  <input required value={form.name} onChange={e=>setForm(f=>({...f,name:e.target.value}))} className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500"/>
+                  <label className="block text-sm font-medium text-gray-300 mb-1">Full Name *</label>
+                  <input required value={form.name} onChange={e=>setForm(f=>({...f,name:e.target.value}))} className="w-full bg-gray-800 border border-gray-700 text-white placeholder-gray-500 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500"/>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Company</label>
-                  <input value={form.company} onChange={e=>setForm(f=>({...f,company:e.target.value}))} className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500"/>
+                  <label className="block text-sm font-medium text-gray-300 mb-1">Company</label>
+                  <input value={form.company} onChange={e=>setForm(f=>({...f,company:e.target.value}))} className="w-full bg-gray-800 border border-gray-700 text-white placeholder-gray-500 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500"/>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Type</label>
-                  <select value={form.type} onChange={e=>setForm(f=>({...f,type:e.target.value}))} className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500">
+                  <label className="block text-sm font-medium text-gray-300 mb-1">Type</label>
+                  <select value={form.type} onChange={e=>setForm(f=>({...f,type:e.target.value}))} className="w-full bg-gray-800 border border-gray-700 text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500">
                     {CONTACT_TYPES.map(t=><option key={t}>{t}</option>)}
                   </select>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
-                  <select value={form.status} onChange={e=>setForm(f=>({...f,status:e.target.value}))} className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500">
+                  <label className="block text-sm font-medium text-gray-300 mb-1">Status</label>
+                  <select value={form.status} onChange={e=>setForm(f=>({...f,status:e.target.value}))} className="w-full bg-gray-800 border border-gray-700 text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500">
                     {STATUS_OPTIONS.map(s=><option key={s}>{s}</option>)}
                   </select>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
-                  <input type="email" value={form.email} onChange={e=>setForm(f=>({...f,email:e.target.value}))} className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500"/>
+                  <label className="block text-sm font-medium text-gray-300 mb-1">Email</label>
+                  <input type="email" value={form.email} onChange={e=>setForm(f=>({...f,email:e.target.value}))} className="w-full bg-gray-800 border border-gray-700 text-white placeholder-gray-500 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500"/>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Phone</label>
-                  <input value={form.phone} onChange={e=>setForm(f=>({...f,phone:e.target.value}))} className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500"/>
+                  <label className="block text-sm font-medium text-gray-300 mb-1">Phone</label>
+                  <input value={form.phone} onChange={e=>setForm(f=>({...f,phone:e.target.value}))} className="w-full bg-gray-800 border border-gray-700 text-white placeholder-gray-500 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500"/>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Rating (1–5)</label>
-                  <select value={form.rating} onChange={e=>setForm(f=>({...f,rating:e.target.value}))} className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500">
+                  <label className="block text-sm font-medium text-gray-300 mb-1">Rating (1–5)</label>
+                  <select value={form.rating} onChange={e=>setForm(f=>({...f,rating:e.target.value}))} className="w-full bg-gray-800 border border-gray-700 text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500">
                     {[1,2,3,4,5].map(n=><option key={n} value={n}>{n} ★</option>)}
                   </select>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Website</label>
-                  <input type="url" value={form.website} onChange={e=>setForm(f=>({...f,website:e.target.value}))} placeholder="https://…" className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500"/>
+                  <label className="block text-sm font-medium text-gray-300 mb-1">Website</label>
+                  <input type="url" value={form.website} onChange={e=>setForm(f=>({...f,website:e.target.value}))} placeholder="https://…" className="w-full bg-gray-800 border border-gray-700 text-white placeholder-gray-500 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500"/>
                 </div>
                 <div className="col-span-2">
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Address</label>
-                  <input value={form.address} onChange={e=>setForm(f=>({...f,address:e.target.value}))} className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500"/>
+                  <label className="block text-sm font-medium text-gray-300 mb-1">Address</label>
+                  <input value={form.address} onChange={e=>setForm(f=>({...f,address:e.target.value}))} className="w-full bg-gray-800 border border-gray-700 text-white placeholder-gray-500 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500"/>
                 </div>
                 <div className="col-span-2">
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Notes</label>
-                  <textarea rows={3} value={form.notes} onChange={e=>setForm(f=>({...f,notes:e.target.value}))} className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500 resize-none"/>
+                  <label className="block text-sm font-medium text-gray-300 mb-1">Notes</label>
+                  <textarea rows={3} value={form.notes} onChange={e=>setForm(f=>({...f,notes:e.target.value}))} className="w-full bg-gray-800 border border-gray-700 text-white placeholder-gray-500 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500 resize-none"/>
                 </div>
               </div>
               <div className="flex gap-3 pt-2">
-                <button type="button" onClick={()=>setShowModal(false)} className="flex-1 px-4 py-2 border border-gray-200 rounded-lg text-sm text-gray-700 hover:bg-gray-50">Cancel</button>
+                <button type="button" onClick={()=>setShowModal(false)} className="flex-1 px-4 py-2 border border-gray-700 rounded-lg text-sm text-gray-300 hover:bg-gray-800">Cancel</button>
                 <button type="submit" disabled={createMutation.isPending||updateMutation.isPending} className="flex-1 px-4 py-2 bg-orange-600 text-white rounded-lg text-sm font-medium hover:bg-orange-700 disabled:opacity-50">
                   {editing?'Update Contact':'Add Contact'}
                 </button>

@@ -13,10 +13,10 @@ const STATUSES = ['pending_approval','ordered','pending_delivery','on_site','del
 const CATEGORIES = ['Structural Steel','Concrete','Waterproofing','Cladding','Fixings','Insulation','Tools','Groundworks','Civils','Other'];
 
 const STATUS_COLOUR: Record<string,string> = {
-  pending_approval: 'bg-yellow-100 text-yellow-700',
-  ordered:          'bg-blue-100 text-blue-700',
-  pending_delivery: 'bg-orange-100 text-orange-700',
-  on_site:          'bg-green-100 text-green-700',
+  pending_approval: 'bg-yellow-500/20 text-yellow-300',
+  ordered:          'bg-blue-500/20 text-blue-300',
+  pending_delivery: 'bg-orange-500/20 text-orange-300',
+  on_site:          'bg-green-500/20 text-green-300',
   delivered:        'bg-emerald-100 text-emerald-700',
 };
 
@@ -186,15 +186,15 @@ export function Procurement() {
         <div className="relative flex-1 min-w-[200px]">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400"/>
           <input value={search} onChange={e=>setSearch(e.target.value)} placeholder="Search supplier, description, PO #…"
-            className="w-full pl-9 pr-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white text-sm focus:outline-none focus:border-blue-500"/>
+            className="w-full pl-9 pr-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white text-sm focus:outline-none focus:border-orange-500"/>
         </div>
         <select value={filterStatus} onChange={e=>setFilterStatus(e.target.value)}
-          className="bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-blue-500">
+          className="bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-orange-500">
           <option value="all">All Statuses</option>
           {STATUSES.map(s=><option key={s} value={s}>{s.replace('_',' ')}</option>)}
         </select>
         <select value={filterCategory} onChange={e=>setFilterCategory(e.target.value)}
-          className="bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-blue-500">
+          className="bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-orange-500">
           <option value="all">All Categories</option>
           {CATEGORIES.map(c=><option key={c} value={c}>{c}</option>)}
         </select>
@@ -225,7 +225,7 @@ export function Procurement() {
                       <td className="px-4 py-3 text-gray-400 text-xs max-w-[140px] truncate">{String(po.project??'—')}</td>
                       <td className="px-4 py-3 text-white font-bold">{fmt(Number(po.value??0))}</td>
                       <td className="px-4 py-3">
-                        <span className={`flex items-center gap-1 text-xs px-2 py-1 rounded-full font-medium w-fit ${STATUS_COLOUR[String(po.status??'')]??'bg-gray-100 text-gray-600'}`}>
+                        <span className={`flex items-center gap-1 text-xs px-2 py-1 rounded-full font-medium w-fit ${STATUS_COLOUR[String(po.status??'')]??'bg-gray-800 text-gray-600'}`}>
                           <StatusIcon className="w-3 h-3"/>
                           {String(po.status??'').replace('_',' ')}
                         </span>
@@ -267,38 +267,38 @@ export function Procurement() {
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-xs font-medium text-gray-400 mb-1">PO Number</label>
-                  <input value={fPO} onChange={e=>setFPO(e.target.value)} className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-blue-500"/>
+                  <input value={fPO} onChange={e=>setFPO(e.target.value)} className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-orange-500"/>
                 </div>
                 <div>
                   <label className="block text-xs font-medium text-gray-400 mb-1">Status</label>
-                  <select value={fStatus} onChange={e=>setFStatus(e.target.value)} className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-blue-500">
+                  <select value={fStatus} onChange={e=>setFStatus(e.target.value)} className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-orange-500">
                     {STATUSES.map(s=><option key={s} value={s}>{s.replace('_',' ')}</option>)}
                   </select>
                 </div>
               </div>
               <div>
                 <label className="block text-xs font-medium text-gray-400 mb-1">Supplier *</label>
-                <input value={fSupplier} onChange={e=>setFSupplier(e.target.value)} placeholder="Supplier name" className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-blue-500"/>
+                <input value={fSupplier} onChange={e=>setFSupplier(e.target.value)} placeholder="Supplier name" className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-orange-500"/>
               </div>
               <div>
                 <label className="block text-xs font-medium text-gray-400 mb-1">Description *</label>
-                <textarea value={fDesc} onChange={e=>setFDesc(e.target.value)} rows={2} placeholder="Materials / works description…" className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-white text-sm resize-none focus:outline-none focus:border-blue-500"/>
+                <textarea value={fDesc} onChange={e=>setFDesc(e.target.value)} rows={2} placeholder="Materials / works description…" className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-white text-sm resize-none focus:outline-none focus:border-orange-500"/>
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-xs font-medium text-gray-400 mb-1">Value (£)</label>
-                  <input type="number" value={fValue} onChange={e=>setFValue(e.target.value)} placeholder="0.00" className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-blue-500"/>
+                  <input type="number" value={fValue} onChange={e=>setFValue(e.target.value)} placeholder="0.00" className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-orange-500"/>
                 </div>
                 <div>
                   <label className="block text-xs font-medium text-gray-400 mb-1">Category</label>
-                  <select value={fCategory} onChange={e=>setFCategory(e.target.value)} className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-blue-500">
+                  <select value={fCategory} onChange={e=>setFCategory(e.target.value)} className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-orange-500">
                     {CATEGORIES.map(c=><option key={c} value={c}>{c}</option>)}
                   </select>
                 </div>
               </div>
               <div>
                 <label className="block text-xs font-medium text-gray-400 mb-1">Project</label>
-                <select value={fProject} onChange={e=>setFProject(e.target.value)} className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-blue-500">
+                <select value={fProject} onChange={e=>setFProject(e.target.value)} className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-orange-500">
                   <option value="">— Select project —</option>
                   {projects.map(p=><option key={String(p.id)} value={String(p.name)}>{String(p.name)}</option>)}
                 </select>
@@ -306,16 +306,16 @@ export function Procurement() {
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-xs font-medium text-gray-400 mb-1">Order Date</label>
-                  <input type="date" value={fOrder} onChange={e=>setFOrder(e.target.value)} className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-blue-500"/>
+                  <input type="date" value={fOrder} onChange={e=>setFOrder(e.target.value)} className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-orange-500"/>
                 </div>
                 <div>
                   <label className="block text-xs font-medium text-gray-400 mb-1">Expected Delivery</label>
-                  <input type="date" value={fDelivery} onChange={e=>setFDelivery(e.target.value)} className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-blue-500"/>
+                  <input type="date" value={fDelivery} onChange={e=>setFDelivery(e.target.value)} className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-orange-500"/>
                 </div>
               </div>
               <div>
                 <label className="block text-xs font-medium text-gray-400 mb-1">Notes</label>
-                <textarea value={fNotes} onChange={e=>setFNotes(e.target.value)} rows={2} placeholder="Additional notes…" className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-white text-sm resize-none focus:outline-none focus:border-blue-500"/>
+                <textarea value={fNotes} onChange={e=>setFNotes(e.target.value)} rows={2} placeholder="Additional notes…" className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-white text-sm resize-none focus:outline-none focus:border-orange-500"/>
               </div>
             </div>
             <div className="flex gap-3 px-6 py-4 border-t border-gray-800 sticky bottom-0 bg-gray-900">

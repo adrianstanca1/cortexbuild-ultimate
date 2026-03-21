@@ -32,6 +32,10 @@ import { Materials } from './components/modules/Materials';
 import { DailyReports } from './components/modules/DailyReports';
 import { Marketplace } from './components/modules/Marketplace';
 import { Settings } from './components/modules/Settings';
+import { Insights } from './components/modules/Insights';
+import { NotificationsPanel } from './components/layout/NotificationsPanel';
+import { ExecutiveReports } from './components/modules/ExecutiveReports';
+import { PredictiveAnalytics } from './components/modules/PredictiveAnalytics';
 import LoginPage from './components/auth/LoginPage';
 import { type Module } from './types';
 import { useAuth } from './context/AuthContext';
@@ -72,6 +76,10 @@ function AppShell() {
       case 'daily-reports':   return <DailyReports />;
       case 'marketplace':     return <Marketplace />;
       case 'settings':        return <Settings />;
+      case 'insights':        return <Insights />;
+      case 'notifications':   return <NotificationsPanel authToken={null} onClose={() => {}} />;
+      case 'executive-reports': return <ExecutiveReports />;
+      case 'predictive-analytics': return <PredictiveAnalytics />;
       default:                return <Dashboard setModule={setActiveModule} />;
     }
   };
