@@ -1,9 +1,10 @@
-import { useState, useRef } from 'react';
-import { FileText, Plus, Search, Eye, Folder, Upload, Edit2, Trash2, X } from 'lucide-react';
+import { useState, useRef, useCallback } from 'react';
+import { FileText, Plus, Search, Eye, Folder, Upload, Edit2, Trash2, X, Download, Clock, Tag, Filter, Grid, List, ChevronRight, File, Check, AlertCircle } from 'lucide-react';
 import { useDocuments } from '../../hooks/useData';
 import { documentsApi } from '../../services/api';
 import { useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
+import clsx from 'clsx';
 
 type AnyRow = Record<string, unknown>;
 
@@ -15,6 +16,15 @@ const statusColour: Record<string,string> = {
   'Draft':'bg-gray-800 text-gray-400','Under Review':'bg-yellow-900/50 text-yellow-300',
   'Approved':'bg-green-900/50 text-green-300','Superseded':'bg-orange-900/50 text-orange-300','Archived':'bg-gray-800 text-gray-500',
 };
+
+const typeColour: Record<string,string> = {
+  'Drawing':'bg-blue-500/20 text-blue-300','Specification':'bg-purple-500/20 text-purple-300',
+  'Contract':'bg-amber-500/20 text-amber-300','Report':'bg-emerald-500/20 text-emerald-300',
+  'Certificate':'bg-teal-500/20 text-teal-300','Letter':'bg-gray-600/50 text-gray-300',
+  'Form':'bg-pink-500/20 text-pink-300','Permit':'bg-red-500/20 text-red-300',
+  'Schedule':'bg-indigo-500/20 text-indigo-300','Other':'bg-gray-700 text-gray-400',
+};
+
 const typeIcon = (t: string) => {
   const icons: Record<string,string> = { 'Drawing':'📐','Specification':'📋','Contract':'📜','Report':'📊','Certificate':'🏆','Letter':'✉️','Form':'📝','Permit':'🎫','Schedule':'📅' };
   return icons[t] ?? '📄';
@@ -32,22 +42,60 @@ export function Documents() {
 
   const qc = useQueryClient();
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const dropZoneRef = useRef<HTMLDivElement>(null);
   const [uploading, setUploading] = useState(false);
+  const [dragOver, setDragOver] = useState(false);
+  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
+  const [selectedDoc, setSelectedDoc] = useState<AnyRow | null>(null);
+  const [uploadProgress, setUploadProgress] = useState(0);
+
+  const handleDragOver = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    setDragOver(true);
+  }, []);
+
+  const handleDragLeave = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    setDragOver(false);
+  }, []);
+
+  const handleDrop = useCallback(async (e: React.DragEvent) => {
+    e.preventDefault();
+    setDragOver(false);
+    const files = Array.from(e.dataTransfer.files);
+    if (files.length > 0) {
+      await uploadFiles(files);
+    }
+  }, []);
+
+  async function uploadFiles(files: File[]) {
+    for (const file of files) {
+      setUploading(true);
+      setUploadProgress(0);
+      try {
+        const progressInterval = setInterval(() => {
+          setUploadProgress(p => Math.min(p + 20, 90));
+        }, 200);
+        
+        await documentsApi.uploadFile(file);
+        clearInterval(progressInterval);
+        setUploadProgress(100);
+        toast.success(`Uploaded: ${file.name}`);
+        qc.invalidateQueries({ queryKey: ['documents'] });
+      } catch (err: unknown) {
+        toast.error(err instanceof Error ? err.message : `Upload failed: ${file.name}`);
+      } finally {
+        setUploading(false);
+        setUploadProgress(0);
+      }
+    }
+  }
 
   async function handleFileUpload(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    setUploading(true);
-    try {
-      await documentsApi.uploadFile(file);
-      toast.success('Document uploaded');
-      qc.invalidateQueries({ queryKey: ['documents'] });
-    } catch (err: unknown) {
-      toast.error(err instanceof Error ? err.message : 'Upload failed');
-    } finally {
-      setUploading(false);
-      e.target.value = '';
-    }
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+    await uploadFiles(Array.from(files));
+    e.target.value = '';
   }
 
   const [subTab, setSubTab] = useState('all');
@@ -97,19 +145,62 @@ export function Documents() {
 
   return (
     <div className="p-6 space-y-6">
+      {/* Drag & Drop Upload Zone */}
+      <div
+        ref={dropZoneRef}
+        onDragOver={handleDragOver}
+        onDragLeave={handleDragLeave}
+        onDrop={handleDrop}
+        className={clsx(
+          'relative border-2 border-dashed rounded-xl p-8 text-center transition-all',
+          dragOver ? 'border-blue-500 bg-blue-500/10' : 'border-gray-700 bg-gray-900/50',
+          uploading && 'pointer-events-none opacity-50'
+        )}
+      >
+        <input ref={fileInputRef} type="file" className="hidden"
+          accept=".pdf,.doc,.docx,.xls,.xlsx,.png,.jpg,.jpeg,.dwg,.zip"
+          onChange={handleFileUpload} multiple />
+        <div className="flex flex-col items-center gap-3">
+          {uploading ? (
+            <>
+              <div className="w-16 h-16 rounded-full bg-blue-500/20 flex items-center justify-center">
+                <Upload className="h-8 w-8 text-blue-400 animate-pulse"/>
+              </div>
+              <div className="w-48 h-2 bg-gray-800 rounded-full overflow-hidden">
+                <div className="h-full bg-blue-500 rounded-full transition-all" style={{ width: `${uploadProgress}%` }}/>
+              </div>
+              <p className="text-sm text-gray-400">Uploading… {uploadProgress}%</p>
+            </>
+          ) : (
+            <>
+              <div className="w-16 h-16 rounded-full bg-gray-800 flex items-center justify-center">
+                <Upload className="h-8 w-8 text-gray-400"/>
+              </div>
+              <div>
+                <p className="text-white font-medium">Drop files here to upload</p>
+                <p className="text-sm text-gray-500 mt-1">or <button onClick={() => fileInputRef.current?.click()} className="text-blue-400 hover:underline">browse</button> to select files</p>
+              </div>
+              <p className="text-xs text-gray-600">PDF, DOC, XLS, DWG, PNG, JPG, ZIP • Max 50MB</p>
+            </>
+          )}
+        </div>
+      </div>
+
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-white">Documents</h1>
           <p className="text-sm text-gray-500 mt-1">Project document register & version control</p>
         </div>
         <div className="flex gap-2">
-          <input ref={fileInputRef} type="file" className="hidden"
-            accept=".pdf,.doc,.docx,.xls,.xlsx,.png,.jpg,.jpeg,.dwg,.zip"
-            onChange={handleFileUpload} />
-          <button onClick={() => fileInputRef.current?.click()} disabled={uploading}
-            className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm font-medium disabled:opacity-50">
-            <Upload size={16}/><span>{uploading ? 'Uploading…' : 'Upload File'}</span>
-          </button>
+          {/* View Mode Toggle */}
+          <div className="flex bg-gray-800 rounded-lg p-1 border border-gray-700">
+            <button onClick={() => setViewMode('grid')} className={clsx('p-2 rounded-md transition-colors', viewMode === 'grid' ? 'bg-orange-600 text-white' : 'text-gray-400 hover:text-white')}>
+              <Grid size={16}/>
+            </button>
+            <button onClick={() => setViewMode('list')} className={clsx('p-2 rounded-md transition-colors', viewMode === 'list' ? 'bg-orange-600 text-white' : 'text-gray-400 hover:text-white')}>
+              <List size={16}/>
+            </button>
+          </div>
           <button onClick={openCreate} className="flex items-center gap-2 px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 text-sm font-medium">
             <Plus size={16}/><span>Register Document</span>
           </button>

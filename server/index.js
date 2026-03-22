@@ -58,6 +58,7 @@ app.use('/api/contacts',        makeRouter('contacts'));
 app.use('/api/risk-register',   makeRouter('risk_register'));
 app.use('/api/purchase-orders', makeRouter('purchase_orders'));
 app.use('/api/daily-reports',   makeRouter('daily_reports'));
+app.use('/api/notifications',   require('./routes/notifications'));
 
 // ─── 404 ──────────────────────────────────────────────────────────────────────
 app.use((_req, res) => res.status(404).json({ message: 'Route not found' }));

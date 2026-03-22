@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { UserCheck, Plus, Search, Phone, Mail, MapPin, Star, Edit2, Trash2, X, ChevronDown, ChevronUp, Building2, TrendingUp, Users } from 'lucide-react';
+import { UserCheck, Plus, Search, Phone, Mail, MapPin, Star, Edit2, Trash2, X, ChevronDown, ChevronUp, Building2, TrendingUp, Users, Briefcase, DollarSign, Calendar, CheckCircle, Clock, AlertCircle, FileText } from 'lucide-react';
 import { useContacts } from '../../hooks/useData';
 import { toast } from 'sonner';
 
@@ -7,6 +7,8 @@ type AnyRow = Record<string, unknown>;
 
 const CONTACT_TYPES = ['Client','Consultant','Subcontractor','Supplier','Statutory Body','Insurer','Solicitor','Other'];
 const STATUS_OPTIONS = ['Active','Inactive','Prospect','Do Not Contact'];
+const DEAL_STAGES = ['Lead','Qualified','Proposal','Negotiation','Won','Lost'];
+const DEAL_PRIORITIES = ['Low','Medium','High','Critical'];
 
 const typeColour: Record<string,string> = {
   'Client':'bg-blue-500/20 text-blue-300','Consultant':'bg-purple-500/20 text-purple-300',
@@ -22,6 +24,28 @@ const statusColour: Record<string,string> = {
 
 const emptyForm = { name:'',company:'',type:'Client',email:'',phone:'',address:'',status:'Active',rating:'3',notes:'',website:'' };
 
+interface Deal {
+  id: string;
+  title: string;
+  contactId: string;
+  contactName: string;
+  company: string;
+  value: number;
+  stage: string;
+  priority: string;
+  expectedClose: string;
+  notes: string;
+  createdAt: string;
+}
+
+const mockDeals: Deal[] = [
+  { id: '1', title: 'Office Fit-Out Contract', contactId: '1', contactName: 'Sarah Mitchell', company: 'Apex Construction Ltd', value: 250000, stage: 'Proposal', priority: 'High', expectedClose: '2026-04-15', notes: 'Waiting for final approval', createdAt: '2026-03-01' },
+  { id: '2', title: 'Warehouse Extension', contactId: '2', contactName: 'James Wilson', company: 'Logistics Pro Inc', value: 180000, stage: 'Negotiation', priority: 'Medium', expectedClose: '2026-04-30', notes: 'Discussing payment terms', createdAt: '2026-02-15' },
+  { id: '3', title: 'Retail Space Reno', contactId: '3', contactName: 'Emily Brown', company: 'ShopFit Partners', value: 95000, stage: 'Qualified', priority: 'High', expectedClose: '2026-05-20', notes: 'Site visit completed', createdAt: '2026-03-10' },
+  { id: '4', title: 'School Refurbishment', contactId: '4', contactName: 'David Clark', company: 'Education Estates', value: 320000, stage: 'Lead', priority: 'Medium', expectedClose: '2026-06-01', notes: 'Initial enquiry received', createdAt: '2026-03-18' },
+  { id: '5', title: 'Hotel Lobby Upgrade', contactId: '5', contactName: 'Anna Taylor', company: 'Grand Hotels Group', value: 450000, stage: 'Won', priority: 'Critical', expectedClose: '2026-03-15', notes: 'Contract signed', createdAt: '2026-02-01' },
+];
+
 export function CRM() {
   const { useList, useCreate, useUpdate, useDelete } = useContacts;
   const { data: raw = [], isLoading } = useList();
@@ -30,7 +54,10 @@ export function CRM() {
   const updateMutation = useUpdate();
   const deleteMutation = useDelete();
 
-  const [subTab, setSubTab] = useState<'contacts'|'pipeline'|'companies'>('contacts');
+  const [subTab, setSubTab] = useState<'contacts'|'pipeline'|'companies'|'deals'>('contacts');
+  const [deals] = useState<Deal[]>(mockDeals);
+  const [dealSearch, setDealSearch] = useState('');
+  const [stageFilter, setStageFilter] = useState('All');
   const [search, setSearch] = useState('');
   const [typeFilter, setTypeFilter] = useState('All');
   const [statusFilter, setStatusFilter] = useState('All');
@@ -125,6 +152,7 @@ export function CRM() {
           { key:'contacts', label:'All Contacts', icon:UserCheck, count:contacts.length },
           { key:'pipeline', label:'By Type',      icon:TrendingUp, count:null },
           { key:'companies',label:'Companies',    icon:Users,      count:companiesMap.size },
+          { key:'deals', label:'Deals', icon:Briefcase, count:deals.length },
         ] as const).map(t=>(
           <button key={t.key} onClick={()=>setSubTab(t.key)}
             className={`flex items-center gap-2 px-4 py-2.5 text-sm font-medium border-b-2 -mb-px transition-colors ${subTab===t.key?'border-orange-600 text-orange-600':'border-transparent text-gray-500 hover:text-gray-300'}`}>
@@ -276,6 +304,97 @@ export function CRM() {
               </div>
             );
           })}
+        </div>
+      )}
+
+      {/* ── DEALS tab ──────────────────────────────────────── */}
+      {subTab === 'deals' && (
+        <div className="space-y-6">
+          {/* Deals Summary */}
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+            {[
+              { label: 'Total Pipeline', value: `£${(deals.reduce((s, d) => s + d.value, 0) / 1000).toFixed(0)}K`, icon: DollarSign, color: 'text-emerald-400', bg: 'bg-emerald-500/20' },
+              { label: 'Active Deals', value: deals.filter(d => !['Won', 'Lost'].includes(d.stage)).length, icon: Briefcase, color: 'text-blue-400', bg: 'bg-blue-500/20' },
+              { label: 'Won This Month', value: `£${(deals.filter(d => d.stage === 'Won').reduce((s, d) => s + d.value, 0) / 1000).toFixed(0)}K`, icon: CheckCircle, color: 'text-emerald-400', bg: 'bg-emerald-500/20' },
+              { label: 'Avg Deal Size', value: `£${Math.round(deals.reduce((s, d) => s + d.value, 0) / deals.length / 1000)}K`, icon: TrendingUp, color: 'text-amber-400', bg: 'bg-amber-500/20' },
+            ].map(kpi => (
+              <div key={kpi.label} className="bg-gray-900 rounded-xl border border-gray-700 p-4">
+                <div className="flex items-center gap-3">
+                  <div className={`p-2 rounded-lg ${kpi.bg}`}><kpi.icon size={20} className={kpi.color}/></div>
+                  <div><p className="text-xs text-gray-500">{kpi.label}</p><p className="text-xl font-bold text-white">{kpi.value}</p></div>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* Deals Filters */}
+          <div className="flex flex-wrap gap-3 items-center bg-gray-900 rounded-xl border border-gray-700 p-4">
+            <div className="relative flex-1 min-w-48">
+              <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"/>
+              <input value={dealSearch} onChange={e => setDealSearch(e.target.value)} placeholder="Search deals..." className="w-full pl-9 pr-4 py-2 text-sm bg-gray-800 border border-gray-700 text-white placeholder-gray-500 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"/>
+            </div>
+            <select value={stageFilter} onChange={e => setStageFilter(e.target.value)} className="text-sm bg-gray-800 border border-gray-700 text-white rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-orange-500">
+              <option>All</option>
+              {DEAL_STAGES.map(s => <option key={s}>{s}</option>)}
+            </select>
+            <span className="text-sm text-gray-500 ml-auto">{deals.length} deals</span>
+          </div>
+
+          {/* Pipeline Board */}
+          <div className="overflow-x-auto">
+            <div className="flex gap-4 min-w-max pb-4">
+              {DEAL_STAGES.map(stage => {
+                const stageDeals = deals.filter(d => {
+                  const matchesSearch = d.title.toLowerCase().includes(dealSearch.toLowerCase()) || d.company.toLowerCase().includes(dealSearch.toLowerCase());
+                  const matchesStage = stageFilter === 'All' || d.stage === stageFilter;
+                  return d.stage === stage && matchesSearch && matchesStage;
+                });
+                const stageValue = stageDeals.reduce((s, d) => s + d.value, 0);
+                const stageColor = stage === 'Won' ? 'border-emerald-500/50' : stage === 'Lost' ? 'border-red-500/50' : 'border-gray-700';
+                return (
+                  <div key={stage} className={`w-72 bg-gray-900 rounded-xl border-t-2 ${stageColor} overflow-hidden`}>
+                    <div className="p-3 border-b border-gray-800">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          {stage === 'Won' && <CheckCircle size={14} className="text-emerald-400"/>}
+                          {stage === 'Lost' && <X size={14} className="text-red-400"/>}
+                          {stage === 'Negotiation' && <Clock size={14} className="text-amber-400"/>}
+                          {stage === 'Proposal' && <FileText size={14} className="text-blue-400"/>}
+                          {stage === 'Qualified' && <UserCheck size={14} className="text-purple-400"/>}
+                          {stage === 'Lead' && <AlertCircle size={14} className="text-gray-400"/>}
+                          <span className="font-semibold text-sm text-white">{stage}</span>
+                          <span className="text-xs px-1.5 py-0.5 rounded-full bg-gray-800 text-gray-400">{stageDeals.length}</span>
+                        </div>
+                        <span className="text-xs font-mono text-gray-400">£{(stageValue / 1000).toFixed(0)}K</span>
+                      </div>
+                    </div>
+                    <div className="p-2 space-y-2 max-h-96 overflow-y-auto">
+                      {stageDeals.map(deal => (
+                        <div key={deal.id} className="bg-gray-800/50 rounded-lg p-3 hover:bg-gray-800 transition-colors cursor-pointer border border-gray-700 hover:border-orange-500/30">
+                          <div className="flex justify-between items-start mb-2">
+                            <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-medium ${
+                              deal.priority === 'Critical' ? 'bg-red-500/20 text-red-400' :
+                              deal.priority === 'High' ? 'bg-amber-500/20 text-amber-400' :
+                              'bg-gray-700 text-gray-400'
+                            }`}>{deal.priority}</span>
+                          </div>
+                          <h4 className="font-semibold text-sm text-white mb-1">{deal.title}</h4>
+                          <p className="text-xs text-gray-500 mb-2">{deal.company}</p>
+                          <div className="flex items-center justify-between">
+                            <span className="text-lg font-bold text-emerald-400">£{(deal.value / 1000).toFixed(0)}K</span>
+                            <span className="text-xs text-gray-500">{deal.expectedClose}</span>
+                          </div>
+                        </div>
+                      ))}
+                      {stageDeals.length === 0 && (
+                        <div className="text-center py-8 text-gray-500 text-xs">No deals</div>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
         </div>
       )}
 

@@ -7,7 +7,8 @@ import {
   Cloud, CloudRain, Wind, Thermometer, MapPin, Eye, Bell, Zap,
   Radar as RadarIcon, Layers, AlertTriangle, Clock, Users, Package, Truck,
   ChevronRight, X, Play, Pause, RefreshCw, BarChart3, PieChart,
-  ClipboardList, ShoppingCart,
+  ClipboardList, ShoppingCart, Calendar, CheckCircle, Circle, Coffee,
+  UserCheck, UserX, Construction,
 } from 'lucide-react';
 import {
   AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
@@ -646,7 +647,7 @@ export function Dashboard({ setModule }: DashboardProps) {
       </div>
 
       {/* ── Quick Actions + Safety Banner ─────────── */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '16px' }}>
         {/* Quick Actions */}
         <div className="card card-grid animate-fade-up delay-5" style={{ padding: '20px' }}>
           <div style={{ marginBottom: '16px' }}>
@@ -687,78 +688,83 @@ export function Dashboard({ setModule }: DashboardProps) {
           </div>
         </div>
 
-        {/* Safety Banner */}
-        <div
-          className="card animate-fade-up delay-6"
-          style={{
-            padding: '20px',
-            background: safetyDays === 0
-              ? 'linear-gradient(135deg, rgba(16,185,129,0.1), rgba(16,185,129,0.05))'
-              : 'linear-gradient(135deg, rgba(245,158,11,0.1), rgba(245,158,11,0.05))',
-            border: safetyDays === 0
-              ? '1px solid rgba(16,185,129,0.2)'
-              : '1px solid rgba(245,158,11,0.2)',
-            position: 'relative',
-            overflow: 'hidden',
-          }}
-        >
-          <div style={{ position: 'absolute', top: '-20%', right: '-10%', width: '200px', height: '200px', opacity: 0.1, pointerEvents: 'none' }}>
-            <ShieldCheck style={{ width: '200px', height: '200px', color: safetyDays === 0 ? 'var(--emerald-400)' : 'var(--amber-400)' }} />
+        {/* Team Availability */}
+        <div className="card card-grid animate-fade-up delay-6" style={{ padding: '20px' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+            <div>
+              <h3 style={{ fontFamily: 'var(--font-display)', fontSize: '14px', fontWeight: 700, color: 'var(--slate-100)', letterSpacing: '-0.01em' }}>Team Availability</h3>
+              <p style={{ fontFamily: 'var(--font-mono)', fontSize: '9px', color: 'var(--slate-500)', letterSpacing: '0.08em', textTransform: 'uppercase' }}>Today's workforce</p>
+            </div>
+            <button onClick={() => setModule('teams')} className="hover-tab" style={{ background: 'rgba(59,130,246,0.1)', border: '1px solid rgba(59,130,246,0.3)', borderRadius: '6px', padding: '6px 12px', cursor: 'pointer', color: 'var(--blue-400)', fontFamily: 'var(--font-mono)', fontSize: '10px', fontWeight: 600 }}>
+              View All
+            </button>
           </div>
-          <div style={{ position: 'relative', zIndex: 1 }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '12px' }}>
-              {safetyDays === 0 ? (
-                <CheckCircle2 style={{ width: '28px', height: '28px', color: 'var(--emerald-400)' }} />
-              ) : (
-                <AlertTriangle style={{ width: '28px', height: '28px', color: 'var(--amber-400)' }} />
-              )}
-              <div>
-                <div style={{ fontFamily: 'var(--font-display)', fontSize: '16px', fontWeight: 700, color: safetyDays === 0 ? 'var(--emerald-400)' : 'var(--amber-400)', lineHeight: 1 }}>
-                  {safetyDays === 0 ? 'Safety Performance Excellent' : 'Safety Attention Required'}
-                </div>
-                <div style={{ fontFamily: 'var(--font-mono)', fontSize: '9px', color: 'var(--slate-400)', marginTop: '2px' }}>
-                  {safetyDays === 0 ? 'No incidents recorded' : `${safetyDays} incidents this period`}
-                </div>
+          <div className="space-y-3">
+            {/* Availability Summary */}
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '8px', marginBottom: '16px' }}>
+              <div style={{ textAlign: 'center', padding: '12px 8px', background: 'rgba(16,185,129,0.1)', borderRadius: '8px' }}>
+                <div style={{ fontFamily: 'var(--font-display)', fontSize: '20px', fontWeight: 700, color: 'var(--emerald-400)' }}>{workerCount}</div>
+                <div style={{ fontFamily: 'var(--font-mono)', fontSize: '8px', color: 'var(--slate-400)', textTransform: 'uppercase' }}>On Site</div>
+              </div>
+              <div style={{ textAlign: 'center', padding: '12px 8px', background: 'rgba(245,158,11,0.1)', borderRadius: '8px' }}>
+                <div style={{ fontFamily: 'var(--font-display)', fontSize: '20px', fontWeight: 700, color: 'var(--amber-400)' }}>{Math.max(0, Math.floor(workerCount * 0.2))}</div>
+                <div style={{ fontFamily: 'var(--font-mono)', fontSize: '8px', color: 'var(--slate-400)', textTransform: 'uppercase' }}>On Leave</div>
+              </div>
+              <div style={{ textAlign: 'center', padding: '12px 8px', background: 'rgba(59,130,246,0.1)', borderRadius: '8px' }}>
+                <div style={{ fontFamily: 'var(--font-display)', fontSize: '20px', fontWeight: 700, color: 'var(--blue-400)' }}>{Math.max(0, workerCount - Math.floor(workerCount * 1.2))}</div>
+                <div style={{ fontFamily: 'var(--font-mono)', fontSize: '8px', color: 'var(--slate-400)', textTransform: 'uppercase' }}>Available</div>
               </div>
             </div>
-            <div style={{ display: 'flex', gap: '12px' }}>
-              <button
-                onClick={() => setModule('safety')}
-                className="hover-safety"
-                style={{
-                  padding: '8px 16px',
-                  background: safetyDays === 0 ? 'var(--emerald-500)' : 'var(--amber-500)',
-                  border: 'none',
-                  borderRadius: '6px',
-                  cursor: 'pointer',
-                  fontFamily: 'var(--font-body)',
-                  fontSize: '12px',
-                  fontWeight: 600,
-                  color: 'var(--slate-950)',
-                  transition: 'all 0.2s',
-                }}
-              >
-                {safetyDays === 0 ? 'View Safety Dashboard' : 'Review Incidents'}
-              </button>
-              <button
-                onClick={() => setModule('rams')}
-                className="hover-btn"
-                style={{
-                  padding: '8px 16px',
-                  background: 'rgba(255,255,255,0.05)',
-                  border: '1px solid var(--slate-700)',
-                  borderRadius: '6px',
-                  cursor: 'pointer',
-                  fontFamily: 'var(--font-body)',
-                  fontSize: '12px',
-                  fontWeight: 600,
-                  color: 'var(--slate-300)',
-                  transition: 'all 0.2s',
-                }}
-              >
-                Check RAMS
-              </button>
+            {/* Top Workers */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+              {team.slice(0, 4).map((member, i) => (
+                <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '8px 10px', background: 'rgba(255,255,255,0.02)', borderRadius: '6px' }}>
+                  <div style={{ width: '28px', height: '28px', borderRadius: '50%', background: 'linear-gradient(135deg, var(--blue-500), var(--blue-600))', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '10px', fontWeight: 700, color: 'white' }}>
+                    {(member.name as string || 'A').charAt(0)}
+                  </div>
+                  <div style={{ flex: 1 }}>
+                    <div style={{ fontFamily: 'var(--font-body)', fontSize: '12px', fontWeight: 600, color: 'var(--slate-200)' }}>{member.name as string || 'Unknown'}</div>
+                    <div style={{ fontFamily: 'var(--font-mono)', fontSize: '9px', color: 'var(--slate-500)' }}>{member.trade as string || member.role as string || 'Worker'}</div>
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                    {member.status === 'active' ? (
+                      <><Circle style={{ width: '8px', height: '8px', color: 'var(--emerald-400)' }} /><span style={{ fontSize: '9px', color: 'var(--emerald-400)' }}>On Site</span></>
+                    ) : (
+                      <><Coffee style={{ width: '8px', height: '8px', color: 'var(--slate-500)' }} /><span style={{ fontSize: '9px', color: 'var(--slate-500)' }}>Off</span></>
+                    )}
+                  </div>
+                </div>
+              ))}
             </div>
+          </div>
+        </div>
+
+        {/* Upcoming Deadlines */}
+        <div className="card card-grid animate-fade-up delay-7" style={{ padding: '20px' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+            <div>
+              <h3 style={{ fontFamily: 'var(--font-display)', fontSize: '14px', fontWeight: 700, color: 'var(--slate-100)', letterSpacing: '-0.01em' }}>Upcoming Deadlines</h3>
+              <p style={{ fontFamily: 'var(--font-mono)', fontSize: '9px', color: 'var(--slate-500)', letterSpacing: '0.08em', textTransform: 'uppercase' }}>Next 7 days</p>
+            </div>
+          </div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+            {[
+              { title: 'RAMS Review', project: 'City Centre Phase 2', days: 2, type: 'compliance', color: 'var(--amber-400)' },
+              { title: 'Invoice Payment', project: 'Highway Extension', days: 3, type: 'financial', color: 'var(--blue-400)' },
+              { title: 'Tender Submission', project: 'Hospital Wing', days: 5, type: 'tender', color: 'var(--emerald-400)' },
+              { title: 'Safety Inspection', project: 'Retail Complex', days: 7, type: 'safety', color: 'var(--red-400)' },
+            ].map((deadline, i) => (
+              <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '10px 12px', background: 'rgba(255,255,255,0.02)', borderRadius: '8px', borderLeft: `3px solid ${deadline.color}` }}>
+                <div style={{ flex: 1 }}>
+                  <div style={{ fontFamily: 'var(--font-body)', fontSize: '12px', fontWeight: 600, color: 'var(--slate-200)' }}>{deadline.title}</div>
+                  <div style={{ fontFamily: 'var(--font-mono)', fontSize: '9px', color: 'var(--slate-500)' }}>{deadline.project}</div>
+                </div>
+                <div style={{ textAlign: 'right' }}>
+                  <div style={{ fontFamily: 'var(--font-mono)', fontSize: '12px', fontWeight: 700, color: deadline.color }}>{deadline.days}d</div>
+                  <div style={{ fontFamily: 'var(--font-mono)', fontSize: '8px', color: 'var(--slate-500)' }}>remaining</div>
+                </div>
+              </div>
+            ))}
           </div>
         </div>
       </div>

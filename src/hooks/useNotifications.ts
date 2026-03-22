@@ -3,6 +3,7 @@
  * Real-time notifications, dashboard updates, and alerts
  */
 import { useEffect, useRef, useCallback, useState } from 'react';
+import { notificationsApi } from '../services/api';
 
 const WS_URL = (() => {
   const proto = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
@@ -10,13 +11,14 @@ const WS_URL = (() => {
 })();
 
 type Notification = {
-  id: string;
+  id: string | number;
   type: 'notification' | 'alert' | 'dashboard_update' | 'collaboration' | 'system';
   title: string;
   description: string;
   severity: 'info' | 'success' | 'warning' | 'error' | 'critical';
   timestamp: string;
   read: boolean;
+  link?: string;
   data?: Record<string, unknown>;
 };
 
@@ -24,17 +26,37 @@ interface UseNotificationsReturn {
   notifications: Notification[];
   unreadCount: number;
   isConnected: boolean;
-  markAsRead: (id: string) => void;
-  markAllAsRead: () => void;
-  dismissNotification: (id: string) => void;
-  clearAll: () => void;
+  isLoading: boolean;
+  markAsRead: (id: string | number) => Promise<void>;
+  markAllAsRead: () => Promise<void>;
+  dismissNotification: (id: string | number) => Promise<void>;
+  clearAll: () => Promise<void>;
+  refresh: () => Promise<void>;
 }
 
 export function useNotifications(authToken: string | null): UseNotificationsReturn {
   const ws = useRef<WebSocket | null>(null);
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [isConnected, setIsConnected] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
   const reconnectTimeout = useRef<NodeJS.Timeout | null>(null);
+
+  // Load notifications from API
+  const loadNotifications = useCallback(async () => {
+    if (!authToken) {
+      setIsLoading(false);
+      return;
+    }
+    
+    try {
+      const data = await notificationsApi.getAll();
+      setNotifications(data as Notification[]);
+    } catch (err) {
+      console.error('[Notifications] Failed to load:', err);
+    } finally {
+      setIsLoading(false);
+    }
+  }, [authToken]);
 
   // Connect to WebSocket
   const connect = useCallback(() => {
@@ -60,6 +82,7 @@ export function useNotifications(authToken: string | null): UseNotificationsRetu
               severity: message.payload.severity || message.payload.priority || 'info',
               timestamp: message.payload.timestamp || new Date().toISOString(),
               read: false,
+              link: message.payload.link,
               data: message.payload,
             };
             setNotifications(prev => [notification, ...prev]);
@@ -72,7 +95,6 @@ export function useNotifications(authToken: string | null): UseNotificationsRetu
       ws.current.onclose = () => {
         console.log('[WS] Disconnected');
         setIsConnected(false);
-        // Attempt reconnection
         reconnectTimeout.current = setTimeout(connect, 3000);
       };
 
@@ -84,30 +106,60 @@ export function useNotifications(authToken: string | null): UseNotificationsRetu
     }
   }, [authToken]);
 
-  // Disconnect on unmount
+  // Initialize
   useEffect(() => {
+    loadNotifications();
     connect();
     return () => {
       if (ws.current) ws.current.close();
       if (reconnectTimeout.current) clearTimeout(reconnectTimeout.current);
     };
-  }, [connect]);
+  }, [connect, loadNotifications]);
 
-  const markAsRead = useCallback((id: string) => {
-    setNotifications(prev => prev.map(n => n.id === id ? { ...n, read: true } : n));
+  const markAsRead = useCallback(async (id: string | number) => {
+    try {
+      await notificationsApi.markAsRead(String(id));
+      setNotifications(prev => prev.map(n => n.id === id ? { ...n, read: true } : n));
+    } catch (err) {
+      console.error('[Notifications] Mark as read failed:', err);
+      setNotifications(prev => prev.map(n => n.id === id ? { ...n, read: true } : n));
+    }
   }, []);
 
-  const markAllAsRead = useCallback(() => {
-    setNotifications(prev => prev.map(n => ({ ...n, read: true })));
+  const markAllAsRead = useCallback(async () => {
+    try {
+      await notificationsApi.markAllAsRead();
+      setNotifications(prev => prev.map(n => ({ ...n, read: true })));
+    } catch (err) {
+      console.error('[Notifications] Mark all as read failed:', err);
+      setNotifications(prev => prev.map(n => ({ ...n, read: true })));
+    }
   }, []);
 
-  const dismissNotification = useCallback((id: string) => {
-    setNotifications(prev => prev.filter(n => n.id !== id));
+  const dismissNotification = useCallback(async (id: string | number) => {
+    try {
+      await notificationsApi.delete(String(id));
+      setNotifications(prev => prev.filter(n => n.id !== id));
+    } catch (err) {
+      console.error('[Notifications] Delete failed:', err);
+      setNotifications(prev => prev.filter(n => n.id !== id));
+    }
   }, []);
 
-  const clearAll = useCallback(() => {
-    setNotifications([]);
+  const clearAll = useCallback(async () => {
+    try {
+      await notificationsApi.clearAll();
+      setNotifications([]);
+    } catch (err) {
+      console.error('[Notifications] Clear all failed:', err);
+      setNotifications([]);
+    }
   }, []);
+
+  const refresh = useCallback(async () => {
+    setIsLoading(true);
+    await loadNotifications();
+  }, [loadNotifications]);
 
   const unreadCount = notifications.filter(n => !n.read).length;
 
@@ -115,9 +167,11 @@ export function useNotifications(authToken: string | null): UseNotificationsRetu
     notifications,
     unreadCount,
     isConnected,
+    isLoading,
     markAsRead,
     markAllAsRead,
     dismissNotification,
     clearAll,
+    refresh,
   };
 }

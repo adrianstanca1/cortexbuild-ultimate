@@ -256,3 +256,13 @@ export const usersApi = {
   create: (data: Row) => apiFetch<Row>('/auth/users', { method: 'POST', body: JSON.stringify(data) }),
   delete: (id: string) => apiFetch<void>(`/auth/users/${id}`, { method: 'DELETE' }),
 };
+
+export const notificationsApi = {
+  getAll: () => apiFetch<Row[]>('/notifications'),
+  getUnreadCount: () => apiFetch<{ count: number }>('/notifications/unread-count'),
+  markAsRead: (id: string) => apiFetch<Row>(`/notifications/${id}/read`, { method: 'PUT' }),
+  markAllAsRead: () => apiFetch<void>('/notifications/read-all', { method: 'PUT' }),
+  delete: (id: string) => apiFetch<void>(`/notifications/${id}`, { method: 'DELETE' }),
+  clearAll: () => apiFetch<void>('/notifications', { method: 'DELETE' }),
+  generateAlerts: () => apiFetch<{ generated: number }>('/notifications/generate-alerts', { method: 'POST' }),
+};
