@@ -6,6 +6,7 @@ import { Dashboard } from './components/modules/Dashboard';
 import { Projects } from './components/modules/Projects';
 import { Invoicing } from './components/modules/Invoicing';
 import { Accounting } from './components/modules/Accounting';
+import { FinancialReports } from './components/modules/FinancialReports';
 import { Procurement } from './components/modules/Procurement';
 import { RAMS } from './components/modules/RAMS';
 import { CIS } from './components/modules/CIS';
@@ -50,6 +51,7 @@ function AppShell() {
       case 'projects':        return <Projects />;
       case 'invoicing':       return <Invoicing />;
       case 'accounting':      return <Accounting />;
+      case 'financial-reports': return <FinancialReports />;
       case 'procurement':     return <Procurement />;
       case 'rams':            return <RAMS />;
       case 'cis':             return <CIS />;

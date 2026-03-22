@@ -8,6 +8,7 @@ const MODULE_LABELS: Record<Module, string> = {
   'projects': 'Projects',
   'invoicing': 'Invoicing',
   'accounting': 'Accounting',
+  'financial-reports': 'Financial Reports',
   'procurement': 'Procurement',
   'rams': 'RAMS — Risk Assessment & Method Statements',
   'cis': 'CIS Returns',

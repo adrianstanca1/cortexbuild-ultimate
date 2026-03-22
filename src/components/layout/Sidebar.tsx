@@ -6,7 +6,8 @@ import {
   Building2, Bot, Settings, ChevronLeft, ChevronRight, Zap,
   MessageSquare, GitPullRequest, CheckSquare, ClipboardCheck,
   Triangle, Layers, Package, ClipboardList, Store,
-  HardHat, TrendingUp, Brain, Bell, FileBarChart, TrendingUp as TrendingUpIcon
+  HardHat, TrendingUp, Brain, Bell, FileBarChart, TrendingUp as TrendingUpIcon,
+  PieChart
 } from 'lucide-react';
 
 interface SidebarProps {
@@ -41,6 +42,7 @@ const groups: { label: string; items: { id: Module; label: string; icon: React.F
       { id: 'tenders', label: 'Tenders & Bids', icon: TrendingUp },
       { id: 'invoicing', label: 'Invoicing', icon: FileText },
       { id: 'accounting', label: 'Accounting', icon: Calculator },
+      { id: 'financial-reports', label: 'Financial Reports', icon: PieChart, badge: 'NEW', badgeVariant: 'green' },
       { id: 'cis', label: 'CIS Returns', icon: Receipt, badge: 'UK', badgeVariant: 'blue' },
       { id: 'procurement', label: 'Procurement', icon: ShoppingCart },
       { id: 'change-orders', label: 'Change Orders', icon: GitPullRequest },

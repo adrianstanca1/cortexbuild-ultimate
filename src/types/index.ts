@@ -15,6 +15,7 @@ export type Module =
   | 'projects'
   | 'invoicing'
   | 'accounting'
+  | 'financial-reports'
   | 'procurement'
   | 'rams'
   | 'cis'
