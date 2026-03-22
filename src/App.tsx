@@ -45,7 +45,7 @@ import { AuditLog } from './components/modules/AuditLog';
 import { MobileNav } from './components/layout/MobileNav';
 import LoginPage from './components/auth/LoginPage';
 import { type Module } from './types';
-import { useAuth } from './context/AuthContext';
+import { useAuth, AuthProvider } from './context/AuthContext';
 import { useTheme } from './context/ThemeContext';
 import { useKeyboardShortcuts, DEFAULT_SHORTCUTS } from './hooks/useKeyboardShortcuts';
 
@@ -172,7 +172,9 @@ function ThemedApp() {
 export default function App() {
   return (
     <ThemeProvider>
-      <ThemedApp />
+      <AuthProvider>
+        <ThemedApp />
+      </AuthProvider>
     </ThemeProvider>
   );
 }
