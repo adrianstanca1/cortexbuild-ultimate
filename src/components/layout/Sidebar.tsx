@@ -97,7 +97,7 @@ const BADGE_COLORS = {
 export function Sidebar({ activeModule, setModule, collapsed, setCollapsed }: SidebarProps) {
   return (
     <aside
-      className="flex flex-col flex-shrink-0 transition-all duration-300"
+      className="flex flex-col flex-shrink-0 transition-all duration-300 hidden md:flex"
       style={{
         width: collapsed ? '64px' : '240px',
         background: 'var(--slate-900)',

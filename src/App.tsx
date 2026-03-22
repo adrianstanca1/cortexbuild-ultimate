@@ -39,6 +39,7 @@ import { NotificationsPanel } from './components/layout/NotificationsPanel';
 import { ExecutiveReports } from './components/modules/ExecutiveReports';
 import { PredictiveAnalytics } from './components/modules/PredictiveAnalytics';
 import { ShortcutsHelp } from './components/layout/ShortcutsHelp';
+import { MobileNav } from './components/layout/MobileNav';
 import LoginPage from './components/auth/LoginPage';
 import { type Module } from './types';
 import { useAuth } from './context/AuthContext';
@@ -124,6 +125,7 @@ function AppShell() {
         </div>
       </div>
       <ShortcutsHelp isOpen={showShortcuts} onClose={() => setShowShortcuts(false)} />
+      <MobileNav activeModule={activeModule} setModule={setActiveModule} />
     </>
   );
 }

@@ -64,11 +64,12 @@ export function Header({ activeModule, onMenuToggle }: HeaderProps) {
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'space-between',
-        padding: '0 24px',
+        padding: '0 16px',
         background: 'var(--slate-900)',
         borderBottom: '1px solid var(--slate-800)',
         flexShrink: 0,
       }}
+      className="px-4 md:px-6"
     >
       {/* Left */}
       <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
