@@ -37,13 +37,27 @@ import { Insights } from './components/modules/Insights';
 import { NotificationsPanel } from './components/layout/NotificationsPanel';
 import { ExecutiveReports } from './components/modules/ExecutiveReports';
 import { PredictiveAnalytics } from './components/modules/PredictiveAnalytics';
+import { ShortcutsHelp } from './components/layout/ShortcutsHelp';
 import LoginPage from './components/auth/LoginPage';
 import { type Module } from './types';
 import { useAuth } from './context/AuthContext';
+import { useKeyboardShortcuts, DEFAULT_SHORTCUTS } from './hooks/useKeyboardShortcuts';
 
 function AppShell() {
   const [activeModule, setActiveModule] = useState<Module>('dashboard');
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [showShortcuts, setShowShortcuts] = useState(false);
+
+  // Register keyboard shortcuts
+  useKeyboardShortcuts([
+    { ...DEFAULT_SHORTCUTS.goToDashboard, handler: () => setActiveModule('dashboard') },
+    { ...DEFAULT_SHORTCUTS.goToProjects, handler: () => setActiveModule('projects') },
+    { ...DEFAULT_SHORTCUTS.goToInvoicing, handler: () => setActiveModule('invoicing') },
+    { ...DEFAULT_SHORTCUTS.goToSafety, handler: () => setActiveModule('safety') },
+    { ...DEFAULT_SHORTCUTS.goToSettings, handler: () => setActiveModule('settings') },
+    { ...DEFAULT_SHORTCUTS.toggleSidebar, handler: () => setSidebarCollapsed(p => !p) },
+    { ...DEFAULT_SHORTCUTS.showHelp, handler: () => setShowShortcuts(true) },
+  ]);
 
   const renderModule = () => {
     switch (activeModule) {
@@ -87,25 +101,28 @@ function AppShell() {
   };
 
   return (
-    <div className="flex h-screen bg-gray-950 overflow-hidden">
-      <Sidebar
-        activeModule={activeModule}
-        setModule={setActiveModule}
-        collapsed={sidebarCollapsed}
-        setCollapsed={setSidebarCollapsed}
-      />
-      <div className="flex flex-col flex-1 overflow-hidden min-w-0">
-        <Header
+    <>
+      <div className="flex h-screen bg-gray-950 overflow-hidden">
+        <Sidebar
           activeModule={activeModule}
-          onMenuToggle={() => setSidebarCollapsed(!sidebarCollapsed)}
+          setModule={setActiveModule}
+          collapsed={sidebarCollapsed}
+          setCollapsed={setSidebarCollapsed}
         />
+        <div className="flex flex-col flex-1 overflow-hidden min-w-0">
+          <Header
+            activeModule={activeModule}
+            onMenuToggle={() => setSidebarCollapsed(!sidebarCollapsed)}
+          />
         <main className="flex-1 overflow-auto bg-gray-950">
           <div className="p-6">
             {renderModule()}
           </div>
         </main>
+        </div>
       </div>
-    </div>
+      <ShortcutsHelp isOpen={showShortcuts} onClose={() => setShowShortcuts(false)} />
+    </>
   );
 }
 
