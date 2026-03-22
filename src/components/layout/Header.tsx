@@ -1,7 +1,8 @@
 import { useState } from 'react';
-import { Bell, Search, Moon, Wifi, WifiOff, ChevronDown, Menu, X } from 'lucide-react';
+import { Bell, Search, Moon, Sun, Wifi, WifiOff, ChevronDown, Menu, X, Monitor } from 'lucide-react';
 import { type Module } from '../../types';
 import { NotificationsPanel } from './NotificationsPanel';
+import { useTheme } from '../../context/ThemeContext';
 
 const MODULE_LABELS: Record<Module, string> = {
   'dashboard': 'Dashboard',
@@ -50,7 +51,11 @@ export function Header({ activeModule, onMenuToggle }: HeaderProps) {
   const [searchOpen, setSearchOpen] = useState(false);
   const [online] = useState(true);
   const [notificationsOpen, setNotificationsOpen] = useState(false);
+  const [themeMenuOpen, setThemeMenuOpen] = useState(false);
+  const { theme, setTheme, resolvedTheme } = useTheme();
   const notifications = 4;
+
+  const ThemeIcon = resolvedTheme === 'dark' ? Moon : Sun;
 
   return (
     <header
@@ -190,18 +195,55 @@ export function Header({ activeModule, onMenuToggle }: HeaderProps) {
         </button>
         {notificationsOpen && <NotificationsPanel authToken={null} onClose={() => setNotificationsOpen(false)} />}
 
-        {/* Dark mode */}
-        <button
-          style={{
-            background: 'none', border: '1px solid transparent', cursor: 'pointer',
-            color: 'var(--slate-400)', padding: '8px', borderRadius: '8px',
-            transition: 'all 0.2s',
-          }}
-          onMouseEnter={e => { e.currentTarget.style.background = 'var(--slate-800)'; e.currentTarget.style.color = 'var(--slate-100)'; }}
-          onMouseLeave={e => { e.currentTarget.style.background = 'none'; e.currentTarget.style.color = 'var(--slate-400)'; }}
-        >
-          <Moon style={{ width: '15px', height: '15px' }} />
-        </button>
+        {/* Theme Toggle */}
+        <div style={{ position: 'relative' }}>
+          <button
+            onClick={() => setThemeMenuOpen(!themeMenuOpen)}
+            style={{
+              background: 'none', border: '1px solid transparent', cursor: 'pointer',
+              color: 'var(--slate-400)', padding: '8px', borderRadius: '8px',
+              transition: 'all 0.2s',
+            }}
+            onMouseEnter={e => { e.currentTarget.style.background = 'var(--slate-800)'; e.currentTarget.style.color = 'var(--slate-100)'; }}
+            onMouseLeave={e => { e.currentTarget.style.background = 'none'; e.currentTarget.style.color = 'var(--slate-400)'; }}
+          >
+            <ThemeIcon style={{ width: '15px', height: '15px' }} />
+          </button>
+          {themeMenuOpen && (
+            <div style={{
+              position: 'absolute', right: 0, top: '100%', marginTop: '8px',
+              background: 'var(--slate-800)', border: '1px solid var(--slate-700)',
+              borderRadius: '8px', padding: '4px', minWidth: '140px', zIndex: 100,
+              boxShadow: '0 4px 20px rgba(0,0,0,0.3)',
+            }}>
+              {[
+                { value: 'light', label: 'Light', icon: Sun },
+                { value: 'dark', label: 'Dark', icon: Moon },
+                { value: 'system', label: 'System', icon: Monitor },
+              ].map(opt => (
+                <button
+                  key={opt.value}
+                  onClick={() => { setTheme(opt.value as 'light' | 'dark' | 'system'); setThemeMenuOpen(false); }}
+                  style={{
+                    width: '100%', display: 'flex', alignItems: 'center', gap: '10px',
+                    padding: '8px 12px', background: theme === opt.value ? 'var(--slate-700)' : 'transparent',
+                    border: 'none', cursor: 'pointer', borderRadius: '6px',
+                    color: theme === opt.value ? 'var(--amber-400)' : 'var(--slate-300)',
+                    fontFamily: 'var(--font-body)', fontSize: '12px',
+                  }}
+                  onMouseEnter={e => { e.currentTarget.style.background = 'var(--slate-700)'; }}
+                  onMouseLeave={e => { e.currentTarget.style.background = theme === opt.value ? 'var(--slate-700)' : 'transparent'; }}
+                >
+                  <opt.icon style={{ width: '14px', height: '14px' }} />
+                  {opt.label}
+                  {theme === opt.value && (
+                    <span style={{ marginLeft: 'auto', color: 'var(--amber-400)' }}>✓</span>
+                  )}
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
 
         {/* Divider */}
         <div style={{ width: '1px', height: '24px', background: 'var(--slate-700)', margin: '0 4px' }} />

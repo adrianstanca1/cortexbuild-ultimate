@@ -18,6 +18,7 @@ import { Safety } from './components/modules/Safety';
 import { FieldView } from './components/modules/FieldView';
 import { CRM } from './components/modules/CRM';
 import { Documents } from './components/modules/Documents';
+import { ThemeProvider } from './context/ThemeContext';
 import { Timesheets } from './components/modules/Timesheets';
 import { PlantEquipment } from './components/modules/PlantEquipment';
 import { Subcontractors } from './components/modules/Subcontractors';
@@ -41,6 +42,7 @@ import { ShortcutsHelp } from './components/layout/ShortcutsHelp';
 import LoginPage from './components/auth/LoginPage';
 import { type Module } from './types';
 import { useAuth } from './context/AuthContext';
+import { useTheme } from './context/ThemeContext';
 import { useKeyboardShortcuts, DEFAULT_SHORTCUTS } from './hooks/useKeyboardShortcuts';
 
 function AppShell() {
@@ -126,8 +128,9 @@ function AppShell() {
   );
 }
 
-export default function App() {
+function ThemedApp() {
   const { isAuthenticated, loading } = useAuth();
+  const { resolvedTheme } = useTheme();
 
   if (loading) {
     return (
@@ -143,13 +146,21 @@ export default function App() {
   return (
     <>
       <Toaster
-        theme="dark"
+        theme={resolvedTheme}
         position="top-right"
         toastOptions={{
-          style: { background: '#1f2937', border: '1px solid #374151', color: '#f9fafb' },
+          style: { background: resolvedTheme === 'dark' ? '#1f2937' : '#ffffff', border: '1px solid #374151', color: resolvedTheme === 'dark' ? '#f9fafb' : '#1f2937' },
         }}
       />
       {isAuthenticated ? <AppShell /> : <LoginPage />}
     </>
+  );
+}
+
+export default function App() {
+  return (
+    <ThemeProvider>
+      <ThemedApp />
+    </ThemeProvider>
   );
 }
