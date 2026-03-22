@@ -5,6 +5,21 @@ const router = express.Router();
 
 router.use(authMiddleware);
 
+function escapeHtml(str) {
+  if (str === null || str === undefined) return '';
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
+}
+
+function escapeAttr(str) {
+  if (str === null || str === undefined) return '';
+  return String(str).replace(/"/g, '&quot;');
+}
+
 const EMAIL_TYPES = {
   invoice_overdue: {
     subject: 'Invoice Overdue - Action Required',
@@ -194,46 +209,46 @@ function generateEmailBody(type, data) {
   const templates = {
     invoice_overdue: `
       <h2>Invoice Overdue</h2>
-      <p>Invoice <strong>${data?.invoice_number || ''}</strong> for <strong>${data?.amount || ''}</strong> is overdue.</p>
-      <p>Client: ${data?.client || ''}</p>
-      <p>Due Date: ${data?.due_date || ''}</p>
+      <p>Invoice <strong>${escapeHtml(data?.invoice_number)}</strong> for <strong>${escapeHtml(data?.amount)}</strong> is overdue.</p>
+      <p>Client: ${escapeHtml(data?.client)}</p>
+      <p>Due Date: ${escapeHtml(data?.due_date)}</p>
       <p>Please take immediate action to collect payment.</p>
     `,
     invoice_paid: `
       <h2>Payment Received</h2>
-      <p>Thank you! We have received payment for Invoice <strong>${data?.invoice_number || ''}</strong>.</p>
-      <p>Amount: <strong>${data?.amount || ''}</strong></p>
-      <p>Project: ${data?.project || ''}</p>
+      <p>Thank you! We have received payment for Invoice <strong>${escapeHtml(data?.invoice_number)}</strong>.</p>
+      <p>Amount: <strong>${escapeHtml(data?.amount)}</strong></p>
+      <p>Project: ${escapeHtml(data?.project)}</p>
     `,
     safety_alert: `
       <h2>⚠️ Safety Alert</h2>
-      <p><strong>${data?.title || 'Safety Incident'}</strong></p>
-      <p>Type: ${data?.type || ''}</p>
-      <p>Severity: ${data?.severity || ''}</p>
-      <p>Location: ${data?.location || ''}</p>
+      <p><strong>${escapeHtml(data?.title || 'Safety Incident')}</strong></p>
+      <p>Type: ${escapeHtml(data?.type)}</p>
+      <p>Severity: ${escapeHtml(data?.severity)}</p>
+      <p>Location: ${escapeHtml(data?.location)}</p>
       <p>Immediate action is required.</p>
     `,
     meeting_reminder: `
       <h2>Meeting Reminder</h2>
       <p>You have a meeting coming up:</p>
-      <p><strong>${data?.meeting_title || ''}</strong></p>
-      <p>Date: ${data?.date || ''}</p>
-      <p>Time: ${data?.time || ''}</p>
-      ${data?.link ? `<p>Join Link: <a href="${data.link}">${data.link}</a></p>` : ''}
+      <p><strong>${escapeHtml(data?.meeting_title)}</strong></p>
+      <p>Date: ${escapeHtml(data?.date)}</p>
+      <p>Time: ${escapeHtml(data?.time)}</p>
+      ${data?.link ? `<p>Join Link: <a href="${escapeAttr(data.link)}">${escapeAttr(data.link)}</a></p>` : ''}
     `,
     weekly_summary: `
       <h2>Weekly Summary</h2>
-      <p>Here's your weekly overview for ${data?.week || 'this week'}:</p>
+      <p>Here's your weekly overview for ${escapeHtml(data?.week || 'this week')}:</p>
       <ul>
-        ${data?.projects_updated ? '<li>Projects Updated: ' + data.projects_updated + '</li>' : ''}
-        ${data?.invoices_sent ? '<li>Invoices Sent: ' + data.invoices_sent + '</li>' : ''}
-        ${data?.safety_incidents ? '<li>Safety Incidents: ' + data.safety_incidents + '</li>' : ''}
-        ${data?.upcoming_deadlines ? '<li>Upcoming Deadlines: ' + data.upcoming_deadlines + '</li>' : ''}
+        ${data?.projects_updated ? `<li>Projects Updated: ${escapeHtml(data.projects_updated)}</li>` : ''}
+        ${data?.invoices_sent ? `<li>Invoices Sent: ${escapeHtml(data.invoices_sent)}</li>` : ''}
+        ${data?.safety_incidents ? `<li>Safety Incidents: ${escapeHtml(data.safety_incidents)}</li>` : ''}
+        ${data?.upcoming_deadlines ? `<li>Upcoming Deadlines: ${escapeHtml(data.upcoming_deadlines)}</li>` : ''}
       </ul>
     `,
   };
 
-  return templates[type] || `<p>${JSON.stringify(data || {})}</p>`;
+  return templates[type] || `<p>${escapeHtml(JSON.stringify(data || {}))}</p>`;
 }
 
 async function sendEmailViaSMTP(to, subject, body) {
