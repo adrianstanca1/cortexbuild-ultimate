@@ -170,10 +170,11 @@ router.post('/roles', async (req, res) => {
     if (!name || !permissions) {
       return res.status(400).json({ message: 'name and permissions are required' });
     }
+    const createdBy = req.user?.id || 'unknown';
     const { rows } = await pool.query(
       `INSERT INTO custom_roles (name, description, permissions, created_by)
        VALUES ($1, $2, $3, $4) RETURNING *`,
-      [name, description || '', JSON.stringify(permissions), req.user?.id]
+      [name, description || '', JSON.stringify(permissions), createdBy]
     );
     res.status(201).json({
       id: `custom_${rows[0].id}`,
@@ -239,6 +240,20 @@ router.delete('/roles/:id', async (req, res) => {
 router.get('/users/:userId/permissions', async (req, res) => {
   try {
     const { userId } = req.params;
+    const requestingUserId = req.user?.id;
+
+    const { rows: requestingUserRows } = await pool.query(
+      'SELECT role FROM users WHERE id = $1',
+      [requestingUserId]
+    );
+    const requestingRole = requestingUserRows[0]?.role;
+    const isAdmin = requestingRole && (DEFAULT_ROLES[requestingRole]?.permissions?.['*']?.includes('manage_users') || requestingRole === 'super_admin' || requestingRole === 'admin');
+    const isSelf = requestingUserId === userId;
+
+    if (!isAdmin && !isSelf) {
+      return res.status(403).json({ message: 'Not authorized to view this user\'s permissions' });
+    }
+
     const { rows: userRows } = await pool.query(
       'SELECT role FROM users WHERE id = $1',
       [userId]

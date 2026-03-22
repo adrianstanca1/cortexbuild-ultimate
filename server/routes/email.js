@@ -5,6 +5,36 @@ const router = express.Router();
 
 router.use(authMiddleware);
 
+const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const MAX_RECIPIENTS = 100;
+const RATE_LIMIT_WINDOW = 60000;
+const RATE_LIMIT_MAX = 50;
+
+const rateLimits = new Map();
+
+function checkRateLimit(userId) {
+  const now = Date.now();
+  const key = userId || 'anonymous';
+  const record = rateLimits.get(key) || { count: 0, resetAt: now + RATE_LIMIT_WINDOW };
+  
+  if (now > record.resetAt) {
+    record.count = 0;
+    record.resetAt = now + RATE_LIMIT_WINDOW;
+  }
+  
+  if (record.count >= RATE_LIMIT_MAX) {
+    return false;
+  }
+  
+  record.count++;
+  rateLimits.set(key, record);
+  return true;
+}
+
+function validateEmail(email) {
+  return EMAIL_REGEX.test(email);
+}
+
 function escapeHtml(str) {
   if (str === null || str === undefined) return '';
   return String(str)
@@ -94,10 +124,18 @@ router.get('/history', async (req, res) => {
 
 router.post('/send', async (req, res) => {
   try {
+    if (!checkRateLimit(req.user?.id)) {
+      return res.status(429).json({ message: 'Rate limit exceeded. Try again later.' });
+    }
+
     const { to, type, data, subject, body } = req.body;
 
     if (!to || !type) {
       return res.status(400).json({ message: 'to and type are required' });
+    }
+
+    if (!validateEmail(to)) {
+      return res.status(400).json({ message: 'Invalid email address format' });
     }
 
     const template = EMAIL_TYPES[type];
@@ -143,10 +181,23 @@ router.post('/send', async (req, res) => {
 
 router.post('/bulk', async (req, res) => {
   try {
+    if (!checkRateLimit(req.user?.id)) {
+      return res.status(429).json({ message: 'Rate limit exceeded. Try again later.' });
+    }
+
     const { recipients, type, data, subject, body } = req.body;
 
     if (!recipients || !Array.isArray(recipients) || recipients.length === 0) {
       return res.status(400).json({ message: 'recipients array is required' });
+    }
+
+    if (recipients.length > MAX_RECIPIENTS) {
+      return res.status(400).json({ message: `Maximum ${MAX_RECIPIENTS} recipients allowed per request` });
+    }
+
+    const invalidEmails = recipients.filter(r => !validateEmail(r));
+    if (invalidEmails.length > 0) {
+      return res.status(400).json({ message: `Invalid email addresses: ${invalidEmails.slice(0, 3).join(', ')}${invalidEmails.length > 3 ? '...' : ''}` });
     }
 
     const template = EMAIL_TYPES[type] || { subject: subject || 'Bulk Email' };
@@ -179,10 +230,18 @@ router.post('/bulk', async (req, res) => {
 
 router.post('/schedule', async (req, res) => {
   try {
+    if (!checkRateLimit(req.user?.id)) {
+      return res.status(429).json({ message: 'Rate limit exceeded. Try again later.' });
+    }
+
     const { to, type, data, scheduledAt } = req.body;
 
     if (!to || !type || !scheduledAt) {
       return res.status(400).json({ message: 'to, type, and scheduledAt are required' });
+    }
+
+    if (!validateEmail(to)) {
+      return res.status(400).json({ message: 'Invalid email address format' });
     }
 
     const template = EMAIL_TYPES[type];
