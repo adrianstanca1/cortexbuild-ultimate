@@ -266,3 +266,68 @@ export const notificationsApi = {
   clearAll: () => apiFetch<void>('/notifications', { method: 'DELETE' }),
   generateAlerts: () => apiFetch<{ generated: number }>('/notifications/generate-alerts', { method: 'POST' }),
 };
+
+export const financialReportsApi = {
+  getSummary: () => apiFetch<{
+    totalRevenue: number;
+    totalCosts: number;
+    grossProfit: number;
+    netProfit: number;
+    outstandingInvoices: number;
+    overdueAmount: number;
+    monthlyBurn: number;
+    projectCount: number;
+    invoiceCount: number;
+    paidCount: number;
+    pendingCount: number;
+    overdueCount: number;
+  }>('/financial-reports/summary'),
+  getCashFlow: (startDate?: string, endDate?: string) =>
+    apiFetch<{ month: string; income: number; expenses: number; net: number }[]>(
+      `/financial-reports/cashflow?startDate=${startDate || ''}&endDate=${endDate || ''}`
+    ),
+  getProjectFinancials: () => apiFetch<Row[]>('/financial-reports/projects'),
+  getInvoiceAnalysis: () => apiFetch<{
+    total: number;
+    paid: number;
+    pending: number;
+    overdue: number;
+    invoices: Row[];
+  }>('/financial-reports/invoices/analysis'),
+};
+
+export const searchApi = {
+  search: (query: string, limit?: number) =>
+    apiFetch<{ results: Row; total: number; query: string }>(
+      `/search?q=${encodeURIComponent(query)}&limit=${limit || 20}`
+    ),
+};
+
+export const auditApi = {
+  getAll: (params?: { table?: string; recordId?: string; userId?: string; limit?: number }) => {
+    const searchParams = new URLSearchParams();
+    if (params?.table) searchParams.append('table', params.table);
+    if (params?.recordId) searchParams.append('record_id', params.recordId);
+    if (params?.userId) searchParams.append('user_id', params.userId);
+    if (params?.limit) searchParams.append('limit', String(params.limit));
+    return apiFetch<Row[]>(`/audit?${searchParams.toString()}`);
+  },
+  create: (data: { table_name: string; record_id?: string; action: string; changes?: Row; user_id?: string }) =>
+    apiFetch<Row>('/audit', { method: 'POST', body: JSON.stringify(data) }),
+  getStats: () => apiFetch<{ byAction: Row[]; byTable: Row[]; last24Hours: number }>('/audit/stats'),
+};
+
+export const calendarApi = {
+  getEvents: (start?: string, end?: string) =>
+    apiFetch<{
+      id: string;
+      title: string;
+      type: string;
+      subtype: string;
+      startDate: string;
+      endDate?: string;
+      status: string;
+      project?: string;
+      url: string;
+    }[]>(`/calendar?start=${start || ''}&end=${end || ''}`),
+};

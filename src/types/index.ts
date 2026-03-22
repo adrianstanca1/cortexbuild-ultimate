@@ -45,7 +45,10 @@ export type Module =
   | 'insights'
   | 'notifications'
   | 'executive-reports'
-  | 'predictive-analytics';
+  | 'predictive-analytics'
+  | 'calendar'
+  | 'search'
+  | 'audit-log';
 
 export type ProjectStatus = 'planning' | 'active' | 'on_hold' | 'completed' | 'archived';
 export type TaskStatus = 'todo' | 'in_progress' | 'review' | 'done' | 'blocked';

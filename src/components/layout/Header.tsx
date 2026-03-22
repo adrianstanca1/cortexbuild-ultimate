@@ -40,6 +40,9 @@ const MODULE_LABELS: Record<Module, string> = {
   'notifications': 'Notifications',
   'executive-reports': 'Executive Reports',
   'predictive-analytics': 'Predictive Analytics',
+  'calendar': 'Calendar',
+  'search': 'Search',
+  'audit-log': 'Audit Log',
 };
 
 interface HeaderProps {

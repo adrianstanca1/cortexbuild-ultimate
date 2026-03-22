@@ -6,7 +6,7 @@ import {
   ArrowDownRight, Briefcase, Users, CreditCard, Building2, AlertCircle,
   FileSpreadsheet, Printer
 } from 'lucide-react';
-import { projectsApi, invoicesApi } from '../../services/api';
+import { projectsApi, invoicesApi, financialReportsApi } from '../../services/api';
 import { toast } from 'sonner';
 import clsx from 'clsx';
 
@@ -88,6 +88,18 @@ export function FinancialReports() {
   const loadData = async () => {
     setLoading(true);
     try {
+      const [summaryData, projectsData, cashFlowData, invoiceAnalysis] = await Promise.all([
+        financialReportsApi.getSummary(),
+        financialReportsApi.getProjectFinancials(),
+        financialReportsApi.getCashFlow(),
+        financialReportsApi.getInvoiceAnalysis(),
+      ]);
+      setSummary(summaryData);
+      setProjectFinancials(projectsData as unknown as ProjectFinancial[]);
+      setCashFlow(cashFlowData);
+      setInvoices(invoiceAnalysis.invoices);
+      setProjects(projectsData as unknown as typeof projects);
+    } catch (err) {
       const [projects, invoices] = await Promise.all([
         projectsApi.getAll(),
         invoicesApi.getAll(),
@@ -97,8 +109,6 @@ export function FinancialReports() {
       calculateSummary(projects, invoices);
       calculateProjectFinancials(projects);
       calculateCashFlow(projects, invoices);
-    } catch (err) {
-      toast.error('Failed to load financial data');
     } finally {
       setLoading(false);
     }

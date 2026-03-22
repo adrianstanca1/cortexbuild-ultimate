@@ -39,6 +39,9 @@ import { NotificationsPanel } from './components/layout/NotificationsPanel';
 import { ExecutiveReports } from './components/modules/ExecutiveReports';
 import { PredictiveAnalytics } from './components/modules/PredictiveAnalytics';
 import { ShortcutsHelp } from './components/layout/ShortcutsHelp';
+import { Calendar } from './components/modules/Calendar';
+import { GlobalSearch } from './components/modules/GlobalSearch';
+import { AuditLog } from './components/modules/AuditLog';
 import { MobileNav } from './components/layout/MobileNav';
 import LoginPage from './components/auth/LoginPage';
 import { type Module } from './types';
@@ -50,8 +53,10 @@ function AppShell() {
   const [activeModule, setActiveModule] = useState<Module>('dashboard');
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [showShortcuts, setShowShortcuts] = useState(false);
+  const [showGlobalSearch, setShowGlobalSearch] = useState(false);
 
-  // Register keyboard shortcuts
+  const toggleSearch = () => setShowGlobalSearch(p => !p);
+
   useKeyboardShortcuts([
     { ...DEFAULT_SHORTCUTS.goToDashboard, handler: () => setActiveModule('dashboard') },
     { ...DEFAULT_SHORTCUTS.goToProjects, handler: () => setActiveModule('projects') },
@@ -60,6 +65,7 @@ function AppShell() {
     { ...DEFAULT_SHORTCUTS.goToSettings, handler: () => setActiveModule('settings') },
     { ...DEFAULT_SHORTCUTS.toggleSidebar, handler: () => setSidebarCollapsed(p => !p) },
     { ...DEFAULT_SHORTCUTS.showHelp, handler: () => setShowShortcuts(true) },
+    { ...DEFAULT_SHORTCUTS.search, handler: toggleSearch },
   ]);
 
   const renderModule = () => {
@@ -99,6 +105,9 @@ function AppShell() {
       case 'notifications':   return <NotificationsPanel authToken={null} onClose={() => {}} />;
       case 'executive-reports': return <ExecutiveReports />;
       case 'predictive-analytics': return <PredictiveAnalytics />;
+      case 'calendar':          return <Calendar />;
+      case 'search':            return <div className="card p-8 text-center text-gray-500">Use Ctrl+K to open Global Search</div>;
+      case 'audit-log':         return <AuditLog />;
       default:                return <Dashboard setModule={setActiveModule} />;
     }
   };
@@ -126,6 +135,7 @@ function AppShell() {
       </div>
       <ShortcutsHelp isOpen={showShortcuts} onClose={() => setShowShortcuts(false)} />
       <MobileNav activeModule={activeModule} setModule={setActiveModule} />
+      {showGlobalSearch && <GlobalSearch onClose={() => setShowGlobalSearch(false)} />}
     </>
   );
 }
