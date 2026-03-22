@@ -39,7 +39,7 @@ export function useNotifications(authToken: string | null): UseNotificationsRetu
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [isConnected, setIsConnected] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
-  const reconnectTimeout = useRef<NodeJS.Timeout | null>(null);
+  const reconnectTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Load notifications from API
   const loadNotifications = useCallback(async () => {

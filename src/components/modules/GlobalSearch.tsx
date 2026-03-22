@@ -56,7 +56,7 @@ export function GlobalSearch({ onClose }: { onClose?: () => void }) {
   const [selectedIndex, setSelectedIndex] = useState(0);
   const [history, setHistory] = useState<SearchHistory[]>([]);
   const inputRef = useRef<HTMLInputElement>(null);
-  const debounceRef = useRef<NodeJS.Timeout>();
+  const debounceRef = useRef<ReturnType<typeof setTimeout>>();
 
   useEffect(() => {
     const saved = localStorage.getItem('cortexbuild_search_history');
