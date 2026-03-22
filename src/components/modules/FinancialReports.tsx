@@ -3,11 +3,42 @@ import { useState, useEffect } from 'react';
 import {
   BarChart3, PieChart, TrendingUp, TrendingDown, DollarSign,
   FileText, Download, Calendar, Filter, RefreshCw, ArrowUpRight,
-  ArrowDownRight, Briefcase, Users, CreditCard, Building2, AlertCircle
+  ArrowDownRight, Briefcase, Users, CreditCard, Building2, AlertCircle,
+  FileSpreadsheet, Printer
 } from 'lucide-react';
 import { projectsApi, invoicesApi } from '../../services/api';
 import { toast } from 'sonner';
 import clsx from 'clsx';
+
+function exportToCSV(data: Record<string, unknown>[], filename: string) {
+  if (data.length === 0) { toast.error('No data to export'); return; }
+  const headers = Object.keys(data[0]);
+  const csvContent = [
+    headers.join(','),
+    ...data.map(row => headers.map(h => {
+      const val = row[h];
+      const str = String(val ?? '');
+      return str.includes(',') || str.includes('"') ? `"${str.replace(/"/g, '""')}"` : str;
+    }).join(','))
+  ].join('\n');
+  const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+  const link = document.createElement('a');
+  link.href = URL.createObjectURL(blob);
+  link.download = `${filename}_${new Date().toISOString().slice(0,10)}.csv`;
+  link.click();
+  URL.revokeObjectURL(link.href);
+  toast.success(`Exported ${data.length} rows`);
+}
+
+function exportToJSON(data: Record<string, unknown>[], filename: string) {
+  const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+  const link = document.createElement('a');
+  link.href = URL.createObjectURL(blob);
+  link.download = `${filename}_${new Date().toISOString().slice(0,10)}.json`;
+  link.click();
+  URL.revokeObjectURL(link.href);
+  toast.success(`Exported ${data.length} records`);
+}
 
 interface FinancialSummary {
   totalRevenue: number;
@@ -302,10 +333,16 @@ export function FinancialReports() {
     <div className="card">
       <div className="p-4 border-b border-gray-800 flex justify-between items-center">
         <h3 className="text-lg font-bold text-white">Project Financial Performance</h3>
-        <button className="btn btn-secondary text-sm">
-          <Download className="h-4 w-4 mr-2" />
-          Export
-        </button>
+        <div className="flex gap-2">
+          <button onClick={() => exportToCSV(projectFinancials.map(p => ({name: p.name, client: p.client, budget: p.budget, spent: p.spent, variance: p.variance, variance_percent: p.variancePercent.toFixed(1), status: p.status}) as Record<string, unknown>), 'project_costs')} className="btn btn-secondary text-sm">
+            <FileSpreadsheet className="h-4 w-4 mr-2" />
+            CSV
+          </button>
+          <button onClick={() => exportToJSON(projectFinancials as unknown as Record<string, unknown>[], 'project_costs')} className="btn btn-secondary text-sm">
+            <Download className="h-4 w-4 mr-2" />
+            JSON
+          </button>
+        </div>
       </div>
       <div className="overflow-x-auto">
         <table className="w-full">
