@@ -8,15 +8,16 @@ import {
   Radar as RadarIcon, Layers, AlertTriangle, Clock, Users, Package, Truck,
   ChevronRight, X, Play, Pause, RefreshCw, BarChart3, PieChart,
   ClipboardList, ShoppingCart, Calendar, CheckCircle, Circle, Coffee,
-  UserCheck, UserX, Construction,
+  UserCheck, UserX, Construction, DollarSign, Target,
 } from 'lucide-react';
 import {
   AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
   RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar, Legend,
-  BarChart, Bar, LabelList,
+  BarChart, Bar, LabelList, LineChart, Line, PieChart as RechartsPieChart, Pie, Cell,
 } from 'recharts';
 import { useProjects, useInvoices, useTeam, useSafety, useRFIs, useDailyReports } from '../../hooks/useData';
 import type { Module } from '../../types';
+import { ChartContainer, DonutChart, AreaChartWidget, ProgressBar, StatusBadge, CHART_COLORS, Sparkline } from '../ui/Charts';
 
 type AnyRow = Record<string, unknown>;
 
@@ -288,6 +289,12 @@ export function Dashboard({ setModule }: DashboardProps) {
   const safetyDays    = safety.filter(s => s.type === 'incident' || s.type === 'riddor').length;
   const overdueInvoices = invoices.filter(i => i.status === 'overdue').length;
   const expiringRAMS = 2;
+  const counts = {
+    active: projects.filter(p => p.status === 'active').length,
+    planning: projects.filter(p => p.status === 'planning').length,
+    on_hold: projects.filter(p => p.status === 'on_hold').length,
+    completed: projects.filter(p => p.status === 'completed').length,
+  };
 
   // Build critical alerts
   const alerts: { id: string; title: string; severity: 'critical' | 'warning' | 'info'; module: Module; time: string }[] = [];
@@ -470,6 +477,90 @@ export function Dashboard({ setModule }: DashboardProps) {
             trendData={[openRFIs + 2, openRFIs + 1, openRFIs, openRFIs - 1, openRFIs]}
           />
         </div>
+      </div>
+
+      {/* ── KPI Detail Cards ──────────────────────────────── */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '16px', marginBottom: '20px' }}>
+        {/* Project Status Distribution */}
+        <ChartContainer title="Project Status" subtitle="Portfolio breakdown">
+          <DonutChart
+            data={[
+              { name: 'Active', value: counts.active, color: CHART_COLORS.success },
+              { name: 'Planning', value: counts.planning, color: CHART_COLORS.secondary },
+              { name: 'On Hold', value: counts.on_hold, color: CHART_COLORS.warning },
+              { name: 'Completed', value: counts.completed, color: CHART_COLORS.purple },
+            ]}
+            height={160}
+            innerRadius={50}
+            outerRadius={70}
+          />
+        </ChartContainer>
+
+        {/* Invoice Collection Rate */}
+        <ChartContainer title="Invoice Status" subtitle="Collection performance">
+          <div className="space-y-3">
+            <ProgressBar
+              label="Paid"
+              value={invoices.filter(i => i.status === 'paid').length}
+              max={invoices.length || 1}
+              color={CHART_COLORS.success}
+            />
+            <ProgressBar
+              label="Pending"
+              value={invoices.filter(i => i.status === 'pending' || i.status === 'sent').length}
+              max={invoices.length || 1}
+              color={CHART_COLORS.warning}
+            />
+            <ProgressBar
+              label="Overdue"
+              value={invoices.filter(i => i.status === 'overdue').length}
+              max={invoices.length || 1}
+              color={CHART_COLORS.danger}
+            />
+          </div>
+        </ChartContainer>
+
+        {/* Safety Score */}
+        <ChartContainer title="Safety Metrics" subtitle="HSE performance">
+          <div className="flex items-center justify-center py-2">
+            <div className="text-center">
+              <div
+                className="text-4xl font-bold mb-2"
+                style={{ color: openIncidents === 0 ? CHART_COLORS.success : CHART_COLORS.warning }}
+              >
+                {100 - (openIncidents * 15)}
+              </div>
+              <p className="text-xs text-gray-500">Safety Score</p>
+              <div className="mt-2 flex justify-center gap-2">
+                <StatusBadge status={openIncidents === 0 ? 'success' : 'warning'} label={`${openIncidents} Open`} />
+              </div>
+            </div>
+          </div>
+        </ChartContainer>
+
+        {/* Workforce Distribution */}
+        <ChartContainer title="Workforce" subtitle="Team allocation">
+          <div className="space-y-3">
+            <div className="flex items-center justify-between">
+              <span className="text-sm text-gray-400">On Site</span>
+              <span className="text-sm font-medium text-emerald-400">{workerCount}</span>
+            </div>
+            <div className="flex items-center justify-between">
+              <span className="text-sm text-gray-400">Remote</span>
+              <span className="text-sm font-medium text-blue-400">{Math.floor(workerCount * 0.15)}</span>
+            </div>
+            <div className="flex items-center justify-between">
+              <span className="text-sm text-gray-400">Available</span>
+              <span className="text-sm font-medium text-amber-400">{Math.floor(workerCount * 0.1)}</span>
+            </div>
+            <Sparkline
+              data={[20, 25, 22, 28, 30, 27, 32, 35, 33, 38, workerCount]}
+              color={CHART_COLORS.primary}
+              width={200}
+              height={40}
+            />
+          </div>
+        </ChartContainer>
       </div>
 
       {/* ── Main Grid: Health Radar + Charts + Resources ─────────── */}
