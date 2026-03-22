@@ -33,22 +33,33 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const token   = getToken();
     const stored  = getStoredUser();
     if (token && stored) {
-      setUser(stored as unknown as Profile);
+      // Use Promise.resolve().then() to defer state updates and avoid synchronous setState in effect
+      Promise.resolve().then(() => {
+        setUser(stored as unknown as Profile);
+        setLoading(false);
+      });
+    } else {
+      // Defer setLoading call to avoid synchronous setState in effect
+      Promise.resolve().then(() => {
+        setLoading(false);
+      });
     }
-    setLoading(false);
   }, []);
 
   const signIn = async (email: string, password: string) => {
+    console.log('[Auth] signIn called with:', email);
     const res = await fetch(`${API_BASE}/auth/login`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ email, password }),
     });
     const data = await res.json();
+    console.log('[Auth] Response:', { ok: res.ok, hasToken: !!data.token, user: data.user });
     if (!res.ok) throw new Error(data.message || 'Login failed');
     setToken(data.token);
     setStoredUser(data.user);
     setUser(data.user as Profile);
+    console.log('[Auth] User set, isAuthenticated should be true');
   };
 
   const signUp = async (email: string, password: string, name: string, company: string) => {

@@ -157,7 +157,7 @@ export function Invoicing() {
           <button key={t.key} onClick={()=>setSubTab(t.key)}
             className={`flex items-center gap-2 px-4 py-2.5 text-sm font-medium border-b-2 -mb-px transition-colors ${subTab===t.key?'border-emerald-500 text-emerald-400':'border-transparent text-gray-400 hover:text-gray-200'}`}>
             {t.label}
-            {'badge' in t && t.badge!=null && t.badge > 0 && <span className="text-xs px-1.5 py-0.5 rounded-full bg-red-900/60 text-red-400">{t.badge}</span>}
+            {'badge' in t && t.badge !== null && t.badge > 0 && <span className="text-xs px-1.5 py-0.5 rounded-full bg-red-900/60 text-red-400">{t.badge}</span>}
           </button>
         ))}
       </div>

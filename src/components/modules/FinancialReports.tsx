@@ -81,11 +81,29 @@ export function FinancialReports() {
   const [projects, setProjects] = useState<any[]>([]);
   const [invoices, setInvoices] = useState<any[]>([]);
 
+  const loadData = async () => {
+    setLoading(true);
+    try {
+      const [summaryData, projectsData, cashFlowData, invoiceAnalysis] = await Promise.all([
+        financialReportsApi.getSummary(),
+        financialReportsApi.getProjectFinancials(),
+        financialReportsApi.getCashFlow(),
+        financialReportsApi.getInvoiceAnalysis(),
+      ]);
+      setSummary(summaryData);
+      setProjectFinancials(projectsData as unknown as ProjectFinancial[]);
+      setCashFlow(cashFlowData);
+      setInvoiceAnalysis(invoiceAnalysis);
+    } catch (err) {
+      toast.error('Failed to load financial data');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
     loadData();
-  }, [dateRange]);
-
-  const loadData = async () => {
+  }, [dateRange, loadData]);
     setLoading(true);
     try {
       const [summaryData, projectsData, cashFlowData, invoiceAnalysis] = await Promise.all([
@@ -595,9 +613,9 @@ export function FinancialReports() {
     return (
       <div className="flex items-center justify-center h-64">
         <RefreshCw className="h-8 w-8 text-orange-500 animate-spin" />
-      </div>
-    );
-  }
+    </div>
+  );
+}
 
   return (
     <div className="space-y-6">

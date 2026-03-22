@@ -48,14 +48,20 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     const resolved = resolveTheme(theme);
-    applyTheme(resolved);
+    // Use Promise.resolve().then() to defer state update and avoid synchronous setState in effect
+    Promise.resolve().then(() => {
+      applyTheme(resolved);
+    });
 
     // Listen for system theme changes
     const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
     const handleChange = () => {
       if (theme === 'system') {
         const newResolved = resolveTheme('system');
-        applyTheme(newResolved);
+        // Also defer this update
+        Promise.resolve().then(() => {
+          applyTheme(newResolved);
+        });
       }
     };
     mediaQuery.addEventListener('change', handleChange);
