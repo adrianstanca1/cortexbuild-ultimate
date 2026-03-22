@@ -63,6 +63,9 @@ app.use('/api/financial-reports', require('./routes/financial-reports'));
 app.use('/api/search',          require('./routes/search'));
 app.use('/api/audit',           require('./routes/audit'));
 app.use('/api/calendar',        require('./routes/calendar'));
+app.use('/api/email',          require('./routes/email'));
+app.use('/api/report-templates', require('./routes/report-templates'));
+app.use('/api/permissions',    require('./routes/permissions'));
 
 // ─── 404 ──────────────────────────────────────────────────────────────────────
 app.use((_req, res) => res.status(404).json({ message: 'Route not found' }));

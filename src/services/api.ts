@@ -331,3 +331,77 @@ export const calendarApi = {
       url: string;
     }[]>(`/calendar?start=${start || ''}&end=${end || ''}`),
 };
+
+export const emailApi = {
+  getTemplates: () => apiFetch<Record<string, { subject: string; template: string; description: string }>>('/email/templates'),
+  getHistory: (limit = 50, offset = 0) =>
+    apiFetch<{ emails: Row[]; total: number }>(`/email/history?limit=${limit}&offset=${offset}`),
+  send: (data: { to: string; type: string; data?: Row; subject?: string; body?: string }) =>
+    apiFetch<{ success: boolean; email: Row }>('/email/send', { method: 'POST', body: JSON.stringify(data) }),
+  sendBulk: (data: { recipients: string[]; type: string; data?: Row; subject?: string; body?: string }) =>
+    apiFetch<{ success: boolean; results: Row[] }>('/email/bulk', { method: 'POST', body: JSON.stringify(data) }),
+  schedule: (data: { to: string; type: string; data?: Row; scheduledAt: string }) =>
+    apiFetch<{ success: boolean; scheduled: Row }>('/email/schedule', { method: 'POST', body: JSON.stringify(data) }),
+};
+
+export interface ReportTemplate {
+  id: number;
+  name: string;
+  type: string;
+  description: string;
+  config: {
+    columns?: string[];
+    filters?: Record<string, unknown>;
+    groupBy?: string;
+    sortBy?: string;
+    sortOrder?: 'asc' | 'desc';
+    chartType?: 'bar' | 'line' | 'pie' | 'table';
+    dateRange?: string;
+  };
+  isDefault: boolean;
+  createdBy: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export const reportTemplatesApi = {
+  getAll: (type?: string) =>
+    apiFetch<ReportTemplate[]>(`/report-templates${type ? `?type=${type}` : ''}`),
+  getById: (id: string) => apiFetch<ReportTemplate>(`/report-templates/${id}`),
+  create: (data: { name: string; type: string; description?: string; config: ReportTemplate['config']; isDefault?: boolean }) =>
+    apiFetch<ReportTemplate>('/report-templates', { method: 'POST', body: JSON.stringify(data) }),
+  update: (id: string, data: Partial<ReportTemplate>) =>
+    apiFetch<ReportTemplate>(`/report-templates/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+  delete: (id: string) => apiFetch<void>(`/report-templates/${id}`, { method: 'DELETE' }),
+  duplicate: (id: string) => apiFetch<ReportTemplate>(`/report-templates/${id}/duplicate`, { method: 'POST' }),
+};
+
+export interface Role {
+  id: string;
+  name: string;
+  description: string;
+  permissions: Record<string, string[]>;
+  isSystem?: boolean;
+  isCustom?: boolean;
+}
+
+export interface Permissions {
+  modules: Record<string, { label: string; defaultRole: string }>;
+  actions: Record<string, { label: string; description: string }>;
+}
+
+export const permissionsApi = {
+  getPermissions: () => apiFetch<Permissions>('/permissions/permissions'),
+  getRoles: () => apiFetch<Role[]>('/permissions/roles'),
+  getRoleById: (id: string) => apiFetch<Role>(`/permissions/roles/${id}`),
+  createRole: (data: { name: string; description?: string; permissions: Record<string, string[]> }) =>
+    apiFetch<Role>('/permissions/roles', { method: 'POST', body: JSON.stringify(data) }),
+  updateRole: (id: string, data: Partial<Role>) =>
+    apiFetch<Role>(`/permissions/roles/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+  deleteRole: (id: string) => apiFetch<void>(`/permissions/roles/${id}`, { method: 'DELETE' }),
+  checkPermission: (userId: string, module: string, action: string) =>
+    apiFetch<{ allowed: boolean }>('/permissions/check', {
+      method: 'POST',
+      body: JSON.stringify({ userId, module, action }),
+    }),
+};
