@@ -93,7 +93,7 @@ export function FinancialReports() {
       setSummary(summaryData);
       setProjectFinancials(projectsData as unknown as ProjectFinancial[]);
       setCashFlow(cashFlowData);
-      setInvoiceAnalysis(invoiceAnalysis);
+      setInvoices(Array.isArray(invoiceAnalysis) ? invoiceAnalysis : (invoiceAnalysis as any)?.invoices ?? []);
     } catch (err) {
       toast.error('Failed to load financial data');
     } finally {

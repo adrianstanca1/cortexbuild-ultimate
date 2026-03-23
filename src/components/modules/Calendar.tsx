@@ -37,7 +37,7 @@ interface CalendarEvent {
   title: string;
   startDate: string;
   endDate?: string;
-  allDay: boolean;
+  allDay?: boolean;
   type: string;
   subtype?: string;
   status: string;
@@ -213,7 +213,7 @@ export function Calendar() {
 {events
                    .filter(
                      (event) =>
-                       new Date(event.startDate) >= new Date().setHours(0, 0, 0, 0)
+                       new Date(event.startDate) >= new Date(new Date().setHours(0, 0, 0, 0))
                    )
                    .sort((a, b) => new Date(a.startDate).getTime() - new Date(b.startDate).getTime())
                    .slice(0, 5)
@@ -226,7 +226,7 @@ export function Calendar() {
                          </span>
                       </div>
                       <p className="text-sm text-gray-500">
-                        {event.relatedTo ?? 'General'} • {new Date(event.start).toLocaleDateString()}
+                        {event.project ?? 'General'} • {new Date(event.startDate).toLocaleDateString()}
                       </p>
                     </div>
                   ))}
