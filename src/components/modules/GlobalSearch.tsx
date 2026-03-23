@@ -11,18 +11,22 @@ import {
   Loader2,
   ArrowRight,
   History,
-  TrendingUp,
+  Star,
+  Filter,
 } from 'lucide-react';
 import { searchApi } from '../../services/api';
 import clsx from 'clsx';
 
+type AnyRow = Record<string, unknown>;
+type SubTab = 'search' | 'recent' | 'saved' | 'advanced';
+
 interface SearchResult {
-  projects: Array<{ id: string; name: string; client: string; status: string; type: string }>;
-  invoices: Array<{ id: string; number: string; client: string; amount: string; status: string }>;
-  contacts: Array<{ id: string; name: string; company: string; email: string; role: string }>;
-  rfis: Array<{ id: string; number: string; subject: string; status: string; project: string }>;
-  documents: Array<{ id: string; name: string; type: string; category: string; project: string }>;
-  team: Array<{ id: string; name: string; role: string; trade: string }>;
+  projects: AnyRow[];
+  invoices: AnyRow[];
+  contacts: AnyRow[];
+  rfis: AnyRow[];
+  documents: AnyRow[];
+  team: AnyRow[];
   [key: string]: unknown;
 }
 
@@ -31,7 +35,16 @@ interface SearchHistory {
   timestamp: number;
 }
 
-const resultIcons: Record<string, typeof Briefcase> = {
+interface SavedSearch {
+  id: string;
+  name: string;
+  query: string;
+  module: string;
+  resultCount: number;
+  createdDate: string;
+}
+
+const resultIcons: Record<string, React.ElementType> = {
   projects: Briefcase,
   invoices: FileText,
   contacts: User,
@@ -50,11 +63,18 @@ const resultLabels: Record<string, string> = {
 };
 
 export function GlobalSearch({ onClose }: { onClose?: () => void }) {
+  const [subTab, setSubTab] = useState<SubTab>('search');
   const [query, setQuery] = useState('');
   const [results, setResults] = useState<SearchResult | null>(null);
   const [loading, setLoading] = useState(false);
   const [selectedIndex, setSelectedIndex] = useState(0);
   const [history, setHistory] = useState<SearchHistory[]>([]);
+  const [savedSearches, setSavedSearches] = useState<SavedSearch[]>([]);
+  const [advancedFilters, setAdvancedFilters] = useState({
+    module: 'all',
+    status: 'all',
+    dateRange: 'all',
+  });
   const inputRef = useRef<HTMLInputElement>(null);
   const debounceRef = useRef<ReturnType<typeof setTimeout>>();
 
@@ -87,7 +107,10 @@ export function GlobalSearch({ onClose }: { onClose?: () => void }) {
   }, [query]);
 
   const saveToHistory = (q: string) => {
-    const updated = [{ query: q, timestamp: Date.now() }, ...history.filter(h => h.query !== q)].slice(0, 10);
+    const updated = [{ query: q, timestamp: Date.now() }, ...history.filter(h => h.query !== q)].slice(
+      0,
+      10
+    );
     setHistory(updated);
     localStorage.setItem('cortexbuild_search_history', JSON.stringify(updated));
   };
@@ -98,11 +121,18 @@ export function GlobalSearch({ onClose }: { onClose?: () => void }) {
     }
   };
 
-  const handleKeyDown = (e: React.KeyboardEvent) => {
-    const allResults = results ? Object.entries(results).flatMap(([type, items]) =>
-      (items as unknown[]).map((item: unknown, i: number) => ({ type, item: item as Record<string, unknown> }))
-    ) : [];
+  const allResults = results
+    ? Object.entries(results).flatMap(([type, items]) =>
+        Array.isArray(items)
+          ? items.map((item: unknown, i: number) => ({
+              type,
+              item: item as AnyRow,
+            }))
+          : []
+      )
+    : [];
 
+  const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'ArrowDown') {
       e.preventDefault();
       setSelectedIndex(i => Math.min(i + 1, allResults.length - 1));
@@ -110,7 +140,6 @@ export function GlobalSearch({ onClose }: { onClose?: () => void }) {
       e.preventDefault();
       setSelectedIndex(i => Math.max(i - 1, 0));
     } else if (e.key === 'Enter' && allResults[selectedIndex]) {
-      const selected = allResults[selectedIndex];
       saveToHistory(query);
     }
   };
@@ -120,14 +149,16 @@ export function GlobalSearch({ onClose }: { onClose?: () => void }) {
     localStorage.removeItem('cortexbuild_search_history');
   };
 
-  const allResults = results ? Object.entries(results).flatMap(([type, items]) =>
-    (items as unknown[]).map((item: unknown, i: number) => ({ type, item: item as Record<string, unknown> }))
-  ) : [];
+  const pinSearch = (search: SavedSearch) => {
+    setSavedSearches(prev =>
+      prev.map(s => (s.id === search.id ? { ...s, id: String(Date.now()) } : s))
+    );
+  };
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-start justify-center pt-20 z-50" onClick={onClose}>
+    <div className="fixed inset-0 bg-black/50 flex items-start justify-center pt-16 z-50" onClick={onClose}>
       <div
-        className="bg-gray-900 border border-gray-700 rounded-xl w-full max-w-2xl shadow-2xl"
+        className="bg-gray-900 border border-gray-700 rounded-xl w-full max-w-3xl shadow-2xl max-h-[85vh] flex flex-col"
         onClick={e => e.stopPropagation()}
       >
         <div className="p-4 border-b border-gray-800">
@@ -141,10 +172,12 @@ export function GlobalSearch({ onClose }: { onClose?: () => void }) {
               ref={inputRef}
               type="text"
               value={query}
-              onChange={e => { setQuery(e.target.value); setSelectedIndex(0); }}
+              onChange={e => {
+                setQuery(e.target.value);
+                setSelectedIndex(0);
+              }}
               onKeyDown={handleKeyDown}
-              onSubmit={handleSearch}
-              placeholder="Search projects, invoices, contacts, RFIs..."
+              placeholder="Search projects, invoices, contacts, RFIs, documents..."
               className="flex-1 bg-transparent text-white text-lg outline-none placeholder-gray-500"
             />
             {query && (
@@ -153,108 +186,230 @@ export function GlobalSearch({ onClose }: { onClose?: () => void }) {
               </button>
             )}
           </div>
+          <div className="mt-3 flex gap-2 text-xs text-gray-500">
+            <kbd className="px-2 py-1 bg-gray-800 rounded">Ctrl+K</kbd>
+            <span>to open search</span>
+          </div>
         </div>
 
-        <div className="max-h-96 overflow-y-auto">
-          {!results && history.length > 0 && (
-            <div className="p-4">
-              <div className="flex justify-between items-center mb-3">
-                <div className="flex items-center gap-2 text-sm text-gray-500">
-                  <History className="h-4 w-4" />
-                  Recent searches
+        {/* Sub-tabs */}
+        <div className="border-b border-gray-800 flex gap-1 px-4 bg-gray-900/50">
+          {[
+            { key: 'search' as SubTab, label: 'Search' },
+            { key: 'recent' as SubTab, label: 'Recent' },
+            { key: 'saved' as SubTab, label: 'Saved Searches' },
+            { key: 'advanced' as SubTab, label: 'Advanced' },
+          ].map(tab => (
+            <button
+              key={tab.key}
+              onClick={() => setSubTab(tab.key)}
+              className={`px-4 py-3 text-sm font-medium border-b-2 -mb-px transition-colors ${
+                subTab === tab.key
+                  ? 'border-blue-500 text-blue-400'
+                  : 'border-transparent text-gray-400 hover:text-gray-200'
+              }`}
+            >
+              {tab.label}
+            </button>
+          ))}
+        </div>
+
+        <div className="flex-1 overflow-y-auto">
+          {/* Search Tab */}
+          {subTab === 'search' && (
+            <>
+              {!results && history.length > 0 && (
+                <div className="p-4">
+                  <div className="flex justify-between items-center mb-3">
+                    <div className="flex items-center gap-2 text-sm text-gray-500">
+                      <History className="h-4 w-4" />
+                      Recent searches
+                    </div>
+                    <button onClick={clearHistory} className="text-xs text-gray-500 hover:text-white">
+                      Clear
+                    </button>
+                  </div>
+                  <div className="space-y-1">
+                    {history.slice(0, 5).map((h, i) => (
+                      <button
+                        key={i}
+                        onClick={() => setQuery(String(h.query))}
+                        className="w-full text-left px-3 py-2 rounded-lg hover:bg-gray-800 text-gray-300 text-sm flex items-center gap-3"
+                      >
+                        <History className="h-4 w-4 text-gray-600" />
+                        {String(h.query)}
+                      </button>
+                    ))}
+                  </div>
                 </div>
-                <button onClick={clearHistory} className="text-xs text-gray-500 hover:text-white">Clear</button>
-              </div>
-              <div className="space-y-1">
-                {history.map((h, i) => (
+              )}
+
+              {!results && query.length < 2 && (
+                <div className="p-8 text-center">
+                  <Search className="h-12 w-12 text-gray-700 mx-auto mb-3" />
+                  <p className="text-gray-400 mb-4">Start typing to search across all modules</p>
+                  <p className="text-xs text-gray-600">
+                    Popular: "Acme Project" • "Invoice #INV-001" • "John Smith" • "RFI-42" • "Site Plan"
+                  </p>
+                </div>
+              )}
+
+              {results && allResults.length === 0 && (
+                <div className="p-8 text-center">
+                  <X className="h-12 w-12 text-gray-700 mx-auto mb-3" />
+                  <p className="text-gray-400">No results found for "{String(query)}"</p>
+                </div>
+              )}
+
+              {results &&
+                Object.entries(results).map(([type, items]) => {
+                  if (!Array.isArray(items) || items.length === 0) return null;
+                  const Icon = resultIcons[type] || Search;
+                  return (
+                    <div key={type} className="p-4 border-b border-gray-800 last:border-0">
+                      <div className="flex items-center gap-2 mb-2 text-xs text-gray-500 uppercase">
+                        <Icon className="h-4 w-4" />
+                        {resultLabels[type] || type} ({Number(items.length)})
+                      </div>
+                      <div className="space-y-1">
+                        {items.slice(0, 5).map((item: unknown, i: number) => {
+                          const typedItem = item as AnyRow;
+                          const itemId = String(typedItem.id || i);
+                          return (
+                            <button
+                              key={itemId}
+                              onClick={() => {
+                                handleSearch();
+                                onClose?.();
+                              }}
+                              className={clsx(
+                                'w-full text-left px-3 py-2 rounded-lg transition-colors flex items-center justify-between',
+                                'hover:bg-gray-800 text-gray-300'
+                              )}
+                            >
+                              <div>
+                                <p className="font-medium text-white">
+                                  {String(
+                                    typedItem.name || typedItem.number || typedItem.title || typedItem.subject || ''
+                                  )}
+                                </p>
+                                <p className="text-xs opacity-70">
+                                  {typedItem.client ? String(typedItem.client) : ''}
+                                  {typedItem.company ? String(typedItem.company) : ''}
+                                  {typedItem.role ? ` • ${String(typedItem.role)}` : ''}
+                                  {typedItem.project ? ` • ${String(typedItem.project)}` : ''}
+                                </p>
+                              </div>
+                              <ArrowRight className="h-4 w-4 text-gray-600" />
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  );
+                })}
+            </>
+          )}
+
+          {/* Recent Tab */}
+          {subTab === 'recent' && (
+            <div className="p-4 space-y-2">
+              {history.length === 0 ? (
+                <p className="text-center text-gray-400 py-8">No recent searches</p>
+              ) : (
+                history.map((h, i) => (
                   <button
                     key={i}
-                    onClick={() => setQuery(h.query)}
-                    className="w-full text-left px-3 py-2 rounded-lg hover:bg-gray-800 text-gray-300 text-sm flex items-center gap-3"
+                    onClick={() => setQuery(String(h.query))}
+                    className="w-full text-left px-4 py-3 rounded-lg hover:bg-gray-800 text-gray-300 text-sm flex items-center justify-between group"
                   >
-                    <History className="h-4 w-4 text-gray-600" />
-                    {h.query}
+                    <div className="flex items-center gap-3">
+                      <History className="h-4 w-4 text-gray-600" />
+                      {String(h.query)}
+                    </div>
+                    <span className="text-xs text-gray-500">
+                      {new Date(Number(h.timestamp)).toLocaleDateString()}
+                    </span>
                   </button>
-                ))}
-              </div>
+                ))
+              )}
             </div>
           )}
 
-          {!results && query.length < 2 && (
-            <div className="p-8 text-center">
-              <Search className="h-12 w-12 text-gray-700 mx-auto mb-3" />
-              <p className="text-gray-500">Start typing to search across all modules</p>
-              <div className="mt-4 flex justify-center gap-4 text-xs text-gray-600">
-                <span>Projects</span>
-                <span>•</span>
-                <span>Invoices</span>
-                <span>•</span>
-                <span>Contacts</span>
-                <span>•</span>
-                <span>RFIs</span>
-                <span>•</span>
-                <span>Documents</span>
-              </div>
+          {/* Saved Searches Tab */}
+          {subTab === 'saved' && (
+            <div className="p-4 space-y-2">
+              {savedSearches.length === 0 ? (
+                <p className="text-center text-gray-400 py-8">No saved searches yet</p>
+              ) : (
+                savedSearches.map(s => (
+                  <div key={s.id} className="bg-gray-800/50 rounded-lg p-3 flex items-center justify-between">
+                    <div className="flex-1">
+                      <p className="text-sm font-medium text-white">{String(s.name)}</p>
+                      <p className="text-xs text-gray-400">{String(s.resultCount)} results</p>
+                    </div>
+                    <button className="text-gray-400 hover:text-yellow-400">
+                      <Star className="h-4 w-4" />
+                    </button>
+                  </div>
+                ))
+              )}
             </div>
           )}
 
-          {results && allResults.length === 0 && (
-            <div className="p-8 text-center">
-              <X className="h-12 w-12 text-gray-700 mx-auto mb-3" />
-              <p className="text-gray-500">No results found for "{query}"</p>
+          {/* Advanced Tab */}
+          {subTab === 'advanced' && (
+            <div className="p-4 space-y-4">
+              <div>
+                <label className="block text-sm text-gray-400 mb-2">Module</label>
+                <select
+                  value={advancedFilters.module}
+                  onChange={e =>
+                    setAdvancedFilters(prev => ({ ...prev, module: e.target.value }))
+                  }
+                  className="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-2 text-white text-sm"
+                >
+                  <option value="all">All Modules</option>
+                  <option value="projects">Projects</option>
+                  <option value="invoices">Invoices</option>
+                  <option value="documents">Documents</option>
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm text-gray-400 mb-2">Status</label>
+                <select
+                  value={advancedFilters.status}
+                  onChange={e =>
+                    setAdvancedFilters(prev => ({ ...prev, status: e.target.value }))
+                  }
+                  className="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-2 text-white text-sm"
+                >
+                  <option value="all">All Statuses</option>
+                  <option value="active">Active</option>
+                  <option value="archived">Archived</option>
+                </select>
+              </div>
+              <button className="w-full px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium text-sm">
+                <Filter className="h-4 w-4 inline mr-2" />
+                Run Advanced Search
+              </button>
             </div>
           )}
-
-          {results && Object.entries(results).map(([type, items]) => {
-            if (!(items as unknown[]).length) return null;
-            const Icon = resultIcons[type] || Search;
-            return (
-              <div key={type} className="p-4 border-b border-gray-800 last:border-0">
-                <div className="flex items-center gap-2 mb-2 text-xs text-gray-500 uppercase">
-                  <Icon className="h-4 w-4" />
-                  {resultLabels[type] || type}
-                </div>
-                <div className="space-y-1">
-                  {(items as unknown[]).map((item: unknown, i: number) => {
-                    const typedItem = item as Record<string, unknown>;
-                    const itemId = String(typedItem.id || i);
-                    const globalIndex = allResults.findIndex(r => r.item.id === typedItem.id);
-                    return (
-                      <button
-                        key={itemId}
-                        onClick={() => { saveToHistory(query); onClose?.(); }}
-                        className={clsx(
-                          'w-full text-left px-3 py-2 rounded-lg transition-colors flex items-center justify-between',
-                          globalIndex === selectedIndex ? 'bg-blue-600 text-white' : 'hover:bg-gray-800 text-gray-300'
-                        )}
-                      >
-                        <div>
-                          <p className="font-medium">{String(typedItem.name || typedItem.number || typedItem.title || typedItem.subject || '')}</p>
-                          <p className="text-xs opacity-70">
-                            {typedItem.client ? String(typedItem.client) : ''}
-                            {typedItem.company ? String(typedItem.company) : ''}
-                            {typedItem.role ? ` • ${String(typedItem.role)}` : ''}
-                            {typedItem.trade ? ` • ${String(typedItem.trade)}` : ''}
-                            {typedItem.project ? ` • ${String(typedItem.project)}` : ''}
-                          </p>
-                        </div>
-                        <ArrowRight className={clsx('h-4 w-4', globalIndex === selectedIndex ? 'text-white' : 'text-gray-600')} />
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-            );
-          })}
         </div>
 
-        <div className="p-3 border-t border-gray-800 flex items-center justify-between text-xs text-gray-500">
+        <div className="border-t border-gray-800 bg-gray-900/50 p-3 flex items-center justify-between text-xs text-gray-500">
           <div className="flex gap-4">
-            <span><kbd className="px-1.5 py-0.5 bg-gray-800 rounded">↑↓</kbd> Navigate</span>
-            <span><kbd className="px-1.5 py-0.5 bg-gray-800 rounded">Enter</kbd> Select</span>
-            <span><kbd className="px-1.5 py-0.5 bg-gray-800 rounded">Esc</kbd> Close</span>
+            <span>
+              <kbd className="px-1.5 py-0.5 bg-gray-800 rounded">↑↓</kbd> Navigate
+            </span>
+            <span>
+              <kbd className="px-1.5 py-0.5 bg-gray-800 rounded">Enter</kbd> Select
+            </span>
+            <span>
+              <kbd className="px-1.5 py-0.5 bg-gray-800 rounded">Esc</kbd> Close
+            </span>
           </div>
-          {results && <span className="text-blue-400">{allResults.length} results</span>}
+          {results && <span className="text-blue-400">{Number(allResults.length)} results</span>}
         </div>
       </div>
     </div>

@@ -1,377 +1,495 @@
 import { useState } from 'react';
-import { Users, Truck, ClipboardList, AlertTriangle, CheckCircle, MapPin, Building2, Layers } from 'lucide-react';
-import { useProjects, useSafety, useEquipment, useDailyReports } from '../../hooks/useData';
+import { Users, Truck, ClipboardList, AlertTriangle, CheckCircle, MapPin, Building2, Layers, Cloud, Wind, Droplets, Plus, X, Edit2, Trash2, Zap } from 'lucide-react';
+import { useDailyReports } from '../../hooks/useData';
+import { toast } from 'sonner';
 
 type AnyRow = Record<string, unknown>;
-
-type SubTab = 'overview' | 'projects' | 'reports' | 'equipment';
+type SubTab = 'overview' | 'workforce' | 'resources' | 'logistics' | 'progress';
 
 const TABS: { key: SubTab; label: string; icon: React.ElementType }[] = [
   { key: 'overview',   label: 'Overview',     icon: Layers },
-  { key: 'projects',  label: 'Projects',     icon: Building2 },
-  { key: 'reports',   label: 'Site Reports', icon: ClipboardList },
-  { key: 'equipment', label: 'Equipment',    icon: Truck },
+  { key: 'workforce',  label: 'Workforce',    icon: Users },
+  { key: 'resources',  label: 'Resources',    icon: Truck },
+  { key: 'logistics',  label: 'Logistics',    icon: MapPin },
+  { key: 'progress',   label: 'Progress',     icon: CheckCircle },
 ];
 
 export function SiteOperations() {
-  const { data: rawProjects = [] } = useProjects.useList();
-  const { data: rawSafety = [] } = useSafety.useList();
-  const { data: rawEquipment = [] } = useEquipment.useList();
-  const { data: rawReports = [] } = useDailyReports.useList();
-
-  const projects = rawProjects as AnyRow[];
-  const safetyIncidents = rawSafety as AnyRow[];
-  const equipment = rawEquipment as AnyRow[];
-  const reports = rawReports as AnyRow[];
+  const { useList, useCreate, useUpdate, useDelete } = useDailyReports;
+  const { data: raw = [], isLoading } = useList();
+  const operations = raw as AnyRow[];
+  const createMutation = useCreate();
+  const updateMutation = useUpdate();
+  const deleteMutation = useDelete();
 
   const [subTab, setSubTab] = useState<SubTab>('overview');
+  const [showModal, setShowModal] = useState(false);
+  const [editing, setEditing] = useState<AnyRow | null>(null);
+  const [form, setForm] = useState({
+    type: 'labour_allocation',
+    description: '',
+    date: new Date().toISOString().split('T')[0],
+    area: '',
+    responsible: '',
+    workforce_count: 0,
+    notes: '',
+  });
 
-  const activeProjects = projects.filter(p => p.status === 'Active' || p.status === 'active' || p.status === 'In Progress');
-  const today = new Date().toISOString().slice(0,10);
-  const todayReports = reports.filter(r => String(r.report_date??'') === today);
-  const openIncidents = safetyIncidents.filter(i => i.status === 'Open' || i.status === 'Investigation');
-  const equipmentInUse = equipment.filter(e => e.status === 'In Use');
-  const faultedEquipment = equipment.filter(e => e.status === 'Fault Reported');
-  const totalWorkersToday = todayReports.reduce((s,r) => s + Number(r.workers_on_site??0), 0);
+  const today = new Date().toISOString().slice(0, 10);
+  const todayOps = operations.filter(op => String(op.date ?? '') === today);
+  const activeOps = operations.filter(op => op.status === 'Active');
+  const workersToday = todayOps.reduce((sum, op) => sum + Number(op.workforce_count ?? 0), 0);
+  const deliveriesToday = operations.filter(op => String(op.type ?? '') === 'delivery' && String(op.date ?? '') === today).length;
+  const alertsCount = operations.filter(op => String(op.status ?? '') === 'Alert' || String(op.status ?? '') === 'Issue').length;
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    if (editing) {
+      await updateMutation.mutateAsync({ id: String(editing.id), data: form });
+      toast.success('Operation updated');
+    } else {
+      await createMutation.mutateAsync(form);
+      toast.success('Operation created');
+    }
+    setShowModal(false);
+    setForm({ type: 'labour_allocation', description: '', date: today, area: '', responsible: '', workforce_count: 0, notes: '' });
+  }
+
+  async function handleDelete(id: string) {
+    if (!confirm('Delete this operation?')) return;
+    await deleteMutation.mutateAsync(id);
+    toast.success('Operation deleted');
+  }
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold text-white">Site Operations</h1>
-        <p className="text-sm text-gray-400 mt-1">Live site overview — today's activity across all projects</p>
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-bold text-white">Site Operations</h1>
+          <p className="text-sm text-gray-400 mt-1">Live site overview — today's activity across all projects</p>
+        </div>
+        <button
+          onClick={() => {
+            setEditing(null);
+            setForm({ type: 'labour_allocation', description: '', date: today, area: '', responsible: '', workforce_count: 0, notes: '' });
+            setShowModal(true);
+          }}
+          className="flex items-center gap-2 px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 text-sm font-medium"
+        >
+          <Plus size={16} />
+          <span>Log Operation</span>
+        </button>
       </div>
 
-      {/* Summary KPIs */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         {[
-          { label:'Active Projects', value:activeProjects.length, icon:Building2, colour:'text-blue-400' },
-          { label:'Workers on Site Today', value:totalWorkersToday || '—', icon:Users, colour:'text-green-400' },
-          { label:'Open Safety Incidents', value:openIncidents.length, icon:AlertTriangle, colour:openIncidents.length>0?'text-red-400':'text-gray-400' },
-          { label:'Equipment In Use', value:equipmentInUse.length, icon:Truck, colour:'text-orange-400' },
-        ].map(kpi=>(
+          { label: 'Workforce Today', value: workersToday || '—', icon: Users, colour: 'text-green-400', bg: 'bg-green-500/20' },
+          { label: 'Active Operations', value: activeOps.length, icon: Zap, colour: 'text-blue-400', bg: 'bg-blue-500/20' },
+          { label: 'Deliveries Today', value: deliveriesToday, icon: Truck, colour: 'text-orange-400', bg: 'bg-orange-500/20' },
+          { label: 'Alerts', value: alertsCount, icon: AlertTriangle, colour: alertsCount > 0 ? 'text-red-400' : 'text-gray-400', bg: alertsCount > 0 ? 'bg-red-500/20' : 'bg-gray-500/20' },
+        ].map((kpi) => (
           <div key={kpi.label} className="bg-gray-900 border border-gray-800 rounded-xl p-4">
             <div className="flex items-center justify-between mb-3">
               <p className="text-xs text-gray-400">{kpi.label}</p>
-              <kpi.icon size={18} className={kpi.colour}/>
+              <kpi.icon size={18} className={kpi.colour} />
             </div>
             <p className={`text-2xl font-bold ${kpi.colour}`}>{kpi.value}</p>
           </div>
         ))}
       </div>
 
-      {/* Sub-nav */}
-      <div className="border-b border-gray-700 flex gap-1">
-        {TABS.map(t => {
+      <div className="border-b border-gray-700 flex gap-1 overflow-x-auto">
+        {TABS.map((t) => {
           const Icon = t.icon;
           return (
             <button
               key={t.key}
               onClick={() => setSubTab(t.key)}
-              className={`flex items-center gap-2 px-4 py-2.5 text-sm font-medium border-b-2 -mb-px transition-colors ${
+              className={`flex items-center gap-2 px-4 py-2.5 text-sm font-medium border-b-2 -mb-px transition-colors whitespace-nowrap ${
                 subTab === t.key
                   ? 'border-orange-500 text-orange-400'
                   : 'border-transparent text-gray-400 hover:text-gray-200'
               }`}
             >
-              <Icon size={14}/>{t.label}
+              <Icon size={14} />
+              {t.label}
             </button>
           );
         })}
       </div>
 
-      {/* OVERVIEW */}
-      {subTab === 'overview' && (
-        <div className="space-y-4">
-          {(openIncidents.length > 0 || faultedEquipment.length > 0) && (
-            <div className="space-y-2">
-              {openIncidents.length > 0 && (
+      {isLoading ? (
+        <div className="flex justify-center py-20">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-600" />
+        </div>
+      ) : (
+        <>
+          {subTab === 'overview' && (
+            <div className="space-y-4">
+              {alertsCount > 0 && (
                 <div className="flex items-center gap-3 bg-red-900/30 border border-red-700 rounded-xl px-4 py-3">
-                  <AlertTriangle size={16} className="text-red-400 flex-shrink-0"/>
-                  <p className="text-sm text-red-300"><span className="font-semibold">{openIncidents.length} open safety incident{openIncidents.length>1?'s':''}</span> — requires immediate attention.</p>
+                  <AlertTriangle size={16} className="text-red-400 flex-shrink-0" />
+                  <p className="text-sm text-red-300">
+                    <span className="font-semibold">{alertsCount} active alert{alertsCount > 1 ? 's' : ''}</span> — requires attention.
+                  </p>
                 </div>
               )}
-              {faultedEquipment.length > 0 && (
-                <div className="flex items-center gap-3 bg-orange-900/30 border border-orange-700 rounded-xl px-4 py-3">
-                  <Truck size={16} className="text-orange-400 flex-shrink-0"/>
-                  <p className="text-sm text-orange-300"><span className="font-semibold">{faultedEquipment.length} equipment fault{faultedEquipment.length>1?'s':''}</span> — out of service.</p>
-                </div>
-              )}
-            </div>
-          )}
 
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {/* Active projects */}
-            <div className="bg-gray-900 border border-gray-800 rounded-xl overflow-hidden">
-              <div className="px-5 py-4 border-b border-gray-800 flex items-center gap-2">
-                <Building2 size={16} className="text-blue-400"/>
-                <h2 className="font-semibold text-white text-sm">Active Projects</h2>
-                <span className="text-xs bg-blue-900/40 text-blue-400 px-2 py-0.5 rounded-full ml-auto">{activeProjects.length}</span>
-              </div>
-              <div className="divide-y divide-gray-800">
-                {activeProjects.length === 0 && <p className="p-5 text-sm text-gray-500 text-center">No active projects</p>}
-                {activeProjects.slice(0,6).map(p=>{
-                  const progress = Number(p.progress??p.completion_percentage??0);
-                  return (
-                    <div key={String(p.id)} className="px-5 py-3">
-                      <div className="flex items-center justify-between mb-1.5">
-                        <p className="font-medium text-white text-sm truncate">{String(p.name??p.title??'Unnamed')}</p>
-                        <span className="text-xs text-gray-400 ml-2 flex-shrink-0">{progress}%</span>
-                      </div>
-                      <div className="h-1.5 bg-gray-800 rounded-full">
-                        <div className="h-full bg-gradient-to-r from-orange-500 to-orange-600 rounded-full" style={{width:`${Math.min(progress,100)}%`}}/>
-                      </div>
-                      {!!p.location && <p className="text-xs text-gray-500 mt-1 flex items-center gap-1"><MapPin size={9}/>{String(p.location)}</p>}
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-
-            {/* Today's daily reports */}
-            <div className="bg-gray-900 border border-gray-800 rounded-xl overflow-hidden">
-              <div className="px-5 py-4 border-b border-gray-800 flex items-center gap-2">
-                <ClipboardList size={16} className="text-green-400"/>
-                <h2 className="font-semibold text-white text-sm">Today's Site Reports</h2>
-                <span className="text-xs bg-green-900/40 text-green-400 px-2 py-0.5 rounded-full ml-auto">{todayReports.length}</span>
-              </div>
-              <div className="divide-y divide-gray-800">
-                {todayReports.length === 0 && <p className="p-5 text-sm text-gray-500 text-center">No reports submitted yet today</p>}
-                {todayReports.map(r=>(
-                  <div key={String(r.id)} className="px-5 py-3">
-                    <div className="flex items-center justify-between">
-                      <p className="text-sm text-gray-300 truncate">{String(r.work_carried_out??'No description')}</p>
-                      <span className="text-xs text-gray-400 ml-2 flex-shrink-0 flex items-center gap-1"><Users size={10}/>{String(r.workers_on_site??0)}</span>
-                    </div>
-                    <p className="text-xs text-gray-500 mt-0.5">{String(r.weather??'')} {r.submitted_by?`· ${r.submitted_by}`:''}</p>
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <div className="bg-gray-900 border border-gray-800 rounded-xl overflow-hidden">
+                  <div className="px-5 py-4 border-b border-gray-800 flex items-center gap-2">
+                    <Cloud size={16} className="text-blue-400" />
+                    <h2 className="font-semibold text-white text-sm">Weather</h2>
                   </div>
-                ))}
-              </div>
-            </div>
-
-            {/* Open safety incidents */}
-            <div className="bg-gray-900 border border-gray-800 rounded-xl overflow-hidden">
-              <div className="px-5 py-4 border-b border-gray-800 flex items-center gap-2">
-                <AlertTriangle size={16} className="text-red-400"/>
-                <h2 className="font-semibold text-white text-sm">Open Safety Incidents</h2>
-                <span className={`text-xs px-2 py-0.5 rounded-full ml-auto font-medium ${openIncidents.length>0?'bg-red-900/40 text-red-400':'bg-gray-800 text-gray-400'}`}>{openIncidents.length}</span>
-              </div>
-              <div className="divide-y divide-gray-800">
-                {openIncidents.length === 0 && <p className="p-5 text-sm text-gray-500 text-center">No open incidents — site running safely</p>}
-                {openIncidents.slice(0,5).map(i=>{
-                  const sev = String(i.severity??'');
-                  const sevColour = sev==='Critical'?'bg-red-900/40 text-red-400':sev==='Serious'?'bg-orange-900/40 text-orange-400':'bg-yellow-900/40 text-yellow-400';
-                  return (
-                    <div key={String(i.id)} className="px-5 py-3">
-                      <div className="flex items-center justify-between">
-                        <p className="text-sm text-gray-300 truncate">{String(i.title??i.description??'Incident')}</p>
-                        <span className={`text-xs px-2 py-0.5 rounded-full font-medium ml-2 flex-shrink-0 ${sevColour}`}>{sev}</span>
-                      </div>
-                      <p className="text-xs text-gray-500 mt-0.5">{String(i.date??i.incident_date??'')} {i.location?`· ${i.location}`:''}</p>
+                  <div className="p-5 space-y-3">
+                    <div className="flex items-center justify-between">
+                      <span className="text-gray-400 text-sm">Temperature</span>
+                      <span className="text-white font-semibold">15°C</span>
                     </div>
-                  );
-                })}
-              </div>
-            </div>
-
-            {/* Equipment status */}
-            <div className="bg-gray-900 border border-gray-800 rounded-xl overflow-hidden">
-              <div className="px-5 py-4 border-b border-gray-800 flex items-center gap-2">
-                <Truck size={16} className="text-orange-400"/>
-                <h2 className="font-semibold text-white text-sm">Equipment Status</h2>
-                <span className="text-xs bg-orange-900/40 text-orange-400 px-2 py-0.5 rounded-full ml-auto">{equipment.length} total</span>
-              </div>
-              <div className="divide-y divide-gray-800">
-                {equipment.length === 0 && <p className="p-5 text-sm text-gray-500 text-center">No equipment registered</p>}
-                {equipment.slice(0,6).map(e=>{
-                  const st = String(e.status??'');
-                  const stColour = st==='In Use'?'bg-blue-900/40 text-blue-400':st==='Fault Reported'?'bg-red-900/40 text-red-400':st==='Under Service'?'bg-yellow-900/40 text-yellow-400':'bg-green-900/40 text-green-400';
-                  return (
-                    <div key={String(e.id)} className="px-5 py-3 flex items-center justify-between">
-                      <div>
-                        <p className="text-sm font-medium text-white">{String(e.name??'Unknown')}</p>
-                        <p className="text-xs text-gray-500">{String(e.category??'')} · {String(e.ownership??'')}</p>
-                      </div>
-                      <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${stColour}`}>{st}</span>
+                    <div className="flex items-center justify-between">
+                      <span className="text-gray-400 text-sm flex items-center gap-1">
+                        <Wind size={14} />
+                        Wind
+                      </span>
+                      <span className="text-white font-semibold">12 mph</span>
                     </div>
-                  );
-                })}
+                    <div className="flex items-center justify-between">
+                      <span className="text-gray-400 text-sm flex items-center gap-1">
+                        <Droplets size={14} />
+                        Rain Risk
+                      </span>
+                      <span className="text-white font-semibold">20%</span>
+                    </div>
+                    <div className="pt-2 border-t border-gray-700">
+                      <p className="text-xs text-gray-500">Status: <span className="text-green-400 font-medium">Good</span></p>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="bg-gray-900 border border-gray-800 rounded-xl overflow-hidden">
+                  <div className="px-5 py-4 border-b border-gray-800 flex items-center gap-2">
+                    <Users size={16} className="text-green-400" />
+                    <h2 className="font-semibold text-white text-sm">Labour Today</h2>
+                    <span className="text-xs bg-green-900/40 text-green-400 px-2 py-0.5 rounded-full ml-auto">{workersToday}</span>
+                  </div>
+                  <div className="divide-y divide-gray-800">
+                    {todayOps.filter(op => String(op.type ?? '') === 'labour').length === 0 ? (
+                      <p className="p-5 text-sm text-gray-500 text-center">No labour logged</p>
+                    ) : (
+                      todayOps
+                        .filter(op => String(op.type ?? '') === 'labour')
+                        .map((op) => (
+                          <div key={String(op.id)} className="px-5 py-3">
+                            <p className="text-sm font-medium text-white">{String(op.description ?? 'Labour')}</p>
+                            <p className="text-xs text-gray-500 mt-1">{Number(op.workforce_count ?? 0)} workers • {String(op.area ?? '—')}</p>
+                          </div>
+                        ))
+                    )}
+                  </div>
+                </div>
+
+                <div className="bg-gray-900 border border-gray-800 rounded-xl overflow-hidden">
+                  <div className="px-5 py-4 border-b border-gray-800 flex items-center gap-2">
+                    <Truck size={16} className="text-orange-400" />
+                    <h2 className="font-semibold text-white text-sm">Deliveries</h2>
+                    <span className="text-xs bg-orange-900/40 text-orange-400 px-2 py-0.5 rounded-full ml-auto">{deliveriesToday}</span>
+                  </div>
+                  <div className="divide-y divide-gray-800">
+                    {todayOps.filter(op => String(op.type ?? '') === 'delivery').length === 0 ? (
+                      <p className="p-5 text-sm text-gray-500 text-center">No deliveries today</p>
+                    ) : (
+                      todayOps
+                        .filter(op => String(op.type ?? '') === 'delivery')
+                        .map((op) => (
+                          <div key={String(op.id)} className="px-5 py-3">
+                            <p className="text-sm font-medium text-white">{String(op.description ?? 'Delivery')}</p>
+                            <p className="text-xs text-gray-500 mt-1">Supplier: {String(op.responsible ?? '—')}</p>
+                          </div>
+                        ))
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              <div className="bg-gray-900 border border-gray-800 rounded-xl overflow-hidden">
+                <div className="px-5 py-4 border-b border-gray-800">
+                  <h2 className="font-semibold text-white text-sm">Recent Activity</h2>
+                </div>
+                <div className="divide-y divide-gray-800 max-h-96 overflow-y-auto">
+                  {todayOps.length === 0 ? (
+                    <p className="p-5 text-sm text-gray-500 text-center">No activity today</p>
+                  ) : (
+                    todayOps.slice(0, 10).map((op) => (
+                      <div key={String(op.id)} className="px-5 py-3 hover:bg-gray-800/50 transition-colors">
+                        <div className="flex items-center justify-between">
+                          <p className="text-sm text-gray-300">{String(op.description ?? 'Operation')}</p>
+                          <span className="text-xs text-gray-500">{String(op.type ?? '—')}</span>
+                        </div>
+                        {!!op.notes && <p className="text-xs text-gray-500 mt-1">{String(op.notes)}</p>}
+                      </div>
+                    ))
+                  )}
+                </div>
               </div>
             </div>
-          </div>
-        </div>
-      )}
+          )}
 
-      {/* PROJECTS */}
-      {subTab === 'projects' && (
-        <div className="space-y-4">
-          {projects.length === 0 ? (
-            <div className="bg-gray-900 border border-gray-800 rounded-xl text-center py-16 text-gray-500">
-              <Building2 size={40} className="mx-auto mb-3 opacity-30"/><p>No projects found</p>
-            </div>
-          ) : (
-            <div className="bg-gray-900 border border-gray-800 rounded-xl overflow-hidden">
+          {subTab === 'workforce' && (
+            <div className="bg-gray-900 rounded-xl border border-gray-700 overflow-hidden">
               <div className="overflow-x-auto">
                 <table className="w-full text-sm">
                   <thead className="bg-gray-800/60 border-b border-gray-700">
                     <tr>
-                      {['Project','Location','Status','Progress','Budget','Start Date','End Date'].map(h=>(
-                        <th key={h} className="text-left px-4 py-3 text-xs font-semibold text-gray-400 uppercase tracking-wide">{h}</th>
-                      ))}
+                      <th className="text-left px-4 py-3 text-xs font-semibold text-gray-400 uppercase">Name</th>
+                      <th className="text-left px-4 py-3 text-xs font-semibold text-gray-400 uppercase">Trade</th>
+                      <th className="text-left px-4 py-3 text-xs font-semibold text-gray-400 uppercase">Hours Planned</th>
+                      <th className="text-left px-4 py-3 text-xs font-semibold text-gray-400 uppercase">Status</th>
+                      <th className="text-left px-4 py-3 text-xs font-semibold text-gray-400 uppercase">Task</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-800">
-                    {projects.map(p => {
-                      const progress = Number(p.progress??p.completion_percentage??0);
-                      const st = String(p.status??'');
-                      const stColour = st==='Active'||st==='In Progress'?'bg-green-900/40 text-green-400':st==='Completed'?'bg-gray-700 text-gray-400':st==='Cancelled'?'bg-red-900/40 text-red-400':'bg-blue-900/40 text-blue-400';
-                      return (
-                        <tr key={String(p.id)} className="hover:bg-gray-800/40 transition-colors">
-                          <td className="px-4 py-3 font-medium text-white">{String(p.name??p.title??'Unnamed')}</td>
-                          <td className="px-4 py-3 text-gray-400">
-                            {!!p.location && <span className="flex items-center gap-1"><MapPin size={10}/>{String(p.location)}</span>}
-                          </td>
-                          <td className="px-4 py-3">
-                            <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${stColour}`}>{st}</span>
-                          </td>
-                          <td className="px-4 py-3">
-                            <div className="flex items-center gap-2 min-w-[100px]">
-                              <div className="flex-1 h-1.5 bg-gray-800 rounded-full">
-                                <div className="h-full bg-gradient-to-r from-orange-500 to-orange-600 rounded-full" style={{width:`${Math.min(progress,100)}%`}}/>
-                              </div>
-                              <span className="text-xs text-gray-400">{progress}%</span>
-                            </div>
-                          </td>
-                          <td className="px-4 py-3 text-gray-300">
-                            {Number(p.budget??0)>0?`£${(Number(p.budget)/1000).toFixed(0)}k`:'—'}
-                          </td>
-                          <td className="px-4 py-3 text-gray-400 whitespace-nowrap">{String(p.start_date??'—')}</td>
-                          <td className="px-4 py-3 text-gray-400 whitespace-nowrap">{String(p.end_date??p.expected_end_date??'—')}</td>
-                        </tr>
-                      );
-                    })}
+                    {todayOps.filter(op => String(op.type ?? '') === 'labour').length === 0 ? (
+                      <tr>
+                        <td colSpan={5} className="px-4 py-8 text-center text-gray-500">
+                          No workforce data
+                        </td>
+                      </tr>
+                    ) : (
+                      todayOps
+                        .filter(op => String(op.type ?? '') === 'labour')
+                        .map((op) => (
+                          <tr key={String(op.id)} className="hover:bg-gray-800/40">
+                            <td className="px-4 py-3 font-medium text-white">{String(op.description ?? '—')}</td>
+                            <td className="px-4 py-3 text-gray-400">{String(op.area ?? '—')}</td>
+                            <td className="px-4 py-3 text-gray-400">{Number(op.workforce_count ?? 0)}h</td>
+                            <td className="px-4 py-3">
+                              <span className="text-xs px-2 py-1 bg-green-500/20 text-green-300 rounded-full">Present</span>
+                            </td>
+                            <td className="px-4 py-3 text-gray-400 max-w-xs truncate">{String(op.notes ?? '—')}</td>
+                          </tr>
+                        ))
+                    )}
                   </tbody>
                 </table>
               </div>
             </div>
           )}
-        </div>
-      )}
 
-      {/* REPORTS */}
-      {subTab === 'reports' && (
-        <div className="space-y-4">
-          <div className="flex items-center gap-3">
-            <span className="text-xs bg-green-900/40 text-green-400 px-3 py-1 rounded-full font-medium">{todayReports.length} today</span>
-            <span className="text-xs bg-gray-800 text-gray-400 px-3 py-1 rounded-full font-medium">{reports.length} total</span>
-          </div>
-          {reports.length === 0 ? (
-            <div className="bg-gray-900 border border-gray-800 rounded-xl text-center py-16 text-gray-500">
-              <ClipboardList size={40} className="mx-auto mb-3 opacity-30"/><p>No site reports found</p>
-            </div>
-          ) : (
-            <div className="bg-gray-900 border border-gray-800 rounded-xl overflow-hidden">
+          {subTab === 'resources' && (
+            <div className="bg-gray-900 rounded-xl border border-gray-700 overflow-hidden">
               <div className="overflow-x-auto">
                 <table className="w-full text-sm">
                   <thead className="bg-gray-800/60 border-b border-gray-700">
                     <tr>
-                      {['Date','Submitted By','Workers','Weather','Activities','Issues / Delays'].map(h=>(
-                        <th key={h} className="text-left px-4 py-3 text-xs font-semibold text-gray-400 uppercase tracking-wide">{h}</th>
-                      ))}
+                      <th className="text-left px-4 py-3 text-xs font-semibold text-gray-400 uppercase">Resource</th>
+                      <th className="text-left px-4 py-3 text-xs font-semibold text-gray-400 uppercase">Type</th>
+                      <th className="text-left px-4 py-3 text-xs font-semibold text-gray-400 uppercase">Location</th>
+                      <th className="text-left px-4 py-3 text-xs font-semibold text-gray-400 uppercase">Responsible</th>
+                      <th className="text-left px-4 py-3 text-xs font-semibold text-gray-400 uppercase">Status</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-800">
-                    {[...reports].sort((a,b)=>String(b.report_date??'').localeCompare(String(a.report_date??''))).map(r=>{
-                      const isToday = String(r.report_date??'') === today;
-                      return (
-                        <tr key={String(r.id)} className="hover:bg-gray-800/40 transition-colors">
-                          <td className="px-4 py-3 whitespace-nowrap">
-                            <div className="flex items-center gap-1.5">
-                              {isToday && <span className="text-xs bg-green-900/40 text-green-400 px-1.5 py-0.5 rounded font-medium">Today</span>}
-                              <span className="text-gray-400 text-xs">{String(r.report_date??'—')}</span>
-                            </div>
-                          </td>
-                          <td className="px-4 py-3 text-gray-300">{String(r.submitted_by??r.author??'—')}</td>
-                          <td className="px-4 py-3">
-                            <span className="flex items-center gap-1 text-gray-300"><Users size={12}/>{Number(r.workers_on_site??0)}</span>
-                          </td>
-                          <td className="px-4 py-3 text-gray-400 text-xs">{String(r.weather??'—')}</td>
-                          <td className="px-4 py-3 text-gray-400 max-w-xs truncate">{String(r.work_carried_out??'—')}</td>
-                          <td className="px-4 py-3">
-                            {r.delays
-                              ? <span className="text-xs text-orange-300 bg-orange-900/30 px-2 py-0.5 rounded-full">{String(r.delays)}</span>
-                              : <span className="text-xs text-green-400">None</span>}
-                          </td>
-                        </tr>
-                      );
-                    })}
+                    {operations.filter(op => String(op.type ?? '') === 'resource').length === 0 ? (
+                      <tr>
+                        <td colSpan={5} className="px-4 py-8 text-center text-gray-500">
+                          No resources recorded
+                        </td>
+                      </tr>
+                    ) : (
+                      operations
+                        .filter(op => String(op.type ?? '') === 'resource')
+                        .slice(0, 20)
+                        .map((op) => (
+                          <tr key={String(op.id)} className="hover:bg-gray-800/40">
+                            <td className="px-4 py-3 font-medium text-white">{String(op.description ?? '—')}</td>
+                            <td className="px-4 py-3 text-gray-400">{String(op.area ?? '—')}</td>
+                            <td className="px-4 py-3 text-gray-400">{String(op.notes ?? '—')}</td>
+                            <td className="px-4 py-3 text-gray-400">{String(op.responsible ?? '—')}</td>
+                            <td className="px-4 py-3">
+                              <span className="text-xs px-2 py-1 bg-blue-500/20 text-blue-300 rounded-full">Active</span>
+                            </td>
+                          </tr>
+                        ))
+                    )}
                   </tbody>
                 </table>
               </div>
             </div>
           )}
-        </div>
-      )}
 
-      {/* EQUIPMENT */}
-      {subTab === 'equipment' && (
-        <div className="space-y-4">
-          <div className="flex gap-2 flex-wrap">
-            {[
-              { label:'In Use', count:equipmentInUse.length, colour:'bg-blue-900/40 text-blue-400' },
-              { label:'Faults', count:faultedEquipment.length, colour:'bg-red-900/40 text-red-400' },
-              { label:'Available', count:equipment.filter(e=>e.status==='Available').length, colour:'bg-green-900/40 text-green-400' },
-              { label:'Total', count:equipment.length, colour:'bg-gray-800 text-gray-400' },
-            ].map(b=>(
-              <span key={b.label} className={`text-xs px-3 py-1 rounded-full font-medium ${b.colour}`}>{b.label}: {b.count}</span>
-            ))}
-          </div>
-          {equipment.length === 0 ? (
-            <div className="bg-gray-900 border border-gray-800 rounded-xl text-center py-16 text-gray-500">
-              <Truck size={40} className="mx-auto mb-3 opacity-30"/><p>No equipment registered</p>
+          {subTab === 'logistics' && (
+            <div className="space-y-4">
+              <div className="bg-gray-900 rounded-xl border border-gray-700 overflow-hidden">
+                <div className="px-5 py-4 border-b border-gray-800">
+                  <h2 className="font-semibold text-white text-sm">Delivery Schedule</h2>
+                </div>
+                <div className="divide-y divide-gray-800">
+                  {operations.filter(op => String(op.type ?? '') === 'delivery').length === 0 ? (
+                    <p className="px-5 py-8 text-center text-gray-500 text-sm">No deliveries scheduled</p>
+                  ) : (
+                    operations
+                      .filter(op => String(op.type ?? '') === 'delivery')
+                      .slice(0, 10)
+                      .map((op) => (
+                        <div key={String(op.id)} className="px-5 py-4 hover:bg-gray-800/40 transition-colors">
+                          <div className="flex items-center justify-between mb-2">
+                            <p className="font-medium text-white">{String(op.description ?? 'Delivery')}</p>
+                            <span className="text-xs px-2 py-1 bg-orange-500/20 text-orange-300 rounded-full">Expected</span>
+                          </div>
+                          <div className="grid grid-cols-2 gap-4 text-sm text-gray-400">
+                            <div>Supplier: {String(op.responsible ?? '—')}</div>
+                            <div>Gate: {String(op.area ?? '—')}</div>
+                          </div>
+                        </div>
+                      ))
+                  )}
+                </div>
+              </div>
             </div>
-          ) : (
-            <div className="bg-gray-900 border border-gray-800 rounded-xl overflow-hidden">
+          )}
+
+          {subTab === 'progress' && (
+            <div className="bg-gray-900 rounded-xl border border-gray-700 overflow-hidden">
               <div className="overflow-x-auto">
                 <table className="w-full text-sm">
                   <thead className="bg-gray-800/60 border-b border-gray-700">
                     <tr>
-                      {['Name','Category','Ownership','Status','Location','Next Service'].map(h=>(
-                        <th key={h} className="text-left px-4 py-3 text-xs font-semibold text-gray-400 uppercase tracking-wide">{h}</th>
-                      ))}
+                      <th className="text-left px-4 py-3 text-xs font-semibold text-gray-400 uppercase">Work Section</th>
+                      <th className="text-center px-4 py-3 text-xs font-semibold text-gray-400 uppercase">Planned</th>
+                      <th className="text-center px-4 py-3 text-xs font-semibold text-gray-400 uppercase">Actual</th>
+                      <th className="text-center px-4 py-3 text-xs font-semibold text-gray-400 uppercase">Variance</th>
+                      <th className="text-left px-4 py-3 text-xs font-semibold text-gray-400 uppercase">Status</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-800">
-                    {equipment.map(e => {
-                      const st = String(e.status??'');
-                      const stColour = st==='In Use'?'bg-blue-900/40 text-blue-400':st==='Fault Reported'?'bg-red-900/40 text-red-400':st==='Under Service'?'bg-yellow-900/40 text-yellow-400':st==='Hired Out'?'bg-purple-900/40 text-purple-400':'bg-green-900/40 text-green-400';
-                      return (
-                        <tr key={String(e.id)} className="hover:bg-gray-800/40 transition-colors">
-                          <td className="px-4 py-3 font-medium text-white">
-                            <div className="flex items-center gap-2">
-                              {st==='Fault Reported' && <AlertTriangle size={13} className="text-red-400 flex-shrink-0"/>}
-                              {String(e.name??'Unknown')}
-                            </div>
-                          </td>
-                          <td className="px-4 py-3 text-gray-400">{String(e.category??'—')}</td>
-                          <td className="px-4 py-3 text-gray-400">{String(e.ownership??'—')}</td>
-                          <td className="px-4 py-3">
-                            <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${stColour}`}>{st}</span>
-                          </td>
-                          <td className="px-4 py-3 text-gray-400">
-                            {!!e.location && <span className="flex items-center gap-1"><MapPin size={10}/>{String(e.location)}</span>}
-                          </td>
-                          <td className="px-4 py-3 text-gray-400 text-xs">{String(e.next_service??e.service_due??'—')}</td>
-                        </tr>
-                      );
-                    })}
+                    {[
+                      { name: 'Foundations', planned: 80, actual: 85, variance: 5 },
+                      { name: 'Superstructure', planned: 45, actual: 40, variance: -5 },
+                      { name: 'Envelope', planned: 20, actual: 15, variance: -5 },
+                      { name: 'MEP Install', planned: 10, actual: 8, variance: -2 },
+                    ].map((section) => (
+                      <tr key={section.name} className="hover:bg-gray-800/40">
+                        <td className="px-4 py-3 font-medium text-white">{section.name}</td>
+                        <td className="text-center px-4 py-3 text-gray-400">{section.planned}%</td>
+                        <td className="text-center px-4 py-3 text-gray-400">{section.actual}%</td>
+                        <td className={`text-center px-4 py-3 font-medium ${section.variance >= 0 ? 'text-green-400' : 'text-orange-400'}`}>
+                          {section.variance > 0 ? '+' : ''}{section.variance}%
+                        </td>
+                        <td className="px-4 py-3">
+                          <span className={`text-xs px-2 py-1 rounded-full ${section.variance < 0 ? 'bg-orange-500/20 text-orange-300' : 'bg-green-500/20 text-green-300'}`}>
+                            {section.variance < 0 ? 'Behind' : 'On Track'}
+                          </span>
+                        </td>
+                      </tr>
+                    ))}
                   </tbody>
                 </table>
               </div>
             </div>
           )}
+        </>
+      )}
+
+      {showModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-gray-900 rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between p-6 border-b border-gray-700 sticky top-0 bg-gray-900 z-10">
+              <h2 className="text-lg font-semibold text-white">{editing ? 'Edit Operation' : 'Log Operation'}</h2>
+              <button onClick={() => setShowModal(false)} className="p-2 hover:bg-gray-800 rounded-lg">
+                <X size={18} />
+              </button>
+            </div>
+            <form onSubmit={handleSubmit} className="p-6 space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div className="col-span-2">
+                  <label className="block text-sm font-medium text-gray-300 mb-1">Description *</label>
+                  <input
+                    required
+                    value={form.description}
+                    onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))}
+                    className="w-full bg-gray-800 border border-gray-700 text-white placeholder-gray-500 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-300 mb-1">Operation Type</label>
+                  <select
+                    value={form.type}
+                    onChange={(e) => setForm((f) => ({ ...f, type: e.target.value }))}
+                    className="w-full bg-gray-800 border border-gray-700 text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500"
+                  >
+                    <option>labour_allocation</option>
+                    <option>delivery</option>
+                    <option>resource</option>
+                    <option>permit</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-300 mb-1">Date</label>
+                  <input
+                    type="date"
+                    value={form.date}
+                    onChange={(e) => setForm((f) => ({ ...f, date: e.target.value }))}
+                    className="w-full bg-gray-800 border border-gray-700 text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-300 mb-1">Area</label>
+                  <input
+                    value={form.area}
+                    onChange={(e) => setForm((f) => ({ ...f, area: e.target.value }))}
+                    placeholder="Site area or location"
+                    className="w-full bg-gray-800 border border-gray-700 text-white placeholder-gray-500 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-300 mb-1">Responsible</label>
+                  <input
+                    value={form.responsible}
+                    onChange={(e) => setForm((f) => ({ ...f, responsible: e.target.value }))}
+                    placeholder="Person or company"
+                    className="w-full bg-gray-800 border border-gray-700 text-white placeholder-gray-500 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-300 mb-1">Workforce Count</label>
+                  <input
+                    type="number"
+                    min="0"
+                    value={form.workforce_count}
+                    onChange={(e) => setForm((f) => ({ ...f, workforce_count: Number(e.target.value) }))}
+                    className="w-full bg-gray-800 border border-gray-700 text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500"
+                  />
+                </div>
+                <div className="col-span-2">
+                  <label className="block text-sm font-medium text-gray-300 mb-1">Notes</label>
+                  <textarea
+                    rows={3}
+                    value={form.notes}
+                    onChange={(e) => setForm((f) => ({ ...f, notes: e.target.value }))}
+                    className="w-full bg-gray-800 border border-gray-700 text-white placeholder-gray-500 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500 resize-none"
+                  />
+                </div>
+              </div>
+              <div className="flex gap-3 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setShowModal(false)}
+                  className="flex-1 px-4 py-2 border border-gray-700 rounded-lg text-sm text-gray-300 hover:bg-gray-800"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={createMutation.isPending || updateMutation.isPending}
+                  className="flex-1 px-4 py-2 bg-orange-600 text-white rounded-lg text-sm font-medium hover:bg-orange-700 disabled:opacity-50"
+                >
+                  {editing ? 'Update' : 'Log Operation'}
+                </button>
+              </div>
+            </form>
+          </div>
         </div>
       )}
     </div>
   );
 }
-

@@ -7,16 +7,17 @@ import {
   CheckCircle,
   X,
   Clock,
-  MapPin,
-  Loader2,
-  ChevronDown,
-  ChevronUp,
-  Menu,
-  Edit,
-  Delete,
+  AlertTriangle,
+  Download,
+  Activity,
+  Users,
+  Shield,
+  BarChart2,
 } from 'lucide-react';
 
-interface AuditEntry {
+type AnyRow = Record<string, unknown>;
+
+interface AuditEntry extends AnyRow {
   id: number;
   user_id: string;
   action: string;
@@ -24,10 +25,8 @@ interface AuditEntry {
   record_id: number;
   changes: string;
   created_at: string;
-  user?: {
-    name: string;
-    avatar?: string;
-  };
+  user?: { name: string; avatar?: string };
+  ip_address?: string;
 }
 
 interface AuditStats {
@@ -35,38 +34,44 @@ interface AuditStats {
   today_entries: number;
   week_entries: number;
   month_entries: number;
+  active_users: number;
+  security_alerts: number;
 }
 
-interface AuditLogProps {
-  initialFilterAction?: string;
-  initialFilterTable?: string;
-}
+type SubTab = 'activity' | 'users' | 'changes' | 'security' | 'export';
 
-export function AuditLog({
-  initialFilterAction = 'all',
-  initialFilterTable = 'all',
-}: AuditLogProps) {
+const TABS: { key: SubTab; label: string; icon: React.ElementType }[] = [
+  { key: 'activity', label: 'Activity Log', icon: Activity },
+  { key: 'users', label: 'User Actions', icon: Users },
+  { key: 'changes', label: 'Data Changes', icon: TrendingUp },
+  { key: 'security', label: 'Security', icon: Shield },
+  { key: 'export', label: 'Export', icon: Download },
+];
+
+export function AuditLog() {
   const [entries, setEntries] = useState<AuditEntry[]>([]);
   const [stats, setStats] = useState<AuditStats>({
     total_entries: 0,
     today_entries: 0,
     week_entries: 0,
     month_entries: 0,
+    active_users: 0,
+    security_alerts: 0,
   });
   const [loading, setLoading] = useState(true);
-  const [filterAction, setFilterAction] = useState<string>(
-    initialFilterAction
-  );
-  const [filterTable, setFilterTable] = useState<string>(
-    initialFilterTable
-  );
-  const [expandedId, setExpandedId] = useState<number | null>(null);
+  const [subTab, setSubTab] = useState<SubTab>('activity');
+  const [filterAction, setFilterAction] = useState('all');
+  const [filterTable, setFilterTable] = useState('all');
+  const [filterUser, setFilterUser] = useState('all');
+  const [filterDateFrom, setFilterDateFrom] = useState('');
+  const [filterDateTo, setFilterDateTo] = useState('');
+  const [searchQuery, setSearchQuery] = useState('');
 
   const loadData = useCallback(async () => {
     setLoading(true);
     try {
       const [entriesData, statsData] = await Promise.all([
-        auditApi.getAll({ limit: 200 }),
+        auditApi.getAll({ limit: 500 }),
         auditApi.getStats(),
       ]);
       let filtered = entriesData as unknown as AuditEntry[];
@@ -76,6 +81,15 @@ export function AuditLog({
       if (filterTable !== 'all') {
         filtered = filtered.filter(e => e.table_name === filterTable);
       }
+      if (filterUser !== 'all') {
+        filtered = filtered.filter(e => e.user_id === filterUser);
+      }
+      if (searchQuery) {
+        filtered = filtered.filter(e =>
+          String(e.table_name).includes(searchQuery) ||
+          String(e.user?.name ?? '').includes(searchQuery)
+        );
+      }
       setEntries(filtered);
       setStats(statsData as unknown as AuditStats);
     } catch (err) {
@@ -83,167 +97,389 @@ export function AuditLog({
     } finally {
       setLoading(false);
     }
-  }, [filterAction, filterTable]);
+  }, [filterAction, filterTable, filterUser, searchQuery]);
 
   useEffect(() => {
     loadData();
   }, [loadData]);
 
-  const handleExpand = (id: number) => {
-    setExpandedId(id === expandedId ? null : id);
-  };
-
-  const getStatusColor = (action: string) => {
+  const getActionColor = (action: string): string => {
     switch (action) {
       case 'create':
-        return 'text-emerald-400';
+        return 'bg-emerald-500/20 text-emerald-400';
       case 'update':
-        return 'text-blue-400';
+        return 'bg-blue-500/20 text-blue-400';
       case 'delete':
-        return 'text-red-400';
+        return 'bg-red-500/20 text-red-400';
+      case 'view':
+        return 'bg-cyan-500/20 text-cyan-400';
+      case 'export':
+        return 'bg-purple-500/20 text-purple-400';
+      case 'approve':
+        return 'bg-green-500/20 text-green-400';
       default:
-        return 'text-gray-400';
+        return 'bg-gray-500/20 text-gray-400';
     }
   };
 
+  const getSecurityLevel = (level: string): string => {
+    switch (level) {
+      case 'high':
+        return 'bg-red-500/20 text-red-400';
+      case 'medium':
+        return 'bg-amber-500/20 text-amber-400';
+      case 'low':
+        return 'bg-blue-500/20 text-blue-400';
+      default:
+        return 'bg-gray-500/20 text-gray-400';
+    }
+  };
+
+  const uniqueUsers = Array.from(
+    new Map(entries.map(e => [e.user_id, e.user])).entries()
+  );
+
+  const activityToday = entries.filter(e => {
+    const entryDate = new Date(String(e.created_at)).toDateString();
+    return entryDate === new Date().toDateString();
+  });
+
   return (
     <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
-        <h2 className="text-xl font-semibold">Audit Log</h2>
-        <div className="flex flex-wrap gap-3 mt-4 sm:mt-0">
-          <div className="flex items-center gap-2">
-            <Filter className="h-4 w-4" />
+      {/* Header with KPIs */}
+      <div>
+        <h2 className="text-2xl font-bold text-white mb-4">Audit & Compliance Log</h2>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <div className="bg-gray-800 border border-gray-700 rounded-lg p-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-xs text-gray-400 uppercase">Events Today</p>
+                <p className="text-xl font-bold text-white">{Number(activityToday.length)}</p>
+              </div>
+              <Activity className="h-6 w-6 text-blue-400" />
+            </div>
+          </div>
+          <div className="bg-gray-800 border border-gray-700 rounded-lg p-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-xs text-gray-400 uppercase">Active Users</p>
+                <p className="text-xl font-bold text-white">{Number(stats.active_users)}</p>
+              </div>
+              <Users className="h-6 w-6 text-cyan-400" />
+            </div>
+          </div>
+          <div className="bg-gray-800 border border-gray-700 rounded-lg p-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-xs text-gray-400 uppercase">Security Alerts</p>
+                <p className="text-xl font-bold text-white">{Number(stats.security_alerts)}</p>
+              </div>
+              <AlertTriangle className="h-6 w-6 text-red-400" />
+            </div>
+          </div>
+          <div className="bg-gray-800 border border-gray-700 rounded-lg p-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-xs text-gray-400 uppercase">This Week</p>
+                <p className="text-xl font-bold text-white">{Number(stats.week_entries)}</p>
+              </div>
+              <TrendingUp className="h-6 w-6 text-emerald-400" />
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Sub-tabs */}
+      <div className="border-b border-gray-700 flex gap-1 overflow-x-auto">
+        {TABS.map(t => {
+          const Icon = t.icon;
+          return (
+            <button
+              key={t.key}
+              onClick={() => setSubTab(t.key)}
+              className={`flex items-center gap-2 px-4 py-3 text-sm font-medium border-b-2 -mb-px transition-colors whitespace-nowrap ${
+                subTab === t.key
+                  ? 'border-blue-500 text-blue-400'
+                  : 'border-transparent text-gray-400 hover:text-gray-200'
+              }`}
+            >
+              <Icon size={14} />
+              {t.label}
+            </button>
+          );
+        })}
+      </div>
+
+      {/* Activity Log Tab */}
+      {subTab === 'activity' && (
+        <div className="space-y-4">
+          <div className="flex flex-col sm:flex-row gap-3">
+            <input
+              type="text"
+              placeholder="Search by user or module..."
+              value={searchQuery}
+              onChange={e => setSearchQuery(e.target.value)}
+              className="flex-1 bg-gray-800 border border-gray-700 rounded-lg px-4 py-2 text-white text-sm placeholder-gray-500"
+            />
             <select
               value={filterAction}
-              onChange={(e) => setFilterAction(e.target.value)}
-              className="border rounded px-3 py-1.5 text-sm focus:ring-2 focus:ring-emerald-400"
+              onChange={e => setFilterAction(e.target.value)}
+              className="bg-gray-800 border border-gray-700 rounded-lg px-4 py-2 text-white text-sm"
             >
               <option value="all">All Actions</option>
               <option value="create">Create</option>
               <option value="update">Update</option>
               <option value="delete">Delete</option>
+              <option value="view">View</option>
+              <option value="export">Export</option>
             </select>
-          </div>
-          <div className="flex items-center gap-2">
-            <MapPin className="h-4 w-4" />
             <select
               value={filterTable}
-              onChange={(e) => setFilterTable(e.target.value)}
-              className="border rounded px-3 py-1.5 text-sm focus:ring-2 focus:ring-emerald-400"
+              onChange={e => setFilterTable(e.target.value)}
+              className="bg-gray-800 border border-gray-700 rounded-lg px-4 py-2 text-white text-sm"
             >
-              <option value="all">All Tables</option>
+              <option value="all">All Modules</option>
               <option value="projects">Projects</option>
-              <option value="tasks">Tasks</option>
-              <option value="users">Users</option>
-              <option value="materials">Materials</option>
-              <option value="expenses">Expenses</option>
               <option value="invoices">Invoices</option>
-              <option value="change_orders">Change Orders</option>
-              <option value="reports">Reports</option>
-              <option value="settings">Settings</option>
+              <option value="safety">Safety</option>
+              <option value="rfis">RFIs</option>
+              <option value="documents">Documents</option>
             </select>
           </div>
-        </div>
-      </div>
 
-      {loading ? (
-        <div className="text-center py-8">
-          <Loader2 className="h-8 w-8 mx-auto mb-4 text-emerald-400" />
-          <p className="text-gray-500">Loading audit log...</p>
-        </div>
-      ) : entries.length === 0 ? (
-        <div className="text-center py-8">
-          <p className="text-gray-500">No audit entries found.</p>
-        </div>
-      ) : (
-        <>
-          <div className="overflow-x-auto">
-            <table className="w-full border-collapse">
-              <thead>
-                <tr className="border-b">
-                  <th className="text-left px-4 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Time
-                  </th>
-                  <th className="text-left px-4 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    User
-                  </th>
-                  <th className="text-left px-4 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Action
-                  </th>
-                  <th className="text-left px-4 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Table
-                  </th>
-                  <th className="text-left px-4 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Record ID
-                  </th>
-                  <th className="text-left px-4 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Changes
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="divide-y">
-                {entries.map((entry) => (
-                  <tr key={entry.id} className="hover:bg-gray-50">
-                    <td className="px-4 py-3 text-sm text-gray-400">
-                      {new Date(entry.created_at).toLocaleString()}
-                    </td>
-                    <td className="px-4 py-3 flex items-center gap-3">
-                      {entry.user?.avatar ? (
-                        <img
-                          src={entry.user.avatar}
-                          alt={`${entry.user.name}'s avatar`}
-                          className="h-8 w-8 rounded-full border border-gray-200"
-                        />
-                      ) : (
-                        <div className="h-8 w-8 rounded-full bg-gray-200 flex items-center justify-center">
-                          {entry.user?.name
-                            .split(' ')
-                            .map((n) => n[0])
-                            .join('')
-                            .toUpperCase()}
-                        </div>
-                      )}
-                      <span className="text-sm font-medium">{entry.user?.name ?? 'Unknown User'}</span>
-                    </td>
-                    <td className="px-4 py-3">
-                      <span
-                        className={`px-2 py-0.5 rounded-full text-xs font-medium ${getStatusColor(
-                          entry.action
-                        )} bg-${entry.action === 'create'
-                          ? 'emerald'
-                          : entry.action === 'update'
-                            ? 'blue'
-                            : 'red'}-500/20`}
-                      >
-                        {entry.action.charAt(0).toUpperCase() + entry.action.slice(1)}
-                      </span>
-                    </td>
-                    <td className="px-4 py-3 text-sm text-gray-400 capitalize">{entry.table_name}</td>
-                    <td className="px-4 py-3 text-sm text-gray-400">{entry.record_id}</td>
-                    <td className="px-4 py-3 text-sm text-gray-400 max-w-xs truncate">{entry.changes}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between pt-4">
-            <div className="text-sm text-gray-500">
-              Showing {entries.length} entries
+          {loading ? (
+            <div className="text-center py-12">
+              <p className="text-gray-400">Loading audit log...</p>
             </div>
-            <div className="flex items-center gap-4 mt-3 sm:mt-0">
-              <button
-                onClick={() => {
-                  setFilterAction('all');
-                  setFilterTable('all');
-                }}
-                className="px-4 py-2 border rounded hover:bg-gray-50"
+          ) : entries.length === 0 ? (
+            <div className="text-center py-12">
+              <p className="text-gray-400">No audit entries found</p>
+            </div>
+          ) : (
+            <div className="bg-gray-900 border border-gray-700 rounded-lg overflow-hidden">
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead className="bg-gray-800">
+                    <tr>
+                      <th className="text-left px-4 py-3 text-xs font-semibold text-gray-300">Time</th>
+                      <th className="text-left px-4 py-3 text-xs font-semibold text-gray-300">User</th>
+                      <th className="text-left px-4 py-3 text-xs font-semibold text-gray-300">Action</th>
+                      <th className="text-left px-4 py-3 text-xs font-semibold text-gray-300">Module</th>
+                      <th className="text-left px-4 py-3 text-xs font-semibold text-gray-300">Description</th>
+                      <th className="text-left px-4 py-3 text-xs font-semibold text-gray-300">IP Address</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-800">
+                    {entries.slice(0, 100).map(entry => (
+                      <tr key={Number(entry.id)} className="hover:bg-gray-800/50">
+                        <td className="px-4 py-3 text-gray-300">
+                          {String(new Date(String(entry.created_at)).toLocaleString())}
+                        </td>
+                        <td className="px-4 py-3">
+                          <div className="flex items-center gap-2">
+                            <div className="h-7 w-7 rounded-full bg-blue-600 flex items-center justify-center text-xs font-medium text-white flex-shrink-0">
+                              {String(entry.user?.name ?? '?')[0]}
+                            </div>
+                            <span className="text-gray-300 text-sm">{String(entry.user?.name ?? 'Unknown')}</span>
+                          </div>
+                        </td>
+                        <td className="px-4 py-3">
+                          <span className={`px-2 py-1 rounded text-xs font-medium ${getActionColor(String(entry.action))}`}>
+                            {String(entry.action).toUpperCase()}
+                          </span>
+                        </td>
+                        <td className="px-4 py-3 text-gray-300 text-sm capitalize">
+                          {String(entry.table_name)}
+                        </td>
+                        <td className="px-4 py-3 text-gray-400 text-sm max-w-xs">
+                          {String(entry.record_id)}
+                        </td>
+                        <td className="px-4 py-3 text-gray-400 text-xs">
+                          {String(entry.ip_address ?? '—')}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* User Actions Tab */}
+      {subTab === 'users' && (
+        <div className="space-y-4">
+          <select
+            value={filterUser}
+            onChange={e => setFilterUser(e.target.value)}
+            className="bg-gray-800 border border-gray-700 rounded-lg px-4 py-2 text-white text-sm max-w-sm"
+          >
+            <option value="all">All Users</option>
+            {uniqueUsers.map(([userId, user]) => (
+              <option key={String(userId)} value={String(userId)}>
+                {String(user?.name ?? 'Unknown')}
+              </option>
+            ))}
+          </select>
+
+          <div className="grid grid-cols-1 gap-4">
+            {uniqueUsers.map(([userId, user]) => {
+              const userEntries = entries.filter(e => e.user_id === userId);
+              return (
+                <div key={String(userId)} className="bg-gray-900 border border-gray-700 rounded-lg p-4">
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="flex items-center gap-3">
+                      <div className="h-10 w-10 rounded-full bg-blue-600 flex items-center justify-center text-sm font-medium text-white">
+                        {String(user?.name ?? '?')[0]}
+                      </div>
+                      <div>
+                        <p className="font-medium text-white">{String(user?.name ?? 'Unknown')}</p>
+                        <p className="text-xs text-gray-400">{Number(userEntries.length)} actions this month</p>
+                      </div>
+                    </div>
+                    <span className="text-sm text-gray-400">
+                      Last: {String(new Date(String(userEntries[0]?.created_at)).toLocaleDateString())}
+                    </span>
+                  </div>
+                  <div className="grid grid-cols-4 gap-2 pt-3 border-t border-gray-800">
+                    <div className="text-center">
+                      <p className="text-lg font-bold text-cyan-400">
+                        {Number(userEntries.filter(e => e.action === 'view').length)}
+                      </p>
+                      <p className="text-xs text-gray-400">Views</p>
+                    </div>
+                    <div className="text-center">
+                      <p className="text-lg font-bold text-emerald-400">
+                        {Number(userEntries.filter(e => e.action === 'create').length)}
+                      </p>
+                      <p className="text-xs text-gray-400">Created</p>
+                    </div>
+                    <div className="text-center">
+                      <p className="text-lg font-bold text-blue-400">
+                        {Number(userEntries.filter(e => e.action === 'update').length)}
+                      </p>
+                      <p className="text-xs text-gray-400">Updated</p>
+                    </div>
+                    <div className="text-center">
+                      <p className="text-lg font-bold text-red-400">
+                        {Number(userEntries.filter(e => e.action === 'delete').length)}
+                      </p>
+                      <p className="text-xs text-gray-400">Deleted</p>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
+      {/* Data Changes Tab */}
+      {subTab === 'changes' && (
+        <div className="bg-gray-900 border border-gray-700 rounded-lg overflow-hidden">
+          <div className="p-4 border-b border-gray-700">
+            <div className="flex gap-3">
+              <select
+                value={filterTable}
+                onChange={e => setFilterTable(e.target.value)}
+                className="bg-gray-800 border border-gray-700 rounded-lg px-4 py-2 text-white text-sm flex-1"
               >
-                Reset Filters
+                <option value="all">All Modules</option>
+                <option value="projects">Projects</option>
+                <option value="invoices">Invoices</option>
+                <option value="safety">Safety</option>
+              </select>
+              <button className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium">
+                <Download className="h-4 w-4 inline mr-2" />
+                Export CSV
               </button>
             </div>
           </div>
-        </>
+          <div className="divide-y divide-gray-800 max-h-96 overflow-y-auto">
+            {entries
+              .filter(e => e.action === 'update')
+              .slice(0, 50)
+              .map(entry => (
+                <div key={Number(entry.id)} className="p-4 hover:bg-gray-800/50">
+                  <div className="flex items-center justify-between mb-2">
+                    <p className="text-sm font-medium text-white">
+                      {String(entry.user?.name ?? 'Unknown')} updated {String(entry.table_name)}
+                    </p>
+                    <span className="text-xs text-gray-400">
+                      {String(new Date(String(entry.created_at)).toLocaleString())}
+                    </span>
+                  </div>
+                  <div className="text-xs text-gray-400">
+                    <p>Record ID: {Number(entry.record_id)}</p>
+                    <p className="text-gray-500 mt-1">{String(entry.changes)}</p>
+                  </div>
+                </div>
+              ))}
+          </div>
+        </div>
+      )}
+
+      {/* Security Tab */}
+      {subTab === 'security' && (
+        <div className="space-y-4">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            {[
+              { label: 'Failed Logins', value: 0, level: 'high', icon: X },
+              { label: 'Password Resets', value: 0, level: 'medium', icon: Shield },
+              { label: 'Permission Changes', value: 0, level: 'low', icon: AlertTriangle },
+            ].map((item, idx) => (
+              <div key={idx} className={`border rounded-lg p-4 ${getSecurityLevel(item.level)}`}>
+                <p className="text-xs uppercase mb-1">
+                  {item.label}
+                </p>
+                <p className="text-2xl font-bold">{Number(item.value)}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Export Tab */}
+      {subTab === 'export' && (
+        <div className="bg-gray-900 border border-gray-700 rounded-lg p-6 max-w-md">
+          <h3 className="text-lg font-bold text-white mb-4">Export Audit Trail</h3>
+          <div className="space-y-4">
+            <div>
+              <label className="block text-sm text-gray-400 mb-2">Date From</label>
+              <input
+                type="date"
+                value={filterDateFrom}
+                onChange={e => setFilterDateFrom(e.target.value)}
+                className="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-2 text-white text-sm"
+              />
+            </div>
+            <div>
+              <label className="block text-sm text-gray-400 mb-2">Date To</label>
+              <input
+                type="date"
+                value={filterDateTo}
+                onChange={e => setFilterDateTo(e.target.value)}
+                className="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-2 text-white text-sm"
+              />
+            </div>
+            <div>
+              <label className="block text-sm text-gray-400 mb-2">Format</label>
+              <select className="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-2 text-white text-sm">
+                <option>CSV</option>
+                <option>PDF</option>
+                <option>Excel</option>
+              </select>
+            </div>
+            <button className="w-full px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium">
+              <Download className="h-4 w-4 inline mr-2" />
+              Export
+            </button>
+            <button className="w-full px-4 py-2 bg-green-600/20 hover:bg-green-600/30 text-green-400 rounded-lg font-medium text-sm">
+              Generate Compliance Report
+            </button>
+          </div>
+        </div>
       )}
     </div>
   );

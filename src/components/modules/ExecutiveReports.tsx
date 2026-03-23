@@ -1,579 +1,403 @@
-// Module: Executive Reports — CortexBuild Ultimate
-// Automated executive summary reports with PDF export and scheduled delivery
+// Module: ExecutiveReports — CortexBuild Ultimate Enhanced
 import { useState, useMemo } from 'react';
 import {
-  FileText, Download, Calendar, Clock, Send,
-  BarChart3, PieChart, TrendingUp, Users,
-  Shield, PoundSterling, Activity, CheckCircle,
-  AlertTriangle, Mail, Printer, Share2,
+  FileText, Download, Calendar, Clock, Send, BarChart3, PieChart,
+  TrendingUp, Users, Shield, PoundSterling, Activity, CheckCircle,
+  AlertTriangle, Mail, Printer, Share2, Award, Eye, Settings,
 } from 'lucide-react';
 import {
-  useProjects, useSafety, useInvoices, useTeam,
-  useDailyReports, useSubcontractors,
-} from '../../hooks/useData';
-import {
   AreaChart, Area, BarChart, Bar, PieChart as RechartsPie, Pie, Cell,
-  XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer,
+  XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, RadarChart, Radar,
+  PolarGrid, PolarAngleAxis, PolarRadiusAxis,
 } from 'recharts';
 
 type AnyRow = Record<string, unknown>;
 
-interface ReportSection {
-  id: string;
-  title: string;
-  icon: React.ElementType;
-  data: React.ReactNode;
-  summary: string;
+interface ReportTab {
+  id: 'dashboard' | 'portfolio' | 'financial' | 'safety' | 'kpis' | 'trends';
+  label: string;
+  icon: React.ComponentType<{ className?: string }>;
 }
 
-// Format currency
 const fmtCurrency = (n: number) => {
   if (n >= 1_000_000) return `£${(n / 1_000_000).toFixed(2)}M`;
   if (n >= 1_000) return `£${(n / 1_000).toFixed(0)}K`;
   return `£${n.toLocaleString()}`;
 };
 
-// Format date
-const fmtDate = (d: Date) => d.toLocaleDateString('en-GB', {
-  weekday: 'long', year: 'numeric', month: 'long', day: 'numeric',
-});
-
-// Build portfolio summary
-function buildPortfolioSummary(projects: AnyRow[], invoices: AnyRow[]) {
-  const active = projects.filter(p => p.status === 'active');
-  const totalValue = active.reduce((s, p) => s + Number(p.contract_value ?? p.contractValue ?? 0), 0);
-  const totalSpent = active.reduce((s, p) => s + Number(p.spent ?? 0), 0);
-  const avgProgress = active.length ? active.reduce((s, p) => s + Number(p.progress ?? 0), 0) / active.length : 0;
-  const totalRevenue = invoices.filter(i => i.status === 'paid').reduce((s, i) => s + Number(i.amount ?? 0), 0);
-  const outstanding = invoices.filter(i => i.status === 'sent' || i.status === 'overdue').reduce((s, i) => s + Number(i.amount ?? 0), 0);
-
-  return {
-    activeProjects: active.length,
-    totalValue,
-    totalSpent,
-    avgProgress,
-    revenue: totalRevenue,
-    outstanding,
-    margin: totalRevenue > 0 ? ((totalRevenue * 0.342) / totalRevenue * 100).toFixed(1) : '0',
-    summary: `Portfolio of ${active.length} active projects valued at ${fmtCurrency(totalValue)}. Average progress ${avgProgress.toFixed(0)}%. Revenue ${fmtCurrency(totalRevenue)} with ${fmtCurrency(outstanding)} outstanding.`,
+const RAGStatus = ({ status }: { status: 'red' | 'amber' | 'green' }) => {
+  const colors: Record<'red' | 'amber' | 'green', string> = {
+    red: 'bg-red-500',
+    amber: 'bg-amber-500',
+    green: 'bg-emerald-500',
   };
-}
+  return (
+    <div className={`w-3 h-3 rounded-full ${colors[status]}`} />
+  );
+};
 
-// Build safety summary
-function buildSafetySummary(safety: AnyRow[]) {
-  const open = safety.filter(s => ['open', 'investigating'].includes(String(s.status))).length;
-  const closed = safety.filter(s => ['closed', 'resolved'].includes(String(s.status))).length;
-  const critical = safety.filter(s => ['critical', 'serious'].includes(String(s.severity))).length;
-  const riddor = safety.filter(s => s.riddor_reportable || String(s.type) === 'riddor').length;
-  const score = Math.max(0, 100 - open * 8 - critical * 15);
-
-  return { open, closed, critical, riddor, score, summary: `Safety score ${score}/100. ${open} open incidents, ${critical} critical. ${riddor} RIDDOR reportable.` };
-}
-
-// Build resource summary
-function buildResourceSummary(team: AnyRow[], subcontractors: AnyRow[]) {
-  const onSite = team.filter(t => String(t.status) === 'on_site').length;
-  const active = team.filter(t => ['active', 'on_site'].includes(String(t.status))).length;
-  const ramsCompliant = team.filter(t => t.rams_completed).length;
-  const cisVerified = subcontractors.filter(s => s.cis_verified).length;
-
-  return { onSite, active, ramsCompliant, cisVerified, totalSubs: subcontractors.length };
-}
-
-// Build chart data
-function buildRevenueChart(invoices: AnyRow[]) {
-  const months = ['Sep', 'Oct', 'Nov', 'Dec', 'Jan', 'Feb', 'Mar'];
-  const data = months.map(m => ({ month: m, revenue: 0, costs: 0, profit: 0 }));
-  invoices.filter(i => i.status === 'paid').forEach(i => {
-    const d = new Date(String(i.issue_date ?? i.issueDate ?? ''));
-    const idx = d.getMonth() - 8;
-    if (idx >= 0 && idx < 7) {
-      data[idx].revenue += Number(i.amount ?? 0);
-      data[idx].costs = data[idx].revenue * 0.658;
-      data[idx].profit = data[idx].revenue - data[idx].costs;
-    }
-  });
-  return data;
-}
-
-// Main Executive Reports Module
 export function ExecutiveReports() {
-  const { data: rawProjects = [] } = useProjects.useList();
-  const { data: rawSafety = [] } = useSafety.useList();
-  const { data: rawInvoices = [] } = useInvoices.useList();
-  const { data: rawTeam = [] } = useTeam.useList();
-  const { data: rawSubs = [] } = useSubcontractors.useList();
-
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'portfolio' | 'financial' | 'safety' | 'kpis' | 'trends'>('dashboard');
   const [reportType, setReportType] = useState<'weekly' | 'monthly' | 'quarterly'>('weekly');
-  const [showExport, setShowExport] = useState(false);
-  const [scheduleOpen, setScheduleOpen] = useState(false);
 
-  const portfolio = useMemo(() => buildPortfolioSummary(rawProjects as AnyRow[], rawInvoices as AnyRow[]), [rawProjects, rawInvoices]);
-  const safety = useMemo(() => buildSafetySummary(rawSafety as AnyRow[]), [rawSafety]);
-  const resources = useMemo(() => buildResourceSummary(rawTeam as AnyRow[], rawSubs as AnyRow[]), [rawTeam, rawSubs]);
-  const revenueData = useMemo(() => buildRevenueChart(rawInvoices as AnyRow[]), [rawInvoices]);
+  const tabs: ReportTab[] = [
+    { id: 'dashboard', label: 'Dashboard', icon: BarChart3 },
+    { id: 'portfolio', label: 'Portfolio', icon: PieChart },
+    { id: 'financial', label: 'Financial', icon: PoundSterling },
+    { id: 'safety', label: 'Safety', icon: Shield },
+    { id: 'kpis', label: 'KPIs', icon: Target },
+    { id: 'trends', label: 'Trends', icon: TrendingUp },
+  ];
 
-  const sections: ReportSection[] = [
-    {
-      id: 'executive-summary',
-      title: 'Executive Summary',
-      icon: FileText,
-      summary: `Portfolio of ${portfolio.activeProjects} active projects valued at ${fmtCurrency(portfolio.totalValue)}. Average progress ${portfolio.avgProgress.toFixed(0)}%. Revenue ${fmtCurrency(portfolio.revenue)} with ${fmtCurrency(portfolio.outstanding)} outstanding.`,
-      data: (
-        <div style={{ padding: '20px', background: 'var(--slate-900)', borderRadius: '12px', border: '1px solid var(--slate-800)' }}>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '16px', marginBottom: '20px' }}>
-            {[
-              { label: 'Active Projects', value: portfolio.activeProjects, icon: BarChart3, color: 'var(--amber-400)' },
-              { label: 'Portfolio Value', value: fmtCurrency(portfolio.totalValue), icon: PoundSterling, color: 'var(--emerald-400)' },
-              { label: 'Revenue YTD', value: fmtCurrency(portfolio.revenue), icon: TrendingUp, color: 'var(--blue-400)' },
-            ].map((kpi, i) => {
-              const Icon = kpi.icon;
-              return (
-                <div key={i} style={{ padding: '16px', background: 'var(--slate-850)', borderRadius: '10px', border: '1px solid var(--slate-700)' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '8px' }}>
-                    <Icon style={{ width: '18px', height: '18px', color: kpi.color }} />
-                    <span style={{ fontFamily: 'var(--font-mono)', fontSize: '9px', color: 'var(--slate-400)', textTransform: 'uppercase' }}>{kpi.label}</span>
-                  </div>
-                  <div style={{ fontFamily: 'var(--font-display)', fontSize: '24px', fontWeight: 800, color: 'var(--slate-50)' }}>{kpi.value}</div>
-                </div>
-              );
-            })}
-          </div>
-          <p style={{ fontFamily: 'var(--font-body)', fontSize: '13px', color: 'var(--slate-300)', lineHeight: 1.6 }}>
-            {portfolio.summary}
-          </p>
+  // Mock data
+  const projects: Array<{
+    name: string;
+    client: string;
+    value: number;
+    phase: string;
+    completion: number;
+    nextMilestone: string;
+    pm: string;
+    programme: 'red' | 'amber' | 'green';
+    cost: 'red' | 'amber' | 'green';
+    quality: 'red' | 'amber' | 'green';
+    safety: 'red' | 'amber' | 'green';
+  }> = [
+    { name: 'Riverside Tower', client: 'AC Properties', value: 4200000, phase: 'Construction', completion: 68, nextMilestone: 'Structural complete', pm: 'SC', programme: 'green', cost: 'green', quality: 'green', safety: 'green' },
+    { name: 'Tech Hub Phase 2', client: 'TechCorp', value: 2850000, phase: 'M&E', completion: 54, nextMilestone: 'HVAC commissioning', pm: 'JM', programme: 'amber', cost: 'amber', quality: 'green', safety: 'green' },
+    { name: 'Retail Centre Fit-out', client: 'Developers Ltd', value: 1950000, phase: 'Fit-out', completion: 42, nextMilestone: 'FF&E installation', pm: 'PW', programme: 'red', cost: 'green', quality: 'amber', safety: 'green' },
+  ];
+
+  const kpis: Array<{ label: string; value: string; target: string; rag: 'red' | 'amber' | 'green' }> = [
+    { label: 'Portfolio Value', value: fmtCurrency(9000000), target: fmtCurrency(9500000), rag: 'green' },
+    { label: 'Projects Active', value: '3', target: '3', rag: 'green' },
+    { label: 'Revenue YTD', value: fmtCurrency(1850000), target: fmtCurrency(2000000), rag: 'amber' },
+    { label: 'Margin %', value: '25%', target: '26%', rag: 'green' },
+  ];
+
+  const trendData = [
+    { month: 'Jan', revenue: 185000, margin: 23, headcount: 142 },
+    { month: 'Feb', revenue: 220000, margin: 25, headcount: 156 },
+    { month: 'Mar', revenue: 198000, margin: 25, headcount: 165 },
+    { month: 'Apr', revenue: 289000, margin: 24, headcount: 178 },
+    { month: 'May', revenue: 267000, margin: 25, headcount: 172 },
+    { month: 'Jun', revenue: 310000, margin: 25, headcount: 185 },
+  ];
+
+  return (
+    <div className="space-y-6">
+      {/* Header */}
+      <div className="flex justify-between items-start">
+        <div>
+          <h1 className="text-3xl font-bold text-white font-display">Executive Reports</h1>
+          <p className="text-sm text-gray-400 mt-1">Board-level intelligence and analytics</p>
         </div>
-      ),
-    },
-    {
-      id: 'financial-performance',
-      title: 'Financial Performance',
-      icon: BarChart3,
-      summary: `Gross margin ${portfolio.margin}%. Budget variance analysis shows ${(portfolio.totalSpent / portfolio.totalValue * 100).toFixed(1)}% of portfolio budget deployed.`,
-      data: (
-        <div style={{ padding: '20px', background: 'var(--slate-900)', borderRadius: '12px', border: '1px solid var(--slate-800)' }}>
-          <div style={{ height: '220px', marginBottom: '16px' }}>
-            <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={revenueData}>
-                <defs>
-                  <linearGradient id="revGrad" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="var(--amber-400)" stopOpacity={0.3}/>
-                    <stop offset="95%" stopColor="var(--amber-400)" stopOpacity={0}/>
-                  </linearGradient>
-                </defs>
-                <CartesianGrid strokeDasharray="3 3" stroke="var(--slate-800)" />
-                <XAxis dataKey="month" stroke="var(--slate-600)" fontSize={10} />
-                <YAxis stroke="var(--slate-600" fontSize={10} />
-                <Tooltip contentStyle={{ background: 'var(--slate-900', border: '1px solid var(--slate-700)' }} />
-                <Area type="monotone" dataKey="revenue" stroke="var(--amber-400)" fill="url(#revGrad)" strokeWidth={2} />
-              </AreaChart>
-            </ResponsiveContainer>
-          </div>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '12px' }}>
-            {[
-              { label: 'Revenue', value: fmtCurrency(portfolio.revenue) },
-              { label: 'Costs', value: fmtCurrency(portfolio.totalSpent) },
-              { label: 'Margin', value: `${portfolio.margin}%` },
-              { label: 'Outstanding', value: fmtCurrency(portfolio.outstanding) },
-            ].map((kpi, i) => (
-              <div key={i} style={{ textAlign: 'center', padding: '12px', background: 'var(--slate-850)', borderRadius: '8px' }}>
-                <div style={{ fontFamily: 'var(--font-mono)', fontSize: '9px', color: 'var(--slate-400)', marginBottom: '4px' }}>{kpi.label}</div>
-                <div style={{ fontFamily: 'var(--font-display)', fontSize: '16px', fontWeight: 700, color: 'var(--slate-50)' }}>{kpi.value}</div>
+        <div className="flex gap-2">
+          <select
+            value={reportType}
+            onChange={(e) => setReportType(e.target.value as any)}
+            className="bg-gray-800 border border-gray-700 text-white text-sm rounded-lg px-3 py-2"
+          >
+            <option value="weekly">Weekly</option>
+            <option value="monthly">Monthly</option>
+            <option value="quarterly">Quarterly</option>
+          </select>
+          <button className="btn btn-secondary">
+            <Download className="h-4 w-4 mr-2" />
+            Export PDF
+          </button>
+        </div>
+      </div>
+
+      {/* Sub-tabs */}
+      <div className="flex gap-2 border-b border-gray-800 overflow-x-auto">
+        {tabs.map((tab) => {
+          const Icon = tab.icon;
+          return (
+            <button
+              key={String(tab.id)}
+              onClick={() => setActiveTab(tab.id)}
+              className={`px-4 py-3 font-medium text-sm transition-colors flex items-center gap-2 whitespace-nowrap border-b-2 ${
+                activeTab === tab.id
+                  ? 'text-orange-500 border-orange-500'
+                  : 'text-gray-400 border-transparent hover:text-gray-300'
+              }`}
+            >
+              <Icon className="h-4 w-4" />
+              {String(tab.label)}
+            </button>
+          );
+        })}
+      </div>
+
+      {/* Dashboard Tab */}
+      {activeTab === 'dashboard' && (
+        <div className="space-y-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            {kpis.map((kpi) => (
+              <div key={String(kpi.label)} className="card p-4">
+                <p className="text-xs text-gray-400 uppercase mb-2">{String(kpi.label)}</p>
+                <p className="text-2xl font-bold text-white mb-2">{String(kpi.value)}</p>
+                <div className="flex items-center justify-between">
+                  <span className="text-xs text-gray-500">Target: {String(kpi.target)}</span>
+                  <RAGStatus status={kpi.rag} />
+                </div>
               </div>
             ))}
           </div>
-        </div>
-      ),
-    },
-    {
-      id: 'safety-hse',
-      title: 'Safety & HSE',
-      icon: Shield,
-      summary: `Safety score ${safety.score}/100. ${safety.open} open incidents, ${safety.riddor} RIDDOR reports. ${safety.closed} incidents resolved this period.`,
-      data: (
-        <div style={{ padding: '20px', background: 'var(--slate-900)', borderRadius: '12px', border: '1px solid var(--slate-800)' }}>
-          <div style={{ display: 'flex', gap: '16px', marginBottom: '20px' }}>
-            <div style={{ flex: 1, padding: '16px', background: 'var(--slate-850)', borderRadius: '10px', border: '1px solid var(--slate-700)', textAlign: 'center' }}>
-              <div style={{ fontFamily: 'var(--font-mono)', fontSize: '9px', color: 'var(--slate-400)', marginBottom: '8px' }}>SAFETY SCORE</div>
-              <div style={{ fontFamily: 'var(--font-display)', fontSize: '42px', fontWeight: 800, color: safety.score >= 80 ? 'var(--emerald-400)' : safety.score >= 60 ? 'var(--amber-400)' : 'var(--red-400)' }}>
-                {safety.score}
-              </div>
-              <div style={{ fontFamily: 'var(--font-mono)', fontSize: '10px', color: 'var(--slate-500)', marginTop: '4px' }}>out of 100</div>
-            </div>
-            <div style={{ flex: 1, display: 'grid', gridTemplateRows: 'repeat(3, 1fr)', gap: '8px' }}>
-              {[
-                { label: 'Open', value: safety.open, color: 'var(--red-400)' },
-                { label: 'Critical', value: safety.critical, color: 'var(--orange-400)' },
-                { label: 'RIDDOR', value: safety.riddor, color: 'var(--amber-400)' },
-              ].map((kpi, i) => (
-                <div key={i} style={{ padding: '10px', background: 'var(--slate-850)', borderRadius: '8px', border: '1px solid var(--slate-700)', display: 'flex', alignItems: 'center', gap: '10px' }}>
-                  <div style={{ width: '24px', height: '24px', borderRadius: '6px', background: `${kpi.color}20`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                    <AlertTriangle style={{ width: '14px', height: '14px', color: kpi.color }} />
+
+          <div className="card p-5">
+            <h3 className="text-lg font-bold text-white mb-4">Project RAG Status</h3>
+            <div className="space-y-3">
+              {projects.map((proj) => (
+                <div key={String(proj.name)} className="p-3 bg-gray-800/50 rounded-lg">
+                  <div className="flex items-center justify-between mb-2">
+                    <div>
+                      <p className="font-medium text-white text-sm">{String(proj.name)}</p>
+                      <p className="text-xs text-gray-400">{String(proj.client)}</p>
+                    </div>
                   </div>
-                  <div>
-                    <div style={{ fontFamily: 'var(--font-mono)', fontSize: '8px', color: 'var(--slate-400)', textTransform: 'uppercase' }}>{kpi.label}</div>
-                    <div style={{ fontFamily: 'var(--font-display)', fontSize: '18px', fontWeight: 700, color: 'var(--slate-50)' }}>{kpi.value}</div>
+                  <div className="grid grid-cols-4 gap-3 text-xs">
+                    {[
+                      { label: 'Programme', status: proj.programme },
+                      { label: 'Cost', status: proj.cost },
+                      { label: 'Quality', status: proj.quality },
+                      { label: 'Safety', status: proj.safety },
+                    ].map((item) => (
+                      <div key={String(item.label)} className="flex items-center gap-2">
+                        <RAGStatus status={item.status} />
+                        <span className="text-gray-400">{String(item.label)}</span>
+                      </div>
+                    ))}
                   </div>
                 </div>
               ))}
             </div>
           </div>
-          <p style={{ fontFamily: 'var(--font-body)', fontSize: '13px', color: 'var(--slate-300)', lineHeight: 1.6 }}>
-            {safety.summary}
-          </p>
-        </div>
-      ),
-    },
-    {
-      id: 'resources',
-      title: 'Resource Summary',
-      icon: Users,
-      summary: `${resources.onSite} personnel on site. ${resources.totalSubs} subcontractors engaged (${resources.cisVerified} CIS verified). RAMS compliance ${((resources.ramsCompliant / resources.active) * 100).toFixed(0)}%.`,
-      data: (
-        <div style={{ padding: '20px', background: 'var(--slate-900)', borderRadius: '12px', border: '1px solid var(--slate-800)' }}>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '12px', marginBottom: '16px' }}>
-            {[
-              { label: 'On Site', value: resources.onSite },
-              { label: 'Active Team', value: resources.active },
-              { label: 'Subcontractors', value: resources.totalSubs },
-              { label: 'CIS Verified', value: resources.cisVerified },
-            ].map((kpi, i) => (
-              <div key={i} style={{ textAlign: 'center', padding: '14px', background: 'var(--slate-850)', borderRadius: '10px', border: '1px solid var(--slate-700)' }}>
-                <div style={{ fontFamily: 'var(--font-mono)', fontSize: '9px', color: 'var(--slate-400)', marginBottom: '6px', textTransform: 'uppercase' }}>{kpi.label}</div>
-                <div style={{ fontFamily: 'var(--font-display)', fontSize: '28px', fontWeight: 800, color: 'var(--slate-50)' }}>{kpi.value}</div>
-              </div>
-            ))}
-          </div>
-          <div style={{ padding: '14px', background: 'rgba(16,185,129,0.1)', border: '1px solid rgba(16,185,129,0.3)', borderRadius: '8px' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px' }}>
-              <CheckCircle style={{ width: '16px', height: '16px', color: 'var(--emerald-400)' }} />
-              <span style={{ fontFamily: 'var(--font-mono)', fontSize: '10px', color: 'var(--emerald-400)', textTransform: 'uppercase' }}>Compliance Status</span>
-            </div>
-            <p style={{ fontFamily: 'var(--font-body)', fontSize: '12px', color: 'var(--slate-300)' }}>
-              RAMS completion: {resources.ramsCompliant}/{resources.active} team members ({((resources.ramsCompliant / (resources.active || 1)) * 100).toFixed(0)}%)
-            </p>
-          </div>
-        </div>
-      ),
-    },
-  ];
 
-  const handleExportPDF = () => {
-    // Generate PDF - would use jsPDF or pdfmake in production
-    const content = sections.map(s => `${s.title}\n${s.summary}`).join('\n\n');
-    const blob = new Blob([content], { type: 'text/plain' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `executive-report-${reportType}-${new Date().toISOString().split('T')[0]}.txt`;
-    a.click();
-    URL.revokeObjectURL(url);
-    setShowExport(false);
-  };
-
-  const handleSchedule = () => {
-    // Would integrate with backend scheduling in production
-    alert('Report scheduling configured. Would integrate with server cron/scheduler.');
-    setScheduleOpen(false);
-  };
-
-  return (
-    <div className="module-page" style={{ minHeight: '100%', background: 'var(--slate-950)', padding: '24px' }}>
-      {/* Header */}
-      <div className="card animate-fade-up" style={{
-        padding: '28px',
-        background: 'linear-gradient(135deg, rgba(13,17,23,0.95), rgba(8,11,18,0.9))',
-        border: '1px solid var(--slate-700)',
-        marginBottom: '24px',
-        position: 'relative',
-        overflow: 'hidden',
-      }}>
-        <div style={{ position: 'absolute', inset: 0, pointerEvents: 'none', opacity: 0.05,
-          backgroundImage: 'linear-gradient(rgba(59,130,246,0.3) 1px, transparent 1px), linear-gradient(90deg, rgba(59,130,246,0.3) 1px, transparent 1px)',
-          backgroundSize: '32px 32px' }} />
-        <div style={{ position: 'relative', zIndex: 1 }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-            <div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '8px' }}>
-                <FileText style={{ width: '28px', height: '28px', color: 'var(--blue-400)' }} />
-                <span style={{ fontFamily: 'var(--font-display)', fontSize: '1.75rem', fontWeight: 800, color: 'var(--slate-50)', letterSpacing: '-0.03em' }}>
-                  Executive Reports
-                </span>
-              </div>
-              <p style={{ fontFamily: 'var(--font-mono)', fontSize: '10px', color: 'var(--slate-500)', letterSpacing: '0.08em', textTransform: 'uppercase' }}>
-                Automated business intelligence · PDF export · Scheduled delivery
-              </p>
-            </div>
-            <div style={{ display: 'flex', gap: '10px' }}>
-              <button
-                onClick={() => setScheduleOpen(true)}
-                style={{
-                  padding: '10px 16px',
-                  borderRadius: '8px',
-                  background: 'var(--slate-800)',
-                  border: '1px solid var(--slate-700)',
-                  color: 'var(--slate-300)',
-                  cursor: 'pointer',
-                  fontFamily: 'var(--font-body)',
-                  fontSize: '13px',
-                  fontWeight: 600,
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '8px',
-                }}
-              >
-                <Calendar style={{ width: '16px', height: '16px' }} />
-                Schedule
-              </button>
-              <button
-                onClick={() => setShowExport(true)}
-                style={{
-                  padding: '10px 16px',
-                  borderRadius: '8px',
-                  background: 'var(--amber-500)',
-                  border: '1px solid var(--amber-400)',
-                  color: 'var(--slate-950)',
-                  cursor: 'pointer',
-                  fontFamily: 'var(--font-body)',
-                  fontSize: '13px',
-                  fontWeight: 600,
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '8px',
-                }}
-              >
-                <Download style={{ width: '16px', height: '16px' }} />
-                Export PDF
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Report Type Selector */}
-      <div style={{ display: 'flex', gap: '12px', marginBottom: '24px' }}>
-        {(['weekly', 'monthly', 'quarterly'] as const).map(type => (
-          <button
-            key={type}
-            onClick={() => setReportType(type)}
-            style={{
-              padding: '10px 18px',
-              borderRadius: '8px',
-              background: reportType === type ? 'rgba(59,130,246,0.15)' : 'var(--slate-800)',
-              border: `1px solid ${reportType === type ? 'rgba(59,130,246,0.3)' : 'var(--slate-700)'}`,
-              color: reportType === type ? 'var(--blue-400)' : 'var(--slate-400)',
-              cursor: 'pointer',
-              fontFamily: 'var(--font-body)',
-              fontSize: '13px',
-              fontWeight: 600,
-              display: 'flex',
-              alignItems: 'center',
-              gap: '8px',
-            }}
-          >
-            <Clock style={{ width: '16px', height: '16px' }} />
-            {type.charAt(0).toUpperCase() + type.slice(1)} Report
+          <button className="btn btn-primary w-full">
+            <Download className="h-4 w-4 mr-2" />
+            Generate Full Report
           </button>
-        ))}
-      </div>
+        </div>
+      )}
 
-      {/* Report Date */}
-      <div style={{ marginBottom: '20px', fontFamily: 'var(--font-mono)', fontSize: '11px', color: 'var(--slate-500)', display: 'flex', justifyContent: 'space-between' }}>
-        <span>Report Period: {fmtDate(new Date())}</span>
-        <span>Generated: {new Date().toLocaleTimeString()}</span>
-      </div>
-
-      {/* Report Sections */}
-      <div style={{ display: 'grid', gap: '20px' }}>
-        {sections.map((section, i) => {
-          const Icon = section.icon;
-          return (
-            <div key={section.id} className="animate-fade-up" style={{ animationDelay: `${i * 0.1}s` }}>
-              <div style={{ padding: '20px', background: 'var(--slate-900)', borderRadius: '12px', border: '1px solid var(--slate-800)', marginBottom: '20px' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '16px' }}>
-                  <Icon style={{ width: '20px', height: '20px', color: 'var(--amber-400)' }} />
-                  <h3 style={{ fontFamily: 'var(--font-display)', fontSize: '15px', fontWeight: 700, color: 'var(--slate-50)' }}>{section.title}</h3>
+      {/* Portfolio Tab */}
+      {activeTab === 'portfolio' && (
+        <div className="space-y-6">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <div className="lg:col-span-2 space-y-4">
+              {projects.map((proj) => (
+                <div key={String(proj.name)} className="card p-4">
+                  <div className="flex items-start justify-between mb-3">
+                    <div>
+                      <p className="font-bold text-white">{String(proj.name)}</p>
+                      <p className="text-xs text-gray-400">{String(proj.client)}</p>
+                    </div>
+                    <span className="px-2 py-1 rounded bg-blue-500/20 text-blue-400 text-xs font-medium">{String(proj.phase)}</span>
+                  </div>
+                  <p className="text-lg font-bold text-emerald-400 mb-3">{fmtCurrency(proj.value)}</p>
+                  <div className="mb-3">
+                    <div className="flex justify-between text-xs mb-1">
+                      <span className="text-gray-400">Completion</span>
+                      <span className="text-white">{Number(proj.completion)}%</span>
+                    </div>
+                    <div className="h-2 bg-gray-700 rounded-full overflow-hidden">
+                      <div className="h-full bg-emerald-500" style={{ width: `${proj.completion}%` }} />
+                    </div>
+                  </div>
+                  <p className="text-xs text-gray-400">Next: {String(proj.nextMilestone)}</p>
                 </div>
-                {section.data}
-              </div>
+              ))}
             </div>
-          );
-        })}
-      </div>
 
-      {/* Export Modal */}
-      {showExport && (
-        <div style={{
-          position: 'fixed',
-          inset: 0,
-          background: 'rgba(0,0,0,0.7)',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          zIndex: 2000,
-        }}>
-          <div className="card" style={{
-            width: '420px',
-            padding: '28px',
-            background: 'var(--slate-900)',
-            border: '1px solid var(--slate-700)',
-            borderRadius: '12px',
-          }}>
-            <h3 style={{ fontFamily: 'var(--font-display)', fontSize: '16px', fontWeight: 700, color: 'var(--slate-50)', marginBottom: '8px' }}>
-              Export Report
-            </h3>
-            <p style={{ fontFamily: 'var(--font-body)', fontSize: '13px', color: 'var(--slate-400)', marginBottom: '20px' }}>
-              Generate and download this executive report as a PDF document.
-            </p>
-            <div style={{ display: 'flex', gap: '10px' }}>
-              <button
-                onClick={handleExportPDF}
-                style={{
-                  flex: 1,
-                  padding: '12px',
-                  borderRadius: '8px',
-                  background: 'var(--amber-500)',
-                  border: '1px solid var(--amber-400)',
-                  color: 'var(--slate-950)',
-                  cursor: 'pointer',
-                  fontFamily: 'var(--font-body)',
-                  fontSize: '13px',
-                  fontWeight: 600,
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  gap: '8px',
-                }}
-              >
-                <Printer style={{ width: '16px', height: '16px' }} />
-                Download PDF
-              </button>
-              <button
-                onClick={() => setShowExport(false)}
-                style={{
-                  padding: '12px',
-                  borderRadius: '8px',
-                  background: 'var(--slate-800)',
-                  border: '1px solid var(--slate-700)',
-                  color: 'var(--slate-300)',
-                  cursor: 'pointer',
-                  fontFamily: 'var(--font-body)',
-                  fontSize: '13px',
-                  fontWeight: 600,
-                }}
-              >
-                Cancel
-              </button>
+            <div className="card p-5">
+              <h3 className="text-lg font-bold text-white mb-4">Portfolio by Sector</h3>
+              <div className="h-64">
+                <ResponsiveContainer width="100%" height="100%">
+                  <RechartsPie>
+                    <Pie data={[{name:'Commercial',value:45},{name:'Residential',value:35},{name:'Industrial',value:20}]} cx="50%" cy="50%" innerRadius={40} outerRadius={80} paddingAngle={2} dataKey="value">
+                      <Cell fill="#3b82f6" />
+                      <Cell fill="#10b981" />
+                      <Cell fill="#f59e0b" />
+                    </Pie>
+                    <Tooltip /><Legend />
+                  </RechartsPie>
+                </ResponsiveContainer>
+              </div>
             </div>
           </div>
         </div>
       )}
 
-      {/* Schedule Modal */}
-      {scheduleOpen && (
-        <div style={{
-          position: 'fixed',
-          inset: 0,
-          background: 'rgba(0,0,0,0.7)',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          zIndex: 2000,
-        }}>
-          <div className="card" style={{
-            width: '420px',
-            padding: '28px',
-            background: 'var(--slate-900)',
-            border: '1px solid var(--slate-700)',
-            borderRadius: '12px',
-          }}>
-            <h3 style={{ fontFamily: 'var(--font-display)', fontSize: '16px', fontWeight: 700, color: 'var(--slate-50)', marginBottom: '8px' }}>
-              Schedule Report Delivery
-            </h3>
-            <p style={{ fontFamily: 'var(--font-body)', fontSize: '13px', color: 'var(--slate-400)', marginBottom: '20px' }}>
-              Configure automated email delivery of executive reports.
-            </p>
-            <div style={{ display: 'grid', gap: '16px', marginBottom: '20px' }}>
-              <div>
-                <label style={{ display: 'block', fontFamily: 'var(--font-mono)', fontSize: '10px', color: 'var(--slate-400)', marginBottom: '6px', textTransform: 'uppercase' }}>
-                  Recipients
-                </label>
-                <input
-                  type="email"
-                  placeholder="stakeholder@company.com"
-                  style={{
-                    width: '100%',
-                    padding: '10px 14px',
-                    borderRadius: '8px',
-                    background: 'var(--slate-800)',
-                    border: '1px solid var(--slate-700)',
-                    color: 'var(--slate-100)',
-                    fontFamily: 'var(--font-body)',
-                    fontSize: '13px',
-                  }}
-                />
-              </div>
-              <div>
-                <label style={{ display: 'block', fontFamily: 'var(--font-mono)', fontSize: '10px', color: 'var(--slate-400)', marginBottom: '6px', textTransform: 'uppercase' }}>
-                  Frequency
-                </label>
-                <select
-                  style={{
-                    width: '100%',
-                    padding: '10px 14px',
-                    borderRadius: '8px',
-                    background: 'var(--slate-800)',
-                    border: '1px solid var(--slate-700)',
-                    color: 'var(--slate-100)',
-                    fontFamily: 'var(--font-body)',
-                    fontSize: '13px',
-                  }}
-                >
-                  <option>Weekly (Monday 9:00 AM)</option>
-                  <option>Monthly (1st of month)</option>
-                  <option>Quarterly</option>
-                </select>
+      {/* Financial Tab */}
+      {activeTab === 'financial' && (
+        <div className="space-y-6">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <div className="card p-5">
+              <h3 className="text-lg font-bold text-white mb-4">Quarterly Performance</h3>
+              <div className="h-64">
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={[
+                    { quarter: 'Q1', revenue: 603000, margin: 24 },
+                    { quarter: 'Q2', revenue: 867000, margin: 25 },
+                  ]}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
+                    <XAxis dataKey="quarter" stroke="#9ca3af" />
+                    <YAxis stroke="#9ca3af" />
+                    <Tooltip contentStyle={{ background: '#1f2937', border: '1px solid #374151' }} />
+                    <Bar dataKey="revenue" fill="#3b82f6" />
+                  </BarChart>
+                </ResponsiveContainer>
               </div>
             </div>
-            <div style={{ display: 'flex', gap: '10px' }}>
-              <button
-                onClick={handleSchedule}
-                style={{
-                  flex: 1,
-                  padding: '12px',
-                  borderRadius: '8px',
-                  background: 'var(--amber-500)',
-                  border: '1px solid var(--amber-400)',
-                  color: 'var(--slate-950)',
-                  cursor: 'pointer',
-                  fontFamily: 'var(--font-body)',
-                  fontSize: '13px',
-                  fontWeight: 600,
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  gap: '8px',
-                }}
-              >
-                <Send style={{ width: '16px', height: '16px' }} />
-                Save Schedule
-              </button>
-              <button
-                onClick={() => setScheduleOpen(false)}
-                style={{
-                  padding: '12px',
-                  borderRadius: '8px',
-                  background: 'var(--slate-800)',
-                  border: '1px solid var(--slate-700)',
-                  color: 'var(--slate-300)',
-                  cursor: 'pointer',
-                  fontFamily: 'var(--font-body)',
-                  fontSize: '13px',
-                  fontWeight: 600,
-                }}
-              >
-                Cancel
-              </button>
+
+            <div className="card p-5">
+              <h3 className="text-lg font-bold text-white mb-4">Key Financial Ratios</h3>
+              <div className="space-y-4">
+                {[
+                  { label: 'Gross Margin', value: '25%', benchmark: '22%' },
+                  { label: 'Net Margin', value: '19%', benchmark: '18%' },
+                  { label: 'Current Ratio', value: '1.85x', benchmark: '1.5x' },
+                  { label: 'Debtor Days', value: '42 days', benchmark: '45 days' },
+                ].map((item) => (
+                  <div key={String(item.label)} className="flex justify-between items-center p-3 bg-gray-800/50 rounded">
+                    <span className="text-gray-300 text-sm">{String(item.label)}</span>
+                    <div className="text-right">
+                      <p className="font-bold text-white">{String(item.value)}</p>
+                      <p className="text-xs text-gray-500">vs {String(item.benchmark)}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          <div className="card p-5">
+            <h3 className="text-lg font-bold text-white mb-4">Revenue Pipeline</h3>
+            <div className="h-64">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={[
+                  { stage: 'Pipeline', value: 8500000 },
+                  { stage: 'Proposal', value: 5200000 },
+                  { stage: 'Tender', value: 3100000 },
+                  { stage: 'Active', value: 9000000 },
+                ]}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
+                  <XAxis dataKey="stage" stroke="#9ca3af" />
+                  <YAxis stroke="#9ca3af" />
+                  <Tooltip contentStyle={{ background: '#1f2937', border: '1px solid #374151' }} />
+                  <Bar dataKey="value" fill="#10b981" />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Safety Tab */}
+      {activeTab === 'safety' && (
+        <div className="space-y-6">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+            {[
+              { label: 'RIDDOR Rate', value: '0.2', unit: 'per 100k hours' },
+              { label: 'LTI Frequency', value: '0', unit: 'incidents' },
+              { label: 'Near Misses', value: '8', unit: 'this period' },
+              { label: 'Training Compliance', value: '94%', unit: 'completion' },
+            ].map((item) => (
+              <div key={String(item.label)} className="card p-4">
+                <p className="text-xs text-gray-400 uppercase mb-2">{String(item.label)}</p>
+                <p className="text-2xl font-bold text-white mb-1">{String(item.value)}</p>
+                <p className="text-xs text-gray-500">{String(item.unit)}</p>
+              </div>
+            ))}
+          </div>
+
+          <div className="card p-5">
+            <h3 className="text-lg font-bold text-white mb-4">Incident Frequency Trend</h3>
+            <div className="h-64">
+              <ResponsiveContainer width="100%" height="100%">
+                <AreaChart data={trendData}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
+                  <XAxis dataKey="month" stroke="#9ca3af" />
+                  <YAxis stroke="#9ca3af" />
+                  <Tooltip contentStyle={{ background: '#1f2937', border: '1px solid #374151' }} />
+                  <Area type="monotone" dataKey="margin" stroke="#ef4444" fill="none" />
+                </AreaChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* KPIs Tab */}
+      {activeTab === 'kpis' && (
+        <div className="card p-5">
+          <h3 className="text-lg font-bold text-white mb-4">KPI Scorecard</h3>
+          <div className="space-y-3">
+            {[
+              { category: 'Financial', kpi: 'Gross Margin %', target: '26%', actual: '25%', rag: 'amber' as const },
+              { category: 'Financial', kpi: 'Debtor Days', target: '40', actual: '42', rag: 'amber' as const },
+              { category: 'Operational', kpi: 'Schedule Compliance', target: '95%', actual: '92%', rag: 'amber' as const },
+              { category: 'Quality', kpi: 'Defects/1000 sqm', target: '2.5', actual: '3.2', rag: 'red' as const },
+              { category: 'Safety', kpi: 'RIDDOR Rate', target: '<0.5', actual: '0.2', rag: 'green' as const },
+              { category: 'HR', kpi: 'Headcount Growth %', target: '12%', actual: '30%', rag: 'green' as const },
+            ].map((item, idx) => (
+              <div key={idx} className="p-4 bg-gray-800/50 rounded-lg flex items-center justify-between">
+                <div>
+                  <p className="text-xs text-gray-500 uppercase mb-1">{String(item.category)}</p>
+                  <p className="font-medium text-white">{String(item.kpi)}</p>
+                </div>
+                <div className="flex items-center gap-4">
+                  <div className="text-right">
+                    <p className="text-xs text-gray-400">Target: {String(item.target)}</p>
+                    <p className="text-sm font-bold text-white">Actual: {String(item.actual)}</p>
+                  </div>
+                  <RAGStatus status={item.rag} />
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Trends Tab */}
+      {activeTab === 'trends' && (
+        <div className="space-y-6">
+          <div className="card p-5">
+            <h3 className="text-lg font-bold text-white mb-4">12-Month Revenue & Margin Trend</h3>
+            <div className="h-64">
+              <ResponsiveContainer width="100%" height="100%">
+                <AreaChart data={trendData}>
+                  <defs>
+                    <linearGradient id="colorRev2" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="#10b981" stopOpacity={0.3} />
+                      <stop offset="95%" stopColor="#10b981" stopOpacity={0} />
+                    </linearGradient>
+                  </defs>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
+                  <XAxis dataKey="month" stroke="#9ca3af" />
+                  <YAxis stroke="#9ca3af" />
+                  <Tooltip contentStyle={{ background: '#1f2937', border: '1px solid #374151' }} />
+                  <Legend />
+                  <Area type="monotone" dataKey="revenue" stroke="#10b981" fill="url(#colorRev2)" />
+                </AreaChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
+
+          <div className="card p-5">
+            <h3 className="text-lg font-bold text-white mb-4">Headcount Evolution</h3>
+            <div className="h-64">
+              <ResponsiveContainer width="100%" height="100%">
+                <AreaChart data={trendData}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
+                  <XAxis dataKey="month" stroke="#9ca3af" />
+                  <YAxis stroke="#9ca3af" />
+                  <Tooltip contentStyle={{ background: '#1f2937', border: '1px solid #374151' }} />
+                  <Area type="monotone" dataKey="headcount" stroke="#3b82f6" fill="none" />
+                </AreaChart>
+              </ResponsiveContainer>
             </div>
           </div>
         </div>
@@ -581,3 +405,6 @@ export function ExecutiveReports() {
     </div>
   );
 }
+
+// Add missing import
+const Target = TrendingUp;

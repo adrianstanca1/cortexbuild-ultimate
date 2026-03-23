@@ -1,24 +1,31 @@
 import { useState } from 'react';
-import { Shield, Plus, Search, FileCheck, AlertTriangle, Clock, CheckCircle, Edit2, Trash2, X, ChevronDown, ChevronUp, Download } from 'lucide-react';
+import { Shield, Plus, Search, FileCheck, AlertTriangle, Clock, CheckCircle, Edit2, Trash2, X, ChevronDown, ChevronUp, Download, Award } from 'lucide-react';
 import { useRAMS } from '../../hooks/useData';
 import { toast } from 'sonner';
 
 type AnyRow = Record<string, unknown>;
 
-const STATUS_OPTIONS = ['Draft','Under Review','Approved','Expired','Superseded'];
+const STATUS_OPTIONS = ['Draft','Under Review','Approved','Superseded'];
+const DOCUMENT_TYPES = ['RAMS','Method Statement','Risk Assessment'];
 const ACTIVITY_TYPES = ['Groundworks','Structural Steel','Concrete Works','Roofing','Scaffolding','Electrical','Plumbing','MEWP Operations','Demolition','Excavation','Working at Height','Hot Works','Confined Space'];
-const RISK_LEVELS = ['Low','Medium','High','Critical'];
+const HAZARD_LEVELS = [1, 2, 3, 4, 5];
 
 const statusColour: Record<string,string> = {
   'Draft':'bg-gray-700 text-gray-400','Under Review':'bg-yellow-500/20 text-yellow-400',
-  'Approved':'bg-green-500/20 text-green-400','Expired':'bg-red-500/20 text-red-400','Superseded':'bg-gray-700 text-gray-500',
-};
-const riskColour: Record<string,string> = {
-  'Low':'bg-green-500/20 text-green-400','Medium':'bg-yellow-500/20 text-yellow-400',
-  'High':'bg-orange-500/20 text-orange-400','Critical':'bg-red-500/20 text-red-400',
+  'Approved':'bg-green-500/20 text-green-400','Superseded':'bg-gray-700 text-gray-500',
 };
 
-const emptyForm = { title:'',activity:'',project_id:'',risk_level:'Medium',status:'Draft',reviewed_by:'',approved_by:'',valid_from:'',valid_until:'',hazards:'',controls:'',ppe:'',version:'1',created_by:'',review_date:'',notes:'' };
+const emptyForm = { title:'',activity:'',project_id:'',doc_type:'RAMS',status:'Draft',reviewed_by:'',approved_by:'',valid_from:'',valid_until:'',hazards:'',controls:'',ppe:'',version:'1',created_by:'',review_date:'',likelihood:'3',severity:'3',notes:'' };
+
+const TEMPLATES = [
+  { name: 'Excavation', activity: 'Excavation', hazards: 'Collapse, Struck by equipment, Utilities damage' },
+  { name: 'Working at Height', activity: 'Working at Height', hazards: 'Falls, Dropped objects, Weather exposure' },
+  { name: 'Electrical', activity: 'Electrical', hazards: 'Electric shock, Arc flash, Electrocution' },
+  { name: 'Demolition', activity: 'Demolition', hazards: 'Structural collapse, Dust inhalation, Asbestos' },
+  { name: 'Hot Works', activity: 'Hot Works', hazards: 'Fire, Explosions, Thermal burns' },
+  { name: 'Confined Space', activity: 'Confined Space', hazards: 'Oxygen depletion, Gas poisoning, Entrapment' },
+  { name: 'Manual Handling', activity: 'Excavation', hazards: 'Back injury, Repetitive strain, Muscle damage' },
+];
 
 export function RAMS() {
   const { useList, useCreate, useUpdate, useDelete } = useRAMS;
@@ -28,15 +35,13 @@ export function RAMS() {
   const updateMutation = useUpdate();
   const deleteMutation = useDelete();
 
-  const [subTab, setSubTab] = useState('all');
+  const [subTab, setSubTab] = useState<'documents'|'method_statements'|'risk_assessments'|'templates'|'approvals'>('documents');
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('All');
   const [showModal, setShowModal] = useState(false);
   const [editing, setEditing] = useState<AnyRow | null>(null);
   const [form, setForm] = useState({ ...emptyForm });
   const [expanded, setExpanded] = useState<string | null>(null);
-
-  function setTab(key: string, filter: string) { setSubTab(key); setStatusFilter(filter); }
 
   const filtered = rams.filter(r => {
     const title = String(r.title ?? '').toLowerCase();
@@ -48,7 +53,7 @@ export function RAMS() {
 
   const approvedCount = rams.filter(r => r.status === 'Approved').length;
   const reviewCount = rams.filter(r => r.status === 'Under Review').length;
-  const expiredCount = rams.filter(r => r.status === 'Expired').length;
+  const draftCount = rams.filter(r => r.status === 'Draft').length;
   const expiringSoon = rams.filter(r => {
     const until = r.valid_until ?? r.validUntil;
     if (!until || r.status !== 'Approved') return false;
@@ -56,25 +61,29 @@ export function RAMS() {
     return diff >= 0 && diff <= 30;
   }).length;
 
+  const riskAssessments = rams.filter(r => r.doc_type === 'Risk Assessment' || !r.doc_type);
+
   function openCreate() { setEditing(null); setForm({ ...emptyForm }); setShowModal(true); }
   function openEdit(r: AnyRow) {
     setEditing(r);
     setForm({
       title: String(r.title ?? ''),
       activity: String(r.activity ?? ''),
-      project_id: String(r.projectId ?? r.project_id ?? ''),
-      risk_level: String(r.riskLevel ?? r.risk_level ?? 'Medium'),
+      project_id: String(r.project_id ?? ''),
+      doc_type: String(r.doc_type ?? 'RAMS'),
       status: String(r.status ?? 'Draft'),
-      reviewed_by: String(r.reviewedBy ?? r.reviewed_by ?? ''),
-      approved_by: String(r.approvedBy ?? r.approved_by ?? ''),
-      valid_from: String(r.validFrom ?? r.valid_from ?? ''),
-      valid_until: String(r.validUntil ?? r.valid_until ?? ''),
+      reviewed_by: String(r.reviewed_by ?? ''),
+      approved_by: String(r.approved_by ?? ''),
+      valid_from: String(r.valid_from ?? ''),
+      valid_until: String(r.valid_until ?? ''),
       hazards: String(r.hazards ?? ''),
       controls: String(r.controls ?? ''),
       ppe: String(r.ppe ?? ''),
       version: String(r.version ?? '1'),
-      created_by: String(r.created_by ?? r.createdBy ?? ''),
-      review_date: String(r.review_date ?? r.reviewDate ?? ''),
+      created_by: String(r.created_by ?? ''),
+      review_date: String(r.review_date ?? ''),
+      likelihood: String(r.likelihood ?? '3'),
+      severity: String(r.severity ?? '3'),
       notes: String(r.notes ?? ''),
     });
     setShowModal(true);
@@ -82,19 +91,35 @@ export function RAMS() {
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (editing) { await updateMutation.mutateAsync({ id: String(editing.id), data: form }); toast.success('RAMS updated'); }
-    else { await createMutation.mutateAsync(form); toast.success('RAMS created'); }
+    if (editing) {
+      await updateMutation.mutateAsync({ id: String(editing.id), data: form });
+      toast.success('RAMS updated');
+    } else {
+      await createMutation.mutateAsync(form);
+      toast.success('RAMS created');
+    }
     setShowModal(false);
   }
 
   async function handleDelete(id: string) {
     if (!confirm('Delete this RAMS document?')) return;
-    await deleteMutation.mutateAsync(id); toast.success('RAMS deleted');
+    await deleteMutation.mutateAsync(id);
+    toast.success('RAMS deleted');
   }
 
   async function approve(r: AnyRow) {
     await updateMutation.mutateAsync({ id: String(r.id), data: { status: 'Approved' } });
     toast.success('RAMS approved');
+  }
+
+  function useTemplate(template: typeof TEMPLATES[0]) {
+    setEditing(null);
+    setForm({
+      ...emptyForm,
+      activity: template.activity,
+      hazards: template.hazards,
+    });
+    setShowModal(true);
   }
 
   const inputCls = 'w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-orange-500';
@@ -105,19 +130,26 @@ export function RAMS() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-white">RAMS</h1>
-          <p className="text-sm text-gray-400 mt-1">Risk Assessment & Method Statements</p>
+          <p className="text-sm text-gray-400 mt-1">Risk assessments, method statements & approvals</p>
         </div>
         <button onClick={openCreate} className="flex items-center gap-2 px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 text-sm font-medium">
           <Plus size={16} /><span>New RAMS</span>
         </button>
       </div>
 
+      {expiringSoon > 0 && (
+        <div className="bg-red-500/10 border border-red-500/30 rounded-xl px-4 py-3 flex items-center gap-2">
+          <AlertTriangle size={16} className="text-red-400" />
+          <span className="text-sm font-medium text-red-300">{expiringSoon} document{expiringSoon !== 1 ? 's' : ''} expiring in ≤30 days</span>
+        </div>
+      )}
+
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         {[
+          { label: 'Total Documents', value: rams.length, icon: FileCheck, colour: 'text-blue-400', bg: 'bg-blue-500/10' },
           { label: 'Approved', value: approvedCount, icon: CheckCircle, colour: 'text-green-400', bg: 'bg-green-500/10' },
           { label: 'Under Review', value: reviewCount, icon: Clock, colour: 'text-yellow-400', bg: 'bg-yellow-500/10' },
-          { label: 'Expired', value: expiredCount, icon: AlertTriangle, colour: 'text-red-400', bg: 'bg-red-500/10' },
-          { label: 'Expiring Soon', value: expiringSoon, icon: FileCheck, colour: expiringSoon > 0 ? 'text-orange-400' : 'text-gray-400', bg: expiringSoon > 0 ? 'bg-orange-500/10' : 'bg-gray-800' },
+          { label: 'Expiring Soon', value: expiringSoon, icon: AlertTriangle, colour: expiringSoon > 0 ? 'text-red-400' : 'text-gray-400', bg: expiringSoon > 0 ? 'bg-red-500/10' : 'bg-gray-800' },
         ].map(kpi => (
           <div key={kpi.label} className="bg-gray-900 rounded-xl border border-gray-800 p-4">
             <div className="flex items-center gap-3">
@@ -130,84 +162,177 @@ export function RAMS() {
 
       <div className="flex gap-1 border-b border-gray-800">
         {([
-          { key: 'all', label: 'All RAMS', filter: 'All', count: rams.length, cls: '' },
-          { key: 'review', label: 'Under Review', filter: 'Under Review', count: reviewCount, cls: 'bg-amber-500/20 text-amber-400' },
-          { key: 'approved', label: 'Approved', filter: 'Approved', count: approvedCount, cls: 'bg-green-500/20 text-green-400' },
-          { key: 'expired', label: 'Expired', filter: 'Expired', count: expiredCount, cls: 'bg-red-500/20 text-red-400' },
-        ]).map(t => (
-          <button key={t.key} onClick={() => setTab(t.key, t.filter)}
+          { key: 'documents', label: 'Documents', count: rams.length },
+          { key: 'method_statements', label: 'Method Statements', count: rams.filter(r => r.doc_type === 'Method Statement').length },
+          { key: 'risk_assessments', label: 'Risk Assessments', count: riskAssessments.length },
+          { key: 'templates', label: 'Templates', count: TEMPLATES.length },
+          { key: 'approvals', label: 'Approvals', count: reviewCount },
+        ] as const).map(t => (
+          <button key={t.key} onClick={() => setSubTab(t.key)}
             className={`flex items-center gap-2 px-4 py-2.5 text-sm font-medium border-b-2 -mb-px transition-colors ${subTab === t.key ? 'border-orange-500 text-orange-500' : 'border-transparent text-gray-400 hover:text-gray-200'}`}>
             {t.label}
-            <span className={`text-xs px-1.5 py-0.5 rounded-full ${t.cls || 'bg-gray-800 text-gray-400'}`}>{t.count}</span>
+            <span className={`text-xs px-1.5 py-0.5 rounded-full ${t.key === 'approvals' && t.count > 0 ? 'bg-yellow-900/40 text-yellow-400' : 'bg-gray-800 text-gray-400'}`}>{t.count}</span>
           </button>
         ))}
       </div>
 
-      <div className="flex flex-wrap gap-3 items-center bg-gray-900 rounded-xl border border-gray-800 p-4">
-        <div className="relative flex-1 min-w-48">
-          <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500" />
-          <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search title or activity…" className={inputCls + ' pl-9'} />
+      {subTab !== 'templates' && subTab !== 'approvals' && (
+        <div className="flex flex-wrap gap-3 items-center bg-gray-900 rounded-xl border border-gray-800 p-4">
+          <div className="relative flex-1 min-w-48">
+            <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500" />
+            <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search title or activity…" className={inputCls + ' pl-9'} />
+          </div>
+          <select value={statusFilter} onChange={e => setStatusFilter(e.target.value)} className="bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-orange-500">
+            {['All', ...STATUS_OPTIONS].map(s => <option key={s}>{s}</option>)}
+          </select>
         </div>
-        <select value={statusFilter} onChange={e => setStatusFilter(e.target.value)} className="bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-orange-500">
-          {['All', ...STATUS_OPTIONS].map(s => <option key={s}>{s}</option>)}
-        </select>
-      </div>
+      )}
 
-      {isLoading ? (
-        <div className="flex justify-center py-20"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-500" /></div>
-      ) : (
+      {subTab === 'documents' && (
+        <>
+          {isLoading ? (
+            <div className="flex justify-center py-20"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-500" /></div>
+          ) : (
+            <div className="bg-gray-900 rounded-xl border border-gray-800 divide-y divide-gray-800">
+              {filtered.length === 0 && <div className="text-center py-16 text-gray-500"><Shield size={40} className="mx-auto mb-3 opacity-30" /><p>No RAMS documents found</p></div>}
+              {filtered.map(r => {
+                const id = String(r.id ?? '');
+                const isExp = expanded === id;
+                const validUntil = r.valid_until ?? r.validUntil;
+                const version = r.version;
+                return (
+                  <div key={id}>
+                    <div className="flex items-center gap-4 p-4 hover:bg-gray-800/50 cursor-pointer" onClick={() => setExpanded(isExp ? null : id)}>
+                      <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-purple-500 to-purple-600 flex items-center justify-center text-white flex-shrink-0 text-xs font-bold">
+                        {String(r.title ?? '?').slice(0, 2).toUpperCase()}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2">
+                          <p className="font-semibold text-white truncate">{String(r.title ?? 'Untitled')}</p>
+                          {!!version && <span className="text-xs bg-gray-700 text-gray-400 px-2 py-0.5 rounded-full">v{String(version)}</span>}
+                        </div>
+                        <p className="text-sm text-gray-400">{String(r.activity ?? '')} {validUntil ? `· Expires ${validUntil}` : ''}</p>
+                      </div>
+                      <div className="hidden md:flex items-center gap-2">
+                        <span className={`text-xs px-2 py-1 rounded-full font-medium ${statusColour[String(r.status ?? '')] ?? 'bg-gray-700 text-gray-400'}`}>{String(r.status ?? '')}</span>
+                      </div>
+                      <div className="flex items-center gap-1">
+                        {r.status === 'Under Review' && <button onClick={e => { e.stopPropagation(); approve(r); }} className="p-1.5 text-green-400 hover:bg-green-500/20 rounded" title="Approve"><CheckCircle size={14} /></button>}
+                        <button onClick={e => { e.stopPropagation(); openEdit(r); }} className="p-1.5 text-gray-500 hover:text-blue-400 hover:bg-blue-500/20 rounded"><Edit2 size={14} /></button>
+                        <button onClick={e => { e.stopPropagation(); handleDelete(id); }} className="p-1.5 text-gray-500 hover:text-red-400 hover:bg-red-500/20 rounded"><Trash2 size={14} /></button>
+                        <button className="p-1.5 text-gray-500 hover:text-gray-300 hover:bg-gray-700 rounded" title="Download"><Download size={14} /></button>
+                        {isExp ? <ChevronUp size={16} className="text-gray-500" /> : <ChevronDown size={16} className="text-gray-500" />}
+                      </div>
+                    </div>
+                    {isExp && (
+                      <div className="px-6 pb-4 bg-gray-800/30 space-y-3 text-sm border-t border-gray-800">
+                        {!!(r.hazards) && <div className="pt-3"><p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">Hazards Identified</p><p className="text-gray-300 whitespace-pre-wrap">{String(r.hazards)}</p></div>}
+                        {!!(r.controls) && <div><p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">Control Measures</p><p className="text-gray-300 whitespace-pre-wrap">{String(r.controls)}</p></div>}
+                        {!!(r.ppe) && <div><p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">PPE Required</p><p className="text-gray-300">{String(r.ppe)}</p></div>}
+                        <div className="flex gap-6 flex-wrap pb-2">
+                          {!!(r.reviewed_by ?? r.reviewedBy) && <div><p className="text-xs text-gray-500">Reviewed By</p><p className="text-gray-300">{String(r.reviewed_by ?? r.reviewedBy)}</p></div>}
+                          {!!(r.approved_by ?? r.approvedBy) && <div><p className="text-xs text-gray-500">Approved By</p><p className="text-gray-300">{String(r.approved_by ?? r.approvedBy)}</p></div>}
+                          {!!(r.created_by ?? r.createdBy) && <div><p className="text-xs text-gray-500">Created By</p><p className="text-gray-300">{String(r.created_by ?? r.createdBy)}</p></div>}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </>
+      )}
+
+      {subTab === 'method_statements' && (
         <div className="bg-gray-900 rounded-xl border border-gray-800 divide-y divide-gray-800">
-          {filtered.length === 0 && <div className="text-center py-16 text-gray-500"><Shield size={40} className="mx-auto mb-3 opacity-30" /><p>No RAMS documents found</p></div>}
-          {filtered.map(r => {
-            const id = String(r.id ?? '');
-            const isExp = expanded === id;
-            const validUntil = r.valid_until ?? r.validUntil;
-            const version = r.version;
-            const activityType = r.activity;
-            const riskLevel = r.risk_level ?? r.riskLevel;
-            return (
-              <div key={id}>
-                <div className="flex items-center gap-4 p-4 hover:bg-gray-800/50 cursor-pointer" onClick={() => setExpanded(isExp ? null : id)}>
-                  <div className={`p-2 rounded-lg flex-shrink-0 ${riskColour[String(riskLevel ?? '')] ? '' : 'bg-gray-800'}`}>
-                    <Shield size={20} className={riskColour[String(riskLevel ?? '')]?.split(' ')[1] ?? 'text-gray-400'} />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2">
-                      <p className="font-semibold text-white truncate">{String(r.title ?? 'Untitled')}</p>
-                      {!!version && <span className="text-xs bg-gray-700 text-gray-400 px-2 py-0.5 rounded-full">v{String(version)}</span>}
-                    </div>
-                    <p className="text-sm text-gray-400">{String(activityType ?? '')} {validUntil ? `· Expires ${validUntil}` : ''}</p>
-                  </div>
-                  <div className="hidden md:flex items-center gap-2">
-                    <span className={`text-xs px-2 py-1 rounded-full font-medium ${riskColour[String(riskLevel ?? '')] ?? 'bg-gray-700 text-gray-400'}`}>{String(riskLevel ?? '')}</span>
-                    <span className={`text-xs px-2 py-1 rounded-full font-medium ${statusColour[String(r.status ?? '')] ?? 'bg-gray-700 text-gray-400'}`}>{String(r.status ?? '')}</span>
-                  </div>
-                  <div className="flex items-center gap-1">
-                    {r.status === 'Under Review' && <button onClick={e => { e.stopPropagation(); approve(r); }} className="p-1.5 text-green-400 hover:bg-green-500/20 rounded" title="Approve"><CheckCircle size={14} /></button>}
-                    <button onClick={e => { e.stopPropagation(); openEdit(r); }} className="p-1.5 text-gray-500 hover:text-blue-400 hover:bg-blue-500/20 rounded"><Edit2 size={14} /></button>
-                    <button onClick={e => { e.stopPropagation(); handleDelete(id); }} className="p-1.5 text-gray-500 hover:text-red-400 hover:bg-red-500/20 rounded"><Trash2 size={14} /></button>
-                    <button className="p-1.5 text-gray-500 hover:text-gray-300 hover:bg-gray-700 rounded" title="Download"><Download size={14} /></button>
-                    {isExp ? <ChevronUp size={16} className="text-gray-500" /> : <ChevronDown size={16} className="text-gray-500" />}
-                  </div>
+          {rams.filter(r => r.doc_type === 'Method Statement').map(r => (
+            <div key={String(r.id ?? '')} className="p-4 hover:bg-gray-800/50">
+              <div className="flex items-start justify-between mb-3">
+                <div>
+                  <p className="font-semibold text-white">{String(r.title ?? '')}</p>
+                  <p className="text-sm text-gray-400">{String(r.activity ?? '')} · {String(r.created_by ?? '—')}</p>
                 </div>
-                {isExp && (
-                  <div className="px-6 pb-4 bg-gray-800/30 space-y-3 text-sm border-t border-gray-800">
-                    {!!(r.hazards) && <div className="pt-3"><p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">Hazards Identified</p><p className="text-gray-300 whitespace-pre-wrap">{String(r.hazards)}</p></div>}
-                    {!!(r.controls) && <div><p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">Control Measures</p><p className="text-gray-300 whitespace-pre-wrap">{String(r.controls)}</p></div>}
-                    {!!(r.ppe) && <div><p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">PPE Required</p><p className="text-gray-300">{String(r.ppe)}</p></div>}
-                    <div className="flex gap-6 flex-wrap pb-2">
-                      {!!(r.reviewed_by ?? r.reviewedBy) && <div><p className="text-xs text-gray-500">Reviewed By</p><p className="text-gray-300">{String(r.reviewed_by ?? r.reviewedBy)}</p></div>}
-                      {!!(r.approved_by ?? r.approvedBy) && <div><p className="text-xs text-gray-500">Approved By</p><p className="text-gray-300">{String(r.approved_by ?? r.approvedBy)}</p></div>}
-                      {!!(r.created_by ?? r.createdBy) && <div><p className="text-xs text-gray-500">Created By</p><p className="text-gray-300">{String(r.created_by ?? r.createdBy)}</p></div>}
-                      {!!(r.valid_from ?? r.validFrom) && <div><p className="text-xs text-gray-500">Valid From</p><p className="text-gray-300">{String(r.valid_from ?? r.validFrom)}</p></div>}
-                      {!!(r.valid_until ?? r.validUntil) && <div><p className="text-xs text-gray-500">Valid Until</p><p className="text-gray-300">{String(r.valid_until ?? r.validUntil)}</p></div>}
-                      {!!(r.review_date ?? r.reviewDate) && <div><p className="text-xs text-gray-500">Review Date</p><p className="text-gray-300">{String(r.review_date ?? r.reviewDate)}</p></div>}
-                    </div>
+                <span className={`text-xs px-2 py-1 rounded-full font-medium ${statusColour[String(r.status ?? '')] ?? 'bg-gray-700 text-gray-400'}`}>{String(r.status ?? '')}</span>
+              </div>
+              <div className="flex gap-2 flex-wrap">
+                {String(r.ppe ?? '').split(',').map((item, idx) => item.trim() && <span key={idx} className="text-xs bg-orange-500/20 text-orange-300 px-2 py-1 rounded-full">{item.trim()}</span>)}
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {subTab === 'risk_assessments' && (
+        <div className="bg-gray-900 rounded-xl border border-gray-800 divide-y divide-gray-800">
+          {riskAssessments.map(r => {
+            const likelihood = Number(r.likelihood ?? 3);
+            const severity = Number(r.severity ?? 3);
+            const riskScore = likelihood * severity;
+            const riskColour = riskScore <= 6 ? 'bg-green-500/20 text-green-400' : riskScore <= 12 ? 'bg-yellow-500/20 text-yellow-400' : 'bg-red-500/20 text-red-400';
+            return (
+              <div key={String(r.id ?? '')} className="p-4 hover:bg-gray-800/50">
+                <div className="flex items-start justify-between mb-2">
+                  <div>
+                    <p className="font-semibold text-white">{String(r.hazards ?? 'Hazard')}</p>
+                    <p className="text-xs text-gray-500">{String(r.activity ?? '')}</p>
                   </div>
-                )}
+                  <span className={`text-xs px-2 py-1 rounded-full font-semibold ${riskColour}`}>Score: {riskScore}</span>
+                </div>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-xs">
+                  <div><p className="text-gray-500">Likelihood</p><p className="text-white font-semibold">{likelihood}/5</p></div>
+                  <div><p className="text-gray-500">Severity</p><p className="text-white font-semibold">{severity}/5</p></div>
+                  <div><p className="text-gray-500">Controls</p><p className="text-gray-300">{String(r.controls ?? '—').slice(0, 20)}...</p></div>
+                  <div><p className="text-gray-500">Residual Risk</p><p className="text-green-400 font-semibold">Low</p></div>
+                </div>
               </div>
             );
           })}
+        </div>
+      )}
+
+      {subTab === 'templates' && (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {TEMPLATES.map(template => (
+            <div key={template.name} className="bg-gray-900 rounded-xl border border-gray-800 p-4 hover:border-orange-500/50 transition-colors">
+              <div className="flex items-center gap-2 mb-3">
+                <Award size={18} className="text-orange-400" />
+                <h3 className="font-semibold text-white">{template.name}</h3>
+              </div>
+              <p className="text-xs text-gray-400 mb-3">{template.hazards}</p>
+              <button onClick={() => useTemplate(template)} className="w-full px-3 py-2 bg-orange-600 text-white rounded-lg text-xs font-medium hover:bg-orange-700">
+                Use Template
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {subTab === 'approvals' && (
+        <div className="bg-gray-900 rounded-xl border border-gray-800 overflow-hidden">
+          {rams.filter(r => r.status === 'Under Review').length === 0 ? (
+            <div className="text-center py-12 text-gray-500 bg-gray-900 rounded-xl border border-gray-800">
+              <CheckCircle size={32} className="mx-auto mb-2 opacity-30 text-green-500" />
+              <p>No documents awaiting approval</p>
+            </div>
+          ) : (
+            <table className="w-full text-sm">
+              <thead className="bg-gray-800/50 border-b border-gray-800">
+                <tr>{['Document', 'Requestor', 'Approval Chain', 'Sign-off', 'Action'].map(h => <th key={h} className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">{h}</th>)}</tr>
+              </thead>
+              <tbody className="divide-y divide-gray-800">
+                {rams.filter(r => r.status === 'Under Review').map(r => (
+                  <tr key={String(r.id ?? '')} className="hover:bg-gray-800/50">
+                    <td className="px-4 py-3 font-medium text-white">{String(r.title ?? '')}</td>
+                    <td className="px-4 py-3 text-gray-400">{String(r.created_by ?? '—')}</td>
+                    <td className="px-4 py-3 text-xs text-gray-400">Principal Contractor → Client</td>
+                    <td className="px-4 py-3"><input type="text" placeholder="Name" className="w-32 bg-gray-800 border border-gray-700 rounded px-2 py-1 text-xs text-white" /></td>
+                    <td className="px-4 py-3"><button onClick={() => approve(r)} className="text-xs px-3 py-1 bg-green-600 text-white rounded-lg hover:bg-green-700 font-medium">Approve</button></td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
         </div>
       )}
 
@@ -231,9 +356,21 @@ export function RAMS() {
                   </select>
                 </div>
                 <div>
-                  <label className={labelCls}>Risk Level</label>
-                  <select value={form.risk_level} onChange={e => setForm(f => ({ ...f, risk_level: e.target.value }))} className={inputCls}>
-                    {RISK_LEVELS.map(r => <option key={r}>{r}</option>)}
+                  <label className={labelCls}>Document Type</label>
+                  <select value={form.doc_type} onChange={e => setForm(f => ({ ...f, doc_type: e.target.value }))} className={inputCls}>
+                    {DOCUMENT_TYPES.map(d => <option key={d}>{d}</option>)}
+                  </select>
+                </div>
+                <div>
+                  <label className={labelCls}>Likelihood (1-5)</label>
+                  <select value={form.likelihood} onChange={e => setForm(f => ({ ...f, likelihood: e.target.value }))} className={inputCls}>
+                    {HAZARD_LEVELS.map(l => <option key={l}>{l}</option>)}
+                  </select>
+                </div>
+                <div>
+                  <label className={labelCls}>Severity (1-5)</label>
+                  <select value={form.severity} onChange={e => setForm(f => ({ ...f, severity: e.target.value }))} className={inputCls}>
+                    {HAZARD_LEVELS.map(s => <option key={s}>{s}</option>)}
                   </select>
                 </div>
                 <div>
