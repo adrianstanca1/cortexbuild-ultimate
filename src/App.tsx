@@ -70,7 +70,7 @@ function AppShell() {
 
   const renderModule = () => {
     switch (activeModule) {
-      case 'dashboard':       return <Dashboard setModule={setActiveModule} />;
+      case 'dashboard':       return <Dashboard />;
       case 'projects':        return <Projects />;
       case 'invoicing':       return <Invoicing />;
       case 'accounting':      return <Accounting />;
@@ -108,7 +108,7 @@ function AppShell() {
       case 'calendar':          return <Calendar />;
       case 'search':            return <div className="card p-8 text-center text-gray-500">Use Ctrl+K to open Global Search</div>;
       case 'audit-log':         return <AuditLog />;
-      default:                return <Dashboard setModule={setActiveModule} />;
+      default:                return <Dashboard />;
     }
   };
 

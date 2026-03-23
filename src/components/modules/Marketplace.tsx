@@ -1,218 +1,320 @@
-// Module: Marketplace
 import { useState } from 'react';
-import { CheckCircle2, Zap, Plug, LayoutTemplate, TrendingUp, Shield, FileText, Calendar, BarChart3, Repeat } from 'lucide-react';
+import {
+  CheckCircle2,
+  Zap,
+  Plug,
+  LayoutTemplate,
+  TrendingUp,
+  Shield,
+  FileText,
+  Calendar,
+  BarChart3,
+  Repeat,
+  Download,
+  BookOpen,
+  MessageCircle,
+  AlertCircle,
+  Star,
+} from 'lucide-react';
 
-type SubTab = 'agents' | 'integrations' | 'templates';
+type SubTab = 'apps' | 'integrations' | 'templates' | 'training' | 'support';
+type AnyRow = Record<string, unknown>;
 
 const TABS: { key: SubTab; label: string; icon: React.ElementType }[] = [
-  { key: 'agents',       label: 'AI Agents',    icon: Zap },
+  { key: 'apps', label: 'Apps', icon: Zap },
   { key: 'integrations', label: 'Integrations', icon: Plug },
-  { key: 'templates',    label: 'Templates',    icon: LayoutTemplate },
+  { key: 'templates', label: 'Templates', icon: LayoutTemplate },
+  { key: 'training', label: 'Training', icon: BookOpen },
+  { key: 'support', label: 'Support', icon: MessageCircle },
 ];
 
-const AGENTS = [
-  { id: 'safety-analyzer', name: 'Safety Incident Analyser', desc: 'Automatically categorize and analyse safety incidents', status: 'active', category: 'Safety' },
-  { id: 'rfi-responder', name: 'RFI AI Responder', desc: 'Draft responses to requests for information', status: 'active', category: 'Admin' },
-  { id: 'rams-generator', name: 'RAMS Generator', desc: 'Auto-generate risk assessments and method statements', status: 'available', category: 'Safety' },
-  { id: 'daily-reporter', name: 'Daily Report Summariser', desc: 'Summarize site activities and progress', status: 'active', category: 'Reporting' },
-  { id: 'cost-predictor', name: 'Cost Predictor', desc: 'Forecast project costs and budget variances', status: 'available', category: 'Finance' },
-  { id: 'tender-scorer', name: 'Tender Scorer', desc: 'Score and rank tender opportunities', status: 'available', category: 'Commercial' },
-  { id: 'cis-calculator', name: 'CIS Calculator', desc: 'Automated CIS deduction calculations', status: 'coming-soon', category: 'Finance' },
-  { id: 'co-drafter', name: 'Change Order Drafter', desc: 'Draft change orders with cost analysis', status: 'available', category: 'Commercial' },
-  { id: 'photo-analyzer', name: 'Progress Photo Analyser', desc: 'Extract progress data from site photos', status: 'coming-soon', category: 'Reporting' },
-  { id: 'weather-assessor', name: 'Weather Risk Assessor', desc: 'Weather-related programme impact analysis', status: 'available', category: 'Planning' },
+const APPS = [
+  {
+    id: 'safety-analyzer',
+    name: 'Safety Incident Analyser',
+    desc: 'Automatically categorize and analyse safety incidents',
+    category: 'Safety',
+    rating: 4.8,
+    installs: 342,
+    price: 'Free',
+    installed: true,
+  },
+  {
+    id: 'rfi-responder',
+    name: 'RFI AI Responder',
+    desc: 'Draft responses to requests for information',
+    category: 'Admin',
+    rating: 4.6,
+    installs: 128,
+    price: '£50/mo',
+    installed: true,
+  },
+  {
+    id: 'rams-generator',
+    name: 'RAMS Generator',
+    desc: 'Auto-generate risk assessments and method statements',
+    category: 'Safety',
+    rating: 4.7,
+    installs: 256,
+    price: '£100/mo',
+    installed: false,
+  },
+  {
+    id: 'daily-reporter',
+    name: 'Daily Report Summariser',
+    desc: 'Summarize site activities and progress',
+    category: 'Reporting',
+    rating: 4.5,
+    installs: 189,
+    price: 'Free',
+    installed: true,
+  },
 ];
 
 const INTEGRATIONS = [
-  { id: 'xero', name: 'Xero', desc: 'Sync invoices, payments and financial data with Xero accounting', icon: '💰', status: 'connected', category: 'Accounting' },
-  { id: 'sage', name: 'Sage 50', desc: 'Two-way sync for payroll and purchase ledger', icon: '📊', status: 'available', category: 'Accounting' },
-  { id: 'ms-project', name: 'Microsoft Project', desc: 'Import & export programme data and Gantt charts', icon: '📅', status: 'available', category: 'Planning' },
-  { id: 'google-drive', name: 'Google Drive', desc: 'Automatically file documents into structured Drive folders', icon: '📂', status: 'connected', category: 'Storage' },
-  { id: 'procore', name: 'Procore', desc: 'Bidirectional sync for drawings, RFIs and submittals', icon: '🏗️', status: 'available', category: 'Construction' },
-  { id: 'docusign', name: 'DocuSign', desc: 'Send contracts and RAMS for e-signature directly', icon: '✍️', status: 'available', category: 'Compliance' },
-  { id: 'metoffice', name: 'Met Office API', desc: 'Live weather data linked to site locations', icon: '🌦️', status: 'connected', category: 'Field' },
-  { id: 'stripe', name: 'Stripe Payments', desc: 'Accept client payments and track cash allocation', icon: '💳', status: 'coming-soon', category: 'Finance' },
-  { id: 'hmrc', name: 'HMRC MTD', desc: 'Submit CIS returns and VAT via Making Tax Digital', icon: '🏛️', status: 'available', category: 'Tax & Compliance' },
-  { id: 'outlook', name: 'Microsoft 365', desc: 'Email, Teams messaging and calendar synchronisation', icon: '📧', status: 'available', category: 'Productivity' },
+  {
+    id: 'xero',
+    name: 'Xero',
+    desc: 'Sync invoices, payments and financial data',
+    category: 'Accounting',
+    status: 'connected',
+    lastSync: '2 hours ago',
+  },
+  {
+    id: 'ms-project',
+    name: 'Microsoft Project',
+    desc: 'Import & export programme data and Gantt charts',
+    category: 'Planning',
+    status: 'available',
+    lastSync: null,
+  },
+  {
+    id: 'procore',
+    name: 'Procore',
+    desc: 'Bidirectional sync for drawings, RFIs and submittals',
+    category: 'Construction',
+    status: 'available',
+    lastSync: null,
+  },
+  {
+    id: 'docusign',
+    name: 'DocuSign',
+    desc: 'Send contracts and RAMS for e-signature directly',
+    category: 'Compliance',
+    status: 'available',
+    lastSync: null,
+  },
 ];
 
 const TEMPLATES = [
-  { id: 'rams-scaffold', name: 'RAMS — Scaffold Erection', desc: 'Full risk assessment and method statement for scaffold erection work', category: 'Safety', icon: Shield, uses: 147 },
-  { id: 'rams-excavation', name: 'RAMS — Excavation Works', desc: 'Comprehensive method statement covering excavation and groundworks', category: 'Safety', icon: Shield, uses: 89 },
-  { id: 'daily-report', name: 'Daily Site Report', desc: 'Standard daily site diary template with weather, workers, activities and delays', category: 'Reporting', icon: FileText, uses: 312 },
-  { id: 'weekly-summary', name: 'Weekly Programme Summary', desc: 'Progress against programme with lookahead schedule and resource plan', category: 'Reporting', icon: BarChart3, uses: 204 },
-  { id: 'change-order', name: 'Change Order — Variation', desc: 'Formal variation instruction template with cost breakdown and approval workflow', category: 'Commercial', icon: FileText, uses: 96 },
-  { id: 'tender-submission', name: 'Tender Submission Pack', desc: 'Complete tender response with pricing schedule, programme and methodology', category: 'Commercial', icon: TrendingUp, uses: 55 },
-  { id: 'meeting-minutes', name: 'Site Meeting Minutes', desc: 'Structured minutes template with action log and attendance register', category: 'Admin', icon: Calendar, uses: 178 },
-  { id: 'cis-return', name: 'CIS Monthly Return', desc: 'CIS300 style summary with individual subcontractor deduction statements', category: 'Finance', icon: Repeat, uses: 73 },
+  {
+    id: 'rams-scaffold',
+    name: 'RAMS — Scaffold Erection',
+    desc: 'Full risk assessment and method statement',
+    category: 'Safety',
+    downloads: 147,
+  },
+  {
+    id: 'daily-report',
+    name: 'Daily Site Report',
+    desc: 'Standard daily site diary template',
+    category: 'Reporting',
+    downloads: 312,
+  },
+  {
+    id: 'weekly-summary',
+    name: 'Weekly Programme Summary',
+    desc: 'Progress against programme with lookahead',
+    category: 'Reporting',
+    downloads: 204,
+  },
+  {
+    id: 'change-order',
+    name: 'Change Order — Variation',
+    desc: 'Formal variation instruction template',
+    category: 'Commercial',
+    downloads: 96,
+  },
+];
+
+const TRAINING_RESOURCES = [
+  { id: '1', title: 'Getting Started with CortexBuild', type: 'Video', duration: '15 min', completed: true },
+  { id: '2', title: 'Project Setup & Management', type: 'Course', duration: '45 min', completed: false },
+  { id: '3', title: 'Advanced Reporting Features', type: 'Webinar', duration: '60 min', completed: false },
 ];
 
 export function Marketplace() {
-  const [subTab, setSubTab] = useState<SubTab>('agents');
-  const [enabledAgents, setEnabledAgents] = useState(['safety-analyzer', 'rfi-responder', 'daily-reporter']);
+  const [subTab, setSubTab] = useState<SubTab>('apps');
+  const [installedApps, setInstalledApps] = useState(['safety-analyzer', 'rfi-responder', 'daily-reporter']);
+  const [searchQuery, setSearchQuery] = useState('');
 
-  const statusColor = (status: string) => {
+  const statusColor = (status: string): string => {
     switch (status) {
-      case 'active':      return 'bg-green-500/20 text-green-400';
-      case 'available':   return 'bg-blue-500/20 text-blue-400';
-      case 'coming-soon': return 'bg-yellow-500/20 text-yellow-400';
-      case 'connected':   return 'bg-emerald-500/20 text-emerald-400';
-      default:            return 'bg-gray-500/20 text-gray-400';
+      case 'connected':
+        return 'bg-emerald-500/20 text-emerald-400';
+      case 'available':
+        return 'bg-blue-500/20 text-blue-400';
+      case 'coming-soon':
+        return 'bg-yellow-500/20 text-yellow-400';
+      default:
+        return 'bg-gray-500/20 text-gray-400';
     }
   };
 
-  const statusLabel = (status: string) => {
+  const statusLabel = (status: string): string => {
     switch (status) {
-      case 'active':      return '✓ Active';
-      case 'available':   return 'Available';
-      case 'coming-soon': return 'Coming Soon';
-      case 'connected':   return '✓ Connected';
-      default:            return status;
+      case 'connected':
+        return '✓ Connected';
+      case 'available':
+        return 'Available';
+      case 'coming-soon':
+        return 'Coming Soon';
+      default:
+        return status;
     }
   };
 
-  const toggleAgent = (id: string) => {
-    setEnabledAgents(prev =>
+  const toggleApp = (id: string) => {
+    setInstalledApps(prev =>
       prev.includes(id) ? prev.filter(a => a !== id) : [...prev, id]
     );
   };
 
-  const activeAgents = AGENTS.filter(a => enabledAgents.includes(a.id));
-
   return (
     <div className="space-y-6">
-      <h1 className="text-3xl font-bold text-white">AI Marketplace</h1>
+      <h1 className="text-3xl font-bold text-white">CortexBuild Marketplace</h1>
 
-      {/* Active Agents Summary */}
-      <div className="bg-gradient-to-r from-blue-600 to-blue-800 rounded-xl p-6 text-white">
-        <h3 className="text-xl font-bold mb-2">Active AI Agents</h3>
-        <p className="text-blue-100 mb-4">{enabledAgents.length} agents enabled and running on your projects</p>
-        <div className="flex flex-wrap gap-2">
-          {activeAgents.map(agent => (
-            <span key={agent.id} className="bg-blue-900 px-3 py-1 rounded-full text-sm font-medium">
-              {agent.name}
-            </span>
-          ))}
+      {/* KPI Stats */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="bg-gray-800 border border-gray-700 rounded-lg p-4">
+          <p className="text-sm text-gray-400 mb-1">Records Indexed</p>
+          <p className="text-2xl font-bold text-white">15.2M</p>
+        </div>
+        <div className="bg-gray-800 border border-gray-700 rounded-lg p-4">
+          <p className="text-sm text-gray-400 mb-1">Last Indexed</p>
+          <p className="text-2xl font-bold text-white">2 hours ago</p>
+        </div>
+        <div className="bg-gray-800 border border-gray-700 rounded-lg p-4">
+          <p className="text-sm text-gray-400 mb-1">Active Apps</p>
+          <p className="text-2xl font-bold text-white">{Number(installedApps.length)}</p>
         </div>
       </div>
 
       {/* Sub-nav */}
-      <div className="border-b border-gray-700 flex gap-1">
+      <div className="border-b border-gray-700 flex gap-1 overflow-x-auto">
         {TABS.map(t => {
           const Icon = t.icon;
           return (
             <button
               key={t.key}
               onClick={() => setSubTab(t.key)}
-              className={`flex items-center gap-2 px-4 py-2.5 text-sm font-medium border-b-2 -mb-px transition-colors ${
+              className={`flex items-center gap-2 px-4 py-3 text-sm font-medium border-b-2 -mb-px transition-colors whitespace-nowrap ${
                 subTab === t.key
                   ? 'border-blue-500 text-blue-400'
                   : 'border-transparent text-gray-400 hover:text-gray-200'
               }`}
             >
-              <Icon size={14}/>{t.label}
+              <Icon size={14} />
+              {t.label}
             </button>
           );
         })}
       </div>
 
-      {/* AI AGENTS */}
-      {subTab === 'agents' && (
+      {/* APPS TAB */}
+      {subTab === 'apps' && (
         <div className="space-y-5">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {AGENTS.map(agent => {
-              const isEnabled = enabledAgents.includes(agent.id);
+          <input
+            type="text"
+            placeholder="Search apps..."
+            value={searchQuery}
+            onChange={e => setSearchQuery(e.target.value)}
+            className="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-3 text-white placeholder-gray-500"
+          />
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-4">
+            {APPS.map(app => {
+              const isInstalled = installedApps.includes(app.id);
               return (
-                <div key={agent.id} className={`border rounded-xl p-6 transition ${
-                  isEnabled ? 'bg-gray-900 border-blue-600' : 'bg-gray-900 border-gray-800 hover:border-gray-700'
-                }`}>
-                  <div className="flex justify-between items-start mb-1">
-                    <h4 className="font-bold text-white flex-1">{agent.name}</h4>
-                    <span className={`px-2 py-1 rounded-full text-xs font-medium whitespace-nowrap ml-2 ${statusColor(agent.status)}`}>
-                      {statusLabel(agent.status)}
+                <div
+                  key={app.id}
+                  className={`border rounded-xl p-6 transition ${
+                    isInstalled ? 'bg-gray-900 border-blue-600' : 'bg-gray-900 border-gray-800 hover:border-gray-700'
+                  }`}
+                >
+                  <div className="flex justify-between items-start mb-2">
+                    <div>
+                      <h4 className="font-bold text-white">{String(app.name)}</h4>
+                      <p className="text-xs text-blue-400">{String(app.category)}</p>
+                    </div>
+                    <span className={`px-2 py-1 rounded-full text-xs font-medium whitespace-nowrap ${statusColor(isInstalled ? 'connected' : 'available')}`}>
+                      {Boolean(isInstalled) && 'Installed'}
+                      {Boolean(!isInstalled) && 'Available'}
                     </span>
                   </div>
-                  <p className="text-xs text-blue-400 mb-2">{agent.category}</p>
-                  <p className="text-sm text-gray-400 mb-4">{agent.desc}</p>
+                  <p className="text-sm text-gray-400 mb-3">{String(app.desc)}</p>
+                  <div className="flex items-center gap-3 mb-4 text-xs text-gray-500">
+                    <span className="flex items-center gap-1">
+                      <Star className="h-3 w-3 text-yellow-400" />
+                      {Number(app.rating)}
+                    </span>
+                    <span>{Number(app.installs)} installs</span>
+                    <span>{String(app.price)}</span>
+                  </div>
                   <button
-                    onClick={() => agent.status !== 'coming-soon' && toggleAgent(agent.id)}
-                    disabled={agent.status === 'coming-soon'}
+                    onClick={() => toggleApp(String(app.id))}
                     className={`w-full px-4 py-2 rounded-lg font-medium text-sm transition ${
-                      agent.status === 'coming-soon'
-                        ? 'bg-gray-800 text-gray-500 cursor-not-allowed'
-                        : isEnabled
-                        ? 'bg-green-600 hover:bg-green-700 text-white'
+                      isInstalled
+                        ? 'bg-gray-700 hover:bg-gray-600 text-white'
                         : 'bg-blue-600 hover:bg-blue-700 text-white'
                     }`}
                   >
-                    {agent.status === 'coming-soon' ? 'Coming Soon' : isEnabled ? 'Disable Agent' : 'Enable Agent'}
+                    {Boolean(isInstalled) && 'Uninstall'}
+                    {Boolean(!isInstalled) && 'Install'}
                   </button>
-                  {isEnabled && (
-                    <div className="mt-3 pt-3 border-t border-gray-800 flex items-center gap-2 text-green-400 text-sm">
-                      <CheckCircle2 className="w-4 h-4" />Running actively
-                    </div>
-                  )}
                 </div>
               );
             })}
           </div>
-
-          {/* Usage Stats */}
-          <div className="bg-gray-900 border border-gray-800 rounded-xl p-6">
-            <h3 className="text-lg font-bold text-white mb-4">Agent Usage This Month</h3>
-            <div className="space-y-3">
-              {[
-                { agent: 'Safety Analyser', uses: 23, savings: '£1,150' },
-                { agent: 'Daily Report Summariser', uses: 19, savings: '£950' },
-                { agent: 'RFI Responder', uses: 12, savings: '£600' },
-                { agent: 'Cost Predictor', uses: 8, savings: '£400' },
-              ].map((stat, idx) => (
-                <div key={idx} className="bg-gray-800/50 rounded-lg p-3 flex justify-between items-center">
-                  <div>
-                    <p className="text-white font-semibold">{stat.agent}</p>
-                    <p className="text-xs text-gray-400">{stat.uses} uses this month</p>
-                  </div>
-                  <p className="text-green-400 font-semibold">{stat.savings} time saved</p>
-                </div>
-              ))}
-            </div>
-          </div>
         </div>
       )}
 
-      {/* INTEGRATIONS */}
+      {/* INTEGRATIONS TAB */}
       {subTab === 'integrations' && (
         <div className="space-y-4">
           <div className="flex gap-2 flex-wrap">
             <span className="text-xs bg-emerald-500/20 text-emerald-400 px-3 py-1 rounded-full font-medium">
-              {INTEGRATIONS.filter(i=>i.status==='connected').length} connected
+              {Number(INTEGRATIONS.filter(i => i.status === 'connected').length)} connected
             </span>
             <span className="text-xs bg-blue-500/20 text-blue-400 px-3 py-1 rounded-full font-medium">
-              {INTEGRATIONS.filter(i=>i.status==='available').length} available
+              {Number(INTEGRATIONS.filter(i => i.status === 'available').length)} available
             </span>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {INTEGRATIONS.map(intg => (
-              <div key={intg.id} className={`bg-gray-900 border rounded-xl p-5 flex gap-4 items-start ${intg.status==='connected'?'border-emerald-700':'border-gray-800 hover:border-gray-700'} transition`}>
-                <div className="text-3xl flex-shrink-0">{intg.icon}</div>
+              <div
+                key={String(intg.id)}
+                className={`bg-gray-900 border rounded-xl p-5 flex gap-4 items-start ${intg.status === 'connected' ? 'border-emerald-700' : 'border-gray-800 hover:border-gray-700'} transition`}
+              >
+                <div className="text-3xl flex-shrink-0">🔗</div>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 mb-1">
-                    <h4 className="font-bold text-white">{intg.name}</h4>
-                    <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${statusColor(intg.status)}`}>{statusLabel(intg.status)}</span>
+                    <h4 className="font-bold text-white">{String(intg.name)}</h4>
+                    <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${statusColor(intg.status)}`}>
+                      {statusLabel(intg.status)}
+                    </span>
                   </div>
-                  <p className="text-xs text-blue-400 mb-1.5">{intg.category}</p>
-                  <p className="text-sm text-gray-400">{intg.desc}</p>
+                  <p className="text-xs text-blue-400 mb-1.5">{String(intg.category)}</p>
+                  <p className="text-sm text-gray-400">{String(intg.desc)}</p>
+                  {intg.lastSync && <p className="text-xs text-gray-500 mt-2">Last sync: {String(intg.lastSync)}</p>}
                 </div>
                 <button
                   className={`flex-shrink-0 px-3 py-1.5 rounded-lg text-xs font-medium transition ${
-                    intg.status==='connected'
+                    intg.status === 'connected'
                       ? 'bg-gray-800 text-gray-300 hover:bg-gray-700'
-                      : intg.status==='coming-soon'
-                      ? 'bg-gray-800 text-gray-500 cursor-not-allowed'
                       : 'bg-blue-600 hover:bg-blue-700 text-white'
                   }`}
                 >
-                  {intg.status==='connected'?'Manage':intg.status==='coming-soon'?'Soon':'Connect'}
+                  {intg.status === 'connected' ? 'Manage' : 'Connect'}
                 </button>
               </div>
             ))}
@@ -220,32 +322,99 @@ export function Marketplace() {
         </div>
       )}
 
-      {/* TEMPLATES */}
+      {/* TEMPLATES TAB */}
       {subTab === 'templates' && (
         <div className="space-y-4">
-          <p className="text-sm text-gray-400">Pre-built templates to speed up document creation across your projects.</p>
+          <p className="text-sm text-gray-400">Pre-built templates to speed up document creation.</p>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {TEMPLATES.map(tpl => {
-              const Icon = tpl.icon;
-              return (
-                <div key={tpl.id} className="bg-gray-900 border border-gray-800 hover:border-gray-700 transition rounded-xl p-5 flex gap-4 items-start">
-                  <div className="p-2.5 bg-blue-900/40 rounded-lg flex-shrink-0">
-                    <Icon size={18} className="text-blue-400"/>
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <h4 className="font-bold text-white mb-0.5">{tpl.name}</h4>
-                    <p className="text-xs text-blue-400 mb-1.5">{tpl.category}</p>
-                    <p className="text-sm text-gray-400 mb-3">{tpl.desc}</p>
-                    <div className="flex items-center justify-between">
-                      <span className="text-xs text-gray-500">{tpl.uses} uses</span>
-                      <button className="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs font-medium transition">
-                        Use Template
-                      </button>
-                    </div>
+            {TEMPLATES.map(tpl => (
+              <div key={String(tpl.id)} className="bg-gray-900 border border-gray-800 hover:border-gray-700 transition rounded-xl p-5 flex gap-4">
+                <div className="p-2.5 bg-blue-900/40 rounded-lg flex-shrink-0">
+                  <LayoutTemplate className="h-5 w-5 text-blue-400" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <h4 className="font-bold text-white mb-0.5">{String(tpl.name)}</h4>
+                  <p className="text-xs text-blue-400 mb-1.5">{String(tpl.category)}</p>
+                  <p className="text-sm text-gray-400 mb-3">{String(tpl.desc)}</p>
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs text-gray-500">{Number(tpl.downloads)} downloads</span>
+                    <button className="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs font-medium transition">
+                      <Download className="h-3 w-3 inline mr-1" />
+                      Download
+                    </button>
                   </div>
                 </div>
-              );
-            })}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* TRAINING TAB */}
+      {subTab === 'training' && (
+        <div className="space-y-4">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            {TRAINING_RESOURCES.map(resource => (
+              <div key={String(resource.id)} className="bg-gray-900 border border-gray-800 rounded-xl p-4">
+                <div className="flex items-center justify-between mb-3">
+                  <p className="text-xs text-blue-400 uppercase font-medium">{String(resource.type)}</p>
+                  {Boolean(resource.completed) && <CheckCircle2 className="h-4 w-4 text-green-400" />}
+                </div>
+                <h4 className="font-bold text-white mb-2">{String(resource.title)}</h4>
+                <div className="w-full bg-gray-800 rounded-full h-2 mb-3">
+                  <div
+                    className={`h-2 rounded-full ${Boolean(resource.completed) ? 'bg-green-500 w-full' : 'bg-blue-500 w-1/3'}`}
+                  />
+                </div>
+                <p className="text-xs text-gray-400">{String(resource.duration)}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* SUPPORT TAB */}
+      {subTab === 'support' && (
+        <div className="space-y-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="bg-green-500/10 border border-green-500/30 rounded-lg p-4">
+              <div className="flex items-center gap-3 mb-2">
+                <CheckCircle2 className="h-5 w-5 text-green-400" />
+                <p className="font-medium text-green-400">All Systems Operational</p>
+              </div>
+              <p className="text-sm text-gray-400">Last updated: 2 hours ago</p>
+            </div>
+            <div className="bg-gray-900 border border-gray-700 rounded-lg p-4">
+              <div className="flex items-center gap-3 mb-2">
+                <MessageCircle className="h-5 w-5 text-blue-400" />
+                <p className="font-medium text-white">Live Chat Support</p>
+              </div>
+              <button className="mt-3 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium w-full">
+                Start Chat
+              </button>
+            </div>
+          </div>
+          <div className="bg-gray-900 border border-gray-700 rounded-lg p-6">
+            <h3 className="text-lg font-bold text-white mb-4">Submit Support Ticket</h3>
+            <form className="space-y-4">
+              <input
+                type="text"
+                placeholder="Subject"
+                className="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-2 text-white"
+              />
+              <textarea
+                placeholder="Description"
+                className="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-2 text-white h-32"
+              />
+              <select className="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-2 text-white">
+                <option>Priority: Medium</option>
+                <option>Priority: High</option>
+                <option>Priority: Low</option>
+              </select>
+              <button type="button" className="w-full px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium">
+                Submit Ticket
+              </button>
+            </form>
           </div>
         </div>
       )}

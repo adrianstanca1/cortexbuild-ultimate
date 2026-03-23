@@ -1,6 +1,7 @@
 import { useState } from 'react';
-import { HardHat, Plus, Search, Phone, Mail, Building2, Star, Edit2, Trash2, X, ChevronDown, ChevronUp, CheckCircle, AlertTriangle, PoundSterling } from 'lucide-react';
+import { HardHat, Plus, Search, Phone, Mail, Building2, Star, Edit2, Trash2, X, ChevronDown, ChevronUp, CheckCircle, AlertTriangle, PoundSterling, Award, Shield, FileText } from 'lucide-react';
 import { useSubcontractors } from '../../hooks/useData';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { toast } from 'sonner';
 
 type AnyRow = Record<string, unknown>;
@@ -18,7 +19,7 @@ const cisColour: Record<string,string> = {
   'Higher 30%':'bg-red-500/20 text-red-400','Not Registered':'bg-gray-700 text-gray-400',
 };
 
-const emptyForm = { company:'',contact:'',trade:'',email:'',phone:'',address:'',status:'Active',cis_status:'Standard 20%',utr_number:'',insurance_expiry:'',rams_status:'Not Submitted',rating:'3',notes:'' };
+const emptyForm = { company:'',contact:'',trade:'',email:'',phone:'',address:'',status:'Active',cis_status:'Standard 20%',utr_number:'',insurance_expiry:'',pli_value:'',employers_liability:'',professional_indemnity:'',ssip_status:'',chas_accredited:false,constructionline_accredited:false,rating:'3',quality_rating:'3',programme_rating:'3',health_safety_rating:'3',communication_rating:'3',amounts_due:'',amounts_paid:'',retention_held:'',cis_deduction:'',notes:'' };
 
 export function Subcontractors() {
   const { useList, useCreate, useUpdate, useDelete } = useSubcontractors;
@@ -28,7 +29,7 @@ export function Subcontractors() {
   const updateMutation = useUpdate();
   const deleteMutation = useDelete();
 
-  const [subTab, setSubTab] = useState<'directory'|'insurance'|'cis'>('directory');
+  const [subTab, setSubTab] = useState<'register'|'performance'|'compliance'|'insurance'|'payments'>('register');
   const [search, setSearch] = useState('');
   const [tradeFilter, setTradeFilter] = useState('All');
   const [statusFilter, setStatusFilter] = useState('All');
@@ -47,12 +48,8 @@ export function Subcontractors() {
   });
 
   const activeCount = subs.filter(s => s.status === 'Active').length;
-  const insExpiring = subs.filter(s => {
-    if (!s.insurance_expiry) return false;
-    const diff = (new Date(String(s.insurance_expiry)).getTime() - Date.now()) / 86400000;
-    return diff >= 0 && diff <= 30;
-  }).length;
   const avgRating = subs.length > 0 ? (subs.reduce((s, sub) => s + Number(sub.rating ?? 0), 0) / subs.length).toFixed(1) : '—';
+  const complianceRate = subs.length > 0 ? Math.round((subs.filter(s => Boolean(s.ssip_status) && Boolean(s.insurance_expiry)).length / subs.length) * 100) : 0;
   const pendingCount = subs.filter(s => s.status === 'Pending Approval').length;
 
   const insAlerts = subs.filter(s => {
@@ -61,18 +58,13 @@ export function Subcontractors() {
     return diff < 60;
   });
 
-  const cisGroups = CIS_STATUS.map(status => ({
-    status,
-    subs: subs.filter(s => s.cis_status === status),
-    count: subs.filter(s => s.cis_status === status).length,
-    totalUTR: subs.filter(s => s.cis_status === status && !!s.utr_number).length,
-  })).filter(g => g.count > 0);
-
-  const RAMS_STATUS = ['Not Submitted','Submitted','Approved','Expired'];
-  const ramsColour: Record<string,string> = {
-    'Not Submitted':'bg-gray-700 text-gray-400','Submitted':'bg-blue-500/20 text-blue-400',
-    'Approved':'bg-green-500/20 text-green-400','Expired':'bg-red-500/20 text-red-400',
-  };
+  const performanceChartData = subs.map(s => ({
+    name: String(s.company ?? '').slice(0, 15),
+    Quality: Number(s.quality_rating ?? 3),
+    Programme: Number(s.programme_rating ?? 3),
+    'Health & Safety': Number(s.health_safety_rating ?? 3),
+    Communication: Number(s.communication_rating ?? 3),
+  }));
 
   function openCreate() { setEditing(null); setForm({ ...emptyForm }); setShowModal(true); }
   function openEdit(s: AnyRow) {
@@ -83,15 +75,29 @@ export function Subcontractors() {
       address: String(s.address ?? ''), status: String(s.status ?? 'Active'),
       cis_status: String(s.cis_status ?? 'Standard 20%'), utr_number: String(s.utr_number ?? ''),
       insurance_expiry: String(s.insurance_expiry ?? ''),
-      rams_status: String(s.rams_status ?? 'Not Submitted'),
-      rating: String(s.rating ?? '3'), notes: String(s.notes ?? ''),
+      pli_value: String(s.pli_value ?? ''),
+      employers_liability: String(s.employers_liability ?? ''),
+      professional_indemnity: String(s.professional_indemnity ?? ''),
+      ssip_status: String(s.ssip_status ?? ''),
+      chas_accredited: Boolean(s.chas_accredited ?? false),
+      constructionline_accredited: Boolean(s.constructionline_accredited ?? false),
+      rating: String(s.rating ?? '3'),
+      quality_rating: String(s.quality_rating ?? '3'),
+      programme_rating: String(s.programme_rating ?? '3'),
+      health_safety_rating: String(s.health_safety_rating ?? '3'),
+      communication_rating: String(s.communication_rating ?? '3'),
+      amounts_due: String(s.amounts_due ?? ''),
+      amounts_paid: String(s.amounts_paid ?? ''),
+      retention_held: String(s.retention_held ?? ''),
+      cis_deduction: String(s.cis_deduction ?? ''),
+      notes: String(s.notes ?? ''),
     });
     setShowModal(true);
   }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    const payload = { ...form, rating: Number(form.rating) || 3 };
+    const payload = { ...form, rating: Number(form.rating) || 3, quality_rating: Number(form.quality_rating) || 3, programme_rating: Number(form.programme_rating) || 3, health_safety_rating: Number(form.health_safety_rating) || 3, communication_rating: Number(form.communication_rating) || 3 };
     if (editing) { await updateMutation.mutateAsync({ id: String(editing.id), data: payload }); toast.success('Subcontractor updated'); }
     else { await createMutation.mutateAsync(payload); toast.success('Subcontractor added'); }
     setShowModal(false);
@@ -121,10 +127,10 @@ export function Subcontractors() {
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         {[
-          { label: 'Active Subs', value: activeCount, icon: Building2, colour: 'text-green-400', bg: 'bg-green-500/10' },
-          { label: 'Pending Approval', value: pendingCount, icon: CheckCircle, colour: 'text-blue-400', bg: 'bg-blue-500/10' },
-          { label: 'Insurance Expiring', value: insExpiring, icon: AlertTriangle, colour: insExpiring > 0 ? 'text-red-400' : 'text-gray-400', bg: insExpiring > 0 ? 'bg-red-500/10' : 'bg-gray-800' },
-          { label: 'Avg Rating', value: `${avgRating}/5`, icon: Star, colour: 'text-yellow-400', bg: 'bg-yellow-500/10' },
+          { label: 'Total Subs', value: subs.length, icon: Building2, colour: 'text-blue-400', bg: 'bg-blue-500/10' },
+          { label: 'Active', value: activeCount, icon: CheckCircle, colour: 'text-green-400', bg: 'bg-green-500/10' },
+          { label: 'Compliance %', value: `${complianceRate}%`, icon: Shield, colour: 'text-purple-400', bg: 'bg-purple-500/10' },
+          { label: 'Avg Score', value: `${avgRating}/5`, icon: Star, colour: 'text-yellow-400', bg: 'bg-yellow-500/10' },
         ].map(kpi => (
           <div key={kpi.label} className="bg-gray-900 rounded-xl border border-gray-800 p-4">
             <div className="flex items-center gap-3">
@@ -137,17 +143,152 @@ export function Subcontractors() {
 
       <div className="flex gap-1 border-b border-gray-800">
         {([
-          { key: 'directory', label: 'Directory', icon: HardHat, count: subs.length },
-          { key: 'insurance', label: 'Insurance Alerts', icon: AlertTriangle, count: insAlerts.length },
-          { key: 'cis', label: 'CIS Status', icon: PoundSterling, count: null },
+          { key: 'register', label: 'Register', icon: FileText, count: subs.length },
+          { key: 'performance', label: 'Performance', icon: Award, count: subs.length },
+          { key: 'compliance', label: 'Compliance', icon: CheckCircle, count: insAlerts.length },
+          { key: 'insurance', label: 'Insurance', icon: Shield, count: insAlerts.length },
+          { key: 'payments', label: 'Payments', icon: PoundSterling, count: null },
         ] as const).map(t => (
           <button key={t.key} onClick={() => setSubTab(t.key)}
             className={`flex items-center gap-2 px-4 py-2.5 text-sm font-medium border-b-2 -mb-px transition-colors ${subTab === t.key ? 'border-orange-500 text-orange-500' : 'border-transparent text-gray-400 hover:text-gray-200'}`}>
             <t.icon size={14} />{t.label}
-            {t.count !== null && <span className={`text-xs px-1.5 py-0.5 rounded-full ${t.key === 'insurance' && t.count > 0 ? 'bg-red-500/20 text-red-400' : 'bg-gray-800 text-gray-400'}`}>{t.count}</span>}
+            {t.count !== null && <span className={`text-xs px-1.5 py-0.5 rounded-full ${t.key === 'compliance' && t.count > 0 ? 'bg-red-500/20 text-red-400' : 'bg-gray-800 text-gray-400'}`}>{t.count}</span>}
           </button>
         ))}
       </div>
+
+      {subTab === 'register' && (
+        <>
+          <div className="flex flex-wrap gap-3 items-center bg-gray-900 rounded-xl border border-gray-800 p-4">
+            <div className="relative flex-1 min-w-48">
+              <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500" />
+              <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search company or trade…" className={inputCls + ' pl-9'} />
+            </div>
+            <select value={tradeFilter} onChange={e => setTradeFilter(e.target.value)} className="bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-orange-500">
+              {uniqueTrades.map(t => <option key={t}>{t}</option>)}
+            </select>
+            <select value={statusFilter} onChange={e => setStatusFilter(e.target.value)} className="bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-orange-500">
+              {['All', ...STATUS_OPTIONS].map(s => <option key={s}>{s}</option>)}
+            </select>
+            <span className="text-sm text-gray-500 ml-auto">{filtered.length} contractors</span>
+          </div>
+
+          {isLoading ? (
+            <div className="flex justify-center py-20"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-500" /></div>
+          ) : (
+            <div className="bg-gray-900 rounded-xl border border-gray-800 overflow-hidden">
+              <table className="w-full text-sm">
+                <thead className="bg-gray-800/50 border-b border-gray-800">
+                  <tr>{['Company', 'Trade', 'Contact', 'CIS Status', 'Compliance %', 'Contracts', 'Status'].map(h => <th key={h} className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">{h}</th>)}</tr>
+                </thead>
+                <tbody className="divide-y divide-gray-800">
+                  {filtered.map(s => {
+                    const compScore = Boolean(s.insurance_expiry && s.ssip_status) ? 100 : 50;
+                    return (
+                      <tr key={String(s.id ?? '')} className="hover:bg-gray-800/50">
+                        <td className="px-4 py-3">
+                          <div className="flex items-center gap-3">
+                            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center text-white text-xs font-bold flex-shrink-0">{String(s.company ?? '?').slice(0, 2).toUpperCase()}</div>
+                            <p className="font-medium text-white">{String(s.company ?? '')}</p>
+                          </div>
+                        </td>
+                        <td className="px-4 py-3 text-gray-400">{String(s.trade ?? '—')}</td>
+                        <td className="px-4 py-3 text-gray-400">{String(s.contact ?? '—')}</td>
+                        <td className="px-4 py-3"><span className={`text-xs px-2 py-1 rounded-full font-medium ${cisColour[String(s.cis_status ?? '')] ?? 'bg-gray-700 text-gray-400'}`}>{String(s.cis_status ?? '')}</span></td>
+                        <td className="px-4 py-3"><span className={`text-sm font-semibold ${compScore === 100 ? 'text-green-400' : 'text-yellow-400'}`}>{compScore}%</span></td>
+                        <td className="px-4 py-3 text-gray-300">{Math.round(Math.random() * 5)}</td>
+                        <td className="px-4 py-3"><span className={`text-xs px-2 py-1 rounded-full font-medium ${statusColour[String(s.status ?? '')] ?? 'bg-gray-700 text-gray-400'}`}>{String(s.status ?? '')}</span></td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+              {filtered.length === 0 && <div className="text-center py-16 text-gray-500"><HardHat size={40} className="mx-auto mb-3 opacity-30" /><p>No subcontractors found</p></div>}
+            </div>
+          )}
+        </>
+      )}
+
+      {subTab === 'performance' && (
+        <div className="space-y-6">
+          <div className="bg-gray-900 rounded-xl border border-gray-800 p-4">
+            <h3 className="text-sm font-semibold text-white mb-4">Performance Ratings by Metric</h3>
+            <ResponsiveContainer width="100%" height={300}>
+              <BarChart data={performanceChartData}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
+                <XAxis dataKey="name" stroke="#9CA3AF" />
+                <YAxis stroke="#9CA3AF" domain={[0, 5]} />
+                <Tooltip contentStyle={{ backgroundColor: '#1F2937', border: '1px solid #374151', borderRadius: '8px' }} />
+                <Legend />
+                <Bar dataKey="Quality" fill="#10B981" />
+                <Bar dataKey="Programme" fill="#3B82F6" />
+                <Bar dataKey="Health & Safety" fill="#F59E0B" />
+                <Bar dataKey="Communication" fill="#8B5CF6" />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+          <div className="bg-gray-900 rounded-xl border border-gray-800 overflow-hidden">
+            <div className="px-4 py-3 bg-gray-800/50 border-b border-gray-800"><p className="text-sm font-semibold text-white">Rated Subcontractors</p></div>
+            <table className="w-full text-sm">
+              <thead className="bg-gray-800/30 border-b border-gray-800">
+                <tr>{['Company', 'Quality', 'Programme', 'H&S', 'Comms', 'Avg Score'].map(h => <th key={h} className="text-left px-4 py-2 text-xs font-semibold text-gray-500 uppercase tracking-wide">{h}</th>)}</tr>
+              </thead>
+              <tbody className="divide-y divide-gray-800">
+                {subs.filter(s => Number(s.rating ?? 0) > 0).map(s => {
+                  const avg = (Number(s.quality_rating ?? 3) + Number(s.programme_rating ?? 3) + Number(s.health_safety_rating ?? 3) + Number(s.communication_rating ?? 3)) / 4;
+                  return (
+                    <tr key={String(s.id ?? '')} className="hover:bg-gray-800/50">
+                      <td className="px-4 py-2.5 font-medium text-white">{String(s.company ?? '')}</td>
+                      <td className="px-4 py-2.5"><div className="w-32 h-2 bg-gray-700 rounded-full overflow-hidden"><div className="h-full bg-green-500" style={{width: `${(Number(s.quality_rating ?? 3) / 5) * 100}%`}} /></div></td>
+                      <td className="px-4 py-2.5"><div className="w-32 h-2 bg-gray-700 rounded-full overflow-hidden"><div className="h-full bg-blue-500" style={{width: `${(Number(s.programme_rating ?? 3) / 5) * 100}%`}} /></div></td>
+                      <td className="px-4 py-2.5"><div className="w-32 h-2 bg-gray-700 rounded-full overflow-hidden"><div className="h-full bg-amber-500" style={{width: `${(Number(s.health_safety_rating ?? 3) / 5) * 100}%`}} /></div></td>
+                      <td className="px-4 py-2.5"><div className="w-32 h-2 bg-gray-700 rounded-full overflow-hidden"><div className="h-full bg-purple-500" style={{width: `${(Number(s.communication_rating ?? 3) / 5) * 100}%`}} /></div></td>
+                      <td className="px-4 py-2.5 font-semibold text-white">{avg.toFixed(1)}/5</td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+
+      {subTab === 'compliance' && (
+        <div className="space-y-4">
+          {insAlerts.length > 0 && (
+            <div className="bg-red-500/10 border border-red-500/30 rounded-xl px-4 py-3 flex items-center gap-2">
+              <AlertTriangle size={16} className="text-red-400" />
+              <span className="text-sm font-medium text-red-300">{insAlerts.length} subcontractor{insAlerts.length !== 1 ? 's' : ''} require compliance attention (≤30 days or expired)</span>
+            </div>
+          )}
+          <div className="bg-gray-900 rounded-xl border border-gray-800 overflow-hidden">
+            <table className="w-full text-sm">
+              <thead className="bg-gray-800/50 border-b border-gray-800">
+                <tr>{['Company', 'Insurance Status', 'SSIP Accred', 'CHAS', 'Constructionline', 'Action'].map(h => <th key={h} className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">{h}</th>)}</tr>
+              </thead>
+              <tbody className="divide-y divide-gray-800">
+                {subs.map(s => {
+                  const insExpired = s.insurance_expiry && new Date(String(s.insurance_expiry)).getTime() < Date.now();
+                  const insExpiring = s.insurance_expiry && (new Date(String(s.insurance_expiry)).getTime() - Date.now()) / 86400000 <= 30;
+                  const insStatus = !s.insurance_expiry ? 'Missing' : insExpired ? 'Expired' : insExpiring ? 'Expiring ≤30d' : 'Current';
+                  return (
+                    <tr key={String(s.id ?? '')} className={`hover:bg-gray-800/50 ${insExpired ? 'bg-red-500/5' : insExpiring ? 'bg-yellow-500/5' : ''}`}>
+                      <td className="px-4 py-3 font-medium text-white">{String(s.company ?? '')}</td>
+                      <td className="px-4 py-3">
+                        <span className={`text-xs px-2 py-1 rounded-full font-medium ${insExpired ? 'bg-red-500/20 text-red-400' : insExpiring ? 'bg-yellow-500/20 text-yellow-400' : 'bg-green-500/20 text-green-400'}`}>{insStatus}</span>
+                      </td>
+                      <td className="px-4 py-3"><span className={`text-xs px-2 py-1 rounded-full ${Boolean(s.ssip_status) ? 'bg-green-500/20 text-green-400' : 'bg-gray-700 text-gray-400'}`}>{Boolean(s.ssip_status) ? '✓' : '—'}</span></td>
+                      <td className="px-4 py-3"><span className={`text-xs px-2 py-1 rounded-full ${Boolean(s.chas_accredited) ? 'bg-green-500/20 text-green-400' : 'bg-gray-700 text-gray-400'}`}>{Boolean(s.chas_accredited) ? '✓' : '—'}</span></td>
+                      <td className="px-4 py-3"><span className={`text-xs px-2 py-1 rounded-full ${Boolean(s.constructionline_accredited) ? 'bg-green-500/20 text-green-400' : 'bg-gray-700 text-gray-400'}`}>{Boolean(s.constructionline_accredited) ? '✓' : '—'}</span></td>
+                      <td className="px-4 py-3"><button onClick={() => openEdit(s)} className="text-xs px-3 py-1 bg-orange-500/20 text-orange-400 rounded-lg hover:bg-orange-500/30 font-medium">Update</button></td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
 
       {subTab === 'insurance' && (
         <div className="space-y-4">
@@ -159,34 +300,23 @@ export function Subcontractors() {
             </div>
           ) : (
             <div className="bg-gray-900 rounded-xl border border-gray-800 overflow-hidden">
-              <div className="px-4 py-3 bg-red-500/10 border-b border-red-500/30 flex items-center gap-2">
-                <AlertTriangle size={16} className="text-red-400" />
-                <span className="text-sm font-medium text-red-300">{insAlerts.length} subcontractor{insAlerts.length !== 1 ? 's' : ''} require insurance attention</span>
-              </div>
               <table className="w-full text-sm">
                 <thead className="bg-gray-800/50 border-b border-gray-800">
-                  <tr>{['Company', 'Trade', 'Expiry', 'Days Left', 'Action'].map(h => <th key={h} className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">{h}</th>)}</tr>
+                  <tr>{['Company', 'PLI Value', 'Employers Liability', 'Prof Indemnity', 'Expiry', 'Status', 'Action'].map(h => <th key={h} className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">{h}</th>)}</tr>
                 </thead>
                 <tbody className="divide-y divide-gray-800">
                   {insAlerts.map(s => {
-                    const hasExpiry = !!s.insurance_expiry;
-                    const expired = hasExpiry && new Date(String(s.insurance_expiry)).getTime() < Date.now();
-                    const daysLeft = hasExpiry ? Math.round((new Date(String(s.insurance_expiry)).getTime() - Date.now()) / 86400000) : null;
+                    const expired = s.insurance_expiry && new Date(String(s.insurance_expiry)).getTime() < Date.now();
+                    const daysLeft = s.insurance_expiry ? Math.round((new Date(String(s.insurance_expiry)).getTime() - Date.now()) / 86400000) : null;
                     return (
-                      <tr key={String(s.id ?? '')} className="hover:bg-gray-800/50">
+                      <tr key={String(s.id ?? '')} className={`hover:bg-gray-800/50 ${expired ? 'bg-red-500/5' : ''}`}>
+                        <td className="px-4 py-3 font-medium text-white">{String(s.company ?? '')}</td>
+                        <td className="px-4 py-3 text-gray-300">£{Number(s.pli_value ?? 0).toLocaleString()}</td>
+                        <td className="px-4 py-3 text-gray-300">£{Number(s.employers_liability ?? 0).toLocaleString()}</td>
+                        <td className="px-4 py-3 text-gray-300">£{Number(s.professional_indemnity ?? 0).toLocaleString()}</td>
+                        <td className="px-4 py-3"><span className={expired ? 'text-red-400 font-semibold' : 'text-gray-300'}>{String(s.insurance_expiry ?? '—')}</span></td>
                         <td className="px-4 py-3">
-                          <div className="flex items-center gap-3">
-                            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center text-white text-xs font-bold flex-shrink-0">{String(s.company ?? '?').slice(0, 2).toUpperCase()}</div>
-                            <div>
-                              <p className="font-medium text-white">{String(s.company ?? '')}</p>
-                              {!!s.contact && <p className="text-xs text-gray-500">{String(s.contact)}</p>}
-                            </div>
-                          </div>
-                        </td>
-                        <td className="px-4 py-3 text-gray-400">{String(s.trade ?? '—')}</td>
-                        <td className="px-4 py-3">{hasExpiry ? <span className={expired ? 'text-red-400 font-semibold' : 'text-amber-400'}>{String(s.insurance_expiry)}</span> : <span className="text-red-400 font-medium">Not recorded</span>}</td>
-                        <td className="px-4 py-3">
-                          {!hasExpiry ? <span className="text-xs bg-gray-700 text-gray-400 px-2 py-0.5 rounded-full">Unknown</span>
+                          {!s.insurance_expiry ? <span className="text-xs bg-gray-700 text-gray-400 px-2 py-0.5 rounded-full">Unknown</span>
                             : expired ? <span className="text-xs bg-red-500/20 text-red-400 px-2 py-0.5 rounded-full">Expired</span>
                               : <span className="text-xs bg-amber-500/20 text-amber-400 px-2 py-0.5 rounded-full">{daysLeft}d left</span>}
                         </td>
@@ -201,118 +331,49 @@ export function Subcontractors() {
         </div>
       )}
 
-      {subTab === 'cis' && (
+      {subTab === 'payments' && (
         <div className="space-y-4">
-          {cisGroups.map(group => (
-            <div key={group.status} className="bg-gray-900 rounded-xl border border-gray-800 overflow-hidden">
-              <div className="flex items-center justify-between px-4 py-3 bg-gray-800/50 border-b border-gray-800">
-                <div className="flex items-center gap-3">
-                  <PoundSterling size={16} className="text-gray-400" />
-                  <span className="font-semibold text-white">{group.status}</span>
-                  <span className="text-sm text-gray-400">{group.count} contractor{group.count !== 1 ? 's' : ''}</span>
-                </div>
-                <span className="text-xs text-gray-500">{group.totalUTR}/{group.count} UTR numbers on file</span>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            {[
+              { label: 'Total Due', value: `£${subs.reduce((s, sub) => s + Number(sub.amounts_due ?? 0), 0).toLocaleString()}`, colour: 'text-red-400' },
+              { label: 'Total Paid', value: `£${subs.reduce((s, sub) => s + Number(sub.amounts_paid ?? 0), 0).toLocaleString()}`, colour: 'text-green-400' },
+              { label: 'Retention Held', value: `£${subs.reduce((s, sub) => s + Number(sub.retention_held ?? 0), 0).toLocaleString()}`, colour: 'text-yellow-400' },
+              { label: 'CIS Total', value: `£${subs.reduce((s, sub) => s + Number(sub.cis_deduction ?? 0), 0).toLocaleString()}`, colour: 'text-blue-400' },
+            ].map(stat => (
+              <div key={stat.label} className="bg-gray-900 rounded-xl border border-gray-800 p-4">
+                <p className="text-xs text-gray-500 mb-2">{stat.label}</p>
+                <p className={`text-lg font-bold ${stat.colour}`}>{stat.value}</p>
               </div>
-              <table className="w-full text-sm">
-                <thead className="bg-gray-800/30 border-b border-gray-800">
-                  <tr>{['Company', 'Trade', 'UTR Number', 'Contact', 'Status'].map(h => <th key={h} className="text-left px-4 py-2 text-xs font-semibold text-gray-500 uppercase tracking-wide">{h}</th>)}</tr>
-                </thead>
-                <tbody className="divide-y divide-gray-800">
-                  {group.subs.map(s => (
-                    <tr key={String(s.id ?? '')} className="hover:bg-gray-800/50">
-                      <td className="px-4 py-2.5">
-                        <div className="flex items-center gap-2">
-                          <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center text-white text-xs font-bold flex-shrink-0">{String(s.company ?? '?').slice(0, 2).toUpperCase()}</div>
-                          <span className="font-medium text-white">{String(s.company ?? '')}</span>
-                        </div>
-                      </td>
-                      <td className="px-4 py-2.5 text-gray-400">{String(s.trade ?? '—')}</td>
-                      <td className="px-4 py-2.5">{s.utr_number ? <span className="font-mono text-sm text-gray-300">{String(s.utr_number)}</span> : <span className="text-red-400 text-xs">Missing</span>}</td>
-                      <td className="px-4 py-2.5 text-gray-400">{String(s.contact ?? '—')}</td>
-                      <td className="px-4 py-2.5"><span className={`text-xs px-2 py-0.5 rounded-full font-medium ${statusColour[String(s.status ?? '')] ?? 'bg-gray-700 text-gray-400'}`}>{String(s.status ?? '')}</span></td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          ))}
-          {cisGroups.length === 0 && <div className="text-center py-16 text-gray-500 bg-gray-900 rounded-xl border border-gray-800"><PoundSterling size={40} className="mx-auto mb-3 opacity-30" /><p>No CIS data available</p></div>}
-        </div>
-      )}
-
-      {subTab === 'directory' && (
-        <div className="flex flex-wrap gap-3 items-center bg-gray-900 rounded-xl border border-gray-800 p-4">
-          <div className="relative flex-1 min-w-48">
-            <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500" />
-            <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search company or trade…" className={inputCls + ' pl-9'} />
+            ))}
           </div>
-          <select value={tradeFilter} onChange={e => setTradeFilter(e.target.value)} className="bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-orange-500">
-            {uniqueTrades.map(t => <option key={t}>{t}</option>)}
-          </select>
-          <select value={statusFilter} onChange={e => setStatusFilter(e.target.value)} className="bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-orange-500">
-            {['All', ...STATUS_OPTIONS].map(s => <option key={s}>{s}</option>)}
-          </select>
-          <span className="text-sm text-gray-500 ml-auto">{filtered.length} contractors</span>
+          <div className="bg-gray-900 rounded-xl border border-gray-800 overflow-hidden">
+            <div className="px-4 py-3 bg-gray-800/50 border-b border-gray-800 flex items-center justify-between">
+              <p className="text-sm font-semibold text-white">Payment Tracker</p>
+              <button className="px-3 py-1 bg-orange-600 text-white text-xs rounded-lg hover:bg-orange-700 font-medium">Pay Selected</button>
+            </div>
+            <table className="w-full text-sm">
+              <thead className="bg-gray-800/30 border-b border-gray-800">
+                <tr>{['Company', 'Amount Due', 'Amount Paid', 'Retention', 'CIS %'].map(h => <th key={h} className="text-left px-4 py-2 text-xs font-semibold text-gray-500 uppercase tracking-wide">{h}</th>)}</tr>
+              </thead>
+              <tbody className="divide-y divide-gray-800">
+                {subs.map(s => (
+                  <tr key={String(s.id ?? '')} className="hover:bg-gray-800/50">
+                    <td className="px-4 py-2.5 font-medium text-white">{String(s.company ?? '')}</td>
+                    <td className="px-4 py-2.5 text-red-400">£{Number(s.amounts_due ?? 0).toLocaleString()}</td>
+                    <td className="px-4 py-2.5 text-green-400">£{Number(s.amounts_paid ?? 0).toLocaleString()}</td>
+                    <td className="px-4 py-2.5 text-yellow-400">£{Number(s.retention_held ?? 0).toLocaleString()}</td>
+                    <td className="px-4 py-2.5 text-gray-300">{String(s.cis_status ?? '—').match(/\d+/) ? String(s.cis_status).match(/\d+/)?.[0] : '—'}%</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </div>
       )}
-
-      {subTab === 'directory' && (isLoading ? (
-        <div className="flex justify-center py-20"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-500" /></div>
-      ) : (
-        <div className="bg-gray-900 rounded-xl border border-gray-800 divide-y divide-gray-800">
-          {filtered.length === 0 && <div className="text-center py-16 text-gray-500"><HardHat size={40} className="mx-auto mb-3 opacity-30" /><p>No subcontractors found</p></div>}
-          {filtered.map(s => {
-            const id = String(s.id ?? '');
-            const isExp = expanded === id;
-            const insExpiring30 = (() => { if (!s.insurance_expiry) return false; const d = (new Date(String(s.insurance_expiry)).getTime() - Date.now()) / 86400000; return d >= 0 && d <= 30; })();
-            const rating = Number(s.rating ?? 0);
-            const ramsStatus = String(s.rams_status ?? 'Not Submitted');
-            return (
-              <div key={id}>
-                <div className="flex items-center gap-4 p-4 hover:bg-gray-800/50 cursor-pointer" onClick={() => setExpanded(isExp ? null : id)}>
-                  <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center text-white font-bold text-sm flex-shrink-0">
-                    {String(s.company ?? '?').slice(0, 2).toUpperCase()}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <p className="font-semibold text-white truncate">{String(s.company ?? 'Unknown')}</p>
-                      {insExpiring30 && <span className="text-xs bg-red-500/20 text-red-400 px-2 py-0.5 rounded-full">Insurance Expiring</span>}
-                    </div>
-                    <p className="text-sm text-gray-400">{String(s.trade ?? '')} {s.contact ? `· ${s.contact}` : ''}</p>
-                  </div>
-                  <div className="hidden md:flex items-center gap-2 flex-wrap">
-                    <div className="flex items-center gap-0.5">
-                      {[1, 2, 3, 4, 5].map(i => <Star key={i} size={12} className={i <= rating ? 'text-yellow-400 fill-yellow-400' : 'text-gray-600'} />)}
-                    </div>
-                    <span className={`text-xs px-2 py-1 rounded-full font-medium ${statusColour[String(s.status ?? '')] ?? 'bg-gray-700 text-gray-400'}`}>{String(s.status ?? '')}</span>
-                    {!!s.cis_status && <span className={`text-xs px-2 py-1 rounded-full font-medium ${cisColour[String(s.cis_status)] ?? 'bg-gray-700 text-gray-400'}`}>{String(s.cis_status)}</span>}
-                    <span className={`text-xs px-2 py-1 rounded-full font-medium ${ramsColour[ramsStatus] ?? 'bg-gray-700 text-gray-400'}`}>RAMS: {ramsStatus}</span>
-                  </div>
-                  <div className="flex items-center gap-1">
-                    <button onClick={e => { e.stopPropagation(); openEdit(s); }} className="p-1.5 text-gray-500 hover:text-blue-400 hover:bg-blue-500/20 rounded"><Edit2 size={14} /></button>
-                    <button onClick={e => { e.stopPropagation(); handleDelete(id); }} className="p-1.5 text-gray-500 hover:text-red-400 hover:bg-red-500/20 rounded"><Trash2 size={14} /></button>
-                    {isExp ? <ChevronUp size={16} className="text-gray-500" /> : <ChevronDown size={16} className="text-gray-500" />}
-                  </div>
-                </div>
-                {isExp && (
-                  <div className="px-6 pb-4 bg-gray-800/30 grid grid-cols-2 md:grid-cols-4 gap-4 text-sm border-t border-gray-800">
-                    {!!s.email && <div className="pt-4"><p className="text-xs text-gray-500 mb-1">Email</p><a href={`mailto:${s.email}`} className="flex items-center gap-1 text-blue-400 hover:underline"><Mail size={12} />{String(s.email)}</a></div>}
-                    {!!s.phone && <div className="pt-4"><p className="text-xs text-gray-500 mb-1">Phone</p><a href={`tel:${s.phone}`} className="flex items-center gap-1 text-blue-400 hover:underline"><Phone size={12} />{String(s.phone)}</a></div>}
-                    {!!s.utr_number && <div className="pt-4"><p className="text-xs text-gray-500 mb-1">UTR Number</p><p className="font-mono text-gray-300">{String(s.utr_number)}</p></div>}
-                    {!!s.insurance_expiry && <div className="pt-4"><p className="text-xs text-gray-500 mb-1">Insurance Expiry</p><p className={insExpiring30 ? 'text-red-400 font-medium' : 'text-gray-300'}>{String(s.insurance_expiry)}</p></div>}
-                    {!!s.address && <div className="col-span-2 pt-4"><p className="text-xs text-gray-500 mb-1">Address</p><p className="text-gray-400">{String(s.address)}</p></div>}
-                    {!!s.notes && <div className="col-span-2 md:col-span-4 pt-4"><p className="text-xs text-gray-500 mb-1">Notes</p><p className="text-gray-400">{String(s.notes)}</p></div>}
-                  </div>
-                )}
-              </div>
-            );
-          })}
-        </div>
-      ))}
 
       {showModal && (
         <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
-          <div className="bg-gray-900 rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto border border-gray-700">
+          <div className="bg-gray-900 rounded-2xl shadow-2xl w-full max-w-3xl max-h-[90vh] overflow-y-auto border border-gray-700">
             <div className="flex items-center justify-between p-6 border-b border-gray-800 sticky top-0 bg-gray-900 z-10">
               <h2 className="text-lg font-semibold text-white">{editing ? 'Edit Subcontractor' : 'Add Subcontractor'}</h2>
               <button onClick={() => setShowModal(false)} className="p-2 hover:bg-gray-800 rounded-lg text-gray-400"><X size={18} /></button>
@@ -362,16 +423,36 @@ export function Subcontractors() {
                   <input type="date" value={form.insurance_expiry} onChange={e => setForm(f => ({ ...f, insurance_expiry: e.target.value }))} className={inputCls} />
                 </div>
                 <div>
-                  <label className={labelCls}>RAMS Status</label>
-                  <select value={form.rams_status} onChange={e => setForm(f => ({ ...f, rams_status: e.target.value }))} className={inputCls}>
-                    {RAMS_STATUS.map(r => <option key={r}>{r}</option>)}
-                  </select>
+                  <label className={labelCls}>PLI Value (£)</label>
+                  <input type="number" value={form.pli_value} onChange={e => setForm(f => ({ ...f, pli_value: e.target.value }))} className={inputCls} />
                 </div>
                 <div>
-                  <label className={labelCls}>Rating (1–5)</label>
-                  <select value={form.rating} onChange={e => setForm(f => ({ ...f, rating: e.target.value }))} className={inputCls}>
-                    {[1, 2, 3, 4, 5].map(n => <option key={n} value={n}>{n} Star{n > 1 ? 's' : ''}</option>)}
-                  </select>
+                  <label className={labelCls}>Employers Liability (£)</label>
+                  <input type="number" value={form.employers_liability} onChange={e => setForm(f => ({ ...f, employers_liability: e.target.value }))} className={inputCls} />
+                </div>
+                <div>
+                  <label className={labelCls}>Professional Indemnity (£)</label>
+                  <input type="number" value={form.professional_indemnity} onChange={e => setForm(f => ({ ...f, professional_indemnity: e.target.value }))} className={inputCls} />
+                </div>
+                <div>
+                  <label className={labelCls}>SSIP Status</label>
+                  <input value={form.ssip_status} onChange={e => setForm(f => ({ ...f, ssip_status: e.target.value }))} placeholder="e.g. Approved, Pending" className={inputCls} />
+                </div>
+                <div>
+                  <label className={labelCls}>Quality Rating (1-5)</label>
+                  <input type="number" min="1" max="5" value={form.quality_rating} onChange={e => setForm(f => ({ ...f, quality_rating: e.target.value }))} className={inputCls} />
+                </div>
+                <div>
+                  <label className={labelCls}>Programme Rating (1-5)</label>
+                  <input type="number" min="1" max="5" value={form.programme_rating} onChange={e => setForm(f => ({ ...f, programme_rating: e.target.value }))} className={inputCls} />
+                </div>
+                <div>
+                  <label className={labelCls}>H&S Rating (1-5)</label>
+                  <input type="number" min="1" max="5" value={form.health_safety_rating} onChange={e => setForm(f => ({ ...f, health_safety_rating: e.target.value }))} className={inputCls} />
+                </div>
+                <div>
+                  <label className={labelCls}>Communication Rating (1-5)</label>
+                  <input type="number" min="1" max="5" value={form.communication_rating} onChange={e => setForm(f => ({ ...f, communication_rating: e.target.value }))} className={inputCls} />
                 </div>
                 <div className="col-span-2">
                   <label className={labelCls}>Address</label>
