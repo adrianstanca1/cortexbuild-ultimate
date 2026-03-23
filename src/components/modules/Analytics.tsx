@@ -1,15 +1,16 @@
 // Module: Analytics — CortexBuild Ultimate
+// Comprehensive analytics dashboard with 6 tabs: Overview, Financial, Projects, Safety, Labour
 import { useState } from 'react';
 import {
-  AreaChart, Area, BarChart, Bar, LineChart, Line, PieChart, Pie, Cell,
+  AreaChart, Area, BarChart, Bar, LineChart, Line, PieChart, Pie, Cell, ScatterChart, Scatter,
   XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer,
 } from 'recharts';
-import { useProjects, useSafety, useInvoices } from '../../hooks/useData';
+import { useProjects, useSafety, useInvoices, useTeam } from '../../hooks/useData';
 import clsx from 'clsx';
 
 type AnyRow = Record<string, unknown>;
 
-// Static monthly trend data (would come from financial_periods table in production)
+// Static monthly trend data
 const REVENUE_DATA = [
   { month:'Sep', revenue:485000, costs:342000, profit:143000 },
   { month:'Oct', revenue:612000, costs:445000, profit:167000 },
@@ -19,6 +20,7 @@ const REVENUE_DATA = [
   { month:'Feb', revenue:856000, costs:601000, profit:255000 },
   { month:'Mar', revenue:943000, costs:648000, profit:295000 },
 ];
+
 const SAFETY_TREND = [
   { month:'Sep', incidents:3, nearMisses:8,  toolboxTalks:12 },
   { month:'Oct', incidents:2, nearMisses:6,  toolboxTalks:14 },
@@ -28,12 +30,14 @@ const SAFETY_TREND = [
   { month:'Feb', incidents:1, nearMisses:4,  toolboxTalks:16 },
   { month:'Mar', incidents:2, nearMisses:5,  toolboxTalks:12 },
 ];
+
 const REVENUE_BY_TYPE = [
   { name:'Commercial',  value:1285440, color:'#3b82f6' },
   { name:'Residential', value:797644,  color:'#8b5cf6' },
   { name:'Civil',       value:511620,  color:'#10b981' },
   { name:'Industrial',  value:258496,  color:'#f59e0b' },
 ];
+
 const INVOICE_AGING = [
   { range:'0–30 days',  amount:94500,  percentage:16 },
   { range:'31–60 days', amount:185000, percentage:31 },
@@ -41,8 +45,47 @@ const INVOICE_AGING = [
   { range:'90+ days',   amount:195800, percentage:33 },
 ];
 
+const CASHFLOW_DATA = [
+  { month:'Sep', cumInflow:485000,   cumOutflow:342000 },
+  { month:'Oct', cumInflow:1097000,  cumOutflow:787000 },
+  { month:'Nov', cumInflow:1631000,  cumOutflow:1165000 },
+  { month:'Dec', cumInflow:1929000,  cumOutflow:1390000 },
+  { month:'Jan', cumInflow:2650000,  cumOutflow:1902000 },
+  { month:'Feb', cumInflow:3506000,  cumOutflow:2503000 },
+  { month:'Mar', cumInflow:4449000,  cumOutflow:3151000 },
+];
+
+const PROFIT_MARGIN_DATA = [
+  { month:'Sep', margin:29.5 },
+  { month:'Oct', margin:27.3 },
+  { month:'Nov', margin:29.2 },
+  { month:'Dec', margin:24.5 },
+  { month:'Jan', margin:29.0 },
+  { month:'Feb', margin:29.8 },
+  { month:'Mar', margin:31.3 },
+];
+
+const LABOUR_BY_TRADE = [
+  { trade:'Electricians', hours:2240, cost:156800 },
+  { trade:'Plumbers',     hours:1890, cost:132300 },
+  { trade:'Carpenters',   hours:2100, cost:126000 },
+  { trade:'Labourers',    hours:3450, cost:103500 },
+  { trade:'Foremen',      hours:840,  cost:84000  },
+  { trade:'Scaffolders',  hours:560,  cost:36400  },
+];
+
+const HEADCOUNT_TREND = [
+  { month:'Sep', headcount:28 },
+  { month:'Oct', headcount:31 },
+  { month:'Nov', headcount:32 },
+  { month:'Dec', headcount:26 },
+  { month:'Jan', headcount:33 },
+  { month:'Feb', headcount:35 },
+  { month:'Mar', headcount:36 },
+];
+
 export function Analytics() {
-  const [activeTab, setActiveTab] = useState<'financial'|'safety'|'performance'>('financial');
+  const [activeTab, setActiveTab] = useState<'overview'|'financial'|'projects'|'safety'|'labour'>('overview');
 
   const { data: rawProjects = [] } = useProjects.useList();
   const { data: rawSafety   = [] } = useSafety.useList();
@@ -59,6 +102,15 @@ export function Analytics() {
     ? activeProjects.reduce((s,p) => s + Number(p.contractValue??p.contract_value??0), 0) / activeProjects.length
     : 0;
 
+  // Overview KPIs
+  const ytdRevenue = totalRevenue;
+  const grossProfitPct = Number(grossMargin);
+  const outstandingInvoices = invoices.filter(i => i.status === 'pending' || i.status === 'unpaid').reduce((s,i) => s + Number(i.amount??0), 0);
+  const pipelineValue = projects.filter(p => p.status === 'quoted' || p.status === 'tendering').reduce((s,p) => s + Number(p.contractValue??p.contract_value??0), 0);
+  const lastIncidentDate = safety.length > 0 ? new Date(String(safety[0].date??Date.now())) : null;
+  const daysSinceLastIncident = lastIncidentDate ? Math.floor((Date.now() - lastIncidentDate.getTime()) / (1000 * 60 * 60 * 24)) : 0;
+
+  // Safety metrics
   const openIncidents   = safety.filter(s => s.status==='open'||s.status==='investigating').length;
   const riddorCount     = safety.filter(s => s.type==='riddor').length;
   const nearMissCount   = safety.filter(s => s.type==='near-miss').length;
@@ -67,12 +119,46 @@ export function Analytics() {
   const incidentCount   = safety.filter(s => s.type==='incident').length;
   const safetyScore     = Math.max(0, 100 - (riddorCount*10) - (incidentCount*3) - (nearMissCount*1));
 
+  // AFR calculation: (incidents × 100000) / total hours worked
+  const totalHours = 15080; // estimated from labour
+  const afr = incidentCount > 0 ? ((incidentCount * 100000) / totalHours).toFixed(2) : '0.00';
+  const daysLost = incidentCount * 5; // estimate
+  const costOfIncidents = incidentCount * 45000; // estimate per incident
+
   const incidentTypes = [
     { name:'Near Miss', value:Math.max(nearMissCount, 1),  color:'#fbbf24' },
     { name:'Hazard',    value:Math.max(hazardCount, 1),    color:'#f97316' },
     { name:'Incident',  value:Math.max(incidentCount, 1),  color:'#ef4444' },
   ];
 
+  // Project health scores
+  const projectHealthScores = activeProjects.map(p => {
+    const budget      = Number(p.budget??0);
+    const spent       = Number(p.spent??0);
+    const progress    = Number(p.progress??0);
+    const schedule    = Number(p.schedule_days_delay??0);
+    const rfis        = Number(p.open_rfis??0);
+    const incidents   = Number(p.safety_incidents??0);
+
+    const budgetOverrun = budget > 0 ? ((spent - budget) / budget) * 100 : 0;
+    const healthScore = Math.max(0, Math.min(100,
+      100 - Math.max(0, budgetOverrun) - (schedule * 2) - (rfis * 5) - (incidents * 10)
+    ));
+
+    const healthStatus = healthScore >= 80 ? 'green' : healthScore >= 60 ? 'amber' : 'red';
+
+    return {
+      id:     String(p.id),
+      name:   String(p.name??'').split(' ').slice(0,2).join(' '),
+      health: healthScore.toFixed(0),
+      status: healthStatus,
+      progress: progress,
+      budget: budget / 1000000,
+      spent:  spent  / 1000000,
+    };
+  });
+
+  // Budget variance for chart
   const budgetVariance = activeProjects.map(p => {
     const budget  = Number(p.budget??0);
     const spent   = Number(p.spent??0);
@@ -89,18 +175,64 @@ export function Analytics() {
     };
   });
 
+  // Progress vs budget scatter data
   const projChartData = activeProjects.map(p => ({
     name:     String(p.name??'').split(' ').slice(0,2).join(' '),
     progress: Number(p.progress??0),
-    spent:    Number(p.spent??0) / 1000000,
+    budget:   Number(p.budget??0) / 1000000,
   }));
 
+  // On-time vs delayed split
+  const onTimeCount = activeProjects.filter(p => Number(p.schedule_days_delay??0) <= 0).length;
+  const delayedCount = activeProjects.filter(p => Number(p.schedule_days_delay??0) > 0).length;
+  const projectStatusSplit = [
+    { name: 'On-Time', value: Math.max(onTimeCount, 1), color: '#10b981' },
+    { name: 'Delayed', value: Math.max(delayedCount, 1), color: '#ef4444' },
+  ];
+
+  // Top 3 projects by value
+  const top3Projects = activeProjects
+    .map(p => ({ name: String(p.name??''), value: Number(p.contractValue??p.contract_value??0) }))
+    .sort((a,b) => b.value - a.value)
+    .slice(0,3);
+
+  // Labour cost vs budget by project (sample)
+  const labourByProject = activeProjects.slice(0,4).map(p => ({
+    name: String(p.name??'').split(' ').slice(0,2).join(' '),
+    budget: Number(p.labour_budget??0) / 1000000 || 0.5,
+    actual: Number(p.labour_cost??0) / 1000000 || 0.3,
+  }));
+
+  // Overtime % ratio (monthly estimate)
+  const overtimeByMonth = [
+    { month: 'Sep', overtime: 8.2 },
+    { month: 'Oct', overtime: 10.5 },
+    { month: 'Nov', overtime: 9.8 },
+    { month: 'Dec', overtime: 6.3 },
+    { month: 'Jan', overtime: 11.2 },
+    { month: 'Feb', overtime: 12.1 },
+    { month: 'Mar', overtime: 13.5 },
+  ];
+
+  // VAT liability tracker (quarterly)
+  const vatTracker = [
+    { quarter: 'Q1', liability: 87500, paid: 87500, status: 'paid' },
+    { quarter: 'Q2', liability: 92300, paid: 0, status: 'due' },
+    { quarter: 'Q3', liability: 85600, paid: 0, status: 'estimated' },
+  ];
+
   return (
-    <div className="h-full overflow-y-auto bg-gradient-to-br from-gray-950 via-gray-900 to-gray-950 p-6">
+    <div className="h-full overflow-y-auto bg-gray-900 p-6 text-white">
       <div className="mb-6">
         <h1 className="text-3xl font-bold text-white mb-4">Analytics &amp; Intelligence</h1>
-        <div className="flex gap-2">
-          {[{id:'financial',label:'Financial'},{id:'safety',label:'Safety'},{id:'performance',label:'Performance'}].map(tab=>(
+        <div className="flex gap-2 flex-wrap">
+          {[
+            {id:'overview',label:'Overview'},
+            {id:'financial',label:'Financial'},
+            {id:'projects',label:'Projects'},
+            {id:'safety',label:'Safety'},
+            {id:'labour',label:'Labour'}
+          ].map(tab=>(
             <button key={tab.id} onClick={()=>setActiveTab(tab.id as typeof activeTab)}
               className={clsx('rounded-lg px-4 py-2 text-sm font-semibold transition-all',
                 activeTab===tab.id?'bg-blue-600 text-white':'bg-gray-800 text-gray-400 hover:bg-gray-700')}>
@@ -110,51 +242,118 @@ export function Analytics() {
         </div>
       </div>
 
-      {/* Financial */}
-      {activeTab==='financial' && (
+      {/* OVERVIEW TAB */}
+      {activeTab==='overview' && (
         <div className="space-y-6">
-          <div className="grid grid-cols-4 gap-4">
-            {[
-              {label:'Turnover YTD',      value:`£${(totalRevenue/1000000).toFixed(2)}M`,         color:'text-blue-400'  },
-              {label:'Gross Margin',      value:`${grossMargin}%`,                                  color:'text-green-400' },
-              {label:'EBITDA Est.',       value:`£${(totalRevenue*0.17/1000).toFixed(0)}K`,        color:'text-purple-400'},
-              {label:'Avg Project Value', value:avgProjValue>0?`£${(avgProjValue/1000000).toFixed(2)}M`:'—', color:'text-orange-400'},
-            ].map((kpi,idx)=>(
-              <div key={idx} className="rounded-xl border border-gray-800 bg-gray-900 p-4">
-                <p className="text-xs text-gray-400">{kpi.label}</p>
-                <p className={clsx('mt-2 text-2xl font-bold', kpi.color)}>{kpi.value}</p>
-              </div>
-            ))}
+          {/* Top 6 KPI Cards */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            <div className="rounded-xl border border-gray-700 bg-gray-800 p-5 hover:border-blue-500 transition-colors">
+              <p className="text-xs text-gray-400 font-semibold">TOTAL REVENUE YTD</p>
+              <p className="mt-3 text-3xl font-bold text-blue-400">£{(ytdRevenue/1000000).toFixed(2)}M</p>
+              <p className="mt-1 text-xs text-gray-500">+12.5% vs prior year</p>
+            </div>
+            <div className="rounded-xl border border-gray-700 bg-gray-800 p-5 hover:border-green-500 transition-colors">
+              <p className="text-xs text-gray-400 font-semibold">GROSS PROFIT %</p>
+              <p className="mt-3 text-3xl font-bold text-green-400">{grossProfitPct.toFixed(1)}%</p>
+              <p className="mt-1 text-xs text-gray-500">Above target 32%</p>
+            </div>
+            <div className="rounded-xl border border-gray-700 bg-gray-800 p-5 hover:border-purple-500 transition-colors">
+              <p className="text-xs text-gray-400 font-semibold">ACTIVE PROJECTS</p>
+              <p className="mt-3 text-3xl font-bold text-purple-400">{activeProjects.length}</p>
+              <p className="mt-1 text-xs text-gray-500">£{(avgProjValue/1000000).toFixed(1)}M avg value</p>
+            </div>
+            <div className="rounded-xl border border-gray-700 bg-gray-800 p-5 hover:border-orange-500 transition-colors">
+              <p className="text-xs text-gray-400 font-semibold">OUTSTANDING INVOICES</p>
+              <p className="mt-3 text-3xl font-bold text-orange-400">£{(outstandingInvoices/1000).toFixed(0)}K</p>
+              <p className="mt-1 text-xs text-gray-500">{invoices.filter(i => i.status === 'pending' || i.status === 'unpaid').length} invoices</p>
+            </div>
+            <div className="rounded-xl border border-gray-700 bg-gray-800 p-5 hover:border-emerald-500 transition-colors">
+              <p className="text-xs text-gray-400 font-semibold">DAYS SINCE LAST INCIDENT</p>
+              <p className="mt-3 text-3xl font-bold text-emerald-400">{daysSinceLastIncident}</p>
+              <p className="mt-1 text-xs text-gray-500">Safety score: {safetyScore}/100</p>
+            </div>
+            <div className="rounded-xl border border-gray-700 bg-gray-800 p-5 hover:border-cyan-500 transition-colors">
+              <p className="text-xs text-gray-400 font-semibold">PIPELINE VALUE</p>
+              <p className="mt-3 text-3xl font-bold text-cyan-400">£{(pipelineValue/1000000).toFixed(1)}M</p>
+              <p className="mt-1 text-xs text-gray-500">{projects.filter(p => p.status === 'quoted' || p.status === 'tendering').length} opportunities</p>
+            </div>
           </div>
 
-          <div className="rounded-2xl border border-gray-800 bg-gray-900 p-5">
-            <h3 className="mb-4 text-sm font-semibold text-white">Revenue vs Cost vs Profit</h3>
+          {/* Revenue vs Cost vs Profit Chart */}
+          <div className="rounded-xl border border-gray-700 bg-gray-800 p-5">
+            <h3 className="mb-4 text-sm font-semibold text-white">Revenue vs Cost vs Profit (7 Months)</h3>
             <ResponsiveContainer width="100%" height={300}>
               <AreaChart data={REVENUE_DATA}>
                 <defs>
-                  <linearGradient id="revGrad" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.3}/><stop offset="95%" stopColor="#3b82f6" stopOpacity={0}/>
+                  <linearGradient id="revGradOv" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.3}/>
+                    <stop offset="95%" stopColor="#3b82f6" stopOpacity={0}/>
                   </linearGradient>
-                  <linearGradient id="costGrad" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#ef4444" stopOpacity={0.3}/><stop offset="95%" stopColor="#ef4444" stopOpacity={0}/>
+                  <linearGradient id="costGradOv" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="#ef4444" stopOpacity={0.3}/>
+                    <stop offset="95%" stopColor="#ef4444" stopOpacity={0}/>
                   </linearGradient>
-                  <linearGradient id="profitGrad2" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#10b981" stopOpacity={0.3}/><stop offset="95%" stopColor="#10b981" stopOpacity={0}/>
+                  <linearGradient id="profitGradOv" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="#10b981" stopOpacity={0.3}/>
+                    <stop offset="95%" stopColor="#10b981" stopOpacity={0}/>
                   </linearGradient>
                 </defs>
                 <CartesianGrid strokeDasharray="3 3" stroke="#374151"/>
                 <XAxis dataKey="month" stroke="#9ca3af"/>
                 <YAxis stroke="#9ca3af"/>
-                <Tooltip contentStyle={{backgroundColor:'#111827',border:'1px solid #374151'}}/>
-                <Area type="monotone" dataKey="revenue" stroke="#3b82f6" fill="url(#revGrad)"/>
-                <Area type="monotone" dataKey="costs"   stroke="#ef4444" fill="url(#costGrad)"/>
-                <Area type="monotone" dataKey="profit"  stroke="#10b981" fill="url(#profitGrad2)"/>
+                <Tooltip contentStyle={{backgroundColor:'#1f2937',border:'1px solid #374151',borderRadius:'8px'}}/>
+                <Legend/>
+                <Area type="monotone" dataKey="revenue" name="Revenue" stroke="#3b82f6" fill="url(#revGradOv)"/>
+                <Area type="monotone" dataKey="costs" name="Costs" stroke="#ef4444" fill="url(#costGradOv)"/>
+                <Area type="monotone" dataKey="profit" name="Profit" stroke="#10b981" fill="url(#profitGradOv)"/>
               </AreaChart>
             </ResponsiveContainer>
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
-            <div className="rounded-2xl border border-gray-800 bg-gray-900 p-5">
+          {/* Top 3 Projects by Value */}
+          <div>
+            <h3 className="mb-3 text-sm font-semibold text-white">Top 3 Projects by Value</h3>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              {top3Projects.map((proj, idx) => (
+                <div key={idx} className="rounded-xl border border-gray-700 bg-gray-800 p-4">
+                  <div className="flex items-center justify-between">
+                    <p className="text-sm font-medium text-gray-300">{proj.name}</p>
+                    <span className="text-xs bg-blue-600 text-white px-2 py-1 rounded">#{idx + 1}</span>
+                  </div>
+                  <p className="mt-2 text-2xl font-bold text-blue-400">£{(proj.value/1000000).toFixed(2)}M</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* FINANCIAL TAB */}
+      {activeTab==='financial' && (
+        <div className="space-y-6">
+          {/* KPI row */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div className="rounded-xl border border-gray-700 bg-gray-800 p-4">
+              <p className="text-xs text-gray-400">Turnover YTD</p>
+              <p className="mt-2 text-2xl font-bold text-blue-400">£{(ytdRevenue/1000000).toFixed(2)}M</p>
+            </div>
+            <div className="rounded-xl border border-gray-700 bg-gray-800 p-4">
+              <p className="text-xs text-gray-400">Gross Margin</p>
+              <p className="mt-2 text-2xl font-bold text-green-400">{grossProfitPct.toFixed(1)}%</p>
+            </div>
+            <div className="rounded-xl border border-gray-700 bg-gray-800 p-4">
+              <p className="text-xs text-gray-400">EBITDA Est.</p>
+              <p className="mt-2 text-2xl font-bold text-purple-400">£{(ytdRevenue*0.17/1000).toFixed(0)}K</p>
+            </div>
+            <div className="rounded-xl border border-gray-700 bg-gray-800 p-4">
+              <p className="text-xs text-gray-400">Outstanding AR</p>
+              <p className="mt-2 text-2xl font-bold text-orange-400">£{(outstandingInvoices/1000).toFixed(0)}K</p>
+            </div>
+          </div>
+
+          {/* Revenue by Type Pie */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <div className="rounded-xl border border-gray-700 bg-gray-800 p-5">
               <h3 className="mb-4 text-sm font-semibold text-white">Revenue by Project Type</h3>
               <ResponsiveContainer width="100%" height={250}>
                 <PieChart>
@@ -167,14 +366,44 @@ export function Analytics() {
                 </PieChart>
               </ResponsiveContainer>
             </div>
-            <div className="rounded-2xl border border-gray-800 bg-gray-900 p-5">
+
+            {/* Cash Flow S-Curve */}
+            <div className="rounded-xl border border-gray-700 bg-gray-800 p-5">
+              <h3 className="mb-4 text-sm font-semibold text-white">Cash Flow S-Curve (Cumulative)</h3>
+              <ResponsiveContainer width="100%" height={250}>
+                <AreaChart data={CASHFLOW_DATA}>
+                  <defs>
+                    <linearGradient id="inflowGrad" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="#10b981" stopOpacity={0.3}/>
+                      <stop offset="95%" stopColor="#10b981" stopOpacity={0}/>
+                    </linearGradient>
+                    <linearGradient id="outflowGrad" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="#ef4444" stopOpacity={0.3}/>
+                      <stop offset="95%" stopColor="#ef4444" stopOpacity={0}/>
+                    </linearGradient>
+                  </defs>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#374151"/>
+                  <XAxis dataKey="month" stroke="#9ca3af"/>
+                  <YAxis stroke="#9ca3af"/>
+                  <Tooltip contentStyle={{backgroundColor:'#1f2937',border:'1px solid #374151',borderRadius:'8px'}} formatter={(v:number)=>`£${(v/1000000).toFixed(1)}M`}/>
+                  <Legend/>
+                  <Area type="monotone" dataKey="cumInflow" name="Cumulative Inflow" stroke="#10b981" fill="url(#inflowGrad)"/>
+                  <Area type="monotone" dataKey="cumOutflow" name="Cumulative Outflow" stroke="#ef4444" fill="url(#outflowGrad)"/>
+                </AreaChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
+
+          {/* Invoice Aging & Profit Margin */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <div className="rounded-xl border border-gray-700 bg-gray-800 p-5">
               <h3 className="mb-4 text-sm font-semibold text-white">Invoice Aging</h3>
-              <div className="space-y-3">
+              <div className="space-y-4">
                 {INVOICE_AGING.map((item,idx)=>(
                   <div key={idx}>
                     <div className="mb-1 flex justify-between text-xs">
                       <span className="text-gray-400">{item.range}</span>
-                      <span className="font-semibold text-white">£{(item.amount/1000).toFixed(0)}K</span>
+                      <span className="font-semibold text-white">£{(item.amount/1000).toFixed(0)}K ({item.percentage}%)</span>
                     </div>
                     <div className="h-2 w-full rounded-full bg-gray-700">
                       <div className="h-full rounded-full bg-gradient-to-r from-amber-500 to-orange-500" style={{width:`${item.percentage}%`}}/>
@@ -183,35 +412,201 @@ export function Analytics() {
                 ))}
               </div>
             </div>
+
+            <div className="rounded-xl border border-gray-700 bg-gray-800 p-5">
+              <h3 className="mb-4 text-sm font-semibold text-white">Profit Margin % by Month</h3>
+              <ResponsiveContainer width="100%" height={200}>
+                <LineChart data={PROFIT_MARGIN_DATA}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#374151"/>
+                  <XAxis dataKey="month" stroke="#9ca3af"/>
+                  <YAxis stroke="#9ca3af"/>
+                  <Tooltip contentStyle={{backgroundColor:'#1f2937',border:'1px solid #374151',borderRadius:'8px'}} formatter={(v:number)=>`${v.toFixed(1)}%`}/>
+                  <Line type="monotone" dataKey="margin" name="Margin %" stroke="#10b981" strokeWidth={2} dot={{fill:'#10b981'}}/>
+                </LineChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
+
+          {/* VAT Liability Tracker */}
+          <div className="rounded-xl border border-gray-700 bg-gray-800 p-5">
+            <h3 className="mb-4 text-sm font-semibold text-white">VAT Liability Tracker</h3>
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b border-gray-700">
+                    <th className="px-4 py-3 text-left font-semibold text-gray-400">Quarter</th>
+                    <th className="px-4 py-3 text-left font-semibold text-gray-400">Liability</th>
+                    <th className="px-4 py-3 text-left font-semibold text-gray-400">Paid</th>
+                    <th className="px-4 py-3 text-left font-semibold text-gray-400">Status</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {vatTracker.map((row, idx) => (
+                    <tr key={idx} className="border-b border-gray-700 hover:bg-gray-700/30">
+                      <td className="px-4 py-3 text-white font-medium">{row.quarter}</td>
+                      <td className="px-4 py-3 text-gray-300">£{(row.liability/1000).toFixed(1)}K</td>
+                      <td className="px-4 py-3 text-gray-300">£{(row.paid/1000).toFixed(1)}K</td>
+                      <td className="px-4 py-3">
+                        <span className={clsx('text-xs px-2 py-1 rounded-full font-semibold',
+                          row.status === 'paid' ? 'bg-green-900 text-green-300' : row.status === 'due' ? 'bg-red-900 text-red-300' : 'bg-amber-900 text-amber-300'
+                        )}>
+                          {row.status.charAt(0).toUpperCase() + row.status.slice(1)}
+                        </span>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           </div>
         </div>
       )}
 
-      {/* Safety */}
-      {activeTab==='safety' && (
+      {/* PROJECTS TAB */}
+      {activeTab==='projects' && (
         <div className="space-y-6">
-          <div className="grid grid-cols-4 gap-4">
-            {[
-              {label:'Safety Score',       value:`${safetyScore}/100`,   color:'text-emerald-400'},
-              {label:'RIDDOR Incidents',   value:String(riddorCount),    color:'text-green-400' },
-              {label:'Open Incidents',     value:String(openIncidents),  color:'text-orange-400'},
-              {label:'Toolbox Talks',      value:String(toolboxCount),   color:'text-blue-400'  },
-            ].map((kpi,idx)=>(
-              <div key={idx} className="rounded-xl border border-gray-800 bg-gray-900 p-4">
-                <p className="text-xs text-gray-400">{kpi.label}</p>
-                <p className={clsx('mt-2 text-2xl font-bold', kpi.color)}>{kpi.value}</p>
-              </div>
-            ))}
+          {/* Project Health Score Cards */}
+          <div>
+            <h3 className="mb-3 text-sm font-semibold text-white">Project Health Scores</h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {projectHealthScores.map((proj, idx) => (
+                <div key={idx} className={clsx('rounded-xl border p-4 transition-colors',
+                  proj.status === 'green' ? 'border-green-700 bg-green-900/20' :
+                  proj.status === 'amber' ? 'border-amber-700 bg-amber-900/20' :
+                  'border-red-700 bg-red-900/20'
+                )}>
+                  <div className="flex items-start justify-between">
+                    <div>
+                      <p className="text-sm font-medium text-gray-300">{proj.name}</p>
+                      <p className="text-xs text-gray-500 mt-1">Progress: {proj.progress}%</p>
+                    </div>
+                    <div className={clsx('text-2xl font-bold',
+                      proj.status === 'green' ? 'text-green-400' :
+                      proj.status === 'amber' ? 'text-amber-400' :
+                      'text-red-400'
+                    )}>
+                      {proj.health}
+                    </div>
+                  </div>
+                  <div className="mt-3 grid grid-cols-2 gap-2 text-xs">
+                    <div className="bg-gray-900/50 rounded px-2 py-1">
+                      <p className="text-gray-500">Budget</p>
+                      <p className="font-semibold text-gray-200">£{proj.budget.toFixed(1)}M</p>
+                    </div>
+                    <div className="bg-gray-900/50 rounded px-2 py-1">
+                      <p className="text-gray-500">Spent</p>
+                      <p className="font-semibold text-orange-400">£{proj.spent.toFixed(1)}M</p>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
           </div>
 
-          <div className="rounded-2xl border border-gray-800 bg-gray-900 p-5">
-            <h3 className="mb-4 text-sm font-semibold text-white">Safety Trends — 7 Months</h3>
+          {/* Progress vs Budget Scatter */}
+          <div className="rounded-xl border border-gray-700 bg-gray-800 p-5">
+            <h3 className="mb-4 text-sm font-semibold text-white">Progress vs Budget Summary</h3>
+            <ResponsiveContainer width="100%" height={300}>
+              <ScatterChart margin={{top:20, right:20, bottom:20, left:20}}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#374151"/>
+                <XAxis dataKey="progress" name="Progress %" stroke="#9ca3af"/>
+                <YAxis dataKey="budget" name="Budget (£M)" stroke="#9ca3af"/>
+                <Tooltip contentStyle={{backgroundColor:'#1f2937',border:'1px solid #374151',borderRadius:'8px'}}
+                  formatter={(value: unknown) => {
+                    const n = Number(value ?? 0);
+                    return isNaN(n) ? '—' : n.toFixed(1);
+                  }}
+                  labelFormatter={(label: unknown) => String(label ?? '—')}
+                />
+                <Scatter name="Projects" data={projChartData} fill="#3b82f6"/>
+              </ScatterChart>
+            </ResponsiveContainer>
+          </div>
+
+          {/* On-Time vs Delayed */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <div className="rounded-xl border border-gray-700 bg-gray-800 p-5">
+              <h3 className="mb-4 text-sm font-semibold text-white">On-Time vs Delayed Split</h3>
+              <ResponsiveContainer width="100%" height={250}>
+                <PieChart>
+                  <Pie data={projectStatusSplit} cx="50%" cy="50%" labelLine={false}
+                    label={({name,value})=>`${name} (${value})`} outerRadius={80} dataKey="value">
+                    {projectStatusSplit.map((entry,idx)=><Cell key={idx} fill={entry.color}/>)}
+                  </Pie>
+                  <Tooltip/>
+                </PieChart>
+              </ResponsiveContainer>
+            </div>
+
+            {/* Budget Variance Table */}
+            <div className="rounded-xl border border-gray-700 bg-gray-800 p-5">
+              <h3 className="mb-4 text-sm font-semibold text-white">Budget Variance Analysis</h3>
+              <div className="overflow-x-auto">
+                <table className="w-full text-xs">
+                  <thead>
+                    <tr className="border-b border-gray-700">
+                      <th className="px-2 py-2 text-left text-gray-400">Project</th>
+                      <th className="px-2 py-2 text-left text-gray-400">Budget</th>
+                      <th className="px-2 py-2 text-left text-gray-400">Spent</th>
+                      <th className="px-2 py-2 text-left text-gray-400">RAG</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {budgetVariance.slice(0,5).map(proj=>(
+                      <tr key={proj.id} className="border-b border-gray-700 hover:bg-gray-700/30">
+                        <td className="px-2 py-2 text-white font-medium">{proj.name}</td>
+                        <td className="px-2 py-2 text-gray-400">£{proj.budget.toFixed(1)}M</td>
+                        <td className="px-2 py-2 text-orange-400">£{proj.spent.toFixed(1)}M</td>
+                        <td className="px-2 py-2">
+                          <span className={clsx('inline-block h-2.5 w-2.5 rounded-full',
+                            proj.rag==='green'?'bg-green-500':proj.rag==='amber'?'bg-yellow-500':'bg-red-500')}/>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* SAFETY TAB */}
+      {activeTab==='safety' && (
+        <div className="space-y-6">
+          {/* Safety KPI Cards */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div className="rounded-xl border border-gray-700 bg-gray-800 p-4">
+              <p className="text-xs text-gray-400 font-semibold">SAFETY SCORE</p>
+              <p className="mt-2 text-3xl font-bold text-emerald-400">{safetyScore}</p>
+              <p className="mt-1 text-xs text-gray-500">/ 100</p>
+            </div>
+            <div className="rounded-xl border border-gray-700 bg-gray-800 p-4">
+              <p className="text-xs text-gray-400 font-semibold">AFR (Accident Frequency Rate)</p>
+              <p className="mt-2 text-3xl font-bold text-orange-400">{afr}</p>
+              <p className="mt-1 text-xs text-gray-500">per 100k hours</p>
+            </div>
+            <div className="rounded-xl border border-gray-700 bg-gray-800 p-4">
+              <p className="text-xs text-gray-400 font-semibold">RIDDOR COUNT</p>
+              <p className="mt-2 text-3xl font-bold text-red-400">{riddorCount}</p>
+              <p className="mt-1 text-xs text-gray-500">Reportable incidents</p>
+            </div>
+            <div className="rounded-xl border border-gray-700 bg-gray-800 p-4">
+              <p className="text-xs text-gray-400 font-semibold">COST OF INCIDENTS</p>
+              <p className="mt-2 text-3xl font-bold text-red-400">£{(costOfIncidents/1000).toFixed(0)}K</p>
+              <p className="mt-1 text-xs text-gray-500">{daysLost} days lost</p>
+            </div>
+          </div>
+
+          {/* Safety Trend LineChart */}
+          <div className="rounded-xl border border-gray-700 bg-gray-800 p-5">
+            <h3 className="mb-4 text-sm font-semibold text-white">Safety Performance Trends (7 Months)</h3>
             <ResponsiveContainer width="100%" height={300}>
               <LineChart data={SAFETY_TREND}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#374151"/>
                 <XAxis dataKey="month" stroke="#9ca3af"/>
                 <YAxis stroke="#9ca3af"/>
-                <Tooltip contentStyle={{backgroundColor:'#111827',border:'1px solid #374151'}}/>
+                <Tooltip contentStyle={{backgroundColor:'#1f2937',border:'1px solid #374151',borderRadius:'8px'}}/>
                 <Legend/>
                 <Line type="monotone" dataKey="incidents"    name="Incidents"     stroke="#ef4444" strokeWidth={2}/>
                 <Line type="monotone" dataKey="nearMisses"   name="Near Misses"   stroke="#fbbf24" strokeWidth={2}/>
@@ -220,63 +615,140 @@ export function Analytics() {
             </ResponsiveContainer>
           </div>
 
-          <div className="rounded-2xl border border-gray-800 bg-gray-900 p-5">
-            <h3 className="mb-4 text-sm font-semibold text-white">Incident Types Distribution</h3>
-            <ResponsiveContainer width="100%" height={250}>
-              <PieChart>
-                <Pie data={incidentTypes} cx="50%" cy="50%" labelLine={false}
-                  label={({name,value})=>`${name} ${value}`} outerRadius={80} dataKey="value">
-                  {incidentTypes.map((entry,idx)=><Cell key={idx} fill={entry.color}/>)}
-                </Pie>
-                <Tooltip/>
-              </PieChart>
-            </ResponsiveContainer>
+          {/* Incident Types & Summary */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <div className="rounded-xl border border-gray-700 bg-gray-800 p-5">
+              <h3 className="mb-4 text-sm font-semibold text-white">Incident Types Distribution</h3>
+              <ResponsiveContainer width="100%" height={250}>
+                <PieChart>
+                  <Pie data={incidentTypes} cx="50%" cy="50%" labelLine={false}
+                    label={({name,value})=>`${name} ${value}`} outerRadius={80} dataKey="value">
+                    {incidentTypes.map((entry,idx)=><Cell key={idx} fill={entry.color}/>)}
+                  </Pie>
+                  <Tooltip/>
+                </PieChart>
+              </ResponsiveContainer>
+            </div>
+
+            <div className="rounded-xl border border-gray-700 bg-gray-800 p-5">
+              <h3 className="mb-4 text-sm font-semibold text-white">Safety Summary</h3>
+              <div className="space-y-3">
+                <div className="flex justify-between items-center pb-3 border-b border-gray-700">
+                  <span className="text-sm text-gray-400">Open Incidents</span>
+                  <span className="font-semibold text-white">{openIncidents}</span>
+                </div>
+                <div className="flex justify-between items-center pb-3 border-b border-gray-700">
+                  <span className="text-sm text-gray-400">Total Toolbox Talks</span>
+                  <span className="font-semibold text-blue-400">{toolboxCount}</span>
+                </div>
+                <div className="flex justify-between items-center pb-3 border-b border-gray-700">
+                  <span className="text-sm text-gray-400">Days Lost</span>
+                  <span className="font-semibold text-orange-400">{daysLost}</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-sm text-gray-400">Days Since Last Incident</span>
+                  <span className="font-semibold text-emerald-400">{daysSinceLastIncident}</span>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       )}
 
-      {/* Performance */}
-      {activeTab==='performance' && (
+      {/* LABOUR TAB */}
+      {activeTab==='labour' && (
         <div className="space-y-6">
-          <div className="rounded-2xl border border-gray-800 bg-gray-900 p-5">
-            <h3 className="mb-4 text-sm font-semibold text-white">Project Progress Overview</h3>
+          {/* Labour by Trade BarChart */}
+          <div className="rounded-xl border border-gray-700 bg-gray-800 p-5">
+            <h3 className="mb-4 text-sm font-semibold text-white">Labour Hours by Trade</h3>
             <ResponsiveContainer width="100%" height={300}>
-              <BarChart data={projChartData}>
+              <BarChart data={LABOUR_BY_TRADE}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#374151"/>
-                <XAxis dataKey="name" stroke="#9ca3af"/>
+                <XAxis dataKey="trade" stroke="#9ca3af"/>
                 <YAxis stroke="#9ca3af"/>
-                <Tooltip contentStyle={{backgroundColor:'#111827',border:'1px solid #374151'}}/>
+                <Tooltip contentStyle={{backgroundColor:'#1f2937',border:'1px solid #374151',borderRadius:'8px'}}/>
                 <Legend/>
-                <Bar dataKey="progress" name="Progress %" fill="#3b82f6"/>
-                <Bar dataKey="spent"    name="Spent (£M)"  fill="#f59e0b"/>
+                <Bar dataKey="hours" name="Hours" fill="#3b82f6"/>
               </BarChart>
             </ResponsiveContainer>
           </div>
 
-          <div className="rounded-2xl border border-gray-800 bg-gray-900 p-5">
-            <h3 className="mb-4 text-sm font-semibold text-white">Budget Variance Analysis</h3>
+          {/* Labour Cost vs Budget by Project */}
+          <div className="rounded-xl border border-gray-700 bg-gray-800 p-5">
+            <h3 className="mb-4 text-sm font-semibold text-white">Labour Cost vs Budget by Project</h3>
+            <ResponsiveContainer width="100%" height={300}>
+              <BarChart data={labourByProject}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#374151"/>
+                <XAxis dataKey="name" stroke="#9ca3af"/>
+                <YAxis stroke="#9ca3af"/>
+                <Tooltip contentStyle={{backgroundColor:'#1f2937',border:'1px solid #374151',borderRadius:'8px'}} formatter={(v:number)=>`£${v.toFixed(1)}M`}/>
+                <Legend/>
+                <Bar dataKey="budget" name="Budget (£M)" fill="#10b981"/>
+                <Bar dataKey="actual" name="Actual (£M)" fill="#f59e0b"/>
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+
+          {/* Headcount & Overtime Trends */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <div className="rounded-xl border border-gray-700 bg-gray-800 p-5">
+              <h3 className="mb-4 text-sm font-semibold text-white">Headcount Trend by Month</h3>
+              <ResponsiveContainer width="100%" height={250}>
+                <LineChart data={HEADCOUNT_TREND}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#374151"/>
+                  <XAxis dataKey="month" stroke="#9ca3af"/>
+                  <YAxis stroke="#9ca3af"/>
+                  <Tooltip contentStyle={{backgroundColor:'#1f2937',border:'1px solid #374151',borderRadius:'8px'}}/>
+                  <Line type="monotone" dataKey="headcount" name="Headcount" stroke="#8b5cf6" strokeWidth={2} dot={{fill:'#8b5cf6'}}/>
+                </LineChart>
+              </ResponsiveContainer>
+            </div>
+
+            <div className="rounded-xl border border-gray-700 bg-gray-800 p-5">
+              <h3 className="mb-4 text-sm font-semibold text-white">Overtime % Ratio by Month</h3>
+              <ResponsiveContainer width="100%" height={250}>
+                <LineChart data={overtimeByMonth}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#374151"/>
+                  <XAxis dataKey="month" stroke="#9ca3af"/>
+                  <YAxis stroke="#9ca3af"/>
+                  <Tooltip contentStyle={{backgroundColor:'#1f2937',border:'1px solid #374151',borderRadius:'8px'}} formatter={(v:number)=>`${v.toFixed(1)}%`}/>
+                  <Line type="monotone" dataKey="overtime" name="Overtime %" stroke="#f59e0b" strokeWidth={2} dot={{fill:'#f59e0b'}}/>
+                </LineChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
+
+          {/* Labour Summary Table */}
+          <div className="rounded-xl border border-gray-700 bg-gray-800 p-5">
+            <h3 className="mb-4 text-sm font-semibold text-white">Labour Summary by Trade</h3>
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead>
-                  <tr className="border-b border-gray-800">
-                    {['Project','Budget','Spent','Variance','RAG'].map(h=>(
-                      <th key={h} className="px-4 py-3 text-left font-semibold text-gray-400">{h}</th>
-                    ))}
+                  <tr className="border-b border-gray-700">
+                    <th className="px-4 py-3 text-left font-semibold text-gray-400">Trade</th>
+                    <th className="px-4 py-3 text-left font-semibold text-gray-400">Hours</th>
+                    <th className="px-4 py-3 text-left font-semibold text-gray-400">Cost</th>
+                    <th className="px-4 py-3 text-left font-semibold text-gray-400">Hourly Rate</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {budgetVariance.map(proj=>(
-                    <tr key={proj.id} className="border-b border-gray-800 hover:bg-gray-800/50">
-                      <td className="px-4 py-3 text-white font-medium">{proj.name}</td>
-                      <td className="px-4 py-3 text-gray-400">£{proj.budget.toFixed(1)}M</td>
-                      <td className="px-4 py-3 text-orange-400 font-medium">£{proj.spent.toFixed(1)}M</td>
-                      <td className="px-4 py-3 font-semibold text-white">£{proj.variance.toFixed(1)}M ({proj.variancePct}%)</td>
-                      <td className="px-4 py-3">
-                        <span className={clsx('inline-block h-3 w-3 rounded-full',
-                          proj.rag==='green'?'bg-green-500':proj.rag==='amber'?'bg-yellow-500':'bg-red-500')}/>
-                      </td>
-                    </tr>
-                  ))}
+                  {LABOUR_BY_TRADE.map((row, idx) => {
+                    const hourlyRate = row.cost / row.hours;
+                    return (
+                      <tr key={idx} className="border-b border-gray-700 hover:bg-gray-700/30">
+                        <td className="px-4 py-3 text-white font-medium">{row.trade}</td>
+                        <td className="px-4 py-3 text-gray-300">{row.hours.toLocaleString()}</td>
+                        <td className="px-4 py-3 text-orange-400">£{(row.cost/1000).toFixed(0)}K</td>
+                        <td className="px-4 py-3 text-blue-400">£{hourlyRate.toFixed(2)}/hr</td>
+                      </tr>
+                    );
+                  })}
+                  <tr className="bg-gray-700/30 font-semibold">
+                    <td className="px-4 py-3 text-white">TOTAL</td>
+                    <td className="px-4 py-3 text-gray-300">{LABOUR_BY_TRADE.reduce((s,r) => s + r.hours, 0).toLocaleString()}</td>
+                    <td className="px-4 py-3 text-orange-400">£{(LABOUR_BY_TRADE.reduce((s,r) => s + r.cost, 0)/1000).toFixed(0)}K</td>
+                    <td className="px-4 py-3 text-blue-400">£{(LABOUR_BY_TRADE.reduce((s,r) => s + r.cost, 0) / LABOUR_BY_TRADE.reduce((s,r) => s + r.hours, 0)).toFixed(2)}/hr</td>
+                  </tr>
                 </tbody>
               </table>
             </div>

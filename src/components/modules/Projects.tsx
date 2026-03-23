@@ -4,7 +4,7 @@ import {
   Plus, X, Trash2, Edit2, Search, ChevronRight, MapPin, Users, Calendar,
   PoundSterling, TrendingUp, AlertTriangle, CheckCircle2, Clock, Building2,
   BarChart3, FileText, Shield, ClipboardList, HardHat, ArrowLeft,
-  Loader2, RefreshCw, MessageSquare,
+  Loader2, RefreshCw, MessageSquare, AlertCircle, CheckSquare, Circle,
 } from 'lucide-react';
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend,
@@ -14,7 +14,7 @@ import {
   useProjects, useInvoices, useTeam, useDocuments,
   useRFIs, useChangeOrders, useSafety, useDailyReports,
 } from '../../hooks/useData';
-import type { ProjectStatus } from '../../types';
+import type { ProjectStatus, Priority } from '../../types';
 import clsx from 'clsx';
 import { toast } from 'sonner';
 
@@ -28,6 +28,14 @@ const STATUS_CFG: Record<string, { label:string; color:string; bg:string; dot:st
   completed: { label:'Completed', color:'text-emerald-400', bg:'bg-emerald-500/15 border border-emerald-600/50',dot:'bg-emerald-400'},
   archived:  { label:'Archived',  color:'text-gray-500',    bg:'bg-gray-700/50 border border-gray-600',         dot:'bg-gray-500'   },
 };
+
+const PRIORITY_CFG: Record<string, { label:string; color:string; dot:string }> = {
+  critical: { label:'Critical', color:'text-red-400',    dot:'bg-red-500'    },
+  high:     { label:'High',     color:'text-orange-400',  dot:'bg-orange-500' },
+  medium:   { label:'Medium',   color:'text-yellow-400',  dot:'bg-yellow-400' },
+  low:      { label:'Low',      color:'text-gray-400',    dot:'bg-gray-500'   },
+};
+
 const PROJECT_TYPES  = ['Commercial','Residential','Civil','Industrial','Healthcare','Fit-Out','Infrastructure','Refurbishment'];
 const PROJECT_PHASES = ['Pre-construction','Tender','Design','Foundation','Structural','Envelope','Internal Fit-Out','MEP','Finishing','Snagging','Handover'];
 const defaultForm    = { name:'', client:'', location:'', type:'Commercial', manager:'', budget:'', contract_value:'', workers:'0', start_date:'', end_date:'', status:'planning', phase:'Pre-construction', description:'' };
@@ -35,19 +43,150 @@ type FormData = typeof defaultForm;
 
 function fmtM(n:number){ if(n>=1_000_000) return `£${(n/1_000_000).toFixed(1)}M`; if(n>=1_000) return `£${(n/1_000).toFixed(0)}K`; return `£${n.toLocaleString()}`; }
 function daysDiff(d:string){ const diff=(new Date(d).getTime()-Date.now())/86400000; return Math.round(diff); }
+function getBudgetHealth(spent:number, budget:number): 'green'|'amber'|'red' {
+  if(budget===0) return 'green';
+  const pct = (spent/budget)*100;
+  if(pct<=70) return 'green';
+  if(pct<=85) return 'amber';
+  return 'red';
+}
 
 // ═══════════════════════════════════════════════════════════════════════════
 // PROJECT WORKSPACE — full page when a project is selected
 // ═══════════════════════════════════════════════════════════════════════════
-type WorkspaceTab = 'overview'|'financials'|'team'|'documents'|'rfis'|'safety'|'reports';
+type WorkspaceTab = 'overview'|'timeline'|'milestones'|'tasks'|'financials'|'team'|'documents'|'rfis'|'safety'|'reports';
 
 interface WorkspaceProps {
   project: AnyRow;
   onBack: () => void;
   onEdit: () => void;
 }
+
+interface ProjectPhase {
+  name: string;
+  progress: number;
+  startDate?: string;
+  endDate?: string;
+}
+
+interface ProjectMilestone {
+  id: string;
+  title: string;
+  dueDate: string;
+  status: 'completed' | 'in_progress' | 'upcoming';
+}
+
+interface ProjectTask {
+  id: string;
+  title: string;
+  status: string;
+  priority: Priority;
+  assignedTo?: string;
+  dueDate?: string;
+}
+
+// Sample helper to generate mock phases for timeline
+function generateProjectPhases(project: AnyRow): ProjectPhase[] {
+  const progress = Number(project.progress ?? 0);
+  const currentPhaseIdx = PROJECT_PHASES.indexOf(String(project.phase ?? 'Pre-construction'));
+
+  return PROJECT_PHASES.map((phase, idx) => {
+    let phProgress = 0;
+    if (idx < currentPhaseIdx) phProgress = 100;
+    else if (idx === currentPhaseIdx) phProgress = progress;
+
+    return {
+      name: phase,
+      progress: phProgress,
+      startDate: String(project.startDate ?? project.start_date ?? ''),
+      endDate: String(project.endDate ?? project.end_date ?? ''),
+    };
+  });
+}
+
+// Sample helper to generate mock milestones
+function generateProjectMilestones(project: AnyRow): ProjectMilestone[] {
+  const currentPhaseIdx = PROJECT_PHASES.indexOf(String(project.phase ?? 'Pre-construction'));
+  const endDate = new Date(String(project.endDate ?? project.end_date ?? Date.now()));
+
+  return [
+    {
+      id: '1',
+      title: 'Site Mobilization',
+      dueDate: new Date(new Date().getTime() + 7*24*60*60*1000).toISOString().split('T')[0],
+      status: currentPhaseIdx > 0 ? 'completed' : 'upcoming',
+    },
+    {
+      id: '2',
+      title: 'Structural Frame Complete',
+      dueDate: new Date(new Date().getTime() + 30*24*60*60*1000).toISOString().split('T')[0],
+      status: currentPhaseIdx > 2 ? 'completed' : currentPhaseIdx > 1 ? 'in_progress' : 'upcoming',
+    },
+    {
+      id: '3',
+      title: 'MEP First Fix',
+      dueDate: new Date(new Date().getTime() + 60*24*60*60*1000).toISOString().split('T')[0],
+      status: currentPhaseIdx > 4 ? 'completed' : currentPhaseIdx > 3 ? 'in_progress' : 'upcoming',
+    },
+    {
+      id: '4',
+      title: 'Interior Finishing',
+      dueDate: new Date(new Date().getTime() + 90*24*60*60*1000).toISOString().split('T')[0],
+      status: currentPhaseIdx > 6 ? 'completed' : currentPhaseIdx > 5 ? 'in_progress' : 'upcoming',
+    },
+    {
+      id: '5',
+      title: 'Snagging & Final Sign-Off',
+      dueDate: endDate.toISOString().split('T')[0],
+      status: currentPhaseIdx >= PROJECT_PHASES.length - 1 ? 'completed' : currentPhaseIdx >= PROJECT_PHASES.length - 2 ? 'in_progress' : 'upcoming',
+    },
+  ];
+}
+
+// Sample helper to generate mock tasks
+function generateProjectTasks(project: AnyRow): ProjectTask[] {
+  const priorities: Priority[] = ['critical', 'high', 'medium', 'low'];
+  const statuses = ['todo', 'in_progress', 'review', 'done', 'blocked'];
+
+  return [
+    {
+      id: '1',
+      title: 'Complete safety induction for new workers',
+      status: 'in_progress',
+      priority: 'critical',
+      assignedTo: String(project.manager ?? project.project_manager ?? 'Unassigned'),
+      dueDate: new Date(new Date().getTime() + 2*24*60*60*1000).toISOString().split('T')[0],
+    },
+    {
+      id: '2',
+      title: 'Review structural engineering drawings',
+      status: 'todo',
+      priority: 'high',
+      assignedTo: 'Unassigned',
+      dueDate: new Date(new Date().getTime() + 5*24*60*60*1000).toISOString().split('T')[0],
+    },
+    {
+      id: '3',
+      title: 'Approve material delivery schedule',
+      status: 'done',
+      priority: 'medium',
+      assignedTo: String(project.manager ?? project.project_manager ?? 'Unassigned'),
+      dueDate: new Date(new Date().getTime() - 3*24*60*60*1000).toISOString().split('T')[0],
+    },
+    {
+      id: '4',
+      title: 'Coordinate MEP subcontractor access',
+      status: 'todo',
+      priority: 'high',
+      assignedTo: 'Unassigned',
+      dueDate: new Date(new Date().getTime() + 7*24*60*60*1000).toISOString().split('T')[0],
+    },
+  ];
+}
+
 function ProjectWorkspace({ project, onBack, onEdit }: WorkspaceProps) {
   const [tab, setTab] = useState<WorkspaceTab>('overview');
+  const [taskAssignee, setTaskAssignee] = useState<Record<string, string>>({});
   const pName = String(project.name ?? '');
 
   // All hooks called unconditionally (React rules)
@@ -75,6 +214,12 @@ function ProjectWorkspace({ project, onBack, onEdit }: WorkspaceProps) {
   const endDate   = String(project.endDate??project.end_date??'');
   const daysLeft  = endDate ? daysDiff(endDate) : null;
   const statusCfg = STATUS_CFG[String(project.status??'')] ?? STATUS_CFG.planning;
+  const budgetHealth = getBudgetHealth(spent, budget);
+  const budgetHealthCfg = {
+    green: { bg:'bg-green-500/20', text:'text-green-400', label:'Healthy' },
+    amber: { bg:'bg-yellow-500/20', text:'text-yellow-400', label:'At Risk' },
+    red:   { bg:'bg-red-500/20',    text:'text-red-400',    label:'Critical' },
+  }[budgetHealth];
 
   const totalInvoiced = invoices.reduce((s,i)=>s+Number(i.amount??0),0);
   const totalPaid     = invoices.filter(i=>i.status==='paid').reduce((s,i)=>s+Number(i.amount??0),0);
@@ -83,8 +228,15 @@ function ProjectWorkspace({ project, onBack, onEdit }: WorkspaceProps) {
   const pendingCOs    = cos.filter(c=>c.status==='pending'||c.status==='draft').length;
   const approvedCOVal = cos.filter(c=>c.status==='approved').reduce((s,c)=>s+Number(c.value??c.amount??0),0);
 
+  const phases = generateProjectPhases(project);
+  const milestones = generateProjectMilestones(project);
+  const tasks = generateProjectTasks(project);
+
   const TABS = [
     { id:'overview',   label:'Overview',       icon:BarChart3       },
+    { id:'timeline',   label:'Timeline',       icon:Calendar        },
+    { id:'milestones', label:'Milestones',     icon:CheckCircle2    },
+    { id:'tasks',      label:'Tasks',          icon:ClipboardList   },
     { id:'financials', label:'Financials',     icon:PoundSterling   },
     { id:'team',       label:'Team',           icon:Users           },
     { id:'documents',  label:'Documents',      icon:FileText        },
@@ -135,7 +287,7 @@ function ProjectWorkspace({ project, onBack, onEdit }: WorkspaceProps) {
         </div>
 
         {/* KPI row */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
           <div className="bg-gray-800/60 rounded-xl p-3">
             <p className="text-gray-400 text-xs mb-1">Contract Value</p>
             <p className="text-white font-bold text-lg">{fmtM(Number(project.contractValue??project.contract_value??0))}</p>
@@ -156,6 +308,11 @@ function ProjectWorkspace({ project, onBack, onEdit }: WorkspaceProps) {
             <p className="text-gray-400 text-xs mb-1">Workers On Site</p>
             <p className="text-white font-bold text-lg">{String(project.workers??0)}</p>
             <p className="text-gray-500 text-xs">{String(project.phase??project.current_phase??'—')}</p>
+          </div>
+          <div className={`${budgetHealthCfg.bg} rounded-xl p-3 border border-gray-700`}>
+            <p className="text-gray-400 text-xs mb-1">Budget Health</p>
+            <p className={`font-bold text-lg ${budgetHealthCfg.text}`}>{budgetHealthCfg.label}</p>
+            <p className="text-gray-500 text-xs">{pct.toFixed(1)}% spent</p>
           </div>
         </div>
       </div>
@@ -245,6 +402,176 @@ function ProjectWorkspace({ project, onBack, onEdit }: WorkspaceProps) {
         </div>
       )}
 
+      {tab==='timeline' && (
+        <div className="space-y-4">
+          <div className="bg-gray-900 border border-gray-800 rounded-xl p-6">
+            <h3 className="text-sm font-semibold text-white mb-6">Project Timeline — Gantt Chart</h3>
+            <div className="overflow-x-auto pb-4">
+              <div className="min-w-[800px]">
+                {/* Legend */}
+                <div className="flex gap-6 mb-6 text-xs text-gray-400">
+                  <div className="flex items-center gap-2">
+                    <div className="w-3 h-3 bg-green-500 rounded"/>
+                    <span>Completed</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <div className="w-3 h-3 bg-blue-500 rounded"/>
+                    <span>In Progress</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <div className="w-3 h-3 bg-gray-600 rounded"/>
+                    <span>Upcoming</span>
+                  </div>
+                </div>
+
+                {/* Timeline bars */}
+                <div className="space-y-4">
+                  {phases.map((phase, idx) => {
+                    let barColor = 'bg-gray-600';
+                    if (phase.progress === 100) barColor = 'bg-green-500';
+                    else if (phase.progress > 0) barColor = 'bg-blue-500';
+
+                    return (
+                      <div key={idx} className="flex items-center gap-3">
+                        <div className="w-32 text-xs font-medium text-gray-400 truncate">{phase.name}</div>
+                        <div className="flex-1">
+                          <div className="h-6 bg-gray-800 rounded-full overflow-hidden relative">
+                            <div
+                              className={`h-full rounded-full transition-all ${barColor}`}
+                              style={{ width: `${Math.max(phase.progress, 5)}%` }}
+                            />
+                            <div className="absolute inset-0 flex items-center px-2">
+                              <span className="text-xs font-medium text-gray-800">{phase.progress}%</span>
+                            </div>
+                          </div>
+                        </div>
+                        <div className="w-16 text-xs text-right text-gray-400">{phase.progress}%</div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {tab==='milestones' && (
+        <div className="space-y-4">
+          <div className="bg-gray-900 border border-gray-800 rounded-xl p-6">
+            <h3 className="text-sm font-semibold text-white mb-6">Project Milestones</h3>
+            <div className="space-y-0">
+              {milestones.map((milestone, idx) => {
+                const isLast = idx === milestones.length - 1;
+                let statusIcon = null;
+                let statusColor = 'text-gray-400';
+
+                if (milestone.status === 'completed') {
+                  statusIcon = <CheckSquare className="w-5 h-5 text-green-400" />;
+                  statusColor = 'text-green-400';
+                } else if (milestone.status === 'in_progress') {
+                  statusIcon = <Circle className="w-5 h-5 text-blue-400 fill-blue-400" />;
+                  statusColor = 'text-blue-400';
+                } else {
+                  statusIcon = <Circle className="w-5 h-5 text-gray-500" />;
+                  statusColor = 'text-gray-500';
+                }
+
+                return (
+                  <div key={milestone.id} className="relative">
+                    <div className="flex gap-4 pb-6">
+                      <div className="flex flex-col items-center">
+                        <div className="flex items-center justify-center w-10 h-10 rounded-full bg-gray-800 border-2 border-gray-700">
+                          {statusIcon}
+                        </div>
+                        {!isLast && <div className="w-0.5 h-12 bg-gray-700 mt-2" />}
+                      </div>
+                      <div className="flex-1 pt-1">
+                        <p className={`font-medium text-sm ${statusColor}`}>{milestone.title}</p>
+                        <p className="text-xs text-gray-400 mt-1">Due: {milestone.dueDate}</p>
+                        <span className={`inline-block text-xs px-2 py-1 rounded-full mt-2 ${
+                          milestone.status === 'completed' ? 'bg-green-500/20 text-green-400' :
+                          milestone.status === 'in_progress' ? 'bg-blue-500/20 text-blue-400' :
+                          'bg-gray-700/50 text-gray-400'
+                        }`}>
+                          {milestone.status === 'completed' ? '✓ Complete' : milestone.status === 'in_progress' ? '● In Progress' : '○ Upcoming'}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {tab==='tasks' && (
+        <div className="space-y-4">
+          <div className="bg-gray-900 border border-gray-800 rounded-xl overflow-hidden">
+            {tasks.length===0 ? (
+              <p className="py-10 text-center text-gray-500">No tasks for this project</p>
+            ) : (
+              <table className="w-full text-sm">
+                <thead className="bg-gray-800/60 border-b border-gray-700">
+                  <tr>
+                    {['Task', 'Priority', 'Status', 'Assigned To', 'Due Date'].map(h => (
+                      <th key={h} className="px-4 py-3 text-left text-xs font-semibold text-gray-400 uppercase">{h}</th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-800">
+                  {tasks.map(task => {
+                    const priorityCfg = PRIORITY_CFG[task.priority] || PRIORITY_CFG.low;
+                    const daysUntilDue = task.dueDate ? daysDiff(task.dueDate) : null;
+
+                    return (
+                      <tr key={task.id} className="hover:bg-gray-800/40">
+                        <td className="px-4 py-3 text-white font-medium">{task.title}</td>
+                        <td className="px-4 py-3">
+                          <div className="flex items-center gap-2">
+                            <div className={`w-2 h-2 rounded-full ${priorityCfg.dot}`} />
+                            <span className={`text-xs font-medium ${priorityCfg.color}`}>{priorityCfg.label}</span>
+                          </div>
+                        </td>
+                        <td className="px-4 py-3">
+                          <span className={`text-xs px-2 py-1 rounded-full font-medium ${
+                            task.status === 'done' ? 'bg-green-900/40 text-green-400' :
+                            task.status === 'in_progress' ? 'bg-blue-900/40 text-blue-400' :
+                            task.status === 'blocked' ? 'bg-red-900/40 text-red-400' :
+                            'bg-gray-700/50 text-gray-400'
+                          }`}>
+                            {task.status}
+                          </span>
+                        </td>
+                        <td className="px-4 py-3">
+                          <select
+                            value={taskAssignee[task.id] ?? task.assignedTo ?? ''}
+                            onChange={(e) => setTaskAssignee(prev => ({ ...prev, [task.id]: e.target.value }))}
+                            className="bg-gray-800 border border-gray-700 rounded px-2 py-1 text-xs text-white focus:outline-none focus:border-blue-500"
+                          >
+                            <option value="">Unassigned</option>
+                            {teamAll.map(member => (
+                              <option key={String(member.id)} value={String(member.name ?? '')}>
+                                {String(member.name ?? '')}
+                              </option>
+                            ))}
+                          </select>
+                        </td>
+                        <td className={`px-4 py-3 text-xs ${daysUntilDue !== null && daysUntilDue < 3 ? 'text-red-400 font-semibold' : 'text-gray-400'}`}>
+                          {task.dueDate}
+                          {daysUntilDue !== null && daysUntilDue >= 0 && <span className="ml-1">({daysUntilDue}d)</span>}
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            )}
+          </div>
+        </div>
+      )}
+
       {tab==='financials' && (
         <div className="space-y-4">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
@@ -273,7 +600,7 @@ function ProjectWorkspace({ project, onBack, onEdit }: WorkspaceProps) {
               <BarChart data={[{name:pName.split(' ').slice(0,2).join(' '), budget:budget/1000, spent:spent/1000, remaining:(budget-spent)/1000}]}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#374151"/>
                 <XAxis dataKey="name" stroke="#9ca3af"/>
-                <YAxis stroke="#9ca3af" tickFormatter={v=>`£${v}K`}/>
+                <YAxis stroke="#9ca3af" tickFormatter={(v: number)=>`£${v}K`}/>
                 <Tooltip contentStyle={{backgroundColor:'#111827',border:'1px solid #374151'}} formatter={(v:number)=>`£${(v).toFixed(0)}K`}/>
                 <Legend/>
                 <Bar dataKey="budget"    name="Budget"    fill="#3b82f6" radius={[4,4,0,0]}/>
@@ -594,6 +921,7 @@ export function Projects() {
             const pct    = budget>0?(spent/budget)*100:0;
             const endDate= String(p.endDate??p.end_date??'');
             const days   = endDate ? daysDiff(endDate) : null;
+            const budgetHealth = getBudgetHealth(spent, budget);
             return (
               <div key={String(p.id)}
                 onClick={()=>setSelectedId(String(p.id))}
@@ -619,6 +947,19 @@ export function Projects() {
                   </div>
                   <div className="h-2 bg-gray-800 rounded-full overflow-hidden">
                     <div className="h-full rounded-full bg-gradient-to-r from-blue-500 to-blue-400" style={{width:`${Number(p.progress??0)}%`}}/>
+                  </div>
+                </div>
+
+                {/* Mini progress bar for budget health */}
+                <div className="mb-3">
+                  <div className="flex justify-between text-xs mb-1">
+                    <span className="text-gray-400">Budget Health</span>
+                    <span className={`font-medium ${budgetHealth==='green'?'text-green-400':budgetHealth==='amber'?'text-yellow-400':'text-red-400'}`}>
+                      {budgetHealth==='green'?'Healthy':budgetHealth==='amber'?'At Risk':'Critical'}
+                    </span>
+                  </div>
+                  <div className="h-1.5 bg-gray-800 rounded-full overflow-hidden">
+                    <div className={`h-full rounded-full ${budgetHealth==='green'?'bg-green-500':budgetHealth==='amber'?'bg-yellow-500':'bg-red-500'}`} style={{width:`${Math.min(pct,100)}%`}}/>
                   </div>
                 </div>
 

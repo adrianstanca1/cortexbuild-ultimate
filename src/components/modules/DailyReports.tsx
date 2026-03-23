@@ -1,192 +1,426 @@
 import { useState } from 'react';
-import { ClipboardList, Plus, Search, CloudRain, Sun, Cloud, Wind, Users, Edit2, Trash2, X, ChevronDown, ChevronUp, Calendar, AlertTriangle } from 'lucide-react';
-import { useDailyReports } from '../../hooks/useData';
+import {
+  ClipboardList, Plus, Search, CloudRain, Sun, Cloud, Wind, Users, Edit2,
+  Trash2, X, ChevronDown, ChevronUp, Calendar, AlertTriangle, Download, FileText
+} from 'lucide-react';
+import { useProjects, useDailyReports } from '../../hooks/useData';
 import { toast } from 'sonner';
 
 type AnyRow = Record<string, unknown>;
 
-const WEATHER_OPTIONS = ['Sunny','Partly Cloudy','Overcast','Light Rain','Heavy Rain','Fog','High Wind','Snow','Frost'];
-const STATUS_OPTIONS = ['Draft','Submitted','Approved'];
+const WEATHER_OPTIONS = ['Sunny', 'Partly Cloudy', 'Overcast', 'Light Rain', 'Heavy Rain', 'Fog', 'High Wind', 'Snow', 'Frost'];
+const STATUS_OPTIONS = ['Draft', 'Submitted', 'Approved'];
 
-const statusColour: Record<string,string> = {
-  'Draft':'bg-gray-100 text-gray-600','Submitted':'bg-blue-100 text-blue-800','Approved':'bg-green-100 text-green-800',
+const statusColour: Record<string, string> = {
+  'Draft': 'bg-yellow-500/20 text-yellow-300 border border-yellow-500/30',
+  'Submitted': 'bg-blue-500/20 text-blue-300 border border-blue-500/30',
+  'Approved': 'bg-green-500/20 text-green-300 border border-green-500/30',
 };
 
 const weatherIcon = (w: string) => {
-  if (w.includes('Rain')) return <CloudRain size={14} className="text-blue-500"/>;
-  if (w.includes('Sun') || w.includes('Sunny')) return <Sun size={14} className="text-yellow-500"/>;
-  if (w.includes('Wind')) return <Wind size={14} className="text-gray-500"/>;
-  return <Cloud size={14} className="text-gray-400"/>;
+  if (w.includes('Rain')) return <CloudRain size={16} className="text-blue-400" />;
+  if (w.includes('Sun') || w.includes('Sunny')) return <Sun size={16} className="text-yellow-400" />;
+  if (w.includes('Wind')) return <Wind size={16} className="text-gray-400" />;
+  return <Cloud size={16} className="text-gray-400" />;
 };
 
-const emptyForm = { report_date:'',project_id:'',weather:'Sunny',temp_high:'',temp_low:'',workers_on_site:'',work_carried_out:'',delays:'',safety_observations:'',visitors:'',status:'Draft',submitted_by:'' };
+const emptyForm = {
+  report_date: '',
+  project_id: '',
+  weather: 'Sunny',
+  temperature: '',
+  workers_on_site: '',
+  plant_equipment: '',
+  visitors: '',
+  work_carried_out: '',
+  work_planned_tomorrow: '',
+  issues_delays: '',
+  safety_notes: '',
+  materials_delivered: '',
+  subcontractors: '',
+  status: 'Draft',
+  submitted_by: '',
+};
 
 export function DailyReports() {
+  const { useList: useProjectsList } = useProjects;
   const { useList, useCreate, useUpdate, useDelete } = useDailyReports;
+
+  const { data: rawProjects = [] } = useProjectsList();
   const { data: raw = [], isLoading } = useList();
+
+  const projects = rawProjects as AnyRow[];
   const reports = raw as AnyRow[];
+
   const createMutation = useCreate();
   const updateMutation = useUpdate();
   const deleteMutation = useDelete();
 
-  const [subTab, setSubTab] = useState<'today'|'week'|'all'|'drafts'>('today');
+  const [subTab, setSubTab] = useState<'today' | 'week' | 'all' | 'drafts'>('today');
   const [search, setSearch] = useState('');
-  const [statusFilter, setStatusFilter] = useState('All');
+  const [projectFilter, setProjectFilter] = useState('all');
+  const [dateRangeStart, setDateRangeStart] = useState('');
+  const [dateRangeEnd, setDateRangeEnd] = useState('');
   const [showModal, setShowModal] = useState(false);
   const [editing, setEditing] = useState<AnyRow | null>(null);
   const [form, setForm] = useState({ ...emptyForm });
   const [expanded, setExpanded] = useState<string | null>(null);
+  const [detailView, setDetailView] = useState<AnyRow | null>(null);
 
-  const today = new Date().toISOString().slice(0,10);
+  const today = new Date().toISOString().slice(0, 10);
 
   const filtered = reports.filter(r => {
-    const date = String(r.report_date??'');
-    const work = String(r.work_carried_out??'').toLowerCase();
+    const date = String(r.report_date ?? '');
+    const projectId = String(r.project_id ?? '');
+    const work = String(r.work_carried_out ?? '').toLowerCase();
+
     const matchSearch = date.includes(search) || work.includes(search.toLowerCase());
-    const matchStatus = statusFilter === 'All' || r.status === statusFilter;
-    if (!matchSearch || !matchStatus) return false;
+    const matchProject = projectFilter === 'all' || projectId === projectFilter;
+    const matchStatus = subTab === 'drafts' ? r.status === 'Draft' : true;
+
+    if (!matchSearch || !matchProject || !matchStatus) return false;
+
     if (subTab === 'today') return date === today;
     if (subTab === 'week') {
       const diff = (Date.now() - new Date(date).getTime()) / 86400000;
       return diff >= 0 && diff <= 7;
     }
-    if (subTab === 'drafts') return r.status === 'Draft';
     return true; // 'all'
   });
 
   const thisWeekCount = reports.filter(r => {
-    const d = new Date(String(r.report_date??''));
+    const d = new Date(String(r.report_date ?? ''));
     const diff = (Date.now() - d.getTime()) / 86400000;
     return diff >= 0 && diff <= 7;
   }).length;
-  const draftCount = reports.filter(r=>r.status==='Draft').length;
-  const totalWorkerDays = reports.reduce((s,r)=>s+Number(r.workers_on_site??0),0);
-  const delayCount = reports.filter(r=>String(r.delays??'').trim().length>0).length;
+
+  const draftCount = reports.filter(r => r.status === 'Draft').length;
+  const totalWorkerDays = reports.reduce((s, r) => s + Number(r.workers_on_site ?? 0), 0);
+  const projectsWithoutReport = projects.filter(p => {
+    const hasReport = reports.some(r => String(r.project_id ?? '') === String(p.id) && String(r.report_date ?? '') === today);
+    return !hasReport && !['Completed', 'Cancelled'].includes(String(p.status ?? ''));
+  });
 
   function openCreate() {
     setEditing(null);
-    setForm({ ...emptyForm, report_date:today });
+    setForm({ ...emptyForm, report_date: today });
     setShowModal(true);
   }
+
   function openEdit(r: AnyRow) {
     setEditing(r);
-    setForm({ report_date:String(r.report_date??''),project_id:String(r.project_id??''),weather:String(r.weather??'Sunny'),temp_high:String(r.temp_high??''),temp_low:String(r.temp_low??''),workers_on_site:String(r.workers_on_site??''),work_carried_out:String(r.work_carried_out??''),delays:String(r.delays??''),safety_observations:String(r.safety_observations??''),visitors:String(r.visitors??''),status:String(r.status??'Draft'),submitted_by:String(r.submitted_by??'') });
+    setForm({
+      report_date: String(r.report_date ?? ''),
+      project_id: String(r.project_id ?? ''),
+      weather: String(r.weather ?? 'Sunny'),
+      temperature: String(r.temperature ?? ''),
+      workers_on_site: String(r.workers_on_site ?? ''),
+      plant_equipment: String(r.plant_equipment ?? ''),
+      visitors: String(r.visitors ?? ''),
+      work_carried_out: String(r.work_carried_out ?? ''),
+      work_planned_tomorrow: String(r.work_planned_tomorrow ?? ''),
+      issues_delays: String(r.issues_delays ?? ''),
+      safety_notes: String(r.safety_notes ?? ''),
+      materials_delivered: String(r.materials_delivered ?? ''),
+      subcontractors: String(r.subcontractors ?? ''),
+      status: String(r.status ?? 'Draft'),
+      submitted_by: String(r.submitted_by ?? ''),
+    });
     setShowModal(true);
   }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    const payload = { ...form, workers_on_site:Number(form.workers_on_site)||0, temp_high:Number(form.temp_high)||null, temp_low:Number(form.temp_low)||null };
-    if (editing) { await updateMutation.mutateAsync({ id:String(editing.id), data:payload }); toast.success('Report updated'); }
-    else { await createMutation.mutateAsync(payload); toast.success('Report submitted'); }
+    const payload = {
+      ...form,
+      workers_on_site: Number(form.workers_on_site) || 0,
+      temperature: Number(form.temperature) || null,
+    };
+
+    if (editing) {
+      await updateMutation.mutateAsync({ id: String(editing.id), data: payload });
+      toast.success('Report updated');
+    } else {
+      await createMutation.mutateAsync(payload);
+      toast.success('Report submitted');
+    }
     setShowModal(false);
   }
 
   async function handleDelete(id: string) {
     if (!confirm('Delete this daily report?')) return;
-    await deleteMutation.mutateAsync(id); toast.success('Report deleted');
+    await deleteMutation.mutateAsync(id);
+    toast.success('Report deleted');
   }
 
   async function submitReport(r: AnyRow) {
-    await updateMutation.mutateAsync({ id:String(r.id), data:{ status:'Submitted' } });
+    await updateMutation.mutateAsync({ id: String(r.id), data: { status: 'Submitted' } });
     toast.success('Report submitted for approval');
   }
 
+  const getProjectName = (projectId: string) => {
+    const proj = projects.find(p => String(p.id) === projectId);
+    return String(proj?.name ?? proj?.title ?? 'Unknown Project');
+  };
+
+  const averageWorkersPerDay = reports.length > 0 ? Math.round(totalWorkerDays / reports.length) : 0;
+
   return (
-    <div className="p-6 space-y-6">
-      <div className="flex items-center justify-between">
+    <div className="p-6 space-y-6 bg-gray-900 min-h-screen">
+      {/* Header */}
+      <div className="flex items-center justify-between flex-wrap gap-3">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Daily Site Reports</h1>
-          <p className="text-sm text-gray-500 mt-1">Daily progress, weather & site records</p>
+          <h1 className="text-3xl font-bold text-white">Daily Site Reports</h1>
+          <p className="text-sm text-gray-400 mt-1">Daily progress, weather & site records</p>
         </div>
-        <button onClick={openCreate} className="flex items-center gap-2 px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 text-sm font-medium">
-          <Plus size={16}/><span>New Report</span>
+        <button
+          onClick={openCreate}
+          className="flex items-center gap-2 px-4 py-2 bg-orange-600 hover:bg-orange-700 text-white rounded-lg text-sm font-medium transition-colors"
+        >
+          <Plus size={16} />
+          <span>New Report</span>
         </button>
       </div>
 
+      {/* Summary Stats */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         {[
-          { label:'This Week', value:thisWeekCount, icon:Calendar, colour:'text-blue-600', bg:'bg-blue-50' },
-          { label:'Drafts', value:draftCount, icon:ClipboardList, colour:'text-yellow-600', bg:'bg-yellow-50' },
-          { label:'Worker Days', value:totalWorkerDays, icon:Users, colour:'text-green-600', bg:'bg-green-50' },
-          { label:'Delays Reported', value:delayCount, icon:AlertTriangle, colour:delayCount>0?'text-orange-600':'text-gray-600', bg:delayCount>0?'bg-orange-50':'bg-gray-50' },
-        ].map(kpi=>(
-          <div key={kpi.label} className="bg-white rounded-xl border border-gray-200 p-4">
+          {
+            label: 'This Week',
+            value: thisWeekCount,
+            icon: Calendar,
+            colour: 'text-blue-400',
+            bg: 'bg-blue-500/10 border-blue-500/30',
+          },
+          {
+            label: 'Draft Reports',
+            value: draftCount,
+            icon: ClipboardList,
+            colour: 'text-yellow-400',
+            bg: 'bg-yellow-500/10 border-yellow-500/30',
+          },
+          {
+            label: 'Avg Workers/Day',
+            value: averageWorkersPerDay,
+            icon: Users,
+            colour: 'text-green-400',
+            bg: 'bg-green-500/10 border-green-500/30',
+          },
+          {
+            label: 'No Report Today',
+            value: projectsWithoutReport.length,
+            icon: AlertTriangle,
+            colour: projectsWithoutReport.length > 0 ? 'text-red-400' : 'text-gray-400',
+            bg: projectsWithoutReport.length > 0 ? 'bg-red-500/10 border-red-500/30' : 'bg-gray-500/10 border-gray-500/30',
+          },
+        ].map(kpi => (
+          <div key={kpi.label} className={`bg-gray-800 rounded-xl border ${kpi.bg} p-4`}>
             <div className="flex items-center gap-3">
-              <div className={`p-2 rounded-lg ${kpi.bg}`}><kpi.icon size={20} className={kpi.colour}/></div>
-              <div><p className="text-xs text-gray-500">{kpi.label}</p><p className="text-xl font-bold text-gray-900">{kpi.value}</p></div>
+              <div className="p-2 rounded-lg bg-gray-700">
+                <kpi.icon size={20} className={kpi.colour} />
+              </div>
+              <div>
+                <p className="text-xs text-gray-400">{kpi.label}</p>
+                <p className="text-xl font-bold text-white">{kpi.value}</p>
+              </div>
             </div>
           </div>
         ))}
       </div>
 
-      <div className="border-b border-gray-200 flex gap-1">
-        {([
-          { key:'today' as const,  label:'Today',     count:reports.filter(r=>String(r.report_date??'')===today).length, cls:'' },
-          { key:'week'  as const,  label:'This Week',  count:thisWeekCount, cls:'' },
-          { key:'drafts' as const, label:'Drafts',     count:draftCount, cls:'bg-yellow-100 text-yellow-700' },
-          { key:'all'   as const,  label:'All Reports', count:reports.length, cls:'' },
-        ]).map(t=>(
-          <button key={t.key} onClick={()=>setSubTab(t.key)}
-            className={`flex items-center gap-2 px-4 py-2.5 text-sm font-medium border-b-2 -mb-px transition-colors ${subTab===t.key?'border-orange-500 text-orange-600':'border-transparent text-gray-500 hover:text-gray-700'}`}>
+      {/* Sub Tabs */}
+      <div className="border-b border-gray-700 flex gap-1 overflow-x-auto">
+        {[
+          { key: 'today' as const, label: 'Today', count: reports.filter(r => String(r.report_date ?? '') === today).length },
+          { key: 'week' as const, label: 'This Week', count: thisWeekCount },
+          { key: 'drafts' as const, label: 'Drafts', count: draftCount },
+          { key: 'all' as const, label: 'All Reports', count: reports.length },
+        ].map(t => (
+          <button
+            key={t.key}
+            onClick={() => setSubTab(t.key)}
+            className={`flex items-center gap-2 px-4 py-3 text-sm font-medium border-b-2 -mb-px transition-colors whitespace-nowrap ${
+              subTab === t.key ? 'border-orange-500 text-orange-400' : 'border-transparent text-gray-400 hover:text-gray-300'
+            }`}
+          >
             {t.label}
-            <span className={`text-xs px-1.5 py-0.5 rounded-full ${t.cls||'bg-gray-100 text-gray-600'}`}>{t.count}</span>
+            <span
+              className={`text-xs px-1.5 py-0.5 rounded-full ${
+                t.key === 'drafts'
+                  ? 'bg-yellow-500/20 text-yellow-300 border border-yellow-500/30'
+                  : 'bg-gray-700 text-gray-300'
+              }`}
+            >
+              {t.count}
+            </span>
           </button>
         ))}
       </div>
 
-      <div className="flex flex-wrap gap-3 items-center bg-white rounded-xl border border-gray-200 p-4">
+      {/* Filters */}
+      <div className="flex flex-wrap gap-3 items-center bg-gray-800 rounded-xl border border-gray-700 p-4">
         <div className="relative flex-1 min-w-48">
-          <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"/>
-          <input value={search} onChange={e=>setSearch(e.target.value)} placeholder="Search date or work description…" className="w-full pl-9 pr-4 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"/>
+          <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500" />
+          <input
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+            placeholder="Search date or work description…"
+            className="w-full pl-9 pr-4 py-2 text-sm border border-gray-700 bg-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-orange-500"
+          />
         </div>
-        <select value={statusFilter} onChange={e=>setStatusFilter(e.target.value)} className="text-sm border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-orange-500">
-          {['All',...STATUS_OPTIONS].map(s=><option key={s}>{s}</option>)}
+
+        <select
+          value={projectFilter}
+          onChange={e => setProjectFilter(e.target.value)}
+          className="text-sm border border-gray-700 bg-gray-700 text-white rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-orange-500"
+        >
+          <option value="all">All Projects</option>
+          {projects.map(p => (
+            <option key={String(p.id)} value={String(p.id)}>
+              {String(p.name ?? p.title ?? 'Unnamed')}
+            </option>
+          ))}
         </select>
-        <span className="text-sm text-gray-500 ml-auto">{filtered.length} reports</span>
+
+        <span className="text-sm text-gray-400 ml-auto">{filtered.length} reports</span>
       </div>
 
+      {/* Reports List */}
       {isLoading ? (
-        <div className="flex justify-center py-20"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-600"/></div>
+        <div className="flex justify-center py-20">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-600" />
+        </div>
       ) : (
-        <div className="bg-white rounded-xl border border-gray-200 divide-y divide-gray-100">
-          {filtered.length === 0 && <div className="text-center py-16 text-gray-400"><ClipboardList size={40} className="mx-auto mb-3 opacity-30"/><p>No daily reports found</p></div>}
+        <div className="bg-gray-800 rounded-xl border border-gray-700 divide-y divide-gray-700">
+          {filtered.length === 0 && (
+            <div className="text-center py-16 text-gray-500">
+              <ClipboardList size={40} className="mx-auto mb-3 opacity-30" />
+              <p>No daily reports found</p>
+            </div>
+          )}
           {filtered.map(r => {
-            const id = String(r.id??'');
+            const id = String(r.id ?? '');
             const isExp = expanded === id;
+            const reportDate = String(r.report_date ?? '');
+            const isToday = reportDate === today;
+
             return (
               <div key={id}>
-                <div className="flex items-center gap-4 p-4 hover:bg-gray-50 cursor-pointer" onClick={()=>setExpanded(isExp?null:id)}>
-                  <div className="w-20 flex-shrink-0 text-center">
-                    <p className="text-sm font-bold text-gray-800">{String(r.report_date??'—')}</p>
+                <div
+                  className="flex items-center gap-4 p-4 hover:bg-gray-700/30 cursor-pointer transition-colors"
+                  onClick={() => setExpanded(isExp ? null : id)}
+                >
+                  <div className="w-24 flex-shrink-0 text-center">
+                    <p className={`text-sm font-bold ${isToday ? 'text-orange-400' : 'text-white'}`}>{reportDate}</p>
+                    {isToday && <p className="text-xs text-orange-400 mt-0.5">Today</p>}
                   </div>
                   <div className="flex items-center gap-1.5 flex-shrink-0">
-                    {weatherIcon(String(r.weather??''))}
-                    <span className="text-xs text-gray-500">{String(r.weather??'—')}</span>
+                    {weatherIcon(String(r.weather ?? ''))}
+                    <span className="text-xs text-gray-400">{String(r.weather ?? '—')}</span>
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm text-gray-700 truncate">{String(r.work_carried_out??'No description')}</p>
-                    <div className="flex items-center gap-3 mt-0.5">
-                      {!!r.workers_on_site && <span className="text-xs text-gray-500 flex items-center gap-1"><Users size={11}/>{String(r.workers_on_site)} workers</span>}
-                      {!!r.delays && <span className="text-xs text-orange-600 flex items-center gap-1"><AlertTriangle size={11}/>Delays noted</span>}
+                    <p className="text-sm text-gray-300 font-medium mb-0.5">{getProjectName(String(r.project_id ?? ''))}</p>
+                    <p className="text-sm text-gray-400 truncate">{String(r.work_carried_out ?? 'No description')}</p>
+                    <div className="flex items-center gap-3 mt-0.5 flex-wrap">
+                      {!!r.workers_on_site && (
+                        <span className="text-xs text-gray-500 flex items-center gap-1">
+                          <Users size={11} />
+                          {String(r.workers_on_site)} workers
+                        </span>
+                      )}
+                      {!!r.issues_delays && (
+                        <span className="text-xs text-red-400 flex items-center gap-1">
+                          <AlertTriangle size={11} />
+                          Issues noted
+                        </span>
+                      )}
                     </div>
                   </div>
                   <div className="flex items-center gap-2">
-                    <span className={`text-xs px-2 py-1 rounded-full font-medium ${statusColour[String(r.status??'')] ?? 'bg-gray-100 text-gray-700'}`}>{String(r.status??'')}</span>
+                    <span className={`text-xs px-2 py-1 rounded-full font-medium ${statusColour[String(r.status ?? '')] ?? 'bg-gray-600 text-gray-300'}`}>
+                      {String(r.status ?? '')}
+                    </span>
                   </div>
                   <div className="flex items-center gap-1">
-                    {r.status==='Draft' && <button onClick={e=>{e.stopPropagation();submitReport(r);}} className="p-1.5 text-blue-600 hover:bg-blue-50 rounded text-xs" title="Submit"><ClipboardList size={14}/></button>}
-                    <button onClick={e=>{e.stopPropagation();openEdit(r);}} className="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded"><Edit2 size={14}/></button>
-                    <button onClick={e=>{e.stopPropagation();handleDelete(id);}} className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded"><Trash2 size={14}/></button>
-                    {isExp?<ChevronUp size={16} className="text-gray-400"/>:<ChevronDown size={16} className="text-gray-400"/>}
+                    {r.status === 'Draft' && (
+                      <button
+                        onClick={e => {
+                          e.stopPropagation();
+                          submitReport(r);
+                        }}
+                        className="p-1.5 text-blue-400 hover:bg-blue-500/20 rounded transition-colors"
+                        title="Submit"
+                      >
+                        <ClipboardList size={14} />
+                      </button>
+                    )}
+                    <button
+                      onClick={e => {
+                        e.stopPropagation();
+                        setDetailView(r);
+                      }}
+                      className="p-1.5 text-gray-500 hover:text-orange-400 hover:bg-gray-700/50 rounded transition-colors"
+                      title="View Full Report"
+                    >
+                      <FileText size={14} />
+                    </button>
+                    <button
+                      onClick={e => {
+                        e.stopPropagation();
+                        openEdit(r);
+                      }}
+                      className="p-1.5 text-gray-500 hover:text-blue-400 hover:bg-gray-700/50 rounded transition-colors"
+                    >
+                      <Edit2 size={14} />
+                    </button>
+                    <button
+                      onClick={e => {
+                        e.stopPropagation();
+                        handleDelete(id);
+                      }}
+                      className="p-1.5 text-gray-500 hover:text-red-400 hover:bg-gray-700/50 rounded transition-colors"
+                    >
+                      <Trash2 size={14} />
+                    </button>
+                    {isExp ? (
+                      <ChevronUp size={16} className="text-gray-500" />
+                    ) : (
+                      <ChevronDown size={16} className="text-gray-500" />
+                    )}
                   </div>
                 </div>
                 {isExp && (
-                  <div className="px-6 pb-5 bg-gray-50 space-y-3 text-sm">
-                    {!!r.work_carried_out && <div><p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">Work Carried Out</p><p className="text-gray-700 whitespace-pre-wrap">{String(r.work_carried_out)}</p></div>}
-                    {!!r.delays && <div><p className="text-xs font-semibold text-orange-600 uppercase tracking-wide mb-1">Delays / Issues</p><p className="text-gray-700">{String(r.delays)}</p></div>}
-                    {!!r.safety_observations && <div><p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">Safety Observations</p><p className="text-gray-700">{String(r.safety_observations)}</p></div>}
-                    {!!r.visitors && <div><p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">Visitors</p><p className="text-gray-700">{String(r.visitors)}</p></div>}
+                  <div className="px-6 pb-4 bg-gray-700/20 space-y-3 text-sm border-t border-gray-700">
+                    {!!r.work_carried_out && (
+                      <div>
+                        <p className="text-xs font-semibold text-orange-400 uppercase tracking-wide mb-1">Work Carried Out</p>
+                        <p className="text-gray-300 whitespace-pre-wrap">{String(r.work_carried_out)}</p>
+                      </div>
+                    )}
+                    {!!r.work_planned_tomorrow && (
+                      <div>
+                        <p className="text-xs font-semibold text-blue-400 uppercase tracking-wide mb-1">Work Planned Tomorrow</p>
+                        <p className="text-gray-300 whitespace-pre-wrap">{String(r.work_planned_tomorrow)}</p>
+                      </div>
+                    )}
+                    {!!r.issues_delays && (
+                      <div>
+                        <p className="text-xs font-semibold text-red-400 uppercase tracking-wide mb-1">Issues / Delays</p>
+                        <p className="text-gray-300">{String(r.issues_delays)}</p>
+                      </div>
+                    )}
+                    {!!r.safety_notes && (
+                      <div>
+                        <p className="text-xs font-semibold text-green-400 uppercase tracking-wide mb-1">Safety Notes</p>
+                        <p className="text-gray-300">{String(r.safety_notes)}</p>
+                      </div>
+                    )}
+                    {!!r.materials_delivered && (
+                      <div>
+                        <p className="text-xs font-semibold text-purple-400 uppercase tracking-wide mb-1">Materials Delivered</p>
+                        <p className="text-gray-300">{String(r.materials_delivered)}</p>
+                      </div>
+                    )}
                   </div>
                 )}
               </div>
@@ -195,71 +429,337 @@ export function DailyReports() {
         </div>
       )}
 
+      {/* Create/Edit Modal */}
       {showModal && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
-            <div className="flex items-center justify-between p-6 border-b sticky top-0 bg-white z-10">
-              <h2 className="text-lg font-semibold">{editing?'Edit Daily Report':'New Daily Report'}</h2>
-              <button onClick={()=>setShowModal(false)} className="p-2 hover:bg-gray-100 rounded-lg"><X size={18}/></button>
+        <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
+          <div className="bg-gray-800 rounded-2xl border border-gray-700 shadow-2xl w-full max-w-3xl max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between p-6 border-b border-gray-700 sticky top-0 bg-gray-800 z-10">
+              <h2 className="text-lg font-semibold text-white">{editing ? 'Edit Daily Report' : 'New Daily Report'}</h2>
+              <button onClick={() => setShowModal(false)} className="p-2 hover:bg-gray-700 rounded-lg transition-colors text-gray-400">
+                <X size={18} />
+              </button>
             </div>
             <form onSubmit={handleSubmit} className="p-6 space-y-4">
               <div className="grid grid-cols-2 gap-4">
+                {/* Project Selector */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Report Date *</label>
-                  <input required type="date" value={form.report_date} onChange={e=>setForm(f=>({...f,report_date:e.target.value}))} className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500"/>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Workers on Site</label>
-                  <input type="number" value={form.workers_on_site} onChange={e=>setForm(f=>({...f,workers_on_site:e.target.value}))} className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500"/>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Weather</label>
-                  <select value={form.weather} onChange={e=>setForm(f=>({...f,weather:e.target.value}))} className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500">
-                    {WEATHER_OPTIONS.map(w=><option key={w}>{w}</option>)}
+                  <label className="block text-sm font-medium text-gray-300 mb-1">Project *</label>
+                  <select
+                    required
+                    value={form.project_id}
+                    onChange={e => setForm(f => ({ ...f, project_id: e.target.value }))}
+                    className="w-full border border-gray-700 bg-gray-700 text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500"
+                  >
+                    <option value="">Select Project</option>
+                    {projects.map(p => (
+                      <option key={String(p.id)} value={String(p.id)}>
+                        {String(p.name ?? p.title ?? 'Unnamed')}
+                      </option>
+                    ))}
                   </select>
                 </div>
+
+                {/* Report Date */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
-                  <select value={form.status} onChange={e=>setForm(f=>({...f,status:e.target.value}))} className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500">
-                    {STATUS_OPTIONS.map(s=><option key={s}>{s}</option>)}
+                  <label className="block text-sm font-medium text-gray-300 mb-1">Report Date *</label>
+                  <input
+                    required
+                    type="date"
+                    value={form.report_date}
+                    onChange={e => setForm(f => ({ ...f, report_date: e.target.value }))}
+                    className="w-full border border-gray-700 bg-gray-700 text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500"
+                  />
+                </div>
+
+                {/* Weather */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-300 mb-1">Weather</label>
+                  <select
+                    value={form.weather}
+                    onChange={e => setForm(f => ({ ...f, weather: e.target.value }))}
+                    className="w-full border border-gray-700 bg-gray-700 text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500"
+                  >
+                    {WEATHER_OPTIONS.map(w => (
+                      <option key={w}>{w}</option>
+                    ))}
                   </select>
                 </div>
+
+                {/* Temperature */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Temp High (°C)</label>
-                  <input type="number" value={form.temp_high} onChange={e=>setForm(f=>({...f,temp_high:e.target.value}))} className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500"/>
+                  <label className="block text-sm font-medium text-gray-300 mb-1">Temperature (°C)</label>
+                  <input
+                    type="number"
+                    value={form.temperature}
+                    onChange={e => setForm(f => ({ ...f, temperature: e.target.value }))}
+                    className="w-full border border-gray-700 bg-gray-700 text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500"
+                  />
                 </div>
+
+                {/* Workers on Site */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Temp Low (°C)</label>
-                  <input type="number" value={form.temp_low} onChange={e=>setForm(f=>({...f,temp_low:e.target.value}))} className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500"/>
+                  <label className="block text-sm font-medium text-gray-300 mb-1">Workers on Site</label>
+                  <input
+                    type="number"
+                    value={form.workers_on_site}
+                    onChange={e => setForm(f => ({ ...f, workers_on_site: e.target.value }))}
+                    className="w-full border border-gray-700 bg-gray-700 text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500"
+                  />
                 </div>
-                <div className="col-span-2">
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Work Carried Out *</label>
-                  <textarea required rows={4} value={form.work_carried_out} onChange={e=>setForm(f=>({...f,work_carried_out:e.target.value}))} placeholder="Describe all work activities on site today…" className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500 resize-none"/>
-                </div>
-                <div className="col-span-2">
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Delays / Issues</label>
-                  <textarea rows={2} value={form.delays} onChange={e=>setForm(f=>({...f,delays:e.target.value}))} placeholder="Any delays, stoppages or issues…" className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500 resize-none"/>
-                </div>
-                <div className="col-span-2">
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Safety Observations</label>
-                  <textarea rows={2} value={form.safety_observations} onChange={e=>setForm(f=>({...f,safety_observations:e.target.value}))} className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500 resize-none"/>
-                </div>
-                <div className="col-span-2">
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Visitors / Inspections</label>
-                  <input value={form.visitors} onChange={e=>setForm(f=>({...f,visitors:e.target.value}))} className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500"/>
-                </div>
-                <div className="col-span-2">
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Submitted By</label>
-                  <input value={form.submitted_by} onChange={e=>setForm(f=>({...f,submitted_by:e.target.value}))} className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500"/>
+
+                {/* Status */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-300 mb-1">Status</label>
+                  <select
+                    value={form.status}
+                    onChange={e => setForm(f => ({ ...f, status: e.target.value }))}
+                    className="w-full border border-gray-700 bg-gray-700 text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500"
+                  >
+                    {STATUS_OPTIONS.map(s => (
+                      <option key={s}>{s}</option>
+                    ))}
+                  </select>
                 </div>
               </div>
-              <div className="flex gap-3 pt-2">
-                <button type="button" onClick={()=>setShowModal(false)} className="flex-1 px-4 py-2 border border-gray-200 rounded-lg text-sm text-gray-700 hover:bg-gray-50">Cancel</button>
-                <button type="submit" disabled={createMutation.isPending||updateMutation.isPending} className="flex-1 px-4 py-2 bg-orange-600 text-white rounded-lg text-sm font-medium hover:bg-orange-700 disabled:opacity-50">
-                  {editing?'Update Report':'Submit Report'}
+
+              {/* Plant/Equipment */}
+              <div>
+                <label className="block text-sm font-medium text-gray-300 mb-1">Plant/Equipment Used</label>
+                <textarea
+                  rows={2}
+                  value={form.plant_equipment}
+                  onChange={e => setForm(f => ({ ...f, plant_equipment: e.target.value }))}
+                  placeholder="e.g. JCB 3CX, Forklift, Scaffold Tower"
+                  className="w-full border border-gray-700 bg-gray-700 text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500 resize-none placeholder-gray-500"
+                />
+              </div>
+
+              {/* Visitors */}
+              <div>
+                <label className="block text-sm font-medium text-gray-300 mb-1">Visitors to Site</label>
+                <textarea
+                  rows={2}
+                  value={form.visitors}
+                  onChange={e => setForm(f => ({ ...f, visitors: e.target.value }))}
+                  placeholder="Names and companies of visitors"
+                  className="w-full border border-gray-700 bg-gray-700 text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500 resize-none placeholder-gray-500"
+                />
+              </div>
+
+              {/* Work Carried Out */}
+              <div>
+                <label className="block text-sm font-medium text-gray-300 mb-1">Work Completed Today *</label>
+                <textarea
+                  required
+                  rows={3}
+                  value={form.work_carried_out}
+                  onChange={e => setForm(f => ({ ...f, work_carried_out: e.target.value }))}
+                  placeholder="Describe all work activities on site today…"
+                  className="w-full border border-gray-700 bg-gray-700 text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500 resize-none placeholder-gray-500"
+                />
+              </div>
+
+              {/* Work Planned Tomorrow */}
+              <div>
+                <label className="block text-sm font-medium text-gray-300 mb-1">Work Planned Tomorrow</label>
+                <textarea
+                  rows={3}
+                  value={form.work_planned_tomorrow}
+                  onChange={e => setForm(f => ({ ...f, work_planned_tomorrow: e.target.value }))}
+                  placeholder="Describe planned work for next day…"
+                  className="w-full border border-gray-700 bg-gray-700 text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500 resize-none placeholder-gray-500"
+                />
+              </div>
+
+              {/* Issues/Delays */}
+              <div>
+                <label className="block text-sm font-medium text-gray-300 mb-1">Issues / Delays</label>
+                <textarea
+                  rows={2}
+                  value={form.issues_delays}
+                  onChange={e => setForm(f => ({ ...f, issues_delays: e.target.value }))}
+                  placeholder="Any delays, stoppages or issues…"
+                  className="w-full border border-gray-700 bg-gray-700 text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500 resize-none placeholder-gray-500"
+                />
+              </div>
+
+              {/* Safety Notes */}
+              <div>
+                <label className="block text-sm font-medium text-gray-300 mb-1">Safety Notes</label>
+                <textarea
+                  rows={2}
+                  value={form.safety_notes}
+                  onChange={e => setForm(f => ({ ...f, safety_notes: e.target.value }))}
+                  placeholder="Safety observations and hazard notes…"
+                  className="w-full border border-gray-700 bg-gray-700 text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500 resize-none placeholder-gray-500"
+                />
+              </div>
+
+              {/* Materials Delivered */}
+              <div>
+                <label className="block text-sm font-medium text-gray-300 mb-1">Materials Delivered</label>
+                <textarea
+                  rows={2}
+                  value={form.materials_delivered}
+                  onChange={e => setForm(f => ({ ...f, materials_delivered: e.target.value }))}
+                  placeholder="Materials delivered to site…"
+                  className="w-full border border-gray-700 bg-gray-700 text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500 resize-none placeholder-gray-500"
+                />
+              </div>
+
+              {/* Subcontractors */}
+              <div>
+                <label className="block text-sm font-medium text-gray-300 mb-1">Subcontractors on Site</label>
+                <textarea
+                  rows={2}
+                  value={form.subcontractors}
+                  onChange={e => setForm(f => ({ ...f, subcontractors: e.target.value }))}
+                  placeholder="Subcontractor names and companies…"
+                  className="w-full border border-gray-700 bg-gray-700 text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500 resize-none placeholder-gray-500"
+                />
+              </div>
+
+              {/* Submitted By */}
+              <div>
+                <label className="block text-sm font-medium text-gray-300 mb-1">Submitted By</label>
+                <input
+                  value={form.submitted_by}
+                  onChange={e => setForm(f => ({ ...f, submitted_by: e.target.value }))}
+                  className="w-full border border-gray-700 bg-gray-700 text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500"
+                />
+              </div>
+
+              {/* Actions */}
+              <div className="flex gap-3 pt-4 border-t border-gray-700">
+                <button
+                  type="button"
+                  onClick={() => setShowModal(false)}
+                  className="flex-1 px-4 py-2 border border-gray-700 text-gray-300 rounded-lg text-sm font-medium hover:bg-gray-700/50 transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={createMutation.isPending || updateMutation.isPending}
+                  className="flex-1 px-4 py-2 bg-orange-600 hover:bg-orange-700 disabled:opacity-50 text-white rounded-lg text-sm font-medium transition-colors"
+                >
+                  {editing ? 'Update Report' : 'Submit Report'}
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Detail View Modal */}
+      {detailView && (
+        <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
+          <div className="bg-gray-800 rounded-2xl border border-gray-700 shadow-2xl w-full max-w-3xl max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between p-6 border-b border-gray-700 sticky top-0 bg-gray-800 z-10">
+              <h2 className="text-lg font-semibold text-white">Daily Site Report</h2>
+              <div className="flex items-center gap-2">
+                <button className="p-2 hover:bg-gray-700 rounded-lg transition-colors text-gray-400">
+                  <Download size={18} />
+                </button>
+                <button
+                  onClick={() => setDetailView(null)}
+                  className="p-2 hover:bg-gray-700 rounded-lg transition-colors text-gray-400"
+                >
+                  <X size={18} />
+                </button>
+              </div>
+            </div>
+            <div className="p-8 space-y-6">
+              {/* Header Section */}
+              <div className="border-b border-gray-700 pb-6">
+                <h3 className="text-2xl font-bold text-white mb-2">{getProjectName(String(detailView.project_id ?? ''))}</h3>
+                <div className="flex items-center gap-4 text-sm text-gray-400">
+                  <span>Date: {String(detailView.report_date ?? '—')}</span>
+                  <span>Reported by: {String(detailView.submitted_by ?? '—')}</span>
+                </div>
+              </div>
+
+              {/* Site Conditions */}
+              <div className="grid grid-cols-3 gap-4">
+                <div className="bg-gray-700/30 rounded-lg p-4 border border-gray-700">
+                  <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-1">Weather</p>
+                  <div className="flex items-center gap-2">
+                    {weatherIcon(String(detailView.weather ?? ''))}
+                    <p className="text-lg font-medium text-white">{String(detailView.weather ?? '—')}</p>
+                  </div>
+                  {Boolean(detailView.temperature) && <p className="text-sm text-gray-400 mt-1">{String(detailView.temperature)}°C</p>}
+                </div>
+                <div className="bg-gray-700/30 rounded-lg p-4 border border-gray-700">
+                  <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-1">Workers</p>
+                  <p className="text-lg font-medium text-white">{String(detailView.workers_on_site ?? '0')}</p>
+                </div>
+                <div className="bg-gray-700/30 rounded-lg p-4 border border-gray-700">
+                  <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-1">Status</p>
+                  <span
+                    className={`text-xs px-2 py-1 rounded-full font-medium inline-block ${statusColour[String(detailView.status ?? '')] ?? 'bg-gray-600 text-gray-300'}`}
+                  >
+                    {String(detailView.status ?? '')}
+                  </span>
+                </div>
+              </div>
+
+              {/* Work Sections */}
+              {Boolean(detailView.work_carried_out) && (
+                <div>
+                  <h4 className="text-sm font-semibold text-orange-400 uppercase tracking-wide mb-2">Work Completed Today</h4>
+                  <p className="text-gray-300 whitespace-pre-wrap">{String(detailView.work_carried_out)}</p>
+                </div>
+              )}
+
+              {Boolean(detailView.work_planned_tomorrow) && (
+                <div>
+                  <h4 className="text-sm font-semibold text-blue-400 uppercase tracking-wide mb-2">Work Planned Tomorrow</h4>
+                  <p className="text-gray-300 whitespace-pre-wrap">{String(detailView.work_planned_tomorrow)}</p>
+                </div>
+              )}
+
+              {Boolean(detailView.plant_equipment) && (
+                <div>
+                  <h4 className="text-sm font-semibold text-purple-400 uppercase tracking-wide mb-2">Plant & Equipment</h4>
+                  <p className="text-gray-300 whitespace-pre-wrap">{String(detailView.plant_equipment)}</p>
+                </div>
+              )}
+
+              {Boolean(detailView.issues_delays) && (
+                <div className="bg-red-500/10 border border-red-500/30 rounded-lg p-4">
+                  <h4 className="text-sm font-semibold text-red-400 uppercase tracking-wide mb-2">Issues & Delays</h4>
+                  <p className="text-gray-300 whitespace-pre-wrap">{String(detailView.issues_delays)}</p>
+                </div>
+              )}
+
+              {Boolean(detailView.safety_notes) && (
+                <div className="bg-green-500/10 border border-green-500/30 rounded-lg p-4">
+                  <h4 className="text-sm font-semibold text-green-400 uppercase tracking-wide mb-2">Safety Notes</h4>
+                  <p className="text-gray-300 whitespace-pre-wrap">{String(detailView.safety_notes)}</p>
+                </div>
+              )}
+
+              {Boolean(detailView.materials_delivered) && (
+                <div>
+                  <h4 className="text-sm font-semibold text-yellow-400 uppercase tracking-wide mb-2">Materials Delivered</h4>
+                  <p className="text-gray-300 whitespace-pre-wrap">{String(detailView.materials_delivered)}</p>
+                </div>
+              )}
+
+              {Boolean(detailView.subcontractors) && (
+                <div>
+                  <h4 className="text-sm font-semibold text-cyan-400 uppercase tracking-wide mb-2">Subcontractors</h4>
+                  <p className="text-gray-300 whitespace-pre-wrap">{String(detailView.subcontractors)}</p>
+                </div>
+              )}
+
+              {Boolean(detailView.visitors) && (
+                <div>
+                  <h4 className="text-sm font-semibold text-indigo-400 uppercase tracking-wide mb-2">Visitors</h4>
+                  <p className="text-gray-300 whitespace-pre-wrap">{String(detailView.visitors)}</p>
+                </div>
+              )}
+            </div>
           </div>
         </div>
       )}
