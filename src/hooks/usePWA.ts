@@ -67,3 +67,7 @@ export function usePWA(): PWAState {
 
   return { isOnline, showBanner, pendingCount, setShowBanner };
 }
+
+export function registerServiceWorker(): void {
+  // Service worker registration is handled by the build toolchain (vite-plugin-pwa)
+}

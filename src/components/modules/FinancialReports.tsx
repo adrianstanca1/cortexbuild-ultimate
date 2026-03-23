@@ -104,33 +104,6 @@ export function FinancialReports() {
   useEffect(() => {
     loadData();
   }, [dateRange, loadData]);
-    setLoading(true);
-    try {
-      const [summaryData, projectsData, cashFlowData, invoiceAnalysis] = await Promise.all([
-        financialReportsApi.getSummary(),
-        financialReportsApi.getProjectFinancials(),
-        financialReportsApi.getCashFlow(),
-        financialReportsApi.getInvoiceAnalysis(),
-      ]);
-      setSummary(summaryData);
-      setProjectFinancials(projectsData as unknown as ProjectFinancial[]);
-      setCashFlow(cashFlowData);
-      setInvoices(invoiceAnalysis.invoices);
-      setProjects(projectsData as unknown as typeof projects);
-    } catch (err) {
-      const [projects, invoices] = await Promise.all([
-        projectsApi.getAll(),
-        invoicesApi.getAll(),
-      ]);
-      setProjects(projects);
-      setInvoices(invoices);
-      calculateSummary(projects, invoices);
-      calculateProjectFinancials(projects);
-      calculateCashFlow(projects, invoices);
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const calculateSummary = (projects: any[], invoices: any[]) => {
     const totalBudget = projects.reduce((sum, p) => sum + (parseFloat(p.budget) || 0), 0);
@@ -613,9 +586,9 @@ export function FinancialReports() {
     return (
       <div className="flex items-center justify-center h-64">
         <RefreshCw className="h-8 w-8 text-orange-500 animate-spin" />
-    </div>
-  );
-}
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
