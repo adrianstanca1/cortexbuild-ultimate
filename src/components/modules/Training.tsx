@@ -1,11 +1,14 @@
-import { useState, useEffect } from 'react';
-import { Plus, Search, GraduationCap, Award, Clock, AlertCircle } from 'lucide-react';
-import { trainingApi } from '../../services/api';
+import { useState, useEffect, useRef } from 'react';
+import { Plus, Search, GraduationCap, Award, Clock, AlertCircle, FileCheck, Upload } from 'lucide-react';
+import { trainingApi, uploadFile } from '../../services/api';
 
 export default function Training() {
   const [searchTerm, setSearchTerm] = useState('');
   const [training, setTraining] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [uploading, setUploading] = useState(false);
+  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     trainingApi.getAll().then((data: any[]) => {
@@ -22,6 +25,25 @@ export default function Training() {
   const validCount = training.filter((t: any) => t.status === 'completed' || t.status === 'certified').length;
   const expiringCount = training.filter((t: any) => t.status === 'scheduled').length;
   const totalCount = training.length;
+
+  const handleUploadCert = async (id: string, file: File) => {
+    setUploading(true);
+    setSelectedId(id);
+    try {
+      const result = await uploadFile(file, 'REPORTS');
+      setTraining(prev => prev.map((t: any) => {
+        if (String(t.id) === String(id)) {
+          return { ...t, certification: file.name, certification_url: result.file_url || result.name };
+        }
+        return t;
+      }));
+    } catch (err) {
+      console.error('Upload failed:', err);
+    } finally {
+      setUploading(false);
+      setSelectedId(null);
+    }
+  };
 
   return (
     <div className="p-6 space-y-6">
@@ -54,9 +76,33 @@ export default function Training() {
                   <p className="text-gray-400 text-sm">{t.provider || 'Provider TBC'} - {t.type || 'General'}</p>
                   <p className="text-gray-500 text-xs">Completed: {t.completed_date || t.scheduled_date || 'TBD'}</p>
                 </div>
-                <div className="text-right">
-                  <span className={`px-2 py-1 rounded text-xs ${t.status === 'completed' ? 'bg-green-500/10 text-green-400' : t.status === 'scheduled' ? 'bg-amber-500/10 text-amber-400' : 'bg-gray-500/10 text-gray-400'}`}>{t.status || 'unknown'}</span>
-                  <p className="text-gray-400 text-xs mt-1">Cert: {t.certification || 'N/A'}</p>
+                <div className="text-right flex items-center gap-3">
+                  <div>
+                    <span className={`px-2 py-1 rounded text-xs ${t.status === 'completed' ? 'bg-green-500/10 text-green-400' : t.status === 'scheduled' ? 'bg-amber-500/10 text-amber-400' : 'bg-gray-500/10 text-gray-400'}`}>{t.status || 'unknown'}</span>
+                    <p className="text-gray-400 text-xs mt-1">Cert: {t.certification || 'Upload cert'}</p>
+                  </div>
+                  <input
+                    type="file"
+                    id={`upload-cert-${t.id}`}
+                    className="hidden"
+                    accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
+                    onChange={async (e) => {
+                      const file = e.target.files?.[0];
+                      if (file) {
+                        await handleUploadCert(String(t.id), file);
+                        e.target.value = '';
+                      }
+                    }}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => document.getElementById(`upload-cert-${t.id}`)?.click()}
+                    disabled={uploading && selectedId === String(t.id)}
+                    className="p-2 hover:bg-gray-700 rounded text-gray-400 hover:text-white disabled:opacity-50"
+                    title="Upload certificate"
+                  >
+                    {uploading && selectedId === String(t.id) ? <Clock size={16} className="animate-spin" /> : <FileCheck size={16} />}
+                  </button>
                 </div>
               </div>
             ))}
