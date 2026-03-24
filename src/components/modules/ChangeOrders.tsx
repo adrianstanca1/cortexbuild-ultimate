@@ -1,25 +1,45 @@
 import { useState } from 'react';
-import { GitBranch, Plus, Search, PoundSterling, CheckCircle, Clock, XCircle, Edit2, Trash2, X, TrendingUp, AlertTriangle, BarChart3, Activity, CheckSquare } from 'lucide-react';
+import {
+  GitBranch, Plus, Search, PoundSterling, CheckCircle2, Clock, XCircle, Edit2, Trash2, X, TrendingUp, AlertTriangle,
+  BarChart3, Activity, CheckSquare, FileEdit, DollarSign, Calendar, ArrowUpRight, ArrowDownRight, ChevronRight
+} from 'lucide-react';
 import { useChangeOrders } from '../../hooks/useData';
 import { toast } from 'sonner';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import {
+  BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend, PieChart, Pie, Cell
+} from 'recharts';
 
 type AnyRow = Record<string, unknown>;
 
-const STATUS_OPTIONS = ['Draft','Submitted','Under Review','Approved','Rejected','Withdrawn'];
-const TYPES = ['Addition','Omission','Substitution','Variation','Provisional Sum'];
-const REASONS = ['Client Request','Design Change','Unforeseen Condition','Specification Clarification','Regulatory Requirement','Other'];
+const STATUS_OPTIONS = ['Draft', 'Submitted', 'Under Review', 'Approved', 'Rejected', 'Withdrawn'];
+const TYPES = ['Addition', 'Omission', 'Substitution', 'Variation', 'Provisional Sum'];
+const REASONS = ['Client Variation', 'Unforeseen Conditions', 'Design Change', 'Scope Creep', 'Regulatory', 'Error & Omission'];
 
-const statusColour: Record<string,string> = {
-  'Draft':'dark:bg-gray-700 dark:text-gray-300 bg-gray-100 text-gray-700',
-  'Submitted':'dark:bg-blue-900 dark:text-blue-300 bg-blue-100 text-blue-800',
-  'Under Review':'dark:bg-yellow-900 dark:text-yellow-300 bg-yellow-100 text-yellow-800',
-  'Approved':'dark:bg-green-900 dark:text-green-300 bg-green-100 text-green-800',
-  'Rejected':'dark:bg-red-900 dark:text-red-300 bg-red-100 text-red-700',
-  'Withdrawn':'dark:bg-gray-700 dark:text-gray-400 bg-gray-100 text-gray-500',
+const statusColour: Record<string, string> = {
+  'Draft': 'bg-gray-700/50 text-gray-400',
+  'Submitted': 'bg-yellow-900/30 text-yellow-300',
+  'Under Review': 'bg-yellow-900/30 text-yellow-300',
+  'Approved': 'bg-green-900/30 text-green-300',
+  'Rejected': 'bg-red-900/30 text-red-300',
+  'Withdrawn': 'bg-gray-700/30 text-gray-400',
 };
 
-const emptyForm = { co_number:'',title:'',type:'Addition',reason:'',value:'',days_extension:'0',status:'Draft',project_id:'',submitted_date:'',approved_date:'',description:'',rejection_reason:'' };
+const chartColours = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899'];
+
+const emptyForm = {
+  co_number: '',
+  title: '',
+  type: 'Addition',
+  reason: '',
+  value: '',
+  days_extension: '0',
+  status: 'Draft',
+  project_id: '',
+  submitted_date: '',
+  approved_date: '',
+  description: '',
+  rejection_reason: ''
+};
 
 // Mock audit logs
 function generateAuditLog(co: AnyRow): Array<{action: string; user: string; date: string}> {
@@ -32,17 +52,52 @@ function generateAuditLog(co: AnyRow): Array<{action: string; user: string; date
   return logs;
 }
 
-// Mock chart data for 6 months
-const chartData = [
-  { month: 'Sep', value: 15000 },
-  { month: 'Oct', value: 22000 },
-  { month: 'Nov', value: 18500 },
-  { month: 'Dec', value: 31000 },
-  { month: 'Jan', value: 27500 },
-  { month: 'Feb', value: 35000 },
-];
+// Generate chart data from orders
+function generateChartData(orders: AnyRow[]) {
+  const byMonth: Record<string, number> = {};
+  orders.forEach(o => {
+    if (o.status === 'Approved' && o.submitted_date) {
+      const date = new Date(String(o.submitted_date));
+      const key = date.toLocaleString('default', { month: 'short', year: '2-digit' });
+      byMonth[key] = (byMonth[key] || 0) + Number(o.value ?? 0);
+    }
+  });
+  const months = ['Sep', 'Oct', 'Nov', 'Dec', 'Jan', 'Feb', 'Mar'];
+  return months.map(m => ({ month: m, value: byMonth[m] || 0 }));
+}
 
-// Approval workflow timeline
+function generateCumulativeData(orders: AnyRow[]) {
+  const byMonth: Record<string, number> = {};
+  let cumulative = 0;
+  orders
+    .filter(o => o.status === 'Approved')
+    .sort((a, b) => String(a.submitted_date ?? '').localeCompare(String(b.submitted_date ?? '')))
+    .forEach(o => {
+      const date = new Date(String(o.submitted_date));
+      const key = date.toLocaleString('default', { month: 'short', year: '2-digit' });
+      cumulative += Number(o.value ?? 0);
+      byMonth[key] = cumulative;
+    });
+  const months = ['Sep', 'Oct', 'Nov', 'Dec', 'Jan', 'Feb', 'Mar'];
+  return months.map(m => ({ month: m, value: byMonth[m] || 0 }));
+}
+
+function generateReasonBreakdown(orders: AnyRow[]) {
+  const breakdown: Record<string, { count: number; value: number }> = {};
+  orders.forEach(o => {
+    const reason = String(o.reason ?? 'Other');
+    if (!breakdown[reason]) breakdown[reason] = { count: 0, value: 0 };
+    breakdown[reason].count += 1;
+    breakdown[reason].value += Number(o.value ?? 0);
+  });
+  return Object.entries(breakdown).map(([reason, data]) => ({
+    reason,
+    count: data.count,
+    value: data.value,
+    percentage: 0
+  })).sort((a, b) => b.value - a.value);
+}
+
 function ApprovalTimeline({ status }: { status: string }) {
   const steps = [
     { label: 'Draft', icon: '📝' },
@@ -55,34 +110,42 @@ function ApprovalTimeline({ status }: { status: string }) {
   const isRejected = status === 'Rejected';
 
   return (
-    <div className="flex items-center justify-between mb-6 p-4 dark:bg-gray-700 bg-gray-100 rounded-lg">
+    <div className="flex items-center justify-between mb-6 p-4 bg-gray-700/50 rounded-lg">
       {steps.map((step, idx) => (
         <div key={step.label} className="flex flex-col items-center flex-1">
           <div className={`w-10 h-10 rounded-full flex items-center justify-center text-lg font-bold ${
-            idx <= stepIndex && !isRejected
-              ? 'dark:bg-green-600 dark:text-white bg-green-500 text-white'
-              : 'dark:bg-gray-600 dark:text-gray-400 bg-gray-300 text-gray-500'
+            idx <= stepIndex && !isRejected ? 'bg-green-600 text-white' : 'bg-gray-600 text-gray-400'
           }`}>
             {step.icon}
           </div>
-          <p className={`text-xs mt-2 font-medium ${
-            idx <= stepIndex && !isRejected
-              ? 'dark:text-green-400 text-green-600'
-              : 'dark:text-gray-400 text-gray-500'
-          }`}>
+          <p className={`text-xs mt-2 font-medium ${idx <= stepIndex && !isRejected ? 'text-green-400' : 'text-gray-400'}`}>
             {step.label}
           </p>
           {idx < steps.length - 1 && (
-            <div className={`h-1 w-8 mt-4 ${
-              idx < stepIndex && !isRejected
-                ? 'dark:bg-green-600 bg-green-500'
-                : 'dark:bg-gray-600 bg-gray-300'
-            }`} />
+            <div className={`h-1 w-8 mt-4 ${idx < stepIndex && !isRejected ? 'bg-green-600' : 'bg-gray-600'}`} />
           )}
         </div>
       ))}
     </div>
   );
+}
+
+function calculateDaysPending(submittedDate: unknown): number {
+  const submitted = new Date(String(submittedDate ?? ''));
+  const now = new Date();
+  return Math.floor((now.getTime() - submitted.getTime()) / (1000 * 60 * 60 * 24));
+}
+
+function getUrgencyClass(daysPending: number): string {
+  if (daysPending > 14) return 'border-l-4 border-l-red-500 bg-red-900/10';
+  if (daysPending > 7) return 'border-l-4 border-l-yellow-500 bg-yellow-900/10';
+  return 'border-l-4 border-l-gray-600 bg-gray-700/20';
+}
+
+function getUrgencyBadge(daysPending: number): { label: string; colour: string } {
+  if (daysPending > 14) return { label: 'Critical', colour: 'bg-red-900/30 text-red-300' };
+  if (daysPending > 7) return { label: 'Urgent', colour: 'bg-yellow-900/30 text-yellow-300' };
+  return { label: 'On Time', colour: 'bg-gray-700/30 text-gray-300' };
 }
 
 export function ChangeOrders() {
@@ -93,325 +156,677 @@ export function ChangeOrders() {
   const updateMutation = useUpdate();
   const deleteMutation = useDelete();
 
+  const [mainTab, setMainTab] = useState('register');
   const [subTab, setSubTab] = useState('all');
   const [search, setSearch] = useState('');
+  const [projectFilter, setProjectFilter] = useState('');
   const [statusFilter, setStatusFilter] = useState('All');
   const [showModal, setShowModal] = useState(false);
   const [expandedCoId, setExpandedCoId] = useState<string | null>(null);
-  function setTab(key: string, filter: string) { setSubTab(key); setStatusFilter(filter); }
+  const [selectedForApproval, setSelectedForApproval] = useState<Set<string>>(new Set());
   const [editing, setEditing] = useState<AnyRow | null>(null);
   const [form, setForm] = useState({ ...emptyForm });
 
-  const PENDING_STATUSES = ['Draft','Submitted','Under Review'];
-  const REJECTED_STATUSES = ['Rejected','Withdrawn'];
+  const PENDING_STATUSES = ['Draft', 'Submitted', 'Under Review'];
+  const REJECTED_STATUSES = ['Rejected', 'Withdrawn'];
+
   const filtered = orders.filter(o => {
-    const title = String(o.title??'').toLowerCase();
-    const num = String(o.co_number??'').toLowerCase();
+    const title = String(o.title ?? '').toLowerCase();
+    const num = String(o.co_number ?? '').toLowerCase();
+    const proj = String(o.project ?? o.project_id ?? '').toLowerCase();
     const matchSearch = title.includes(search.toLowerCase()) || num.includes(search.toLowerCase());
+    const matchProject = !projectFilter || proj.includes(projectFilter.toLowerCase());
     let matchStatus = statusFilter === 'All' || o.status === statusFilter;
-    if (subTab === 'pending') matchStatus = PENDING_STATUSES.includes(String(o.status??''));
-    if (subTab === 'rejected') matchStatus = REJECTED_STATUSES.includes(String(o.status??''));
-    return matchSearch && matchStatus;
+    if (subTab === 'pending') matchStatus = PENDING_STATUSES.includes(String(o.status ?? ''));
+    if (subTab === 'rejected') matchStatus = REJECTED_STATUSES.includes(String(o.status ?? ''));
+    return matchSearch && matchStatus && matchProject;
   });
 
-  const totalValue = orders.filter(o=>o.status==='Approved').reduce((s,o)=>s+Number(o.value??0),0);
-  const pendingValue = orders.filter(o=>['Submitted','Under Review'].includes(String(o.status??''))).reduce((s,o)=>s+Number(o.value??0),0);
-  const approvedCount = orders.filter(o=>o.status==='Approved').length;
-  const totalDays = orders.filter(o=>o.status==='Approved').reduce((s,o)=>s+Number(o.days_extension??0),0);
+  const approvedOrders = orders.filter(o => o.status === 'Approved');
+  const pendingOrders = orders.filter(o => ['Submitted', 'Under Review'].includes(String(o.status ?? '')));
+  const draftOrders = orders.filter(o => o.status === 'Draft');
+
+  const totalCOs = orders.length;
+  const approvedCount = approvedOrders.length;
+  const pendingCount = pendingOrders.length;
+  const approvedValue = approvedOrders.reduce((s, o) => s + Number(o.value ?? 0), 0);
+  const pendingValue = pendingOrders.reduce((s, o) => s + Number(o.value ?? 0), 0);
+  const draftValue = draftOrders.reduce((s, o) => s + Number(o.value ?? 0), 0);
+  const totalValue = approvedValue + pendingValue + draftValue;
+  const totalDays = approvedOrders.reduce((s, o) => s + Number(o.days_extension ?? 0), 0);
+  const avgProcessingTime = approvedCount > 0 ? Math.round(totalDays / approvedCount) : 0;
   const underReviewCount = orders.filter(o => o.status === 'Under Review').length;
+  const projects = Array.from(new Set(orders.map(o => String(o.project ?? o.project_id ?? '')).filter(Boolean)));
 
   function nextCONumber() {
-    const nums = orders.map(o=>parseInt(String(o.co_number??'0').replace(/\D/g,''))).filter(n=>!isNaN(n));
-    const next = nums.length>0?Math.max(...nums)+1:1;
-    return `CO-${String(next).padStart(3,'0')}`;
+    const nums = orders.map(o => parseInt(String(o.co_number ?? '0').replace(/\D/g, ''))).filter(n => !isNaN(n));
+    const next = nums.length > 0 ? Math.max(...nums) + 1 : 1;
+    return `CO-${String(next).padStart(3, '0')}`;
   }
 
-  function openCreate() { setEditing(null); setForm({ ...emptyForm, co_number:nextCONumber() }); setShowModal(true); }
+  function openCreate() {
+    setEditing(null);
+    setForm({ ...emptyForm, co_number: nextCONumber() });
+    setShowModal(true);
+  }
+
   function openEdit(o: AnyRow) {
     setEditing(o);
-    setForm({ co_number:String(o.co_number??''),title:String(o.title??''),type:String(o.type??'Addition'),reason:String(o.reason??''),value:String(o.value??''),days_extension:String(o.days_extension??'0'),status:String(o.status??'Draft'),project_id:String(o.project_id??''),submitted_date:String(o.submitted_date??''),approved_date:String(o.approved_date??''),description:String(o.description??''),rejection_reason:String(o.rejection_reason??'') });
+    setForm({
+      co_number: String(o.co_number ?? ''),
+      title: String(o.title ?? ''),
+      type: String(o.type ?? 'Addition'),
+      reason: String(o.reason ?? ''),
+      value: String(o.value ?? ''),
+      days_extension: String(o.days_extension ?? '0'),
+      status: String(o.status ?? 'Draft'),
+      project_id: String(o.project_id ?? ''),
+      submitted_date: String(o.submitted_date ?? ''),
+      approved_date: String(o.approved_date ?? ''),
+      description: String(o.description ?? ''),
+      rejection_reason: String(o.rejection_reason ?? '')
+    });
     setShowModal(true);
   }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    const payload = { ...form, value:Number(form.value)||0, days_extension:Number(form.days_extension)||0 };
-    if (editing) { await updateMutation.mutateAsync({ id:String(editing.id), data:payload }); toast.success('Change order updated'); }
-    else { await createMutation.mutateAsync(payload); toast.success('Change order created'); }
+    const payload = { ...form, value: Number(form.value) || 0, days_extension: Number(form.days_extension) || 0 };
+    if (editing) {
+      await updateMutation.mutateAsync({ id: String(editing.id), data: payload });
+      toast.success('Change order updated');
+    } else {
+      await createMutation.mutateAsync(payload);
+      toast.success('Change order created');
+    }
     setShowModal(false);
   }
 
   async function handleDelete(id: string) {
     if (!confirm('Delete this change order?')) return;
-    await deleteMutation.mutateAsync(id); toast.success('Change order deleted');
+    await deleteMutation.mutateAsync(id);
+    toast.success('Change order deleted');
   }
 
   async function approve(o: AnyRow) {
-    await updateMutation.mutateAsync({ id:String(o.id), data:{ status:'Approved', approved_date:new Date().toISOString().slice(0,10) } });
+    await updateMutation.mutateAsync({
+      id: String(o.id),
+      data: { status: 'Approved', approved_date: new Date().toISOString().slice(0, 10) }
+    });
     toast.success('Change order approved');
   }
 
-  async function approveAll() {
-    const underReview = orders.filter(o => o.status === 'Under Review');
-    for (const co of underReview) {
-      await updateMutation.mutateAsync({ id:String(co.id), data:{ status:'Approved', approved_date:new Date().toISOString().slice(0,10) } });
+  async function approveSelected() {
+    for (const id of selectedForApproval) {
+      const order = orders.find(o => String(o.id) === id);
+      if (order) {
+        await updateMutation.mutateAsync({
+          id,
+          data: { status: 'Approved', approved_date: new Date().toISOString().slice(0, 10) }
+        });
+      }
     }
-    toast.success(`${underReview.length} change orders approved`);
+    toast.success(`${selectedForApproval.size} change orders approved`);
+    setSelectedForApproval(new Set());
   }
 
+  function toggleApprovalSelection(id: string) {
+    const newSet = new Set(selectedForApproval);
+    if (newSet.has(id)) {
+      newSet.delete(id);
+    } else {
+      newSet.add(id);
+    }
+    setSelectedForApproval(newSet);
+  }
+
+  const chartData = generateChartData(orders);
+  const cumulativeData = generateCumulativeData(orders);
+  const reasonBreakdown = generateReasonBreakdown(orders);
+  const byProjectData = Array.from(new Set(orders.map(o => String(o.project ?? o.project_id ?? ''))))
+    .map(proj => ({
+      project: proj || 'Unassigned',
+      value: orders.filter(o => String(o.project ?? o.project_id ?? '') === proj && o.status === 'Approved')
+        .reduce((s, o) => s + Number(o.value ?? 0), 0)
+    }))
+    .filter(d => d.value > 0)
+    .sort((a, b) => b.value - a.value);
+
+  const pendingWorkflow = orders.filter(o => PENDING_STATUSES.includes(String(o.status ?? ''))).sort(
+    (a, b) => String(a.submitted_date ?? '').localeCompare(String(b.submitted_date ?? ''))
+  );
+
   return (
-    <div className="p-6 space-y-6 dark:bg-gray-900 min-h-screen">
+    <div className="p-6 space-y-6 min-h-screen">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold dark:text-white text-gray-900">Change Orders</h1>
-          <p className="text-sm dark:text-gray-400 text-gray-500 mt-1">Contract variations, additions & omissions</p>
+          <h1 className="text-2xl font-bold text-white">Change Orders</h1>
+          <p className="text-sm text-gray-400 mt-1">UK construction variation management & financial impact</p>
         </div>
-        <button onClick={openCreate} className="flex items-center gap-2 px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 text-sm font-medium">
-          <Plus size={16}/><span>New CO</span>
+        <button
+          onClick={openCreate}
+          className="flex items-center gap-2 px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 text-sm font-medium"
+        >
+          <Plus size={16} /> <span>New Change Order</span>
         </button>
       </div>
 
-      {/* Review Pending Banner */}
-      {underReviewCount > 0 && (
-        <div className="flex items-center justify-between p-4 dark:bg-yellow-900/30 dark:border-yellow-700 dark:text-yellow-300 bg-yellow-50 border border-yellow-200 text-yellow-800 rounded-lg">
-          <div className="flex items-center gap-3">
-            <AlertTriangle size={20}/>
-            <span className="font-medium">Review Pending ({underReviewCount})</span>
-          </div>
-          <button onClick={approveAll} className="flex items-center gap-2 px-3 py-1.5 dark:bg-yellow-700 dark:hover:bg-yellow-600 bg-yellow-600 text-white rounded text-sm font-medium hover:bg-yellow-700">
-            <CheckSquare size={14}/> Approve All
-          </button>
-        </div>
-      )}
-
-      {/* KPI Cards */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+      {/* Stats Cards (5) */}
+      <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
         {[
-          { label:'Approved Value', value:`£${totalValue.toLocaleString()}`, icon:PoundSterling, colour:'dark:text-green-400 text-green-600', bg:'dark:bg-green-900/30 bg-green-50', border:'dark:border-green-700 border-green-200' },
-          { label:'Pending Value', value:`£${pendingValue.toLocaleString()}`, icon:Clock, colour:'dark:text-yellow-400 text-yellow-600', bg:'dark:bg-yellow-900/30 bg-yellow-50', border:'dark:border-yellow-700 border-yellow-200' },
-          { label:'Approved COs', value:approvedCount, icon:CheckCircle, colour:'dark:text-green-400 text-green-600', bg:'dark:bg-green-900/30 bg-green-50', border:'dark:border-green-700 border-green-200' },
-          { label:'Extension Days', value:totalDays, icon:TrendingUp, colour:'dark:text-orange-400 text-orange-600', bg:'dark:bg-orange-900/30 bg-orange-50', border:'dark:border-orange-700 border-orange-200' },
-        ].map(kpi=>(
-          <div key={kpi.label} className={`dark:bg-gray-800 dark:border-gray-700 rounded-xl border ${kpi.border} bg-white p-4`}>
-            <div className="flex items-center gap-3">
-              <div className={`p-2 rounded-lg ${kpi.bg}`}><kpi.icon size={20} className={kpi.colour}/></div>
-              <div><p className="text-xs dark:text-gray-400 text-gray-500">{kpi.label}</p><p className="text-xl font-bold dark:text-white text-gray-900">{kpi.value}</p></div>
+          { label: 'Total COs', value: totalCOs, icon: FileEdit, colour: 'text-blue-400', bg: 'bg-blue-900/30', border: 'border-blue-700' },
+          { label: 'Approved', value: approvedCount, icon: CheckCircle2, colour: 'text-green-400', bg: 'bg-green-900/30', border: 'border-green-700' },
+          { label: 'Pending', value: pendingCount, icon: Clock, colour: 'text-yellow-400', bg: 'bg-yellow-900/30', border: 'border-yellow-700' },
+          { label: 'Total Value (£)', value: `£${totalValue.toLocaleString()}`, icon: DollarSign, colour: 'text-purple-400', bg: 'bg-purple-900/30', border: 'border-purple-700' },
+          { label: 'Avg Processing (days)', value: avgProcessingTime, icon: Calendar, colour: 'text-orange-400', bg: 'bg-orange-900/30', border: 'border-orange-700' },
+        ].map(kpi => (
+          <div key={kpi.label} className={`bg-gray-800 border-gray-700 rounded-xl border ${kpi.border} p-4`}>
+            <div className="flex items-start justify-between">
+              <div className="flex-1">
+                <p className="text-xs text-gray-400 font-medium">{kpi.label}</p>
+                <p className="text-2xl font-bold text-white mt-2">{kpi.value}</p>
+              </div>
+              <div className={`p-2.5 rounded-lg ${kpi.bg}`}>
+                <kpi.icon size={20} className={kpi.colour} />
+              </div>
             </div>
           </div>
         ))}
       </div>
 
-      {/* Tabs */}
-      <div className="flex gap-1 dark:border-gray-700 border-b border-gray-200">
-        {([
-          { key:'all',      label:'All COs',       filter:'All',          count:orders.length },
-          { key:'pending',  label:'Pending',        filter:'Submitted',    count:orders.filter(o=>['Draft','Submitted','Under Review'].includes(String(o.status??''))).length },
-          { key:'analytics',label:'Analytics',      filter:'Analytics',    count:0 },
-          { key:'approved', label:'Approved',       filter:'Approved',     count:approvedCount },
-          { key:'rejected', label:'Rejected',       filter:'Rejected',     count:orders.filter(o=>['Rejected','Withdrawn'].includes(String(o.status??''))).length },
-        ]).map(t=>(
-          <button key={t.key} onClick={()=>{ setSubTab(t.key); if(t.key==='pending'){ setStatusFilter('All'); } else if(t.key!=='analytics'){ setStatusFilter(t.filter); } }}
-            className={`flex items-center gap-2 px-4 py-2.5 text-sm font-medium dark:border-gray-700 dark:text-gray-400 border-b-2 -mb-px transition-colors ${subTab===t.key?'dark:border-orange-600 dark:text-orange-400 border-orange-600 text-orange-600':'border-transparent text-gray-500 hover:text-gray-700 dark:hover:text-gray-300'}`}>
-            {t.label}
-            {t.count > 0 && <span className={`text-xs px-1.5 py-0.5 rounded-full ${t.key==='approved'?'dark:bg-green-900 dark:text-green-300 bg-green-100 text-green-700':t.key==='rejected'?'dark:bg-red-900 dark:text-red-300 bg-red-100 text-red-700':'dark:bg-gray-700 dark:text-gray-300 bg-gray-100 text-gray-600'}`}>{t.count}</span>}
+      {/* Main Tabs */}
+      <div className="flex gap-1 border-b border-gray-700">
+        {[
+          { key: 'register', label: 'Change Orders', icon: FileEdit },
+          { key: 'financial', label: 'Financial Impact', icon: BarChart3 },
+          { key: 'workflow', label: 'Approval Workflow', icon: CheckCircle2 },
+        ].map(tab => (
+          <button
+            key={tab.key}
+            onClick={() => setMainTab(tab.key)}
+            className={`flex items-center gap-2 px-4 py-2.5 text-sm font-medium border-b-2 transition-colors ${
+              mainTab === tab.key
+                ? 'border-orange-600 text-orange-400'
+                : 'border-transparent text-gray-400 hover:text-gray-300'
+            }`}
+          >
+            <tab.icon size={16} />
+            {tab.label}
           </button>
         ))}
       </div>
 
-      {/* Analytics Tab */}
-      {subTab === 'analytics' && (
-        <div className="dark:bg-gray-800 dark:border-gray-700 bg-white rounded-xl border border-gray-200 p-6">
-          <h3 className="text-lg font-semibold dark:text-white text-gray-900 mb-6 flex items-center gap-2">
-            <BarChart3 size={20}/>Approved CO Values by Month
-          </h3>
-          <ResponsiveContainer width="100%" height={300}>
-            <BarChart data={chartData}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#444"/>
-              <XAxis dataKey="month" stroke="#888"/>
-              <YAxis stroke="#888"/>
-              <Tooltip contentStyle={{ backgroundColor: '#1f2937', border: '1px solid #444', borderRadius: '8px', color: '#fff' }}/>
-              <Bar dataKey="value" fill="#f97316" radius={[8, 8, 0, 0]}/>
-            </BarChart>
-          </ResponsiveContainer>
-        </div>
-      )}
-
-      {/* Search & Filter */}
-      {subTab !== 'analytics' && (
-        <div className="flex flex-wrap gap-3 items-center dark:bg-gray-800 dark:border-gray-700 bg-white rounded-xl border border-gray-200 p-4">
-          <div className="relative flex-1 min-w-48">
-            <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 dark:text-gray-500 text-gray-400"/>
-            <input value={search} onChange={e=>setSearch(e.target.value)} placeholder="Search CO number or title…" className="w-full dark:bg-gray-700 dark:border-gray-600 dark:text-white dark:placeholder-gray-400 pl-9 pr-4 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"/>
+      {/* CHANGE ORDERS TAB */}
+      {mainTab === 'register' && (
+        <div className="space-y-4">
+          {/* Sub-tabs for Change Orders */}
+          <div className="flex gap-1 border-b border-gray-700">
+            {[
+              { key: 'all', label: 'All', filter: 'All', count: orders.length },
+              { key: 'draft', label: 'Draft', filter: 'Draft', count: draftOrders.length },
+              { key: 'pending', label: 'Pending', filter: 'All', count: pendingCount },
+              { key: 'approved', label: 'Approved', filter: 'Approved', count: approvedCount },
+              { key: 'rejected', label: 'Rejected', filter: 'Rejected', count: orders.filter(o => REJECTED_STATUSES.includes(String(o.status ?? ''))).length },
+            ].map(t => (
+              <button
+                key={t.key}
+                onClick={() => {
+                  setSubTab(t.key);
+                  setStatusFilter(t.filter);
+                }}
+                className={`flex items-center gap-2 px-4 py-2.5 text-sm font-medium border-b-2 -mb-px transition-colors ${
+                  subTab === t.key ? 'border-orange-600 text-orange-400' : 'border-transparent text-gray-400 hover:text-gray-300'
+                }`}
+              >
+                {t.label}
+                {t.count > 0 && (
+                  <span className={`text-xs px-1.5 py-0.5 rounded-full ${
+                    t.key === 'approved'
+                      ? 'bg-green-900/30 text-green-300'
+                      : t.key === 'rejected'
+                        ? 'bg-red-900/30 text-red-300'
+                        : 'bg-gray-700/30 text-gray-300'
+                  }`}>
+                    {t.count}
+                  </span>
+                )}
+              </button>
+            ))}
           </div>
-          <select value={statusFilter} onChange={e=>setStatusFilter(e.target.value)} className="text-sm dark:bg-gray-700 dark:border-gray-600 dark:text-white border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-orange-500">
-            {['All',...STATUS_OPTIONS].map(s=><option key={s}>{s}</option>)}
-          </select>
+
+          {/* Search & Filter */}
+          <div className="flex flex-wrap gap-3 items-center bg-gray-800 border-gray-700 rounded-xl border p-4">
+            <div className="relative flex-1 min-w-48">
+              <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500" />
+              <input
+                value={search}
+                onChange={e => setSearch(e.target.value)}
+                placeholder="Search CO number or title…"
+                className="w-full bg-gray-700 border-gray-600 text-white placeholder-gray-400 pl-9 pr-4 py-2 text-sm border rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
+              />
+            </div>
+            <select
+              value={projectFilter}
+              onChange={e => setProjectFilter(e.target.value)}
+              className="text-sm bg-gray-700 border-gray-600 text-white border rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-orange-500"
+            >
+              <option value="">All Projects</option>
+              {projects.map(p => <option key={p}>{p}</option>)}
+            </select>
+          </div>
+
+          {/* Table */}
+          {isLoading ? (
+            <div className="flex justify-center py-20">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-600" />
+            </div>
+          ) : (
+            <div className="bg-gray-800 border-gray-700 rounded-xl border overflow-hidden">
+              <table className="w-full">
+                <thead className="bg-gray-700 border-gray-600 border-b">
+                  <tr>
+                    {['CO #', 'Project', 'Title', 'Amount (£)', 'Schedule Impact', 'Reason', 'Submitted', 'Status', ''].map(h => (
+                      <th key={h} className="px-4 py-3 text-left text-xs text-gray-400 font-medium uppercase tracking-wider">
+                        {h}
+                      </th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-700">
+                  {filtered.map(o => (
+                    <div key={String(o.id)}>
+                      <tr
+                        className="hover:bg-gray-700/50 cursor-pointer"
+                        onClick={() => setExpandedCoId(expandedCoId === String(o.id) ? null : String(o.id))}
+                      >
+                        <td className="px-4 py-3 font-mono text-xs font-bold text-orange-600">{String(o.co_number ?? '—')}</td>
+                        <td className="px-4 py-3 text-gray-300 text-sm">{String(o.project ?? o.project_id ?? '—')}</td>
+                        <td className="px-4 py-3 font-medium text-white max-w-xs truncate">{String(o.title ?? '—')}</td>
+                        <td className="px-4 py-3 font-semibold text-white">
+                          {Number(o.value ?? 0) >= 0 ? '+' : ''}£{Number(o.value ?? 0).toLocaleString()}
+                        </td>
+                        <td className="px-4 py-3 text-gray-300 text-sm">
+                          {Number(o.days_extension ?? 0) > 0 ? `+${String(o.days_extension)}d` : '—'}
+                        </td>
+                        <td className="px-4 py-3 text-gray-300 text-sm">{String(o.reason ?? '—')}</td>
+                        <td className="px-4 py-3 text-gray-400 text-sm">{String(o.submitted_date ?? '—')}</td>
+                        <td className="px-4 py-3">
+                          <span className={`text-xs px-2 py-1 rounded-full font-medium ${statusColour[String(o.status ?? '')] ?? 'bg-gray-700/30 text-gray-300'}`}>
+                            {String(o.status ?? '')}
+                          </span>
+                        </td>
+                        <td className="px-4 py-3">
+                          <div className="flex items-center gap-1">
+                            {String(o.status ?? '') === 'Under Review' && (
+                              <button
+                                onClick={e => {
+                                  e.stopPropagation();
+                                  approve(o);
+                                }}
+                                className="p-1.5 text-green-400 hover:bg-green-900/30 rounded"
+                                title="Approve"
+                              >
+                                <CheckCircle2 size={14} />
+                              </button>
+                            )}
+                            <button
+                              onClick={e => {
+                                e.stopPropagation();
+                                openEdit(o);
+                              }}
+                              className="p-1.5 text-gray-500 hover:text-blue-400 hover:bg-blue-900/30 rounded"
+                            >
+                              <Edit2 size={14} />
+                            </button>
+                            <button
+                              onClick={e => {
+                                e.stopPropagation();
+                                handleDelete(String(o.id));
+                              }}
+                              className="p-1.5 text-gray-500 hover:text-red-400 hover:bg-red-900/30 rounded"
+                            >
+                              <Trash2 size={14} />
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                      {/* Expanded Row */}
+                      {expandedCoId === String(o.id) && (
+                        <tr className="bg-gray-700/50">
+                          <td colSpan={9} className="px-4 py-4">
+                            <div className="space-y-4">
+                              <ApprovalTimeline status={String(o.status ?? 'Draft')} />
+                              {!!o.rejection_reason && (
+                                <div className="p-4 bg-red-900/30 border-red-700 border text-red-300 rounded-lg flex items-start gap-3">
+                                  <AlertTriangle size={20} className="flex-shrink-0 mt-0.5" />
+                                  <div>
+                                    <p className="font-semibold">Rejection Reason</p>
+                                    <p className="text-sm mt-1">{String(o.rejection_reason)}</p>
+                                  </div>
+                                </div>
+                              )}
+                              <div className="grid grid-cols-3 gap-3 p-4 bg-gray-600/50 rounded-lg">
+                                <div>
+                                  <p className="text-xs text-gray-400 uppercase tracking-wide font-semibold">Contract Impact</p>
+                                  <p className="text-lg font-bold text-white mt-1">£{Number(o.value ?? 0).toLocaleString()}</p>
+                                </div>
+                                <div>
+                                  <p className="text-xs text-gray-400 uppercase tracking-wide font-semibold">Programme Extension</p>
+                                  <p className="text-lg font-bold text-white mt-1">+{Number(o.days_extension ?? 0)}d</p>
+                                </div>
+                                <div>
+                                  <p className="text-xs text-gray-400 uppercase tracking-wide font-semibold">Cumulative Approved</p>
+                                  <p className="text-lg font-bold text-white mt-1">£{approvedValue.toLocaleString()}</p>
+                                </div>
+                              </div>
+                              <div className="bg-gray-600/50 rounded-lg p-4">
+                                <p className="text-sm font-semibold text-white mb-3 flex items-center gap-2">
+                                  <Activity size={16} />
+                                  Activity Log
+                                </p>
+                                <div className="space-y-2">
+                                  {generateAuditLog(o).map((log, idx) => (
+                                    <div key={idx} className="text-xs text-gray-300 flex items-start gap-2">
+                                      <span className="text-gray-400">{log.date}</span>
+                                      <span>•</span>
+                                      <span>
+                                        <span className="font-semibold">{log.action}</span> by {log.user}
+                                      </span>
+                                    </div>
+                                  ))}
+                                </div>
+                              </div>
+                              {!!o.description && (
+                                <div className="bg-gray-600/50 rounded-lg p-4">
+                                  <p className="text-sm font-semibold text-white mb-2">Description</p>
+                                  <p className="text-sm text-gray-300">{String(o.description)}</p>
+                                </div>
+                              )}
+                            </div>
+                          </td>
+                        </tr>
+                      )}
+                    </div>
+                  ))}
+                </tbody>
+              </table>
+              {filtered.length === 0 && (
+                <div className="text-center py-16 text-gray-500">
+                  <GitBranch size={40} className="mx-auto mb-3 opacity-30" />
+                  <p>No change orders found</p>
+                </div>
+              )}
+            </div>
+          )}
         </div>
       )}
 
-      {/* Table */}
-      {isLoading ? (
-        <div className="flex justify-center py-20"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-600"/></div>
-      ) : subTab !== 'analytics' ? (
-        <div className="dark:bg-gray-800 dark:border-gray-700 bg-white rounded-xl border border-gray-200 overflow-hidden">
-          <table className="w-full">
-            <thead className="dark:bg-gray-700 dark:border-gray-600 bg-gray-50 border-b border-gray-200">
-              <tr>{['CO #','Title','Type','Value','Extension','Status','Submitted',''].map(h=><th key={h} className="px-4 py-3 text-left text-xs dark:text-gray-400 font-medium text-gray-500 uppercase tracking-wider">{h}</th>)}</tr>
-            </thead>
-            <tbody className="dark:divide-gray-700 divide-y divide-gray-100">
-              {filtered.map(o=>(
-                <div key={String(o.id)}>
-                  <tr className="dark:hover:bg-gray-700/50 hover:bg-gray-50 cursor-pointer" onClick={() => setExpandedCoId(expandedCoId === String(o.id) ? null : String(o.id))}>
-                    <td className="px-4 py-3 font-mono text-xs font-bold text-orange-600">{String(o.co_number??'—')}</td>
-                    <td className="px-4 py-3 font-medium dark:text-white text-gray-900 max-w-xs truncate">{String(o.title??'—')}</td>
-                    <td className="px-4 py-3 dark:text-gray-300 text-gray-600 text-sm">{String(o.type??'—')}</td>
-                    <td className="px-4 py-3 font-semibold dark:text-white text-gray-900">£{Number(o.value??0).toLocaleString()}</td>
-                    <td className="px-4 py-3 dark:text-gray-300 text-gray-600 text-sm">{Number(o.days_extension??0)>0?`+${o.days_extension}d`:'—'}</td>
-                    <td className="px-4 py-3"><span className={`text-xs px-2 py-1 rounded-full font-medium ${statusColour[String(o.status??'')] ?? 'dark:bg-gray-700 dark:text-gray-300 bg-gray-100 text-gray-700'}`}>{String(o.status??'')}</span></td>
-                    <td className="px-4 py-3 dark:text-gray-400 text-gray-500 text-sm">{String(o.submitted_date??'—')}</td>
-                    <td className="px-4 py-3">
-                      <div className="flex items-center gap-1">
-                        {o.status==='Under Review' && <button onClick={(e)=>{ e.stopPropagation(); approve(o); }} className="p-1.5 dark:text-green-400 text-green-600 dark:hover:bg-green-900/30 hover:bg-green-50 rounded" title="Approve"><CheckCircle size={14}/></button>}
-                        <button onClick={(e)=>{ e.stopPropagation(); openEdit(o); }} className="p-1.5 dark:text-gray-500 dark:hover:text-blue-400 text-gray-400 hover:text-blue-600 dark:hover:bg-blue-900/30 hover:bg-blue-50 rounded"><Edit2 size={14}/></button>
-                        <button onClick={(e)=>{ e.stopPropagation(); handleDelete(String(o.id)); }} className="p-1.5 dark:text-gray-500 dark:hover:text-red-400 text-gray-400 hover:text-red-600 dark:hover:bg-red-900/30 hover:bg-red-50 rounded"><Trash2 size={14}/></button>
-                      </div>
+      {/* FINANCIAL IMPACT TAB */}
+      {mainTab === 'financial' && (
+        <div className="space-y-6">
+          {/* Summary Cards */}
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+            {[
+              { label: 'Original Contract Value', value: '£2,500,000', colour: 'text-blue-400', bg: 'bg-blue-900/30' },
+              { label: 'Approved COs Value', value: `£${approvedValue.toLocaleString()}`, colour: 'text-green-400', bg: 'bg-green-900/30' },
+              { label: 'Pending COs Value', value: `£${pendingValue.toLocaleString()}`, colour: 'text-yellow-400', bg: 'bg-yellow-900/30' },
+              { label: 'Revised Contract Value', value: `£${(2500000 + approvedValue).toLocaleString()}`, colour: 'text-purple-400', bg: 'bg-purple-900/30' },
+            ].map(card => (
+              <div key={card.label} className={`bg-gray-800 border-gray-700 rounded-xl border p-4`}>
+                <p className="text-xs text-gray-400 font-medium">{card.label}</p>
+                <p className={`text-2xl font-bold mt-2 ${card.colour}`}>{card.value}</p>
+              </div>
+            ))}
+          </div>
+
+          {/* Charts */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {/* Bar Chart - CO Values by Project */}
+            <div className="bg-gray-800 border-gray-700 rounded-xl border p-6">
+              <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
+                <BarChart3 size={20} />
+                CO Values by Project
+              </h3>
+              {byProjectData.length > 0 ? (
+                <ResponsiveContainer width="100%" height={300}>
+                  <BarChart data={byProjectData}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
+                    <XAxis dataKey="project" stroke="#9ca3af" tick={{ fontSize: 12 }} />
+                    <YAxis stroke="#9ca3af" tick={{ fontSize: 12 }} />
+                    <Tooltip contentStyle={{ backgroundColor: '#1f2937', border: '1px solid #374151', borderRadius: '8px', color: '#fff' }} />
+                    <Bar dataKey="value" fill="#3b82f6" radius={[8, 8, 0, 0]} />
+                  </BarChart>
+                </ResponsiveContainer>
+              ) : (
+                <div className="h-80 flex items-center justify-center text-gray-400">No approved COs by project</div>
+              )}
+            </div>
+
+            {/* Line Chart - Cumulative CO Value Over Time */}
+            <div className="bg-gray-800 border-gray-700 rounded-xl border p-6">
+              <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
+                <TrendingUp size={20} />
+                Cumulative CO Value Over Time
+              </h3>
+              {cumulativeData.some(d => d.value > 0) ? (
+                <ResponsiveContainer width="100%" height={300}>
+                  <LineChart data={cumulativeData}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
+                    <XAxis dataKey="month" stroke="#9ca3af" tick={{ fontSize: 12 }} />
+                    <YAxis stroke="#9ca3af" tick={{ fontSize: 12 }} />
+                    <Tooltip contentStyle={{ backgroundColor: '#1f2937', border: '1px solid #374151', borderRadius: '8px', color: '#fff' }} />
+                    <Line type="monotone" dataKey="value" stroke="#10b981" strokeWidth={2} dot={{ fill: '#10b981', r: 4 }} />
+                  </LineChart>
+                </ResponsiveContainer>
+              ) : (
+                <div className="h-80 flex items-center justify-center text-gray-400">No cumulative data available</div>
+              )}
+            </div>
+          </div>
+
+          {/* Reason Breakdown Table */}
+          <div className="bg-gray-800 border-gray-700 rounded-xl border p-6">
+            <h3 className="text-lg font-semibold text-white mb-4">Reason Breakdown</h3>
+            <table className="w-full text-sm">
+              <thead className="bg-gray-700 border-gray-600 border-b">
+                <tr>
+                  {['Reason', 'Count', 'Total Value (£)', '%'].map(h => (
+                    <th key={h} className="px-4 py-3 text-left text-xs text-gray-400 font-medium uppercase tracking-wider">
+                      {h}
+                    </th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-700">
+                {reasonBreakdown.length > 0 ? (
+                  reasonBreakdown.map(row => {
+                    const totalBreakdownValue = reasonBreakdown.reduce((s, r) => s + r.value, 0);
+                    const pct = totalBreakdownValue > 0 ? ((row.value / totalBreakdownValue) * 100).toFixed(1) : '0.0';
+                    return (
+                      <tr key={row.reason} className="hover:bg-gray-700/50">
+                        <td className="px-4 py-3 text-gray-300">{String(row.reason)}</td>
+                        <td className="px-4 py-3 text-white font-semibold">{String(row.count)}</td>
+                        <td className="px-4 py-3 text-white font-semibold">£{Number(row.value).toLocaleString()}</td>
+                        <td className="px-4 py-3 text-white font-semibold">{String(pct)}%</td>
+                      </tr>
+                    );
+                  })
+                ) : (
+                  <tr>
+                    <td colSpan={4} className="px-4 py-8 text-center text-gray-400">
+                      No data available
                     </td>
                   </tr>
-                  {/* Expanded Row */}
-                  {expandedCoId === String(o.id) && (
-                    <tr className="dark:bg-gray-700/50 bg-gray-50">
-                      <td colSpan={8} className="px-4 py-4">
-                        <div className="space-y-4">
-                          {/* Approval Timeline */}
-                          <ApprovalTimeline status={String(o.status??'Draft')}/>
-
-                          {/* Rejection Reason */}
-                          {o.status === 'Rejected' && (
-                            <div className="p-4 dark:bg-red-900/30 dark:border-red-700 dark:text-red-300 bg-red-50 border border-red-200 text-red-800 rounded-lg flex items-start gap-3">
-                              <AlertTriangle size={20} className="flex-shrink-0 mt-0.5"/>
-                              <div>
-                                <p className="font-semibold">Rejection Reason</p>
-                                <p className="text-sm mt-1">{String(o.rejection_reason || 'No reason provided')}</p>
-                              </div>
-                            </div>
-                          )}
-
-                          {/* Impact Analysis */}
-                          <div className="grid grid-cols-3 gap-3 p-4 dark:bg-gray-600 bg-gray-100 rounded-lg">
-                            <div>
-                              <p className="text-xs dark:text-gray-400 text-gray-600 uppercase tracking-wide font-semibold">Contract Impact</p>
-                              <p className="text-lg font-bold dark:text-white text-gray-900 mt-1">£{Number(o.value??0).toLocaleString()}</p>
-                              <p className="text-xs dark:text-gray-400 text-gray-500 mt-0.5">{((Number(o.value??0) / 1000000) * 100).toFixed(2)}% of base</p>
-                            </div>
-                            <div>
-                              <p className="text-xs dark:text-gray-400 text-gray-600 uppercase tracking-wide font-semibold">Programme Extension</p>
-                              <p className="text-lg font-bold dark:text-white text-gray-900 mt-1">+{Number(o.days_extension??0)}d</p>
-                              <p className="text-xs dark:text-gray-400 text-gray-500 mt-0.5">{(Number(o.days_extension??0) / 7).toFixed(1)} weeks</p>
-                            </div>
-                            <div>
-                              <p className="text-xs dark:text-gray-400 text-gray-600 uppercase tracking-wide font-semibold">Cumulative Approved</p>
-                              <p className="text-lg font-bold dark:text-white text-gray-900 mt-1">£{totalValue.toLocaleString()}</p>
-                              <p className="text-xs dark:text-gray-400 text-gray-500 mt-0.5">{approvedCount} change orders</p>
-                            </div>
-                          </div>
-
-                          {/* Audit Log */}
-                          <div className="dark:bg-gray-600 bg-gray-100 rounded-lg p-4">
-                            <p className="text-sm font-semibold dark:text-white text-gray-900 mb-3 flex items-center gap-2">
-                              <Activity size={16}/>Activity Log
-                            </p>
-                            <div className="space-y-2">
-                              {generateAuditLog(o).map((log, idx) => (
-                                <div key={idx} className="text-xs dark:text-gray-300 text-gray-600 flex items-start gap-2">
-                                  <span className="dark:text-gray-400 text-gray-500">{log.date}</span>
-                                  <span>•</span>
-                                  <span><span className="font-semibold">{log.action}</span> by {log.user}</span>
-                                </div>
-                              ))}
-                            </div>
-                          </div>
-
-                          {/* Description */}
-                          {Boolean(o.description) && (
-                            <div className="dark:bg-gray-600 bg-gray-100 rounded-lg p-4">
-                              <p className="text-sm font-semibold dark:text-white text-gray-900 mb-2">Description</p>
-                              <p className="text-sm dark:text-gray-300 text-gray-700">{String(o.description)}</p>
-                            </div>
-                          )}
-                        </div>
-                      </td>
-                    </tr>
-                  )}
-                </div>
-              ))}
-            </tbody>
-          </table>
-          {filtered.length === 0 && <div className="text-center py-16 dark:text-gray-500 text-gray-400"><GitBranch size={40} className="mx-auto mb-3 opacity-30"/><p>No change orders found</p></div>}
+                )}
+              </tbody>
+            </table>
+          </div>
         </div>
-      ) : null}
+      )}
+
+      {/* APPROVAL WORKFLOW TAB */}
+      {mainTab === 'workflow' && (
+        <div className="space-y-4">
+          {/* Bulk Actions */}
+          {selectedForApproval.size > 0 && (
+            <div className="flex items-center justify-between p-4 bg-orange-900/30 border border-orange-700 text-orange-300 rounded-lg">
+              <span className="font-medium">{selectedForApproval.size} items selected</span>
+              <button
+                onClick={approveSelected}
+                className="flex items-center gap-2 px-4 py-2 bg-orange-600 hover:bg-orange-700 text-white rounded-lg text-sm font-medium"
+              >
+                <CheckCircle2 size={16} />
+                Approve Selected
+              </button>
+            </div>
+          )}
+
+          {/* Pending COs Cards */}
+          {pendingWorkflow.length > 0 ? (
+            <div className="grid grid-cols-1 gap-4">
+              {pendingWorkflow.map(co => {
+                const daysPending = calculateDaysPending(co.submitted_date);
+                const urgency = getUrgencyBadge(daysPending);
+                const selected = !!selectedForApproval.has(String(co.id));
+                return (
+                  <div key={String(co.id)} className={`bg-gray-800 border-gray-700 rounded-xl border p-5 ${getUrgencyClass(daysPending)}`}>
+                    <div className="flex items-start justify-between">
+                      <div className="flex items-start gap-4 flex-1">
+                        <input
+                          type="checkbox"
+                          checked={selected}
+                          onChange={() => toggleApprovalSelection(String(co.id))}
+                          className="mt-1 w-5 h-5 bg-gray-700 border-gray-600 rounded cursor-pointer"
+                        />
+                        <div className="flex-1">
+                          <div className="flex items-center gap-3 mb-2">
+                            <p className="font-mono text-sm font-bold text-orange-400">{String(co.co_number ?? '—')}</p>
+                            <span className={`text-xs px-2 py-1 rounded-full font-medium ${urgency.colour}`}>
+                              {urgency.label} ({daysPending}d)
+                            </span>
+                          </div>
+                          <p className="text-white font-semibold">{String(co.title ?? '—')}</p>
+                          <p className="text-sm text-gray-400 mt-1">
+                            Project: <span className="text-gray-300">{String(co.project ?? co.project_id ?? '—')}</span>
+                          </p>
+                          <p className="text-sm text-gray-400">
+                            Amount: <span className="text-white font-semibold">£{Number(co.value ?? 0).toLocaleString()}</span>
+                          </p>
+                          <p className="text-xs text-gray-500 mt-2">
+                            Submitted: {String(co.submitted_date ?? '—')}
+                          </p>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <button
+                          onClick={() => approve(co)}
+                          className="flex items-center gap-2 px-3 py-2 bg-green-900/30 text-green-300 hover:bg-green-900/50 rounded-lg text-sm font-medium"
+                        >
+                          <CheckCircle2 size={16} />
+                          Approve
+                        </button>
+                        <button
+                          onClick={() => {
+                            setEditing(co);
+                            setForm({
+                              co_number: String(co.co_number ?? ''),
+                              title: String(co.title ?? ''),
+                              type: String(co.type ?? 'Addition'),
+                              reason: String(co.reason ?? ''),
+                              value: String(co.value ?? ''),
+                              days_extension: String(co.days_extension ?? '0'),
+                              status: String(co.status ?? 'Draft'),
+                              project_id: String(co.project_id ?? ''),
+                              submitted_date: String(co.submitted_date ?? ''),
+                              approved_date: String(co.approved_date ?? ''),
+                              description: String(co.description ?? ''),
+                              rejection_reason: String(co.rejection_reason ?? '')
+                            });
+                            setShowModal(true);
+                          }}
+                          className="flex items-center gap-2 px-3 py-2 bg-blue-900/30 text-blue-300 hover:bg-blue-900/50 rounded-lg text-sm font-medium"
+                        >
+                          <Edit2 size={16} />
+                          Info
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          ) : (
+            <div className="text-center py-20 text-gray-500">
+              <CheckCircle2 size={48} className="mx-auto mb-3 opacity-30" />
+              <p className="text-lg">All change orders processed</p>
+              <p className="text-sm mt-1">No pending approvals at this time</p>
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Modal */}
       {showModal && (
-        <div className="fixed inset-0 dark:bg-black/70 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="dark:bg-gray-800 dark:border-gray-700 bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto border border-gray-200">
-            <div className="flex items-center justify-between p-6 dark:border-gray-700 dark:bg-gray-800 border-b sticky top-0 bg-white z-10">
-              <h2 className="text-lg font-semibold dark:text-white text-gray-900">{editing?'Edit Change Order':'New Change Order'}</h2>
-              <button onClick={()=>setShowModal(false)} className="p-2 dark:hover:bg-gray-700 hover:bg-gray-100 rounded-lg"><X size={18}/></button>
+        <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
+          <div className="bg-gray-800 border-gray-700 rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto border">
+            <div className="flex items-center justify-between p-6 border-gray-700 bg-gray-800 border-b sticky top-0 z-10">
+              <h2 className="text-lg font-semibold text-white">{editing?'Edit Change Order':'New Change Order'}</h2>
+              <button onClick={()=>setShowModal(false)} className="p-2 hover:bg-gray-700 rounded-lg"><X size={18}/></button>
             </div>
             <form onSubmit={handleSubmit} className="p-6 space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium dark:text-gray-300 text-gray-700 mb-1">CO Number</label>
-                  <input value={form.co_number} onChange={e=>setForm(f=>({...f,co_number:e.target.value}))} className="w-full dark:bg-gray-700 dark:border-gray-600 dark:text-white dark:placeholder-gray-400 border border-gray-200 rounded-lg px-3 py-2 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-orange-500"/>
+                  <label className="block text-sm font-medium text-gray-300 mb-1">CO Number</label>
+                  <input value={form.co_number} onChange={e=>setForm(f=>({...f,co_number:e.target.value}))} className="w-full bg-gray-700 border-gray-600 text-white placeholder-gray-400 border rounded-lg px-3 py-2 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-orange-500"/>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium dark:text-gray-300 text-gray-700 mb-1">Type</label>
-                  <select value={form.type} onChange={e=>setForm(f=>({...f,type:e.target.value}))} className="w-full dark:bg-gray-700 dark:border-gray-600 dark:text-white border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500">
+                  <label className="block text-sm font-medium text-gray-300 mb-1">Type</label>
+                  <select value={form.type} onChange={e=>setForm(f=>({...f,type:e.target.value}))} className="w-full bg-gray-700 border-gray-600 text-white border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500">
                     {TYPES.map(t=><option key={t}>{t}</option>)}
                   </select>
                 </div>
                 <div className="col-span-2">
-                  <label className="block text-sm font-medium dark:text-gray-300 text-gray-700 mb-1">Title *</label>
-                  <input required value={form.title} onChange={e=>setForm(f=>({...f,title:e.target.value}))} className="w-full dark:bg-gray-700 dark:border-gray-600 dark:text-white dark:placeholder-gray-400 border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500"/>
+                  <label className="block text-sm font-medium text-gray-300 mb-1">Title *</label>
+                  <input required value={form.title} onChange={e=>setForm(f=>({...f,title:e.target.value}))} className="w-full bg-gray-700 border-gray-600 text-white placeholder-gray-400 border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500"/>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium dark:text-gray-300 text-gray-700 mb-1">Value (£)</label>
-                  <input type="number" value={form.value} onChange={e=>setForm(f=>({...f,value:e.target.value}))} className="w-full dark:bg-gray-700 dark:border-gray-600 dark:text-white dark:placeholder-gray-400 border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500"/>
+                  <label className="block text-sm font-medium text-gray-300 mb-1">Value (£)</label>
+                  <input type="number" value={form.value} onChange={e=>setForm(f=>({...f,value:e.target.value}))} className="w-full bg-gray-700 border-gray-600 text-white placeholder-gray-400 border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500"/>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium dark:text-gray-300 text-gray-700 mb-1">Extension Days</label>
-                  <input type="number" value={form.days_extension} onChange={e=>setForm(f=>({...f,days_extension:e.target.value}))} className="w-full dark:bg-gray-700 dark:border-gray-600 dark:text-white dark:placeholder-gray-400 border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500"/>
+                  <label className="block text-sm font-medium text-gray-300 mb-1">Extension Days</label>
+                  <input type="number" value={form.days_extension} onChange={e=>setForm(f=>({...f,days_extension:e.target.value}))} className="w-full bg-gray-700 border-gray-600 text-white placeholder-gray-400 border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500"/>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium dark:text-gray-300 text-gray-700 mb-1">Reason</label>
-                  <select value={form.reason} onChange={e=>setForm(f=>({...f,reason:e.target.value}))} className="w-full dark:bg-gray-700 dark:border-gray-600 dark:text-white border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500">
+                  <label className="block text-sm font-medium text-gray-300 mb-1">Reason</label>
+                  <select value={form.reason} onChange={e=>setForm(f=>({...f,reason:e.target.value}))} className="w-full bg-gray-700 border-gray-600 text-white border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500">
                     <option value="">Select…</option>{REASONS.map(r=><option key={r}>{r}</option>)}
                   </select>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium dark:text-gray-300 text-gray-700 mb-1">Status</label>
-                  <select value={form.status} onChange={e=>setForm(f=>({...f,status:e.target.value}))} className="w-full dark:bg-gray-700 dark:border-gray-600 dark:text-white border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500">
+                  <label className="block text-sm font-medium text-gray-300 mb-1">Status</label>
+                  <select value={form.status} onChange={e=>setForm(f=>({...f,status:e.target.value}))} className="w-full bg-gray-700 border-gray-600 text-white border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500">
                     {STATUS_OPTIONS.map(s=><option key={s}>{s}</option>)}
                   </select>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium dark:text-gray-300 text-gray-700 mb-1">Submitted Date</label>
-                  <input type="date" value={form.submitted_date} onChange={e=>setForm(f=>({...f,submitted_date:e.target.value}))} className="w-full dark:bg-gray-700 dark:border-gray-600 dark:text-white dark:placeholder-gray-400 border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500"/>
+                  <label className="block text-sm font-medium text-gray-300 mb-1">Submitted Date</label>
+                  <input type="date" value={form.submitted_date} onChange={e=>setForm(f=>({...f,submitted_date:e.target.value}))} className="w-full bg-gray-700 border-gray-600 text-white placeholder-gray-400 border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500"/>
                 </div>
                 {form.status === 'Rejected' && (
                   <div className="col-span-2">
-                    <label className="block text-sm font-medium dark:text-gray-300 text-gray-700 mb-1">Rejection Reason</label>
-                    <input value={form.rejection_reason} onChange={e=>setForm(f=>({...f,rejection_reason:e.target.value}))} placeholder="Explain why this change order was rejected…" className="w-full dark:bg-gray-700 dark:border-gray-600 dark:text-white dark:placeholder-gray-400 border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500"/>
+                    <label className="block text-sm font-medium text-gray-300 mb-1">Rejection Reason</label>
+                    <input value={form.rejection_reason} onChange={e=>setForm(f=>({...f,rejection_reason:e.target.value}))} placeholder="Explain why this change order was rejected…" className="w-full bg-gray-700 border-gray-600 text-white placeholder-gray-400 border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500"/>
                   </div>
                 )}
                 <div className="col-span-2">
-                  <label className="block text-sm font-medium dark:text-gray-300 text-gray-700 mb-1">Description</label>
-                  <textarea rows={3} value={form.description} onChange={e=>setForm(f=>({...f,description:e.target.value}))} className="w-full dark:bg-gray-700 dark:border-gray-600 dark:text-white dark:placeholder-gray-400 border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500 resize-none"/>
+                  <label className="block text-sm font-medium text-gray-300 mb-1">Description</label>
+                  <textarea rows={3} value={form.description} onChange={e=>setForm(f=>({...f,description:e.target.value}))} className="w-full bg-gray-700 border-gray-600 text-white placeholder-gray-400 border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500 resize-none"/>
                 </div>
               </div>
               <div className="flex gap-3 pt-2">
-                <button type="button" onClick={()=>setShowModal(false)} className="flex-1 px-4 py-2 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700 border border-gray-200 rounded-lg text-sm text-gray-700 hover:bg-gray-50">Cancel</button>
+                <button type="button" onClick={()=>setShowModal(false)} className="flex-1 px-4 py-2 border-gray-600 text-gray-300 hover:bg-gray-700 border rounded-lg text-sm">Cancel</button>
                 <button type="submit" disabled={createMutation.isPending||updateMutation.isPending} className="flex-1 px-4 py-2 bg-orange-600 text-white rounded-lg text-sm font-medium hover:bg-orange-700 disabled:opacity-50">
                   {editing?'Update CO':'Create CO'}
                 </button>

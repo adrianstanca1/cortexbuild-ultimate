@@ -1,8 +1,10 @@
 import { useState } from 'react';
 import {
   ClipboardList, Plus, Search, CloudRain, Sun, Cloud, Wind, Users, Edit2,
-  Trash2, X, ChevronDown, ChevronUp, Calendar, AlertTriangle, Download, FileText
+  Trash2, X, ChevronDown, ChevronUp, Calendar, AlertTriangle, Download, FileText,
+  Camera, Brain, BarChart3, CheckCircle2, ThumbsUp, Eye
 } from 'lucide-react';
+import { LineChart, Line, CartesianGrid, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
 import { useProjects, useDailyReports } from '../../hooks/useData';
 import { toast } from 'sonner';
 
@@ -56,9 +58,11 @@ export function DailyReports() {
   const updateMutation = useUpdate();
   const deleteMutation = useDelete();
 
-  const [subTab, setSubTab] = useState<'today' | 'week' | 'all' | 'drafts'>('today');
+  const [mainTab, setMainTab] = useState<'diary' | 'weather' | 'photos' | 'summary'>('diary');
+  const [diarySubTab, setDiarySubTab] = useState<'today' | 'week' | 'all' | 'drafts'>('today');
   const [search, setSearch] = useState('');
   const [projectFilter, setProjectFilter] = useState('all');
+  const [weatherProjectFilter, setWeatherProjectFilter] = useState('');
   const [dateRangeStart, setDateRangeStart] = useState('');
   const [dateRangeEnd, setDateRangeEnd] = useState('');
   const [showModal, setShowModal] = useState(false);
@@ -76,12 +80,12 @@ export function DailyReports() {
 
     const matchSearch = date.includes(search) || work.includes(search.toLowerCase());
     const matchProject = projectFilter === 'all' || projectId === projectFilter;
-    const matchStatus = subTab === 'drafts' ? r.status === 'Draft' : true;
+    const matchStatus = diarySubTab === 'drafts' ? r.status === 'Draft' : true;
 
     if (!matchSearch || !matchProject || !matchStatus) return false;
 
-    if (subTab === 'today') return date === today;
-    if (subTab === 'week') {
+    if (diarySubTab === 'today') return date === today;
+    if (diarySubTab === 'week') {
       const diff = (Date.now() - new Date(date).getTime()) / 86400000;
       return diff >= 0 && diff <= 7;
     }
@@ -228,205 +232,528 @@ export function DailyReports() {
         ))}
       </div>
 
-      {/* Sub Tabs */}
+      {/* Main Tabs */}
       <div className="border-b border-gray-700 flex gap-1 overflow-x-auto">
         {[
-          { key: 'today' as const, label: 'Today', count: reports.filter(r => String(r.report_date ?? '') === today).length },
-          { key: 'week' as const, label: 'This Week', count: thisWeekCount },
-          { key: 'drafts' as const, label: 'Drafts', count: draftCount },
-          { key: 'all' as const, label: 'All Reports', count: reports.length },
-        ].map(t => (
-          <button
-            key={t.key}
-            onClick={() => setSubTab(t.key)}
-            className={`flex items-center gap-2 px-4 py-3 text-sm font-medium border-b-2 -mb-px transition-colors whitespace-nowrap ${
-              subTab === t.key ? 'border-orange-500 text-orange-400' : 'border-transparent text-gray-400 hover:text-gray-300'
-            }`}
-          >
-            {t.label}
-            <span
-              className={`text-xs px-1.5 py-0.5 rounded-full ${
-                t.key === 'drafts'
-                  ? 'bg-yellow-500/20 text-yellow-300 border border-yellow-500/30'
-                  : 'bg-gray-700 text-gray-300'
+          { key: 'diary' as const, label: 'Site Diary', icon: ClipboardList },
+          { key: 'weather' as const, label: 'Weather Log', icon: Cloud },
+          { key: 'photos' as const, label: 'Progress Photos', icon: Camera },
+          { key: 'summary' as const, label: 'AI Summary', icon: Brain },
+        ].map(t => {
+          const Icon = t.icon;
+          return (
+            <button
+              key={t.key}
+              onClick={() => setMainTab(t.key)}
+              className={`flex items-center gap-2 px-4 py-3 text-sm font-medium border-b-2 -mb-px transition-colors whitespace-nowrap ${
+                mainTab === t.key ? 'border-orange-500 text-orange-400' : 'border-transparent text-gray-400 hover:text-gray-300'
               }`}
             >
-              {t.count}
-            </span>
+              <Icon size={16} />
+              {t.label}
+            </button>
+          );
+        })}
+      </div>
+
+      {/* Conditional Content */}
+      {mainTab === 'diary' && (
+        <>
+          {/* Diary Sub Tabs */}
+          <div className="border-b border-gray-700 flex gap-1 overflow-x-auto">
+            {[
+              { key: 'today' as const, label: 'Today', count: reports.filter(r => String(r.report_date ?? '') === today).length },
+              { key: 'week' as const, label: 'This Week', count: thisWeekCount },
+              { key: 'drafts' as const, label: 'Drafts', count: draftCount },
+              { key: 'all' as const, label: 'All Reports', count: reports.length },
+            ].map(t => (
+              <button
+                key={t.key}
+                onClick={() => setDiarySubTab(t.key)}
+                className={`flex items-center gap-2 px-4 py-3 text-sm font-medium border-b-2 -mb-px transition-colors whitespace-nowrap ${
+                  diarySubTab === t.key ? 'border-orange-500 text-orange-400' : 'border-transparent text-gray-400 hover:text-gray-300'
+                }`}
+              >
+                {t.label}
+                <span
+                  className={`text-xs px-1.5 py-0.5 rounded-full ${
+                    t.key === 'drafts'
+                      ? 'bg-yellow-500/20 text-yellow-300 border border-yellow-500/30'
+                      : 'bg-gray-700 text-gray-300'
+                  }`}
+                >
+                  {t.count}
+                </span>
+              </button>
+            ))}
+          </div>
+
+          {/* Filters */}
+          <div className="flex flex-wrap gap-3 items-center bg-gray-800 rounded-xl border border-gray-700 p-4">
+            <div className="relative flex-1 min-w-48">
+              <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500" />
+              <input
+                value={search}
+                onChange={e => setSearch(e.target.value)}
+                placeholder="Search date or work description…"
+                className="w-full pl-9 pr-4 py-2 text-sm border border-gray-700 bg-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-orange-500"
+              />
+            </div>
+
+            <select
+              value={projectFilter}
+              onChange={e => setProjectFilter(e.target.value)}
+              className="text-sm border border-gray-700 bg-gray-700 text-white rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-orange-500"
+            >
+              <option value="all">All Projects</option>
+              {projects.map(p => (
+                <option key={String(p.id)} value={String(p.id)}>
+                  {String(p.name ?? p.title ?? 'Unnamed')}
+                </option>
+              ))}
+            </select>
+
+            <span className="text-sm text-gray-400 ml-auto">{filtered.length} reports</span>
+          </div>
+        </>
+      )}
+
+      {mainTab === 'weather' && (
+        <div className="flex items-center gap-3 bg-gray-800 rounded-xl border border-gray-700 p-4">
+          <span className="text-sm font-medium text-gray-400">Project:</span>
+          <select
+            value={weatherProjectFilter}
+            onChange={e => setWeatherProjectFilter(e.target.value)}
+            className="text-sm border border-gray-700 bg-gray-700 text-white rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-orange-500"
+          >
+            <option value="">All Projects</option>
+            {projects.map(p => (
+              <option key={String(p.id)} value={String(p.id)}>
+                {String(p.name ?? p.title ?? 'Unnamed')}
+              </option>
+            ))}
+          </select>
+        </div>
+      )}
+
+      {mainTab === 'photos' && (
+        <div className="flex items-center justify-between bg-gray-800 rounded-xl border border-gray-700 p-4">
+          <div className="flex items-center gap-3">
+            <span className="text-sm font-medium text-gray-400">Project:</span>
+            <select
+              value={projectFilter}
+              onChange={e => setProjectFilter(e.target.value)}
+              className="text-sm border border-gray-700 bg-gray-700 text-white rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-orange-500"
+            >
+              <option value="all">All Projects</option>
+              {projects.map(p => (
+                <option key={String(p.id)} value={String(p.id)}>
+                  {String(p.name ?? p.title ?? 'Unnamed')}
+                </option>
+              ))}
+            </select>
+          </div>
+          <button
+            onClick={() => toast.message('Photo upload coming soon!')}
+            className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium transition-colors"
+          >
+            <Plus size={16} />
+            Upload Photo
           </button>
-        ))}
-      </div>
-
-      {/* Filters */}
-      <div className="flex flex-wrap gap-3 items-center bg-gray-800 rounded-xl border border-gray-700 p-4">
-        <div className="relative flex-1 min-w-48">
-          <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500" />
-          <input
-            value={search}
-            onChange={e => setSearch(e.target.value)}
-            placeholder="Search date or work description…"
-            className="w-full pl-9 pr-4 py-2 text-sm border border-gray-700 bg-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-orange-500"
-          />
         </div>
+      )}
 
-        <select
-          value={projectFilter}
-          onChange={e => setProjectFilter(e.target.value)}
-          className="text-sm border border-gray-700 bg-gray-700 text-white rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-orange-500"
-        >
-          <option value="all">All Projects</option>
-          {projects.map(p => (
-            <option key={String(p.id)} value={String(p.id)}>
-              {String(p.name ?? p.title ?? 'Unnamed')}
-            </option>
-          ))}
-        </select>
+      {/* SITE DIARY TAB */}
+      {mainTab === 'diary' && (
+        <>
+          {isLoading ? (
+            <div className="flex justify-center py-20">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-600" />
+            </div>
+          ) : (
+            <div className="bg-gray-800 rounded-xl border border-gray-700 divide-y divide-gray-700">
+              {filtered.length === 0 && (
+                <div className="text-center py-16 text-gray-500">
+                  <ClipboardList size={40} className="mx-auto mb-3 opacity-30" />
+                  <p>No daily reports found</p>
+                </div>
+              )}
+              {filtered.map(r => {
+                const id = String(r.id ?? '');
+                const isExp = expanded === id;
+                const reportDate = String(r.report_date ?? '');
+                const isToday = reportDate === today;
 
-        <span className="text-sm text-gray-400 ml-auto">{filtered.length} reports</span>
-      </div>
-
-      {/* Reports List */}
-      {isLoading ? (
-        <div className="flex justify-center py-20">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-600" />
-        </div>
-      ) : (
-        <div className="bg-gray-800 rounded-xl border border-gray-700 divide-y divide-gray-700">
-          {filtered.length === 0 && (
-            <div className="text-center py-16 text-gray-500">
-              <ClipboardList size={40} className="mx-auto mb-3 opacity-30" />
-              <p>No daily reports found</p>
+                return (
+                  <div key={id}>
+                    <div
+                      className="flex items-center gap-4 p-4 hover:bg-gray-700/30 cursor-pointer transition-colors"
+                      onClick={() => setExpanded(isExp ? null : id)}
+                    >
+                      <div className="w-24 flex-shrink-0 text-center">
+                        <p className={`text-sm font-bold ${isToday ? 'text-orange-400' : 'text-white'}`}>{reportDate}</p>
+                        {isToday && <p className="text-xs text-orange-400 mt-0.5">Today</p>}
+                      </div>
+                      <div className="flex items-center gap-1.5 flex-shrink-0">
+                        {weatherIcon(String(r.weather ?? ''))}
+                        <span className="text-xs text-gray-400">{String(r.weather ?? '—')}</span>
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm text-gray-300 font-medium mb-0.5">{getProjectName(String(r.project_id ?? ''))}</p>
+                        <p className="text-sm text-gray-400 truncate">{String(r.work_carried_out ?? 'No description')}</p>
+                        <div className="flex items-center gap-3 mt-0.5 flex-wrap">
+                          {!!r.workers_on_site && (
+                            <span className="text-xs text-gray-500 flex items-center gap-1">
+                              <Users size={11} />
+                              {String(r.workers_on_site)} workers
+                            </span>
+                          )}
+                          {!!r.issues_delays && (
+                            <span className="text-xs text-red-400 flex items-center gap-1">
+                              <AlertTriangle size={11} />
+                              Issues noted
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span className={`text-xs px-2 py-1 rounded-full font-medium ${statusColour[String(r.status ?? '')] ?? 'bg-gray-600 text-gray-300'}`}>
+                          {String(r.status ?? '')}
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-1">
+                        {r.status === 'Draft' && (
+                          <button
+                            onClick={e => {
+                              e.stopPropagation();
+                              submitReport(r);
+                            }}
+                            className="p-1.5 text-blue-400 hover:bg-blue-500/20 rounded transition-colors"
+                            title="Submit"
+                          >
+                            <ClipboardList size={14} />
+                          </button>
+                        )}
+                        <button
+                          onClick={e => {
+                            e.stopPropagation();
+                            setDetailView(r);
+                          }}
+                          className="p-1.5 text-gray-500 hover:text-orange-400 hover:bg-gray-700/50 rounded transition-colors"
+                          title="View Full Report"
+                        >
+                          <FileText size={14} />
+                        </button>
+                        <button
+                          onClick={e => {
+                            e.stopPropagation();
+                            openEdit(r);
+                          }}
+                          className="p-1.5 text-gray-500 hover:text-blue-400 hover:bg-gray-700/50 rounded transition-colors"
+                        >
+                          <Edit2 size={14} />
+                        </button>
+                        <button
+                          onClick={e => {
+                            e.stopPropagation();
+                            handleDelete(id);
+                          }}
+                          className="p-1.5 text-gray-500 hover:text-red-400 hover:bg-gray-700/50 rounded transition-colors"
+                        >
+                          <Trash2 size={14} />
+                        </button>
+                        {isExp ? (
+                          <ChevronUp size={16} className="text-gray-500" />
+                        ) : (
+                          <ChevronDown size={16} className="text-gray-500" />
+                        )}
+                      </div>
+                    </div>
+                    {isExp && (
+                      <div className="px-6 pb-4 bg-gray-700/20 space-y-3 text-sm border-t border-gray-700">
+                        {!!r.work_carried_out && (
+                          <div>
+                            <p className="text-xs font-semibold text-orange-400 uppercase tracking-wide mb-1">Work Carried Out</p>
+                            <p className="text-gray-300 whitespace-pre-wrap">{String(r.work_carried_out)}</p>
+                          </div>
+                        )}
+                        {!!r.work_planned_tomorrow && (
+                          <div>
+                            <p className="text-xs font-semibold text-blue-400 uppercase tracking-wide mb-1">Work Planned Tomorrow</p>
+                            <p className="text-gray-300 whitespace-pre-wrap">{String(r.work_planned_tomorrow)}</p>
+                          </div>
+                        )}
+                        {!!r.issues_delays && (
+                          <div>
+                            <p className="text-xs font-semibold text-red-400 uppercase tracking-wide mb-1">Issues / Delays</p>
+                            <p className="text-gray-300">{String(r.issues_delays)}</p>
+                          </div>
+                        )}
+                        {!!r.safety_notes && (
+                          <div>
+                            <p className="text-xs font-semibold text-green-400 uppercase tracking-wide mb-1">Safety Notes</p>
+                            <p className="text-gray-300">{String(r.safety_notes)}</p>
+                          </div>
+                        )}
+                        {!!r.materials_delivered && (
+                          <div>
+                            <p className="text-xs font-semibold text-purple-400 uppercase tracking-wide mb-1">Materials Delivered</p>
+                            <p className="text-gray-300">{String(r.materials_delivered)}</p>
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
             </div>
           )}
-          {filtered.map(r => {
-            const id = String(r.id ?? '');
-            const isExp = expanded === id;
-            const reportDate = String(r.report_date ?? '');
-            const isToday = reportDate === today;
+        </>
+      )}
 
-            return (
-              <div key={id}>
-                <div
-                  className="flex items-center gap-4 p-4 hover:bg-gray-700/30 cursor-pointer transition-colors"
-                  onClick={() => setExpanded(isExp ? null : id)}
-                >
-                  <div className="w-24 flex-shrink-0 text-center">
-                    <p className={`text-sm font-bold ${isToday ? 'text-orange-400' : 'text-white'}`}>{reportDate}</p>
-                    {isToday && <p className="text-xs text-orange-400 mt-0.5">Today</p>}
-                  </div>
-                  <div className="flex items-center gap-1.5 flex-shrink-0">
-                    {weatherIcon(String(r.weather ?? ''))}
-                    <span className="text-xs text-gray-400">{String(r.weather ?? '—')}</span>
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm text-gray-300 font-medium mb-0.5">{getProjectName(String(r.project_id ?? ''))}</p>
-                    <p className="text-sm text-gray-400 truncate">{String(r.work_carried_out ?? 'No description')}</p>
-                    <div className="flex items-center gap-3 mt-0.5 flex-wrap">
-                      {!!r.workers_on_site && (
-                        <span className="text-xs text-gray-500 flex items-center gap-1">
-                          <Users size={11} />
-                          {String(r.workers_on_site)} workers
-                        </span>
-                      )}
-                      {!!r.issues_delays && (
-                        <span className="text-xs text-red-400 flex items-center gap-1">
-                          <AlertTriangle size={11} />
-                          Issues noted
-                        </span>
-                      )}
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <span className={`text-xs px-2 py-1 rounded-full font-medium ${statusColour[String(r.status ?? '')] ?? 'bg-gray-600 text-gray-300'}`}>
-                      {String(r.status ?? '')}
-                    </span>
-                  </div>
-                  <div className="flex items-center gap-1">
-                    {r.status === 'Draft' && (
-                      <button
-                        onClick={e => {
-                          e.stopPropagation();
-                          submitReport(r);
-                        }}
-                        className="p-1.5 text-blue-400 hover:bg-blue-500/20 rounded transition-colors"
-                        title="Submit"
-                      >
-                        <ClipboardList size={14} />
-                      </button>
-                    )}
-                    <button
-                      onClick={e => {
-                        e.stopPropagation();
-                        setDetailView(r);
-                      }}
-                      className="p-1.5 text-gray-500 hover:text-orange-400 hover:bg-gray-700/50 rounded transition-colors"
-                      title="View Full Report"
-                    >
-                      <FileText size={14} />
-                    </button>
-                    <button
-                      onClick={e => {
-                        e.stopPropagation();
-                        openEdit(r);
-                      }}
-                      className="p-1.5 text-gray-500 hover:text-blue-400 hover:bg-gray-700/50 rounded transition-colors"
-                    >
-                      <Edit2 size={14} />
-                    </button>
-                    <button
-                      onClick={e => {
-                        e.stopPropagation();
-                        handleDelete(id);
-                      }}
-                      className="p-1.5 text-gray-500 hover:text-red-400 hover:bg-gray-700/50 rounded transition-colors"
-                    >
-                      <Trash2 size={14} />
-                    </button>
-                    {isExp ? (
-                      <ChevronUp size={16} className="text-gray-500" />
-                    ) : (
-                      <ChevronDown size={16} className="text-gray-500" />
-                    )}
-                  </div>
-                </div>
-                {isExp && (
-                  <div className="px-6 pb-4 bg-gray-700/20 space-y-3 text-sm border-t border-gray-700">
-                    {!!r.work_carried_out && (
-                      <div>
-                        <p className="text-xs font-semibold text-orange-400 uppercase tracking-wide mb-1">Work Carried Out</p>
-                        <p className="text-gray-300 whitespace-pre-wrap">{String(r.work_carried_out)}</p>
-                      </div>
-                    )}
-                    {!!r.work_planned_tomorrow && (
-                      <div>
-                        <p className="text-xs font-semibold text-blue-400 uppercase tracking-wide mb-1">Work Planned Tomorrow</p>
-                        <p className="text-gray-300 whitespace-pre-wrap">{String(r.work_planned_tomorrow)}</p>
-                      </div>
-                    )}
-                    {!!r.issues_delays && (
-                      <div>
-                        <p className="text-xs font-semibold text-red-400 uppercase tracking-wide mb-1">Issues / Delays</p>
-                        <p className="text-gray-300">{String(r.issues_delays)}</p>
-                      </div>
-                    )}
-                    {!!r.safety_notes && (
-                      <div>
-                        <p className="text-xs font-semibold text-green-400 uppercase tracking-wide mb-1">Safety Notes</p>
-                        <p className="text-gray-300">{String(r.safety_notes)}</p>
-                      </div>
-                    )}
-                    {!!r.materials_delivered && (
-                      <div>
-                        <p className="text-xs font-semibold text-purple-400 uppercase tracking-wide mb-1">Materials Delivered</p>
-                        <p className="text-gray-300">{String(r.materials_delivered)}</p>
-                      </div>
-                    )}
-                  </div>
-                )}
+      {/* WEATHER LOG TAB */}
+      {mainTab === 'weather' && (
+        <div className="space-y-6">
+          {isLoading ? (
+            <div className="flex justify-center py-20">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-600" />
+            </div>
+          ) : (
+            <>
+              {/* Weather Chart */}
+              <div className="bg-gray-800 rounded-xl border border-gray-700 p-6">
+                <h3 className="text-lg font-semibold text-white mb-4">Temperature Trend (Last 14 Days)</h3>
+                <ResponsiveContainer width="100%" height={300}>
+                  <LineChart
+                    data={reports
+                      .filter(r => !weatherProjectFilter || String(r.project_id) === weatherProjectFilter)
+                      .sort((a, b) => new Date(String(a.report_date)).getTime() - new Date(String(b.report_date)).getTime())
+                      .slice(-14)
+                      .map(r => ({
+                        date: String(r.report_date ?? '').slice(-5),
+                        temp: Number(r.temperature ?? 0),
+                      }))}
+                  >
+                    <CartesianGrid stroke="#374151" />
+                    <XAxis dataKey="date" tick={{ fill: '#9ca3af' }} />
+                    <YAxis tick={{ fill: '#9ca3af' }} />
+                    <Tooltip
+                      contentStyle={{ backgroundColor: '#1f2937', border: '1px solid #374151', borderRadius: '8px' }}
+                      labelStyle={{ color: '#fff' }}
+                    />
+                    <Line type="monotone" dataKey="temp" stroke="#f97316" strokeWidth={2} dot={{ fill: '#f97316' }} />
+                  </LineChart>
+                </ResponsiveContainer>
               </div>
-            );
-          })}
+
+              {/* Weather Grid */}
+              <div className="bg-gray-800 rounded-xl border border-gray-700 p-6">
+                <h3 className="text-lg font-semibold text-white mb-4">Daily Weather (Last 14 Days)</h3>
+                <div className="grid grid-cols-7 gap-3">
+                  {reports
+                    .filter(r => !weatherProjectFilter || String(r.project_id) === weatherProjectFilter)
+                    .sort((a, b) => new Date(String(a.report_date)).getTime() - new Date(String(b.report_date)).getTime())
+                    .slice(-14)
+                    .map(r => (
+                      <div key={String(r.id)} className="bg-gray-700/50 rounded-lg p-3 border border-gray-700 text-center">
+                        <p className="text-xs text-gray-400 mb-2">{String(r.report_date ?? '').slice(-5)}</p>
+                        <div className="flex justify-center mb-2">
+                          {weatherIcon(String(r.weather ?? ''))}
+                        </div>
+                        <p className="text-xs text-gray-300 font-medium">{Number(r.temperature ?? 0)}°C</p>
+                        <p className="text-xs text-gray-500 mt-1">
+                          <CheckCircle2 size={12} className="inline text-green-400" />
+                        </p>
+                      </div>
+                    ))}
+                </div>
+              </div>
+
+              {/* Weather Summary */}
+              <div className="grid grid-cols-3 gap-4">
+                <div className="bg-gray-800 rounded-xl border border-gray-700 p-4">
+                  <p className="text-xs text-gray-400 uppercase tracking-wide mb-1">Sunny Days</p>
+                  <p className="text-2xl font-bold text-yellow-400">
+                    {Number(
+                      reports
+                        .filter(r => !weatherProjectFilter || String(r.project_id) === weatherProjectFilter)
+                        .filter(r => String(r.weather ?? '').includes('Sunny')).length
+                    )}
+                  </p>
+                </div>
+                <div className="bg-gray-800 rounded-xl border border-gray-700 p-4">
+                  <p className="text-xs text-gray-400 uppercase tracking-wide mb-1">Rainy Days</p>
+                  <p className="text-2xl font-bold text-blue-400">
+                    {Number(
+                      reports
+                        .filter(r => !weatherProjectFilter || String(r.project_id) === weatherProjectFilter)
+                        .filter(r => String(r.weather ?? '').includes('Rain')).length
+                    )}
+                  </p>
+                </div>
+                <div className="bg-gray-800 rounded-xl border border-gray-700 p-4">
+                  <p className="text-xs text-gray-400 uppercase tracking-wide mb-1">Weather Delays</p>
+                  <p className="text-2xl font-bold text-orange-400">
+                    {Number(
+                      reports
+                        .filter(r => !weatherProjectFilter || String(r.project_id) === weatherProjectFilter)
+                        .filter(r => String(r.issues_delays ?? '').toLowerCase().includes('weather')).length
+                    )}
+                  </p>
+                </div>
+              </div>
+            </>
+          )}
         </div>
+      )}
+
+      {/* PROGRESS PHOTOS TAB */}
+      {mainTab === 'photos' && (
+        <>
+          {isLoading ? (
+            <div className="flex justify-center py-20">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-600" />
+            </div>
+          ) : (
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <h3 className="text-lg font-semibold text-white">
+                  {reports.reduce((sum, r) => sum + Number(r.photos ?? 0), 0)} Photos
+                </h3>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                {reports
+                  .filter(r => projectFilter === 'all' || String(r.project_id) === projectFilter)
+                  .flatMap((r: AnyRow) =>
+                    Array.from({ length: Number(r.photos ?? 0) }, (_, i) => ({
+                      ...r,
+                      photoIndex: i,
+                      colors: ['bg-blue-500/20', 'bg-purple-500/20', 'bg-pink-500/20', 'bg-green-500/20'],
+                    }))
+                  )
+                  .slice(0, 20)
+                  .map((r: AnyRow & { photoIndex: number; colors: string[] }, idx) => {
+                    const colorIdx = (idx + Number(r.photoIndex)) % 4;
+                    return (
+                      <div key={`${r.id}-${idx}`} className="bg-gray-800 rounded-lg border border-gray-700 overflow-hidden hover:border-orange-500/50 transition-colors group">
+                        <div className={`h-40 ${r.colors[colorIdx]} flex items-center justify-center border-b border-gray-700`}>
+                          <Camera size={32} className="text-gray-500 group-hover:text-orange-400 transition-colors" />
+                        </div>
+                        <div className="p-3">
+                          <p className="text-sm font-medium text-white truncate">{getProjectName(String(r.project_id ?? ''))}</p>
+                          <p className="text-xs text-gray-400">{String(r.report_date ?? '—')}</p>
+                          <p className="text-xs text-gray-500 mt-2 line-clamp-2">{String(r.work_carried_out ?? 'Photo from site').slice(0, 50)}</p>
+                        </div>
+                      </div>
+                    );
+                  })}
+              </div>
+              {reports.filter(r => projectFilter === 'all' || String(r.project_id) === projectFilter).length === 0 && (
+                <div className="text-center py-16 text-gray-500">
+                  <Camera size={40} className="mx-auto mb-3 opacity-30" />
+                  <p>No photos found</p>
+                </div>
+              )}
+            </div>
+          )}
+        </>
+      )}
+
+      {/* AI SUMMARY TAB */}
+      {mainTab === 'summary' && (
+        <>
+          {isLoading ? (
+            <div className="flex justify-center py-20">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-600" />
+            </div>
+          ) : (
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <h3 className="text-lg font-semibold text-white">Weekly Summaries</h3>
+                <button
+                  onClick={() => toast.message('Summary generated for this week!')}
+                  className="flex items-center gap-2 px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg text-sm font-medium transition-colors"
+                >
+                  <Brain size={16} />
+                  Generate Summary
+                </button>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {Array.from({ length: 4 }, (_, weekIdx) => {
+                  const weekStart = new Date();
+                  weekStart.setDate(weekStart.getDate() - weekIdx * 7);
+                  const weekEnd = new Date(weekStart);
+                  weekEnd.setDate(weekEnd.getDate() + 6);
+                  const weekReports = reports.filter(r => {
+                    const d = new Date(String(r.report_date ?? ''));
+                    return d >= weekStart && d <= weekEnd;
+                  });
+                  const totalWorkers = weekReports.reduce((sum, r) => sum + Number(r.workers_on_site ?? 0), 0);
+                  const issuesCount = weekReports.filter(r => !!r.issues_delays).length;
+
+                  return (
+                    <div key={weekIdx} className="bg-gray-800 rounded-lg border border-gray-700 p-5">
+                      <div className="flex items-start justify-between mb-3">
+                        <div>
+                          <p className="text-xs text-gray-400 uppercase tracking-wide">Week {4 - weekIdx}</p>
+                          <p className="text-sm text-gray-300 mt-0.5">
+                            {weekStart.toLocaleDateString('en-GB', { month: 'short', day: 'numeric' })} - {weekEnd.toLocaleDateString('en-GB', { month: 'short', day: 'numeric' })}
+                          </p>
+                        </div>
+                        <Brain size={20} className="text-purple-400" />
+                      </div>
+                      <div className="space-y-3 border-t border-gray-700 pt-3">
+                        <div>
+                          <p className="text-xs font-medium text-gray-400 mb-1">Reports Submitted</p>
+                          <p className="text-lg font-bold text-white">{weekReports.length}</p>
+                        </div>
+                        <div>
+                          <p className="text-xs font-medium text-gray-400 mb-1">Total Worker Days</p>
+                          <p className="text-lg font-bold text-green-400">{totalWorkers}</p>
+                        </div>
+                        <div>
+                          <p className="text-xs font-medium text-gray-400 mb-1">Issues Reported</p>
+                          <p className="text-lg font-bold text-red-400">{issuesCount}</p>
+                        </div>
+                        <div className="pt-2">
+                          <p className="text-xs font-medium text-gray-400 mb-2">Highlights</p>
+                          <div className="flex flex-wrap gap-1">
+                            {weekReports.length > 0 && (
+                              <>
+                                <span className="text-xs px-2 py-1 bg-green-500/20 text-green-300 border border-green-500/30 rounded-full flex items-center gap-1">
+                                  <CheckCircle2 size={10} />
+                                  On Track
+                                </span>
+                                {issuesCount > 0 && (
+                                  <span className="text-xs px-2 py-1 bg-orange-500/20 text-orange-300 border border-orange-500/30 rounded-full flex items-center gap-1">
+                                    <AlertTriangle size={10} />
+                                    {issuesCount} Issues
+                                  </span>
+                                )}
+                              </>
+                            )}
+                            {weekReports.length === 0 && (
+                              <span className="text-xs px-2 py-1 bg-gray-700 text-gray-400 rounded-full">No reports</span>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+              <div className="bg-gray-800 rounded-lg border border-gray-700 p-4">
+                <button
+                  onClick={() => toast.message('Export PDF coming soon!')}
+                  className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-gray-700 hover:bg-gray-600 text-gray-300 rounded-lg text-sm font-medium transition-colors"
+                >
+                  <Download size={16} />
+                  Export Weekly Reports
+                </button>
+              </div>
+            </div>
+          )}
+        </>
       )}
 
       {/* Create/Edit Modal */}

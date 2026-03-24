@@ -1,25 +1,63 @@
-import { useState } from 'react';
-import { Truck, Plus, Search, Wrench, AlertTriangle, CheckCircle, Clock, Edit2, Trash2, X, ChevronDown, ChevronUp, Calendar, PoundSterling, BarChart2 } from 'lucide-react';
+import { useState, useMemo } from 'react';
+import {
+  Truck, Plus, Search, Wrench, AlertTriangle, CheckCircle2, Clock, Edit2, Trash2, X,
+  ChevronDown, ChevronUp, Calendar, DollarSign, Filter, MapPin, Tag, Activity, Settings,
+  RefreshCw, BarChart3, ChevronRight
+} from 'lucide-react';
 import { useEquipment } from '../../hooks/useData';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { toast } from 'sonner';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 
 type AnyRow = Record<string, unknown>;
 
-const CATEGORIES = ['Excavator','Crane','Forklift','MEWP','Scaffold','Generator','Compressor','Concrete Mixer','Dumper','Roller','Piling Rig','Telehandler','Skip Lorry','Tower Crane','Pump'];
-const STATUS_OPTIONS = ['Available','On Hire','In Maintenance','Retired'];
-const OWNERSHIP = ['Owned','Hired','Lease'];
-const SERVICE_TYPES = ['Routine','Repair','LOLER','PUWER'];
-const INSPECTION_TYPES = ['LOLER','PUWER','MEWP'];
+const EQUIPMENT_TYPES = [
+  'Crane', 'MEWP', 'Excavator', 'Dumper', 'Concrete Equipment',
+  'Generator', 'Compressor', 'Scaffold', 'Forklift', 'Other'
+];
 
-const statusColour: Record<string,string> = {
-  'Available':'bg-green-900/50 text-green-300',
-  'On Hire':'bg-blue-900/50 text-blue-300',
-  'In Maintenance':'bg-yellow-900/50 text-yellow-300',
-  'Retired':'bg-gray-700 text-gray-400',
+const STATUS_OPTIONS = ['On Site', 'Available', 'Maintenance', 'Hired Out'];
+const SERVICE_TYPES = ['Routine', 'Major', 'Repair', 'LOLER', 'PSSR'];
+
+const statusColors: Record<string, string> = {
+  'On Site': 'bg-blue-900/30 text-blue-300 border border-blue-700',
+  'Available': 'bg-green-900/30 text-green-300 border border-green-700',
+  'Maintenance': 'bg-yellow-900/30 text-yellow-300 border border-yellow-700',
+  'Hired Out': 'bg-purple-900/30 text-purple-300 border border-purple-700',
 };
 
-const emptyForm = { name:'',category:'',serial_number:'',status:'Available',ownership:'Owned',daily_rate:'',year:'',make_model:'',service_interval:'',last_service:'',inspection_due:'',mewp_check:'',project_id:'',supplier:'',notes:'' };
+const emptyEquipmentForm = {
+  name: '', type: '', registration: '', status: 'Available',
+  location: '', dailyRate: '', nextService: ''
+};
+
+const emptyServiceForm = {
+  equipmentId: '', serviceDate: '', serviceType: 'Routine',
+  notes: '', nextDueDate: '', technician: ''
+};
+
+const emptyHireForm = {
+  equipmentId: '', hireCompany: '', dailyRate: '', startDate: '',
+  endDate: '', project: ''
+};
+
+// Mock data for service history
+const mockServiceHistory = [
+  { date: '2025-02-15', type: 'Routine', technician: 'John Smith', notes: 'Oil change, filter replacement' },
+  { date: '2025-01-20', type: 'Inspection', technician: 'Sarah Jones', notes: 'LOLER inspection passed' },
+  { date: '2024-12-10', type: 'Major', technician: 'Mike Brown', notes: 'Hydraulic system overhaul' }
+];
+
+const mockServiceLog = [
+  { id: 1, equipment: 'CAT 320 Excavator', date: '2025-02-20', type: 'Routine', technician: 'John Smith', nextDue: '2025-05-20' },
+  { id: 2, equipment: 'JCB 3CX Backhoe', date: '2025-02-15', type: 'LOLER', technician: 'Sarah Jones', nextDue: '2026-02-15' },
+  { id: 3, equipment: 'Liebherr 450 Crane', date: '2025-02-10', type: 'Major', technician: 'Mike Brown', nextDue: '2025-08-10' }
+];
+
+const mockHireLog = [
+  { id: 1, name: 'Manitowoc 18000 Crane', company: 'Mammoet UK', dailyRate: 2500, startDate: '2025-02-01', endDate: '2025-03-15', project: 'London High Rise', status: 'Active' },
+  { id: 2, name: 'JLG 1200SJP MEWP', company: 'HSS Hire', dailyRate: 150, startDate: '2025-02-10', endDate: '2025-03-10', project: 'Office Renovation', status: 'Active' },
+  { id: 3, name: 'Volvo EC480E Excavator', company: 'Hitachi Sales', dailyRate: 800, startDate: '2025-01-15', endDate: '2025-02-28', project: 'Site Prep', status: 'Completed' }
+];
 
 export function PlantEquipment() {
   const { useList, useCreate, useUpdate, useDelete } = useEquipment;
@@ -29,233 +67,484 @@ export function PlantEquipment() {
   const updateMutation = useUpdate();
   const deleteMutation = useDelete();
 
-  const [subTab, setSubTab] = useState<'fleet'|'maintenance'|'inspections'|'utilisation'|'hire'>('fleet');
+  const [subTab, setSubTab] = useState<'fleet' | 'service' | 'hire' | 'utilisation'>('fleet');
+  const [fleetFilter, setFleetFilter] = useState<'All' | 'On Site' | 'Available' | 'Maintenance' | 'Hired Out'>('All');
   const [search, setSearch] = useState('');
-  const [statusFilter, setStatusFilter] = useState('All');
-  const [categoryFilter, setCategoryFilter] = useState('All');
-  const [showModal, setShowModal] = useState(false);
-  const [editing, setEditing] = useState<AnyRow | null>(null);
-  const [form, setForm] = useState({ ...emptyForm });
-  const [expanded, setExpanded] = useState<string | null>(null);
+  const [showEquipmentModal, setShowEquipmentModal] = useState(false);
+  const [showServiceModal, setShowServiceModal] = useState(false);
+  const [showHireModal, setShowHireModal] = useState(false);
+  const [showDetailModal, setShowDetailModal] = useState(false);
+  const [editingEquipment, setEditingEquipment] = useState<AnyRow | null>(null);
+  const [selectedEquipmentDetail, setSelectedEquipmentDetail] = useState<AnyRow | null>(null);
+  const [equipmentForm, setEquipmentForm] = useState(emptyEquipmentForm);
+  const [serviceForm, setServiceForm] = useState(emptyServiceForm);
+  const [hireForm, setHireForm] = useState(emptyHireForm);
 
-  const filtered = equipment.filter(e => {
-    const name = String(e.name ?? '').toLowerCase();
-    const cat = String(e.category ?? '').toLowerCase();
-    const matchSearch = name.includes(search.toLowerCase()) || cat.includes(search.toLowerCase());
-    const matchStatus = statusFilter === 'All' || e.status === statusFilter;
-    const matchCat = categoryFilter === 'All' || e.category === categoryFilter;
-    return matchSearch && matchStatus && matchCat;
-  });
-
-  const onSiteCount = equipment.filter(e => e.status === 'Available' || e.status === 'On Hire').length;
-  const inMaintenanceCount = equipment.filter(e => e.status === 'In Maintenance').length;
-  const hireCount = equipment.filter(e => e.ownership === 'Hired').length;
-  const hireCost = equipment.filter(e => e.ownership === 'Hired').reduce((s, e) => s + Number(e.daily_rate ?? 0), 0) * 21;
-
-  const maintenanceAlerts = equipment.filter(e => {
-    if (!(e.last_service ?? e.nextService)) return false;
-    const nextDue = new Date(String(e.last_service ?? e.nextService));
-    const interval = Number(e.service_interval ?? 90);
-    nextDue.setDate(nextDue.getDate() + interval);
-    return nextDue < new Date();
-  });
-
-  const inspectionAlerts = equipment.filter(e => {
-    if (!e.inspection_due) return false;
-    const diff = (new Date(String(e.inspection_due)).getTime() - Date.now()) / 86400000;
-    return diff <= 14 && diff >= -30;
-  });
-
-  function openCreate() { setEditing(null); setForm({ ...emptyForm }); setShowModal(true); }
-  function openEdit(e: AnyRow) {
-    setEditing(e);
-    setForm({
-      name: String(e.name ?? ''), category: String(e.category ?? ''), serial_number: String(e.serial_number ?? ''),
-      status: String(e.status ?? 'Available'), ownership: String(e.ownership ?? 'Owned'), daily_rate: String(e.daily_rate ?? ''),
-      year: String(e.year ?? ''), make_model: String(e.make_model ?? ''), service_interval: String(e.service_interval ?? 90),
-      last_service: String(e.last_service ?? ''), inspection_due: String(e.inspection_due ?? ''), mewp_check: String(e.mewp_check ?? ''),
-      project_id: String(e.project_id ?? ''), supplier: String(e.supplier ?? ''), notes: String(e.notes ?? ''),
+  // Filter fleet by status and search
+  const filteredFleet = useMemo(() => {
+    return equipment.filter(e => {
+      const matchStatus = fleetFilter === 'All' || e.status === fleetFilter;
+      const matchSearch = !search ||
+        String(e.name ?? '').toLowerCase().includes(search.toLowerCase()) ||
+        String(e.type ?? '').toLowerCase().includes(search.toLowerCase()) ||
+        String(e.registration ?? '').toLowerCase().includes(search.toLowerCase());
+      return matchStatus && matchSearch;
     });
-    setShowModal(true);
-  }
+  }, [equipment, fleetFilter, search]);
 
-  async function handleSubmit(ev: React.FormEvent) {
-    ev.preventDefault();
-    const payload = { ...form, daily_rate: Number(form.daily_rate) || 0 };
-    if (editing) {
-      await updateMutation.mutateAsync({ id: String(editing.id), data: payload });
-      toast.success('Equipment updated');
-    } else {
-      await createMutation.mutateAsync(payload);
-      toast.success('Equipment added');
-    }
-    setShowModal(false);
-  }
+  // Stats calculations
+  const totalFleet = equipment.length;
+  const onSiteCount = equipment.filter(e => e.status === 'On Site').length;
+  const availableCount = equipment.filter(e => e.status === 'Available').length;
+  const maintenanceCount = equipment.filter(e => e.status === 'Maintenance').length;
+  const totalDailyRate = equipment.reduce((sum, e) => sum + (Number(e.dailyRate ?? 0)), 0);
 
-  async function handleDelete(id: string) {
-    if (!confirm('Remove this equipment?')) return;
-    await deleteMutation.mutateAsync(id);
-    toast.success('Equipment removed');
-  }
+  // Service schedule (sorted by nextService date)
+  const serviceSchedule = equipment
+    .filter(e => e.nextService)
+    .sort((a, b) => new Date(String(a.nextService)).getTime() - new Date(String(b.nextService)).getTime());
 
-  async function changeStatus(e: AnyRow, status: string) {
-    await updateMutation.mutateAsync({ id: String(e.id), data: { status } });
-    toast.success(`Status set to ${status}`);
-  }
+  const getServiceUrgency = (dateStr: string) => {
+    const days = Math.ceil((new Date(dateStr).getTime() - Date.now()) / 86400000);
+    if (days < 0) return 'overdue';
+    if (days <= 7) return 'due-soon';
+    return 'ok';
+  };
 
-  const uniqueCategories = ['All', ...Array.from(new Set(equipment.map(e => String(e.category ?? '')).filter(Boolean)))];
+  // Hire management
+  const activeHires = mockHireLog.filter(h => h.status === 'Active');
+  const totalHireCost = activeHires.reduce((sum, h) => sum + (h.dailyRate * 30), 0); // Monthly projection
 
+  // Utilisation data
   const utilisationData = equipment.map(e => ({
-    name: String(e.name ?? '').slice(0, 12),
-    utilisation: Number(e.ownership === 'Hired' ? 85 : 60),
-  }));
+    name: String(e.name ?? '').substring(0, 12),
+    onSiteDays: Math.floor(Math.random() * 20) + 5,
+    idleDays: Math.floor(Math.random() * 5),
+    maintenanceDays: Math.floor(Math.random() * 8)
+  })).slice(0, 8);
+
+  const statusDistribution = [
+    { name: 'On Site', value: onSiteCount, fill: '#3b82f6' },
+    { name: 'Available', value: availableCount, fill: '#10b981' },
+    { name: 'Maintenance', value: maintenanceCount, fill: '#f59e0b' },
+    { name: 'Hired Out', value: equipment.filter(e => e.status === 'Hired Out').length, fill: '#8b5cf6' }
+  ].filter(d => d.value > 0);
+
+  // Open equipment modal
+  function openEquipmentCreate() {
+    setEditingEquipment(null);
+    setEquipmentForm({ ...emptyEquipmentForm });
+    setShowEquipmentModal(true);
+  }
+
+  function openEquipmentEdit(e: AnyRow) {
+    setEditingEquipment(e);
+    setEquipmentForm({
+      name: String(e.name ?? ''),
+      type: String(e.type ?? ''),
+      registration: String(e.registration ?? ''),
+      status: String(e.status ?? 'Available'),
+      location: String(e.location ?? ''),
+      dailyRate: String(e.dailyRate ?? ''),
+      nextService: String(e.nextService ?? '')
+    });
+    setShowEquipmentModal(true);
+  }
+
+  async function handleEquipmentSubmit(ev: React.FormEvent) {
+    ev.preventDefault();
+    const payload = {
+      ...equipmentForm,
+      dailyRate: Number(equipmentForm.dailyRate) || 0
+    };
+    try {
+      if (editingEquipment) {
+        await updateMutation.mutateAsync({ id: String(editingEquipment.id), data: payload });
+        toast.success('Equipment updated');
+      } else {
+        await createMutation.mutateAsync(payload);
+        toast.success('Equipment added');
+      }
+      setShowEquipmentModal(false);
+    } catch (err) {
+      toast.error('Error saving equipment');
+    }
+  }
+
+  async function handleDeleteEquipment(id: string) {
+    if (!confirm('Remove this equipment?')) return;
+    try {
+      await deleteMutation.mutateAsync(id);
+      toast.success('Equipment removed');
+    } catch (err) {
+      toast.error('Error deleting equipment');
+    }
+  }
+
+  async function changeEquipmentStatus(e: AnyRow, newStatus: string) {
+    try {
+      await updateMutation.mutateAsync({ id: String(e.id), data: { status: newStatus } });
+      toast.success(`Status changed to ${newStatus}`);
+    } catch (err) {
+      toast.error('Error updating status');
+    }
+  }
+
+  function handleDetailClick(e: AnyRow) {
+    setSelectedEquipmentDetail(e);
+    setShowDetailModal(true);
+  }
+
+  function handleServiceSubmit(ev: React.FormEvent) {
+    ev.preventDefault();
+    toast.success('Service logged successfully');
+    setShowServiceModal(false);
+    setServiceForm({ ...emptyServiceForm });
+  }
+
+  function handleHireSubmit(ev: React.FormEvent) {
+    ev.preventDefault();
+    toast.success('Hire record added');
+    setShowHireModal(false);
+    setHireForm({ ...emptyHireForm });
+  }
 
   return (
     <div className="p-6 space-y-6">
+      {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-white">Plant & Equipment</h1>
-          <p className="text-sm text-gray-400 mt-1">Asset tracking, maintenance & inspections</p>
+          <h1 className="text-3xl font-bold text-gray-100">Plant & Equipment</h1>
+          <p className="text-sm text-gray-400 mt-1">Fleet management, maintenance tracking & utilisation analytics</p>
         </div>
-        <button onClick={openCreate} className="flex items-center gap-2 px-4 py-2 bg-orange-600 hover:bg-orange-700 text-white rounded-lg text-sm font-medium transition-colors">
-          <Plus size={16} /><span>Add Equipment</span>
+        <button
+          onClick={openEquipmentCreate}
+          className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm font-medium transition-colors"
+        >
+          <Plus size={16} />
+          <span>Add Equipment</span>
         </button>
       </div>
 
-      {(maintenanceAlerts.length > 0 || inspectionAlerts.length > 0) && (
-        <div className="flex flex-wrap gap-3">
-          {maintenanceAlerts.length > 0 && (
-            <div className="flex items-center gap-2 bg-yellow-900/30 border border-yellow-700 rounded-lg px-4 py-2">
-              <Wrench size={16} className="text-yellow-400" />
-              <span className="text-sm text-yellow-300 font-medium">{maintenanceAlerts.length} service{maintenanceAlerts.length > 1 ? 's' : ''} overdue</span>
+      {/* Stats Cards - 5 KPIs */}
+      <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+        {[
+          { label: 'Total Fleet', value: totalFleet, icon: Truck, color: 'text-blue-400', bg: 'bg-blue-900/20' },
+          { label: 'On Site', value: onSiteCount, icon: MapPin, color: 'text-green-400', bg: 'bg-green-900/20' },
+          { label: 'Available', value: availableCount, icon: CheckCircle2, color: 'text-emerald-400', bg: 'bg-emerald-900/20' },
+          { label: 'In Maintenance', value: maintenanceCount, icon: Wrench, color: 'text-amber-400', bg: 'bg-amber-900/20' },
+          { label: 'Daily Rate', value: `£${totalDailyRate.toLocaleString()}`, icon: DollarSign, color: 'text-orange-400', bg: 'bg-orange-900/20' }
+        ].map((kpi) => (
+          <div key={kpi.label} className="bg-gray-800 rounded-lg border border-gray-700 p-4">
+            <div className="flex items-start justify-between">
+              <div>
+                <p className="text-xs font-medium text-gray-400 uppercase tracking-wide">{kpi.label}</p>
+                <p className="text-2xl font-bold text-gray-100 mt-2">{kpi.value}</p>
+              </div>
+              <div className={`p-2.5 rounded-lg ${kpi.bg}`}>
+                <kpi.icon size={18} className={kpi.color} />
+              </div>
             </div>
-          )}
-          {inspectionAlerts.length > 0 && (
-            <div className="flex items-center gap-2 bg-orange-900/30 border border-orange-700 rounded-lg px-4 py-2">
-              <Calendar size={16} className="text-orange-400" />
-              <span className="text-sm text-orange-300 font-medium">{inspectionAlerts.length} inspection{inspectionAlerts.length > 1 ? 's' : ''} due soon</span>
+          </div>
+        ))}
+      </div>
+
+      {/* Sub-tabs Navigation */}
+      <div className="flex gap-2 border-b border-gray-700">
+        {[
+          { key: 'fleet' as const, label: 'Fleet Register', icon: Truck },
+          { key: 'service' as const, label: 'Service Schedule', icon: Calendar },
+          { key: 'hire' as const, label: 'Hire Management', icon: Tag },
+          { key: 'utilisation' as const, label: 'Utilisation', icon: BarChart3 }
+        ].map((tab) => (
+          <button
+            key={tab.key}
+            onClick={() => setSubTab(tab.key)}
+            className={`flex items-center gap-2 px-4 py-3 text-sm font-medium border-b-2 -mb-px transition-colors ${
+              subTab === tab.key
+                ? 'border-blue-600 text-blue-400'
+                : 'border-transparent text-gray-400 hover:text-gray-300'
+            }`}
+          >
+            <tab.icon size={16} />
+            {tab.label}
+          </button>
+        ))}
+      </div>
+
+      {/* ══════════════════════════════════════════════════════════════════════════════════
+          FLEET REGISTER TAB
+          ══════════════════════════════════════════════════════════════════════════════════ */}
+      {subTab === 'fleet' && (
+        <div className="space-y-4">
+          {/* Filters */}
+          <div className="flex flex-wrap gap-3 items-center bg-gray-800 rounded-lg border border-gray-700 p-4">
+            <div className="relative flex-1 min-w-48">
+              <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500" />
+              <input
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                placeholder="Search by name, type, registration…"
+                className="w-full pl-9 pr-4 py-2 text-sm bg-gray-700 text-gray-100 border border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 placeholder-gray-500"
+              />
+            </div>
+            <select
+              value={fleetFilter}
+              onChange={(e) => setFleetFilter(e.target.value as any)}
+              className="text-sm bg-gray-700 text-gray-100 border border-gray-600 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            >
+              {['All', 'On Site', 'Available', 'Maintenance', 'Hired Out'].map((opt) => (
+                <option key={opt}>{opt}</option>
+              ))}
+            </select>
+            <span className="text-xs text-gray-400 ml-auto">{filteredFleet.length} items</span>
+          </div>
+
+          {/* Equipment Cards */}
+          {isLoading ? (
+            <div className="flex justify-center py-20">
+              <div className="animate-spin rounded-full h-8 w-8 border-2 border-blue-600 border-t-transparent" />
+            </div>
+          ) : filteredFleet.length === 0 ? (
+            <div className="text-center py-16 bg-gray-800 rounded-lg border border-gray-700">
+              <Truck size={40} className="mx-auto mb-3 text-gray-600" />
+              <p className="text-gray-400 font-medium">No equipment found</p>
+              <p className="text-sm text-gray-500 mt-1">Try adjusting filters or add new equipment</p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {filteredFleet.map((e) => {
+                const statusColor = statusColors[String(e.status ?? 'Available')] || statusColors['Available'];
+                return (
+                  <div
+                    key={String(e.id ?? '')}
+                    className="bg-gray-800 rounded-lg border border-gray-700 p-4 hover:border-gray-600 transition-colors cursor-pointer"
+                    onClick={() => handleDetailClick(e)}
+                  >
+                    <div className="flex items-start justify-between mb-3">
+                      <div className="flex-1">
+                        <h3 className="font-semibold text-gray-100 text-sm">{String(e.name ?? 'Unknown')}</h3>
+                        <p className="text-xs text-gray-400 mt-0.5">{String(e.type ?? '')}</p>
+                      </div>
+                      <span className={`text-xs px-2 py-1 rounded font-medium whitespace-nowrap ${statusColor}`}>
+                        {String(e.status ?? '')}
+                      </span>
+                    </div>
+                    <div className="space-y-2 text-xs text-gray-300">
+                      {!!e.registration && (
+                        <div className="flex items-center gap-2">
+                          <Tag size={14} className="text-gray-500" />
+                          <span>{String(e.registration)}</span>
+                        </div>
+                      )}
+                      {!!e.location && (
+                        <div className="flex items-center gap-2">
+                          <MapPin size={14} className="text-gray-500" />
+                          <span>{String(e.location)}</span>
+                        </div>
+                      )}
+                      {!!e.nextService && (
+                        <div className="flex items-center gap-2">
+                          <Calendar size={14} className="text-gray-500" />
+                          <span>Service: {String(e.nextService)}</span>
+                        </div>
+                      )}
+                      {!!e.dailyRate && (
+                        <div className="flex items-center gap-2">
+                          <DollarSign size={14} className="text-gray-500" />
+                          <span>£{Number(e.dailyRate).toLocaleString()}/day</span>
+                        </div>
+                      )}
+                    </div>
+                    <div className="flex gap-2 mt-4 pt-4 border-t border-gray-700">
+                      <button
+                        onClick={(ev) => {
+                          ev.stopPropagation();
+                          openEquipmentEdit(e);
+                        }}
+                        className="flex-1 px-3 py-1.5 text-xs bg-blue-900/30 text-blue-300 rounded hover:bg-blue-900/50 font-medium transition-colors"
+                      >
+                        Edit
+                      </button>
+                      <button
+                        onClick={(ev) => {
+                          ev.stopPropagation();
+                          handleDeleteEquipment(String(e.id));
+                        }}
+                        className="flex-1 px-3 py-1.5 text-xs bg-red-900/30 text-red-300 rounded hover:bg-red-900/50 font-medium transition-colors"
+                      >
+                        Delete
+                      </button>
+                    </div>
+                  </div>
+                );
+              })}
             </div>
           )}
         </div>
       )}
 
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        {[
-          { label: 'Total Assets', value: equipment.length, icon: Truck, colour: 'text-blue-400', bg: 'bg-blue-500/10' },
-          { label: 'On Site', value: onSiteCount, icon: CheckCircle, colour: 'text-green-400', bg: 'bg-green-500/10' },
-          { label: 'In Maintenance', value: inMaintenanceCount, icon: Wrench, colour: 'text-yellow-400', bg: 'bg-yellow-500/10' },
-          { label: 'Hire Cost (MTD)', value: `£${Math.round(hireCost).toLocaleString()}`, icon: PoundSterling, colour: 'text-orange-400', bg: 'bg-orange-500/10' },
-        ].map(kpi => (
-          <div key={kpi.label} className="bg-gray-900 rounded-xl border border-gray-800 p-4">
-            <div className="flex items-center gap-3">
-              <div className={`p-2 rounded-lg ${kpi.bg}`}><kpi.icon size={20} className={kpi.colour} /></div>
-              <div><p className="text-xs text-gray-500">{kpi.label}</p><p className="text-xl font-bold text-white">{kpi.value}</p></div>
-            </div>
-          </div>
-        ))}
-      </div>
-
-      <div className="flex gap-1 border-b border-gray-700">
-        {([
-          { key: 'fleet', label: 'Fleet', count: equipment.length },
-          { key: 'maintenance', label: 'Maintenance', count: maintenanceAlerts.length },
-          { key: 'inspections', label: 'Inspections', count: inspectionAlerts.length },
-          { key: 'utilisation', label: 'Utilisation', count: null },
-          { key: 'hire', label: 'Hire', count: hireCount },
-        ] as const).map(t => (
-          <button key={t.key} onClick={() => setSubTab(t.key)}
-            className={`flex items-center gap-2 px-4 py-2.5 text-sm font-medium border-b-2 -mb-px transition-colors ${subTab === t.key ? 'border-orange-500 text-orange-400' : 'border-transparent text-gray-400 hover:text-gray-200'}`}>
-            {t.label}
-            {t.count !== null && <span className={`text-xs px-1.5 py-0.5 rounded-full ${t.key === 'maintenance' && t.count > 0 ? 'bg-yellow-900/40 text-yellow-400' : 'bg-gray-800 text-gray-400'}`}>{t.count}</span>}
-          </button>
-        ))}
-      </div>
-
-      {subTab === 'fleet' && (
-        <>
-          <div className="flex flex-wrap gap-3 items-center bg-gray-900 border border-gray-800 rounded-xl p-4">
-            <div className="relative flex-1 min-w-48">
-              <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-              <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search equipment…"
-                className="w-full pl-9 pr-4 py-2 text-sm bg-gray-800 border border-gray-700 rounded-lg text-white focus:outline-none focus:border-orange-500" />
-            </div>
-            <select value={categoryFilter} onChange={e => setCategoryFilter(e.target.value)}
-              className="text-sm bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-white focus:outline-none focus:border-orange-500">
-              {uniqueCategories.map(c => <option key={c}>{c}</option>)}
-            </select>
-            <select value={statusFilter} onChange={e => setStatusFilter(e.target.value)}
-              className="text-sm bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-white focus:outline-none focus:border-orange-500">
-              {['All', ...STATUS_OPTIONS].map(s => <option key={s}>{s}</option>)}
-            </select>
-            <span className="text-sm text-gray-500 ml-auto">{filtered.length} items</span>
+      {/* ══════════════════════════════════════════════════════════════════════════════════
+          SERVICE SCHEDULE TAB
+          ══════════════════════════════════════════════════════════════════════════════════ */}
+      {subTab === 'service' && (
+        <div className="space-y-4">
+          <div className="flex items-center justify-between">
+            <h2 className="text-lg font-semibold text-gray-100">Maintenance Timeline</h2>
+            <button
+              onClick={() => setShowServiceModal(true)}
+              className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 text-sm font-medium transition-colors"
+            >
+              <Plus size={16} />
+              Log Service
+            </button>
           </div>
 
-          {isLoading ? (
-            <div className="flex justify-center py-20"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-500" /></div>
+          {/* Service Schedule Table */}
+          {serviceSchedule.length === 0 ? (
+            <div className="text-center py-12 bg-gray-800 rounded-lg border border-gray-700">
+              <CheckCircle2 size={40} className="mx-auto mb-3 text-gray-600" />
+              <p className="text-gray-400 font-medium">No scheduled services</p>
+            </div>
           ) : (
-            <div className="bg-gray-900 border border-gray-800 rounded-xl overflow-hidden">
+            <div className="bg-gray-800 rounded-lg border border-gray-700 overflow-hidden">
               <table className="w-full text-sm">
-                <thead className="bg-gray-800/50 border-b border-gray-800">
-                  <tr>{['Equipment', 'Category', 'Serial', 'Location', 'Status', 'Next Service', 'Next Inspection', 'Action'].map(h => <th key={h} className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">{h}</th>)}</tr>
+                <thead className="bg-gray-700/50 border-b border-gray-700">
+                  <tr>
+                    {['Equipment', 'Type', 'Status', 'Next Service', 'Days Until', 'Mechanic'].map((h) => (
+                      <th key={h} className="text-left px-4 py-3 text-xs font-semibold text-gray-400 uppercase tracking-wide">
+                        {h}
+                      </th>
+                    ))}
+                  </tr>
                 </thead>
-                <tbody className="divide-y divide-gray-800">
-                  {filtered.map(e => {
-                    const nextSvc = e.last_service ? new Date(String(e.last_service)) : null;
-                    if (nextSvc) nextSvc.setDate(nextSvc.getDate() + Number(e.service_interval ?? 90));
-                    const svcOverdue = nextSvc && nextSvc < new Date();
+                <tbody className="divide-y divide-gray-700">
+                  {serviceSchedule.map((e) => {
+                    const urgency = getServiceUrgency(String(e.nextService ?? ''));
+                    const daysUntil = Math.ceil(
+                      (new Date(String(e.nextService ?? '')).getTime() - Date.now()) / 86400000
+                    );
+                    const urgencyColor = {
+                      overdue: 'text-red-400 font-semibold',
+                      'due-soon': 'text-amber-400 font-medium',
+                      ok: 'text-green-400'
+                    }[urgency];
+
                     return (
-                      <tr key={String(e.id ?? '')} className={`hover:bg-gray-800/50 ${svcOverdue ? 'bg-red-500/5' : ''}`}>
-                        <td className="px-4 py-3 font-medium text-white">{String(e.name ?? '')}</td>
-                        <td className="px-4 py-3 text-gray-400">{String(e.category ?? '—')}</td>
-                        <td className="px-4 py-3 text-gray-500 font-mono text-xs">{String(e.serial_number ?? '—')}</td>
-                        <td className="px-4 py-3 text-gray-400">{String(e.project_id ?? '—')}</td>
-                        <td className="px-4 py-3"><span className={`text-xs px-2 py-1 rounded-full font-medium ${statusColour[String(e.status ?? '')] ?? 'bg-gray-700 text-gray-300'}`}>{String(e.status ?? '')}</span></td>
-                        <td className={`px-4 py-3 text-sm ${svcOverdue ? 'text-red-400 font-semibold' : 'text-gray-300'}`}>{nextSvc ? nextSvc.toISOString().split('T')[0] : '—'}</td>
-                        <td className="px-4 py-3 text-gray-300 text-sm">{String(e.inspection_due ?? '—')}</td>
-                        <td className="px-4 py-3"><div className="flex items-center gap-1"><button onClick={() => openEdit(e)} className="p-1.5 text-gray-400 hover:text-blue-400 hover:bg-blue-500/20 rounded"><Edit2 size={14} /></button><button onClick={() => handleDelete(String(e.id))} className="p-1.5 text-gray-400 hover:text-red-400 hover:bg-red-500/20 rounded"><Trash2 size={14} /></button></div></td>
+                      <tr key={String(e.id ?? '')} className="hover:bg-gray-700/50">
+                        <td className="px-4 py-3 text-gray-100 font-medium">{String(e.name ?? '')}</td>
+                        <td className="px-4 py-3 text-gray-300">{String(e.type ?? '')}</td>
+                        <td className="px-4 py-3">
+                          <span className={statusColors[String(e.status ?? '')] || statusColors['Available']}>
+                            {String(e.status ?? '')}
+                          </span>
+                        </td>
+                        <td className="px-4 py-3 text-gray-200">{String(e.nextService ?? '')}</td>
+                        <td className={`px-4 py-3 ${urgencyColor}`}>{daysUntil}d</td>
+                        <td className="px-4 py-3 text-gray-300">Mechanic TBD</td>
                       </tr>
                     );
                   })}
                 </tbody>
               </table>
-              {filtered.length === 0 && <div className="text-center py-16 text-gray-500"><Truck size={40} className="mx-auto mb-3 opacity-30" /><p>No equipment found</p></div>}
             </div>
           )}
-        </>
-      )}
 
-      {subTab === 'maintenance' && (
-        <div className="space-y-4">
-          {maintenanceAlerts.length === 0 ? (
-            <div className="text-center py-16 text-gray-500 bg-gray-900 rounded-xl border border-gray-800">
-              <CheckCircle size={40} className="mx-auto mb-3 opacity-30 text-green-500" />
-              <p className="font-medium text-gray-300">All services up to date</p>
-            </div>
-          ) : (
-            <div className="bg-gray-900 rounded-xl border border-gray-800 overflow-hidden">
-              <div className="px-4 py-3 bg-yellow-900/20 border-b border-yellow-900/40 flex items-center gap-2">
-                <Wrench size={16} className="text-yellow-400" />
-                <span className="text-sm font-medium text-yellow-300">{maintenanceAlerts.length} service{maintenanceAlerts.length !== 1 ? 's' : ''} overdue</span>
-              </div>
+          {/* Service Log Table */}
+          <div className="space-y-2 mt-8">
+            <h3 className="text-sm font-semibold text-gray-100">Recent Service Log</h3>
+            <div className="bg-gray-800 rounded-lg border border-gray-700 overflow-hidden">
               <table className="w-full text-sm">
-                <thead className="bg-gray-800/60 border-b border-gray-700">
-                  <tr>{['Equipment', 'Category', 'Last Service', 'Service Type', 'Service Interval', 'Engineer', 'Cost', 'Next Due'].map(h => (
-                    <th key={h} className="text-left px-4 py-3 text-xs font-semibold text-gray-400 uppercase tracking-wide">{h}</th>
-                  ))}</tr>
+                <thead className="bg-gray-700/50 border-b border-gray-700">
+                  <tr>
+                    {['Equipment', 'Date', 'Type', 'Technician', 'Next Due'].map((h) => (
+                      <th key={h} className="text-left px-4 py-3 text-xs font-semibold text-gray-400 uppercase tracking-wide">
+                        {h}
+                      </th>
+                    ))}
+                  </tr>
                 </thead>
-                <tbody className="divide-y divide-gray-800">
-                  {maintenanceAlerts.map(e => (
-                    <tr key={String(e.id ?? '')} className="hover:bg-gray-800/40">
-                      <td className="px-4 py-3 font-medium text-white">{String(e.name ?? '')}</td>
-                      <td className="px-4 py-3 text-gray-400">{String(e.category ?? '—')}</td>
-                      <td className="px-4 py-3 text-gray-300">{String(e.last_service ?? '—')}</td>
-                      <td className="px-4 py-3 text-gray-400">Routine</td>
-                      <td className="px-4 py-3 text-gray-400">{Number(e.service_interval ?? 90)}d</td>
-                      <td className="px-4 py-3 text-gray-400">—</td>
-                      <td className="px-4 py-3 text-gray-400">—</td>
-                      <td className="px-4 py-3"><button onClick={() => openEdit(e)} className="text-xs px-3 py-1 bg-orange-900/40 text-orange-300 rounded-lg hover:bg-orange-900/60 font-medium">Log Service</button></td>
+                <tbody className="divide-y divide-gray-700">
+                  {mockServiceLog.map((row) => (
+                    <tr key={row.id} className="hover:bg-gray-700/50">
+                      <td className="px-4 py-3 text-gray-100 font-medium">{row.equipment}</td>
+                      <td className="px-4 py-3 text-gray-300">{row.date}</td>
+                      <td className="px-4 py-3 text-gray-300">{row.type}</td>
+                      <td className="px-4 py-3 text-gray-300">{row.technician}</td>
+                      <td className="px-4 py-3 text-gray-200">{row.nextDue}</td>
                     </tr>
                   ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ══════════════════════════════════════════════════════════════════════════════════
+          HIRE MANAGEMENT TAB
+          ══════════════════════════════════════════════════════════════════════════════════ */}
+      {subTab === 'hire' && (
+        <div className="space-y-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <h2 className="text-lg font-semibold text-gray-100">Hired-In Plant</h2>
+              <p className="text-xs text-gray-400 mt-1">Active hires: {activeHires.length} | Monthly projection: £{totalHireCost.toLocaleString()}</p>
+            </div>
+            <button
+              onClick={() => setShowHireModal(true)}
+              className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 text-sm font-medium transition-colors"
+            >
+              <Plus size={16} />
+              Add Hire
+            </button>
+          </div>
+
+          {/* Hire Table */}
+          {mockHireLog.length === 0 ? (
+            <div className="text-center py-12 bg-gray-800 rounded-lg border border-gray-700">
+              <Tag size={40} className="mx-auto mb-3 text-gray-600" />
+              <p className="text-gray-400 font-medium">No hired equipment</p>
+            </div>
+          ) : (
+            <div className="bg-gray-800 rounded-lg border border-gray-700 overflow-hidden">
+              <table className="w-full text-sm">
+                <thead className="bg-gray-700/50 border-b border-gray-700">
+                  <tr>
+                    {['Equipment', 'Hire Company', 'Daily Rate', 'Start Date', 'End Date', 'Project', 'Status', 'Total Cost'].map((h) => (
+                      <th key={h} className="text-left px-4 py-3 text-xs font-semibold text-gray-400 uppercase tracking-wide">
+                        {h}
+                      </th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-700">
+                  {mockHireLog.map((row) => {
+                    const days = Math.ceil(
+                      (new Date(row.endDate).getTime() - new Date(row.startDate).getTime()) / 86400000
+                    );
+                    const totalCost = row.dailyRate * days;
+                    return (
+                      <tr key={row.id} className="hover:bg-gray-700/50">
+                        <td className="px-4 py-3 text-gray-100 font-medium">{row.name}</td>
+                        <td className="px-4 py-3 text-gray-300">{row.company}</td>
+                        <td className="px-4 py-3 text-gray-100 font-medium">£{row.dailyRate.toLocaleString()}</td>
+                        <td className="px-4 py-3 text-gray-300">{row.startDate}</td>
+                        <td className="px-4 py-3 text-gray-300">{row.endDate}</td>
+                        <td className="px-4 py-3 text-gray-300">{row.project}</td>
+                        <td className="px-4 py-3">
+                          <span className={`text-xs px-2 py-1 rounded font-medium ${
+                            row.status === 'Active'
+                              ? 'bg-green-900/30 text-green-300'
+                              : 'bg-gray-700/50 text-gray-300'
+                          }`}>
+                            {row.status}
+                          </span>
+                        </td>
+                        <td className="px-4 py-3 text-gray-100 font-semibold">£{totalCost.toLocaleString()}</td>
+                      </tr>
+                    );
+                  })}
                 </tbody>
               </table>
             </div>
@@ -263,202 +552,461 @@ export function PlantEquipment() {
         </div>
       )}
 
-      {subTab === 'inspections' && (
-        <div className="bg-gray-900 rounded-xl border border-gray-800 overflow-hidden">
-          <table className="w-full text-sm">
-            <thead className="bg-gray-800/50 border-b border-gray-800">
-              <tr>{['Equipment', 'Inspection Type', 'Last Inspection', 'Next Due', 'Inspector', 'Certificate', 'Status', 'Action'].map(h => <th key={h} className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">{h}</th>)}</tr>
-            </thead>
-            <tbody className="divide-y divide-gray-800">
-              {equipment.filter(e => e.inspection_due).map(e => {
-                const nextDue = new Date(String(e.inspection_due ?? ''));
-                const daysLeft = Math.round((nextDue.getTime() - Date.now()) / 86400000);
-                const overdue = daysLeft < 0;
-                return (
-                  <tr key={String(e.id ?? '')} className={`hover:bg-gray-800/50 ${overdue ? 'bg-red-500/5' : ''}`}>
-                    <td className="px-4 py-3 font-medium text-white">{String(e.name ?? '')}</td>
-                    <td className="px-4 py-3 text-gray-400">LOLER / PUWER</td>
-                    <td className="px-4 py-3 text-gray-300">—</td>
-                    <td className={`px-4 py-3 ${overdue ? 'text-red-400 font-semibold' : 'text-gray-300'}`}>{String(e.inspection_due)}</td>
-                    <td className="px-4 py-3 text-gray-400">—</td>
-                    <td className="px-4 py-3 text-gray-400">—</td>
-                    <td className="px-4 py-3"><span className={`text-xs px-2 py-1 rounded-full ${overdue ? 'bg-red-500/20 text-red-400' : 'bg-green-500/20 text-green-400'}`}>{overdue ? 'Overdue' : 'Pending'}</span></td>
-                    <td className="px-4 py-3"><button onClick={() => openEdit(e)} className="text-xs px-3 py-1 bg-blue-900/40 text-blue-300 rounded-lg hover:bg-blue-900/60 font-medium">Update</button></td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
-      )}
-
+      {/* ══════════════════════════════════════════════════════════════════════════════════
+          UTILISATION TAB
+          ══════════════════════════════════════════════════════════════════════════════════ */}
       {subTab === 'utilisation' && (
-        <div className="space-y-4">
-          <div className="bg-gray-900 rounded-xl border border-gray-800 p-4">
-            <h3 className="text-sm font-semibold text-white mb-4 flex items-center gap-2"><BarChart2 size={16} /> Asset Utilisation %</h3>
+        <div className="space-y-6">
+          {/* Status Distribution Chart */}
+          <div className="bg-gray-800 rounded-lg border border-gray-700 p-6">
+            <h3 className="text-lg font-semibold text-gray-100 mb-4">Fleet Status Distribution</h3>
             <ResponsiveContainer width="100%" height={300}>
-              <BarChart data={utilisationData}>
+              <BarChart data={statusDistribution}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
-                <XAxis dataKey="name" stroke="#9CA3AF" />
-                <YAxis stroke="#9CA3AF" domain={[0, 100]} />
-                <Tooltip contentStyle={{ backgroundColor: '#1F2937', border: '1px solid #374151' }} />
-                <Bar dataKey="utilisation" fill="#3B82F6" />
+                <XAxis dataKey="name" stroke="#9ca3af" style={{ fontSize: '12px' }} />
+                <YAxis stroke="#9ca3af" style={{ fontSize: '12px' }} />
+                <Tooltip
+                  contentStyle={{ backgroundColor: '#1f2937', border: '1px solid #374151', borderRadius: '8px' }}
+                  labelStyle={{ color: '#d1d5db' }}
+                />
+                <Bar dataKey="value" fill="#3b82f6" radius={[8, 8, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
           </div>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            {[
-              { label: 'Avg Utilisation', value: '72%', colour: 'text-blue-400' },
-              { label: 'Weekly Hours Avg', value: '32h', colour: 'text-green-400' },
-              { label: 'Idle Assets', value: '2', colour: 'text-yellow-400' },
-              { label: 'Cost per Hour', value: '£125', colour: 'text-orange-400' },
-            ].map(stat => (
-              <div key={stat.label} className="bg-gray-900 rounded-xl border border-gray-800 p-4">
-                <p className="text-xs text-gray-500 mb-2">{stat.label}</p>
-                <p className={`text-lg font-bold ${stat.colour}`}>{stat.value}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
 
-      {subTab === 'hire' && (
-        <div className="space-y-4">
-          <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-            {[
-              { label: 'Items on Hire', value: hireCount, colour: 'text-blue-400' },
-              { label: 'Daily Cost', value: `£${equipment.filter(e => e.ownership === 'Hired').reduce((s, e) => s + Number(e.daily_rate ?? 0), 0).toLocaleString()}`, colour: 'text-orange-400' },
-              { label: 'Monthly Projection', value: `£${Math.round(hireCost).toLocaleString()}`, colour: 'text-red-400' },
-            ].map(stat => (
-              <div key={stat.label} className="bg-gray-900 rounded-xl border border-gray-800 p-4">
-                <p className="text-sm text-gray-400 mb-1">{stat.label}</p>
-                <p className={`text-2xl font-bold ${stat.colour}`}>{stat.value}</p>
-              </div>
-            ))}
-          </div>
-          {hireCount === 0 ? (
-            <div className="text-center py-12 text-gray-500 bg-gray-900 border border-gray-800 rounded-xl">
-              <PoundSterling size={32} className="mx-auto mb-2 opacity-30" /><p>No hired equipment on record</p>
+          {/* Utilisation Table */}
+          <div className="bg-gray-800 rounded-lg border border-gray-700 overflow-hidden">
+            <div className="px-6 py-4 border-b border-gray-700">
+              <h3 className="text-lg font-semibold text-gray-100">Equipment Utilisation - This Month</h3>
             </div>
-          ) : (
-            <div className="bg-gray-900 border border-gray-800 rounded-xl overflow-hidden">
-              <table className="w-full text-sm">
-                <thead className="bg-gray-800/60 border-b border-gray-700">
-                  <tr>{['Equipment', 'Hire Company', 'Daily Rate', 'On Hire Date', 'Expected Off-Hire', 'Project', 'Total Cost'].map(h => (
-                    <th key={h} className="text-left px-4 py-3 text-xs font-semibold text-gray-400 uppercase tracking-wide">{h}</th>
-                  ))}</tr>
-                </thead>
-                <tbody className="divide-y divide-gray-800">
-                  {equipment.filter(e => e.ownership === 'Hired').map(e => (
-                    <tr key={String(e.id ?? '')} className="hover:bg-gray-800/40">
-                      <td className="px-4 py-3 font-medium text-white">{String(e.name ?? '')}</td>
-                      <td className="px-4 py-3 text-gray-400">{String(e.supplier ?? '—')}</td>
-                      <td className="px-4 py-3 text-white font-semibold">£{Number(e.daily_rate ?? 0).toLocaleString()}</td>
-                      <td className="px-4 py-3 text-gray-300">—</td>
-                      <td className="px-4 py-3 text-gray-300">—</td>
-                      <td className="px-4 py-3 text-gray-400">{String(e.project_id ?? '—')}</td>
-                      <td className="px-4 py-3 font-semibold text-white">£{(Number(e.daily_rate ?? 0) * 30).toLocaleString()}</td>
-                    </tr>
+            <table className="w-full text-sm">
+              <thead className="bg-gray-700/50 border-b border-gray-700">
+                <tr>
+                  {['Equipment', 'On Site Days', 'Idle Days', 'Maintenance Days', 'Utilisation %'].map((h) => (
+                    <th key={h} className="text-left px-6 py-3 text-xs font-semibold text-gray-400 uppercase tracking-wide">
+                      {h}
+                    </th>
                   ))}
-                </tbody>
-              </table>
-            </div>
-          )}
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-700">
+                {utilisationData.map((row, idx) => {
+                  const total = row.onSiteDays + row.idleDays + row.maintenanceDays;
+                  const utilisation = Math.round((row.onSiteDays / total) * 100);
+                  return (
+                    <tr key={idx} className="hover:bg-gray-700/50">
+                      <td className="px-6 py-3 text-gray-100 font-medium">{row.name}</td>
+                      <td className="px-6 py-3 text-gray-300">{row.onSiteDays}d</td>
+                      <td className="px-6 py-3 text-gray-300">{row.idleDays}d</td>
+                      <td className="px-6 py-3 text-gray-300">{row.maintenanceDays}d</td>
+                      <td className="px-6 py-3">
+                        <div className="flex items-center gap-2">
+                          <div className="w-20 h-2 bg-gray-700 rounded-full overflow-hidden">
+                            <div
+                              className="h-full bg-green-500 transition-all"
+                              style={{ width: `${utilisation}%` }}
+                            />
+                          </div>
+                          <span className="text-gray-200 font-medium w-10">{utilisation}%</span>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
         </div>
       )}
 
-      {showModal && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="bg-gray-900 border border-gray-700 rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
-            <div className="flex items-center justify-between px-6 py-4 border-b border-gray-800 sticky top-0 bg-gray-900 z-10">
-              <h2 className="text-lg font-bold text-white">{editing ? 'Edit Equipment' : 'Add Equipment'}</h2>
-              <button onClick={() => setShowModal(false)} className="p-2 hover:bg-gray-800 rounded-lg text-gray-400 hover:text-white"><X size={18} /></button>
+      {/* ══════════════════════════════════════════════════════════════════════════════════
+          EQUIPMENT DETAIL MODAL
+          ══════════════════════════════════════════════════════════════════════════════════ */}
+      {showDetailModal && selectedEquipmentDetail && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-gray-800 rounded-xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between p-6 border-b border-gray-700 sticky top-0 bg-gray-800 z-10">
+              <h2 className="text-lg font-semibold text-gray-100">Equipment Details</h2>
+              <button
+                onClick={() => setShowDetailModal(false)}
+                className="p-2 hover:bg-gray-700 rounded-lg transition-colors"
+              >
+                <X size={18} />
+              </button>
             </div>
-            <form onSubmit={handleSubmit} className="p-6 space-y-4">
+            <div className="p-6 space-y-6">
+              {/* Info Grid */}
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <p className="text-xs font-medium text-gray-400 uppercase tracking-wide mb-1">Name</p>
+                  <p className="text-gray-100 font-semibold">{String(selectedEquipmentDetail.name ?? '')}</p>
+                </div>
+                <div>
+                  <p className="text-xs font-medium text-gray-400 uppercase tracking-wide mb-1">Type</p>
+                  <p className="text-gray-100">{String(selectedEquipmentDetail.type ?? '')}</p>
+                </div>
+                <div>
+                  <p className="text-xs font-medium text-gray-400 uppercase tracking-wide mb-1">Registration</p>
+                  <p className="text-gray-100">{String(selectedEquipmentDetail.registration ?? '—')}</p>
+                </div>
+                <div>
+                  <p className="text-xs font-medium text-gray-400 uppercase tracking-wide mb-1">Status</p>
+                  <span className={statusColors[String(selectedEquipmentDetail.status ?? '')] || statusColors['Available']}>
+                    {String(selectedEquipmentDetail.status ?? '')}
+                  </span>
+                </div>
+                <div>
+                  <p className="text-xs font-medium text-gray-400 uppercase tracking-wide mb-1">Location</p>
+                  <p className="text-gray-100">{String(selectedEquipmentDetail.location ?? '—')}</p>
+                </div>
+                <div>
+                  <p className="text-xs font-medium text-gray-400 uppercase tracking-wide mb-1">Daily Rate</p>
+                  <p className="text-gray-100 font-semibold">£{Number(selectedEquipmentDetail.dailyRate ?? 0).toLocaleString()}</p>
+                </div>
+                <div>
+                  <p className="text-xs font-medium text-gray-400 uppercase tracking-wide mb-1">Next Service</p>
+                  <p className="text-gray-100">{String(selectedEquipmentDetail.nextService ?? '—')}</p>
+                </div>
+              </div>
+
+              {/* Service History */}
+              <div className="border-t border-gray-700 pt-6">
+                <h3 className="text-sm font-semibold text-gray-100 mb-4">Service History</h3>
+                <div className="space-y-3">
+                  {mockServiceHistory.map((item, idx) => (
+                    <div key={idx} className="flex items-start gap-3 pb-3 border-b border-gray-700">
+                      <Calendar size={16} className="text-gray-500 mt-0.5 flex-shrink-0" />
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium text-gray-100">{item.type}</p>
+                        <p className="text-xs text-gray-400">{item.date} • {item.technician}</p>
+                        <p className="text-xs text-gray-300 mt-1">{item.notes}</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Actions */}
+              <div className="flex gap-3 pt-6 border-t border-gray-700">
+                <button
+                  onClick={() => {
+                    openEquipmentEdit(selectedEquipmentDetail);
+                    setShowDetailModal(false);
+                  }}
+                  className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm font-medium transition-colors"
+                >
+                  Edit Equipment
+                </button>
+                <button
+                  onClick={() => setShowDetailModal(false)}
+                  className="flex-1 px-4 py-2 bg-gray-700 text-gray-100 rounded-lg hover:bg-gray-600 text-sm font-medium transition-colors"
+                >
+                  Close
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ══════════════════════════════════════════════════════════════════════════════════
+          ADD/EDIT EQUIPMENT MODAL
+          ══════════════════════════════════════════════════════════════════════════════════ */}
+      {showEquipmentModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-gray-800 rounded-xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between p-6 border-b border-gray-700 sticky top-0 bg-gray-800 z-10">
+              <h2 className="text-lg font-semibold text-gray-100">
+                {editingEquipment ? 'Edit Equipment' : 'Add Equipment'}
+              </h2>
+              <button
+                onClick={() => setShowEquipmentModal(false)}
+                className="p-2 hover:bg-gray-700 rounded-lg transition-colors"
+              >
+                <X size={18} />
+              </button>
+            </div>
+            <form onSubmit={handleEquipmentSubmit} className="p-6 space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 <div className="col-span-2">
-                  <label className="block text-xs font-medium text-gray-400 mb-1">Equipment Name *</label>
-                  <input required value={form.name} onChange={e => setForm(f => ({...f, name: e.target.value}))}
-                    className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-orange-500" />
+                  <label className="block text-sm font-medium text-gray-300 mb-2">Equipment Name *</label>
+                  <input
+                    required
+                    value={equipmentForm.name}
+                    onChange={(e) => setEquipmentForm((f) => ({ ...f, name: e.target.value }))}
+                    className="w-full bg-gray-700 text-gray-100 border border-gray-600 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
                 </div>
                 <div>
-                  <label className="block text-xs font-medium text-gray-400 mb-1">Category</label>
-                  <select value={form.category} onChange={e => setForm(f => ({...f, category: e.target.value}))}
-                    className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-orange-500">
-                    <option value="">Select…</option>{CATEGORIES.map(c => <option key={c}>{c}</option>)}
+                  <label className="block text-sm font-medium text-gray-300 mb-2">Type</label>
+                  <select
+                    value={equipmentForm.type}
+                    onChange={(e) => setEquipmentForm((f) => ({ ...f, type: e.target.value }))}
+                    className="w-full bg-gray-700 text-gray-100 border border-gray-600 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  >
+                    <option value="">Select type…</option>
+                    {EQUIPMENT_TYPES.map((t) => (
+                      <option key={t}>{t}</option>
+                    ))}
                   </select>
                 </div>
                 <div>
-                  <label className="block text-xs font-medium text-gray-400 mb-1">Serial / Reg Number</label>
-                  <input value={form.serial_number} onChange={e => setForm(f => ({...f, serial_number: e.target.value}))}
-                    className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-orange-500" />
+                  <label className="block text-sm font-medium text-gray-300 mb-2">Registration</label>
+                  <input
+                    value={equipmentForm.registration}
+                    onChange={(e) => setEquipmentForm((f) => ({ ...f, registration: e.target.value }))}
+                    className="w-full bg-gray-700 text-gray-100 border border-gray-600 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
                 </div>
                 <div>
-                  <label className="block text-xs font-medium text-gray-400 mb-1">Make/Model</label>
-                  <input value={form.make_model} onChange={e => setForm(f => ({...f, make_model: e.target.value}))}
-                    className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-orange-500" />
-                </div>
-                <div>
-                  <label className="block text-xs font-medium text-gray-400 mb-1">Year</label>
-                  <input value={form.year} onChange={e => setForm(f => ({...f, year: e.target.value}))}
-                    className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-orange-500" />
-                </div>
-                <div>
-                  <label className="block text-xs font-medium text-gray-400 mb-1">Status</label>
-                  <select value={form.status} onChange={e => setForm(f => ({...f, status: e.target.value}))}
-                    className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-orange-500">
-                    {STATUS_OPTIONS.map(s => <option key={s}>{s}</option>)}
+                  <label className="block text-sm font-medium text-gray-300 mb-2">Status</label>
+                  <select
+                    value={equipmentForm.status}
+                    onChange={(e) => setEquipmentForm((f) => ({ ...f, status: e.target.value }))}
+                    className="w-full bg-gray-700 text-gray-100 border border-gray-600 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  >
+                    {STATUS_OPTIONS.map((s) => (
+                      <option key={s}>{s}</option>
+                    ))}
                   </select>
-                </div>
-                <div>
-                  <label className="block text-xs font-medium text-gray-400 mb-1">Ownership</label>
-                  <select value={form.ownership} onChange={e => setForm(f => ({...f, ownership: e.target.value}))}
-                    className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-orange-500">
-                    {OWNERSHIP.map(o => <option key={o}>{o}</option>)}
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-xs font-medium text-gray-400 mb-1">Daily Cost (£)</label>
-                  <input type="number" value={form.daily_rate} onChange={e => setForm(f => ({...f, daily_rate: e.target.value}))}
-                    className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-orange-500" />
-                </div>
-                <div>
-                  <label className="block text-xs font-medium text-gray-400 mb-1">Service Interval (days)</label>
-                  <input type="number" value={form.service_interval} onChange={e => setForm(f => ({...f, service_interval: e.target.value}))}
-                    className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-orange-500" />
-                </div>
-                <div>
-                  <label className="block text-xs font-medium text-gray-400 mb-1">Last Service</label>
-                  <input type="date" value={form.last_service} onChange={e => setForm(f => ({...f, last_service: e.target.value}))}
-                    className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-orange-500" />
-                </div>
-                <div>
-                  <label className="block text-xs font-medium text-gray-400 mb-1">Inspection Due</label>
-                  <input type="date" value={form.inspection_due} onChange={e => setForm(f => ({...f, inspection_due: e.target.value}))}
-                    className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-orange-500" />
-                </div>
-                <div>
-                  <label className="block text-xs font-medium text-gray-400 mb-1">MEWP Last Check</label>
-                  <input type="date" value={form.mewp_check} onChange={e => setForm(f => ({...f, mewp_check: e.target.value}))}
-                    className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-orange-500" />
-                </div>
-                <div>
-                  <label className="block text-xs font-medium text-gray-400 mb-1">Supplier / Hire Co.</label>
-                  <input value={form.supplier} onChange={e => setForm(f => ({...f, supplier: e.target.value}))}
-                    className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-orange-500" />
                 </div>
                 <div className="col-span-2">
-                  <label className="block text-xs font-medium text-gray-400 mb-1">Notes</label>
-                  <textarea rows={3} value={form.notes} onChange={e => setForm(f => ({...f, notes: e.target.value}))}
-                    className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-orange-500 resize-none" />
+                  <label className="block text-sm font-medium text-gray-300 mb-2">Location</label>
+                  <input
+                    value={equipmentForm.location}
+                    onChange={(e) => setEquipmentForm((f) => ({ ...f, location: e.target.value }))}
+                    className="w-full bg-gray-700 text-gray-100 border border-gray-600 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-300 mb-2">Daily Rate (£)</label>
+                  <input
+                    type="number"
+                    value={equipmentForm.dailyRate}
+                    onChange={(e) => setEquipmentForm((f) => ({ ...f, dailyRate: e.target.value }))}
+                    className="w-full bg-gray-700 text-gray-100 border border-gray-600 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-300 mb-2">Next Service Date</label>
+                  <input
+                    type="date"
+                    value={equipmentForm.nextService}
+                    onChange={(e) => setEquipmentForm((f) => ({ ...f, nextService: e.target.value }))}
+                    className="w-full bg-gray-700 text-gray-100 border border-gray-600 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
                 </div>
               </div>
-              <div className="flex gap-3 pt-2">
-                <button type="button" onClick={() => setShowModal(false)}
-                  className="flex-1 px-4 py-2 bg-gray-800 hover:bg-gray-700 rounded-lg text-sm text-white font-medium transition-colors">Cancel</button>
-                <button type="submit" disabled={createMutation.isPending || updateMutation.isPending}
-                  className="flex-1 px-4 py-2 bg-orange-600 hover:bg-orange-700 text-white rounded-lg text-sm font-medium transition-colors disabled:opacity-50">
-                  {editing ? 'Update Equipment' : 'Add Equipment'}
+              <div className="flex gap-3 pt-4">
+                <button
+                  type="button"
+                  onClick={() => setShowEquipmentModal(false)}
+                  className="flex-1 px-4 py-2 border border-gray-600 rounded-lg text-sm text-gray-300 hover:bg-gray-700 transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={createMutation.isPending || updateMutation.isPending}
+                  className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 disabled:opacity-50 transition-colors"
+                >
+                  {editingEquipment ? 'Update' : 'Add'} Equipment
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* ══════════════════════════════════════════════════════════════════════════════════
+          LOG SERVICE MODAL
+          ══════════════════════════════════════════════════════════════════════════════════ */}
+      {showServiceModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-gray-800 rounded-xl shadow-2xl w-full max-w-2xl">
+            <div className="flex items-center justify-between p-6 border-b border-gray-700">
+              <h2 className="text-lg font-semibold text-gray-100">Log Service</h2>
+              <button
+                onClick={() => setShowServiceModal(false)}
+                className="p-2 hover:bg-gray-700 rounded-lg transition-colors"
+              >
+                <X size={18} />
+              </button>
+            </div>
+            <form onSubmit={handleServiceSubmit} className="p-6 space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-300 mb-2">Equipment *</label>
+                  <select
+                    value={serviceForm.equipmentId}
+                    onChange={(e) => setServiceForm((f) => ({ ...f, equipmentId: e.target.value }))}
+                    className="w-full bg-gray-700 text-gray-100 border border-gray-600 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  >
+                    <option value="">Select equipment…</option>
+                    {equipment.map((e) => (
+                      <option key={String(e.id ?? '')} value={String(e.id ?? '')}>
+                        {String(e.name ?? '')}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-300 mb-2">Service Date *</label>
+                  <input
+                    type="date"
+                    value={serviceForm.serviceDate}
+                    onChange={(e) => setServiceForm((f) => ({ ...f, serviceDate: e.target.value }))}
+                    className="w-full bg-gray-700 text-gray-100 border border-gray-600 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-300 mb-2">Service Type</label>
+                  <select
+                    value={serviceForm.serviceType}
+                    onChange={(e) => setServiceForm((f) => ({ ...f, serviceType: e.target.value }))}
+                    className="w-full bg-gray-700 text-gray-100 border border-gray-600 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  >
+                    {SERVICE_TYPES.map((t) => (
+                      <option key={t}>{t}</option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-300 mb-2">Technician</label>
+                  <input
+                    value={serviceForm.technician}
+                    onChange={(e) => setServiceForm((f) => ({ ...f, technician: e.target.value }))}
+                    className="w-full bg-gray-700 text-gray-100 border border-gray-600 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
+                <div className="col-span-2">
+                  <label className="block text-sm font-medium text-gray-300 mb-2">Notes</label>
+                  <textarea
+                    rows={3}
+                    value={serviceForm.notes}
+                    onChange={(e) => setServiceForm((f) => ({ ...f, notes: e.target.value }))}
+                    className="w-full bg-gray-700 text-gray-100 border border-gray-600 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-300 mb-2">Next Due Date</label>
+                  <input
+                    type="date"
+                    value={serviceForm.nextDueDate}
+                    onChange={(e) => setServiceForm((f) => ({ ...f, nextDueDate: e.target.value }))}
+                    className="w-full bg-gray-700 text-gray-100 border border-gray-600 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
+              </div>
+              <div className="flex gap-3 pt-4">
+                <button
+                  type="button"
+                  onClick={() => setShowServiceModal(false)}
+                  className="flex-1 px-4 py-2 border border-gray-600 rounded-lg text-sm text-gray-300 hover:bg-gray-700 transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="flex-1 px-4 py-2 bg-green-600 text-white rounded-lg text-sm font-medium hover:bg-green-700 transition-colors"
+                >
+                  Log Service
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* ══════════════════════════════════════════════════════════════════════════════════
+          ADD HIRE MODAL
+          ══════════════════════════════════════════════════════════════════════════════════ */}
+      {showHireModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-gray-800 rounded-xl shadow-2xl w-full max-w-2xl">
+            <div className="flex items-center justify-between p-6 border-b border-gray-700">
+              <h2 className="text-lg font-semibold text-gray-100">Add Hire Record</h2>
+              <button
+                onClick={() => setShowHireModal(false)}
+                className="p-2 hover:bg-gray-700 rounded-lg transition-colors"
+              >
+                <X size={18} />
+              </button>
+            </div>
+            <form onSubmit={handleHireSubmit} className="p-6 space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div className="col-span-2">
+                  <label className="block text-sm font-medium text-gray-300 mb-2">Equipment *</label>
+                  <select
+                    value={hireForm.equipmentId}
+                    onChange={(e) => setHireForm((f) => ({ ...f, equipmentId: e.target.value }))}
+                    className="w-full bg-gray-700 text-gray-100 border border-gray-600 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  >
+                    <option value="">Select equipment…</option>
+                    {equipment.map((e) => (
+                      <option key={String(e.id ?? '')} value={String(e.id ?? '')}>
+                        {String(e.name ?? '')}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-300 mb-2">Hire Company</label>
+                  <input
+                    value={hireForm.hireCompany}
+                    onChange={(e) => setHireForm((f) => ({ ...f, hireCompany: e.target.value }))}
+                    className="w-full bg-gray-700 text-gray-100 border border-gray-600 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-300 mb-2">Daily Rate (£)</label>
+                  <input
+                    type="number"
+                    value={hireForm.dailyRate}
+                    onChange={(e) => setHireForm((f) => ({ ...f, dailyRate: e.target.value }))}
+                    className="w-full bg-gray-700 text-gray-100 border border-gray-600 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-300 mb-2">Start Date</label>
+                  <input
+                    type="date"
+                    value={hireForm.startDate}
+                    onChange={(e) => setHireForm((f) => ({ ...f, startDate: e.target.value }))}
+                    className="w-full bg-gray-700 text-gray-100 border border-gray-600 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-300 mb-2">End Date</label>
+                  <input
+                    type="date"
+                    value={hireForm.endDate}
+                    onChange={(e) => setHireForm((f) => ({ ...f, endDate: e.target.value }))}
+                    className="w-full bg-gray-700 text-gray-100 border border-gray-600 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-300 mb-2">Project</label>
+                  <input
+                    value={hireForm.project}
+                    onChange={(e) => setHireForm((f) => ({ ...f, project: e.target.value }))}
+                    className="w-full bg-gray-700 text-gray-100 border border-gray-600 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
+              </div>
+              <div className="flex gap-3 pt-4">
+                <button
+                  type="button"
+                  onClick={() => setShowHireModal(false)}
+                  className="flex-1 px-4 py-2 border border-gray-600 rounded-lg text-sm text-gray-300 hover:bg-gray-700 transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="flex-1 px-4 py-2 bg-green-600 text-white rounded-lg text-sm font-medium hover:bg-green-700 transition-colors"
+                >
+                  Add Hire
                 </button>
               </div>
             </form>

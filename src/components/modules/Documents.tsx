@@ -1,96 +1,138 @@
 import { useState } from 'react';
-import { FileText, Plus, Search, Download, Eye, Folder, Upload, Edit2, Trash2, X, ChevronDown, ChevronUp, Clock, Tag } from 'lucide-react';
+import {
+  FileText, Plus, Search, Download, Eye, Edit2, Trash2, X, ChevronDown, ChevronUp, ChevronRight, Clock, Upload,
+  Shield, FileCheck, Image, FolderOpen, CheckCircle2, BarChart3, Activity, Calendar, HardDrive
+} from 'lucide-react';
 import { useDocuments } from '../../hooks/useData';
 import { toast } from 'sonner';
 
 type AnyRow = Record<string, unknown>;
 
-const DOC_TYPES = ['Drawing','Specification','Contract','Report','Certificate','Letter','Form','Permit','Schedule','Other'];
-const STATUS_OPTIONS = ['Draft','Under Review','Approved','Superseded','Archived'];
-const DISCIPLINES = ['Architecture','Structural','MEP','Civil','H&S','QA','Legal','Commercial','General'];
+interface Document {
+  id: string;
+  name: string;
+  type: string;
+  project: string;
+  uploadedBy: string;
+  uploadedDate: string;
+  version: string;
+  size: string;
+  status: 'current' | 'for review' | 'superseded' | 'draft';
+  category: 'PLANS' | 'DRAWINGS' | 'PERMITS' | 'RAMS' | 'CONTRACTS' | 'REPORTS' | 'SPECS' | 'PHOTOS';
+}
 
-const statusColour: Record<string,string> = {
-  'Draft':'bg-gray-700 text-gray-300','Under Review':'bg-amber-900/40 text-amber-300',
-  'Approved':'bg-emerald-900/40 text-emerald-300','Superseded':'bg-orange-900/40 text-orange-300','Archived':'bg-gray-800 text-gray-400',
+const CATEGORIES = ['PLANS', 'DRAWINGS', 'PERMITS', 'RAMS', 'CONTRACTS', 'REPORTS', 'SPECS', 'PHOTOS'];
+const STATUS_OPTIONS = ['draft', 'for review', 'current', 'superseded'];
+const PROJECTS = ['Project A', 'Project B', 'Project C', 'Site 1', 'Site 2'];
+
+const statusColour: Record<string, string> = {
+  'current': 'bg-emerald-900/40 text-emerald-300',
+  'for review': 'bg-amber-900/40 text-amber-300',
+  'superseded': 'bg-gray-700 text-gray-400',
+  'draft': 'bg-blue-900/40 text-blue-300',
 };
 
-const revisionColour = (rev: string): string => {
-  const r = String(rev ?? 'A').toUpperCase()[0];
-  if (r === 'A') return 'bg-gray-700 text-gray-300 border-gray-600';
-  if (r === 'B') return 'bg-blue-900/50 text-blue-300 border-blue-700';
-  if (r === 'C') return 'bg-orange-900/50 text-orange-300 border-orange-700';
-  return 'bg-red-900/50 text-red-300 border-red-700';
+const categoryIcons: Record<string, React.ReactNode> = {
+  'PLANS': <FileText size={16} />,
+  'DRAWINGS': <FileText size={16} />,
+  'PERMITS': <FileCheck size={16} />,
+  'RAMS': <Shield size={16} />,
+  'CONTRACTS': <FileCheck size={16} />,
+  'REPORTS': <BarChart3 size={16} />,
+  'SPECS': <FileText size={16} />,
+  'PHOTOS': <Image size={16} />,
 };
 
-const typeIcon = (t: string) => {
-  const icons: Record<string,string> = { 'Drawing':'📐','Specification':'📋','Contract':'📜','Report':'📊','Certificate':'🏆','Letter':'✉️','Form':'📝','Permit':'🎫','Schedule':'📅' };
-  return icons[t] ?? '📄';
+const emptyForm = {
+  name: '', category: 'PLANS' as const, project: 'Project A', version: '1.0',
+  status: 'draft' as const, uploadedBy: '', uploadedDate: new Date().toISOString().split('T')[0],
+  description: '', size: '0 MB'
 };
 
-const emptyForm = { title:'',document_type:'Drawing',discipline:'Architecture',revision:'A',status:'Draft',file_url:'',project_id:'',author:'',date_issued:'',description:'',document_number:'',supersedes:'',tags:'' };
+const MOCK_ACTIVITY = [
+  { id: '1', action: 'uploaded', doc: 'Foundation Plans Rev B', user: 'John Smith', time: '2 hours ago', icon: 'upload' },
+  { id: '2', action: 'approved', doc: 'Structural Drawings', user: 'Sarah Jones', time: '4 hours ago', icon: 'check' },
+  { id: '3', action: 'superseded', doc: 'Health & Safety Plan', user: 'Mike Brown', time: '1 day ago', icon: 'archive' },
+  { id: '4', action: 'uploaded', doc: 'Site Photos - Week 3', user: 'Tom Wilson', time: '1 day ago', icon: 'upload' },
+  { id: '5', action: 'downloaded', doc: 'Building Permits', user: 'Emma Davis', time: '2 days ago', icon: 'download' },
+  { id: '6', action: 'approved', doc: 'Electrical Specifications', user: 'John Smith', time: '3 days ago', icon: 'check' },
+];
 
 export function Documents() {
   const { useList, useCreate, useUpdate, useDelete } = useDocuments;
   const { data: raw = [], isLoading } = useList();
-  const docs = raw as AnyRow[];
+  const docs = (raw as AnyRow[]).map(d => ({
+    id: String(d.id ?? ''),
+    name: String(d.name ?? ''),
+    type: String(d.type ?? ''),
+    project: String(d.project ?? ''),
+    uploadedBy: String(d.uploadedBy ?? ''),
+    uploadedDate: String(d.uploadedDate ?? ''),
+    version: String(d.version ?? ''),
+    size: String(d.size ?? ''),
+    status: String(d.status ?? 'draft') as 'current' | 'for review' | 'superseded' | 'draft',
+    category: String(d.category ?? 'PLANS') as 'PLANS' | 'DRAWINGS' | 'PERMITS' | 'RAMS' | 'CONTRACTS' | 'REPORTS' | 'SPECS' | 'PHOTOS',
+  }));
   const createMutation = useCreate();
   const updateMutation = useUpdate();
   const deleteMutation = useDelete();
 
-  const [activeTab, setActiveTab] = useState<'register'|'folder'|'issued'>('register');
+  const [activeTab, setActiveTab] = useState<'library'|'categories'|'approvals'|'activity'>('library');
   const [selectedDoc, setSelectedDoc] = useState<AnyRow | null>(null);
-  const [expandedFolders, setExpandedFolders] = useState<Set<string>>(new Set(['Architecture']));
   const [search, setSearch] = useState('');
-  const [typeFilter, setTypeFilter] = useState('All');
   const [statusFilter, setStatusFilter] = useState('All');
-  const [disciplineFilter, setDisciplineFilter] = useState('All');
+  const [categoryFilter, setCategoryFilter] = useState('All');
+  const [projectFilter, setProjectFilter] = useState('All');
   const [showModal, setShowModal] = useState(false);
   const [editing, setEditing] = useState<AnyRow | null>(null);
   const [form, setForm] = useState({ ...emptyForm });
+  const [selectedCategoryTab, setSelectedCategoryTab] = useState<string | null>(null);
 
   const filtered = docs.filter(d => {
-    const title = String(d.title??'').toLowerCase();
-    const num = String(d.document_number??'').toLowerCase();
-    const matchSearch = title.includes(search.toLowerCase()) || num.includes(search.toLowerCase());
-    const matchType = typeFilter === 'All' || d.document_type === typeFilter;
+    const matchSearch = d.name.toLowerCase().includes(search.toLowerCase());
     const matchStatus = statusFilter === 'All' || d.status === statusFilter;
-    const matchDisc = disciplineFilter === 'All' || d.discipline === disciplineFilter;
-    return matchSearch && matchType && matchStatus && matchDisc;
+    const matchCategory = categoryFilter === 'All' || d.category === categoryFilter;
+    const matchProject = projectFilter === 'All' || d.project === projectFilter;
+    return matchSearch && matchStatus && matchCategory && matchProject;
   });
 
-  const approvedCount = docs.filter(d=>d.status==='Approved').length;
-  const reviewCount = docs.filter(d=>d.status==='Under Review').length;
-  const draftCount = docs.filter(d=>d.status==='Draft').length;
-  const supersededCount = docs.filter(d=>d.status==='Superseded').length;
+  const totalDocs = docs.length;
+  const currentRevisions = docs.filter(d => d.status === 'current').length;
+  const forReviewCount = docs.filter(d => d.status === 'for review').length;
+  const supersededCount = docs.filter(d => d.status === 'superseded').length;
+  const draftCount = docs.filter(d => d.status === 'draft').length;
+  const totalSize = docs.reduce((acc, d) => {
+    const num = parseFloat(String(d.size ?? '0').replace(/[^0-9.]/g, ''));
+    return acc + (isNaN(num) ? 0 : num);
+  }, 0);
 
-  const uniqueDisciplines = ['All', ...Array.from(new Set(docs.map(d=>String(d.discipline??'')).filter(Boolean)))];
-  const disciplineGroups = DISCIPLINES.reduce((acc, disc) => {
-    acc[disc] = docs.filter(d => d.discipline === disc);
-    return acc;
-  }, {} as Record<string, AnyRow[]>);
+  const uniqueProjects = ['All', ...Array.from(new Set(docs.map(d => d.project).filter(Boolean)))];
+  const categoryDocs = CATEGORIES.map(cat => ({
+    name: cat,
+    count: docs.filter(d => d.category === cat).length,
+    lastUpdate: docs.filter(d => d.category === cat).sort((a, b) =>
+      new Date(b.uploadedDate).getTime() - new Date(a.uploadedDate).getTime()
+    )[0]?.uploadedDate || 'N/A',
+  }));
 
   function openCreate() {
     setEditing(null);
-    setForm({ ...emptyForm, date_issued:new Date().toISOString().slice(0,10), document_number:`DOC-${new Date().getFullYear()}-${String(docs.length + 1).padStart(3, '0')}` });
+    setForm({ ...emptyForm, uploadedDate: new Date().toISOString().split('T')[0] });
     setShowModal(true);
   }
 
   function openEdit(d: AnyRow) {
     setEditing(d);
     setForm({
-      title:String(d.title??''),
-      document_type:String(d.document_type??'Drawing'),
-      discipline:String(d.discipline??'Architecture'),
-      revision:String(d.revision??'A'),
-      status:String(d.status??'Draft'),
-      file_url:String(d.file_url??''),
-      project_id:String(d.project_id??''),
-      author:String(d.author??''),
-      date_issued:String(d.date_issued??''),
-      description:String(d.description??''),
-      document_number:String(d.document_number??''),
-      supersedes:String(d.supersedes??''),
-      tags:String(d.tags??'')
+      name: String(d.name ?? ''),
+      category: String(d.category ?? 'PLANS') as any,
+      project: String(d.project ?? ''),
+      version: String(d.version ?? ''),
+      status: String(d.status ?? 'draft') as any,
+      uploadedBy: String(d.uploadedBy ?? ''),
+      uploadedDate: String(d.uploadedDate ?? ''),
+      description: String(d.description ?? ''),
+      size: String(d.size ?? ''),
     });
     setShowModal(true);
   }
@@ -98,11 +140,11 @@ export function Documents() {
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (editing) {
-      await updateMutation.mutateAsync({ id:String(editing.id), data:form });
+      await updateMutation.mutateAsync({ id: String(editing.id), data: form });
       toast.success('Document updated');
     } else {
       await createMutation.mutateAsync(form);
-      toast.success('Document registered');
+      toast.success('Document uploaded');
     }
     setShowModal(false);
   }
@@ -113,359 +155,464 @@ export function Documents() {
     toast.success('Document deleted');
   }
 
-  async function approve(d: AnyRow) {
-    await updateMutation.mutateAsync({ id:String(d.id), data:{ status:'Approved' } });
+  async function handleApprove(d: AnyRow) {
+    await updateMutation.mutateAsync({ id: String(d.id), data: { status: 'current' } });
     toast.success('Document approved');
   }
 
-  function toggleFolder(disc: string) {
-    const next = new Set(expandedFolders);
-    if (next.has(disc)) next.delete(disc);
-    else next.add(disc);
-    setExpandedFolders(next);
+  async function handleReject(d: AnyRow) {
+    await updateMutation.mutateAsync({ id: String(d.id), data: { status: 'draft' } });
+    toast.success('Document rejected');
   }
 
+  function handleDownloadAll() {
+    toast.success('Download started for all documents');
+  }
+
+  const getDaysPending = (date: string): number => {
+    const days = Math.floor((new Date().getTime() - new Date(date).getTime()) / (1000 * 60 * 60 * 24));
+    return days;
+  };
+
   return (
-    <div className="min-h-screen bg-gray-900 p-6 space-y-6">
+    <div className="min-h-screen bg-gray-950 p-6 space-y-6">
+      {/* Header */}
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold text-white">Documents</h1>
-          <p className="text-sm text-gray-400 mt-1">Project document register & version control</p>
+          <p className="text-sm text-gray-400 mt-1">UK construction document control & version management</p>
         </div>
-        <button onClick={openCreate} className="flex items-center gap-2 px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 text-sm font-medium transition-colors">
-          <Plus size={16}/><span>Register Document</span>
+        <button onClick={openCreate} className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm font-medium transition-colors">
+          <Upload size={16} /><span>Upload Document</span>
         </button>
       </div>
 
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+      {/* Stats Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
         {[
-          { label:'Total Documents', value:docs.length, colour:'text-blue-400', bg:'bg-blue-900/30 border-blue-700' },
-          { label:'Approved', value:approvedCount, colour:'text-emerald-400', bg:'bg-emerald-900/30 border-emerald-700' },
-          { label:'Under Review', value:reviewCount, colour:'text-amber-400', bg:'bg-amber-900/30 border-amber-700' },
-          { label:'Superseded', value:supersededCount, colour:'text-orange-400', bg:'bg-orange-900/30 border-orange-700' },
-        ].map(kpi=>(
-          <div key={kpi.label} className={`bg-gray-800/40 rounded-xl border ${kpi.bg} p-4`}>
-            <p className="text-xs text-gray-400">{kpi.label}</p>
-            <p className={`text-2xl font-bold ${kpi.colour} mt-1`}>{kpi.value}</p>
+          { label: 'Total Documents', value: totalDocs, icon: FileText, colour: 'text-blue-400', bg: 'bg-blue-900/20 border-blue-700' },
+          { label: 'Current Revisions', value: currentRevisions, icon: CheckCircle2, colour: 'text-emerald-400', bg: 'bg-emerald-900/20 border-emerald-700' },
+          { label: 'For Review', value: forReviewCount, icon: Clock, colour: 'text-amber-400', bg: 'bg-amber-900/20 border-amber-700' },
+          { label: 'Superseded', value: supersededCount, icon: FolderOpen, colour: 'text-gray-400', bg: 'bg-gray-800 border-gray-700' },
+          { label: 'Storage Used', value: `${totalSize.toFixed(1)} MB`, icon: HardDrive, colour: 'text-purple-400', bg: 'bg-purple-900/20 border-purple-700' },
+        ].map(stat => (
+          <div key={stat.label} className={`bg-gray-800/40 rounded-lg border ${stat.bg} p-4`}>
+            <div className="flex items-start justify-between">
+              <div>
+                <p className="text-xs text-gray-400 font-medium">{stat.label}</p>
+                <p className={`text-2xl font-bold ${stat.colour} mt-2`}>{stat.value}</p>
+              </div>
+              <stat.icon size={20} className={`${stat.colour} opacity-60`} />
+            </div>
           </div>
         ))}
       </div>
 
+      {/* Tabs */}
       <div className="flex gap-0 border-b border-gray-700">
         {[
-          { key:'register', label:'Register', icon:'📋' },
-          { key:'folder', label:'By Discipline', icon:'📁' },
-          { key:'issued', label:'Issued Log', icon:'📤' },
-        ].map(t=>(
+          { key: 'library', label: 'Document Library', icon: FileText },
+          { key: 'categories', label: 'Categories', icon: FolderOpen },
+          { key: 'approvals', label: 'Approvals', icon: CheckCircle2 },
+          { key: 'activity', label: 'Recent Activity', icon: Activity },
+        ].map(t => (
           <button
             key={t.key}
-            onClick={()=>setActiveTab(t.key as any)}
-            className={`flex items-center gap-2 px-4 py-3 text-sm font-medium border-b-2 -mb-px transition-colors ${activeTab===t.key?'border-orange-500 text-orange-400':'border-transparent text-gray-400 hover:text-gray-300'}`}>
-            <span>{t.icon}</span>{t.label}
+            onClick={() => { setActiveTab(t.key as any); setSelectedCategoryTab(null); }}
+            className={`flex items-center gap-2 px-4 py-3 text-sm font-medium border-b-2 -mb-px transition-colors ${
+              activeTab === t.key ? 'border-blue-500 text-blue-400' : 'border-transparent text-gray-400 hover:text-gray-300'
+            }`}
+          >
+            <t.icon size={16} />{t.label}
           </button>
         ))}
       </div>
 
-      {activeTab === 'register' && (
+      {/* Document Library Tab */}
+      {activeTab === 'library' && (
         <>
-          <div className="flex flex-wrap gap-3 items-center bg-gray-800 rounded-xl border border-gray-700 p-4">
+          <div className="flex flex-wrap gap-3 items-center bg-gray-800 rounded-lg border border-gray-700 p-4">
             <div className="relative flex-1 min-w-48">
-              <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500"/>
+              <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500" />
               <input
                 value={search}
-                onChange={e=>setSearch(e.target.value)}
-                placeholder="Search documents…"
-                className="w-full pl-9 pr-4 py-2 text-sm bg-gray-700 border border-gray-600 rounded-lg text-gray-200 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-orange-500"
+                onChange={e => setSearch(e.target.value)}
+                placeholder="Search by name or description…"
+                className="w-full pl-9 pr-4 py-2 text-sm bg-gray-700 border border-gray-600 rounded-lg text-gray-200 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
             </div>
             <select
-              value={typeFilter}
-              onChange={e=>setTypeFilter(e.target.value)}
-              className="text-sm bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-gray-200 focus:outline-none focus:ring-2 focus:ring-orange-500"
-            >
-              {['All',...DOC_TYPES].map(t=><option key={t}>{t}</option>)}
-            </select>
-            <select
-              value={disciplineFilter}
-              onChange={e=>setDisciplineFilter(e.target.value)}
-              className="text-sm bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-gray-200 focus:outline-none focus:ring-2 focus:ring-orange-500"
-            >
-              {uniqueDisciplines.map(d=><option key={d}>{d}</option>)}
-            </select>
-            <select
               value={statusFilter}
-              onChange={e=>setStatusFilter(e.target.value)}
-              className="text-sm bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-gray-200 focus:outline-none focus:ring-2 focus:ring-orange-500"
+              onChange={e => setStatusFilter(e.target.value)}
+              className="text-sm bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500"
             >
-              {['All',...STATUS_OPTIONS].map(s=><option key={s}>{s}</option>)}
+              <option>All Statuses</option>
+              {STATUS_OPTIONS.map(s => <option key={s} value={s}>{s.charAt(0).toUpperCase() + s.slice(1)}</option>)}
             </select>
-            <span className="text-sm text-gray-400 ml-auto">{filtered.length} docs</span>
+            <select
+              value={categoryFilter}
+              onChange={e => setCategoryFilter(e.target.value)}
+              className="text-sm bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            >
+              <option>All Categories</option>
+              {CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
+            </select>
+            <select
+              value={projectFilter}
+              onChange={e => setProjectFilter(e.target.value)}
+              className="text-sm bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            >
+              {uniqueProjects.map(p => <option key={p} value={p}>{p}</option>)}
+            </select>
+            <button onClick={handleDownloadAll} className="flex items-center gap-1 px-3 py-2 bg-gray-700 hover:bg-gray-600 rounded-lg text-gray-300 text-sm transition-colors">
+              <Download size={14} />Download All
+            </button>
+            <span className="text-sm text-gray-400 ml-auto">{filtered.length} documents</span>
           </div>
 
           {isLoading ? (
-            <div className="flex justify-center py-20"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-600"/></div>
+            <div className="flex justify-center py-20"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600" /></div>
           ) : (
-            <div className="bg-gray-800 rounded-xl border border-gray-700 overflow-hidden">
+            <div className="bg-gray-800 rounded-lg border border-gray-700 overflow-hidden">
               <table className="w-full">
                 <thead className="bg-gray-900 border-b border-gray-700">
-                  <tr>{['No.', 'Title','Type','Discipline','Rev','Status','Issued By','Date',''].map(h=><th key={h} className="px-4 py-3 text-left text-xs font-semibold text-gray-300 uppercase tracking-wider">{h}</th>)}</tr>
+                  <tr>
+                    {['Name', 'Category', 'Project', 'Version', 'Status', 'Uploaded By', 'Date', 'Size', 'Actions'].map(h => (
+                      <th key={h} className="px-4 py-3 text-left text-xs font-semibold text-gray-300 uppercase tracking-wider">{h}</th>
+                    ))}
+                  </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-700">
-                  {filtered.map((d, idx)=>(
+                  {filtered.map((d, idx) => (
                     <tr
                       key={String(d.id)}
-                      onClick={()=>setSelectedDoc(d)}
+                      onClick={() => setSelectedDoc(d)}
                       className={`cursor-pointer transition-colors ${idx % 2 === 0 ? 'bg-gray-800/50' : 'bg-gray-800/30'} hover:bg-gray-700/50`}
                     >
-                      <td className="px-4 py-3 text-sm font-mono text-gray-400">{String(d.document_number??'—')}</td>
-                      <td className="px-4 py-3 font-medium text-gray-200 max-w-xs truncate">{String(d.title??'—')}</td>
-                      <td className="px-4 py-3 text-sm text-gray-300">{typeIcon(String(d.document_type??''))}</td>
-                      <td className="px-4 py-3 text-sm text-gray-400">{String(d.discipline??'—')}</td>
+                      <td className="px-4 py-3 font-medium text-gray-200 max-w-xs truncate">{d.name}</td>
+                      <td className="px-4 py-3 text-sm text-gray-300 flex items-center gap-2">
+                        {categoryIcons[d.category]}{d.category}
+                      </td>
+                      <td className="px-4 py-3 text-sm text-gray-400">{d.project}</td>
+                      <td className="px-4 py-3 text-sm font-mono text-gray-300">{d.version}</td>
                       <td className="px-4 py-3">
-                        <span className={`text-xs px-2 py-1 rounded border font-mono font-bold ${revisionColour(String(d.revision??'A'))}`}>
-                          {String(d.revision??'A')}
+                        <span className={`text-xs px-2 py-1 rounded-full font-medium ${statusColour[d.status] ?? 'bg-gray-700 text-gray-300'}`}>
+                          {d.status.charAt(0).toUpperCase() + d.status.slice(1)}
                         </span>
                       </td>
-                      <td className="px-4 py-3"><span className={`text-xs px-2 py-1 rounded-full font-medium ${statusColour[String(d.status??'')] ?? 'bg-gray-700 text-gray-300'}`}>{String(d.status??'')}</span></td>
-                      <td className="px-4 py-3 text-sm text-gray-400">{String(d.author??'—')}</td>
-                      <td className="px-4 py-3 text-sm text-gray-400">{String(d.date_issued??'—')}</td>
-                      <td className="px-4 py-3">
+                      <td className="px-4 py-3 text-sm text-gray-400">{d.uploadedBy}</td>
+                      <td className="px-4 py-3 text-sm text-gray-400">{d.uploadedDate}</td>
+                      <td className="px-4 py-3 text-sm text-gray-400">{d.size}</td>
+                      <td className="px-4 py-3" onClick={e => e.stopPropagation()}>
                         <div className="flex items-center gap-1">
-                          {d.status==='Under Review' && <button onClick={(e)=>{e.stopPropagation();approve(d);}} className="p-1.5 text-emerald-400 hover:bg-emerald-900/30 rounded" title="Approve"><FileText size={14}/></button>}
-                          {!!d.file_url && <a href={String(d.file_url)} target="_blank" rel="noopener noreferrer" className="p-1.5 text-blue-400 hover:bg-blue-900/30 rounded" onClick={e=>e.stopPropagation()}><Eye size={14}/></a>}
-                          <button onClick={(e)=>{e.stopPropagation();openEdit(d);}} className="p-1.5 text-gray-400 hover:text-blue-400 hover:bg-blue-900/30 rounded"><Edit2 size={14}/></button>
-                          <button onClick={(e)=>{e.stopPropagation();handleDelete(String(d.id));}} className="p-1.5 text-gray-400 hover:text-red-400 hover:bg-red-900/30 rounded"><Trash2 size={14}/></button>
+                          <button onClick={() => toast.success('Document viewed')} className="p-1.5 text-blue-400 hover:bg-blue-900/30 rounded" title="View">
+                            <Eye size={14} />
+                          </button>
+                          <button onClick={() => openEdit(d)} className="p-1.5 text-gray-400 hover:text-blue-400 hover:bg-blue-900/30 rounded" title="Edit">
+                            <Edit2 size={14} />
+                          </button>
+                          <button onClick={() => handleDelete(String(d.id))} className="p-1.5 text-gray-400 hover:text-red-400 hover:bg-red-900/30 rounded" title="Delete">
+                            <Trash2 size={14} />
+                          </button>
                         </div>
                       </td>
                     </tr>
                   ))}
                 </tbody>
               </table>
-              {filtered.length === 0 && <div className="text-center py-16 text-gray-500"><Folder size={40} className="mx-auto mb-3 opacity-30"/><p>No documents found</p></div>}
+              {filtered.length === 0 && (
+                <div className="text-center py-16 text-gray-500">
+                  <FileText size={40} className="mx-auto mb-3 opacity-30" />
+                  <p>No documents found</p>
+                </div>
+              )}
             </div>
           )}
         </>
       )}
 
-      {activeTab === 'folder' && (
-        <div className="space-y-3">
-          {uniqueDisciplines.filter(d => d !== 'All').map(disc => {
-            const docCount = disciplineGroups[disc]?.length ?? 0;
-            const isExpanded = expandedFolders.has(disc);
-            return (
-              <div key={disc} className="bg-gray-800 rounded-lg border border-gray-700 overflow-hidden">
-                <button
-                  onClick={() => toggleFolder(disc)}
-                  className="w-full flex items-center justify-between px-4 py-3 hover:bg-gray-700/50 transition-colors"
-                >
-                  <div className="flex items-center gap-3">
-                    <span className="text-lg">{isExpanded ? '📂' : '📁'}</span>
-                    <div className="text-left">
-                      <p className="font-medium text-gray-200">{disc}</p>
-                      <p className="text-xs text-gray-400">{docCount} document{docCount !== 1 ? 's' : ''}</p>
-                    </div>
-                  </div>
-                  <span className="text-gray-400">{isExpanded ? <ChevronUp size={18}/> : <ChevronDown size={18}/>}</span>
-                </button>
-
-                {isExpanded && (
-                  <div className="border-t border-gray-700 bg-gray-900/50 divide-y divide-gray-700">
-                    {disciplineGroups[disc]?.map(doc => (
-                      <div
-                        key={String(doc.id)}
-                        onClick={() => setSelectedDoc(doc)}
-                        className="px-4 py-2 flex items-center justify-between cursor-pointer hover:bg-gray-700/30 transition-colors"
-                      >
-                        <div className="flex-1">
-                          <p className="text-sm font-medium text-gray-300">{String(doc.title??'—')}</p>
-                          <p className="text-xs text-gray-500">{String(doc.document_number??'—')}</p>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <span className={`text-xs px-2 py-1 rounded ${revisionColour(String(doc.revision??'A'))}`}>
-                            Rev {String(doc.revision??'A')}
-                          </span>
-                          <span className={`text-xs px-2 py-1 rounded-full font-medium ${statusColour[String(doc.status??'')] ?? 'bg-gray-700 text-gray-300'}`}>
-                            {String(doc.status??'')}
-                          </span>
-                        </div>
-                      </div>
+      {/* Categories Tab */}
+      {activeTab === 'categories' && (
+        selectedCategoryTab ? (
+          <>
+            <button onClick={() => setSelectedCategoryTab(null)} className="flex items-center gap-2 text-blue-400 hover:text-blue-300 mb-4 text-sm font-medium">
+              <ChevronUp size={16} />Back to Categories
+            </button>
+            <div className="bg-gray-800 rounded-lg border border-gray-700 overflow-hidden">
+              <table className="w-full">
+                <thead className="bg-gray-900 border-b border-gray-700">
+                  <tr>
+                    {['Name', 'Project', 'Version', 'Status', 'Uploaded By', 'Date', 'Size'].map(h => (
+                      <th key={h} className="px-4 py-3 text-left text-xs font-semibold text-gray-300 uppercase tracking-wider">{h}</th>
                     ))}
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-700">
+                  {docs.filter(d => d.category === selectedCategoryTab).map((d, idx) => (
+                    <tr
+                      key={String(d.id)}
+                      onClick={() => setSelectedDoc(d)}
+                      className={`cursor-pointer transition-colors ${idx % 2 === 0 ? 'bg-gray-800/50' : 'bg-gray-800/30'} hover:bg-gray-700/50`}
+                    >
+                      <td className="px-4 py-3 font-medium text-gray-200">{d.name}</td>
+                      <td className="px-4 py-3 text-sm text-gray-400">{d.project}</td>
+                      <td className="px-4 py-3 text-sm font-mono text-gray-300">{d.version}</td>
+                      <td className="px-4 py-3">
+                        <span className={`text-xs px-2 py-1 rounded-full font-medium ${statusColour[d.status]}`}>
+                          {d.status.charAt(0).toUpperCase() + d.status.slice(1)}
+                        </span>
+                      </td>
+                      <td className="px-4 py-3 text-sm text-gray-400">{d.uploadedBy}</td>
+                      <td className="px-4 py-3 text-sm text-gray-400">{d.uploadedDate}</td>
+                      <td className="px-4 py-3 text-sm text-gray-400">{d.size}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            {categoryDocs.map(cat => (
+              <button
+                key={cat.name}
+                onClick={() => setSelectedCategoryTab(cat.name)}
+                className="bg-gray-800 border border-gray-700 hover:border-blue-500/50 rounded-lg p-6 text-left transition-all hover:shadow-lg hover:shadow-blue-500/10"
+              >
+                <div className="flex items-start justify-between mb-4">
+                  <div className="text-2xl text-blue-400">
+                    {categoryIcons[cat.name as keyof typeof categoryIcons]}
                   </div>
-                )}
-              </div>
-            );
-          })}
-        </div>
+                  <ChevronRight size={18} className="text-gray-600" />
+                </div>
+                <h3 className="font-semibold text-gray-200 mb-1">{cat.name}</h3>
+                <p className="text-2xl font-bold text-white mb-3">{cat.count}</p>
+                <p className="text-xs text-gray-400">
+                  {cat.lastUpdate !== 'N/A' ? `Updated ${cat.lastUpdate}` : 'No documents'}
+                </p>
+              </button>
+            ))}
+          </div>
+        )
       )}
 
-      {activeTab === 'issued' && (
-        <div className="bg-gray-800 rounded-xl border border-gray-700 overflow-hidden">
+      {/* Approvals Tab */}
+      {activeTab === 'approvals' && (
+        <div className="bg-gray-800 rounded-lg border border-gray-700 overflow-hidden">
           <table className="w-full">
             <thead className="bg-gray-900 border-b border-gray-700">
-              <tr>{['Document','Issued By','Status','Date Issued','Version'].map(h=><th key={h} className="px-4 py-3 text-left text-xs font-semibold text-gray-300 uppercase tracking-wider">{h}</th>)}</tr>
+              <tr>
+                {['Document', 'Project', 'Submitted By', 'Submitted Date', 'Days Pending', 'Status', 'Actions'].map(h => (
+                  <th key={h} className="px-4 py-3 text-left text-xs font-semibold text-gray-300 uppercase tracking-wider">{h}</th>
+                ))}
+              </tr>
             </thead>
             <tbody className="divide-y divide-gray-700">
-              {docs.filter(d => d.status === 'Approved' || d.status === 'Superseded').map(doc => (
-                <tr key={String(doc.id)} className="bg-gray-800/50 hover:bg-gray-700/50 transition-colors">
-                  <td className="px-4 py-3 font-medium text-gray-200">{String(doc.title??'—')}</td>
-                  <td className="px-4 py-3 text-sm text-gray-400">{String(doc.author??'—')}</td>
-                  <td className="px-4 py-3"><span className={`text-xs px-2 py-1 rounded-full font-medium ${statusColour[String(doc.status??'')] ?? 'bg-gray-700 text-gray-300'}`}>{String(doc.status??'')}</span></td>
-                  <td className="px-4 py-3 text-sm text-gray-400">{String(doc.date_issued??'—')}</td>
-                  <td className="px-4 py-3 text-xs font-mono text-gray-400">Rev {String(doc.revision??'A')}</td>
-                </tr>
-              ))}
+              {docs.filter(d => d.status === 'draft' || d.status === 'for review').map((doc, idx) => {
+                const daysPending = getDaysPending(doc.uploadedDate);
+                const isOverdue = daysPending > 7;
+                return (
+                  <tr
+                    key={String(doc.id)}
+                    className={`transition-colors ${idx % 2 === 0 ? 'bg-gray-800/50' : 'bg-gray-800/30'} ${isOverdue ? 'hover:bg-amber-900/20' : 'hover:bg-gray-700/50'}`}
+                  >
+                    <td className="px-4 py-3 font-medium text-gray-200">{doc.name}</td>
+                    <td className="px-4 py-3 text-sm text-gray-400">{doc.project}</td>
+                    <td className="px-4 py-3 text-sm text-gray-400">{doc.uploadedBy}</td>
+                    <td className="px-4 py-3 text-sm text-gray-400">{doc.uploadedDate}</td>
+                    <td className={`px-4 py-3 text-sm font-medium ${isOverdue ? 'text-amber-400' : 'text-gray-400'}`}>
+                      {daysPending}d {isOverdue && <span className="text-amber-400 font-bold">(OVERDUE)</span>}
+                    </td>
+                    <td className="px-4 py-3">
+                      <span className={`text-xs px-2 py-1 rounded-full font-medium ${statusColour[doc.status]}`}>
+                        {doc.status.charAt(0).toUpperCase() + doc.status.slice(1)}
+                      </span>
+                    </td>
+                    <td className="px-4 py-3">
+                      <div className="flex items-center gap-2">
+                        <button
+                          onClick={() => handleApprove(doc)}
+                          className="px-2 py-1 text-xs bg-emerald-900/30 text-emerald-300 hover:bg-emerald-900/50 rounded border border-emerald-700 transition-colors"
+                        >
+                          Approve
+                        </button>
+                        <button
+                          onClick={() => handleReject(doc)}
+                          className="px-2 py-1 text-xs bg-red-900/30 text-red-300 hover:bg-red-900/50 rounded border border-red-700 transition-colors"
+                        >
+                          Reject
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
-          {docs.filter(d => d.status === 'Approved' || d.status === 'Superseded').length === 0 &&
-            <div className="text-center py-12 text-gray-500"><p>No issued documents</p></div>}
+          {docs.filter(d => d.status === 'draft' || d.status === 'for review').length === 0 && (
+            <div className="text-center py-16 text-gray-500">
+              <CheckCircle2 size={40} className="mx-auto mb-3 opacity-30" />
+              <p>All documents approved</p>
+            </div>
+          )}
         </div>
       )}
 
+      {/* Recent Activity Tab */}
+      {activeTab === 'activity' && (
+        <div className="space-y-4">
+          {MOCK_ACTIVITY.map((entry, idx) => (
+            <div key={entry.id} className="flex items-start gap-4 p-4 bg-gray-800 border border-gray-700 rounded-lg hover:border-gray-600 transition-colors">
+              <div className="flex-shrink-0 mt-1">
+                {entry.icon === 'upload' && <Upload size={18} className="text-blue-400" />}
+                {entry.icon === 'check' && <CheckCircle2 size={18} className="text-emerald-400" />}
+                {entry.icon === 'archive' && <FolderOpen size={18} className="text-gray-400" />}
+                {entry.icon === 'download' && <Download size={18} className="text-blue-400" />}
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium text-gray-200">
+                  Document <span className="text-blue-400">{entry.doc}</span> was <span className="font-semibold text-gray-100">{entry.action}</span>
+                </p>
+                <p className="text-xs text-gray-400 mt-1">by {entry.user} • {entry.time}</p>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Detail Panel */}
       {selectedDoc && (
         <div className="fixed right-0 top-0 bottom-0 w-96 bg-gray-800 border-l border-gray-700 shadow-2xl overflow-y-auto z-40">
           <div className="p-6 space-y-6">
             <div className="flex items-center justify-between">
               <h3 className="text-lg font-semibold text-white">Document Details</h3>
-              <button onClick={() => setSelectedDoc(null)} className="p-1 hover:bg-gray-700 rounded"><X size={20} className="text-gray-400"/></button>
+              <button onClick={() => setSelectedDoc(null)} className="p-1 hover:bg-gray-700 rounded"><X size={20} className="text-gray-400" /></button>
             </div>
 
             <div className="space-y-4">
               <div>
-                <p className="text-xs font-semibold text-gray-400 uppercase">Document Number</p>
-                <p className="text-sm font-mono text-gray-200 mt-1">{String(selectedDoc.document_number??'—')}</p>
-              </div>
-              <div>
-                <p className="text-xs font-semibold text-gray-400 uppercase">Title</p>
-                <p className="text-sm text-gray-200 mt-1">{String(selectedDoc.title??'—')}</p>
+                <p className="text-xs font-semibold text-gray-400 uppercase">Name</p>
+                <p className="text-sm text-gray-200 mt-1">{String(selectedDoc.name ?? '—')}</p>
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <p className="text-xs font-semibold text-gray-400 uppercase">Type</p>
-                  <p className="text-sm text-gray-300 mt-1">{String(selectedDoc.document_type??'—')}</p>
+                  <p className="text-xs font-semibold text-gray-400 uppercase">Category</p>
+                  <p className="text-sm text-gray-300 mt-1">{String(selectedDoc.category ?? '—')}</p>
                 </div>
                 <div>
-                  <p className="text-xs font-semibold text-gray-400 uppercase">Discipline</p>
-                  <p className="text-sm text-gray-300 mt-1">{String(selectedDoc.discipline??'—')}</p>
+                  <p className="text-xs font-semibold text-gray-400 uppercase">Version</p>
+                  <p className="text-sm text-gray-300 mt-1">{String(selectedDoc.version ?? '—')}</p>
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <p className="text-xs font-semibold text-gray-400 uppercase">Project</p>
+                  <p className="text-sm text-gray-300 mt-1">{String(selectedDoc.project ?? '—')}</p>
+                </div>
+                <div>
+                  <p className="text-xs font-semibold text-gray-400 uppercase">Size</p>
+                  <p className="text-sm text-gray-300 mt-1">{String(selectedDoc.size ?? '—')}</p>
                 </div>
               </div>
               <div>
                 <p className="text-xs font-semibold text-gray-400 uppercase mb-3">Revision History</p>
                 <div className="space-y-2">
                   <div className="flex items-center gap-2 p-2 bg-gray-700/50 rounded border border-gray-600">
-                    <Clock size={14} className="text-orange-400"/>
+                    <Clock size={14} className="text-blue-400" />
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm font-mono text-gray-200">Rev {String(selectedDoc.revision??'A')}</p>
-                      <p className="text-xs text-gray-400">{String(selectedDoc.date_issued??'—')}</p>
+                      <p className="text-sm font-mono text-gray-200">v{String(selectedDoc.version ?? '1.0')}</p>
+                      <p className="text-xs text-gray-400">{String(selectedDoc.uploadedDate ?? '—')}</p>
                     </div>
-                    <span className="text-xs px-2 py-1 bg-orange-900/30 text-orange-300 rounded border border-orange-700">Current</span>
+                    <span className="text-xs px-2 py-1 bg-blue-900/30 text-blue-300 rounded border border-blue-700">Current</span>
                   </div>
                 </div>
               </div>
               <div>
                 <p className="text-xs font-semibold text-gray-400 uppercase">Status</p>
-                <span className={`inline-block text-xs px-3 py-1 rounded-full font-medium mt-2 ${statusColour[String(selectedDoc.status??'')] ?? 'bg-gray-700 text-gray-300'}`}>
-                  {String(selectedDoc.status??'')}
+                <span className={`inline-block text-xs px-3 py-1 rounded-full font-medium mt-2 ${statusColour[String(selectedDoc.status ?? '')] ?? 'bg-gray-700 text-gray-300'}`}>
+                  {String(selectedDoc.status ?? '').charAt(0).toUpperCase() + String(selectedDoc.status ?? '').slice(1)}
                 </span>
               </div>
               <div>
-                <p className="text-xs font-semibold text-gray-400 uppercase">Issued By</p>
-                <p className="text-sm text-gray-300 mt-1">{String(selectedDoc.author??'—')}</p>
+                <p className="text-xs font-semibold text-gray-400 uppercase">Uploaded By</p>
+                <p className="text-sm text-gray-300 mt-1">{String(selectedDoc.uploadedBy ?? '—')}</p>
               </div>
               {Boolean(selectedDoc.description) && (
                 <div>
                   <p className="text-xs font-semibold text-gray-400 uppercase">Description</p>
-                  <p className="text-sm text-gray-300 mt-1">{String(selectedDoc.description??'—')}</p>
-                </div>
-              )}
-              {Boolean(selectedDoc.tags) && (
-                <div>
-                  <p className="text-xs font-semibold text-gray-400 uppercase mb-2">Tags</p>
-                  <div className="flex flex-wrap gap-1">
-                    {String(selectedDoc.tags??'').split(',').map(tag => (
-                      <span key={tag.trim()} className="text-xs px-2 py-1 bg-blue-900/30 text-blue-300 rounded border border-blue-700">
-                        {tag.trim()}
-                      </span>
-                    ))}
-                  </div>
+                  <p className="text-sm text-gray-300 mt-1">{String(selectedDoc.description ?? '—')}</p>
                 </div>
               )}
               <div className="flex gap-2 pt-4">
-                {Boolean(selectedDoc.file_url) && <a href={String(selectedDoc.file_url)} target="_blank" rel="noopener noreferrer" className="flex-1 flex items-center justify-center gap-2 px-3 py-2 bg-blue-900/30 hover:bg-blue-900/50 text-blue-300 rounded border border-blue-700 text-sm font-medium"><Download size={14}/>Download</a>}
-                <button onClick={() => openEdit(selectedDoc)} className="flex-1 flex items-center justify-center gap-2 px-3 py-2 bg-gray-700 hover:bg-gray-600 text-gray-200 rounded text-sm font-medium"><Edit2 size={14}/>Edit</button>
+                <button onClick={() => { toast.success('Document downloaded'); }} className="flex-1 flex items-center justify-center gap-2 px-3 py-2 bg-blue-900/30 hover:bg-blue-900/50 text-blue-300 rounded border border-blue-700 text-sm font-medium">
+                  <Download size={14} />Download
+                </button>
+                <button onClick={() => openEdit(selectedDoc)} className="flex-1 flex items-center justify-center gap-2 px-3 py-2 bg-gray-700 hover:bg-gray-600 text-gray-200 rounded text-sm font-medium">
+                  <Edit2 size={14} />Edit
+                </button>
               </div>
             </div>
           </div>
         </div>
       )}
 
+      {/* Upload/Edit Modal */}
       {showModal && (
         <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
           <div className="bg-gray-800 rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto border border-gray-700">
             <div className="flex items-center justify-between p-6 border-b border-gray-700 sticky top-0 bg-gray-800 z-10">
-              <h2 className="text-lg font-semibold text-white">{editing?'Edit Document':'Register Document'}</h2>
-              <button onClick={()=>setShowModal(false)} className="p-2 hover:bg-gray-700 rounded-lg"><X size={18} className="text-gray-400"/></button>
+              <h2 className="text-lg font-semibold text-white">{editing ? 'Edit Document' : 'Upload Document'}</h2>
+              <button onClick={() => setShowModal(false)} className="p-2 hover:bg-gray-700 rounded-lg"><X size={18} className="text-gray-400" /></button>
             </div>
             <form onSubmit={handleSubmit} className="p-6 space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 <div className="col-span-2">
-                  <label className="block text-sm font-semibold text-gray-300 mb-2">Document Title *</label>
-                  <input required value={form.title} onChange={e=>setForm(f=>({...f,title:e.target.value}))} className="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-sm text-gray-200 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-orange-500"/>
+                  <label className="block text-sm font-semibold text-gray-300 mb-2">Document Name *</label>
+                  <input required value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} className="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-sm text-gray-200 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500" />
                 </div>
                 <div>
-                  <label className="block text-sm font-semibold text-gray-300 mb-2">Document Number</label>
-                  <input value={form.document_number} onChange={e=>setForm(f=>({...f,document_number:e.target.value}))} placeholder="DOC-YYYY-NNN" className="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-sm text-gray-200 placeholder-gray-500 font-mono focus:outline-none focus:ring-2 focus:ring-orange-500"/>
-                </div>
-                <div>
-                  <label className="block text-sm font-semibold text-gray-300 mb-2">Type</label>
-                  <select value={form.document_type} onChange={e=>setForm(f=>({...f,document_type:e.target.value}))} className="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-sm text-gray-200 focus:outline-none focus:ring-2 focus:ring-orange-500">
-                    {DOC_TYPES.map(t=><option key={t}>{t}</option>)}
+                  <label className="block text-sm font-semibold text-gray-300 mb-2">Category *</label>
+                  <select required value={form.category} onChange={e => setForm(f => ({ ...f, category: e.target.value as any }))} className="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-sm text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    {CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
                   </select>
                 </div>
                 <div>
-                  <label className="block text-sm font-semibold text-gray-300 mb-2">Discipline</label>
-                  <select value={form.discipline} onChange={e=>setForm(f=>({...f,discipline:e.target.value}))} className="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-sm text-gray-200 focus:outline-none focus:ring-2 focus:ring-orange-500">
-                    {DISCIPLINES.map(d=><option key={d}>{d}</option>)}
+                  <label className="block text-sm font-semibold text-gray-300 mb-2">Project *</label>
+                  <select required value={form.project} onChange={e => setForm(f => ({ ...f, project: e.target.value }))} className="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-sm text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    {PROJECTS.map(p => <option key={p} value={p}>{p}</option>)}
                   </select>
                 </div>
                 <div>
-                  <label className="block text-sm font-semibold text-gray-300 mb-2">Revision Letter</label>
-                  <input value={form.revision} onChange={e=>setForm(f=>({...f,revision:e.target.value}))} placeholder="A, B, C..." className="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-sm text-gray-200 placeholder-gray-500 font-mono focus:outline-none focus:ring-2 focus:ring-orange-500"/>
+                  <label className="block text-sm font-semibold text-gray-300 mb-2">Version</label>
+                  <input value={form.version} onChange={e => setForm(f => ({ ...f, version: e.target.value }))} placeholder="1.0" className="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-sm text-gray-200 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500" />
                 </div>
                 <div>
                   <label className="block text-sm font-semibold text-gray-300 mb-2">Status</label>
-                  <select value={form.status} onChange={e=>setForm(f=>({...f,status:e.target.value}))} className="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-sm text-gray-200 focus:outline-none focus:ring-2 focus:ring-orange-500">
-                    {STATUS_OPTIONS.map(s=><option key={s}>{s}</option>)}
+                  <select value={form.status} onChange={e => setForm(f => ({ ...f, status: e.target.value as any }))} className="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-sm text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    {STATUS_OPTIONS.map(s => <option key={s} value={s}>{s.charAt(0).toUpperCase() + s.slice(1)}</option>)}
                   </select>
                 </div>
                 <div>
-                  <label className="block text-sm font-semibold text-gray-300 mb-2">Author</label>
-                  <input value={form.author} onChange={e=>setForm(f=>({...f,author:e.target.value}))} className="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-sm text-gray-200 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-orange-500"/>
+                  <label className="block text-sm font-semibold text-gray-300 mb-2">Uploaded By</label>
+                  <input value={form.uploadedBy} onChange={e => setForm(f => ({ ...f, uploadedBy: e.target.value }))} className="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-sm text-gray-200 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500" />
                 </div>
                 <div>
-                  <label className="block text-sm font-semibold text-gray-300 mb-2">Date Issued</label>
-                  <input type="date" value={form.date_issued} onChange={e=>setForm(f=>({...f,date_issued:e.target.value}))} className="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-sm text-gray-200 focus:outline-none focus:ring-2 focus:ring-orange-500"/>
+                  <label className="block text-sm font-semibold text-gray-300 mb-2">Upload Date</label>
+                  <input type="date" value={form.uploadedDate} onChange={e => setForm(f => ({ ...f, uploadedDate: e.target.value }))} className="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-sm text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500" />
                 </div>
                 <div>
-                  <label className="block text-sm font-semibold text-gray-300 mb-2">Supersedes (Doc No)</label>
-                  <input value={form.supersedes} onChange={e=>setForm(f=>({...f,supersedes:e.target.value}))} placeholder="Reference to older doc" className="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-sm text-gray-200 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-orange-500"/>
+                  <label className="block text-sm font-semibold text-gray-300 mb-2">File Size (MB)</label>
+                  <input value={form.size} onChange={e => setForm(f => ({ ...f, size: e.target.value }))} placeholder="0 MB" className="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-sm text-gray-200 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500" />
                 </div>
                 <div className="col-span-2">
-                  <label className="block text-sm font-semibold text-gray-300 mb-2">File URL</label>
-                  <input type="url" value={form.file_url} onChange={e=>setForm(f=>({...f,file_url:e.target.value}))} placeholder="https://…" className="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-sm text-gray-200 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-orange-500"/>
-                </div>
-                <div className="col-span-2">
-                  <label className="block text-sm font-semibold text-gray-300 mb-2">Tags</label>
-                  <input value={form.tags} onChange={e=>setForm(f=>({...f,tags:e.target.value}))} placeholder="Comma-separated tags" className="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-sm text-gray-200 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-orange-500"/>
-                </div>
-                <div className="col-span-2">
-                  <label className="block text-sm font-semibold text-gray-300 mb-2">Description / Notes</label>
-                  <textarea rows={3} value={form.description} onChange={e=>setForm(f=>({...f,description:e.target.value}))} className="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-sm text-gray-200 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-orange-500 resize-none"/>
+                  <label className="block text-sm font-semibold text-gray-300 mb-2">Description</label>
+                  <textarea rows={3} value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))} placeholder="Document description or notes" className="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-sm text-gray-200 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none" />
                 </div>
               </div>
               <div className="flex gap-3 pt-4">
-                <button type="button" onClick={()=>setShowModal(false)} className="flex-1 px-4 py-2 border border-gray-600 rounded-lg text-sm text-gray-300 hover:bg-gray-700 transition-colors">Cancel</button>
-                <button type="submit" disabled={createMutation.isPending||updateMutation.isPending} className="flex-1 px-4 py-2 bg-orange-600 text-white rounded-lg text-sm font-medium hover:bg-orange-700 disabled:opacity-50 transition-colors">
-                  {editing?'Update Document':'Register Document'}
+                <button type="button" onClick={() => setShowModal(false)} className="flex-1 px-4 py-2 border border-gray-600 rounded-lg text-sm text-gray-300 hover:bg-gray-700 transition-colors">Cancel</button>
+                <button type="submit" disabled={createMutation.isPending || updateMutation.isPending} className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 disabled:opacity-50 transition-colors">
+                  {editing ? 'Update Document' : 'Upload Document'}
                 </button>
               </div>
             </form>
@@ -475,3 +622,4 @@ export function Documents() {
     </div>
   );
 }
+
