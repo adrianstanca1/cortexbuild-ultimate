@@ -370,7 +370,7 @@ export function Teams() {
                   <div className="w-full h-24 bg-gray-700 rounded-lg mt-4 flex items-center justify-center text-xs opacity-50">QR Code Placeholder</div>
 
                   {Boolean(m.cscs_card) && isExpiring && (
-                    <button onClick={()=>renewCSCS(String(m.id))} className="w-full mt-4 px-3 py-2 bg-white/20 hover:bg-white/30 rounded-lg text-sm font-medium transition-colors">
+                    <button onClick={()=>renewCSCS(String(m.id))} className="w-full mt-4 px-3 py-2 bg-gray-800/20 hover:bg-gray-800/30 rounded-lg text-sm font-medium transition-colors">
                       Renew Certificate
                     </button>
                   )}

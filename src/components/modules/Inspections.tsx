@@ -90,9 +90,9 @@ const INSPECTION_CHECKLISTS: Record<string, string[]> = {
 };
 
 const statusColour: Record<string,string> = {
-  'Scheduled':'bg-blue-100 text-blue-800','In Progress':'bg-yellow-100 text-yellow-800',
-  'Passed':'bg-green-100 text-green-800','Failed':'bg-red-100 text-red-700',
-  'Conditional Pass':'bg-orange-100 text-orange-700','Cancelled':'bg-gray-100 text-gray-500',
+  'Scheduled':'bg-blue-900/30 text-blue-300','In Progress':'bg-yellow-900/30 text-yellow-300',
+  'Passed':'bg-green-900/30 text-green-300','Failed':'bg-red-900/30 text-red-300',
+  'Conditional Pass':'bg-orange-900/30 text-orange-300','Cancelled':'bg-gray-700/50 text-gray-400',
 };
 
 const emptyForm = { title:'',inspection_type:'Quality',inspection_date:'',inspector:'',location:'',status:'Scheduled',checklist_items: [] as AnyRow[],defect_count: 0,overall_score:0,project_id:'',next_due:'',notes:'' };

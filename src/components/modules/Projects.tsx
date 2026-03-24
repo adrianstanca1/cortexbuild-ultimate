@@ -624,7 +624,7 @@ function ProjectWorkspace({ project, onBack, onEdit }: WorkspaceProps) {
                     <tr key={String(inv.id)} className="hover:bg-gray-800/40">
                       <td className="px-4 py-3 font-mono text-xs text-blue-400 font-bold">{String(inv.number??inv.invoice_number??'—')}</td>
                       <td className="px-4 py-3 text-white font-bold">£{Number(inv.amount??0).toLocaleString()}</td>
-                      <td className="px-4 py-3"><span className={`text-xs px-2 py-0.5 rounded-full font-medium ${inv.status==='paid'?'bg-green-100 text-green-700':inv.status==='overdue'?'bg-red-100 text-red-700':inv.status==='sent'?'bg-blue-100 text-blue-700':'bg-gray-100 text-gray-600'}`}>{String(inv.status??'')}</span></td>
+                      <td className="px-4 py-3"><span className={`text-xs px-2 py-0.5 rounded-full font-medium ${inv.status==='paid'?'bg-green-900/30 text-green-300':inv.status==='overdue'?'bg-red-900/30 text-red-300':inv.status==='sent'?'bg-blue-900/30 text-blue-300':'bg-gray-700/50 text-gray-600'}`}>{String(inv.status??'')}</span></td>
                       <td className="px-4 py-3 text-gray-400 text-xs">{String(inv.dueDate??inv.due_date??'—')}</td>
                     </tr>
                   ))}
@@ -682,7 +682,7 @@ function ProjectWorkspace({ project, onBack, onEdit }: WorkspaceProps) {
                     <td className="px-4 py-3 font-mono text-xs text-orange-400">{String(d.revision??d.version??'—')}</td>
                     <td className="px-4 py-3 text-gray-400 text-xs">{String(d.author??d.uploadedBy??'—')}</td>
                     <td className="px-4 py-3 text-gray-400 text-xs">{String(d.date_issued??d.uploadedDate??'—')}</td>
-                    <td className="px-4 py-3"><span className={`text-xs px-2 py-0.5 rounded-full font-medium ${d.status==='approved'?'bg-green-100 text-green-700':d.status==='draft'?'bg-gray-100 text-gray-600':'bg-blue-100 text-blue-700'}`}>{String(d.status??'—')}</span></td>
+                    <td className="px-4 py-3"><span className={`text-xs px-2 py-0.5 rounded-full font-medium ${d.status==='approved'?'bg-green-900/30 text-green-300':d.status==='draft'?'bg-gray-700/50 text-gray-600':'bg-blue-900/30 text-blue-300'}`}>{String(d.status??'—')}</span></td>
                   </tr>
                 ))}
               </tbody>
@@ -706,7 +706,7 @@ function ProjectWorkspace({ project, onBack, onEdit }: WorkspaceProps) {
                     <tr key={String(r.id)} className="hover:bg-gray-800/40">
                       <td className="px-4 py-3 font-mono text-xs text-blue-400 font-bold">{String(r.rfi_number??r.number??'—')}</td>
                       <td className="px-4 py-3 text-white max-w-[240px] truncate">{String(r.subject??r.title??'—')}</td>
-                      <td className="px-4 py-3"><span className={`text-xs px-2 py-0.5 rounded-full font-medium ${r.priority==='critical'?'bg-red-100 text-red-700':r.priority==='high'?'bg-orange-100 text-orange-700':r.priority==='medium'?'bg-yellow-100 text-yellow-700':'bg-gray-100 text-gray-600'}`}>{String(r.priority??'—')}</span></td>
+                      <td className="px-4 py-3"><span className={`text-xs px-2 py-0.5 rounded-full font-medium ${r.priority==='critical'?'bg-red-900/30 text-red-300':r.priority==='high'?'bg-orange-900/30 text-orange-300':r.priority==='medium'?'bg-yellow-900/30 text-yellow-300':'bg-gray-700/50 text-gray-600'}`}>{String(r.priority??'—')}</span></td>
                       <td className="px-4 py-3 text-gray-400 text-xs capitalize">{String(r.status??'—')}</td>
                       <td className="px-4 py-3 text-gray-400 text-xs">{String(r.due_date??r.dueDate??'—')}</td>
                     </tr>
@@ -729,7 +729,7 @@ function ProjectWorkspace({ project, onBack, onEdit }: WorkspaceProps) {
                       <td className="px-4 py-3 font-mono text-xs text-blue-400 font-bold">{String(co.co_number??co.number??'—')}</td>
                       <td className="px-4 py-3 text-white max-w-[240px] truncate">{String(co.title??'—')}</td>
                       <td className="px-4 py-3 text-white font-bold">£{Number(co.value??co.amount??0).toLocaleString()}</td>
-                      <td className="px-4 py-3"><span className={`text-xs px-2 py-0.5 rounded-full font-medium ${co.status==='approved'?'bg-green-100 text-green-700':co.status==='rejected'?'bg-red-100 text-red-700':'bg-yellow-100 text-yellow-700'}`}>{String(co.status??'—')}</span></td>
+                      <td className="px-4 py-3"><span className={`text-xs px-2 py-0.5 rounded-full font-medium ${co.status==='approved'?'bg-green-900/30 text-green-300':co.status==='rejected'?'bg-red-900/30 text-red-300':'bg-yellow-900/30 text-yellow-300'}`}>{String(co.status??'—')}</span></td>
                     </tr>
                   ))}
                 </tbody>
@@ -762,7 +762,7 @@ function ProjectWorkspace({ project, onBack, onEdit }: WorkspaceProps) {
                     <tr key={String(s.id)} className="hover:bg-gray-800/40">
                       <td className="px-4 py-3 text-white font-medium max-w-[220px] truncate">{String(s.title??'—')}</td>
                       <td className="px-4 py-3 text-gray-400 text-xs capitalize">{String(s.type??'').replace(/_/g,' ')}</td>
-                      <td className="px-4 py-3"><span className={`text-xs px-2 py-0.5 rounded-full font-medium ${s.severity==='serious'||s.severity==='critical'?'bg-red-100 text-red-700':s.severity==='moderate'?'bg-orange-100 text-orange-700':'bg-green-100 text-green-700'}`}>{String(s.severity??'—')}</span></td>
+                      <td className="px-4 py-3"><span className={`text-xs px-2 py-0.5 rounded-full font-medium ${s.severity==='serious'||s.severity==='critical'?'bg-red-900/30 text-red-300':s.severity==='moderate'?'bg-orange-900/30 text-orange-300':'bg-green-900/30 text-green-300'}`}>{String(s.severity??'—')}</span></td>
                       <td className="px-4 py-3 text-xs capitalize text-gray-300">{String(s.status??'—')}</td>
                       <td className="px-4 py-3 text-gray-400 text-xs">{String(s.date??s.incident_date??'—')}</td>
                     </tr>
@@ -784,7 +784,7 @@ function ProjectWorkspace({ project, onBack, onEdit }: WorkspaceProps) {
                     <p className="text-white font-semibold">{String(rep.date??'—')}</p>
                     <p className="text-gray-400 text-xs">Prepared by {String(rep.preparedBy??rep.prepared_by??'—')} · {String(rep.weather??'—')} {String(rep.temperature??'')}</p>
                   </div>
-                  <span className={`text-xs px-2 py-1 rounded-full font-medium ${rep.status==='approved'?'bg-green-100 text-green-700':'bg-yellow-100 text-yellow-700'}`}>{String(rep.status??'draft')}</span>
+                  <span className={`text-xs px-2 py-1 rounded-full font-medium ${rep.status==='approved'?'bg-green-900/30 text-green-300':'bg-yellow-900/30 text-yellow-300'}`}>{String(rep.status??'draft')}</span>
                 </div>
                 {!!rep.workers_on_site && <p className="text-sm text-gray-300">Workers on site: <span className="text-white font-semibold">{String(rep.workers_on_site)}</span></p>}
                 {!!rep.activities && <p className="text-sm text-gray-400 mt-1 line-clamp-2">{String(rep.activities)}</p>}
