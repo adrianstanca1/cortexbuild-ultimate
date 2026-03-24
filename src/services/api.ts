@@ -88,6 +88,28 @@ async function deleteRow(endpoint: string, id: string): Promise<void> {
   await apiFetch(`/${endpoint}/${id}`, { method: 'DELETE' });
 }
 
+async function uploadFile(file: File, category: string, project?: string, projectId?: string): Promise<any> {
+  const token = getToken();
+  const formData = new FormData();
+  formData.append('file', file);
+  formData.append('category', category);
+  if (project) formData.append('project', project);
+  if (projectId) formData.append('project_id', projectId);
+
+  const res = await fetch(`${API_BASE}/upload`, {
+    method: 'POST',
+    headers: {
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    },
+    body: formData,
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ message: res.statusText }));
+    throw new Error(err.message || 'Upload failed');
+  }
+  return res.json();
+}
+
 // ─── Entity APIs ──────────────────────────────────────────────────────────────
 
 export const projectsApi = {
@@ -565,3 +587,5 @@ export const measuringApi = {
   update: (id: string, data: Row) => updateRow('measuring', id, data),
   delete: (id: string) => deleteRow('measuring', id),
 };
+
+export { uploadFile };

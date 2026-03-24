@@ -1,5 +1,5 @@
-import { useState, useEffect } from 'react';
-import { defectsApi } from '../../services/api';
+import { useState, useEffect, useRef } from 'react';
+import { defectsApi, uploadFile } from '../../services/api';
 import {
   AlertTriangle, Plus, Search, Filter, Download, Clock, AlertCircle,
   CheckCircle, XCircle, ArrowRight, Calendar, Building2, User,
@@ -182,6 +182,8 @@ const typeConfig: Record<string, { label: string; color: string }> = {
 };
 
 export default function Defects() {
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [uploading, setUploading] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState<string>('all');
   const [filterPriority, setFilterPriority] = useState<string>('all');
@@ -191,6 +193,27 @@ export default function Defects() {
   const [expandedCards, setExpandedCards] = useState<string[]>([]);
   const [defects, setDefects] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+
+  const handleUploadPhoto = async (defectId: string, file: File) => {
+    setUploading(true);
+    try {
+      const result = await uploadFile(file, 'PHOTOS');
+      const updated = defects.map(d => {
+        if (String(d.id) === String(defectId)) {
+          return {
+            ...d,
+            photos: [...(d.photos || []), { url: result.file_url || result.name, caption: file.name }]
+          };
+        }
+        return d;
+      });
+      setDefects(updated);
+    } catch (err) {
+      console.error('Upload failed:', err);
+    } finally {
+      setUploading(false);
+    }
+  };
 
   useEffect(() => {
     const fetchDefects = async () => {
@@ -442,7 +465,7 @@ export default function Defects() {
                     {(defect.photos as any[])?.length > 0 && (
                       <div className="mb-4">
                         <p className="text-gray-400 text-xs mb-2">Photos ({defect.photos?.length || 0})</p>
-                        <div className="flex gap-2">
+                        <div className="flex gap-2 flex-wrap">
                           {(defect.photos as any[]).map((photo: any, idx: number) => (
                             <div key={idx} className="flex items-center gap-2 px-3 py-2 bg-gray-700 rounded text-sm text-gray-300">
                               <Camera size={14} /> {photo.caption}
@@ -451,6 +474,28 @@ export default function Defects() {
                         </div>
                       </div>
                     )}
+
+                    <div className="mb-4">
+                      <input
+                        type="file"
+                        ref={fileInputRef}
+                        accept="image/*"
+                        className="hidden"
+                        onChange={(e) => {
+                          const file = e.target.files?.[0];
+                          if (file) handleUploadPhoto(String(defect.id), file);
+                          e.target.value = '';
+                        }}
+                      />
+                      <button
+                        type="button"
+                        onClick={() => fileInputRef.current?.click()}
+                        disabled={uploading}
+                        className="flex items-center gap-2 px-3 py-2 bg-gray-700 hover:bg-gray-600 text-gray-300 rounded text-sm transition-colors disabled:opacity-50"
+                      >
+                        <Camera size={14} /> {uploading ? 'Uploading...' : 'Add Photo'}
+                      </button>
+                    </div>
 
                     {(defect.comments as any[])?.length > 0 && (
                       <div>
