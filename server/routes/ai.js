@@ -1,9 +1,12 @@
 const express = require('express');
 const pool    = require('../db');
+const https = require('https');
+const http = require('http');
 
 const router = express.Router();
 
-// ─── Helpers ──────────────────────────────────────────────────────────────────
+const OLLAMA_HOST = process.env.OLLAMA_HOST || 'http://localhost:11434';
+const LLM_MODEL = process.env.LLM_MODEL || 'llama3.1:8b';
 
 function fmt(n) {
   if (n == null) return '£0';
@@ -795,6 +798,71 @@ function classify(message) {
   return 'unknown';
 }
 
+async function getOllamaResponse(userMessage, context = '') {
+  return new Promise((resolve, reject) => {
+    const prompt = `You are a helpful AI assistant for CortexBuild, a UK construction management platform. You help users manage projects, contracts, safety, finances, and team operations.
+
+Current user message: ${userMessage}
+
+${context ? `Context from database:\n${context}` : ''}
+
+Provide a helpful, concise response. Format your answer clearly with bullet points and headings where appropriate.`;
+
+    const body = JSON.stringify({
+      model: LLM_MODEL,
+      messages: [{ role: 'user', content: prompt }],
+      stream: false,
+      options: {
+        temperature: 0.7,
+        top_p: 0.9,
+        num_predict: 1024,
+      }
+    });
+
+    const url = new URL(OLLAMA_HOST + '/api/chat');
+    const isHttps = url.protocol === 'https:';
+    const lib = isHttps ? https : http;
+
+    const req = lib.request({
+      hostname: url.hostname,
+      port: url.port || (isHttps ? 443 : 11434),
+      path: '/api/chat',
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Content-Length': Buffer.byteLength(body),
+      },
+      timeout: 45000,
+    }, (res) => {
+      let data = '';
+      res.on('data', chunk => data += chunk);
+      res.on('end', () => {
+        try {
+          const parsed = JSON.parse(data);
+          if (parsed.message && parsed.message.content) {
+            resolve(parsed.message.content);
+          } else if (parsed.error) {
+            reject(new Error(parsed.error));
+          } else {
+            resolve(data.substring(0, 500));
+          }
+        } catch (e) {
+          reject(e);
+        }
+      });
+    });
+
+    req.on('error', reject);
+    req.on('timeout', () => {
+      req.destroy();
+      reject(new Error('Ollama request timed out'));
+    });
+
+    req.write(body);
+    req.end();
+  });
+}
+
 // ─── POST /chat ───────────────────────────────────────────────────────────────
 
 router.post('/chat', async (req, res) => {
@@ -828,13 +896,28 @@ router.post('/chat', async (req, res) => {
       case 'cis':             result = await handleCIS();             break;
       case 'daily_reports':   result = await handleDailyReports();    break;
       case 'risk':            result = await handleRisk();            break;
-      default:                result = handleUnknown(message.trim()); break;
+      default:
+        result = handleUnknown(message.trim());
+        break;
+    }
+
+    let reply = result.reply;
+    let useLLM = false;
+
+    if (intent === 'unknown' || message.trim().length > 30) {
+      try {
+        reply = await getOllamaResponse(message.trim(), result.reply);
+        useLLM = true;
+      } catch (llmErr) {
+        console.warn('[AI] Ollama unavailable, using rule-based fallback:', llmErr.message);
+      }
     }
 
     res.json({
-      reply:       result.reply,
-      data:        result.data ?? null,
+      reply,
+      data: result.data ?? null,
       suggestions: result.suggestions,
+      source: useLLM ? 'ollama' : 'rule-based',
     });
   } catch (err) {
     console.error('[AI /chat]', err.message);
