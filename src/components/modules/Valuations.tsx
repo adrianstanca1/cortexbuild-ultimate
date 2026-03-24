@@ -1,5 +1,5 @@
-import { useState, useEffect } from 'react';
-import { valuationsApi } from '../../services/api';
+import { useState, useEffect, useRef } from 'react';
+import { valuationsApi, uploadFile } from '../../services/api';
 import {
   FileText, Plus, Search, Filter, Download, Clock, AlertCircle,
   CheckCircle, XCircle, DollarSign, Building2, User, Calendar,
@@ -143,11 +143,14 @@ const statusConfig: Record<string, { label: string; color: string; bg: string }>
 };
 
 export default function Valuations() {
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [uploading, setUploading] = useState(false);
   const [valuations, setValuations] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState<string>('all');
   const [showCreateModal, setShowCreateModal] = useState(false);
+  const [selectedValId, setSelectedValId] = useState<string | null>(null);
 
   useEffect(() => {
     valuationsApi.getAll()
@@ -155,6 +158,28 @@ export default function Valuations() {
       .catch(console.error)
       .finally(() => setLoading(false));
   }, []);
+
+  const handleUploadDoc = async (valId: string, file: File) => {
+    setUploading(true);
+    setSelectedValId(valId);
+    try {
+      const result = await uploadFile(file, 'REPORTS');
+      setValuations(prev => prev.map((v: any) => {
+        if (String(v.id) === String(valId)) {
+          return {
+            ...v,
+            documents: [...(v.documents || []), { name: file.name, type: file.name.split('.').pop() || 'pdf', url: result.file_url || result.name }]
+          };
+        }
+        return v;
+      }));
+    } catch (err) {
+      console.error('Upload failed:', err);
+    } finally {
+      setUploading(false);
+      setSelectedValId(null);
+    }
+  };
 
   const filteredValuations = valuations.filter((v: any) => {
     const matchesSearch = v.ref.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -298,11 +323,33 @@ export default function Valuations() {
                     </td>
                     <td className="py-3">
                       <div className="flex items-center gap-2">
-                        <button className="p-1.5 hover:bg-gray-700 rounded text-gray-400 hover:text-white">
+                        <button type="button" className="p-1.5 hover:bg-gray-700 rounded text-gray-400 hover:text-white">
                           <Eye size={16} />
                         </button>
-                        <button className="p-1.5 hover:bg-gray-700 rounded text-gray-400 hover:text-white">
+                        <button type="button" className="p-1.5 hover:bg-gray-700 rounded text-gray-400 hover:text-white">
                           <Download size={16} />
+                        </button>
+                        <input
+                          type="file"
+                          id={`upload-val-${val.id}`}
+                          className="hidden"
+                          accept=".pdf,.doc,.docx,.xls,.xlsx"
+                          onChange={async (e) => {
+                            const file = e.target.files?.[0];
+                            if (file) {
+                              await handleUploadDoc(String(val.id), file);
+                              e.target.value = '';
+                            }
+                          }}
+                        />
+                        <button
+                          type="button"
+                          onClick={() => document.getElementById(`upload-val-${val.id}`)?.click()}
+                          disabled={uploading && selectedValId === String(val.id)}
+                          className="p-1.5 hover:bg-gray-700 rounded text-gray-400 hover:text-white disabled:opacity-50"
+                          title="Upload document"
+                        >
+                          <FileCheck size={16} />
                         </button>
                       </div>
                     </td>
