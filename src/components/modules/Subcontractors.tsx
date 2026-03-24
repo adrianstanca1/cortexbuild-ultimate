@@ -312,8 +312,8 @@ export function Subcontractors() {
                       </div>
                       <div>
                         <p className="text-xs text-gray-400 mb-1">CIS</p>
-                        <p className={!!s.cisVerified ? 'text-green-300 font-semibold' : 'text-red-300 font-semibold'}>
-                          {!!s.cisVerified ? '✓' : '✗'}
+                        <p className={s.cisVerified ? 'text-green-300 font-semibold' : 'text-red-300 font-semibold'}>
+                          {s.cisVerified ? '✓' : '✗'}
                         </p>
                       </div>
                     </div>
@@ -396,14 +396,14 @@ export function Subcontractors() {
                       </td>
                       <td className="px-4 py-3 text-gray-300">{String(s.trade ?? '—')}</td>
                       <td className="px-4 py-3">
-                        {!!s.cisVerified ? (
+                        {s.cisVerified ? (
                           <CheckCircle2 size={16} className="text-green-300" />
                         ) : (
                           <XCircle size={16} className="text-red-300" />
                         )}
                       </td>
                       <td className="px-4 py-3">
-                        {!!s.ramsApproved ? (
+                        {s.ramsApproved ? (
                           <CheckCircle2 size={16} className="text-green-300" />
                         ) : (
                           <XCircle size={16} className="text-red-300" />
@@ -783,23 +783,23 @@ export function Subcontractors() {
                 <h3 className="text-sm font-semibold text-gray-100 mb-3">Compliance Checklist</h3>
                 <div className="space-y-2">
                   <div className="flex items-center gap-2 p-3 bg-gray-700/50 rounded-lg">
-                    {!!selectedSub.cisVerified ? (
+                    {selectedSub.cisVerified ? (
                       <CheckCircle2 size={18} className="text-green-300 flex-shrink-0" />
                     ) : (
                       <XCircle size={18} className="text-red-300 flex-shrink-0" />
                     )}
-                    <span className={!!selectedSub.cisVerified ? 'text-green-300 font-medium' : 'text-red-300 font-medium'}>
-                      CIS Verified {!!selectedSub.cisVerified ? '✓' : '✗'}
+                    <span className={selectedSub.cisVerified ? 'text-green-300 font-medium' : 'text-red-300 font-medium'}>
+                      CIS Verified {selectedSub.cisVerified ? '✓' : '✗'}
                     </span>
                   </div>
                   <div className="flex items-center gap-2 p-3 bg-gray-700/50 rounded-lg">
-                    {!!selectedSub.ramsApproved ? (
+                    {selectedSub.ramsApproved ? (
                       <CheckCircle2 size={18} className="text-green-300 flex-shrink-0" />
                     ) : (
                       <XCircle size={18} className="text-red-300 flex-shrink-0" />
                     )}
-                    <span className={!!selectedSub.ramsApproved ? 'text-green-300 font-medium' : 'text-red-300 font-medium'}>
-                      RAMS Approved {!!selectedSub.ramsApproved ? '✓' : '✗'}
+                    <span className={selectedSub.ramsApproved ? 'text-green-300 font-medium' : 'text-red-300 font-medium'}>
+                      RAMS Approved {selectedSub.ramsApproved ? '✓' : '✗'}
                     </span>
                   </div>
                   <div className="flex items-center gap-2 p-3 bg-gray-700/50 rounded-lg">

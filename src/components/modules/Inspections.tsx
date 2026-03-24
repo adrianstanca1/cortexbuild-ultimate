@@ -272,7 +272,7 @@ export function Inspections() {
                       <div className="flex items-start justify-between gap-4">
                         <div className="flex-1 min-w-0">
                           <p className="font-semibold text-white truncate">{String(i.title??'Untitled')}</p>
-                          <p className="text-sm text-gray-400 mt-1">{String(i.inspection_type??'')} · {String(i.inspection_date??'—')} {Boolean(i.inspector)?`· ${i.inspector}`:''}</p>
+                          <p className="text-sm text-gray-400 mt-1">{String(i.inspection_type??'')} · {String(i.inspection_date??'—')} {i.inspector?`· ${i.inspector}`:''}</p>
                         </div>
                         {score > 0 && (
                           <div className={`flex-shrink-0 px-3 py-2 rounded-lg ${scoreColour.bg} border ${scoreColour.border}`}>

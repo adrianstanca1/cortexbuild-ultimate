@@ -104,7 +104,7 @@ export function PermissionsManager() {
 
   const saveChanges = async () => {
     if (!selectedRole) return;
-    if (Boolean(selectedRole.isSystem)) {
+    if (selectedRole.isSystem) {
       toast.error('Cannot modify system roles');
       return;
     }
@@ -256,7 +256,7 @@ export function PermissionsManager() {
                     <h3 className="text-lg font-bold text-white">{String(selectedRole.name ?? 'Untitled')}</h3>
                     <p className="text-sm text-gray-500">{String(selectedRole.description ?? '')}</p>
                   </div>
-                  {!Boolean(selectedRole.isSystem) && (
+                  {!selectedRole.isSystem && (
                     <div className="flex items-center gap-2">
                       <button
                         onClick={saveChanges}
@@ -295,7 +295,7 @@ export function PermissionsManager() {
                           className="w-full flex items-center justify-between p-3 hover:bg-gray-800/50 transition-colors"
                         >
                           <div className="flex items-center gap-3">
-                            {Boolean(isExpanded) ? (
+                            {isExpanded ? (
                               <ChevronDown className="h-4 w-4 text-gray-500" />
                             ) : (
                               <ChevronRight className="h-4 w-4 text-gray-500" />
@@ -322,19 +322,19 @@ export function PermissionsManager() {
                               <button
                                 key={String(action)}
                                 onClick={() =>
-                                  !Boolean(hasAll) &&
+                                  !hasAll &&
                                   togglePermission(String(module), String(action))
                                 }
                                 disabled={Boolean(hasAll)}
                                 className={clsx(
                                   'w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm transition-colors text-left',
-                                  hasPermission(String(module), String(action)) && !Boolean(hasAll)
+                                  hasPermission(String(module), String(action)) && !hasAll
                                     ? 'bg-emerald-500/20 text-emerald-400'
                                     : 'bg-gray-800 text-gray-400 hover:bg-gray-700',
                                   Boolean(hasAll) && 'opacity-50 cursor-not-allowed'
                                 )}
                               >
-                                {Boolean(hasPermission(String(module), String(action))) && !Boolean(hasAll) ? (
+                                {Boolean(hasPermission(String(module), String(action))) && !hasAll ? (
                                   <Check className="h-4 w-4" />
                                 ) : (
                                   <div className="h-4 w-4" />

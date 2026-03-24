@@ -503,7 +503,7 @@ export function FieldView() {
                         </td>
                         <td className="px-4 py-3 text-gray-400 max-w-xs truncate">{String(r.work_carried_out ?? '—')}</td>
                         <td className="px-4 py-3">
-                          {!!r.delays ? (
+                          {r.delays ? (
                             <span className="text-xs text-orange-300 bg-orange-500/20 px-2 py-0.5 rounded-full border border-orange-500/30">{String(r.delays)}</span>
                           ) : (
                             <span className="text-xs text-gray-500">None</span>

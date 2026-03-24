@@ -363,7 +363,7 @@ export function Marketplace() {
                 <h4 className="font-bold text-white mb-2">{String(resource.title)}</h4>
                 <div className="w-full bg-gray-800 rounded-full h-2 mb-3">
                   <div
-                    className={`h-2 rounded-full ${Boolean(resource.completed) ? 'bg-green-500 w-full' : 'bg-blue-500 w-1/3'}`}
+                    className={`h-2 rounded-full ${resource.completed ? 'bg-green-500 w-full' : 'bg-blue-500 w-1/3'}`}
                   />
                 </div>
                 <p className="text-xs text-gray-400">{String(resource.duration)}</p>

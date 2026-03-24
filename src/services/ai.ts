@@ -1,7 +1,7 @@
 const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001'
 
 function getToken(): string | null {
-  return localStorage.getItem('auth_token')
+  return localStorage.getItem('cortexbuild_token')
 }
 
 export interface AIChatMessage {
@@ -73,6 +73,7 @@ export async function streamChatMessage(
     const decoder = new TextDecoder()
     let buffer = ''
 
+    // eslint-disable-next-line no-constant-condition
     while (true) {
       const { done, value } = await reader.read()
       if (done) break

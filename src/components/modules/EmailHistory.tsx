@@ -33,7 +33,7 @@ export function EmailHistory() {
 
   const inboxEmails = emails.filter((e) => String(e.direction ?? '') !== 'sent');
   const sentEmails = emails.filter((e) => String(e.direction ?? '') === 'sent');
-  const unreadEmails = emails.filter((e) => !Boolean(e.read_at));
+  const unreadEmails = emails.filter((e) => !e.read_at);
   const notificationEmails = emails.filter((e) =>
     ['rfi_response', 'invoice_due', 'approval_required', 'document_shared', 'deadline_approaching'].includes(
       String(e.type ?? '')
@@ -156,7 +156,7 @@ export function EmailHistory() {
                 </div>
               ) : (
                 filtered.map((e) => {
-                  const isUnread = !Boolean(e.read_at);
+                  const isUnread = !e.read_at;
                   return (
                     <div
                       key={String(e.id)}
@@ -299,7 +299,7 @@ export function EmailHistory() {
                             >
                               {String(n.type ?? '').replace(/_/g, ' ')}
                             </span>
-                            {!Boolean(n.read_at) && <div className="w-2 h-2 rounded-full bg-orange-400" />}
+                            {!n.read_at && <div className="w-2 h-2 rounded-full bg-orange-400" />}
                           </div>
                           <p className="text-sm text-gray-300">{String(n.subject ?? n.message ?? '—')}</p>
                           <p className="text-xs text-gray-500 mt-1">{String(n.date ?? '—')}</p>

@@ -513,7 +513,7 @@ function TemplateModal({
       } else {
         await reportTemplatesApi.create({ name, type, description, config: {} });
       }
-      toast.success(Boolean(template) ? 'Template updated' : 'Template created');
+      toast.success(template ? 'Template updated' : 'Template created');
       onSave();
     } catch (err) {
       toast.error('Failed to save template');
@@ -530,7 +530,7 @@ function TemplateModal({
       >
         <div className="p-6 border-b border-gray-800">
           <h3 className="text-lg font-bold text-white">
-            {Boolean(template) ? 'Edit Template' : 'Create Template'}
+            {template ? 'Edit Template' : 'Create Template'}
           </h3>
         </div>
         <div className="p-6 space-y-4">
@@ -578,7 +578,7 @@ function TemplateModal({
             className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium flex items-center gap-2"
           >
             {Boolean(saving) && <RefreshCw className="h-4 w-4 animate-spin" />}
-            {Boolean(template) ? 'Update' : 'Create'}
+            {template ? 'Update' : 'Create'}
           </button>
         </div>
       </div>
