@@ -48,7 +48,20 @@ export type Module =
   | 'predictive-analytics'
   | 'calendar'
   | 'search'
-  | 'audit-log';
+  | 'audit-log'
+  | 'variations'
+  | 'defects'
+  | 'valuations'
+  | 'specifications'
+  | 'temp-works'
+  | 'signage'
+  | 'waste-management'
+  | 'sustainability'
+  | 'training'
+  | 'certifications'
+  | 'prequalification'
+  | 'lettings'
+  | 'measuring';
 
 export type ProjectStatus = 'planning' | 'active' | 'on_hold' | 'completed' | 'archived';
 export type TaskStatus = 'todo' | 'in_progress' | 'review' | 'done' | 'blocked';

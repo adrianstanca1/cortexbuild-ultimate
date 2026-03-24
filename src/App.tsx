@@ -48,6 +48,19 @@ import { type Module } from './types';
 import { useAuth, AuthProvider } from './context/AuthContext';
 import { useTheme } from './context/ThemeContext';
 import { useKeyboardShortcuts, DEFAULT_SHORTCUTS } from './hooks/useKeyboardShortcuts';
+import Variations from './components/modules/Variations';
+import Defects from './components/modules/Defects';
+import Valuations from './components/modules/Valuations';
+import Specifications from './components/modules/Specifications';
+import TempWorks from './components/modules/TempWorks';
+import Signage from './components/modules/Signage';
+import WasteManagement from './components/modules/WasteManagement';
+import Sustainability from './components/modules/Sustainability';
+import Training from './components/modules/Training';
+import Certifications from './components/modules/Certifications';
+import Prequalification from './components/modules/Prequalification';
+import Lettings from './components/modules/Lettings';
+import Measuring from './components/modules/Measuring';
 
 function AppShell() {
   const [activeModule, setActiveModule] = useState<Module>('dashboard');
@@ -108,6 +121,19 @@ function AppShell() {
       case 'calendar':          return <Calendar />;
       case 'search':            return <div className="card p-8 text-center text-gray-500">Use Ctrl+K to open Global Search</div>;
       case 'audit-log':         return <AuditLog />;
+      case 'variations':        return <Variations />;
+      case 'defects':           return <Defects />;
+      case 'valuations':        return <Valuations />;
+      case 'specifications':     return <Specifications />;
+      case 'temp-works':        return <TempWorks />;
+      case 'signage':           return <Signage />;
+      case 'waste-management':   return <WasteManagement />;
+      case 'sustainability':    return <Sustainability />;
+      case 'training':          return <Training />;
+      case 'certifications':    return <Certifications />;
+      case 'prequalification':  return <Prequalification />;
+      case 'lettings':         return <Lettings />;
+      case 'measuring':        return <Measuring />;
       default:                return <Dashboard />;
     }
   };

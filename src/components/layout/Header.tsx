@@ -44,6 +44,19 @@ const MODULE_LABELS: Record<Module, string> = {
   'calendar': 'Calendar',
   'search': 'Search',
   'audit-log': 'Audit Log',
+  'variations': 'Variations',
+  'defects': 'Defects Management',
+  'valuations': 'Valuations & Certificates',
+  'specifications': 'Specifications',
+  'temp-works': 'Temporary Works',
+  'signage': 'Site Signage',
+  'waste-management': 'Waste Management',
+  'sustainability': 'Sustainability & ESG',
+  'training': 'Training & Certifications',
+  'certifications': 'Certifications & Licenses',
+  'prequalification': 'Prequalification',
+  'lettings': 'Contract Lettings',
+  'measuring': 'Site Measuring & Surveys',
 };
 
 interface HeaderProps {
