@@ -1,0 +1,1112 @@
+/**
+ * ============================================
+ * CORTEXBUILD ULTIMATE - Unified AI Service
+ * ============================================
+ * 
+ * Multi-provider AI abstraction layer supporting:
+ * - OpenAI (GPT-4, GPT-4 Turbo, GPT-3.5)
+ * - Google Gemini (Pro, Ultra, Vision)
+ * - Anthropic Claude (3 Opus, Sonnet, Haiku)
+ * - Local models via Ollama
+ * 
+ * Features:
+ * - Text completion & chat
+ * - Image analysis (vision)
+ * - Document processing (OCR + NLP)
+ * - Code generation
+ * - Timeline prediction
+ * - Cost prediction
+ * - Risk assessment
+ * - Resource optimization
+ */
+
+import OpenAI from 'openai';
+import { GoogleGenerativeAI } from '@google/generative-ai';
+import Anthropic from '@anthropic-ai/sdk';
+import axios from 'axios';
+import { prisma } from '../database/client';
+import { redis } from '../database/redis';
+import { encrypt, decrypt } from '../auth/encryption';
+
+// ============================================
+// TYPES & INTERFACES
+// ============================================
+
+export type AIProvider = 'openai' | 'gemini' | 'claude' | 'ollama' | 'local';
+
+export interface AIMessage {
+  role: 'system' | 'user' | 'assistant';
+  content: string | Array<{ type: 'text' | 'image_url'; text?: string; image_url?: { url: string } }>;
+}
+
+export interface AICompletionOptions {
+  provider: AIProvider;
+  model?: string;
+  messages: AIMessage[];
+  temperature?: number;
+  maxTokens?: number;
+  topP?: number;
+  frequencyPenalty?: number;
+  presencePenalty?: number;
+  stream?: boolean;
+  vision?: boolean;
+  system?: string;
+}
+
+export interface AICompletionResponse {
+  content: string;
+  provider: AIProvider;
+  model: string;
+  usage?: {
+    promptTokens: number;
+    completionTokens: number;
+    totalTokens: number;
+  };
+  finishReason?: string;
+  latency: number;
+}
+
+export interface AIImageAnalysisOptions {
+  provider: AIProvider;
+  imageUrl: string;
+  prompt: string;
+  model?: string;
+}
+
+export interface AIDocumentAnalysisOptions {
+  provider: AIProvider;
+  documentUrl: string;
+  prompt: string;
+  extractFields?: string[];
+  model?: string;
+}
+
+export interface AIPredictionOptions {
+  type: 'timeline' | 'cost' | 'risk' | 'resource';
+  projectId: string;
+  historicalData?: any;
+  constraints?: any;
+  model?: string;
+}
+
+export interface AIPredictionResult {
+  prediction: any;
+  confidence: number; // 0-100
+  factors: string[];
+  recommendations: string[];
+  alternatives: any[];
+  generatedAt: Date;
+}
+
+// ============================================
+// PROVIDER CONFIGURATIONS
+// ============================================
+
+const DEFAULT_MODELS = {
+  openai: 'gpt-4-turbo-preview',
+  gemini: 'gemini-pro',
+  claude: 'claude-3-sonnet-20240229',
+  ollama: 'llama2',
+  local: 'local-model',
+};
+
+const MODEL_CAPABILITIES = {
+  openai: {
+    vision: true,
+    functionCalling: true,
+    maxTokens: 128000,
+    supportsSystem: true,
+  },
+  gemini: {
+    vision: true,
+    functionCalling: true,
+    maxTokens: 128000,
+    supportsSystem: true,
+  },
+  claude: {
+    vision: true,
+    functionCalling: true,
+    maxTokens: 200000,
+    supportsSystem: true,
+  },
+  ollama: {
+    vision: false,
+    functionCalling: false,
+    maxTokens: 4096,
+    supportsSystem: true,
+  },
+};
+
+// ============================================
+// AI SERVICE CLASS
+// ============================================
+
+export class UnifiedAIService {
+  private openai: OpenAI | null = null;
+  private gemini: GoogleGenerativeAI | null = null;
+  private anthropic: Anthropic | null = null;
+  private ollamaBaseUrl: string = 'http://localhost:11434';
+  
+  private defaultProvider: AIProvider = 'openai';
+  private fallbackProviders: AIProvider[] = ['gemini', 'claude'];
+  
+  constructor() {
+    this.initializeProviders();
+  }
+  
+  private initializeProviders() {
+    // OpenAI
+    const openaiKey = process.env.OPENAI_API_KEY;
+    if (openaiKey) {
+      this.openai = new OpenAI({ apiKey: openaiKey });
+    }
+    
+    // Google Gemini
+    const geminiKey = process.env.GOOGLE_GEMINI_API_KEY;
+    if (geminiKey) {
+      this.gemini = new GoogleGenerativeAI(geminiKey);
+    }
+    
+    // Anthropic Claude
+    const anthropicKey = process.env.ANTHROPIC_API_KEY;
+    if (anthropicKey) {
+      this.anthropic = new Anthropic({ apiKey: anthropicKey });
+    }
+  }
+  
+  /**
+   * Get or create AI model configuration from database
+   */
+  async getModelConfig(organizationId: string, provider?: AIProvider): Promise<any> {
+    const providerEnum = (provider || this.defaultProvider).toUpperCase() as 'OPENAI' | 'GEMINI' | 'CLAUDE' | 'OLLAMA' | 'LOCAL'
+    const config = await prisma.aiModelConfig.findFirst({
+      where: {
+        organizationId,
+        provider: providerEnum,
+        isActive: true,
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+    
+    if (!config) {
+      // Create default configuration
+      return this.createDefaultConfig(organizationId, providerEnum);
+    }
+    
+    return config;
+  }
+  
+  private createDefaultConfig(organizationId: string, provider: 'OPENAI' | 'GEMINI' | 'CLAUDE' | 'OLLAMA' | 'LOCAL') {
+    // Stub implementation - returns default config
+    return {
+      provider,
+      model: 'llama3.1:8b',
+      apiEndpoint: 'http://localhost:11434',
+      temperature: 0.7,
+      maxTokens: 4096,
+      isActive: true,
+      isDefault: true,
+    }
+  }
+  
+  /**
+   * Get or create AI model configuration from database
+   */
+  async getModelConfigSimple(organizationId: string): Promise<any> {
+    const config = await prisma.aiModelConfig.findFirst({
+      where: {
+        organizationId,
+        isActive: true,
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+    
+    if (!config) {
+      return {
+        provider: 'OLLAMA',
+        model: 'llama3.1:8b',
+        apiEndpoint: 'http://localhost:11434',
+        temperature: 0.7,
+        maxTokens: 4096,
+        isActive: true,
+        isDefault: true,
+      }
+    }
+    
+    return config;
+  }
+  
+  private async createDefaultConfig(organizationId: string, provider: AIProvider) {
+    const defaultConfig = {
+      provider,
+      model: DEFAULT_MODELS[provider],
+      temperature: 0.7,
+      maxTokens: 4096,
+      credentials: {
+        apiKey: process.env[`${provider.toUpperCase()}_API_KEY`] || '',
+      },
+    };
+    
+    return prisma.aiModelConfig.create({
+      data: {
+        organizationId,
+        provider,
+        model: DEFAULT_MODELS[provider],
+        temperature: 0.7,
+        maxTokens: 4096,
+        credentials: {
+          apiKey: encrypt(defaultConfig.credentials.apiKey),
+        },
+        isActive: true,
+        isDefault: provider === this.defaultProvider,
+      },
+    });
+  }
+  
+  /**
+   * Generate text completion using specified provider
+   */
+  async generateCompletion(options: AICompletionOptions): Promise<AICompletionResponse> {
+    const startTime = Date.now();
+    
+    try {
+      switch (options.provider) {
+        case 'openai':
+          return this.generateOpenAI(options);
+        case 'gemini':
+          return this.generateGemini(options);
+        case 'claude':
+          return this.generateClaude(options);
+        case 'ollama':
+          return this.generateOllama(options);
+        default:
+          throw new Error(`Unsupported AI provider: ${options.provider}`);
+      }
+    } catch (error) {
+      // Try fallback providers
+      for (const fallback of this.fallbackProviders) {
+        if (fallback !== options.provider) {
+          try {
+            return await this.generateCompletion({
+              ...options,
+              provider: fallback,
+            });
+          } catch (fallbackError) {
+            continue;
+          }
+        }
+      }
+      throw error;
+    } finally {
+      // Track usage
+      await this.trackUsage(options.provider, Date.now() - startTime);
+    }
+  }
+  
+  /**
+   * OpenAI GPT completion
+   */
+  private async generateOpenAI(options: AICompletionOptions): Promise<AICompletionResponse> {
+    if (!this.openai) {
+      throw new Error('OpenAI provider not configured');
+    }
+    
+    const model = options.model || DEFAULT_MODELS.openai;
+    const messages = this.formatOpenAIMessages(options.messages, options.system);
+    
+    const response = await this.openai.chat.completions.create({
+      model,
+      messages,
+      temperature: options.temperature ?? 0.7,
+      max_tokens: options.maxTokens ?? 4096,
+      top_p: options.topP ?? 1,
+      frequency_penalty: options.frequencyPenalty ?? 0,
+      presence_penalty: options.presencePenalty ?? 0,
+      stream: options.stream ?? false,
+    });
+    
+    const choice = response.choices[0];
+    
+    return {
+      content: choice.message.content || '',
+      provider: 'openai',
+      model,
+      usage: response.usage ? {
+        promptTokens: response.usage.prompt_tokens,
+        completionTokens: response.usage.completion_tokens,
+        totalTokens: response.usage.total_tokens,
+      } : undefined,
+      finishReason: choice.finish_reason,
+      latency: Date.now(),
+    };
+  }
+  
+  /**
+   * Google Gemini completion
+   */
+  private async generateGemini(options: AICompletionOptions): Promise<AICompletionResponse> {
+    if (!this.gemini) {
+      throw new Error('Google Gemini provider not configured');
+    }
+    
+    const model = this.gemini.getGenerativeModel({
+      model: options.model || DEFAULT_MODELS.gemini,
+      generationConfig: {
+        temperature: options.temperature ?? 0.7,
+        maxOutputTokens: options.maxTokens ?? 4096,
+        topP: options.topP ?? 1,
+      },
+    });
+    
+    // Format messages for Gemini
+    const prompt = this.formatGeminiPrompt(options.messages, options.system);
+    
+    const result = await model.generateContent(prompt);
+    const response = await result.response;
+    
+    return {
+      content: response.text(),
+      provider: 'gemini',
+      model: options.model || DEFAULT_MODELS.gemini,
+      usage: response.usageMetadata ? {
+        promptTokens: response.usageMetadata.promptTokenCount,
+        completionTokens: response.usageMetadata.candidatesTokenCount,
+        totalTokens: response.usageMetadata.totalTokenCount,
+      } : undefined,
+      latency: Date.now(),
+    };
+  }
+  
+  /**
+   * Anthropic Claude completion
+   */
+  private async generateClaude(options: AICompletionOptions): Promise<AICompletionResponse> {
+    if (!this.anthropic) {
+      throw new Error('Anthropic Claude provider not configured');
+    }
+    
+    const model = options.model || DEFAULT_MODELS.claude;
+    
+    // Extract system message
+    const systemMessage = options.messages.find(m => m.role === 'system')?.content;
+    const conversationMessages = options.messages.filter(m => m.role !== 'system');
+    
+    const response = await this.anthropic.messages.create({
+      model,
+      max_tokens: options.maxTokens ?? 4096,
+      system: typeof systemMessage === 'string' ? systemMessage : '',
+      messages: conversationMessages.map(m => ({
+        role: m.role === 'user' ? 'user' : 'assistant',
+        content: m.content,
+      })),
+      temperature: options.temperature ?? 0.7,
+      top_p: options.topP ?? 1,
+    });
+    
+    return {
+      content: response.content[0]?.text || '',
+      provider: 'claude',
+      model,
+      usage: {
+        promptTokens: response.usage.input_tokens,
+        completionTokens: response.usage.output_tokens,
+        totalTokens: response.usage.input_tokens + response.usage.output_tokens,
+      },
+      finishReason: response.stop_reason,
+      latency: Date.now(),
+    };
+  }
+  
+  /**
+   * Ollama local model completion
+   */
+  private async generateOllama(options: AICompletionOptions): Promise<AICompletionResponse> {
+    const model = options.model || DEFAULT_MODELS.ollama;
+    
+    const response = await axios.post(`${this.ollamaBaseUrl}/api/generate`, {
+      model,
+      prompt: this.formatOllamaPrompt(options.messages, options.system),
+      stream: options.stream ?? false,
+      options: {
+        temperature: options.temperature ?? 0.7,
+        num_predict: options.maxTokens ?? 4096,
+        top_p: options.topP ?? 1,
+      },
+    });
+    
+    return {
+      content: response.data.response,
+      provider: 'ollama',
+      model,
+      latency: Date.now(),
+    };
+  }
+  
+  /**
+   * Image analysis using vision-capable models
+   */
+  async analyzeImage(options: AIImageAnalysisOptions): Promise<AICompletionResponse> {
+    const { provider, imageUrl, prompt, model } = options;
+    
+    const messages: AIMessage[] = [
+      {
+        role: 'user',
+        content: [
+          { type: 'text', text: prompt },
+          { type: 'image_url', image_url: { url: imageUrl } },
+        ],
+      },
+    ];
+    
+    return this.generateCompletion({
+      provider,
+      model: model || (provider === 'claude' ? 'claude-3-sonnet-20240229' : undefined),
+      messages,
+      vision: true,
+    });
+  }
+  
+  /**
+   * Document analysis with OCR and NLP
+   */
+  async analyzeDocument(options: AIDocumentAnalysisOptions): Promise<any> {
+    const { documentUrl, prompt, extractFields } = options;
+    
+    // First, extract text from document (using AI vision or OCR service)
+    const extractionResult = await this.analyzeImage({
+      provider: options.provider,
+      imageUrl: documentUrl,
+      prompt: 'Extract all text from this document. Preserve formatting and structure.',
+    });
+    
+    // Then analyze the extracted text
+    const analysisResult = await this.generateCompletion({
+      provider: options.provider,
+      messages: [
+        {
+          role: 'user',
+          content: `${prompt}\n\nDocument content:\n${extractionResult.content}`,
+        },
+      ],
+    });
+    
+    // Extract structured fields if requested
+    let structuredData = null;
+    if (extractFields && extractFields.length > 0) {
+      const extractionPrompt = `Extract the following fields from the text: ${extractFields.join(', ')}. Return as JSON.`;
+      const extractionResult = await this.generateCompletion({
+        provider: options.provider,
+        messages: [{ role: 'user', content: extractionPrompt }],
+      });
+      try {
+        structuredData = JSON.parse(extractionResult.content);
+      } catch (e) {
+        structuredData = { error: 'Failed to parse structured data' };
+      }
+    }
+    
+    return {
+      extractedText: extractionResult.content,
+      analysis: analysisResult.content,
+      structuredData,
+      provider: options.provider,
+    };
+  }
+  
+  /**
+   * Timeline prediction using ML
+   */
+  async predictTimeline(options: AIPredictionOptions): Promise<AIPredictionResult> {
+    const { projectId, historicalData, constraints } = options;
+    
+    // Fetch project data
+    const project = await prisma.project.findUnique({
+      where: { id: projectId },
+      include: {
+        tasks: {
+          where: { status: { in: ['IN_PROGRESS', 'COMPLETED'] } },
+          include: { assignee: true },
+        },
+        milestones: true,
+        dailyLogs: {
+          orderBy: { date: 'desc' },
+          take: 30,
+        },
+        weatherLogs: {
+          orderBy: { date: 'desc' },
+          take: 30,
+        },
+      },
+    });
+    
+    if (!project) {
+      throw new Error('Project not found');
+    }
+    
+    // Build prompt for AI analysis
+    const prompt = this.buildTimelinePredictionPrompt(project, historicalData, constraints);
+    
+    const analysis = await this.generateCompletion({
+      provider: this.defaultProvider,
+      messages: [{ role: 'user', content: prompt }],
+      temperature: 0.3, // Lower temperature for more deterministic predictions
+    });
+    
+    // Parse AI response
+    const prediction = this.parseTimelinePrediction(analysis.content);
+    
+    // Calculate confidence based on data quality
+    const confidence = this.calculatePredictionConfidence(project, historicalData);
+    
+    // Generate recommendations
+    const recommendations = this.generateTimelineRecommendations(project, prediction);
+    
+    return {
+      prediction,
+      confidence,
+      factors: this.identifyCriticalFactors(project),
+      recommendations,
+      alternatives: this.generateAlternatives(project, prediction),
+      generatedAt: new Date(),
+    };
+  }
+  
+  /**
+   * Cost prediction and budget analysis
+   */
+  async predictCosts(options: AIPredictionOptions): Promise<AIPredictionResult> {
+    const { projectId, historicalData, constraints } = options;
+    
+    // Fetch financial data
+    const project = await prisma.project.findUnique({
+      where: { id: projectId },
+      include: {
+        costItems: true,
+        budgetLines: true,
+        changeOrders: true,
+        progressClaims: true,
+        company: {
+          include: {
+            projects: {
+              where: { status: 'COMPLETED' },
+              include: { costItems: true, budgetLines: true },
+            },
+          },
+        },
+      },
+    });
+    
+    if (!project) {
+      throw new Error('Project not found');
+    }
+    
+    // Build prompt for cost analysis
+    const prompt = this.buildCostPredictionPrompt(project, historicalData, constraints);
+    
+    const analysis = await this.generateCompletion({
+      provider: this.defaultProvider,
+      messages: [{ role: 'user', content: prompt }],
+      temperature: 0.3,
+    });
+    
+    const prediction = this.parseCostPrediction(analysis.content);
+    const confidence = this.calculateCostConfidence(project);
+    const recommendations = this.generateCostRecommendations(project, prediction);
+    
+    return {
+      prediction,
+      confidence,
+      factors: this.identifyCostFactors(project),
+      recommendations,
+      alternatives: this.generateCostAlternatives(project, prediction),
+      generatedAt: new Date(),
+    };
+  }
+  
+  /**
+   * Risk assessment using AI
+   */
+  async assessRisk(options: AIPredictionOptions): Promise<AIPredictionResult> {
+    const { projectId } = options;
+    
+    // Fetch safety and quality data
+    const project = await prisma.project.findUnique({
+      where: { id: projectId },
+      include: {
+        safetyIncidents: true,
+        riskAssessments: true,
+        defects: true,
+        qualityChecks: true,
+        dailyLogs: {
+          where: { safetyIncidents: { isNot: null } },
+        },
+      },
+    });
+    
+    if (!project) {
+      throw new Error('Project not found');
+    }
+    
+    // Build prompt for risk analysis
+    const prompt = this.buildRiskAssessmentPrompt(project);
+    
+    const analysis = await this.generateCompletion({
+      provider: this.defaultProvider,
+      messages: [{ role: 'user', content: prompt }],
+      temperature: 0.4,
+    });
+    
+    const prediction = this.parseRiskAssessment(analysis.content);
+    const confidence = this.calculateRiskConfidence(project);
+    const recommendations = this.generateRiskRecommendations(project, prediction);
+    
+    return {
+      prediction,
+      confidence,
+      factors: this.identifyRiskFactors(project),
+      recommendations,
+      alternatives: [],
+      generatedAt: new Date(),
+    };
+  }
+  
+  /**
+   * Resource optimization suggestions
+   */
+  async optimizeResources(options: AIPredictionOptions): Promise<AIPredictionResult> {
+    const { projectId } = options;
+    
+    // Fetch resource data
+    const project = await prisma.project.findUnique({
+      where: { id: projectId },
+      include: {
+        tasks: {
+          include: { assignee: true },
+        },
+        timeEntries: {
+          orderBy: { date: 'desc' },
+          take: 100,
+        },
+        equipment: {
+          include: { usageLogs: { take: 30 } },
+        },
+        materials: true,
+      },
+    });
+    
+    if (!project) {
+      throw new Error('Project not found');
+    }
+    
+    // Build prompt for resource optimization
+    const prompt = this.buildResourceOptimizationPrompt(project);
+    
+    const analysis = await this.generateCompletion({
+      provider: this.defaultProvider,
+      messages: [{ role: 'user', content: prompt }],
+      temperature: 0.5,
+    });
+    
+    const prediction = this.parseResourceOptimization(analysis.content);
+    const confidence = 85; // Base confidence for resource optimization
+    const recommendations = this.generateResourceRecommendations(project, prediction);
+    
+    return {
+      prediction,
+      confidence,
+      factors: this.identifyResourceFactors(project),
+      recommendations,
+      alternatives: this.generateResourceAlternatives(project, prediction),
+      generatedAt: new Date(),
+    };
+  }
+  
+  // ============================================
+  // HELPER METHODS
+  // ============================================
+  
+  private formatOpenAIMessages(messages: AIMessage[], system?: string): any[] {
+    const formatted = [];
+    
+    if (system) {
+      formatted.push({ role: 'system', content: system });
+    }
+    
+    for (const msg of messages) {
+      if (msg.role !== 'system') {
+        formatted.push(msg);
+      }
+    }
+    
+    return formatted;
+  }
+  
+  private formatGeminiPrompt(messages: AIMessage[], system?: string): string {
+    let prompt = '';
+    
+    if (system) {
+      prompt += `System: ${system}\n\n`;
+    }
+    
+    for (const msg of messages) {
+      if (msg.role === 'user') {
+        prompt += `User: ${typeof msg.content === 'string' ? msg.content : 'Image analysis request'}\n\n`;
+      } else if (msg.role === 'assistant') {
+        prompt += `Assistant: ${msg.content}\n\n`;
+      }
+    }
+    
+    return prompt;
+  }
+  
+  private formatOllamaPrompt(messages: AIMessage[], system?: string): string {
+    let prompt = '';
+    
+    if (system) {
+      prompt += `System: ${system}\n\n`;
+    }
+    
+    for (const msg of messages) {
+      if (msg.role === 'user') {
+        prompt += `${typeof msg.content === 'string' ? msg.content : 'Image analysis'}\n`;
+      }
+    }
+    
+    return prompt;
+  }
+  
+  private async trackUsage(provider: AIProvider, latency: number) {
+    // Update usage metrics in Redis for real-time tracking
+    const key = `ai:usage:${provider}:${new Date().toISOString().split('T')[0]}`;
+    await redis.incr(key);
+    await redis.expire(key, 86400); // 24 hours
+  }
+  
+  private buildTimelinePredictionPrompt(project: any, historicalData: any, constraints: any): string {
+    return `Analyze this construction project and predict completion timeline.
+    
+Project: ${project.name}
+Current Status: ${project.status}
+Current Phase: ${project.phase}
+Progress: ${project.progress}%
+Start Date: ${project.startDate}
+End Date: ${project.endDate}
+
+Tasks: ${project.tasks?.length || 0}
+Milestones: ${project.milestones?.length || 0}
+
+Consider:
+- Historical productivity rates
+- Weather impacts from daily logs
+- Resource availability
+- Critical path dependencies
+- Industry benchmarks for similar projects
+
+Provide:
+1. Predicted completion date
+2. Confidence level (0-100%)
+3. Key factors affecting timeline
+4. Recommendations to accelerate delivery
+5. Alternative scenarios (optimistic, realistic, pessimistic)`;
+  }
+  
+  private buildCostPredictionPrompt(project: any, historicalData: any, constraints: any): string {
+    return `Analyze this construction project and predict final costs.
+    
+Project: ${project.name}
+Budget: $${project.budget}
+Spent: $${project.spent}
+Forecast: $${project.forecast}
+
+Cost Items: ${project.costItems?.length || 0}
+Change Orders: ${project.changeOrders?.length || 0}
+Progress Claims: ${project.progressClaims?.length || 0}
+
+Consider:
+- Historical cost performance
+- Change order trends
+- Material price fluctuations
+- Labor rate trends
+- Contingency utilization
+- Industry benchmarks
+
+Provide:
+1. Predicted final cost
+2. Budget variance prediction
+3. Cost overrun risk level
+4. Key cost drivers
+5. Cost optimization recommendations`;
+  }
+  
+  private buildRiskAssessmentPrompt(project: any): string {
+    return `Assess safety and quality risks for this construction project.
+    
+Project: ${project.name}
+
+Safety Incidents: ${project.safetyIncidents?.length || 0}
+Risk Assessments: ${project.riskAssessments?.length || 0}
+Defects: ${project.defects?.length || 0}
+Quality Checks: ${project.qualityChecks?.length || 0}
+
+Consider:
+- Incident patterns and trends
+- High-risk activities
+- Compliance gaps
+- Quality issues
+- Weather impacts
+- Workforce factors
+
+Provide:
+1. Overall risk score (1-10)
+2. Top 5 risks with severity
+3. Root causes
+4. Mitigation recommendations
+5. Preventive actions`;
+  }
+  
+  private buildResourceOptimizationPrompt(project: any): string {
+    return `Optimize resource allocation for this construction project.
+    
+Project: ${project.name}
+
+Tasks: ${project.tasks?.length || 0}
+Time Entries: ${project.timeEntries?.length || 0}
+Equipment: ${project.equipment?.length || 0}
+Materials: ${project.materials?.length || 0}
+
+Consider:
+- Labor utilization rates
+- Equipment availability
+- Material delivery schedules
+- Task dependencies
+- Critical path activities
+- Cost efficiency
+
+Provide:
+1. Resource allocation recommendations
+2. Utilization improvements
+3. Cost savings opportunities
+4. Schedule optimization
+5. Alternative resourcing strategies`;
+  }
+  
+  private parseTimelinePrediction(content: string): any {
+    // Parse AI response into structured format
+    // In production, use structured output or JSON mode
+    try {
+      const jsonMatch = content.match(/\{[\s\S]*\}/);
+      if (jsonMatch) {
+        return JSON.parse(jsonMatch[0]);
+      }
+    } catch (e) {
+      // Fallback to text parsing
+    }
+    
+    return {
+      rawAnalysis: content,
+      completionDate: null,
+      confidence: null,
+    };
+  }
+  
+  private parseCostPrediction(content: string): any {
+    try {
+      const jsonMatch = content.match(/\{[\s\S]*\}/);
+      if (jsonMatch) {
+        return JSON.parse(jsonMatch[0]);
+      }
+    } catch (e) {
+      // Fallback
+    }
+    
+    return { rawAnalysis: content };
+  }
+  
+  private parseRiskAssessment(content: string): any {
+    try {
+      const jsonMatch = content.match(/\{[\s\S]*\}/);
+      if (jsonMatch) {
+        return JSON.parse(jsonMatch[0]);
+      }
+    } catch (e) {
+      // Fallback
+    }
+    
+    return { rawAnalysis: content };
+  }
+  
+  private parseResourceOptimization(content: string): any {
+    try {
+      const jsonMatch = content.match(/\{[\s\S]*\}/);
+      if (jsonMatch) {
+        return JSON.parse(jsonMatch[0]);
+      }
+    } catch (e) {
+      // Fallback
+    }
+    
+    return { rawAnalysis: content };
+  }
+  
+  private calculatePredictionConfidence(project: any, historicalData: any): number {
+    let confidence = 70; // Base confidence
+    
+    // Increase confidence with more data
+    if (project.tasks && project.tasks.length > 10) confidence += 10;
+    if (project.dailyLogs && project.dailyLogs.length > 20) confidence += 5;
+    if (historicalData && Object.keys(historicalData).length > 0) confidence += 10;
+    
+    // Decrease confidence with high variance
+    if (project.progress && project.progress < 50) confidence -= 10;
+    
+    return Math.min(100, Math.max(0, confidence));
+  }
+  
+  private calculateCostConfidence(project: any): number {
+    let confidence = 65;
+    
+    if (project.costItems && project.costItems.length > 20) confidence += 15;
+    if (project.budgetLines && project.budgetLines.length > 10) confidence += 10;
+    if (project.changeOrders && project.changeOrders.length < 5) confidence += 10;
+    
+    return Math.min(100, Math.max(0, confidence));
+  }
+  
+  private calculateRiskConfidence(project: any): number {
+    let confidence = 60;
+    
+    if (project.safetyIncidents && project.safetyIncidents.length > 5) confidence += 15;
+    if (project.riskAssessments && project.riskAssessments.length > 3) confidence += 10;
+    if (project.defects && project.defects.length > 10) confidence += 10;
+    
+    return Math.min(100, Math.max(0, confidence));
+  }
+  
+  private generateTimelineRecommendations(project: any, prediction: any): string[] {
+    const recommendations = [];
+    
+    if (prediction.completionDate) {
+      recommendations.push('Focus on critical path activities');
+      recommendations.push('Increase workforce on bottleneck tasks');
+      recommendations.push('Consider fast-tracking overlapping phases');
+      recommendations.push('Pre-order long-lead materials');
+      recommendations.push('Implement daily standup meetings');
+    }
+    
+    return recommendations;
+  }
+  
+  private generateCostRecommendations(project: any, prediction: any): string[] {
+    const recommendations = [];
+    
+    recommendations.push('Review and optimize procurement strategy');
+    recommendations.push('Negotiate bulk material discounts');
+    recommendations.push('Implement just-in-time delivery');
+    recommendations.push('Track labor productivity daily');
+    recommendations.push('Review subcontractor rates');
+    
+    return recommendations;
+  }
+  
+  private generateRiskRecommendations(project: any, prediction: any): string[] {
+    const recommendations = [];
+    
+    recommendations.push('Conduct daily toolbox talks');
+    recommendations.push('Increase safety inspections frequency');
+    recommendations.push('Implement hazard reporting system');
+    recommendations.push('Review all high-risk activities');
+    recommendations.push('Ensure PPE compliance');
+    
+    return recommendations;
+  }
+  
+  private generateResourceRecommendations(project: any, prediction: any): string[] {
+    const recommendations = [];
+    
+    recommendations.push('Cross-train workers for flexibility');
+    recommendations.push('Implement equipment sharing schedule');
+    recommendations.push('Optimize material delivery timing');
+    recommendations.push('Balance workload across teams');
+    recommendations.push('Use prefabrication where possible');
+    
+    return recommendations;
+  }
+  
+  private identifyCriticalFactors(project: any): string[] {
+    const factors = [];
+    
+    factors.push('Critical path tasks');
+    factors.push('Resource availability');
+    factors.push('Weather conditions');
+    factors.push('Permit approvals');
+    factors.push('Material lead times');
+    
+    return factors;
+  }
+  
+  private identifyCostFactors(project: any): string[] {
+    const factors = [];
+    
+    factors.push('Labor rates');
+    factors.push('Material prices');
+    factors.push('Equipment costs');
+    factors.push('Change orders');
+    factors.push('Contingency usage');
+    
+    return factors;
+  }
+  
+  private identifyRiskFactors(project: any): string[] {
+    const factors = [];
+    
+    factors.push('Work at height');
+    factors.push('Heavy equipment operation');
+    factors.push('Electrical work');
+    factors.push('Confined spaces');
+    factors.push('Weather exposure');
+    
+    return factors;
+  }
+  
+  private identifyResourceFactors(project: any): string[] {
+    const factors = [];
+    
+    factors.push('Labor utilization');
+    factors.push('Equipment availability');
+    factors.push('Material supply chain');
+    factors.push('Skill availability');
+    factors.push('Budget constraints');
+    
+    return factors;
+  }
+  
+  private generateAlternatives(project: any, prediction: any): any[] {
+    return [
+      { scenario: 'optimistic', date: prediction.completionDate, probability: 20 },
+      { scenario: 'realistic', date: prediction.completionDate, probability: 60 },
+      { scenario: 'pessimistic', date: prediction.completionDate, probability: 20 },
+    ];
+  }
+  
+  private generateCostAlternatives(project: any, prediction: any): any[] {
+    return [
+      { scenario: 'under-budget', cost: prediction.finalCost * 0.9, probability: 20 },
+      { scenario: 'on-budget', cost: prediction.finalCost, probability: 60 },
+      { scenario: 'over-budget', cost: prediction.finalCost * 1.1, probability: 20 },
+    ];
+  }
+  
+  private generateResourceAlternatives(project: any, prediction: any): any[] {
+    return [
+      { strategy: 'lean', description: 'Minimal resources, longer timeline' },
+      { strategy: 'balanced', description: 'Optimal resource/cost balance' },
+      { strategy: 'accelerated', description: 'Maximum resources, shortest timeline' },
+    ];
+  }
+}
+
+// ============================================
+// EXPORT INSTANCE
+// ============================================
+
+export const aiService = new UnifiedAIService();

@@ -1,0 +1,166 @@
+version: '3.8'
+
+services:
+  # PostgreSQL Database
+  postgres:
+    image: postgres:16-alpine
+    container_name: cortexbuild-db
+    restart: always
+    environment:
+      POSTGRES_USER: cortexbuild
+      POSTGRES_PASSWORD: C0rt3xBu1ld_S3cur3_P@ss
+      POSTGRES_DB: cortexbuild
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    networks:
+      - cortexbuild
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U cortexbuild"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Redis Cache
+  redis:
+    image: redis:7-alpine
+    container_name: cortexbuild-redis
+    restart: always
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - cortexbuild
+    command: redis-server --appendonly yes
+
+  # Ollama Local LLM
+  ollama:
+    image: ollama/ollama:latest
+    container_name: cortexbuild-ollama
+    restart: always
+    volumes:
+      - ollama_data:/root/.ollama
+    ports:
+      - "11434:11434"
+    networks:
+      - cortexbuild
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+    # Note: GPU passthrough requires NVIDIA Container Toolkit
+    # For CPU-only: remove deploy section
+
+  # MinIO Object Storage (S3-compatible)
+  minio:
+    image: minio/minio:latest
+    container_name: cortexbuild-minio
+    restart: always
+    environment:
+      MINIO_ROOT_USER: cortexbuild-admin
+      MINIO_ROOT_PASSWORD: C0rt3xBu1ld_M1n10_S3cur3
+    volumes:
+      - minio_data:/data
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    networks:
+      - cortexbuild
+    command: server /data --console-address ":9001"
+
+  # Next.js Application
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: cortexbuild-app
+    restart: always
+    environment:
+      DATABASE_URL: postgresql://cortexbuild:C0rt3xBu1ld_S3cur3_P@ss@postgres:5432/cortexbuild?schema=public
+      OLLAMA_HOST: http://ollama:11434
+      NEXTAUTH_URL: http://72.62.132.43:3000
+      REDIS_URL: redis://redis:6379
+      STORAGE_PROVIDER: minio
+      STORAGE_BUCKET: cortexbuild
+      MINIO_ENDPOINT: minio:9000
+      MINIO_ACCESS_KEY: cortexbuild-admin
+      MINIO_SECRET_KEY: C0rt3xBu1ld_M1n10_S3cur3
+    ports:
+      - "3000:3000"
+    networks:
+      - cortexbuild
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_started
+      ollama:
+        condition: service_started
+    volumes:
+      - ./uploads:/app/uploads
+
+  # Nginx Reverse Proxy
+  nginx:
+    image: nginx:alpine
+    container_name: cortexbuild-nginx
+    restart: always
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./nginx/ssl:/etc/nginx/ssl:ro
+    networks:
+      - cortexbuild
+    depends_on:
+      - app
+
+  # Prometheus Monitoring
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: cortexbuild-prometheus
+    restart: always
+    volumes:
+      - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus_data:/prometheus
+    ports:
+      - "9090:9090"
+    networks:
+      - cortexbuild
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+
+  # Grafana Dashboards
+  grafana:
+    image: grafana/grafana:latest
+    container_name: cortexbuild-grafana
+    restart: always
+    environment:
+      GF_SECURITY_ADMIN_PASSWORD: C0rt3xBu1ld_Grafana
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./monitoring/grafana:/etc/grafana/provisioning
+    ports:
+      - "3001:3001"
+    networks:
+      - cortexbuild
+    depends_on:
+      - prometheus
+
+networks:
+  cortexbuild:
+    driver: bridge
+
+volumes:
+  postgres_data:
+  redis_data:
+  ollama_data:
+  minio_data:
+  prometheus_data:
+  grafana_data:

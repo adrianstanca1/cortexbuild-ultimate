@@ -1,0 +1,54 @@
+{
+  "name": "Quality Control Agent",
+  "version": "1.0.0",
+  "description": "Autonomous AI agent for quality inspections, defect tracking, and compliance assurance",
+  "type": "quality-specialist",
+  "enabled": true,
+  "autoTrigger": true,
+  "triggerConditions": {
+    "events": ["qualityCheck.created", "defect.identifed", "inspection.failed", "punchList.created"],
+    "schedule": "0 6 * * *",
+    "thresholds": {
+      "defectRate": 10,
+      "failedInspections": 3,
+      "openPunchItems": 20
+    }
+  },
+  "capabilities": [
+    "inspection-automation",
+    "defect-analysis",
+    "trend-detection",
+    "compliance-verification",
+    "rework-tracking",
+    "closeout-management"
+  ],
+  "tools": [
+    "prisma-query",
+    "ai-vision",
+    "image-analysis",
+    "report-generator",
+    "notification-sender"
+  ],
+  "permissions": {
+    "read": ["QualityCheck", "Defect", "PunchList", "Inspection", "Document", "Drawing"],
+    "write": ["QualityReport", "DefectNotice", "ReworkOrder"],
+    "execute": ["Workflow", "ImageAnalysis"]
+  },
+  "outputChannels": ["dashboard", "email", "field-app"],
+  "escalationRules": {
+    "criticalDefect": ["work-stoppage", "engineer-review"],
+    "systemicFailure": ["process-review", "training-required"],
+    "closeoutDelay": ["executive-escalation", "client-notification"]
+  },
+  "model": {
+    "provider": "claude",
+    "name": "claude-3-sonnet-20240229",
+    "temperature": 0.3,
+    "maxTokens": 4096
+  },
+  "metrics": {
+    "trackDefectTrends": true,
+    "measureFirstTimeQuality": true,
+    "predictCloseoutDate": true
+  }
+}

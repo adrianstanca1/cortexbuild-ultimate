@@ -8,3 +8,4 @@ dist/
 .vercel
 tsconfig.tsbuildinfo
 dist_backup_*/
+.next/

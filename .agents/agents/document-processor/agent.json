@@ -1,0 +1,53 @@
+{
+  "name": "Document Processing Agent",
+  "version": "1.0.0",
+  "description": "Autonomous AI agent for document analysis, OCR extraction, and compliance verification",
+  "type": "document-specialist",
+  "enabled": true,
+  "autoTrigger": true,
+  "triggerConditions": {
+    "events": ["document.uploaded", "drawing.revised", "submittal.submitted", "rfi.created"],
+    "schedule": "0 10 * * *",
+    "thresholds": {
+      "pendingReviews": 10,
+      "overdueApprovals": 5
+    }
+  },
+  "capabilities": [
+    "ocr-extraction",
+    "nlp-analysis",
+    "compliance-check",
+    "revision-tracking",
+    "annotation-processing",
+    "search-indexing"
+  ],
+  "tools": [
+    "prisma-query",
+    "ai-vision",
+    "ocr-engine",
+    "pdf-parser",
+    "search-indexer"
+  ],
+  "permissions": {
+    "read": ["Document", "Drawing", "Submittal", "RFI", "Specification"],
+    "write": ["ExtractedData", "ComplianceReport", "SearchIndex"],
+    "execute": ["OCRProcess", "AIAnalysis"]
+  },
+  "outputChannels": ["dashboard", "email", "webhook"],
+  "escalationRules": {
+    "nonCompliant": ["quality-team", "rework-required"],
+    "missingDocs": ["project-hold", "client-notification"],
+    "expiredPermit": ["work-stoppage", "authority-contact"]
+  },
+  "model": {
+    "provider": "google",
+    "name": "gemini-pro-vision",
+    "temperature": 0.3,
+    "maxTokens": 8192
+  },
+  "metrics": {
+    "trackExtractionAccuracy": true,
+    "measureProcessingTime": true,
+    "indexSearchability": true
+  }
+}

@@ -1,0 +1,879 @@
+// CortexBuild Ultimate - MVP Schema (Validated)
+// Phase 1: Core models for enterprise deployment
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// Core Enums
+enum UserRole {
+  SUPER_ADMIN
+  COMPANY_OWNER
+  ADMIN
+  PROJECT_MANAGER
+  FIELD_WORKER
+  VIEWER
+}
+
+enum PlanType {
+  FREE
+  STARTER
+  PRO
+  ENTERPRISE
+  ULTIMATE
+}
+
+enum ProjectStatus {
+  PLANNING
+  ACTIVE
+  ON_HOLD
+  COMPLETED
+  CANCELLED
+  ARCHIVED
+}
+
+enum TaskStatus {
+  NOT_STARTED
+  IN_PROGRESS
+  BLOCKED
+  REVIEW
+  COMPLETED
+  CANCELLED
+}
+
+enum TaskPriority {
+  LOW
+  MEDIUM
+  HIGH
+  URGENT
+}
+
+enum ApiProvider {
+  OPENAI
+  GEMINI
+  CLAUDE
+  OLLAMA
+  LOCAL
+}
+
+// Core Models
+model Organization {
+  id                   String           @id @default(cuid())
+  name                 String
+  slug                 String           @unique
+  industry             String           @default("Construction")
+  
+  plan                 PlanType         @default(STARTER)
+  stripeCustomerId     String?
+  subscriptionStatus   String           @default("ACTIVE")
+  
+  isActive             Boolean          @default(true)
+  createdAt            DateTime         @default(now())
+  updatedAt            DateTime         @updatedAt
+  
+  users                User[]
+  companies            Company[]
+  aiConfigs            AiModelConfig[]
+  auditLogs            AuditLog[]
+  invitations          Invitation[] @relation("OrganizationInvitations")
+  apiKeys              ApiKey[]     @relation("OrganizationApiKeys")
+  webhooks             Webhook[]    @relation("OrganizationWebhooks")
+  storages             Storage[]
+  jobs                 Job[]
+  
+  @@index([slug])
+  @@index([isActive])
+}
+
+model Company {
+  id              String         @id @default(cuid())
+  organizationId  String
+  organization    Organization   @relation(fields: [organizationId], references: [id])
+  name            String
+  address         String?
+  city            String?
+  country         String         @default("USA")
+  phone           String?
+  email           String?
+  
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+  
+  users           User[]
+  projects        Project[]
+  invitations     Invitation[] @relation("CompanyInvitations")
+  
+  @@index([organizationId])
+}
+
+model User {
+  id              String         @id @default(cuid())
+  email           String         @unique
+  emailVerified   DateTime?
+  passwordHash    String?
+  firstName       String
+  lastName        String
+  fullName        String         @db.Text
+  avatarUrl       String?
+  phone           String?
+  jobTitle        String?
+  
+  role            UserRole       @default(FIELD_WORKER)
+  permissions     Json           @default("[]")
+  
+  companyId       String?
+  company         Company?       @relation(fields: [companyId], references: [id])
+  organizationId  String
+  organization    Organization   @relation(fields: [organizationId], references: [id])
+  
+  isActive        Boolean        @default(true)
+  lastLoginAt     DateTime?
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+  
+  // Relations
+  projectMemberships    ProjectMember[]
+  assignedTasks         Task[]          @relation("TaskAssignee")
+  createdTasks          Task[]          @relation("TaskCreator")
+  managedProjects       Project[]       @relation("ProjectManager")
+  rfiRequests           RFI[]           @relation("RFIRequester")
+  rfiAssignments        RFI[]           @relation("RFIAssignee")
+  submittals            Submittal[]     @relation("SubmittalSubmitter")
+  incidents             SafetyIncident[] @relation("IncidentReporter")
+  qualityChecks         QualityCheck[]  @relation("QualityInspector")
+  defects               Defect[]        @relation("DefectIdentifier")
+  milestones            Milestone[]     @relation("MilestoneCreator")
+  costItems             CostItem[]      @relation("CostItemCreator")
+  changeOrders          ChangeOrder[]   @relation("ChangeOrderCreator")
+  progressClaims        ProgressClaim[] @relation("ClaimSubmitter")
+  weatherLogs           WeatherLog[]    @relation("WeatherLogRecorder")
+  dailyLogs             DailyLog[]      @relation("DailyLogCreator")
+  siteDiaries           SiteDiary[]     @relation("SiteDiaryAuthor")
+  drawings              Drawing[]       @relation("DrawingUploader")
+  documents             Document[]      @relation("DocumentUploader")
+  workflows             Workflow[]      @relation("WorkflowCreator")
+  
+  sessions              Session[]
+  accounts              Account[]
+  invitations           Invitation[]    @relation("InvitationInviter")
+  rfiAttachments        RFIAttachment[]
+  submittalAttachments  SubmittalAttachment[]
+  incidentPhotos        IncidentPhoto[]
+  defectPhotos          DefectPhoto[]
+  documentVersions      DocumentVersion[]
+  apiKeys               ApiKey[]        @relation("UserApiKeys")
+  webhooks              Webhook[]       @relation("UserWebhooks")
+  auditLogs             AuditLog[]
+  storages              Storage[]
+  
+  @@index([email])
+  @@index([companyId])
+  @@index([organizationId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  expires      DateTime
+  createdAt    DateTime @default(now())
+  ipAddress    String?
+  userAgent    String?
+  
+  @@index([userId])
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  user              User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  
+  @@unique([provider, providerAccountId])
+  @@index([userId])
+}
+
+model Invitation {
+  id             String         @id @default(cuid())
+  email          String
+  organizationId String
+  organization   Organization   @relation("OrganizationInvitations", fields: [organizationId], references: [id])
+  companyId      String?
+  company        Company?       @relation("CompanyInvitations", fields: [companyId], references: [id])
+  role           UserRole       @default(FIELD_WORKER)
+  invitedById    String
+  invitedBy      User           @relation("InvitationInviter", fields: [invitedById], references: [id])
+  status         String         @default("pending")
+  token          String         @unique
+  expiresAt      DateTime
+  createdAt      DateTime       @default(now())
+  
+  @@index([email])
+  @@index([organizationId])
+  @@index([token])
+}
+
+// AI Configuration (Local LLM + Cloud)
+model AiModelConfig {
+  id              String         @id @default(cuid())
+  organizationId  String
+  organization    Organization   @relation(fields: [organizationId], references: [id])
+  
+  provider        ApiProvider    @default(OLLAMA)
+  model           String         @default("llama3.1:8b")
+  apiEndpoint     String         @default("http://localhost:11434")
+  
+  temperature     Float          @default(0.7)
+  maxTokens       Int            @default(4096)
+  
+  isActive        Boolean        @default(true)
+  isDefault       Boolean        @default(true)
+  
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+  
+  @@index([organizationId])
+}
+
+// Project Management
+model Project {
+  id              String         @id @default(cuid())
+  name            String
+  description     String?        @db.Text
+  code            String         @unique
+  type            String         @default("Commercial")
+  
+  address         String?
+  city            String?
+  country         String         @default("USA")
+  
+  status          ProjectStatus  @default(PLANNING)
+  startDate       DateTime?
+  endDate         DateTime?
+  
+  budget          Float          @default(0)
+  spent           Float          @default(0)
+  progress        Int            @default(0)
+  
+  companyId       String
+  company         Company        @relation(fields: [companyId], references: [id])
+  projectManagerId String?
+  projectManager  User?          @relation("ProjectManager", fields: [projectManagerId], references: [id])
+  
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+  
+  // Relations
+  members         ProjectMember[]
+  tasks           Task[]
+  rfis            RFI[]
+  submittals      Submittal[]
+  incidents       SafetyIncident[]
+  qualityChecks   QualityCheck[]
+  defects         Defect[]
+  milestones      Milestone[]
+  costItems       CostItem[]
+  changeOrders    ChangeOrder[]
+  progressClaims  ProgressClaim[]
+  weatherLogs     WeatherLog[]
+  dailyLogs       DailyLog[]
+  siteDiaries     SiteDiary[]
+  drawings        Drawing[]
+  documents       Document[]
+  workflows       Workflow[]
+  
+  @@index([companyId])
+  @@index([status])
+}
+
+model ProjectMember {
+  id          String         @id @default(cuid())
+  projectId   String
+  project     Project        @relation(fields: [projectId], references: [id])
+  userId      String
+  user        User           @relation(fields: [userId], references: [id])
+  
+  role        String         @default("member")
+  joinedAt    DateTime       @default(now())
+  
+  @@unique([projectId, userId])
+  @@index([projectId])
+}
+
+// Tasks
+model Task {
+  id              String         @id @default(cuid())
+  title           String
+  description     String?        @db.Text
+  code            String         @unique
+  
+  status          TaskStatus     @default(NOT_STARTED)
+  priority        TaskPriority   @default(MEDIUM)
+  
+  assigneeId      String?
+  assignee        User?          @relation("TaskAssignee", fields: [assigneeId], references: [id])
+  createdById     String
+  createdBy       User           @relation("TaskCreator", fields: [createdById], references: [id])
+  
+  projectId       String
+  project         Project        @relation(fields: [projectId], references: [id])
+  
+  dueDate         DateTime?
+  percentComplete Int            @default(0)
+  
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+  
+  @@index([projectId])
+  @@index([status])
+  @@index([assigneeId])
+}
+
+// Milestones
+model Milestone {
+  id              String          @id @default(cuid())
+  name            String
+  targetDate      DateTime
+  status          String          @default("pending")
+  
+  projectId       String
+  project         Project         @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  createdById     String
+  createdBy       User            @relation("MilestoneCreator", fields: [createdById], references: [id])
+  
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+  
+  @@index([projectId])
+}
+
+// Financial
+model CostItem {
+  id              String         @id @default(cuid())
+  description     String
+  category        String         @default("other")
+  amount          Float          @default(0)
+  status          String         @default("estimated")
+  
+  projectId       String
+  project         Project        @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  createdById     String
+  createdBy       User           @relation("CostItemCreator", fields: [createdById], references: [id])
+  
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+  
+  @@index([projectId])
+}
+
+model ChangeOrder {
+  id              String         @id @default(cuid())
+  number          Int
+  title           String
+  description     String?        @db.Text
+  status          String         @default("draft")
+  
+  costChange      Float          @default(0)
+  scheduleChange  Int            @default(0)
+  
+  projectId       String
+  project         Project        @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  createdById     String
+  createdBy       User           @relation("ChangeOrderCreator", fields: [createdById], references: [id])
+  
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+  
+  @@unique([projectId, number])
+  @@index([projectId])
+}
+
+model ProgressClaim {
+  id              String         @id @default(cuid())
+  claimNumber     String         @unique
+  title           String
+  
+  claimDate       DateTime
+  periodStart     DateTime
+  periodEnd       DateTime
+  
+  status          String         @default("draft")
+  claimedAmount   Float          @default(0)
+  approvedAmount  Float?
+  
+  projectId       String
+  project         Project        @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  submittedById   String
+  submittedBy     User           @relation("ClaimSubmitter", fields: [submittedById], references: [id])
+  
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+  
+  @@index([projectId])
+}
+
+// RFI & Submittal
+model RFI {
+  id              String         @id @default(cuid())
+  number          Int
+  rfiNumber       String         @unique
+  subject         String
+  question        String         @db.Text
+  response        String?        @db.Text
+  status          String         @default("open")
+  priority        String         @default("medium")
+  
+  assignedToId    String?
+  assignedTo      User?          @relation("RFIAssignee", fields: [assignedToId], references: [id])
+  
+  projectId       String
+  project         Project        @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  requestedById   String
+  requestedBy     User           @relation("RFIRequester", fields: [requestedById], references: [id])
+  
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+  
+  attachments     RFIAttachment[]
+  
+  @@unique([projectId, number])
+  @@index([projectId])
+}
+
+model RFIAttachment {
+  id               String   @id @default(cuid())
+  name             String
+  cloudStoragePath String
+  fileSize         BigInt?
+  
+  rfiId            String
+  rfi              RFI      @relation(fields: [rfiId], references: [id], onDelete: Cascade)
+  uploadedById     String?
+  uploadedBy       User?    @relation(fields: [uploadedById], references: [id])
+  
+  createdAt        DateTime @default(now())
+  
+  @@index([rfiId])
+}
+
+model Submittal {
+  id              String           @id @default(cuid())
+  number          Int
+  submittalNumber String           @unique
+  title           String
+  description     String?          @db.Text
+  status          String           @default("draft")
+  revision        Int              @default(0)
+  
+  projectId       String
+  project         Project          @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  submittedById   String
+  submittedBy     User             @relation("SubmittalSubmitter", fields: [submittedById], references: [id])
+  
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+  
+  attachments     SubmittalAttachment[]
+  
+  @@unique([projectId, number])
+  @@index([projectId])
+}
+
+model SubmittalAttachment {
+  id               String   @id @default(cuid())
+  name             String
+  cloudStoragePath String
+  fileSize         BigInt?
+  
+  submittalId      String
+  submittal        Submittal @relation(fields: [submittalId], references: [id], onDelete: Cascade)
+  uploadedById     String?
+  uploadedBy       User?    @relation(fields: [uploadedById], references: [id])
+  
+  createdAt        DateTime @default(now())
+  
+  @@index([submittalId])
+}
+
+// Safety
+model SafetyIncident {
+  id              String           @id @default(cuid())
+  incidentNumber  String           @unique
+  title           String
+  description     String           @db.Text
+  
+  severity        String           @default("low")
+  status          String           @default("reported")
+  
+  occurrenceDate  DateTime
+  location        String
+  
+  reportedById    String
+  reportedBy      User             @relation("IncidentReporter", fields: [reportedById], references: [id])
+  
+  projectId       String
+  project         Project          @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+  
+  photos          IncidentPhoto[]
+  
+  @@index([projectId])
+}
+
+model IncidentPhoto {
+  id               String   @id @default(cuid())
+  incidentId       String
+  incident         SafetyIncident @relation(fields: [incidentId], references: [id], onDelete: Cascade)
+  cloudStoragePath String
+  caption          String?
+  uploadedById     String?
+  uploadedBy       User?    @relation(fields: [uploadedById], references: [id])
+  createdAt        DateTime @default(now())
+  
+  @@index([incidentId])
+}
+
+// Quality
+model QualityCheck {
+  id              String         @id @default(cuid())
+  checkNumber     String         @unique
+  title           String
+  
+  status          String         @default("scheduled")
+  scheduledDate   DateTime
+  
+  inspectorId     String
+  inspector       User           @relation("QualityInspector", fields: [inspectorId], references: [id])
+  
+  projectId       String
+  project         Project        @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+  
+  defects         Defect[]       @relation("DefectQualityCheck")
+  
+  @@index([projectId])
+  
+  @@map("quality_checks")
+}
+
+model Defect {
+  id              String          @id @default(cuid())
+  defectNumber    String          @unique
+  title           String
+  description     String          @db.Text
+  
+  priority        String          @default("medium")
+  status          String          @default("identified")
+  
+  identifiedById  String
+  identifiedBy    User            @relation("DefectIdentifier", fields: [identifiedById], references: [id])
+  
+  projectId       String
+  project         Project         @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+  
+  photos          DefectPhoto[]
+  qualityCheck    QualityCheck?  @relation("DefectQualityCheck", fields: [qualityCheckId], references: [id])
+  qualityCheckId  String?
+  
+  @@index([projectId])
+}
+
+model DefectPhoto {
+  id               String   @id @default(cuid())
+  defectId         String
+  defect           Defect   @relation(fields: [defectId], references: [id], onDelete: Cascade)
+  cloudStoragePath String
+  uploadedById     String?
+  uploadedBy       User?    @relation(fields: [uploadedById], references: [id])
+  createdAt        DateTime @default(now())
+  
+  @@index([defectId])
+}
+
+// Time & Weather
+model WeatherLog {
+  id              String         @id @default(cuid())
+  date            DateTime
+  
+  temperature     Float?
+  conditions      String?
+  
+  recordedById    String
+  recordedBy      User           @relation("WeatherLogRecorder", fields: [recordedById], references: [id])
+  
+  projectId       String
+  project         Project        @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  
+  createdAt       DateTime       @default(now())
+  
+  @@unique([projectId, date])
+  @@index([projectId])
+}
+
+model DailyLog {
+  id              String         @id @default(cuid())
+  logNumber       String         @unique
+  date            DateTime
+  
+  workPerformed   String         @db.Text
+  headcount       Int            @default(0)
+  
+  createdById     String
+  createdBy       User           @relation("DailyLogCreator", fields: [createdById], references: [id])
+  
+  projectId       String
+  project         Project        @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+  
+  @@index([projectId])
+}
+
+model SiteDiary {
+  id              String         @id @default(cuid())
+  entryNumber     String         @unique
+  date            DateTime
+  
+  title           String
+  content         String         @db.Text
+  
+  authorId        String
+  author          User           @relation("SiteDiaryAuthor", fields: [authorId], references: [id])
+  
+  projectId       String
+  project         Project        @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+  
+  @@index([projectId])
+}
+
+// Documents & Drawings
+model Document {
+  id              String         @id @default(cuid())
+  number          String         @unique
+  title           String
+  
+  type            String         @default("general")
+  revision        String         @default("0")
+  fileSize        BigInt
+  mimeType        String
+  cloudStoragePath String
+  
+  uploadedById    String
+  uploadedBy      User           @relation("DocumentUploader", fields: [uploadedById], references: [id])
+  
+  projectId       String
+  project         Project        @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+  
+  versions        DocumentVersion[]
+  
+  @@index([projectId])
+}
+
+model DocumentVersion {
+  id              String         @id @default(cuid())
+  documentId      String
+  document        Document       @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  
+  version         Int
+  cloudStoragePath String
+  fileSize        BigInt
+  
+  uploadedById    String
+  uploadedBy      User           @relation(fields: [uploadedById], references: [id])
+  
+  createdAt       DateTime       @default(now())
+  
+  @@index([documentId])
+}
+
+model Drawing {
+  id              String         @id @default(cuid())
+  number          String         @unique
+  title           String
+  
+  discipline      String         @default("architectural")
+  revision        String         @default("0")
+  fileSize        BigInt
+  mimeType        String
+  cloudStoragePath String
+  
+  uploadedById    String
+  uploadedBy      User           @relation("DrawingUploader", fields: [uploadedById], references: [id])
+  
+  projectId       String
+  project         Project        @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+  
+  @@index([projectId])
+}
+
+// Workflow
+model Workflow {
+  id              String         @id @default(cuid())
+  name            String
+  
+  status          String         @default("draft")
+  trigger         Json           @default("{}")
+  nodes           Json           @default("[]")
+  
+  createdById     String
+  createdBy       User           @relation("WorkflowCreator", fields: [createdById], references: [id])
+  
+  projectId       String?
+  project         Project?       @relation(fields: [projectId], references: [id])
+  
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+  
+  executions      WorkflowExecution[]
+  
+  @@index([projectId])
+}
+
+model WorkflowExecution {
+  id              String         @id @default(cuid())
+  workflowId      String
+  workflow        Workflow       @relation(fields: [workflowId], references: [id], onDelete: Cascade)
+  
+  status          String         @default("pending")
+  result          Json?
+  error           String?        @db.Text
+  
+  createdAt       DateTime       @default(now())
+  
+  @@index([workflowId])
+}
+
+// Integrations & API
+model ApiKey {
+  id              String         @id @default(cuid())
+  name            String
+  
+  key             String         @unique
+  prefix          String
+  
+  organizationId  String
+  organization    Organization   @relation("OrganizationApiKeys", fields: [organizationId], references: [id], onDelete: Cascade)
+  
+  userId          String?
+  user            User?          @relation("UserApiKeys", fields: [userId], references: [id])
+  
+  isActive        Boolean        @default(true)
+  createdAt       DateTime       @default(now())
+  
+  @@index([organizationId])
+}
+
+model Webhook {
+  id              String         @id @default(cuid())
+  name            String
+  url             String
+  secret          String         @unique
+  
+  events          String[]       @default([])
+  
+  organizationId  String
+  organization    Organization   @relation("OrganizationWebhooks", fields: [organizationId], references: [id], onDelete: Cascade)
+  
+  userId          String?
+  user            User?          @relation("UserWebhooks", fields: [userId], references: [id])
+  
+  active          Boolean        @default(true)
+  createdAt       DateTime       @default(now())
+  
+  @@index([organizationId])
+}
+
+model AuditLog {
+  id              String         @id @default(cuid())
+  action          String
+  entityType      String
+  entityId        String
+  
+  actorId         String?
+  actor           User?          @relation(fields: [actorId], references: [id])
+  
+  organizationId  String
+  organization    Organization   @relation(fields: [organizationId], references: [id])
+  
+  changes         Json           @default("{}")
+  ipAddress       String?
+  
+  createdAt       DateTime       @default(now())
+  
+  @@index([actorId])
+  @@index([organizationId])
+  @@index([createdAt])
+}
+
+// Storage & Jobs
+model Storage {
+  id              String         @id @default(cuid())
+  name            String
+  path            String
+  provider        String         @default("local")
+  fileSize        BigInt
+  mimeType        String
+  
+  ownerId         String?
+  owner           User?          @relation(fields: [ownerId], references: [id])
+  
+  organizationId  String
+  organization    Organization   @relation(fields: [organizationId], references: [id])
+  
+  createdAt       DateTime       @default(now())
+  
+  @@index([organizationId])
+  @@index([ownerId])
+}
+
+model Job {
+  id              String         @id @default(cuid())
+  type            String
+  status          String         @default("pending")
+  
+  payload         Json           @default("{}")
+  result          Json?
+  error           String?        @db.Text
+  
+  attempts        Int            @default(0)
+  
+  organizationId  String
+  organization    Organization   @relation(fields: [organizationId], references: [id])
+  
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+  
+  @@index([status])
+  @@index([organizationId])
+}

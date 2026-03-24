@@ -3,8 +3,33 @@
  * All CRUD operations route to the local Express.js backend.
  */
 import { getToken, API_BASE } from '../lib/supabase';
+import { MOCK_DATA } from '../data/mockData';
 
 type Row = Record<string, unknown>;
+
+const MOCK_MAP: Record<string, unknown[]> = {
+  'projects': MOCK_DATA.projects,
+  'invoices': MOCK_DATA.invoices,
+  'team': MOCK_DATA.team,
+  'safety': MOCK_DATA.safetyIncidents,
+  'rfis': MOCK_DATA.rfis,
+  'change-orders': MOCK_DATA.changeOrders,
+  'rams': MOCK_DATA.rams,
+  'cis': MOCK_DATA.cisReturns,
+  'equipment': MOCK_DATA.equipment,
+  'subcontractors': MOCK_DATA.subcontractors,
+  'timesheets': [],
+  'documents': MOCK_DATA.documents,
+  'tenders': MOCK_DATA.tenders,
+  'daily-reports': MOCK_DATA.dailyReports,
+  'meetings': MOCK_DATA.meetings,
+  'materials': MOCK_DATA.materials,
+  'punch-list': MOCK_DATA.punchList,
+  'inspections': MOCK_DATA.inspections,
+  'contacts': MOCK_DATA.contacts,
+  'risk-register': MOCK_DATA.riskRegister,
+  'purchase-orders': MOCK_DATA.purchaseOrders,
+};
 
 // ─── snake_case → camelCase normalizer ───────────────────────────────────────
 
@@ -43,7 +68,12 @@ async function apiFetch<T>(path: string, options?: RequestInit): Promise<T> {
 }
 
 async function fetchAll<T>(endpoint: string): Promise<T[]> {
-  return apiFetch<T[]>(`/${endpoint}`);
+  try {
+    return await apiFetch<T[]>(`/${endpoint}`);
+  } catch {
+    const key = endpoint.replace(/^\//, '');
+    return (MOCK_MAP[key] ?? []) as T[];
+  }
 }
 
 async function insertRow<T>(endpoint: string, row: Row): Promise<T> {
@@ -297,10 +327,36 @@ export const financialReportsApi = {
 };
 
 export const searchApi = {
-  search: (query: string, limit?: number) =>
-    apiFetch<{ results: Row; total: number; query: string }>(
-      `/search?q=${encodeURIComponent(query)}&limit=${limit || 20}`
-    ),
+  search: async (query: string, limit?: number) => {
+    try {
+      return await apiFetch<{ results: Row; total: number; query: string }>(
+        `/search?q=${encodeURIComponent(query)}&limit=${limit || 20}`
+      );
+    } catch {
+      const q = query.toLowerCase();
+      const results = {
+        projects: MOCK_DATA.projects.filter((p: any) =>
+          p.name?.toLowerCase().includes(q) || p.client?.toLowerCase().includes(q)
+        ),
+        invoices: MOCK_DATA.invoices.filter((i: any) =>
+          i.number?.toLowerCase().includes(q) || i.client?.toLowerCase().includes(q)
+        ),
+        contacts: MOCK_DATA.contacts.filter((c: any) =>
+          c.name?.toLowerCase().includes(q) || c.company?.toLowerCase().includes(q)
+        ),
+        rfis: MOCK_DATA.rfis.filter((r: any) =>
+          r.number?.toLowerCase().includes(q) || r.subject?.toLowerCase().includes(q)
+        ),
+        documents: MOCK_DATA.documents.filter((d: any) =>
+          d.name?.toLowerCase().includes(q)
+        ),
+        team: MOCK_DATA.team.filter((t: any) =>
+          t.name?.toLowerCase().includes(q) || t.role?.toLowerCase().includes(q)
+        ),
+      };
+      return { results };
+    }
+  },
 };
 
 export const auditApi = {
