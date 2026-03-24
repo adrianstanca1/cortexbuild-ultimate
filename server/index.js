@@ -58,6 +58,21 @@ app.use('/api/contacts',        makeRouter('contacts'));
 app.use('/api/risk-register',   makeRouter('risk_register'));
 app.use('/api/purchase-orders', makeRouter('purchase_orders'));
 app.use('/api/daily-reports',   makeRouter('daily_reports'));
+
+// New construction module routes
+app.use('/api/variations',         makeRouter('variations'));
+app.use('/api/defects',            makeRouter('defects'));
+app.use('/api/valuations',         makeRouter('valuations'));
+app.use('/api/specifications',     makeRouter('specifications'));
+app.use('/api/temp-works',         makeRouter('temp_works'));
+app.use('/api/signage',            makeRouter('signage'));
+app.use('/api/waste-management',   makeRouter('waste_management'));
+app.use('/api/sustainability',     makeRouter('sustainability'));
+app.use('/api/training',            makeRouter('training'));
+app.use('/api/certifications',     makeRouter('certifications'));
+app.use('/api/prequalification',   makeRouter('prequalification'));
+app.use('/api/lettings',            makeRouter('lettings'));
+app.use('/api/measuring',          makeRouter('measuring'));
 app.use('/api/notifications',   require('./routes/notifications'));
 app.use('/api/financial-reports', require('./routes/financial-reports'));
 app.use('/api/search',          require('./routes/search'));

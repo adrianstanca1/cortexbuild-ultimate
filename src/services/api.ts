@@ -461,3 +461,107 @@ export const permissionsApi = {
       body: JSON.stringify({ userId, module, action }),
     }),
 };
+
+export const variationsApi = {
+  getAll: () => fetchAll('variations'),
+  getById: (id: string) => apiFetch(`/variations/${id}`),
+  create: (data: Row) => insertRow('variations', data),
+  update: (id: string, data: Row) => updateRow('variations', id, data),
+  delete: (id: string) => deleteRow('variations', id),
+};
+
+export const defectsApi = {
+  getAll: () => fetchAll('defects'),
+  getById: (id: string) => apiFetch(`/defects/${id}`),
+  create: (data: Row) => insertRow('defects', data),
+  update: (id: string, data: Row) => updateRow('defects', id, data),
+  delete: (id: string) => deleteRow('defects', id),
+};
+
+export const valuationsApi = {
+  getAll: () => fetchAll('valuations'),
+  getById: (id: string) => apiFetch(`/valuations/${id}`),
+  create: (data: Row) => insertRow('valuations', data),
+  update: (id: string, data: Row) => updateRow('valuations', id, data),
+  delete: (id: string) => deleteRow('valuations', id),
+};
+
+export const specificationsApi = {
+  getAll: () => fetchAll('specifications'),
+  getById: (id: string) => apiFetch(`/specifications/${id}`),
+  create: (data: Row) => insertRow('specifications', data),
+  update: (id: string, data: Row) => updateRow('specifications', id, data),
+  delete: (id: string) => deleteRow('specifications', id),
+};
+
+export const tempWorksApi = {
+  getAll: () => fetchAll('temp-works'),
+  getById: (id: string) => apiFetch(`/temp-works/${id}`),
+  create: (data: Row) => insertRow('temp-works', data),
+  update: (id: string, data: Row) => updateRow('temp-works', id, data),
+  delete: (id: string) => deleteRow('temp-works', id),
+};
+
+export const signageApi = {
+  getAll: () => fetchAll('signage'),
+  getById: (id: string) => apiFetch(`/signage/${id}`),
+  create: (data: Row) => insertRow('signage', data),
+  update: (id: string, data: Row) => updateRow('signage', id, data),
+  delete: (id: string) => deleteRow('signage', id),
+};
+
+export const wasteManagementApi = {
+  getAll: () => fetchAll('waste-management'),
+  getById: (id: string) => apiFetch(`/waste-management/${id}`),
+  create: (data: Row) => insertRow('waste-management', data),
+  update: (id: string, data: Row) => updateRow('waste-management', id, data),
+  delete: (id: string) => deleteRow('waste-management', id),
+};
+
+export const sustainabilityApi = {
+  getAll: () => fetchAll('sustainability'),
+  getById: (id: string) => apiFetch(`/sustainability/${id}`),
+  create: (data: Row) => insertRow('sustainability', data),
+  update: (id: string, data: Row) => updateRow('sustainability', id, data),
+  delete: (id: string) => deleteRow('sustainability', id),
+};
+
+export const trainingApi = {
+  getAll: () => fetchAll('training'),
+  getById: (id: string) => apiFetch(`/training/${id}`),
+  create: (data: Row) => insertRow('training', data),
+  update: (id: string, data: Row) => updateRow('training', id, data),
+  delete: (id: string) => deleteRow('training', id),
+};
+
+export const certificationsApi = {
+  getAll: () => fetchAll('certifications'),
+  getById: (id: string) => apiFetch(`/certifications/${id}`),
+  create: (data: Row) => insertRow('certifications', data),
+  update: (id: string, data: Row) => updateRow('certifications', id, data),
+  delete: (id: string) => deleteRow('certifications', id),
+};
+
+export const prequalificationApi = {
+  getAll: () => fetchAll('prequalification'),
+  getById: (id: string) => apiFetch(`/prequalification/${id}`),
+  create: (data: Row) => insertRow('prequalification', data),
+  update: (id: string, data: Row) => updateRow('prequalification', id, data),
+  delete: (id: string) => deleteRow('prequalification', id),
+};
+
+export const lettingsApi = {
+  getAll: () => fetchAll('lettings'),
+  getById: (id: string) => apiFetch(`/lettings/${id}`),
+  create: (data: Row) => insertRow('lettings', data),
+  update: (id: string, data: Row) => updateRow('lettings', id, data),
+  delete: (id: string) => deleteRow('lettings', id),
+};
+
+export const measuringApi = {
+  getAll: () => fetchAll('measuring'),
+  getById: (id: string) => apiFetch(`/measuring/${id}`),
+  create: (data: Row) => insertRow('measuring', data),
+  update: (id: string, data: Row) => updateRow('measuring', id, data),
+  delete: (id: string) => deleteRow('measuring', id),
+};

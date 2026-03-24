@@ -24,6 +24,20 @@ const ALLOWED_COLUMNS = {
   risk_register:    ['title','project_id','project','category','likelihood','impact','risk_score','owner','status','mitigation','review_date','notes','contingency','description'],
   purchase_orders:  ['number','supplier','project_id','project','amount','status','order_date','delivery_date','items','notes','category'],
   daily_reports:    ['project_id','project','date','prepared_by','weather','temperature','workers_on_site','activities','materials','equipment','issues','photos','progress','temp_high','temp_low','delays','safety_observations','visitors','status','submitted_by'],
+  // New construction modules
+  variations:         ['ref','title','project_id','project','subcontractor','status','type','value','original_value','impact','submitted_date','responded_date','description','reason','affected_items','approval_chain','documents'],
+  defects:            ['reference','title','project_id','project','location','description','priority','status','trade','raised_by','assigned_to','due_date','closed_date','photos','cost','category'],
+  valuations:         ['reference','project_id','project','application_number','period_start','period_end','status','contractor_name','client_name','original_value','variations','total_value','retention','amount_due','submitted_date','certified_date','certified_by','notes'],
+  specifications:     ['reference','title','project_id','project','section','version','status','description','specifications','materials','standards','approved_by','approved_date'],
+  temp_works:        ['reference','title','project_id','project','description','type','status','location','design_by','approved_by','design_date','approval_date','erected_by','erected_date','inspected_by','inspected_date','load_capacity','notes'],
+  signage:           ['reference','project_id','project','type','description','location','size','material','quantity','status','required_date','installed_date','installed_by','notes'],
+  waste_management:  ['reference','project_id','project','waste_type','carrier','license_number','skip_number','collection_date','quantity','unit','cost','disposal_site','waste_code','status','notes'],
+  sustainability:   ['project_id','project','metric_type','target','actual','unit','period','status','notes'],
+  training:          ['reference','title','project_id','project','type','provider','duration','cost','attendees','status','scheduled_date','completed_date','certification','expiry_date','notes'],
+  certifications:   ['reference','company','certification_type','body','grade','expiry_date','status','renewal_date','cost','scope','accreditation_number','notes'],
+  prequalification: ['reference','contractor','project_id','project','questionnaire_type','status','score','approved_by','approved_date','expiry_date','documents','sections_completed','total_sections','notes'],
+  lettings:         ['reference','project_id','project','package_name','trade','status','tender_closing_date','award_date','contractor','contract_value','notes'],
+  measuring:        ['reference','project_id','project','survey_type','location','status','surveyor','survey_date','completed_date','areas','total_area','unit','notes'],
 };
 
 /**
