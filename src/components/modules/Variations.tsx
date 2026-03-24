@@ -1,10 +1,11 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
   FileText, Plus, Search, Filter, Download, Clock, AlertCircle,
   CheckCircle, XCircle, ArrowUpRight, ArrowDownRight, AlertTriangle,
   ChevronDown, ChevronRight, Calendar, Building2, User, PoundSterling,
   FileCheck, RefreshCw, Eye, Edit, Trash2, X
 } from 'lucide-react';
+import { variationsApi } from '../../services/api';
 
 interface Variation {
   id: string;
@@ -165,11 +166,20 @@ export default function Variations() {
   const [selectedVar, setSelectedVar] = useState<Variation | null>(null);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [expandedCards, setExpandedCards] = useState<string[]>([]);
+  const [variations, setVariations] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  const filteredVariations = mockVariations.filter(v => {
-    const matchesSearch = v.ref.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      v.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      v.project.toLowerCase().includes(searchTerm.toLowerCase());
+  useEffect(() => {
+    variationsApi.getAll().then(data => {
+      setVariations(data);
+      setLoading(false);
+    }).catch(() => setLoading(false));
+  }, []);
+
+  const filteredVariations = variations.filter((v: any) => {
+    const matchesSearch = (v.ref || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (v.title || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (v.project || '').toLowerCase().includes(searchTerm.toLowerCase());
     const matchesStatus = filterStatus === 'all' || v.status === filterStatus;
     const matchesType = filterType === 'all' || v.type === filterType;
     const matchesImpact = filterImpact === 'all' || v.impact === filterImpact;
@@ -180,9 +190,9 @@ export default function Variations() {
     setExpandedCards(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]);
   };
 
-  const totalPending = mockVariations.filter(v => v.status === 'pending' || v.status === 'submitted').reduce((sum, v) => sum + v.value, 0);
-  const totalApproved = mockVariations.filter(v => v.status === 'approved' || v.status === 'executed').reduce((sum, v) => sum + v.value, 0);
-  const totalRejected = mockVariations.filter(v => v.status === 'rejected').reduce((sum, v) => sum + Math.abs(v.value), 0);
+  const totalPending = variations.filter((v: any) => v.status === 'pending' || v.status === 'submitted').reduce((sum: number, v: any) => sum + Number(v.value), 0);
+  const totalApproved = variations.filter((v: any) => v.status === 'approved' || v.status === 'executed').reduce((sum: number, v: any) => sum + Number(v.value), 0);
+  const totalRejected = variations.filter((v: any) => v.status === 'rejected').reduce((sum: number, v: any) => sum + Math.abs(Number(v.value)), 0);
 
   return (
     <div className="p-6 space-y-6">
@@ -246,7 +256,7 @@ export default function Variations() {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-gray-400 text-xs uppercase tracking-wider">Total Variations</p>
-              <p className="text-2xl font-bold text-white mt-1">{mockVariations.length}</p>
+              <p className="text-2xl font-bold text-white mt-1">{loading ? '...' : variations.length}</p>
             </div>
             <div className="w-10 h-10 rounded-lg bg-orange-500/10 flex items-center justify-center">
               <FileText className="text-orange-400" size={20} />
@@ -394,7 +404,7 @@ export default function Variations() {
                     <div className="mb-4">
                       <p className="text-gray-400 text-xs mb-2">Affected Items</p>
                       <div className="flex flex-wrap gap-2">
-                        {variation.affectedItems.map((item) => (
+                        {(variation.affectedItems as any[] || []).map((item: any) => (
                           <span key={item} className="px-2 py-1 bg-gray-700 text-gray-300 text-xs rounded">
                             {item}
                           </span>
@@ -406,7 +416,7 @@ export default function Variations() {
                       <div>
                         <p className="text-gray-400 text-xs mb-2">Approval Chain</p>
                         <div className="space-y-2">
-                          {variation.approvalChain.map((approver, idx) => (
+                          {(variation.approvalChain as any[] || []).map((approver: any, idx: number) => (
                             <div key={idx} className="flex items-center gap-3 text-sm">
                               <div className={`w-6 h-6 rounded-full flex items-center justify-center ${
                                 approver.status === 'approved' ? 'bg-green-500/20 text-green-400' :

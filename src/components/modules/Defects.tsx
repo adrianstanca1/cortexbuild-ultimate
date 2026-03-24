@@ -1,4 +1,5 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { defectsApi } from '../../services/api';
 import {
   AlertTriangle, Plus, Search, Filter, Download, Clock, AlertCircle,
   CheckCircle, XCircle, ArrowRight, Calendar, Building2, User,
@@ -188,8 +189,24 @@ export default function Defects() {
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [selectedDefect, setSelectedDefect] = useState<Defect | null>(null);
   const [expandedCards, setExpandedCards] = useState<string[]>([]);
+  const [defects, setDefects] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  const filteredDefects = mockDefects.filter(d => {
+  useEffect(() => {
+    const fetchDefects = async () => {
+      try {
+        const data = await defectsApi.getAll();
+        setDefects(data);
+      } catch (error) {
+        console.error('Failed to fetch defects:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchDefects();
+  }, []);
+
+  const filteredDefects = defects.filter((d: any) => {
     const matchesSearch = d.ref.toLowerCase().includes(searchTerm.toLowerCase()) ||
       d.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
       d.project.toLowerCase().includes(searchTerm.toLowerCase());
@@ -203,9 +220,9 @@ export default function Defects() {
     setExpandedCards(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]);
   };
 
-  const totalOpen = mockDefects.filter(d => !['completed', 'closed'].includes(d.status)).length;
-  const totalCritical = mockDefects.filter(d => d.priority === 'critical' && d.status !== 'closed').length;
-  const totalCost = mockDefects.reduce((sum, d) => sum + d.cost, 0);
+  const totalOpen = defects.filter((v: any) => !['completed', 'closed'].includes(v.status)).length;
+  const totalCritical = defects.filter((v: any) => v.priority === 'critical' && v.status !== 'closed').length;
+  const totalCost = defects.reduce((sum, v: any) => sum + v.cost, 0);
 
   return (
     <div className="p-6 space-y-6">
@@ -263,7 +280,7 @@ export default function Defects() {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-gray-400 text-xs uppercase tracking-wider">Total Defects</p>
-              <p className="text-2xl font-bold text-white mt-1">{mockDefects.length}</p>
+              <p className="text-2xl font-bold text-white mt-1">{defects.length}</p>
             </div>
             <div className="w-10 h-10 rounded-lg bg-blue-500/10 flex items-center justify-center">
               <FileText className="text-blue-400" size={20} />
@@ -422,11 +439,11 @@ export default function Defects() {
                       </div>
                     </div>
 
-                    {defect.photos.length > 0 && (
+                    {(defect.photos as any[])?.length > 0 && (
                       <div className="mb-4">
-                        <p className="text-gray-400 text-xs mb-2">Photos ({defect.photos.length})</p>
+                        <p className="text-gray-400 text-xs mb-2">Photos ({defect.photos?.length || 0})</p>
                         <div className="flex gap-2">
-                          {defect.photos.map((photo, idx) => (
+                          {(defect.photos as any[]).map((photo: any, idx: number) => (
                             <div key={idx} className="flex items-center gap-2 px-3 py-2 bg-gray-700 rounded text-sm text-gray-300">
                               <Camera size={14} /> {photo.caption}
                             </div>
@@ -435,11 +452,11 @@ export default function Defects() {
                       </div>
                     )}
 
-                    {defect.comments.length > 0 && (
+                    {(defect.comments as any[])?.length > 0 && (
                       <div>
                         <p className="text-gray-400 text-xs mb-2">Comments</p>
                         <div className="space-y-2">
-                          {defect.comments.map((comment, idx) => (
+                          {(defect.comments as any[]).map((comment: any, idx: number) => (
                             <div key={idx} className="flex gap-3 p-3 bg-gray-800 rounded">
                               <MessageSquare size={14} className="text-gray-500 mt-1" />
                               <div>

@@ -1,8 +1,9 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
   Plus, Search, Clock, CheckCircle, AlertTriangle, Construction,
   Shield, Eye, Edit, X
 } from 'lucide-react';
+import { tempWorksApi } from '../../services/api';
 
 interface TempWork {
   id: string;
@@ -55,10 +56,19 @@ const statusConfig: Record<string, { label: string; color: string; bg: string }>
 export default function TempWorks() {
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState<string>('all');
+  const [tempWorks, setTempWorks] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  const filtered = mockTempWorks.filter(t => {
-    const matchesSearch = t.ref.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      t.title.toLowerCase().includes(searchTerm.toLowerCase());
+  useEffect(() => {
+    tempWorksApi.getAll().then((data: any[]) => {
+      setTempWorks(data);
+      setLoading(false);
+    }).catch(() => setLoading(false));
+  }, []);
+
+  const filtered = tempWorks.filter((t: any) => {
+    const matchesSearch = (t.ref || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (t.title || '').toLowerCase().includes(searchTerm.toLowerCase());
     const matchesStatus = filterStatus === 'all' || t.status === filterStatus;
     return matchesSearch && matchesStatus;
   });

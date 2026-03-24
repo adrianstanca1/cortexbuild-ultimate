@@ -1,8 +1,9 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
   FileText, Plus, Search, Filter, Download, Clock, BookOpen,
   CheckCircle, AlertTriangle, FileCheck, Eye, Edit, X, Building2
 } from 'lucide-react';
+import { specificationsApi } from '../../services/api';
 
 interface Specification {
   id: string;
@@ -18,50 +19,27 @@ interface Specification {
   approvedBy?: string;
 }
 
-const mockSpecs: Specification[] = [
-  {
-    id: 'SPEC-001',
-    ref: 'KINGS PAN-SPEC-01',
-    title: 'Structural Steelwork Specification',
-    project: 'Kingspan Stadium Refurbishment',
-    section: '05 20 00',
-    discipline: 'Structural',
-    version: 'Rev B',
-    status: 'issued',
-    issuedDate: '2024-01-15',
-    description: 'Complete specification for structural steelwork including materials, fabrication, protective treatment and erection requirements.',
-    approvedBy: 'Harvey Engineering',
-  },
-  {
-    id: 'SPEC-002',
-    ref: 'KINGS SPEC-02',
-    title: 'Architectural Metalwork Specification',
-    project: 'Kingspan Stadium Refurbishment',
-    section: '05 50 00',
-    discipline: 'Architectural',
-    version: 'Rev A',
-    status: 'approved',
-    description: 'Specification for handrails, balustrades, ladders and architectural metalwork items.',
-    approvedBy: 'KMS Architects',
-  },
-  {
-    id: 'SPEC-003',
-    ref: 'BHS-SPEC-MEP-01',
-    title: 'M&E Performance Specification',
-    project: 'Belfast High School Extension',
-    section: 'MEP',
-    discipline: 'M&E',
-    version: 'Rev C',
-    status: 'review',
-    description: 'Performance-based specification for all mechanical and electrical installations.',
-  },
-];
-
 export default function Specifications() {
+  const [specifications, setSpecifications] = useState<Specification[]>([]);
+  const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState<string>('all');
 
-  const filtered = mockSpecs.filter(s => {
+  useEffect(() => {
+    async function loadSpecifications() {
+      try {
+        const data = await specificationsApi.getAll() as Specification[];
+        setSpecifications(data);
+      } catch (error) {
+        console.error('Failed to load specifications:', error);
+      } finally {
+        setLoading(false);
+      }
+    }
+    loadSpecifications();
+  }, []);
+
+  const filtered = specifications.filter(s => {
     const matchesSearch = s.ref.toLowerCase().includes(searchTerm.toLowerCase()) ||
       s.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
       s.project.toLowerCase().includes(searchTerm.toLowerCase());

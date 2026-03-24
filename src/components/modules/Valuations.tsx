@@ -1,4 +1,5 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { valuationsApi } from '../../services/api';
 import {
   FileText, Plus, Search, Filter, Download, Clock, AlertCircle,
   CheckCircle, XCircle, DollarSign, Building2, User, Calendar,
@@ -142,11 +143,20 @@ const statusConfig: Record<string, { label: string; color: string; bg: string }>
 };
 
 export default function Valuations() {
+  const [valuations, setValuations] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState<string>('all');
   const [showCreateModal, setShowCreateModal] = useState(false);
 
-  const filteredValuations = mockValuations.filter(v => {
+  useEffect(() => {
+    valuationsApi.getAll()
+      .then(setValuations)
+      .catch(console.error)
+      .finally(() => setLoading(false));
+  }, []);
+
+  const filteredValuations = valuations.filter((v: any) => {
     const matchesSearch = v.ref.toLowerCase().includes(searchTerm.toLowerCase()) ||
       v.project.toLowerCase().includes(searchTerm.toLowerCase()) ||
       v.contractor.toLowerCase().includes(searchTerm.toLowerCase());
@@ -154,9 +164,9 @@ export default function Valuations() {
     return matchesSearch && matchesStatus;
   });
 
-  const totalSubmitted = mockValuations.filter(v => v.status === 'submitted' || v.status === 'valued').reduce((sum, v) => sum + v.thisApplication, 0);
-  const totalCertified = mockValuations.filter(v => v.status === 'certified' || v.status === 'paid').reduce((sum, v) => sum + v.certifiedValue, 0);
-  const totalPaid = mockValuations.filter(v => v.status === 'paid').reduce((sum, v) => sum + v.certifiedValue, 0);
+  const totalSubmitted = valuations.filter((v: any) => v.status === 'submitted' || v.status === 'valued').reduce((sum, v: any) => sum + v.thisApplication, 0);
+  const totalCertified = valuations.filter((v: any) => v.status === 'certified' || v.status === 'paid').reduce((sum, v: any) => sum + v.certifiedValue, 0);
+  const totalPaid = valuations.filter((v: any) => v.status === 'paid').reduce((sum, v: any) => sum + v.certifiedValue, 0);
 
   return (
     <div className="p-6 space-y-6">
@@ -214,7 +224,7 @@ export default function Valuations() {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-gray-400 text-xs uppercase tracking-wider">Total Applications</p>
-              <p className="text-2xl font-bold text-white mt-1">{mockValuations.length}</p>
+              <p className="text-2xl font-bold text-white mt-1">{valuations.length}</p>
             </div>
             <div className="w-10 h-10 rounded-lg bg-orange-500/10 flex items-center justify-center">
               <Receipt className="text-orange-400" size={20} />
