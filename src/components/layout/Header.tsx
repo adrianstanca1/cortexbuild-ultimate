@@ -1,8 +1,9 @@
 import { useState } from 'react';
-import { Bell, Search, Moon, Sun, Wifi, WifiOff, ChevronDown, Menu, X, Monitor } from 'lucide-react';
+import { Bell, Search, Moon, Sun, Wifi, WifiOff, ChevronDown, Menu, X, Monitor, LogOut, User, Settings } from 'lucide-react';
 import { type Module } from '../../types';
 import { NotificationsPanel } from './NotificationsPanel';
 import { useTheme } from '../../context/ThemeContext';
+import { useAuth } from '../../context/AuthContext';
 
 const MODULE_LABELS: Record<Module, string> = {
   'dashboard': 'Dashboard',
@@ -55,6 +56,8 @@ export function Header({ activeModule, onMenuToggle }: HeaderProps) {
   const [online] = useState(true);
   const [notificationsOpen, setNotificationsOpen] = useState(false);
   const [themeMenuOpen, setThemeMenuOpen] = useState(false);
+  const [userMenuOpen, setUserMenuOpen] = useState(false);
+  const { user, signOut } = useAuth();
   const { theme, setTheme, resolvedTheme } = useTheme();
   const notifications = 4;
 
@@ -253,33 +256,92 @@ export function Header({ activeModule, onMenuToggle }: HeaderProps) {
         <div style={{ width: '1px', height: '24px', background: 'var(--slate-700)', margin: '0 4px' }} />
 
         {/* User menu */}
-        <button
-          style={{
-            display: 'flex', alignItems: 'center', gap: '10px',
-            background: 'none', border: '1px solid transparent',
-            cursor: 'pointer', padding: '6px 10px', borderRadius: '8px',
-            transition: 'all 0.2s',
-          }}
-          onMouseEnter={e => { e.currentTarget.style.background = 'var(--slate-800)'; }}
-          onMouseLeave={e => { e.currentTarget.style.background = 'none'; }}
-        >
-          <div
+        <div style={{ position: 'relative' }}>
+          <button
+            type="button"
+            onClick={() => setUserMenuOpen(!userMenuOpen)}
             style={{
-              width: '28px', height: '28px', borderRadius: '50%',
-              background: 'linear-gradient(135deg, var(--amber-500), var(--amber-600))',
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              fontFamily: 'var(--font-display)', fontSize: '10px', fontWeight: 700,
-              color: 'var(--slate-950)',
+              display: 'flex', alignItems: 'center', gap: '10px',
+              background: 'none', border: '1px solid transparent',
+              cursor: 'pointer', padding: '6px 10px', borderRadius: '8px',
+              transition: 'all 0.2s',
             }}
+            onMouseEnter={e => { e.currentTarget.style.background = 'var(--slate-800)'; }}
+            onMouseLeave={e => { e.currentTarget.style.background = 'none'; }}
           >
-            AS
-          </div>
-          <div style={{ textAlign: 'left' }}>
-            <div style={{ fontFamily: 'var(--font-body)', fontSize: '12px', fontWeight: 600, color: 'var(--slate-100)', lineHeight: 1.2 }}>Adrian Stanca</div>
-            <div style={{ fontFamily: 'var(--font-mono)', fontSize: '9px', color: 'var(--slate-500)' }}>CortexBuild Ltd</div>
-          </div>
-          <ChevronDown style={{ width: '12px', height: '12px', color: 'var(--slate-500)' }} />
-        </button>
+            <div
+              style={{
+                width: '28px', height: '28px', borderRadius: '50%',
+                background: 'linear-gradient(135deg, var(--amber-500), var(--amber-600))',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                fontFamily: 'var(--font-display)', fontSize: '10px', fontWeight: 700,
+                color: 'var(--slate-950)',
+              }}
+            >
+              {user?.name?.split(' ').map(n => n[0]).join('').toUpperCase() || 'U'}
+            </div>
+            <div style={{ textAlign: 'left' }}>
+              <div style={{ fontFamily: 'var(--font-body)', fontSize: '12px', fontWeight: 600, color: 'var(--slate-100)', lineHeight: 1.2 }}>{user?.name || 'User'}</div>
+              <div style={{ fontFamily: 'var(--font-mono)', fontSize: '9px', color: 'var(--slate-500)' }}>{user?.company || 'CortexBuild Ltd'}</div>
+            </div>
+            <ChevronDown style={{ width: '12px', height: '12px', color: 'var(--slate-500)' }} />
+          </button>
+          {userMenuOpen && (
+            <div style={{
+              position: 'absolute', right: 0, top: '100%', marginTop: '8px',
+              background: 'var(--slate-800)', border: '1px solid var(--slate-700)',
+              borderRadius: '8px', padding: '4px', minWidth: '180px', zIndex: 100,
+              boxShadow: '0 4px 20px rgba(0,0,0,0.3)',
+            }}>
+              <button
+                type="button"
+                onClick={() => { setUserMenuOpen(false); }}
+                style={{
+                  width: '100%', display: 'flex', alignItems: 'center', gap: '10px',
+                  padding: '10px 12px', background: 'transparent', border: 'none',
+                  cursor: 'pointer', borderRadius: '6px', color: 'var(--slate-300)',
+                  fontFamily: 'var(--font-body)', fontSize: '13px',
+                }}
+                onMouseEnter={e => { e.currentTarget.style.background = 'var(--slate-700)'; }}
+                onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; }}
+              >
+                <Settings style={{ width: '14px', height: '14px' }} />
+                Settings
+              </button>
+              <button
+                type="button"
+                onClick={() => { setUserMenuOpen(false); }}
+                style={{
+                  width: '100%', display: 'flex', alignItems: 'center', gap: '10px',
+                  padding: '10px 12px', background: 'transparent', border: 'none',
+                  cursor: 'pointer', borderRadius: '6px', color: 'var(--slate-300)',
+                  fontFamily: 'var(--font-body)', fontSize: '13px',
+                }}
+                onMouseEnter={e => { e.currentTarget.style.background = 'var(--slate-700)'; }}
+                onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; }}
+              >
+                <User style={{ width: '14px', height: '14px' }} />
+                Profile
+              </button>
+              <div style={{ height: '1px', background: 'var(--slate-700)', margin: '4px 0' }} />
+              <button
+                type="button"
+                onClick={async () => { await signOut(); setUserMenuOpen(false); }}
+                style={{
+                  width: '100%', display: 'flex', alignItems: 'center', gap: '10px',
+                  padding: '10px 12px', background: 'transparent', border: 'none',
+                  cursor: 'pointer', borderRadius: '6px', color: '#ef4444',
+                  fontFamily: 'var(--font-body)', fontSize: '13px',
+                }}
+                onMouseEnter={e => { e.currentTarget.style.background = 'rgba(239,68,68,0.1)'; }}
+                onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; }}
+              >
+                <LogOut style={{ width: '14px', height: '14px' }} />
+                Sign Out
+              </button>
+            </div>
+          )}
+        </div>
       </div>
     </header>
   );
