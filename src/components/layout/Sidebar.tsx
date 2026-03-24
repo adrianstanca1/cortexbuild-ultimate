@@ -7,7 +7,9 @@ import {
   MessageSquare, GitPullRequest, CheckSquare, ClipboardCheck,
   Triangle, Layers, Package, ClipboardList, Store,
   HardHat, TrendingUp, Brain, Bell, FileBarChart, TrendingUp as TrendingUpIcon,
-  PieChart
+  PieChart, FileEdit, Clipboard, Coins, FileStack, Construction,
+  Signpost, Trash2, Leaf, GraduationCap, Award, BadgeCheck,
+  Building, Ruler
 } from 'lucide-react';
 
 interface SidebarProps {
@@ -46,6 +48,10 @@ const groups: { label: string; items: { id: Module; label: string; icon: React.F
       { id: 'cis', label: 'CIS Returns', icon: Receipt, badge: 'UK', badgeVariant: 'blue' },
       { id: 'procurement', label: 'Procurement', icon: ShoppingCart },
       { id: 'change-orders', label: 'Change Orders', icon: GitPullRequest },
+      { id: 'variations', label: 'Variations', icon: FileEdit },
+      { id: 'valuations', label: 'Valuations', icon: Coins },
+      { id: 'prequalification', label: 'Prequalification', icon: BadgeCheck },
+      { id: 'lettings', label: 'Lettings', icon: Building },
     ]
   },
   {
@@ -56,6 +62,8 @@ const groups: { label: string; items: { id: Module; label: string; icon: React.F
       { id: 'plant', label: 'Plant & Equipment', icon: Wrench },
       { id: 'materials', label: 'Materials', icon: Package },
       { id: 'rfis', label: 'RFIs', icon: HardHat },
+      { id: 'temp-works', label: 'Temp Works', icon: Construction },
+      { id: 'measuring', label: 'Measuring', icon: Ruler },
     ]
   },
   {
@@ -66,6 +74,8 @@ const groups: { label: string; items: { id: Module; label: string; icon: React.F
       { id: 'punch-list', label: 'Punch List / Snagging', icon: CheckSquare },
       { id: 'risk-register', label: 'Risk Register', icon: Triangle },
       { id: 'documents', label: 'Documents', icon: BookOpen },
+      { id: 'defects', label: 'Defects', icon: FileSearch },
+      { id: 'specifications', label: 'Specifications', icon: FileStack },
     ]
   },
   {
@@ -74,6 +84,11 @@ const groups: { label: string; items: { id: Module; label: string; icon: React.F
       { id: 'executive-reports', label: 'Executive Reports', icon: FileBarChart, badge: 'NEW', badgeVariant: 'green' },
       { id: 'marketplace', label: 'AI Marketplace', icon: Store, badge: 'NEW', badgeVariant: 'green' },
       { id: 'settings', label: 'Settings', icon: Settings },
+      { id: 'signage', label: 'Signage', icon: Signpost },
+      { id: 'waste-management', label: 'Waste Management', icon: Trash2 },
+      { id: 'sustainability', label: 'Sustainability', icon: Leaf },
+      { id: 'training', label: 'Training', icon: GraduationCap },
+      { id: 'certifications', label: 'Certifications', icon: Award },
     ]
   },
 ];
