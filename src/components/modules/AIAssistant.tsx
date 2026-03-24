@@ -9,6 +9,7 @@ import {
   projects, invoices, safetyIncidents, rfis, changeOrders,
   teamMembers
 } from '../../data/mockData';
+import { sendChatMessage } from '../../services/ai';
 
 interface Message {
   id: string;
@@ -328,7 +329,6 @@ export function AIAssistant() {
     setMessages(prev => [...prev, userMessage]);
     setInput('');
 
-    // Create chat session if this is the first message
     if (messages.length === 0) {
       const newSessionId = Date.now().toString();
       setChatSessions(prev => [
@@ -340,39 +340,51 @@ export function AIAssistant() {
 
     setIsTyping(true);
 
-    setTimeout(() => {
-      const responseText = generateContextAwareResponse(messageText, selectedAgent);
-      const words = responseText.split(' ');
+    sendChatMessage(messageText, { agent: selectedAgent, context: {} })
+      .then((response) => {
+        const assistantMessage: Message = {
+          id: (Date.now() + 1).toString(),
+          role: 'assistant',
+          content: '',
+          timestamp: new Date(),
+          isStreaming: true
+        };
 
-      const assistantMessage: Message = {
-        id: (Date.now() + 1).toString(),
-        role: 'assistant',
-        content: '',
-        timestamp: new Date(),
-        isStreaming: true
-      };
+        setMessages(prev => [...prev, assistantMessage]);
 
-      setMessages(prev => [...prev, assistantMessage]);
+        const words = response.reply.split(' ');
+        let currentIndex = 0;
 
-      let currentIndex = 0;
-      const streamInterval = setInterval(() => {
-        if (currentIndex < words.length) {
-          const newContent = words.slice(0, currentIndex + 1).join(' ');
-          setMessages(prev => [
-            ...prev.slice(0, -1),
-            { ...assistantMessage, content: newContent + ' |' }
-          ]);
-          currentIndex++;
-        } else {
-          clearInterval(streamInterval);
-          setMessages(prev => [
-            ...prev.slice(0, -1),
-            { ...assistantMessage, content: responseText, isStreaming: false }
-          ]);
-          setIsTyping(false);
-        }
-      }, Math.random() * 20 + 40); // 40-60ms per word
-    }, 500);
+        const streamInterval = setInterval(() => {
+          if (currentIndex < words.length) {
+            const newContent = words.slice(0, currentIndex + 1).join(' ');
+            setMessages(prev => [
+              ...prev.slice(0, -1),
+              { ...assistantMessage, content: newContent + ' |' }
+            ]);
+            currentIndex++;
+          } else {
+            clearInterval(streamInterval);
+            setMessages(prev => [
+              ...prev.slice(0, -1),
+              { ...assistantMessage, content: response.reply, isStreaming: false }
+            ]);
+            setIsTyping(false);
+          }
+        }, Math.random() * 20 + 40);
+      })
+      .catch((error) => {
+        console.error('AI Chat error:', error);
+        const errorMessage: Message = {
+          id: (Date.now() + 1).toString(),
+          role: 'assistant',
+          content: `Sorry, I encountered an error: ${error.message}. Please try again or check if the server is running.`,
+          timestamp: new Date(),
+          isStreaming: false
+        };
+        setMessages(prev => [...prev, errorMessage]);
+        setIsTyping(false);
+      });
   };
 
   const selectedAgentData = agents.find(a => a.id === selectedAgent)!;
