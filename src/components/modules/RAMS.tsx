@@ -1,830 +1,435 @@
-/**
- * RAMS Module — Risk Assessment & Method Statement Management
- * CortexBuild Ultimate
- *
- * Full RAMS document lifecycle: creation, approval workflow, templates, review log
- * Sub-tabs: Documents | Create | Approval Workflow | Templates | Review Log
- */
-
 import { useState } from 'react';
-import {
-  Shield, Plus, Search, AlertTriangle, CheckCircle2, FileText, Users,
-  ClipboardCheck, Eye, X, ChevronRight, Download, Archive, Trash2, Edit2,
-  Clock, TrendingUp, ChevronDown, ChevronUp, MoreVertical, Filter,
-  Calendar, MapPin, User, CheckCircle, AlertCircle, RefreshCw, FileDown,
-} from 'lucide-react';
-import clsx from 'clsx';
+import { Shield, Plus, Search, FileCheck, AlertTriangle, Clock, CheckCircle, Edit2, Trash2, X, ChevronDown, ChevronUp, Download, Award } from 'lucide-react';
+import { useRAMS } from '../../hooks/useData';
+import { toast } from 'sonner';
 
 type AnyRow = Record<string, unknown>;
 
-// ─── Types ────────────────────────────────────────────────────────────────
+const STATUS_OPTIONS = ['Draft','Under Review','Approved','Superseded'];
+const DOCUMENT_TYPES = ['RAMS','Method Statement','Risk Assessment'];
+const ACTIVITY_TYPES = ['Groundworks','Structural Steel','Concrete Works','Roofing','Scaffolding','Electrical','Plumbing','MEWP Operations','Demolition','Excavation','Working at Height','Hot Works','Confined Space'];
+const HAZARD_LEVELS = [1, 2, 3, 4, 5];
 
-interface RAMSDocument {
-  id: string;
-  title: string;
-  project: string;
-  trade: string;
-  author: string;
-  version: string;
-  status: 'Draft' | 'Under Review' | 'Approved' | 'Expired' | 'Rejected';
-  createdDate: string;
-  expiryDate: string;
-  approvalDate: string | null;
-  hazards: Hazard[];
-  controlMeasures: ControlMeasure[];
-  ppeRequired: string[];
-  emergencyProcedures: string;
-  personsResponsible: string[];
-  competencyRequirements: string[];
-}
+const statusColour: Record<string,string> = {
+  'Draft':'bg-gray-700 text-gray-400','Under Review':'bg-yellow-500/20 text-yellow-400',
+  'Approved':'bg-green-500/20 text-green-400','Superseded':'bg-gray-700 text-gray-500',
+};
 
-interface Hazard {
-  id: string;
-  description: string;
-  whoAffected: string;
-  likelihood: number;
-  severity: number;
-  riskScore: number;
-  ragStatus: string;
-}
+const emptyForm = { title:'',activity:'',project_id:'',doc_type:'RAMS',status:'Draft',reviewed_by:'',approved_by:'',valid_from:'',valid_until:'',hazards:'',controls:'',ppe:'',version:'1',created_by:'',review_date:'',likelihood:'3',severity:'3',notes:'' };
 
-interface ControlMeasure {
-  id: string;
-  type: 'eliminate' | 'substitute' | 'engineer' | 'admin' | 'ppe';
-  description: string;
-  residualRisk: string;
-}
-
-interface MethodStep {
-  id: string;
-  stepNumber: number;
-  description: string;
-}
-
-interface ApprovalRecord {
-  id: string;
-  ramsId: string;
-  action: 'submitted' | 'approved' | 'rejected' | 'commented';
-  actor: string;
-  timestamp: string;
-  comments?: string;
-  rating?: number;
-}
-
-// ─── Mock Data ────────────────────────────────────────────────────────────
-
-const mockRAMS: RAMSDocument[] = [
-  {
-    id: 'r1',
-    title: 'Scaffold Erection - Main Block',
-    project: 'Riverside Tower',
-    trade: 'Scaffold Erection',
-    author: 'John Smith',
-    version: '2.1',
-    status: 'Approved',
-    createdDate: '2026-01-15',
-    expiryDate: '2027-01-15',
-    approvalDate: '2026-02-10',
-    hazards: [
-      { id: 'h1', description: 'Fall from height', whoAffected: 'All workers', likelihood: 4, severity: 5, riskScore: 20, ragStatus: 'Red' },
-      { id: 'h2', description: 'Dropped objects', whoAffected: 'Workers below', likelihood: 3, severity: 4, riskScore: 12, ragStatus: 'Amber' },
-    ],
-    controlMeasures: [
-      { id: 'c1', type: 'ppe', description: 'Full body harness and safety line', residualRisk: 'Medium' },
-      { id: 'c2', type: 'engineer', description: 'Guardrails on all platforms', residualRisk: 'Low' },
-    ],
-    ppeRequired: ['Hard hat', 'Safety harness', 'Work boots', 'High-visibility vest'],
-    emergencyProcedures: 'Call emergency services, cease all work, initiate rescue plan',
-    personsResponsible: ['John Smith', 'Sarah Johnson'],
-    competencyRequirements: ['CSCS Gold', 'Working at Height', 'Scaffold Inspection'],
-  },
-  {
-    id: 'r2',
-    title: 'Concrete Pour - Foundation Slab',
-    project: 'Riverside Tower',
-    trade: 'Concrete Pour',
-    author: 'Sarah Johnson',
-    version: '1.0',
-    status: 'Under Review',
-    createdDate: '2026-02-20',
-    expiryDate: '2027-02-20',
-    approvalDate: null,
-    hazards: [
-      { id: 'h3', description: 'Chemical burns from wet concrete', whoAffected: 'All operatives', likelihood: 2, severity: 4, riskScore: 8, ragStatus: 'Amber' },
-      { id: 'h4', description: 'Entanglement in concrete pump', whoAffected: 'Pump operatives', likelihood: 2, severity: 5, riskScore: 10, ragStatus: 'Amber' },
-    ],
-    controlMeasures: [
-      { id: 'c3', type: 'ppe', description: 'Protective gloves, eye protection, chemical suit', residualRisk: 'Low' },
-      { id: 'c4', type: 'admin', description: 'Weekly toolbox talks on concrete safety', residualRisk: 'Medium' },
-    ],
-    ppeRequired: ['Hard hat', 'Chemical suit', 'Gloves', 'Eye protection', 'Respirator'],
-    emergencyProcedures: 'Flush affected area with water, seek medical attention immediately',
-    personsResponsible: ['Sarah Johnson', 'Tom Bradley'],
-    competencyRequirements: ['CSCS Gold', 'Confined Space Entry Training'],
-  },
-  {
-    id: 'r3',
-    title: 'Steel Frame Erection - Block A',
-    project: 'Tech Hub Phase 2',
-    trade: 'Steel Frame Erection',
-    author: 'Tom Bradley',
-    version: '3.0',
-    status: 'Approved',
-    createdDate: '2025-12-01',
-    expiryDate: '2026-12-01',
-    approvalDate: '2026-01-05',
-    hazards: [
-      { id: 'h5', description: 'Fall from height during member installation', whoAffected: 'All site personnel', likelihood: 4, severity: 5, riskScore: 20, ragStatus: 'Red' },
-    ],
-    controlMeasures: [
-      { id: 'c5', type: 'engineer', description: 'Mobile elevated work platform with safety gate', residualRisk: 'Low' },
-    ],
-    ppeRequired: ['Hard hat', 'Full harness', 'Safety footwear', 'HiVis vest'],
-    emergencyProcedures: 'Activate rescue plan, call emergency services',
-    personsResponsible: ['Tom Bradley'],
-    competencyRequirements: ['CSCS Gold', 'MEWP', 'Working at Height'],
-  },
-  {
-    id: 'r4',
-    title: 'Confined Space Entry - Basement Tank',
-    project: 'Birmingham Road Bridge',
-    trade: 'Confined Space Entry',
-    author: 'Mike Davis',
-    version: '1.5',
-    status: 'Approved',
-    createdDate: '2026-01-10',
-    expiryDate: '2027-01-10',
-    approvalDate: '2026-02-01',
-    hazards: [
-      { id: 'h6', description: 'Atmospheric hazard - oxygen deficiency', whoAffected: 'Entry workers', likelihood: 3, severity: 5, riskScore: 15, ragStatus: 'Red' },
-    ],
-    controlMeasures: [
-      { id: 'c6', type: 'admin', description: 'Atmospheric testing every 15 minutes', residualRisk: 'Low' },
-    ],
-    ppeRequired: ['Supplied air respirator', 'Full harness', 'Hard hat'],
-    emergencyProcedures: 'Immediate evacuation, fresh air resuscitation, ambulance',
-    personsResponsible: ['Mike Davis', 'Claire Watson'],
-    competencyRequirements: ['CSCS Gold', 'Confined Space Entry', 'First Aid at Work'],
-  },
-  {
-    id: 'r5',
-    title: 'Working at Height - Facade Installation',
-    project: 'Edinburgh Data Centre',
-    trade: 'Working at Height',
-    author: 'Claire Watson',
-    version: '2.0',
-    status: 'Approved',
-    createdDate: '2025-11-20',
-    expiryDate: '2026-11-20',
-    approvalDate: '2026-01-08',
-    hazards: [
-      { id: 'h7', description: 'Slip, trip, fall while installing facade panels', whoAffected: 'All facade workers', likelihood: 3, severity: 5, riskScore: 15, ragStatus: 'Red' },
-    ],
-    controlMeasures: [
-      { id: 'c7', type: 'ppe', description: '100% tie-off with double lanyard system', residualRisk: 'Low' },
-    ],
-    ppeRequired: ['Hard hat', 'Safety harness', 'Work gloves', 'Non-slip footwear', 'HiVis'],
-    emergencyProcedures: 'Suspended rescue plan pre-established',
-    personsResponsible: ['Claire Watson'],
-    competencyRequirements: ['CSCS Gold', 'Working at Height', 'Rescue Awareness'],
-  },
-  {
-    id: 'r6',
-    title: 'Electrical Installation - Power Distribution',
-    project: 'Canary Wharf Office Complex',
-    trade: 'Electrical Installation',
-    author: 'Adrian Stanca',
-    version: '1.2',
-    status: 'Draft',
-    createdDate: '2026-02-28',
-    expiryDate: '2027-02-28',
-    approvalDate: null,
-    hazards: [
-      { id: 'h8', description: 'Electric shock from live conductors', whoAffected: 'Electricians', likelihood: 2, severity: 5, riskScore: 10, ragStatus: 'Amber' },
-    ],
-    controlMeasures: [
-      { id: 'c8', type: 'admin', description: 'Permit to work system for all live work', residualRisk: 'Low' },
-    ],
-    ppeRequired: ['Insulated gloves', 'Insulated tools', 'Hard hat', 'Safety glasses'],
-    emergencyProcedures: 'Isolate circuit, call emergency services, CPR if required',
-    personsResponsible: ['Adrian Stanca'],
-    competencyRequirements: ['CSCS Gold', '16th Edition', 'Electrical Installation'],
-  },
-  {
-    id: 'r7',
-    title: 'Demolition Works - Old East Wing',
-    project: 'Sheffield Hospital Refurb',
-    trade: 'Demolition Works',
-    author: 'James Harrington',
-    version: '1.0',
-    status: 'Expired',
-    createdDate: '2025-06-15',
-    expiryDate: '2026-06-15',
-    approvalDate: '2025-07-10',
-    hazards: [
-      { id: 'h9', description: 'Asbestos exposure during removal', whoAffected: 'All demolition crew', likelihood: 2, severity: 5, riskScore: 10, ragStatus: 'Amber' },
-    ],
-    controlMeasures: [
-      { id: 'c9', type: 'admin', description: 'Licensed asbestos removal contractor engagement', residualRisk: 'Low' },
-    ],
-    ppeRequired: ['Disposable suit', 'Respirator', 'Gloves', 'Booties'],
-    emergencyProcedures: 'Seal area, medical evaluation for exposed workers',
-    personsResponsible: ['James Harrington'],
-    competencyRequirements: ['CSCS Gold', 'Asbestos Awareness', 'Demolition Supervisor'],
-  },
-  {
-    id: 'r8',
-    title: 'Excavation & Groundworks - Piling Prep',
-    project: 'Manchester City Apartments',
-    trade: 'Excavation & Groundworks',
-    author: 'Sarah Mitchell',
-    version: '2.5',
-    status: 'Approved',
-    createdDate: '2025-10-05',
-    expiryDate: '2026-10-05',
-    approvalDate: '2025-11-12',
-    hazards: [
-      { id: 'h10', description: 'Trench collapse - ground instability', whoAffected: 'Groundwork operatives', likelihood: 3, severity: 5, riskScore: 15, ragStatus: 'Red' },
-    ],
-    controlMeasures: [
-      { id: 'c10', type: 'engineer', description: 'Shoring and propping system with civil engineer design', residualRisk: 'Low' },
-    ],
-    ppeRequired: ['Hard hat', 'Safety harness', 'Work boots', 'HiVis vest'],
-    emergencyProcedures: 'Rescue equipment on standby, immediate excavation halt',
-    personsResponsible: ['Sarah Mitchell'],
-    competencyRequirements: ['CSCS Gold', 'Excavation Supervisor', 'First Aid'],
-  },
-  {
-    id: 'r9',
-    title: 'Lift Operations - Material Hoists',
-    project: 'Newcastle Residential Block',
-    trade: 'Lift Operations',
-    author: 'Tom Bradley',
-    version: '1.8',
-    status: 'Approved',
-    createdDate: '2025-09-30',
-    expiryDate: '2026-09-30',
-    approvalDate: '2025-10-25',
-    hazards: [
-      { id: 'h11', description: 'Dropped loads from malfunctioning hoist', whoAffected: 'Site personnel below', likelihood: 2, severity: 5, riskScore: 10, ragStatus: 'Amber' },
-    ],
-    controlMeasures: [
-      { id: 'c11', type: 'admin', description: 'Daily hoist inspection and certification', residualRisk: 'Low' },
-    ],
-    ppeRequired: ['Hard hat', 'Safety footwear', 'HiVis vest'],
-    emergencyProcedures: 'Stop hoist immediately, isolate area, assess injuries',
-    personsResponsible: ['Tom Bradley'],
-    competencyRequirements: ['CSCS Gold', 'IPAF/PASMA certification', 'Plant operation'],
-  },
-  {
-    id: 'r10',
-    title: 'Hot Works - Welding Operations',
-    project: 'Peterborough Distribution Hub',
-    trade: 'Hot Works',
-    author: 'Mike Davis',
-    version: '3.2',
-    status: 'Approved',
-    createdDate: '2025-08-10',
-    expiryDate: '2026-08-10',
-    approvalDate: '2025-09-05',
-    hazards: [
-      { id: 'h12', description: 'Fire risk from hot work operations', whoAffected: 'All nearby personnel', likelihood: 2, severity: 5, riskScore: 10, ragStatus: 'Amber' },
-    ],
-    controlMeasures: [
-      { id: 'c12', type: 'admin', description: 'Hot work permit system with fire watch', residualRisk: 'Low' },
-    ],
-    ppeRequired: ['Welding helmet', 'Leather apron', 'Gloves', 'Steel toe boots'],
-    emergencyProcedures: 'Fire extinguisher on standby, immediate isolation',
-    personsResponsible: ['Mike Davis'],
-    competencyRequirements: ['CSCS Gold', 'Welding certification', 'Hot Work Supervisor'],
-  },
-  {
-    id: 'r11',
-    title: 'Temporary Works - Formwork System',
-    project: 'Leeds Warehouse Extension',
-    trade: 'Temporary Works',
-    author: 'Claire Watson',
-    version: '1.4',
-    status: 'Approved',
-    createdDate: '2025-07-20',
-    expiryDate: '2026-07-20',
-    approvalDate: '2025-08-15',
-    hazards: [
-      { id: 'h13', description: 'Collapse of unsupported formwork', whoAffected: 'Operatives and personnel below', likelihood: 2, severity: 5, riskScore: 10, ragStatus: 'Amber' },
-    ],
-    controlMeasures: [
-      { id: 'c13', type: 'engineer', description: 'Structural engineer designed temporary support plan', residualRisk: 'Low' },
-    ],
-    ppeRequired: ['Hard hat', 'Safety harness', 'Safety glasses', 'Work gloves'],
-    emergencyProcedures: 'Cease operations, evacuate area, structural assessment before resuming',
-    personsResponsible: ['Claire Watson'],
-    competencyRequirements: ['CSCS Gold', 'Temporary Works Supervisor', 'Formwork knowledge'],
-  },
-  {
-    id: 'r12',
-    title: 'Roof Works - Slate Installation',
-    project: 'Bristol Retail Park Fit-Out',
-    trade: 'Roof Works',
-    author: 'Adrian Stanca',
-    version: '2.0',
-    status: 'Under Review',
-    createdDate: '2026-02-10',
-    expiryDate: '2027-02-10',
-    approvalDate: null,
-    hazards: [
-      { id: 'h14', description: 'Fall from pitched roof during slate fixing', whoAffected: 'Roofers', likelihood: 4, severity: 5, riskScore: 20, ragStatus: 'Red' },
-    ],
-    controlMeasures: [
-      { id: 'c14', type: 'engineer', description: 'Roof edge protection and safety netting', residualRisk: 'Low' },
-    ],
-    ppeRequired: ['Hard hat', 'Full harness', 'Non-slip footwear', 'HiVis vest', 'Gloves'],
-    emergencyProcedures: 'Suspended rescue procedures in place',
-    personsResponsible: ['Adrian Stanca'],
-    competencyRequirements: ['CSCS Gold', 'Working at Height', 'Roofing knowledge'],
-  },
+const TEMPLATES = [
+  { name: 'Excavation', activity: 'Excavation', hazards: 'Collapse, Struck by equipment, Utilities damage' },
+  { name: 'Working at Height', activity: 'Working at Height', hazards: 'Falls, Dropped objects, Weather exposure' },
+  { name: 'Electrical', activity: 'Electrical', hazards: 'Electric shock, Arc flash, Electrocution' },
+  { name: 'Demolition', activity: 'Demolition', hazards: 'Structural collapse, Dust inhalation, Asbestos' },
+  { name: 'Hot Works', activity: 'Hot Works', hazards: 'Fire, Explosions, Thermal burns' },
+  { name: 'Confined Space', activity: 'Confined Space', hazards: 'Oxygen depletion, Gas poisoning, Entrapment' },
+  { name: 'Manual Handling', activity: 'Excavation', hazards: 'Back injury, Repetitive strain, Muscle damage' },
 ];
-
-const mockApprovals: ApprovalRecord[] = [
-  { id: 'a1', ramsId: 'r1', action: 'submitted', actor: 'John Smith', timestamp: '2026-02-08' },
-  { id: 'a2', ramsId: 'r1', action: 'approved', actor: 'James Harrington', timestamp: '2026-02-10' },
-  { id: 'a3', ramsId: 'r2', action: 'submitted', actor: 'Sarah Johnson', timestamp: '2026-02-22' },
-  { id: 'a4', ramsId: 'r2', action: 'commented', actor: 'Tom Bradley', timestamp: '2026-02-25', comments: 'Need clarification on emergency procedure' },
-];
-
-// ─── Helper Functions ──────────────────────────────────────────────────────
-
-const fmtDate = (d: string) => new Date(d).toLocaleDateString('en-GB');
-
-const getRagColour = (status: string) => ({
-  'Red': 'bg-red-900/30 text-red-300 border border-red-700/50',
-  'Amber': 'bg-yellow-900/30 text-yellow-300 border border-yellow-700/50',
-  'Green': 'bg-green-900/30 text-green-300 border border-green-700/50',
-}[status] || 'bg-gray-700/30 text-gray-300');
-
-const getStatusColour = (status: string) => ({
-  'Draft': 'bg-gray-700 text-gray-200',
-  'Under Review': 'bg-yellow-900 text-yellow-100',
-  'Approved': 'bg-green-900 text-green-100',
-  'Expired': 'bg-red-900 text-red-100',
-  'Rejected': 'bg-red-900/50 text-red-100',
-}[status] || 'bg-gray-700 text-gray-200');
-
-// ─── Component ────────────────────────────────────────────────────────────
 
 export function RAMS() {
-  const [activeTab, setActiveTab] = useState<'documents' | 'create' | 'approval' | 'templates' | 'review'>('documents');
+  const { useList, useCreate, useUpdate, useDelete } = useRAMS;
+  const { data: raw = [], isLoading } = useList();
+  const rams = raw as AnyRow[];
+  const createMutation = useCreate();
+  const updateMutation = useUpdate();
+  const deleteMutation = useDelete();
+
+  const [subTab, setSubTab] = useState<'documents'|'method_statements'|'risk_assessments'|'templates'|'approvals'>('documents');
   const [search, setSearch] = useState('');
-  const [filterProject, setFilterProject] = useState<string>('');
-  const [filterStatus, setFilterStatus] = useState<string>('');
-  const [filterTrade, setFilterTrade] = useState<string>('');
-  const [expandedId, setExpandedId] = useState<string | null>(null);
-  const [createStep, setCreateStep] = useState(1);
-  const [approvalKanban, setApprovalKanban] = useState<Record<string, RAMSDocument[]>>(() => {
-    const grouped: Record<string, RAMSDocument[]> = {
-      'Draft': [],
-      'Submitted': [],
-      'Under Review': [],
-      'Approved': [],
-      'Rejected': [],
-    };
-    mockRAMS.forEach((doc) => {
-      if (doc.status === 'Draft') grouped['Draft'].push(doc);
-      else if (doc.status === 'Under Review') grouped['Under Review'].push(doc);
-      else if (doc.status === 'Approved') grouped['Approved'].push(doc);
-      else if (doc.status === 'Rejected') grouped['Rejected'].push(doc);
-    });
-    return grouped;
+  const [statusFilter, setStatusFilter] = useState('All');
+  const [showModal, setShowModal] = useState(false);
+  const [editing, setEditing] = useState<AnyRow | null>(null);
+  const [form, setForm] = useState({ ...emptyForm });
+  const [expanded, setExpanded] = useState<string | null>(null);
+
+  const filtered = rams.filter(r => {
+    const title = String(r.title ?? '').toLowerCase();
+    const activity = String(r.activity ?? '').toLowerCase();
+    const matchSearch = title.includes(search.toLowerCase()) || activity.includes(search.toLowerCase());
+    const matchStatus = statusFilter === 'All' || r.status === statusFilter;
+    return matchSearch && matchStatus;
   });
 
-  const filtered = mockRAMS.filter((doc) => {
-    const matchSearch = search === '' || doc.title.toLowerCase().includes(search.toLowerCase()) || doc.trade.toLowerCase().includes(search.toLowerCase());
-    const matchProject = filterProject === '' || doc.project === filterProject;
-    const matchStatus = filterStatus === '' || doc.status === filterStatus;
-    const matchTrade = filterTrade === '' || doc.trade === filterTrade;
-    return matchSearch && matchProject && matchStatus && matchTrade;
-  });
-
-  const projects = Array.from(new Set(mockRAMS.map((d) => d.project)));
-  const statuses = Array.from(new Set(mockRAMS.map((d) => d.status)));
-  const trades = Array.from(new Set(mockRAMS.map((d) => d.trade)));
-
-  const totalActive = mockRAMS.filter((d) => d.status === 'Approved' && new Date(d.expiryDate) > new Date()).length;
-  const dueRenewal = mockRAMS.filter((d) => {
-    const daysToExpiry = (new Date(d.expiryDate).getTime() - Date.now()) / 86400000;
-    return daysToExpiry > 0 && daysToExpiry <= 30;
+  const approvedCount = rams.filter(r => r.status === 'Approved').length;
+  const reviewCount = rams.filter(r => r.status === 'Under Review').length;
+  const draftCount = rams.filter(r => r.status === 'Draft').length;
+  const expiringSoon = rams.filter(r => {
+    const until = r.valid_until ?? r.validUntil;
+    if (!until || r.status !== 'Approved') return false;
+    const diff = (new Date(String(until)).getTime() - Date.now()) / 86400000;
+    return diff >= 0 && diff <= 30;
   }).length;
-  const expired = mockRAMS.filter((d) => new Date(d.expiryDate) < new Date()).length;
-  const approvalRate = mockRAMS.filter((d) => d.status === 'Approved').length;
+
+  const riskAssessments = rams.filter(r => r.doc_type === 'Risk Assessment' || !r.doc_type);
+
+  function openCreate() { setEditing(null); setForm({ ...emptyForm }); setShowModal(true); }
+  function openEdit(r: AnyRow) {
+    setEditing(r);
+    setForm({
+      title: String(r.title ?? ''),
+      activity: String(r.activity ?? ''),
+      project_id: String(r.project_id ?? ''),
+      doc_type: String(r.doc_type ?? 'RAMS'),
+      status: String(r.status ?? 'Draft'),
+      reviewed_by: String(r.reviewed_by ?? ''),
+      approved_by: String(r.approved_by ?? ''),
+      valid_from: String(r.valid_from ?? ''),
+      valid_until: String(r.valid_until ?? ''),
+      hazards: String(r.hazards ?? ''),
+      controls: String(r.controls ?? ''),
+      ppe: String(r.ppe ?? ''),
+      version: String(r.version ?? '1'),
+      created_by: String(r.created_by ?? ''),
+      review_date: String(r.review_date ?? ''),
+      likelihood: String(r.likelihood ?? '3'),
+      severity: String(r.severity ?? '3'),
+      notes: String(r.notes ?? ''),
+    });
+    setShowModal(true);
+  }
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    if (editing) {
+      await updateMutation.mutateAsync({ id: String(editing.id), data: form });
+      toast.success('RAMS updated');
+    } else {
+      await createMutation.mutateAsync(form);
+      toast.success('RAMS created');
+    }
+    setShowModal(false);
+  }
+
+  async function handleDelete(id: string) {
+    if (!confirm('Delete this RAMS document?')) return;
+    await deleteMutation.mutateAsync(id);
+    toast.success('RAMS deleted');
+  }
+
+  async function approve(r: AnyRow) {
+    await updateMutation.mutateAsync({ id: String(r.id), data: { status: 'Approved' } });
+    toast.success('RAMS approved');
+  }
+
+  function useTemplate(template: typeof TEMPLATES[0]) {
+    setEditing(null);
+    setForm({
+      ...emptyForm,
+      activity: template.activity,
+      hazards: template.hazards,
+    });
+    setShowModal(true);
+  }
+
+  const inputCls = 'w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-orange-500';
+  const labelCls = 'block text-sm font-medium text-gray-300 mb-1';
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="flex justify-between items-start">
+    <div className="p-6 space-y-6">
+      <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-white mb-2">Risk Assessment & Method Statements</h1>
-          <p className="text-gray-400">Complete RAMS lifecycle management and approval workflow</p>
+          <h1 className="text-2xl font-bold text-white">RAMS</h1>
+          <p className="text-sm text-gray-400 mt-1">Risk assessments, method statements & approvals</p>
         </div>
-        <button className="bg-orange-600 hover:bg-orange-700 text-white px-4 py-2 rounded-lg font-medium flex items-center gap-2">
-          <Plus className="h-5 w-5" />
-          New RAMS
+        <button onClick={openCreate} className="flex items-center gap-2 px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 text-sm font-medium">
+          <Plus size={16} /><span>New RAMS</span>
         </button>
       </div>
 
-      {/* Tab Navigation */}
-      <div className="flex gap-2 border-b border-gray-800">
+      {expiringSoon > 0 && (
+        <div className="bg-red-500/10 border border-red-500/30 rounded-xl px-4 py-3 flex items-center gap-2">
+          <AlertTriangle size={16} className="text-red-400" />
+          <span className="text-sm font-medium text-red-300">{expiringSoon} document{expiringSoon !== 1 ? 's' : ''} expiring in ≤30 days</span>
+        </div>
+      )}
+
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         {[
-          { id: 'documents', label: 'Documents', icon: FileText },
-          { id: 'create', label: 'Create', icon: Plus },
-          { id: 'approval', label: 'Approval Workflow', icon: ClipboardCheck },
-          { id: 'templates', label: 'Templates', icon: Shield },
-          { id: 'review', label: 'Review Log', icon: Clock },
-        ].map(({ id, label, icon: Icon }) => (
-          <button
-            key={id}
-            onClick={() => setActiveTab(id as typeof activeTab)}
-            className={clsx(
-              'px-4 py-3 font-medium text-sm border-b-2 flex items-center gap-2 transition-all',
-              activeTab === id
-                ? 'border-orange-500 text-orange-400'
-                : 'border-transparent text-gray-400 hover:text-gray-300'
-            )}
-          >
-            <Icon className="h-4 w-4" />
-            {label}
+          { label: 'Total Documents', value: rams.length, icon: FileCheck, colour: 'text-blue-400', bg: 'bg-blue-500/10' },
+          { label: 'Approved', value: approvedCount, icon: CheckCircle, colour: 'text-green-400', bg: 'bg-green-500/10' },
+          { label: 'Under Review', value: reviewCount, icon: Clock, colour: 'text-yellow-400', bg: 'bg-yellow-500/10' },
+          { label: 'Expiring Soon', value: expiringSoon, icon: AlertTriangle, colour: expiringSoon > 0 ? 'text-red-400' : 'text-gray-400', bg: expiringSoon > 0 ? 'bg-red-500/10' : 'bg-gray-800' },
+        ].map(kpi => (
+          <div key={kpi.label} className="bg-gray-900 rounded-xl border border-gray-800 p-4">
+            <div className="flex items-center gap-3">
+              <div className={`p-2 rounded-lg ${kpi.bg}`}><kpi.icon size={20} className={kpi.colour} /></div>
+              <div><p className="text-xs text-gray-500">{kpi.label}</p><p className="text-xl font-bold text-white">{kpi.value}</p></div>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      <div className="flex gap-1 border-b border-gray-800">
+        {([
+          { key: 'documents', label: 'Documents', count: rams.length },
+          { key: 'method_statements', label: 'Method Statements', count: rams.filter(r => r.doc_type === 'Method Statement').length },
+          { key: 'risk_assessments', label: 'Risk Assessments', count: riskAssessments.length },
+          { key: 'templates', label: 'Templates', count: TEMPLATES.length },
+          { key: 'approvals', label: 'Approvals', count: reviewCount },
+        ] as const).map(t => (
+          <button key={t.key} onClick={() => setSubTab(t.key)}
+            className={`flex items-center gap-2 px-4 py-2.5 text-sm font-medium border-b-2 -mb-px transition-colors ${subTab === t.key ? 'border-orange-500 text-orange-500' : 'border-transparent text-gray-400 hover:text-gray-200'}`}>
+            {t.label}
+            <span className={`text-xs px-1.5 py-0.5 rounded-full ${t.key === 'approvals' && t.count > 0 ? 'bg-yellow-900/40 text-yellow-400' : 'bg-gray-800 text-gray-400'}`}>{t.count}</span>
           </button>
         ))}
       </div>
 
-      {/* Documents Tab */}
-      {activeTab === 'documents' && (
-        <div className="space-y-6">
-          {/* KPI Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-            <div className="bg-gray-800 border border-gray-700 rounded-xl p-5">
-              <p className="text-gray-400 text-sm mb-2">Total Active</p>
-              <p className="text-3xl font-bold text-white">{totalActive}</p>
-            </div>
-            <div className="bg-gray-800 border border-gray-700 rounded-xl p-5">
-              <p className="text-gray-400 text-sm mb-2">Due for Renewal</p>
-              <p className="text-3xl font-bold text-yellow-400">{dueRenewal}</p>
-            </div>
-            <div className="bg-gray-800 border border-gray-700 rounded-xl p-5">
-              <p className="text-gray-400 text-sm mb-2">Expired</p>
-              <p className="text-3xl font-bold text-red-400">{expired}</p>
-            </div>
-            <div className="bg-gray-800 border border-gray-700 rounded-xl p-5">
-              <p className="text-gray-400 text-sm mb-2">Approval Rate</p>
-              <p className="text-3xl font-bold text-emerald-400">{approvalRate} docs</p>
-            </div>
+      {subTab !== 'templates' && subTab !== 'approvals' && (
+        <div className="flex flex-wrap gap-3 items-center bg-gray-900 rounded-xl border border-gray-800 p-4">
+          <div className="relative flex-1 min-w-48">
+            <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500" />
+            <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search title or activity…" className={inputCls + ' pl-9'} />
           </div>
+          <select value={statusFilter} onChange={e => setStatusFilter(e.target.value)} className="bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-orange-500">
+            {['All', ...STATUS_OPTIONS].map(s => <option key={s}>{s}</option>)}
+          </select>
+        </div>
+      )}
 
-          {/* Filters */}
-          <div className="bg-gray-800 border border-gray-700 rounded-xl p-4 flex flex-wrap gap-4">
-            <div className="flex-1 min-w-64">
-              <input
-                type="text"
-                placeholder="Search RAMS documents..."
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                className="w-full bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-white text-sm"
-              />
-            </div>
-            <select
-              value={filterProject}
-              onChange={(e) => setFilterProject(e.target.value)}
-              className="bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-white text-sm"
-            >
-              <option value="">All Projects</option>
-              {projects.map((p) => (
-                <option key={p} value={p}>{p}</option>
-              ))}
-            </select>
-            <select
-              value={filterStatus}
-              onChange={(e) => setFilterStatus(e.target.value)}
-              className="bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-white text-sm"
-            >
-              <option value="">All Status</option>
-              {statuses.map((s) => (
-                <option key={s} value={s}>{s}</option>
-              ))}
-            </select>
-            <select
-              value={filterTrade}
-              onChange={(e) => setFilterTrade(e.target.value)}
-              className="bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-white text-sm"
-            >
-              <option value="">All Trades</option>
-              {trades.map((t) => (
-                <option key={t} value={t}>{t}</option>
-              ))}
-            </select>
-          </div>
-
-          {/* Documents Table */}
-          <div className="bg-gray-800 border border-gray-700 rounded-xl overflow-hidden">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b border-gray-700 bg-gray-900/50">
-                  <th className="text-left p-4 text-gray-400 font-medium">Title</th>
-                  <th className="text-left p-4 text-gray-400 font-medium">Project</th>
-                  <th className="text-left p-4 text-gray-400 font-medium">Trade</th>
-                  <th className="text-left p-4 text-gray-400 font-medium">Author</th>
-                  <th className="text-left p-4 text-gray-400 font-medium">Version</th>
-                  <th className="text-left p-4 text-gray-400 font-medium">Status</th>
-                  <th className="text-left p-4 text-gray-400 font-medium">Created</th>
-                  <th className="text-left p-4 text-gray-400 font-medium">Expires</th>
-                  <th className="text-center p-4 text-gray-400 font-medium">Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {filtered.map((doc) => (
-                  <React.Fragment key={doc.id}>
-                    <tr className="border-b border-gray-700/50 hover:bg-gray-700/30 cursor-pointer" onClick={() => setExpandedId(expandedId === doc.id ? null : doc.id)}>
-                      <td className="p-4">
-                        <div className="flex items-start gap-2">
-                          <ChevronRight className={clsx('h-4 w-4 text-gray-500 mt-1 transition-transform', expandedId === doc.id && 'rotate-90')} />
-                          <span className="font-medium text-white">{doc.title}</span>
+      {subTab === 'documents' && (
+        <>
+          {isLoading ? (
+            <div className="flex justify-center py-20"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-500" /></div>
+          ) : (
+            <div className="bg-gray-900 rounded-xl border border-gray-800 divide-y divide-gray-800">
+              {filtered.length === 0 && <div className="text-center py-16 text-gray-500"><Shield size={40} className="mx-auto mb-3 opacity-30" /><p>No RAMS documents found</p></div>}
+              {filtered.map(r => {
+                const id = String(r.id ?? '');
+                const isExp = expanded === id;
+                const validUntil = r.valid_until ?? r.validUntil;
+                const version = r.version;
+                return (
+                  <div key={id}>
+                    <div className="flex items-center gap-4 p-4 hover:bg-gray-800/50 cursor-pointer" onClick={() => setExpanded(isExp ? null : id)}>
+                      <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-purple-500 to-purple-600 flex items-center justify-center text-white flex-shrink-0 text-xs font-bold">
+                        {String(r.title ?? '?').slice(0, 2).toUpperCase()}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2">
+                          <p className="font-semibold text-white truncate">{String(r.title ?? 'Untitled')}</p>
+                          {!!version && <span className="text-xs bg-gray-700 text-gray-400 px-2 py-0.5 rounded-full">v{String(version)}</span>}
                         </div>
-                      </td>
-                      <td className="p-4 text-gray-400">{doc.project}</td>
-                      <td className="p-4 text-gray-400">{doc.trade}</td>
-                      <td className="p-4 text-gray-400">{doc.author}</td>
-                      <td className="p-4 text-gray-400">{doc.version}</td>
-                      <td className="p-4">
-                        <span className={clsx('px-3 py-1 rounded-full text-xs font-medium', getStatusColour(doc.status))}>
-                          {doc.status}
-                        </span>
-                      </td>
-                      <td className="p-4 text-gray-400">{fmtDate(doc.createdDate)}</td>
-                      <td className="p-4 text-gray-400">{fmtDate(doc.expiryDate)}</td>
-                      <td className="p-4 text-center">
-                        <button className="text-gray-400 hover:text-orange-400">
-                          <MoreVertical className="h-4 w-4" />
-                        </button>
-                      </td>
-                    </tr>
-                    {expandedId === doc.id && (
-                      <tr className="bg-gray-900/50 border-b border-gray-700">
-                        <td colSpan={9} className="p-6">
-                          <div className="grid grid-cols-2 gap-6">
-                            <div>
-                              <h4 className="font-bold text-white mb-3">Hazards</h4>
-                              <div className="space-y-2">
-                                {doc.hazards.map((h) => (
-                                  <div key={h.id} className={clsx('p-3 rounded-lg', getRagColour(h.ragStatus))}>
-                                    <p className="font-medium">{h.description}</p>
-                                    <p className="text-xs mt-1 opacity-75">Likelihood: {h.likelihood}/5 | Severity: {h.severity}/5 | Risk: {h.riskScore}</p>
-                                  </div>
-                                ))}
-                              </div>
-                            </div>
-                            <div>
-                              <h4 className="font-bold text-white mb-3">Control Measures</h4>
-                              <div className="space-y-2">
-                                {doc.controlMeasures.map((c) => (
-                                  <div key={c.id} className="p-3 bg-gray-800 border border-gray-700 rounded-lg">
-                                    <p className="font-medium text-white">{c.description}</p>
-                                    <p className="text-xs text-gray-400 mt-1">Type: {c.type} | Residual: {c.residualRisk}</p>
-                                  </div>
-                                ))}
-                              </div>
-                            </div>
-                          </div>
-                          <div className="grid grid-cols-2 gap-6 mt-6">
-                            <div>
-                              <h4 className="font-bold text-white mb-2">PPE Required</h4>
-                              <ul className="space-y-1">
-                                {doc.ppeRequired.map((ppe) => (
-                                  <li key={ppe} className="text-gray-400 text-sm">• {ppe}</li>
-                                ))}
-                              </ul>
-                            </div>
-                            <div>
-                              <h4 className="font-bold text-white mb-2">Persons Responsible</h4>
-                              <ul className="space-y-1">
-                                {doc.personsResponsible.map((p) => (
-                                  <li key={p} className="text-gray-400 text-sm">• {p}</li>
-                                ))}
-                              </ul>
-                            </div>
-                          </div>
-                          <div className="mt-6 flex gap-2">
-                            <button className="bg-orange-600 hover:bg-orange-700 text-white px-4 py-2 rounded-lg text-sm font-medium flex items-center gap-2">
-                              <FileDown className="h-4 w-4" />
-                              Download PDF
-                            </button>
-                            <button className="bg-gray-700 hover:bg-gray-600 text-white px-4 py-2 rounded-lg text-sm font-medium">New Version</button>
-                            <button className="bg-gray-700 hover:bg-gray-600 text-white px-4 py-2 rounded-lg text-sm font-medium">Archive</button>
-                          </div>
-                        </td>
-                      </tr>
+                        <p className="text-sm text-gray-400">{String(r.activity ?? '')} {validUntil ? `· Expires ${validUntil}` : ''}</p>
+                      </div>
+                      <div className="hidden md:flex items-center gap-2">
+                        <span className={`text-xs px-2 py-1 rounded-full font-medium ${statusColour[String(r.status ?? '')] ?? 'bg-gray-700 text-gray-400'}`}>{String(r.status ?? '')}</span>
+                      </div>
+                      <div className="flex items-center gap-1">
+                        {r.status === 'Under Review' && <button onClick={e => { e.stopPropagation(); approve(r); }} className="p-1.5 text-green-400 hover:bg-green-500/20 rounded" title="Approve"><CheckCircle size={14} /></button>}
+                        <button onClick={e => { e.stopPropagation(); openEdit(r); }} className="p-1.5 text-gray-500 hover:text-blue-400 hover:bg-blue-500/20 rounded"><Edit2 size={14} /></button>
+                        <button onClick={e => { e.stopPropagation(); handleDelete(id); }} className="p-1.5 text-gray-500 hover:text-red-400 hover:bg-red-500/20 rounded"><Trash2 size={14} /></button>
+                        <button className="p-1.5 text-gray-500 hover:text-gray-300 hover:bg-gray-700 rounded" title="Download"><Download size={14} /></button>
+                        {isExp ? <ChevronUp size={16} className="text-gray-500" /> : <ChevronDown size={16} className="text-gray-500" />}
+                      </div>
+                    </div>
+                    {isExp && (
+                      <div className="px-6 pb-4 bg-gray-800/30 space-y-3 text-sm border-t border-gray-800">
+                        {!!(r.hazards) && <div className="pt-3"><p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">Hazards Identified</p><p className="text-gray-300 whitespace-pre-wrap">{String(r.hazards)}</p></div>}
+                        {!!(r.controls) && <div><p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">Control Measures</p><p className="text-gray-300 whitespace-pre-wrap">{String(r.controls)}</p></div>}
+                        {!!(r.ppe) && <div><p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">PPE Required</p><p className="text-gray-300">{String(r.ppe)}</p></div>}
+                        <div className="flex gap-6 flex-wrap pb-2">
+                          {!!(r.reviewed_by ?? r.reviewedBy) && <div><p className="text-xs text-gray-500">Reviewed By</p><p className="text-gray-300">{String(r.reviewed_by ?? r.reviewedBy)}</p></div>}
+                          {!!(r.approved_by ?? r.approvedBy) && <div><p className="text-xs text-gray-500">Approved By</p><p className="text-gray-300">{String(r.approved_by ?? r.approvedBy)}</p></div>}
+                          {!!(r.created_by ?? r.createdBy) && <div><p className="text-xs text-gray-500">Created By</p><p className="text-gray-300">{String(r.created_by ?? r.createdBy)}</p></div>}
+                        </div>
+                      </div>
                     )}
-                  </React.Fragment>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </>
+      )}
+
+      {subTab === 'method_statements' && (
+        <div className="bg-gray-900 rounded-xl border border-gray-800 divide-y divide-gray-800">
+          {rams.filter(r => r.doc_type === 'Method Statement').map(r => (
+            <div key={String(r.id ?? '')} className="p-4 hover:bg-gray-800/50">
+              <div className="flex items-start justify-between mb-3">
+                <div>
+                  <p className="font-semibold text-white">{String(r.title ?? '')}</p>
+                  <p className="text-sm text-gray-400">{String(r.activity ?? '')} · {String(r.created_by ?? '—')}</p>
+                </div>
+                <span className={`text-xs px-2 py-1 rounded-full font-medium ${statusColour[String(r.status ?? '')] ?? 'bg-gray-700 text-gray-400'}`}>{String(r.status ?? '')}</span>
+              </div>
+              <div className="flex gap-2 flex-wrap">
+                {String(r.ppe ?? '').split(',').map((item, idx) => item.trim() && <span key={idx} className="text-xs bg-orange-500/20 text-orange-300 px-2 py-1 rounded-full">{item.trim()}</span>)}
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {subTab === 'risk_assessments' && (
+        <div className="bg-gray-900 rounded-xl border border-gray-800 divide-y divide-gray-800">
+          {riskAssessments.map(r => {
+            const likelihood = Number(r.likelihood ?? 3);
+            const severity = Number(r.severity ?? 3);
+            const riskScore = likelihood * severity;
+            const riskColour = riskScore <= 6 ? 'bg-green-500/20 text-green-400' : riskScore <= 12 ? 'bg-yellow-500/20 text-yellow-400' : 'bg-red-500/20 text-red-400';
+            return (
+              <div key={String(r.id ?? '')} className="p-4 hover:bg-gray-800/50">
+                <div className="flex items-start justify-between mb-2">
+                  <div>
+                    <p className="font-semibold text-white">{String(r.hazards ?? 'Hazard')}</p>
+                    <p className="text-xs text-gray-500">{String(r.activity ?? '')}</p>
+                  </div>
+                  <span className={`text-xs px-2 py-1 rounded-full font-semibold ${riskColour}`}>Score: {riskScore}</span>
+                </div>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-xs">
+                  <div><p className="text-gray-500">Likelihood</p><p className="text-white font-semibold">{likelihood}/5</p></div>
+                  <div><p className="text-gray-500">Severity</p><p className="text-white font-semibold">{severity}/5</p></div>
+                  <div><p className="text-gray-500">Controls</p><p className="text-gray-300">{String(r.controls ?? '—').slice(0, 20)}...</p></div>
+                  <div><p className="text-gray-500">Residual Risk</p><p className="text-green-400 font-semibold">Low</p></div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+
+      {subTab === 'templates' && (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {TEMPLATES.map(template => (
+            <div key={template.name} className="bg-gray-900 rounded-xl border border-gray-800 p-4 hover:border-orange-500/50 transition-colors">
+              <div className="flex items-center gap-2 mb-3">
+                <Award size={18} className="text-orange-400" />
+                <h3 className="font-semibold text-white">{template.name}</h3>
+              </div>
+              <p className="text-xs text-gray-400 mb-3">{template.hazards}</p>
+              <button onClick={() => useTemplate(template)} className="w-full px-3 py-2 bg-orange-600 text-white rounded-lg text-xs font-medium hover:bg-orange-700">
+                Use Template
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {subTab === 'approvals' && (
+        <div className="bg-gray-900 rounded-xl border border-gray-800 overflow-hidden">
+          {rams.filter(r => r.status === 'Under Review').length === 0 ? (
+            <div className="text-center py-12 text-gray-500 bg-gray-900 rounded-xl border border-gray-800">
+              <CheckCircle size={32} className="mx-auto mb-2 opacity-30 text-green-500" />
+              <p>No documents awaiting approval</p>
+            </div>
+          ) : (
+            <table className="w-full text-sm">
+              <thead className="bg-gray-800/50 border-b border-gray-800">
+                <tr>{['Document', 'Requestor', 'Approval Chain', 'Sign-off', 'Action'].map(h => <th key={h} className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">{h}</th>)}</tr>
+              </thead>
+              <tbody className="divide-y divide-gray-800">
+                {rams.filter(r => r.status === 'Under Review').map(r => (
+                  <tr key={String(r.id ?? '')} className="hover:bg-gray-800/50">
+                    <td className="px-4 py-3 font-medium text-white">{String(r.title ?? '')}</td>
+                    <td className="px-4 py-3 text-gray-400">{String(r.created_by ?? '—')}</td>
+                    <td className="px-4 py-3 text-xs text-gray-400">Principal Contractor → Client</td>
+                    <td className="px-4 py-3"><input type="text" placeholder="Name" className="w-32 bg-gray-800 border border-gray-700 rounded px-2 py-1 text-xs text-white" /></td>
+                    <td className="px-4 py-3"><button onClick={() => approve(r)} className="text-xs px-3 py-1 bg-green-600 text-white rounded-lg hover:bg-green-700 font-medium">Approve</button></td>
+                  </tr>
                 ))}
               </tbody>
             </table>
-          </div>
+          )}
         </div>
       )}
 
-      {/* Create Tab */}
-      {activeTab === 'create' && (
-        <div className="bg-gray-800 border border-gray-700 rounded-xl p-6 max-w-4xl">
-          <div className="mb-6">
-            <div className="flex gap-4 mb-6">
-              {[1, 2, 3, 4].map((step) => (
-                <div key={step} className="flex-1">
-                  <div className={clsx('h-2 rounded-full', createStep >= step ? 'bg-orange-500' : 'bg-gray-700')}></div>
-                  <p className="text-xs text-gray-400 mt-2 text-center">Step {step}</p>
-                </div>
-              ))}
+      {showModal && (
+        <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
+          <div className="bg-gray-900 rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto border border-gray-700">
+            <div className="flex items-center justify-between p-6 border-b border-gray-800 sticky top-0 bg-gray-900 z-10">
+              <h2 className="text-lg font-semibold text-white">{editing ? 'Edit RAMS' : 'New RAMS Document'}</h2>
+              <button onClick={() => setShowModal(false)} className="p-2 hover:bg-gray-800 rounded-lg text-gray-400"><X size={18} /></button>
             </div>
-            <p className="text-center text-gray-400 text-sm">
-              {createStep === 1 && 'Project & Activity Details'}
-              {createStep === 2 && 'Hazard Identification & Control Measures'}
-              {createStep === 3 && 'Method Statement & Equipment'}
-              {createStep === 4 && 'Sign-off & Approval'}
-            </p>
-          </div>
-
-          {createStep === 1 && (
-            <div className="space-y-4">
+            <form onSubmit={handleSubmit} className="p-6 space-y-4">
               <div className="grid grid-cols-2 gap-4">
+                <div className="col-span-2">
+                  <label className={labelCls}>Document Title *</label>
+                  <input required value={form.title} onChange={e => setForm(f => ({ ...f, title: e.target.value }))} className={inputCls} />
+                </div>
                 <div>
-                  <label className="block text-sm font-medium text-white mb-2">Project</label>
-                  <select className="w-full bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-white text-sm">
-                    <option>Select project...</option>
-                    {projects.map((p) => (
-                      <option key={p}>{p}</option>
-                    ))}
+                  <label className={labelCls}>Activity Type</label>
+                  <select value={form.activity} onChange={e => setForm(f => ({ ...f, activity: e.target.value }))} className={inputCls}>
+                    <option value="">Select…</option>{ACTIVITY_TYPES.map(a => <option key={a}>{a}</option>)}
                   </select>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-white mb-2">Activity Type</label>
-                  <select className="w-full bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-white text-sm">
-                    <option>Select activity...</option>
-                    {trades.map((t) => (
-                      <option key={t}>{t}</option>
-                    ))}
+                  <label className={labelCls}>Document Type</label>
+                  <select value={form.doc_type} onChange={e => setForm(f => ({ ...f, doc_type: e.target.value }))} className={inputCls}>
+                    {DOCUMENT_TYPES.map(d => <option key={d}>{d}</option>)}
                   </select>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-white mb-2">Location</label>
-                  <input type="text" placeholder="e.g., Main Block, Floor 5" className="w-full bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-white text-sm" />
+                  <label className={labelCls}>Likelihood (1-5)</label>
+                  <select value={form.likelihood} onChange={e => setForm(f => ({ ...f, likelihood: e.target.value }))} className={inputCls}>
+                    {HAZARD_LEVELS.map(l => <option key={l}>{l}</option>)}
+                  </select>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-white mb-2">Supervisor</label>
-                  <input type="text" placeholder="Select supervisor..." className="w-full bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-white text-sm" />
+                  <label className={labelCls}>Severity (1-5)</label>
+                  <select value={form.severity} onChange={e => setForm(f => ({ ...f, severity: e.target.value }))} className={inputCls}>
+                    {HAZARD_LEVELS.map(s => <option key={s}>{s}</option>)}
+                  </select>
+                </div>
+                <div>
+                  <label className={labelCls}>Status</label>
+                  <select value={form.status} onChange={e => setForm(f => ({ ...f, status: e.target.value }))} className={inputCls}>
+                    {STATUS_OPTIONS.map(s => <option key={s}>{s}</option>)}
+                  </select>
+                </div>
+                <div>
+                  <label className={labelCls}>Version</label>
+                  <input value={form.version} onChange={e => setForm(f => ({ ...f, version: e.target.value }))} placeholder="e.g. 1.0" className={inputCls} />
+                </div>
+                <div>
+                  <label className={labelCls}>Created By</label>
+                  <input value={form.created_by} onChange={e => setForm(f => ({ ...f, created_by: e.target.value }))} className={inputCls} />
+                </div>
+                <div>
+                  <label className={labelCls}>Review Date</label>
+                  <input type="date" value={form.review_date} onChange={e => setForm(f => ({ ...f, review_date: e.target.value }))} className={inputCls} />
+                </div>
+                <div>
+                  <label className={labelCls}>Reviewed By</label>
+                  <input value={form.reviewed_by} onChange={e => setForm(f => ({ ...f, reviewed_by: e.target.value }))} className={inputCls} />
+                </div>
+                <div>
+                  <label className={labelCls}>Approved By</label>
+                  <input value={form.approved_by} onChange={e => setForm(f => ({ ...f, approved_by: e.target.value }))} className={inputCls} />
+                </div>
+                <div>
+                  <label className={labelCls}>Valid From</label>
+                  <input type="date" value={form.valid_from} onChange={e => setForm(f => ({ ...f, valid_from: e.target.value }))} className={inputCls} />
+                </div>
+                <div>
+                  <label className={labelCls}>Valid Until</label>
+                  <input type="date" value={form.valid_until} onChange={e => setForm(f => ({ ...f, valid_until: e.target.value }))} className={inputCls} />
+                </div>
+                <div className="col-span-2">
+                  <label className={labelCls}>Hazards Identified</label>
+                  <textarea rows={3} value={form.hazards} onChange={e => setForm(f => ({ ...f, hazards: e.target.value }))} className={inputCls + ' resize-none'} />
+                </div>
+                <div className="col-span-2">
+                  <label className={labelCls}>Control Measures</label>
+                  <textarea rows={3} value={form.controls} onChange={e => setForm(f => ({ ...f, controls: e.target.value }))} className={inputCls + ' resize-none'} />
+                </div>
+                <div className="col-span-2">
+                  <label className={labelCls}>PPE Required</label>
+                  <input value={form.ppe} onChange={e => setForm(f => ({ ...f, ppe: e.target.value }))} placeholder="e.g. Hard hat, Hi-vis, Safety boots, Gloves" className={inputCls} />
                 </div>
               </div>
-              <div>
-                <label className="block text-sm font-medium text-white mb-2">Description</label>
-                <textarea rows={3} className="w-full bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-white text-sm"></textarea>
+              <div className="flex gap-3 pt-2">
+                <button type="button" onClick={() => setShowModal(false)} className="flex-1 px-4 py-2 border border-gray-700 rounded-lg text-sm text-gray-300 hover:bg-gray-800">Cancel</button>
+                <button type="submit" disabled={createMutation.isPending || updateMutation.isPending} className="flex-1 px-4 py-2 bg-orange-600 text-white rounded-lg text-sm font-medium hover:bg-orange-700 disabled:opacity-50">
+                  {editing ? 'Update RAMS' : 'Create RAMS'}
+                </button>
               </div>
-            </div>
-          )}
-
-          {createStep === 2 && (
-            <div className="space-y-4">
-              <p className="text-gray-300 mb-4">Add hazards and control measures below</p>
-              <div className="bg-gray-900 border border-gray-700 rounded-lg p-4">
-                <p className="text-white font-medium mb-3">Hazards</p>
-                <div className="space-y-3">
-                  <div className="flex gap-2">
-                    <input type="text" placeholder="Hazard description" className="flex-1 bg-gray-800 border border-gray-700 rounded px-2 py-1 text-white text-sm" />
-                    <input type="number" placeholder="Likelihood (1-5)" className="w-20 bg-gray-800 border border-gray-700 rounded px-2 py-1 text-white text-sm" />
-                    <input type="number" placeholder="Severity (1-5)" className="w-20 bg-gray-800 border border-gray-700 rounded px-2 py-1 text-white text-sm" />
-                    <button className="text-orange-400 hover:text-orange-300">+</button>
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {createStep === 3 && (
-            <div className="space-y-4">
-              <p className="text-gray-300 mb-4">Define method steps and equipment</p>
-              <div className="bg-gray-900 border border-gray-700 rounded-lg p-4">
-                <p className="text-white font-medium mb-3">Method Steps</p>
-                <div className="space-y-3">
-                  <div className="flex gap-2">
-                    <input type="number" placeholder="Step #" className="w-16 bg-gray-800 border border-gray-700 rounded px-2 py-1 text-white text-sm" />
-                    <input type="text" placeholder="Description" className="flex-1 bg-gray-800 border border-gray-700 rounded px-2 py-1 text-white text-sm" />
-                    <button className="text-orange-400 hover:text-orange-300">+</button>
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {createStep === 4 && (
-            <div className="space-y-4">
-              <p className="text-gray-300 mb-4">Final approval sign-off</p>
-              <div className="bg-gray-900 border border-gray-700 rounded-lg p-4">
-                <p className="text-white font-medium mb-3">Required Signatures</p>
-                <div className="space-y-2 text-gray-400 text-sm">
-                  <p>✓ Site Supervisor</p>
-                  <p>✓ Project Manager</p>
-                  <p>✓ Health & Safety Officer</p>
-                </div>
-              </div>
-              <button className="w-full bg-orange-600 hover:bg-orange-700 text-white py-2 rounded-lg font-medium">Submit for Approval</button>
-            </div>
-          )}
-
-          <div className="mt-6 flex gap-3 justify-between">
-            <button onClick={() => setCreateStep(Math.max(1, createStep - 1))} className="bg-gray-700 hover:bg-gray-600 text-white px-6 py-2 rounded-lg font-medium" disabled={createStep === 1}>
-              Back
-            </button>
-            <button className="bg-gray-700 hover:bg-gray-600 text-white px-6 py-2 rounded-lg font-medium">Save Draft</button>
-            {createStep < 4 && (
-              <button onClick={() => setCreateStep(createStep + 1)} className="bg-orange-600 hover:bg-orange-700 text-white px-6 py-2 rounded-lg font-medium">
-                Next
-              </button>
-            )}
-          </div>
-        </div>
-      )}
-
-      {/* Approval Workflow Tab */}
-      {activeTab === 'approval' && (
-        <div className="grid grid-cols-5 gap-4">
-          {['Draft', 'Submitted', 'Under Review', 'Approved', 'Rejected'].map((status) => (
-            <div key={status} className="bg-gray-800 border border-gray-700 rounded-xl p-4">
-              <h3 className="font-bold text-white mb-4">{status}</h3>
-              <div className="space-y-3">
-                {approvalKanban[status]?.map((doc) => (
-                  <div key={doc.id} className="bg-gray-900 border border-gray-700 rounded-lg p-3 hover:border-orange-500/50">
-                    <p className="font-medium text-white text-sm">{doc.title}</p>
-                    <p className="text-xs text-gray-400 mt-1">{doc.project}</p>
-                    <div className="flex gap-2 mt-2">
-                      <button className="text-xs bg-orange-600/20 text-orange-300 px-2 py-1 rounded hover:bg-orange-600/30">View</button>
-                      {status === 'Under Review' && <button className="text-xs bg-green-600/20 text-green-300 px-2 py-1 rounded hover:bg-green-600/30">Approve</button>}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          ))}
-        </div>
-      )}
-
-      {/* Templates Tab */}
-      {activeTab === 'templates' && (
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {trades.map((trade) => (
-            <div key={trade} className="bg-gray-800 border border-gray-700 rounded-xl p-5 hover:border-orange-500/50">
-              <Shield className="h-8 w-8 text-orange-500 mb-3" />
-              <h3 className="font-bold text-white mb-1">{trade}</h3>
-              <p className="text-xs text-gray-400 mb-3">Activity-based template</p>
-              <div className="space-y-1 text-xs text-gray-400 mb-4">
-                <p>Hazards: 5-8</p>
-                <p>Last updated: 2026-02-15</p>
-                <p>Used: 3 times</p>
-              </div>
-              <button className="w-full bg-orange-600 hover:bg-orange-700 text-white px-4 py-2 rounded-lg text-sm font-medium">Use Template</button>
-            </div>
-          ))}
-        </div>
-      )}
-
-      {/* Review Log Tab */}
-      {activeTab === 'review' && (
-        <div className="space-y-6">
-          {/* KPIs */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="bg-gray-800 border border-gray-700 rounded-xl p-5">
-              <p className="text-gray-400 text-sm mb-2">Pending Reviews</p>
-              <p className="text-3xl font-bold text-yellow-400">{approvalKanban['Under Review']?.length || 0}</p>
-            </div>
-            <div className="bg-gray-800 border border-gray-700 rounded-xl p-5">
-              <p className="text-gray-400 text-sm mb-2">Approval Rate (YTD)</p>
-              <p className="text-3xl font-bold text-emerald-400">94%</p>
-            </div>
-          </div>
-
-          {/* Review Timeline */}
-          <div className="bg-gray-800 border border-gray-700 rounded-xl overflow-hidden">
-            <div className="max-h-96 overflow-y-auto">
-              {mockApprovals.map((record) => (
-                <div key={record.id} className="border-b border-gray-700 p-4 hover:bg-gray-700/30">
-                  <div className="flex items-start justify-between gap-4">
-                    <div className="flex-1">
-                      <p className="text-white font-medium">{record.action === 'approved' ? '✓' : record.action === 'submitted' ? '◆' : '◎'} {record.action.replace('_', ' ').toUpperCase()}</p>
-                      <p className="text-sm text-gray-400">RAMS ID: {record.ramsId}</p>
-                      <p className="text-xs text-gray-500">By {record.actor} on {fmtDate(record.timestamp)}</p>
-                      {record.comments && <p className="text-sm text-gray-300 mt-2">"{record.comments}"</p>}
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
+            </form>
           </div>
         </div>
       )}
     </div>
   );
 }
-
-import React from 'react';

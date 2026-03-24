@@ -1,114 +1,191 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
+import { auditApi } from '@/services/api';
+import { toast } from 'sonner';
 import {
-  Activity, Users, AlertTriangle, Download, Shield, BarChart2, Filter,
-  Search, Calendar, Settings, TrendingUp, Lock, Eye, CheckCircle,
+  Filter,
+  TrendingUp,
+  CheckCircle,
+  X,
+  Clock,
+  AlertTriangle,
+  Download,
+  Activity,
+  Users,
+  Shield,
+  BarChart2,
 } from 'lucide-react';
 
-type SubTab = 'activity' | 'users' | 'events' | 'compliance' | 'export';
 type AnyRow = Record<string, unknown>;
 
 interface AuditEntry extends AnyRow {
-  id: string;
-  timestamp: string;
-  user: string;
-  userInitials: string;
-  action: 'Created' | 'Updated' | 'Deleted' | 'Viewed' | 'Exported' | 'Approved';
-  module: string;
-  record: string;
-  ipAddress: string;
-  device: string;
-  details?: string;
+  id: number;
+  user_id: string;
+  action: string;
+  table_name: string;
+  record_id: number;
+  changes: string;
+  created_at: string;
+  user?: { name: string; avatar?: string };
+  ip_address?: string;
 }
+
+interface AuditStats {
+  total_entries: number;
+  today_entries: number;
+  week_entries: number;
+  month_entries: number;
+  active_users: number;
+  security_alerts: number;
+}
+
+type SubTab = 'activity' | 'users' | 'changes' | 'security' | 'export';
 
 const TABS: { key: SubTab; label: string; icon: React.ElementType }[] = [
   { key: 'activity', label: 'Activity Log', icon: Activity },
   { key: 'users', label: 'User Actions', icon: Users },
-  { key: 'events', label: 'System Events', icon: AlertTriangle },
-  { key: 'compliance', label: 'Compliance', icon: Shield },
+  { key: 'changes', label: 'Data Changes', icon: TrendingUp },
+  { key: 'security', label: 'Security', icon: Shield },
   { key: 'export', label: 'Export', icon: Download },
 ];
 
-const MOCK_ENTRIES: AuditEntry[] = [
-  { id: '1', timestamp: '2026-03-24 14:32:15', user: 'John Smith', userInitials: 'JS', action: 'Updated', module: 'Projects', record: 'PRJ-001', ipAddress: '192.168.1.45', device: 'Chrome / Windows' },
-  { id: '2', timestamp: '2026-03-24 14:28:42', user: 'Sarah Johnson', userInitials: 'SJ', action: 'Created', module: 'Invoices', record: 'INV-2026-045', ipAddress: '192.168.1.52', device: 'Safari / MacOS' },
-  { id: '3', timestamp: '2026-03-24 14:15:08', user: 'Mike Chen', userInitials: 'MC', action: 'Approved', module: 'CIS Returns', record: 'CIS-FEB-2026', ipAddress: '192.168.1.88', device: 'Firefox / Linux' },
-  { id: '4', timestamp: '2026-03-24 13:52:33', user: 'Emma Wilson', userInitials: 'EW', action: 'Exported', module: 'Safety Reports', record: 'SAFETY-Q1-2026', ipAddress: '192.168.1.76', device: 'Chrome / Windows' },
-  { id: '5', timestamp: '2026-03-24 13:41:19', user: 'John Smith', userInitials: 'JS', action: 'Viewed', module: 'Financial Summary', record: 'FIN-MAR-2026', ipAddress: '192.168.1.45', device: 'Chrome / Windows' },
-  { id: '6', timestamp: '2026-03-24 13:28:56', user: 'Lisa Park', userInitials: 'LP', action: 'Updated', module: 'RFIs', record: 'RFI-089', ipAddress: '192.168.2.12', device: 'Edge / Windows' },
-  { id: '7', timestamp: '2026-03-24 13:15:42', user: 'David Brown', userInitials: 'DB', action: 'Created', module: 'Punch List', record: 'PL-RIVERSIDE-01', ipAddress: '192.168.1.34', device: 'Chrome / iOS' },
-  { id: '8', timestamp: '2026-03-24 12:58:07', user: 'Sarah Johnson', userInitials: 'SJ', action: 'Deleted', module: 'Documents', record: 'DOC-DRAFT-234', ipAddress: '192.168.1.52', device: 'Safari / MacOS' },
-  { id: '9', timestamp: '2026-03-24 12:42:18', user: 'Mike Chen', userInitials: 'MC', action: 'Approved', module: 'Invoices', record: 'INV-2026-044', ipAddress: '192.168.1.88', device: 'Firefox / Linux' },
-  { id: '10', timestamp: '2026-03-24 12:21:54', user: 'Emma Wilson', userInitials: 'EW', action: 'Updated', module: 'Safety', record: 'INC-2026-012', ipAddress: '192.168.1.76', device: 'Chrome / Windows' },
-];
-
-const getActionColor = (action: string): string => {
-  switch (action) {
-    case 'Created':
-      return 'bg-emerald-500/20 text-emerald-400';
-    case 'Updated':
-      return 'bg-blue-500/20 text-blue-400';
-    case 'Deleted':
-      return 'bg-red-500/20 text-red-400';
-    case 'Viewed':
-      return 'bg-cyan-500/20 text-cyan-400';
-    case 'Exported':
-      return 'bg-purple-500/20 text-purple-400';
-    case 'Approved':
-      return 'bg-emerald-500/20 text-emerald-400';
-    default:
-      return 'bg-gray-500/20 text-gray-400';
-  }
-};
-
 export function AuditLog() {
-  const [subTab, setSubTab] = useState<SubTab>('activity');
-  const [searchQuery, setSearchQuery] = useState('');
-  const [actionFilter, setActionFilter] = useState('All');
-  const [moduleFilter, setModuleFilter] = useState('All');
-  const [dateRange, setDateRange] = useState('7days');
-
-  const filteredEntries = MOCK_ENTRIES.filter(entry => {
-    const matchesSearch = entry.user.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                          entry.module.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                          entry.record.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesAction = actionFilter === 'All' || entry.action === actionFilter;
-    const matchesModule = moduleFilter === 'All' || entry.module === moduleFilter;
-    return matchesSearch && matchesAction && matchesModule;
+  const [entries, setEntries] = useState<AuditEntry[]>([]);
+  const [stats, setStats] = useState<AuditStats>({
+    total_entries: 0,
+    today_entries: 0,
+    week_entries: 0,
+    month_entries: 0,
+    active_users: 0,
+    security_alerts: 0,
   });
+  const [loading, setLoading] = useState(true);
+  const [subTab, setSubTab] = useState<SubTab>('activity');
+  const [filterAction, setFilterAction] = useState('all');
+  const [filterTable, setFilterTable] = useState('all');
+  const [filterUser, setFilterUser] = useState('all');
+  const [filterDateFrom, setFilterDateFrom] = useState('');
+  const [filterDateTo, setFilterDateTo] = useState('');
+  const [searchQuery, setSearchQuery] = useState('');
 
-  const userSummary = Array.from(
-    new Map(MOCK_ENTRIES.map(e => [e.user, { name: e.user, initials: e.userInitials, count: 0 }])).entries()
-  ).map(([_, user]) => ({
-    ...user,
-    count: MOCK_ENTRIES.filter(e => e.user === user.name).length,
-  }));
+  const loadData = useCallback(async () => {
+    setLoading(true);
+    try {
+      const [entriesData, statsData] = await Promise.all([
+        auditApi.getAll({ limit: 500 }),
+        auditApi.getStats(),
+      ]);
+      let filtered = entriesData as unknown as AuditEntry[];
+      if (filterAction !== 'all') {
+        filtered = filtered.filter(e => e.action === filterAction);
+      }
+      if (filterTable !== 'all') {
+        filtered = filtered.filter(e => e.table_name === filterTable);
+      }
+      if (filterUser !== 'all') {
+        filtered = filtered.filter(e => e.user_id === filterUser);
+      }
+      if (searchQuery) {
+        filtered = filtered.filter(e =>
+          String(e.table_name).includes(searchQuery) ||
+          String(e.user?.name ?? '').includes(searchQuery)
+        );
+      }
+      setEntries(filtered);
+      setStats(statsData as unknown as AuditStats);
+    } catch (err) {
+      toast.error('Failed to load audit log');
+    } finally {
+      setLoading(false);
+    }
+  }, [filterAction, filterTable, filterUser, searchQuery]);
+
+  useEffect(() => {
+    loadData();
+  }, [loadData]);
+
+  const getActionColor = (action: string): string => {
+    switch (action) {
+      case 'create':
+        return 'bg-emerald-500/20 text-emerald-400';
+      case 'update':
+        return 'bg-blue-500/20 text-blue-400';
+      case 'delete':
+        return 'bg-red-500/20 text-red-400';
+      case 'view':
+        return 'bg-cyan-500/20 text-cyan-400';
+      case 'export':
+        return 'bg-purple-500/20 text-purple-400';
+      case 'approve':
+        return 'bg-green-500/20 text-green-400';
+      default:
+        return 'bg-gray-500/20 text-gray-400';
+    }
+  };
+
+  const getSecurityLevel = (level: string): string => {
+    switch (level) {
+      case 'high':
+        return 'bg-red-500/20 text-red-400';
+      case 'medium':
+        return 'bg-amber-500/20 text-amber-400';
+      case 'low':
+        return 'bg-blue-500/20 text-blue-400';
+      default:
+        return 'bg-gray-500/20 text-gray-400';
+    }
+  };
+
+  const uniqueUsers = Array.from(
+    new Map(entries.map(e => [e.user_id, e.user])).entries()
+  );
+
+  const activityToday = entries.filter(e => {
+    const entryDate = new Date(String(e.created_at)).toDateString();
+    return entryDate === new Date().toDateString();
+  });
 
   return (
     <div className="space-y-6">
-      <div className="flex justify-between items-start">
-        <div>
-          <h1 className="text-3xl font-bold text-white">Audit & Compliance Log</h1>
-          <p className="text-sm text-gray-400 mt-1">Complete system activity trail for compliance & security</p>
-        </div>
-      </div>
-
-      {/* KPI Stats */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <div className="bg-gray-800 border border-gray-700 rounded-lg p-4">
-          <p className="text-xs text-gray-400 uppercase font-bold mb-1">Events Today</p>
-          <p className="text-2xl font-bold text-orange-500">{MOCK_ENTRIES.length}</p>
-        </div>
-        <div className="bg-gray-800 border border-gray-700 rounded-lg p-4">
-          <p className="text-xs text-gray-400 uppercase font-bold mb-1">Active Users</p>
-          <p className="text-2xl font-bold text-blue-500">{userSummary.length}</p>
-        </div>
-        <div className="bg-gray-800 border border-gray-700 rounded-lg p-4">
-          <p className="text-xs text-gray-400 uppercase font-bold mb-1">Data Changes</p>
-          <p className="text-2xl font-bold text-emerald-500">{MOCK_ENTRIES.filter(e => ['Created', 'Updated', 'Deleted'].includes(e.action)).length}</p>
-        </div>
-        <div className="bg-gray-800 border border-gray-700 rounded-lg p-4">
-          <p className="text-xs text-gray-400 uppercase font-bold mb-1">Deletions</p>
-          <p className="text-2xl font-bold text-red-500">{MOCK_ENTRIES.filter(e => e.action === 'Deleted').length}</p>
+      {/* Header with KPIs */}
+      <div>
+        <h2 className="text-2xl font-bold text-white mb-4">Audit & Compliance Log</h2>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <div className="bg-gray-800 border border-gray-700 rounded-lg p-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-xs text-gray-400 uppercase">Events Today</p>
+                <p className="text-xl font-bold text-white">{Number(activityToday.length)}</p>
+              </div>
+              <Activity className="h-6 w-6 text-blue-400" />
+            </div>
+          </div>
+          <div className="bg-gray-800 border border-gray-700 rounded-lg p-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-xs text-gray-400 uppercase">Active Users</p>
+                <p className="text-xl font-bold text-white">{Number(stats.active_users)}</p>
+              </div>
+              <Users className="h-6 w-6 text-cyan-400" />
+            </div>
+          </div>
+          <div className="bg-gray-800 border border-gray-700 rounded-lg p-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-xs text-gray-400 uppercase">Security Alerts</p>
+                <p className="text-xl font-bold text-white">{Number(stats.security_alerts)}</p>
+              </div>
+              <AlertTriangle className="h-6 w-6 text-red-400" />
+            </div>
+          </div>
+          <div className="bg-gray-800 border border-gray-700 rounded-lg p-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-xs text-gray-400 uppercase">This Week</p>
+                <p className="text-xl font-bold text-white">{Number(stats.week_entries)}</p>
+              </div>
+              <TrendingUp className="h-6 w-6 text-emerald-400" />
+            </div>
+          </div>
         </div>
       </div>
 
@@ -122,329 +199,285 @@ export function AuditLog() {
               onClick={() => setSubTab(t.key)}
               className={`flex items-center gap-2 px-4 py-3 text-sm font-medium border-b-2 -mb-px transition-colors whitespace-nowrap ${
                 subTab === t.key
-                  ? 'border-orange-500 text-orange-500'
+                  ? 'border-blue-500 text-blue-400'
                   : 'border-transparent text-gray-400 hover:text-gray-200'
               }`}
             >
-              <Icon size={16} />
+              <Icon size={14} />
               {t.label}
             </button>
           );
         })}
       </div>
 
-      {/* ACTIVITY TAB */}
+      {/* Activity Log Tab */}
       {subTab === 'activity' && (
         <div className="space-y-4">
           <div className="flex flex-col sm:flex-row gap-3">
-            <div className="flex-1">
-              <input
-                type="text"
-                placeholder="Search by user, module, or record..."
-                value={searchQuery}
-                onChange={e => setSearchQuery(e.target.value)}
-                className="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-2 text-white text-sm placeholder-gray-500"
-              />
-            </div>
+            <input
+              type="text"
+              placeholder="Search by user or module..."
+              value={searchQuery}
+              onChange={e => setSearchQuery(e.target.value)}
+              className="flex-1 bg-gray-800 border border-gray-700 rounded-lg px-4 py-2 text-white text-sm placeholder-gray-500"
+            />
             <select
-              value={actionFilter}
-              onChange={e => setActionFilter(e.target.value)}
+              value={filterAction}
+              onChange={e => setFilterAction(e.target.value)}
               className="bg-gray-800 border border-gray-700 rounded-lg px-4 py-2 text-white text-sm"
             >
-              <option>All Actions</option>
-              <option>Created</option>
-              <option>Updated</option>
-              <option>Deleted</option>
-              <option>Viewed</option>
-              <option>Exported</option>
-              <option>Approved</option>
+              <option value="all">All Actions</option>
+              <option value="create">Create</option>
+              <option value="update">Update</option>
+              <option value="delete">Delete</option>
+              <option value="view">View</option>
+              <option value="export">Export</option>
             </select>
             <select
-              value={moduleFilter}
-              onChange={e => setModuleFilter(e.target.value)}
+              value={filterTable}
+              onChange={e => setFilterTable(e.target.value)}
               className="bg-gray-800 border border-gray-700 rounded-lg px-4 py-2 text-white text-sm"
             >
-              <option>All Modules</option>
-              <option>Projects</option>
-              <option>Invoices</option>
-              <option>CIS Returns</option>
-              <option>Safety</option>
-              <option>Documents</option>
+              <option value="all">All Modules</option>
+              <option value="projects">Projects</option>
+              <option value="invoices">Invoices</option>
+              <option value="safety">Safety</option>
+              <option value="rfis">RFIs</option>
+              <option value="documents">Documents</option>
             </select>
           </div>
 
-          <div className="bg-gray-900 border border-gray-700 rounded-lg overflow-hidden">
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead className="bg-gray-800 border-b border-gray-700">
-                  <tr>
-                    <th className="text-left px-4 py-3 text-xs font-semibold text-gray-300">Timestamp</th>
-                    <th className="text-left px-4 py-3 text-xs font-semibold text-gray-300">User</th>
-                    <th className="text-left px-4 py-3 text-xs font-semibold text-gray-300">Action</th>
-                    <th className="text-left px-4 py-3 text-xs font-semibold text-gray-300">Module</th>
-                    <th className="text-left px-4 py-3 text-xs font-semibold text-gray-300">Record</th>
-                    <th className="text-left px-4 py-3 text-xs font-semibold text-gray-300">IP Address</th>
-                    <th className="text-left px-4 py-3 text-xs font-semibold text-gray-300">Device</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-800">
-                  {filteredEntries.map(entry => (
-                    <tr key={entry.id} className="hover:bg-gray-800/50 transition">
-                      <td className="px-4 py-3 text-gray-300 text-xs">{String(entry.timestamp)}</td>
-                      <td className="px-4 py-3">
-                        <div className="flex items-center gap-2">
-                          <div className="h-6 w-6 rounded-full bg-orange-600 flex items-center justify-center text-xs font-bold text-white flex-shrink-0">
-                            {String(entry.userInitials)}
-                          </div>
-                          <span className="text-gray-300 text-sm">{String(entry.user)}</span>
-                        </div>
-                      </td>
-                      <td className="px-4 py-3">
-                        <span className={`px-2 py-1 rounded text-xs font-medium ${getActionColor(String(entry.action))}`}>
-                          {String(entry.action)}
-                        </span>
-                      </td>
-                      <td className="px-4 py-3 text-gray-300 text-sm capitalize">{String(entry.module)}</td>
-                      <td className="px-4 py-3 text-gray-300 text-sm font-mono">{String(entry.record)}</td>
-                      <td className="px-4 py-3 text-gray-400 text-xs">{String(entry.ipAddress)}</td>
-                      <td className="px-4 py-3 text-gray-400 text-xs">{String(entry.device)}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+          {loading ? (
+            <div className="text-center py-12">
+              <p className="text-gray-400">Loading audit log...</p>
             </div>
+          ) : entries.length === 0 ? (
+            <div className="text-center py-12">
+              <p className="text-gray-400">No audit entries found</p>
+            </div>
+          ) : (
+            <div className="bg-gray-900 border border-gray-700 rounded-lg overflow-hidden">
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead className="bg-gray-800">
+                    <tr>
+                      <th className="text-left px-4 py-3 text-xs font-semibold text-gray-300">Time</th>
+                      <th className="text-left px-4 py-3 text-xs font-semibold text-gray-300">User</th>
+                      <th className="text-left px-4 py-3 text-xs font-semibold text-gray-300">Action</th>
+                      <th className="text-left px-4 py-3 text-xs font-semibold text-gray-300">Module</th>
+                      <th className="text-left px-4 py-3 text-xs font-semibold text-gray-300">Description</th>
+                      <th className="text-left px-4 py-3 text-xs font-semibold text-gray-300">IP Address</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-800">
+                    {entries.slice(0, 100).map(entry => (
+                      <tr key={Number(entry.id)} className="hover:bg-gray-800/50">
+                        <td className="px-4 py-3 text-gray-300">
+                          {String(new Date(String(entry.created_at)).toLocaleString())}
+                        </td>
+                        <td className="px-4 py-3">
+                          <div className="flex items-center gap-2">
+                            <div className="h-7 w-7 rounded-full bg-blue-600 flex items-center justify-center text-xs font-medium text-white flex-shrink-0">
+                              {String(entry.user?.name ?? '?')[0]}
+                            </div>
+                            <span className="text-gray-300 text-sm">{String(entry.user?.name ?? 'Unknown')}</span>
+                          </div>
+                        </td>
+                        <td className="px-4 py-3">
+                          <span className={`px-2 py-1 rounded text-xs font-medium ${getActionColor(String(entry.action))}`}>
+                            {String(entry.action).toUpperCase()}
+                          </span>
+                        </td>
+                        <td className="px-4 py-3 text-gray-300 text-sm capitalize">
+                          {String(entry.table_name)}
+                        </td>
+                        <td className="px-4 py-3 text-gray-400 text-sm max-w-xs">
+                          {String(entry.record_id)}
+                        </td>
+                        <td className="px-4 py-3 text-gray-400 text-xs">
+                          {String(entry.ip_address ?? '—')}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* User Actions Tab */}
+      {subTab === 'users' && (
+        <div className="space-y-4">
+          <select
+            value={filterUser}
+            onChange={e => setFilterUser(e.target.value)}
+            className="bg-gray-800 border border-gray-700 rounded-lg px-4 py-2 text-white text-sm max-w-sm"
+          >
+            <option value="all">All Users</option>
+            {uniqueUsers.map(([userId, user]) => (
+              <option key={String(userId)} value={String(userId)}>
+                {String(user?.name ?? 'Unknown')}
+              </option>
+            ))}
+          </select>
+
+          <div className="grid grid-cols-1 gap-4">
+            {uniqueUsers.map(([userId, user]) => {
+              const userEntries = entries.filter(e => e.user_id === userId);
+              return (
+                <div key={String(userId)} className="bg-gray-900 border border-gray-700 rounded-lg p-4">
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="flex items-center gap-3">
+                      <div className="h-10 w-10 rounded-full bg-blue-600 flex items-center justify-center text-sm font-medium text-white">
+                        {String(user?.name ?? '?')[0]}
+                      </div>
+                      <div>
+                        <p className="font-medium text-white">{String(user?.name ?? 'Unknown')}</p>
+                        <p className="text-xs text-gray-400">{Number(userEntries.length)} actions this month</p>
+                      </div>
+                    </div>
+                    <span className="text-sm text-gray-400">
+                      Last: {String(new Date(String(userEntries[0]?.created_at)).toLocaleDateString())}
+                    </span>
+                  </div>
+                  <div className="grid grid-cols-4 gap-2 pt-3 border-t border-gray-800">
+                    <div className="text-center">
+                      <p className="text-lg font-bold text-cyan-400">
+                        {Number(userEntries.filter(e => e.action === 'view').length)}
+                      </p>
+                      <p className="text-xs text-gray-400">Views</p>
+                    </div>
+                    <div className="text-center">
+                      <p className="text-lg font-bold text-emerald-400">
+                        {Number(userEntries.filter(e => e.action === 'create').length)}
+                      </p>
+                      <p className="text-xs text-gray-400">Created</p>
+                    </div>
+                    <div className="text-center">
+                      <p className="text-lg font-bold text-blue-400">
+                        {Number(userEntries.filter(e => e.action === 'update').length)}
+                      </p>
+                      <p className="text-xs text-gray-400">Updated</p>
+                    </div>
+                    <div className="text-center">
+                      <p className="text-lg font-bold text-red-400">
+                        {Number(userEntries.filter(e => e.action === 'delete').length)}
+                      </p>
+                      <p className="text-xs text-gray-400">Deleted</p>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
           </div>
         </div>
       )}
 
-      {/* USER ACTIONS TAB */}
-      {subTab === 'users' && (
-        <div className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div className="space-y-4">
-              <h3 className="text-lg font-bold text-white">Top Active Users</h3>
-              {userSummary.sort((a, b) => b.count - a.count).slice(0, 5).map((user) => (
-                <div key={user.name} className="bg-gray-800 border border-gray-700 rounded-lg p-4">
+      {/* Data Changes Tab */}
+      {subTab === 'changes' && (
+        <div className="bg-gray-900 border border-gray-700 rounded-lg overflow-hidden">
+          <div className="p-4 border-b border-gray-700">
+            <div className="flex gap-3">
+              <select
+                value={filterTable}
+                onChange={e => setFilterTable(e.target.value)}
+                className="bg-gray-800 border border-gray-700 rounded-lg px-4 py-2 text-white text-sm flex-1"
+              >
+                <option value="all">All Modules</option>
+                <option value="projects">Projects</option>
+                <option value="invoices">Invoices</option>
+                <option value="safety">Safety</option>
+              </select>
+              <button className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium">
+                <Download className="h-4 w-4 inline mr-2" />
+                Export CSV
+              </button>
+            </div>
+          </div>
+          <div className="divide-y divide-gray-800 max-h-96 overflow-y-auto">
+            {entries
+              .filter(e => e.action === 'update')
+              .slice(0, 50)
+              .map(entry => (
+                <div key={Number(entry.id)} className="p-4 hover:bg-gray-800/50">
                   <div className="flex items-center justify-between mb-2">
-                    <div className="flex items-center gap-3">
-                      <div className="h-8 w-8 rounded-full bg-blue-600 flex items-center justify-center text-xs font-bold text-white">
-                        {user.initials}
-                      </div>
-                      <div>
-                        <p className="font-medium text-white">{user.name}</p>
-                        <p className="text-xs text-gray-400">{user.count} actions</p>
-                      </div>
-                    </div>
-                    <span className="text-lg font-bold text-orange-500">{user.count}</span>
+                    <p className="text-sm font-medium text-white">
+                      {String(entry.user?.name ?? 'Unknown')} updated {String(entry.table_name)}
+                    </p>
+                    <span className="text-xs text-gray-400">
+                      {String(new Date(String(entry.created_at)).toLocaleString())}
+                    </span>
                   </div>
-                  <div className="h-2 bg-gray-900 rounded-full overflow-hidden">
-                    <div className="h-full bg-orange-500" style={{ width: `${(user.count / 10) * 100}%` }} />
+                  <div className="text-xs text-gray-400">
+                    <p>Record ID: {Number(entry.record_id)}</p>
+                    <p className="text-gray-500 mt-1">{String(entry.changes)}</p>
                   </div>
                 </div>
               ))}
-            </div>
-
-            <div className="space-y-4">
-              <h3 className="text-lg font-bold text-white">Action Breakdown</h3>
-              {['Created', 'Updated', 'Viewed', 'Deleted', 'Approved'].map((action) => {
-                const count = MOCK_ENTRIES.filter(e => e.action === action).length;
-                return (
-                  <div key={action} className="bg-gray-800 border border-gray-700 rounded-lg p-4">
-                    <div className="flex items-center justify-between mb-2">
-                      <p className="text-sm font-medium text-white">{action}</p>
-                      <span className="text-lg font-bold text-white">{count}</span>
-                    </div>
-                    <div className="h-2 bg-gray-900 rounded-full overflow-hidden">
-                      <div className="h-full bg-blue-500" style={{ width: `${(count / 10) * 100}%` }} />
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
           </div>
         </div>
       )}
 
-      {/* SYSTEM EVENTS TAB */}
-      {subTab === 'events' && (
+      {/* Security Tab */}
+      {subTab === 'security' && (
         <div className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             {[
-              { label: 'API Calls', value: 1247, icon: '🔌', color: 'bg-blue-900/30 border-blue-700' },
-              { label: 'Failed Logins', value: 2, icon: '⚠️', color: 'bg-red-900/30 border-red-700' },
-              { label: 'Config Changes', value: 8, icon: '⚙️', color: 'bg-orange-900/30 border-orange-700' },
-              { label: 'Integration Syncs', value: 34, icon: '🔄', color: 'bg-emerald-900/30 border-emerald-700' },
-            ].map((item) => (
-              <div key={item.label} className={`border rounded-xl p-4 ${item.color}`}>
-                <div className="flex items-center gap-3">
-                  <span className="text-2xl">{item.icon}</span>
-                  <div>
-                    <p className="text-xs text-gray-400 uppercase font-bold">{item.label}</p>
-                    <p className="text-2xl font-bold text-white">{item.value}</p>
-                  </div>
-                </div>
+              { label: 'Failed Logins', value: 0, level: 'high', icon: X },
+              { label: 'Password Resets', value: 0, level: 'medium', icon: Shield },
+              { label: 'Permission Changes', value: 0, level: 'low', icon: AlertTriangle },
+            ].map((item, idx) => (
+              <div key={idx} className={`border rounded-lg p-4 ${getSecurityLevel(item.level)}`}>
+                <p className="text-xs uppercase mb-1">
+                  {item.label}
+                </p>
+                <p className="text-2xl font-bold">{Number(item.value)}</p>
               </div>
             ))}
           </div>
-
-          <div className="bg-gray-800 border border-gray-700 rounded-xl overflow-hidden">
-            <table className="w-full text-sm">
-              <thead className="bg-gray-900 border-b border-gray-700">
-                <tr>
-                  <th className="text-left px-4 py-3 text-xs font-semibold text-gray-300">Time</th>
-                  <th className="text-left px-4 py-3 text-xs font-semibold text-gray-300">Event Type</th>
-                  <th className="text-left px-4 py-3 text-xs font-semibold text-gray-300">Details</th>
-                  <th className="text-left px-4 py-3 text-xs font-semibold text-gray-300">Status</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-800">
-                {[
-                  { time: '14:32', type: 'API Call', details: 'GET /projects/PRJ-001', status: '200 OK' },
-                  { time: '14:28', type: 'Export', details: 'Monthly CIS Return CSV', status: 'Success' },
-                  { time: '13:52', type: 'Integration', details: 'Xero sync completed', status: '156 records' },
-                  { time: '13:41', type: 'Config Change', details: 'Updated user permissions', status: 'Applied' },
-                ].map((event, idx) => (
-                  <tr key={idx} className="hover:bg-gray-800/50">
-                    <td className="px-4 py-3 text-gray-400 text-xs">{event.time}</td>
-                    <td className="px-4 py-3 text-white text-sm font-medium">{event.type}</td>
-                    <td className="px-4 py-3 text-gray-300 text-sm">{event.details}</td>
-                    <td className="px-4 py-3"><span className="px-2 py-1 rounded text-xs font-bold bg-emerald-900/40 text-emerald-300">{event.status}</span></td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
         </div>
       )}
 
-      {/* COMPLIANCE TAB */}
-      {subTab === 'compliance' && (
-        <div className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="bg-gray-800 border border-gray-700 rounded-xl p-5">
-              <h3 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
-                <Lock size={20} className="text-blue-400" />
-                GDPR Data Access
-              </h3>
-              <div className="space-y-2">
-                {['Right-to-Access Requests', 'Data Export Requests', 'Deletion Requests', 'Consent Records'].map((item) => (
-                  <div key={item} className="flex items-center justify-between p-3 bg-gray-900 rounded-lg">
-                    <span className="text-gray-300">{item}</span>
-                    <span className="text-lg font-bold text-white">3</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            <div className="bg-gray-800 border border-gray-700 rounded-xl p-5">
-              <h3 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
-                <Eye size={20} className="text-emerald-400" />
-                Document Access Tracking
-              </h3>
-              <div className="space-y-2">
-                {['Financial Records Accessed', 'CIS Data Viewed', 'Safety Reports Downloaded', 'Contract Reviews'].map((item) => (
-                  <div key={item} className="flex items-center justify-between p-3 bg-gray-900 rounded-lg">
-                    <span className="text-gray-300">{item}</span>
-                    <span className="text-lg font-bold text-white">{Math.floor(Math.random() * 20)}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            <div className="bg-gray-800 border border-gray-700 rounded-xl p-5">
-              <h3 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
-                <Shield size={20} className="text-orange-400" />
-                Financial Access Log
-              </h3>
-              <p className="text-sm text-gray-400 mb-4">Last 30 days of financial record access</p>
-              <div className="space-y-2">
-                {['Invoice Viewing: 45', 'Payment Processing: 12', 'Budget Review: 28', 'CIS Deduction Access: 34'].map((item) => (
-                  <div key={item} className="flex items-center gap-2 text-sm text-gray-300">
-                    <CheckCircle size={14} className="text-emerald-400 flex-shrink-0" />
-                    {item}
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            <div className="bg-gray-800 border border-gray-700 rounded-xl p-5">
-              <h3 className="text-lg font-bold text-white mb-4">Compliance Status</h3>
-              <div className="space-y-3">
-                {['GDPR Compliant', 'Data Retention Policy Met', 'Access Control Enforced', 'Audit Trail Complete'].map((item) => (
-                  <div key={item} className="flex items-center gap-3 p-3 bg-emerald-900/30 border border-emerald-700 rounded-lg">
-                    <CheckCircle size={18} className="text-emerald-400 flex-shrink-0" />
-                    <span className="text-sm font-medium text-emerald-300">{item}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* EXPORT TAB */}
+      {/* Export Tab */}
       {subTab === 'export' && (
-        <div className="space-y-4">
-          <div className="bg-gray-800 border border-gray-700 rounded-xl p-6">
-            <h3 className="text-lg font-bold text-white mb-4">Export Audit Log</h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-              <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2">Date Range</label>
-                <select className="w-full bg-gray-900 border border-gray-700 rounded-lg px-4 py-2 text-white text-sm">
-                  <option>Last 7 days</option>
-                  <option>Last 30 days</option>
-                  <option>Last 90 days</option>
-                  <option>Last year</option>
-                  <option>All time</option>
-                </select>
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2">Format</label>
-                <select className="w-full bg-gray-900 border border-gray-700 rounded-lg px-4 py-2 text-white text-sm">
-                  <option>CSV</option>
-                  <option>PDF</option>
-                  <option>Excel</option>
-                  <option>JSON</option>
-                </select>
-              </div>
+        <div className="bg-gray-900 border border-gray-700 rounded-lg p-6 max-w-md">
+          <h3 className="text-lg font-bold text-white mb-4">Export Audit Trail</h3>
+          <div className="space-y-4">
+            <div>
+              <label className="block text-sm text-gray-400 mb-2">Date From</label>
+              <input
+                type="date"
+                value={filterDateFrom}
+                onChange={e => setFilterDateFrom(e.target.value)}
+                className="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-2 text-white text-sm"
+              />
             </div>
-            <button className="w-full px-4 py-3 bg-orange-600 hover:bg-orange-700 text-white rounded-lg font-bold transition flex items-center justify-center gap-2">
-              <Download size={18} />
-              Export Now
+            <div>
+              <label className="block text-sm text-gray-400 mb-2">Date To</label>
+              <input
+                type="date"
+                value={filterDateTo}
+                onChange={e => setFilterDateTo(e.target.value)}
+                className="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-2 text-white text-sm"
+              />
+            </div>
+            <div>
+              <label className="block text-sm text-gray-400 mb-2">Format</label>
+              <select className="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-2 text-white text-sm">
+                <option>CSV</option>
+                <option>PDF</option>
+                <option>Excel</option>
+              </select>
+            </div>
+            <button className="w-full px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium">
+              <Download className="h-4 w-4 inline mr-2" />
+              Export
             </button>
-          </div>
-
-          <div className="bg-gray-800 border border-gray-700 rounded-xl p-6">
-            <h3 className="text-lg font-bold text-white mb-4">Scheduled Reports</h3>
-            <div className="space-y-3">
-              {['Weekly Audit Summary (Every Monday 09:00)', 'Monthly Compliance Report (1st of month)', 'Quarterly Security Review (Quarterly)'].map((report) => (
-                <div key={report} className="flex items-center justify-between p-4 bg-gray-900 rounded-lg">
-                  <span className="text-gray-300">{report}</span>
-                  <button className="px-3 py-1 text-xs bg-blue-600 hover:bg-blue-700 text-white rounded font-medium">
-                    Edit
-                  </button>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          <div className="bg-gray-800 border border-gray-700 rounded-xl p-6">
-            <h3 className="text-lg font-bold text-white mb-4">Data Retention Policy</h3>
-            <div className="space-y-3">
-              {[
-                { label: '90 Days', desc: 'Automatic deletion of logs older than 90 days' },
-                { label: '1 Year', desc: 'Extended retention for compliance purposes' },
-                { label: '7 Years', desc: 'Long-term archive for financial audits' },
-              ].map((policy) => (
-                <div key={policy.label} className="flex items-start justify-between p-3 bg-gray-900 rounded-lg">
-                  <div>
-                    <p className="font-medium text-white">{policy.label} Retention</p>
-                    <p className="text-xs text-gray-400 mt-1">{policy.desc}</p>
-                  </div>
-                  <input type="radio" name="retention" className="accent-orange-500 mt-1" />
-                </div>
-              ))}
-            </div>
+            <button className="w-full px-4 py-2 bg-green-600/20 hover:bg-green-600/30 text-green-400 rounded-lg font-medium text-sm">
+              Generate Compliance Report
+            </button>
           </div>
         </div>
       )}

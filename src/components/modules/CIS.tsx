@@ -44,7 +44,7 @@ export function CIS() {
   const updateMutation = useUpdate();
   const deleteMutation = useDelete();
 
-  const [mainTab, setMainTab] = useState<'returns'|'register'|'calculator'|'submissions'|'cis300'|'verification'|'deduction'>('returns');
+  const [mainTab, setMainTab] = useState<'returns'|'register'|'calculator'|'submissions'>('returns');
   const [subTab, setSubTab] = useState('all');
   function setTab(key: string, filter: string) { setSubTab(key); setStatusFilter(filter); }
   const [search, setSearch] = useState('');
@@ -164,17 +164,15 @@ export function CIS() {
       </div>
 
       {/* Main Tabs */}
-      <div className="flex gap-1 border-b border-gray-700 overflow-x-auto">
+      <div className="flex gap-2 border-b border-gray-700 pb-2">
         {[
           {id:'returns', label:'Monthly Returns'},
           {id:'register', label:'Subcontractor Register'},
           {id:'calculator', label:'Deduction Calculator'},
-          {id:'cis300', label:'CIS300 Returns'},
-          {id:'verification', label:'Verification'},
           {id:'submissions', label:'Submission History'},
         ].map(t=>(
           <button key={t.id} onClick={()=>setMainTab(t.id as any)}
-            className={`px-4 py-3 text-sm font-medium border-b-2 -mb-px transition-colors whitespace-nowrap ${mainTab===t.id?'border-orange-600 text-orange-600':'border-transparent text-gray-400 hover:text-gray-200'}`}>
+            className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${mainTab===t.id?'bg-orange-600 text-white':'bg-gray-800 text-gray-400 hover:bg-gray-700 hover:text-white'}`}>
             {t.label}
           </button>
         ))}
@@ -356,133 +354,6 @@ export function CIS() {
               <button className="mt-4 w-full bg-orange-600 hover:bg-orange-700 text-white rounded-lg py-3 font-semibold transition-colors">
                 Generate HMRC Return
               </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* CIS300 RETURNS TAB */}
-      {mainTab==='cis300' && (
-        <div className="space-y-6">
-          <div className="bg-gradient-to-br from-amber-900/40 to-amber-900/20 border border-amber-700 rounded-xl p-6">
-            <h3 className="text-lg font-bold text-white mb-4">CIS300 Monthly Return Generator</h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2">Tax Month</label>
-                <select className="w-full bg-gray-900 border border-gray-700 rounded-lg px-4 py-3 text-white text-sm focus:outline-none focus:ring-2 focus:ring-orange-500">
-                  {TAX_PERIOD_OPTIONS.map(period=><option key={period}>{period}</option>)}
-                </select>
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2">Contractor UTR</label>
-                <input type="text" placeholder="1234567890" className="w-full bg-gray-900 border border-gray-700 rounded-lg px-4 py-3 text-white text-sm focus:outline-none focus:ring-2 focus:ring-orange-500"/>
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2">Employer Reference</label>
-                <input type="text" placeholder="123/AB12345" className="w-full bg-gray-900 border border-gray-700 rounded-lg px-4 py-3 text-white text-sm focus:outline-none focus:ring-2 focus:ring-orange-500"/>
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2">Total Payments (£)</label>
-                <input type="number" placeholder="50000" className="w-full bg-gray-900 border border-gray-700 rounded-lg px-4 py-3 text-white text-sm focus:outline-none focus:ring-2 focus:ring-orange-500"/>
-              </div>
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <button className="px-4 py-3 bg-orange-600 hover:bg-orange-700 text-white rounded-lg text-sm font-medium transition-colors">
-                Generate XML
-              </button>
-              <button className="px-4 py-3 bg-green-600 hover:bg-green-700 text-white rounded-lg text-sm font-medium transition-colors">
-                Submit to HMRC
-              </button>
-              <button className="px-4 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium transition-colors">
-                Preview
-              </button>
-            </div>
-          </div>
-
-          <div className="bg-gray-800 border border-gray-700 rounded-xl overflow-hidden">
-            <div className="px-6 py-4 border-b border-gray-700 bg-gray-900">
-              <h4 className="text-lg font-bold text-white">Last 12 Submitted Returns</h4>
-            </div>
-            <table className="w-full text-sm">
-              <thead className="bg-gray-900 border-b border-gray-700">
-                <tr>{['Tax Month','Submission Date','Status','Total Payments','Total Deductions','Filed by',''].map(h=><th key={h} className="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase">{h}</th>)}</tr>
-              </thead>
-              <tbody className="divide-y divide-gray-700">
-                {[
-                  {month:'Feb 2026', date:'2026-03-10', status:'Submitted', payments:78450, deductions:15690, by:'System'},
-                  {month:'Jan 2026', date:'2026-02-12', status:'Accepted', payments:72100, deductions:14420, by:'John Smith'},
-                  {month:'Dec 2025', date:'2026-01-10', status:'Accepted', payments:85600, deductions:17120, by:'System'},
-                  {month:'Nov 2025', date:'2025-12-12', status:'Accepted', payments:69900, deductions:13980, by:'John Smith'},
-                ].map((ret, idx)=>(
-                  <tr key={idx} className="hover:bg-gray-900/40">
-                    <td className="px-4 py-3 text-white font-medium">{ret.month}</td>
-                    <td className="px-4 py-3 text-gray-400">{ret.date}</td>
-                    <td className="px-4 py-3"><span className={`text-xs px-2 py-1 rounded-full font-medium ${ret.status==='Submitted'?'bg-blue-900/40 text-blue-300':'bg-green-900/40 text-green-300'}`}>{ret.status}</span></td>
-                    <td className="px-4 py-3 text-white font-semibold">£{ret.payments.toLocaleString()}</td>
-                    <td className="px-4 py-3 text-orange-400 font-semibold">£{ret.deductions.toLocaleString()}</td>
-                    <td className="px-4 py-3 text-gray-400">{ret.by}</td>
-                    <td className="px-4 py-3"><button className="p-1.5 text-gray-400 hover:text-blue-400 rounded"><Edit2 size={14}/></button></td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </div>
-      )}
-
-      {/* VERIFICATION TAB */}
-      {mainTab==='verification' && (
-        <div className="space-y-6">
-          <div className="bg-gradient-to-br from-blue-900/40 to-blue-900/20 border border-blue-700 rounded-xl p-6">
-            <h3 className="text-lg font-bold text-white mb-4">UTR Verification Lookup</h3>
-            <div className="flex gap-3">
-              <input type="text" placeholder="Enter UTR number (10 digits)" maxLength={10} className="flex-1 bg-gray-900 border border-gray-700 rounded-lg px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-blue-500"/>
-              <button className="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-colors">
-                Verify
-              </button>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div className="bg-gray-800 border border-gray-700 rounded-xl p-5">
-              <h4 className="text-lg font-bold text-white mb-4">Verification Result</h4>
-              <div className="space-y-3 bg-gray-900 rounded-lg p-4">
-                <div>
-                  <p className="text-xs text-gray-400 mb-1">Status</p>
-                  <p className="text-lg font-bold text-emerald-400">Verified Gross</p>
-                </div>
-                <div>
-                  <p className="text-xs text-gray-400 mb-1">CIS Rate</p>
-                  <p className="text-lg font-bold text-white">0% (Gross Payment)</p>
-                </div>
-                <div>
-                  <p className="text-xs text-gray-400 mb-1">Verified Date</p>
-                  <p className="text-white">2026-03-01</p>
-                </div>
-                <div>
-                  <p className="text-xs text-gray-400 mb-1">Expiry Date</p>
-                  <p className="text-white">2027-03-01</p>
-                </div>
-              </div>
-            </div>
-
-            <div className="bg-gray-800 border border-gray-700 rounded-xl p-5">
-              <h4 className="text-lg font-bold text-white mb-4">Verification History</h4>
-              <div className="space-y-2 max-h-64 overflow-y-auto">
-                {[
-                  {utr:'5555444433', status:'Gross', date:'2026-03-01', expiry:'2027-03-01'},
-                  {utr:'1234567890', status:'Standard 20%', date:'2026-02-15', expiry:'2027-02-15'},
-                  {utr:'9876543210', status:'Higher 30%', date:'2026-01-20', expiry:'2027-01-20'},
-                ].map((v, idx)=>(
-                  <div key={idx} className="bg-gray-900 rounded-lg p-3 flex justify-between items-start">
-                    <div>
-                      <p className="text-sm font-medium text-white">****{v.utr.slice(-4)}</p>
-                      <p className="text-xs text-gray-400 mt-1">{v.status} • Verified {v.date}</p>
-                    </div>
-                    <button className="px-2 py-1 text-xs bg-blue-600 hover:bg-blue-700 text-white rounded">Re-verify</button>
-                  </div>
-                ))}
-              </div>
             </div>
           </div>
         </div>
