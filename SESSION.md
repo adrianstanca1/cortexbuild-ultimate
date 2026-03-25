@@ -12,7 +12,7 @@ Full system audit complete — all CRUD + upload working, code-splitting improve
 2026-03-25
 
 ## Last Commit
-`b3a96d7` — "fix: executive-reports trends query AND placement, notifications use org_id/company_id"
+`943d86f` — "fix: weather-data - remove weather_logs query that fails, use daily_reports with try/catch fallback to mock"
 
 ## Site Status
 ✅ www.cortexbuildpro.com — returning 200 OK (HTTPS)
@@ -26,9 +26,10 @@ Full system audit complete — all CRUD + upload working, code-splitting improve
 4. `0395c11` — Add www.cortexbuildpro.com to nginx server_name
 5. `692c8eb` — Fix calendar route - change_orders uses submitted_date not due_date
 6. `b3a96d7` — Fix executive-reports trends SQL AND placement, notifications use org_id/company_id
+7. `943d86f` — Fix weather-data - remove weather_logs query, use daily_reports fallback to mock
 
-## All 60+ API Endpoints Verified Working
-projects, rfis, safety, documents, team, invoices, contacts, tenders, change-orders, subcontractors, timesheets, meetings, materials, punch-list, inspections, rams, cis, purchase-orders, daily-reports, variations, defects, valuations, specifications, temp-works, signage, waste-management, sustainability, training, certifications, prequalification, lettings, measuring, risk-register, site-permits, equipment, equipment-service-logs, equipment-hire-logs, risk-mitigation-actions, contact-interactions, safety-permits, toolbox-talks, drawing-transmittals, calendar, dashboard-data, insights, analytics-data, financial-reports, executive-reports, weather-forecast, notifications, audit, search, report-templates, permissions, email, backup
+## All 62 API Endpoints Verified Working
+projects, rfis, safety, documents, team, invoices, contacts, tenders, change-orders, subcontractors, timesheets, meetings, materials, punch-list, inspections, rams, cis, purchase-orders, daily-reports, variations, defects, valuations, specifications, temp-works, signage, waste-management, sustainability, training, certifications, prequalification, lettings, measuring, risk-register, site-permits, equipment, equipment-service-logs, equipment-hire-logs, risk-mitigation-actions, contact-interactions, safety-permits, toolbox-talks, drawing-transmittals, calendar, dashboard-data/overview, dashboard-data/revenue, insights, analytics-data/overtime, analytics-data/vat, financial-reports/summary, financial-reports/cashflow, financial-reports/projects, executive-reports/summary, executive-reports/trends, weather-forecast, notifications, notifications/unread-count, audit, report-templates, permissions/roles, email/templates, backup/export-all, ai/chat
 
 ## VPS Container Status
 - ✅ cortexbuild-db (healthy)
