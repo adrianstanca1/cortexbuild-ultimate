@@ -168,6 +168,10 @@ export default function Variations() {
   const [expandedCards, setExpandedCards] = useState<string[]>([]);
   const [variations, setVariations] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [creating, setCreating] = useState(false);
+  const [form, setForm] = useState({
+    title: '', project: '', subcontractor: '', type: 'addition', value: '', reason: '', description: ''
+  });
 
   useEffect(() => {
     variationsApi.getAll().then(data => {
@@ -175,6 +179,35 @@ export default function Variations() {
       setLoading(false);
     }).catch(() => setLoading(false));
   }, []);
+
+  const handleCreate = async () => {
+    if (!form.title || !form.project) return;
+    setCreating(true);
+    try {
+      const ref = `VAR-${String(Date.now()).slice(-6)}`;
+      const newRecord = {
+        ref,
+        title: form.title,
+        project: form.project,
+        subcontractor: form.subcontractor,
+        type: form.type,
+        value: parseFloat(form.value) || 0,
+        original_value: parseFloat(form.value) || 0,
+        status: 'draft',
+        impact: parseFloat(form.value) > 0 ? 'increase' : parseFloat(form.value) < 0 ? 'decrease' : 'neutral',
+        description: form.description,
+        reason: form.reason,
+      };
+      const created = await variationsApi.create(newRecord);
+      setVariations(prev => [created, ...prev]);
+      setShowCreateModal(false);
+      setForm({ title: '', project: '', subcontractor: '', type: 'addition', value: '', reason: '', description: '' });
+    } catch (err) {
+      console.error('Failed to create variation:', err);
+    } finally {
+      setCreating(false);
+    }
+  };
 
   const filteredVariations = variations.filter((v: any) => {
     const matchesSearch = (v.ref || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -448,37 +481,32 @@ export default function Variations() {
           <div className="bg-gray-900 border border-gray-700 rounded-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
             <div className="p-6 border-b border-gray-700 flex items-center justify-between">
               <h3 className="text-xl font-bold text-white">Create Variation</h3>
-              <button onClick={() => setShowCreateModal(false)} className="text-gray-400 hover:text-white">
+              <button type="button" onClick={() => setShowCreateModal(false)} className="text-gray-400 hover:text-white">
                 <X size={20} />
               </button>
             </div>
             <div className="p-6 space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-gray-400 text-xs mb-1">Reference</label>
-                  <input type="text" value="VAR-2024-006" readOnly className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white" />
-                </div>
-                <div>
                   <label className="block text-gray-400 text-xs mb-1">Project</label>
-                  <select className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white">
-                    <option>Kingspan Stadium Refurbishment</option>
-                    <option>Belfast High School Extension</option>
-                    <option>Retail Park Car Park</option>
+                  <select
+                    value={form.project}
+                    onChange={e => setForm(f => ({ ...f, project: e.target.value }))}
+                    className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white"
+                  >
+                    <option value="">Select project...</option>
+                    <option>Canary Wharf Office Complex</option>
+                    <option>Manchester City Apartments</option>
+                    <option>Birmingham Road Bridge</option>
                   </select>
                 </div>
-              </div>
-              <div>
-                <label className="block text-gray-400 text-xs mb-1">Title</label>
-                <input type="text" placeholder="Variation title..." className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500" />
-              </div>
-              <div>
-                <label className="block text-gray-400 text-xs mb-1">Description</label>
-                <textarea rows={3} placeholder="Describe the variation..." className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500" />
-              </div>
-              <div className="grid grid-cols-3 gap-4">
                 <div>
                   <label className="block text-gray-400 text-xs mb-1">Type</label>
-                  <select className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white">
+                  <select
+                    value={form.type}
+                    onChange={e => setForm(f => ({ ...f, type: e.target.value }))}
+                    className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white"
+                  >
                     <option value="addition">Addition</option>
                     <option value="omission">Omission</option>
                     <option value="deletion">Deletion</option>
@@ -486,13 +514,46 @@ export default function Variations() {
                     <option value="provisional">Provisional Sum</option>
                   </select>
                 </div>
+              </div>
+              <div>
+                <label className="block text-gray-400 text-xs mb-1">Title</label>
+                <input
+                  type="text"
+                  value={form.title}
+                  onChange={e => setForm(f => ({ ...f, title: e.target.value }))}
+                  placeholder="Variation title..."
+                  className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500"
+                />
+              </div>
+              <div>
+                <label className="block text-gray-400 text-xs mb-1">Description</label>
+                <textarea
+                  rows={3}
+                  value={form.description}
+                  onChange={e => setForm(f => ({ ...f, description: e.target.value }))}
+                  placeholder="Describe the variation..."
+                  className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500"
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-gray-400 text-xs mb-1">Value (£)</label>
-                  <input type="number" placeholder="0.00" className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500" />
+                  <input
+                    type="number"
+                    value={form.value}
+                    onChange={e => setForm(f => ({ ...f, value: e.target.value }))}
+                    placeholder="0.00"
+                    className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500"
+                  />
                 </div>
                 <div>
                   <label className="block text-gray-400 text-xs mb-1">Reason</label>
-                  <select className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white">
+                  <select
+                    value={form.reason}
+                    onChange={e => setForm(f => ({ ...f, reason: e.target.value }))}
+                    className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white"
+                  >
+                    <option value="">Select reason...</option>
                     <option>Site condition</option>
                     <option>Design coordination</option>
                     <option>Regulatory requirement</option>
@@ -503,15 +564,26 @@ export default function Variations() {
               </div>
               <div>
                 <label className="block text-gray-400 text-xs mb-1">Subcontractor</label>
-                <input type="text" placeholder="Subcontractor name..." className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500" />
+                <input
+                  type="text"
+                  value={form.subcontractor}
+                  onChange={e => setForm(f => ({ ...f, subcontractor: e.target.value }))}
+                  placeholder="Subcontractor name..."
+                  className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500"
+                />
               </div>
             </div>
             <div className="p-6 border-t border-gray-700 flex justify-end gap-3">
-              <button onClick={() => setShowCreateModal(false)} className="px-4 py-2 text-gray-400 hover:text-white">
+              <button type="button" onClick={() => setShowCreateModal(false)} className="px-4 py-2 text-gray-400 hover:text-white">
                 Cancel
               </button>
-              <button className="px-4 py-2 bg-orange-500 hover:bg-orange-600 text-white rounded-lg font-semibold">
-                Create Variation
+              <button
+                type="button"
+                onClick={handleCreate}
+                disabled={creating || !form.title || !form.project}
+                className="px-4 py-2 bg-orange-500 hover:bg-orange-600 text-white rounded-lg font-semibold disabled:opacity-50"
+              >
+                {creating ? 'Creating...' : 'Create Variation'}
               </button>
             </div>
           </div>
