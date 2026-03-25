@@ -1,8 +1,9 @@
 import { useState } from 'react';
 import {
   GitBranch, Plus, Search, PoundSterling, CheckCircle2, Clock, XCircle, Edit2, Trash2, X, TrendingUp, AlertTriangle,
-  BarChart3, Activity, CheckSquare, FileEdit, DollarSign, Calendar, ArrowUpRight, ArrowDownRight, ChevronRight
+  BarChart3, Activity, CheckSquare, Square, FileEdit, DollarSign, Calendar, ArrowUpRight, ArrowDownRight, ChevronRight
 } from 'lucide-react';
+import { BulkActionsBar, useBulkSelection } from '../ui/BulkActions';
 import { useChangeOrders } from '../../hooks/useData';
 import { toast } from 'sonner';
 import {
@@ -166,6 +167,29 @@ export function ChangeOrders() {
   const [selectedForApproval, setSelectedForApproval] = useState<Set<string>>(new Set());
   const [editing, setEditing] = useState<AnyRow | null>(null);
   const [form, setForm] = useState({ ...emptyForm });
+
+  const { selectedIds, toggle, clearSelection } = useBulkSelection();
+
+  async function handleBulkDelete(ids: string[]) {
+    if (!confirm(`Delete ${ids.length} change order(s)?`)) return;
+    try {
+      await Promise.all(ids.map(id => deleteMutation.mutateAsync(id)));
+      toast.success(`Deleted ${ids.length} order(s)`);
+      clearSelection();
+    } catch {
+      toast.error('Bulk delete failed');
+    }
+  }
+
+  async function handleBulkApprove(ids: string[]) {
+    try {
+      await Promise.all(ids.map(id => updateMutation.mutateAsync({ id, data: { status: 'Approved' } })));
+      toast.success(`Approved ${ids.length} order(s)`);
+      clearSelection();
+    } catch {
+      toast.error('Bulk approve failed');
+    }
+  }
 
   const PENDING_STATUSES = ['Draft', 'Submitted', 'Under Review'];
   const REJECTED_STATUSES = ['Rejected', 'Withdrawn'];
@@ -434,12 +458,18 @@ export function ChangeOrders() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-700">
-                  {filtered.map(o => (
-                    <div key={String(o.id)}>
+                  {filtered.map(o => {
+                    const id = String(o.id);
+                    const isSelected = selectedIds.has(id);
+                    return (
+                    <div key={id}>
                       <tr
                         className="hover:bg-gray-700/50 cursor-pointer"
-                        onClick={() => setExpandedCoId(expandedCoId === String(o.id) ? null : String(o.id))}
+                        onClick={() => setExpandedCoId(expandedCoId === id ? null : id)}
                       >
+                        <td className="px-4 py-3">
+                          <button type="button" onClick={e => { e.stopPropagation(); toggle(id); }}>{isSelected ? <CheckSquare size={16} className="text-blue-400"/> : <Square size={16} className="text-gray-500"/>}</button>
+                        </td>
                         <td className="px-4 py-3 font-mono text-xs font-bold text-orange-600">{String(o.co_number ?? '—')}</td>
                         <td className="px-4 py-3 text-gray-300 text-sm">{String(o.project ?? o.project_id ?? '—')}</td>
                         <td className="px-4 py-3 font-medium text-white max-w-xs truncate">{String(o.title ?? '—')}</td>
@@ -548,7 +578,8 @@ export function ChangeOrders() {
                         </tr>
                       )}
                     </div>
-                  ))}
+                  );
+                  })}
                 </tbody>
               </table>
               {filtered.length === 0 && (
@@ -557,6 +588,14 @@ export function ChangeOrders() {
                   <p>No change orders found</p>
                 </div>
               )}
+              <BulkActionsBar
+                selectedIds={Array.from(selectedIds)}
+                actions={[
+                  { id: 'delete', label: 'Delete Selected', icon: Trash2, variant: 'danger', onClick: handleBulkDelete, confirm: 'This action cannot be undone.' },
+                  { id: 'approve', label: 'Approve Selected', icon: CheckCircle2, variant: 'primary', onClick: handleBulkApprove },
+                ]}
+                onClearSelection={clearSelection}
+              />
             </div>
           )}
         </div>

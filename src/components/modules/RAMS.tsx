@@ -1,8 +1,9 @@
 import { useState, useRef } from 'react';
-import { Shield, Plus, Search, FileCheck, AlertTriangle, Clock, CheckCircle, Edit2, Trash2, X, ChevronDown, ChevronUp, Download, Award, Upload } from 'lucide-react';
+import { Shield, Plus, Search, FileCheck, AlertTriangle, Clock, CheckCircle, Edit2, Trash2, X, ChevronDown, ChevronUp, Download, Award, Upload, CheckSquare, Square } from 'lucide-react';
 import { useRAMS } from '../../hooks/useData';
 import { uploadFile } from '../../services/api';
 import { toast } from 'sonner';
+import { BulkActionsBar, useBulkSelection } from '../ui/BulkActions';
 
 type AnyRow = Record<string, unknown>;
 
@@ -46,6 +47,29 @@ export function RAMS() {
   const [uploading, setUploading] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [selectedUploadId, setSelectedUploadId] = useState<string | null>(null);
+
+  const { selectedIds, toggle, clearSelection } = useBulkSelection();
+
+  async function handleBulkDelete(ids: string[]) {
+    if (!confirm(`Delete ${ids.length} RAMS document(s)?`)) return;
+    try {
+      await Promise.all(ids.map(id => deleteMutation.mutateAsync(id)));
+      toast.success(`Deleted ${ids.length} document(s)`);
+      clearSelection();
+    } catch {
+      toast.error('Bulk delete failed');
+    }
+  }
+
+  async function handleBulkApprove(ids: string[]) {
+    try {
+      await Promise.all(ids.map(id => updateMutation.mutateAsync({ id, data: { status: 'Approved' } })));
+      toast.success(`Approved ${ids.length} document(s)`);
+      clearSelection();
+    } catch {
+      toast.error('Bulk approve failed');
+    }
+  }
 
   const filtered = rams.filter(r => {
     const title = String(r.title ?? '').toLowerCase();
@@ -215,11 +239,15 @@ export function RAMS() {
               {filtered.map(r => {
                 const id = String(r.id ?? '');
                 const isExp = expanded === id;
+                const isSelected = selectedIds.has(id);
                 const validUntil = r.valid_until ?? r.validUntil;
                 const version = r.version;
                 return (
-                  <div key={id}>
+                  <div key={id} className={`${isSelected ? 'bg-blue-900/10' : ''}`}>
                     <div className="flex items-center gap-4 p-4 hover:bg-gray-800/50 cursor-pointer" onClick={() => setExpanded(isExp ? null : id)}>
+                      <button type="button" onClick={e => { e.stopPropagation(); toggle(id); }} className="flex-shrink-0">
+                        {isSelected ? <CheckSquare size={16} className="text-blue-400"/> : <Square size={16} className="text-gray-500"/>}
+                      </button>
                       <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-purple-500 to-purple-600 flex items-center justify-center text-white flex-shrink-0 text-xs font-bold">
                         {String(r.title ?? '?').slice(0, 2).toUpperCase()}
                       </div>
@@ -280,6 +308,15 @@ export function RAMS() {
           )}
         </>
       )}
+
+      <BulkActionsBar
+        selectedIds={Array.from(selectedIds)}
+        actions={[
+          { id: 'delete', label: 'Delete Selected', icon: Trash2, variant: 'danger', onClick: handleBulkDelete, confirm: 'This action cannot be undone.' },
+          { id: 'approve', label: 'Approve Selected', icon: CheckCircle, variant: 'primary', onClick: handleBulkApprove },
+        ]}
+        onClearSelection={clearSelection}
+      />
 
       {subTab === 'method_statements' && (
         <div className="bg-gray-900 rounded-xl border border-gray-800 divide-y divide-gray-800">

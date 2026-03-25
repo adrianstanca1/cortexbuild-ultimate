@@ -1,7 +1,8 @@
 import { useState } from 'react';
-import { Clock, Plus, Search, DollarSign, Users, CheckCircle2, AlertTriangle, Edit2, Trash2, X, Calendar, BarChart3, TrendingUp, Download, Briefcase, ChevronLeft, ChevronRight, Filter } from 'lucide-react';
+import { Clock, Plus, Search, DollarSign, Users, CheckCircle2, AlertTriangle, Edit2, Trash2, X, Calendar, BarChart3, TrendingUp, Download, Briefcase, ChevronLeft, ChevronRight, Filter, CheckSquare, Square } from 'lucide-react';
 import { BarChart, Bar, LineChart, Line, CartesianGrid, Tooltip, Legend, ResponsiveContainer, XAxis, YAxis } from 'recharts';
 import { useTimesheets } from '../../hooks/useData';
+import { BulkActionsBar, useBulkSelection } from '../ui/BulkActions';
 import { toast } from 'sonner';
 
 type AnyRow = Record<string, unknown>;
@@ -64,6 +65,19 @@ export function Timesheets() {
   const [editing, setEditing] = useState<AnyRow | null>(null);
   const [detailRow, setDetailRow] = useState<AnyRow | null>(null);
   const [form, setForm] = useState({ ...emptyForm });
+
+  const { selectedIds, toggle, clearSelection } = useBulkSelection();
+
+  async function handleBulkDelete(ids: string[]) {
+    if (!confirm(`Delete ${ids.length} timesheet(s)?`)) return;
+    try {
+      await Promise.all(ids.map(id => deleteMutation.mutateAsync(id)));
+      toast.success(`Deleted ${ids.length} timesheet(s)`);
+      clearSelection();
+    } catch {
+      toast.error('Bulk delete failed');
+    }
+  }
 
   const getWeekDate = (offset: number) => {
     const d = new Date();
@@ -349,6 +363,8 @@ export function Timesheets() {
                 </thead>
                 <tbody className="divide-y divide-gray-700">
                   {filtered.map(t=>{
+                    const id = String(t.id);
+                    const isSelected = selectedIds.has(id);
                     const regHrs = Number(t.regularHours??0);
                     const otHrs = Number(t.overtimeHours??0);
                     const dwHrs = Number(t.dayworkHours??0);
@@ -356,7 +372,10 @@ export function Timesheets() {
                     const cis = calculateCIS(pay);
                     return (
                       <tr key={String(t.id)} className="hover:bg-gray-800 border-b border-gray-700 cursor-pointer" onClick={()=>{setDetailRow(t); setShowDetailModal(true);}}>
-                        <td className="px-4 py-3 font-medium text-white">{String(t.worker_name??'—')}</td>
+                        <td className="px-4 py-3">
+                          <button type="button" onClick={e => { e.stopPropagation(); toggle(id); }}>{isSelected ? <CheckSquare size={16} className="text-blue-400"/> : <Square size={16} className="text-gray-500"/>}</button>
+                          <span className="ml-2 font-medium text-white">{String(t.worker_name??'—')}</span>
+                        </td>
                         <td className="px-4 py-3 text-gray-300">{String(t.project_id??'—')}</td>
                         <td className="px-4 py-3 text-center text-gray-300 text-xs">{String(t.week_ending??'—').substring(0,10)}</td>
                         <td className="px-3 py-3 text-center text-white">{regHrs}h</td>
@@ -387,6 +406,15 @@ export function Timesheets() {
                 </tbody>
               </table>
               {filtered.length === 0 && <div className="text-center py-16 text-gray-500"><Clock size={40} className="mx-auto mb-3 opacity-30"/><p>No timesheets found</p></div>}
+              {selectedIds.size > 0 && (
+                <BulkActionsBar
+                  selectedIds={Array.from(selectedIds)}
+                  actions={[
+                    { id: 'delete', label: 'Delete Selected', icon: Trash2, variant: 'danger' as const, onClick: handleBulkDelete, confirm: 'This action cannot be undone.' },
+                  ]}
+                  onClearSelection={clearSelection}
+                />
+              )}
             </div>
           )}
         </div>

@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { HardHat, CheckCircle2, AlertTriangle, XCircle, Star, DollarSign, Plus, Search, Filter, Shield, FileText, BarChart3, X, Edit2, Trash2, Phone, Mail, Building2 } from 'lucide-react';
+import { HardHat, CheckCircle2, AlertTriangle, XCircle, Star, DollarSign, Plus, Search, Filter, Shield, FileText, BarChart3, X, Edit2, Trash2, Phone, Mail, Building2, CheckSquare, Square } from 'lucide-react';
+import { BulkActionsBar, useBulkSelection } from '../ui/BulkActions';
 import { useSubcontractors } from '../../hooks/useData';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { toast } from 'sonner';
@@ -32,6 +33,18 @@ export function Subcontractors() {
   const [selectedSub, setSelectedSub] = useState<AnyRow | null>(null);
   const [editing, setEditing] = useState<AnyRow | null>(null);
   const [form, setForm] = useState({ ...emptyForm });
+  const { selectedIds, toggle, clearSelection } = useBulkSelection();
+
+  async function handleBulkDelete(ids: string[]) {
+    if (!confirm(`Delete ${ids.length} subcontractor(s)?`)) return;
+    try {
+      await Promise.all(ids.map(id => deleteMutation.mutateAsync(id)));
+      toast.success(`Deleted ${ids.length} subcontractor(s)`);
+      clearSelection();
+    } catch {
+      toast.error('Bulk delete failed');
+    }
+  }
 
   // Filter & compute stats
   const filtered = subs.filter(s => {
@@ -255,16 +268,19 @@ export function Subcontractors() {
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {filtered.map((s) => {
+                const id = String(s.id ?? '');
                 const rating = Number(s.rating ?? 0);
                 const insStatus = insuranceStatus(String(s.insuranceExpiry ?? ''));
+                const isSelected = selectedIds.has(id);
                 return (
                   <div
-                    key={String(s.id ?? '')}
+                    key={id}
                     onClick={() => openDetail(s)}
                     className="bg-gray-800 rounded-xl border border-gray-700 p-4 hover:border-orange-600 cursor-pointer transition-colors"
                   >
                     <div className="flex items-start justify-between mb-3">
                       <div className="flex items-start gap-3">
+                        <button type="button" onClick={e => { e.stopPropagation(); toggle(id); }}>{isSelected ? <CheckSquare size={16} className="text-blue-400"/> : <Square size={16} className="text-gray-500"/>}</button>
                         <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center text-white font-bold text-sm flex-shrink-0">
                           {String(s.company ?? '?').slice(0, 2).toUpperCase()}
                         </div>
@@ -346,6 +362,13 @@ export function Subcontractors() {
               })}
             </div>
           )}
+          <BulkActionsBar
+            selectedIds={Array.from(selectedIds)}
+            actions={[
+              { id: 'delete', label: 'Delete Selected', icon: Trash2, variant: 'danger', onClick: handleBulkDelete, confirm: 'This action cannot be undone.' },
+            ]}
+            onClearSelection={clearSelection}
+          />
         </div>
       )}
 

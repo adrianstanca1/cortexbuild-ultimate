@@ -2,10 +2,11 @@ import { useState } from 'react';
 import {
   MessageSquare, Plus, Search, Clock, CheckCircle, AlertTriangle, Edit2, Trash2, X,
   ChevronDown, ChevronUp, Send, Zap, Calendar, User, Flame, TrendingUp, ChevronRight,
-  Loader2, Filter,
+  Loader2, Filter, CheckSquare, Square,
 } from 'lucide-react';
 import { useRFIs } from '../../hooks/useData';
 import { toast } from 'sonner';
+import { BulkActionsBar, useBulkSelection } from '../ui/BulkActions';
 
 type AnyRow = Record<string, unknown>;
 
@@ -110,6 +111,29 @@ export function RFIs() {
   const [editing, setEditing] = useState<AnyRow | null>(null);
   const [form, setForm] = useState({ ...emptyForm });
   const [panelOpen, setPanelOpen] = useState<string | null>(null);
+
+  const { selectedIds, toggle, clearSelection } = useBulkSelection();
+
+  async function handleBulkDelete(ids: string[]) {
+    if (!confirm(`Delete ${ids.length} RFI(s)?`)) return;
+    try {
+      await Promise.all(ids.map(id => deleteMutation.mutateAsync(id)));
+      toast.success(`Deleted ${ids.length} RFI(s)`);
+      clearSelection();
+    } catch {
+      toast.error('Bulk delete failed');
+    }
+  }
+
+  async function handleBulkClose(ids: string[]) {
+    try {
+      await Promise.all(ids.map(id => updateMutation.mutateAsync({ id, data: { status: 'Closed' } })));
+      toast.success(`Closed ${ids.length} RFI(s)`);
+      clearSelection();
+    } catch {
+      toast.error('Bulk close failed');
+    }
+  }
 
   const filtered = rfis.filter(r => {
     const title = String(r.title??'').toLowerCase();
@@ -320,12 +344,15 @@ export function RFIs() {
             const submittedDate = String(r.submitted_date ?? '');
 
             return (
-              <div key={id} className={`transition-all ${isPanel ? 'bg-gray-700/50' : 'hover:bg-gray-700/30'}`}>
+              <div key={id} className={`transition-all ${isPanel ? 'bg-gray-700/50' : 'hover:bg-gray-700/30'} ${selectedIds.has(id) ? 'border-l-2 border-blue-500' : ''}`}>
                 {/* RFI Row */}
                 <div
                   className="flex items-center gap-4 p-4 cursor-pointer transition-colors"
                   onClick={() => setPanelOpen(isPanel ? null : id)}
                 >
+                  <button type="button" onClick={e => { e.stopPropagation(); toggle(id); }} className="flex-shrink-0">
+                    {selectedIds.has(id) ? <CheckSquare size={16} className="text-blue-400"/> : <Square size={16} className="text-gray-500"/>}
+                  </button>
                   <div className="w-16 flex-shrink-0 text-center">
                     <p className="text-xs font-bold text-orange-400 font-mono">{String(r.rfi_number??'—')}</p>
                   </div>
@@ -496,6 +523,15 @@ export function RFIs() {
           })}
         </div>
       )}
+
+      <BulkActionsBar
+        selectedIds={Array.from(selectedIds)}
+        actions={[
+          { id: 'delete', label: 'Delete Selected', icon: Trash2, variant: 'danger', onClick: handleBulkDelete, confirm: 'This action cannot be undone.' },
+          { id: 'close', label: 'Close RFIs', icon: CheckCircle, variant: 'primary', onClick: handleBulkClose },
+        ]}
+        onClearSelection={clearSelection}
+      />
 
       {/* Create/Edit Modal */}
       {showModal && (
