@@ -131,65 +131,21 @@ export function FinancialReports() {
   const deleteMutation = { mutateAsync: async () => {} };
 
   useEffect(() => {
-    // Mock data initialization
-    setSummary({
-      totalRevenue: 1850000,
-      totalCosts: 1387500,
-      grossProfit: 462500,
-      netProfit: 356250,
-      outstandingInvoices: 385000,
-      overdueAmount: 95000,
-      monthlyBurn: 115625,
-    });
-
-    setProjectFinancials([
-      {
-        id: 1,
-        name: 'Riverside Tower',
-        client: 'AC Properties',
-        budget: 4200000,
-        spent: 2856000,
-        variance: 1344000,
-        variancePercent: 32,
-        profit: 1344000,
-        status: 'active',
-      },
-      {
-        id: 2,
-        name: 'Tech Hub Phase 2',
-        client: 'TechCorp',
-        budget: 2850000,
-        spent: 2294000,
-        variance: 556000,
-        variancePercent: 19.5,
-        profit: 556000,
-        status: 'active',
-      },
-      {
-        id: 3,
-        name: 'Retail Centre Fit-out',
-        client: 'Developers Ltd',
-        budget: 1950000,
-        spent: 1950000,
-        variance: 0,
-        variancePercent: 0,
-        profit: 0,
-        status: 'completed',
-      },
-    ]);
-
-    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'];
-    setCashFlow(
-      months.map((month) => ({
-        month,
-        income: Math.random() * 400000 + 250000,
-        expenses: Math.random() * 300000 + 150000,
-        net: Math.random() * 200000 - 25000,
-      }))
-    );
-
-    setLoading(false);
-  }, [dateRange]);
+    Promise.all([
+      financialReportsApi.getSummary(),
+      financialReportsApi.getProjectFinancials(),
+      financialReportsApi.getCashFlow(),
+    ]).then(([summaryData, projData, cashFlowData]) => {
+      setSummary(summaryData as FinancialSummary);
+      setProjectFinancials(projData as unknown as ProjectFinancial[]);
+      setCashFlow(cashFlowData as unknown as CashFlow[]);
+    }).catch(() => {
+      setSummary({
+        totalRevenue: 0, totalCosts: 0, grossProfit: 0, netProfit: 0,
+        outstandingInvoices: 0, overdueAmount: 0, monthlyBurn: 0,
+      });
+    }).finally(() => setLoading(false));
+  }, []);
 
   const ReportTabs = () => (
     <div className="flex gap-2 mb-6 border-b border-gray-800">
