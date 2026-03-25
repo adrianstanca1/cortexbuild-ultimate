@@ -4,6 +4,7 @@
  */
 import { useEffect, useRef, useCallback, useState } from 'react';
 import { notificationsApi } from '../services/api';
+import { eventBus } from '../lib/eventBus';
 
 const WS_URL = (() => {
   const proto = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
@@ -68,6 +69,7 @@ export function useNotifications(authToken: string | null): UseNotificationsRetu
       ws.current.onopen = () => {
         console.log('[WS] Connected');
         setIsConnected(true);
+        eventBus.emit('ws:connect', undefined);
       };
 
       ws.current.onmessage = (event) => {
@@ -86,6 +88,12 @@ export function useNotifications(authToken: string | null): UseNotificationsRetu
               data: message.payload,
             };
             setNotifications(prev => [notification, ...prev]);
+            eventBus.emit('ws:message', {
+              type: message.type,
+              table: message.payload.table,
+              action: message.payload.action,
+              id: message.payload.id,
+            });
           }
         } catch (err) {
           console.error('[WS] Message parse error:', err);
@@ -95,6 +103,7 @@ export function useNotifications(authToken: string | null): UseNotificationsRetu
       ws.current.onclose = () => {
         console.log('[WS] Disconnected');
         setIsConnected(false);
+        eventBus.emit('ws:disconnect', undefined);
         reconnectTimeout.current = setTimeout(connect, 3000);
       };
 

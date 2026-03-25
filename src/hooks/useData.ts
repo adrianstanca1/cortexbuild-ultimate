@@ -2,6 +2,7 @@
  * CortexBuild Ultimate — Universal Data Hooks
  * Uses React Query for caching, background refresh, and optimistic updates.
  */
+import { useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import {
@@ -10,22 +11,57 @@ import {
   documentsApi, tendersApi, dailyReportsApi, meetingsApi, materialsApi,
   punchListApi, inspectionsApi, contactsApi, riskRegisterApi, purchaseOrdersApi,
 } from '../services/api';
+import { eventBus } from '../lib/eventBus';
 
 type Row = Record<string, unknown>;
 
+// Map WS table names to React Query query keys
+const TABLE_TO_KEY: Record<string, string> = {
+  projects: 'projects',
+  invoices: 'invoices',
+  'team_members': 'team',
+  safety_incidents: 'safety',
+  rfis: 'rfis',
+  change_orders: 'change-orders',
+  rams: 'rams',
+  cis_returns: 'cis',
+  equipment: 'equipment',
+  subcontractors: 'subcontractors',
+  timesheets: 'timesheets',
+  documents: 'documents',
+  tenders: 'tenders',
+  daily_reports: 'daily-reports',
+  meetings: 'meetings',
+  materials: 'materials',
+  punch_list: 'punch-list',
+  inspections: 'inspections',
+  contacts: 'contacts',
+  risk_register: 'risk-register',
+  purchase_orders: 'purchase-orders',
+};
+
 // ─── Generic hook factory ─────────────────────────────────────────────────────
 
-function makeHooks<T>(key: string, api: {
+function makeHooks<T>(key: string, tableName: string, api: {
   getAll: () => Promise<T[]>;
   create: (data: Row) => Promise<T | null>;
   update: (id: string, data: Row) => Promise<T | null>;
   delete: (id: string) => Promise<void>;
 }) {
   function useList() {
+    const qc = useQueryClient();
+    useEffect(() => {
+      const unsub = eventBus.on('ws:message', ({ type }) => {
+        if (type === 'notification' || type === 'dashboard_update' || type === 'alert') {
+          qc.invalidateQueries({ queryKey: [key] });
+        }
+      });
+      return unsub;
+    }, [qc, key]);
     return useQuery<T[]>({
       queryKey: [key],
       queryFn: api.getAll,
-      staleTime: 30_000, // 30 s
+      staleTime: 30_000,
     });
   }
 
@@ -70,24 +106,24 @@ function makeHooks<T>(key: string, api: {
 
 // ─── Exported hooks ───────────────────────────────────────────────────────────
 
-export const useProjects       = makeHooks('projects',       projectsApi);
-export const useInvoices       = makeHooks('invoices',       invoicesApi);
-export const useTeam           = makeHooks('team',           teamApi);
-export const useSafety         = makeHooks('safety',         safetyApi);
-export const useRFIs           = makeHooks('rfis',           rfisApi);
-export const useChangeOrders   = makeHooks('change-orders',  changeOrdersApi);
-export const useRAMS           = makeHooks('rams',           ramsApi);
-export const useCIS            = makeHooks('cis',            cisApi);
-export const useEquipment      = makeHooks('equipment',      equipmentApi);
-export const useSubcontractors = makeHooks('subcontractors', subcontractorsApi);
-export const useTimesheets     = makeHooks('timesheets',     timesheetsApi);
-export const useDocuments      = makeHooks('documents',      documentsApi);
-export const useTenders        = makeHooks('tenders',        tendersApi);
-export const useDailyReports   = makeHooks('daily-reports',  dailyReportsApi);
-export const useMeetings       = makeHooks('meetings',       meetingsApi);
-export const useMaterials      = makeHooks('materials',      materialsApi);
-export const usePunchList      = makeHooks('punch-list',     punchListApi);
-export const useInspections    = makeHooks('inspections',    inspectionsApi);
-export const useContacts       = makeHooks('contacts',       contactsApi);
-export const useRiskRegister   = makeHooks('risk-register',  riskRegisterApi);
-export const useProcurement    = makeHooks('purchase-orders', purchaseOrdersApi);
+export const useProjects       = makeHooks('projects',        'projects',        projectsApi);
+export const useInvoices       = makeHooks('invoices',        'invoices',        invoicesApi);
+export const useTeam           = makeHooks('team',            'team_members',    teamApi);
+export const useSafety         = makeHooks('safety',          'safety_incidents', safetyApi);
+export const useRFIs           = makeHooks('rfis',            'rfis',            rfisApi);
+export const useChangeOrders   = makeHooks('change-orders',   'change_orders',   changeOrdersApi);
+export const useRAMS           = makeHooks('rams',            'rams',            ramsApi);
+export const useCIS            = makeHooks('cis',             'cis_returns',     cisApi);
+export const useEquipment      = makeHooks('equipment',       'equipment',       equipmentApi);
+export const useSubcontractors = makeHooks('subcontractors',  'subcontractors',  subcontractorsApi);
+export const useTimesheets     = makeHooks('timesheets',       'timesheets',      timesheetsApi);
+export const useDocuments      = makeHooks('documents',       'documents',       documentsApi);
+export const useTenders        = makeHooks('tenders',          'tenders',         tendersApi);
+export const useDailyReports   = makeHooks('daily-reports',   'daily_reports',   dailyReportsApi);
+export const useMeetings       = makeHooks('meetings',         'meetings',        meetingsApi);
+export const useMaterials      = makeHooks('materials',        'materials',       materialsApi);
+export const usePunchList      = makeHooks('punch-list',       'punch_list',      punchListApi);
+export const useInspections    = makeHooks('inspections',      'inspections',     inspectionsApi);
+export const useContacts       = makeHooks('contacts',          'contacts',        contactsApi);
+export const useRiskRegister   = makeHooks('risk-register',    'risk_register',   riskRegisterApi);
+export const useProcurement    = makeHooks('purchase-orders',  'purchase_orders', purchaseOrdersApi);

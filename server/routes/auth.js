@@ -41,7 +41,7 @@ router.post('/register', async (req, res) => {
     const newUser = rows[0];
 
     const token = jwt.sign(
-      { id: newUser.id, email: newUser.email, role: newUser.role, name: newUser.name, company: newUser.company },
+      { id: newUser.id, email: newUser.email, role: newUser.role, name: newUser.name, company: newUser.company, organization_id: newUser.organization_id, company_id: newUser.company_id },
       SECRET,
       { expiresIn: '7d' }
     );
@@ -67,7 +67,7 @@ router.post('/login', async (req, res) => {
     if (!valid) return res.status(401).json({ message: 'Invalid email or password' });
 
     const token = jwt.sign(
-      { id: user.id, email: user.email, role: user.role, name: user.name, company: user.company },
+      { id: user.id, email: user.email, role: user.role, name: user.name, company: user.company, organization_id: user.organization_id, company_id: user.company_id },
       SECRET,
       { expiresIn: '7d' }
     );
@@ -84,7 +84,7 @@ router.post('/login', async (req, res) => {
 router.get('/me', authMiddleware, async (req, res) => {
   try {
     const { rows } = await pool.query(
-      'SELECT id,name,email,role,company,phone,avatar,created_at FROM users WHERE id = $1',
+      'SELECT id,name,email,role,company,phone,avatar,organization_id,company_id,created_at FROM users WHERE id = $1',
       [req.user.id]
     );
     if (!rows[0]) return res.status(404).json({ message: 'User not found' });
@@ -99,7 +99,7 @@ router.put('/profile', authMiddleware, async (req, res) => {
   const { name, phone } = req.body;
   try {
     const { rows } = await pool.query(
-      'UPDATE users SET name=$1, phone=$2 WHERE id=$3 RETURNING id,name,email,role,company,phone,avatar',
+      'UPDATE users SET name=$1, phone=$2 WHERE id=$3 RETURNING id,name,email,role,company,phone,avatar,organization_id,company_id',
       [name, phone, req.user.id]
     );
     res.json(rows[0]);
@@ -135,7 +135,7 @@ router.get('/users', authMiddleware, async (req, res) => {
   }
   try {
     const { rows } = await pool.query(
-      'SELECT id,name,email,role,company,phone,avatar,created_at FROM users ORDER BY created_at DESC'
+      'SELECT id,name,email,role,company,phone,avatar,organization_id,company_id,created_at FROM users ORDER BY created_at DESC'
     );
     res.json(rows);
   } catch (err) {
@@ -157,8 +157,8 @@ router.post('/users', authMiddleware, async (req, res) => {
   try {
     const hash = await bcrypt.hash(password, 10);
     const { rows } = await pool.query(
-      'INSERT INTO users (name,email,password_hash,role,company,phone) VALUES ($1,$2,$3,$4,$5,$6) RETURNING id,name,email,role,company,phone,created_at',
-      [name, email.toLowerCase().trim(), hash, role, company || 'CortexBuild Ltd', phone || null]
+      'INSERT INTO users (name,email,password_hash,role,company,phone,organization_id,company_id) VALUES ($1,$2,$3,$4,$5,$6,$7,$8) RETURNING id,name,email,role,company,phone,organization_id,company_id,created_at',
+      [name, email.toLowerCase().trim(), hash, role, company || 'CortexBuild Ltd', phone || null, req.user.organization_id, req.user.company_id]
     );
     res.status(201).json(rows[0]);
   } catch (err) {

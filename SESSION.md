@@ -12,7 +12,10 @@ Full system audit complete — all CRUD + upload working, code-splitting improve
 2026-03-25
 
 ## Last Commit
-`31c497a` — "feat: add vitest tests for rate limiter, audit log export with backup API, full backup route"
+`5f49d62` — "Audit fixes: SQL injection prevention, auth credential leak removal, ALLOWED_COLUMNS completeness, bulk import error toasts, try/catch coverage"
+
+## Pending Commit
+SESSION.md update (this file)
 
 ## What Works
 - **Upload**: All 16 modules have file upload (Teams, Documents, Safety, RAMS, Certifications, Training, Specifications, Valuations, Defects, Signage, Lettings, Measuring, Prequalification, Sustainability, WasteManagement, TempWorks)
