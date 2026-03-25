@@ -219,6 +219,16 @@ export default function Variations() {
     return matchesSearch && matchesStatus && matchesType && matchesImpact;
   });
 
+  const handleDelete = async (id: string) => {
+    if (!confirm('Delete this variation?')) return;
+    try {
+      await variationsApi.delete(id);
+      setVariations(prev => prev.filter(v => String(v.id) !== String(id)));
+    } catch (err) {
+      console.error('Failed to delete:', err);
+    }
+  };
+
   const toggleExpand = (id: string) => {
     setExpandedCards(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]);
   };
@@ -399,8 +409,15 @@ export default function Variations() {
                     </div>
                     {isExpanded && (
                       <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
-                        <button className="p-2 hover:bg-gray-700 rounded"><Eye size={16} className="text-gray-400" /></button>
-                        <button className="p-2 hover:bg-gray-700 rounded"><Edit size={16} className="text-gray-400" /></button>
+                        <button type="button" className="p-2 hover:bg-gray-700 rounded"><Eye size={16} className="text-gray-400" /></button>
+                        <button type="button" className="p-2 hover:bg-gray-700 rounded"><Edit size={16} className="text-gray-400" /></button>
+                        <button
+                          type="button"
+                          onClick={() => handleDelete(String(variation.id))}
+                          className="p-2 hover:bg-red-900/30 rounded"
+                        >
+                          <Trash2 size={16} className="text-red-400" />
+                        </button>
                       </div>
                     )}
                   </div>
