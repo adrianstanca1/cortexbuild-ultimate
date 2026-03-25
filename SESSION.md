@@ -12,7 +12,7 @@ Full system audit complete — all CRUD + upload working, code-splitting improve
 2026-03-25
 
 ## Last Commit
-`74ab88f` — "feat: replace Teams mock data with real API — skills, inductions, availability tabs now use backend tables and routes"
+`ae318d8` — "feat: add site_permits, equipment_service_logs, equipment_hire_logs tables to generic.js router with multi-tenancy"
 
 ## What Works
 - **Upload**: All 16 modules have file upload (Teams, Documents, Safety, RAMS, Certifications, Training, Specifications, Valuations, Defects, Signage, Lettings, Measuring, Prequalification, Sustainability, WasteManagement, TempWorks)
@@ -21,7 +21,7 @@ Full system audit complete — all CRUD + upload working, code-splitting improve
 - **Bulk Actions**: BulkActionsBar + useBulkSelection integrated in ALL 40+ modules with bulk delete
 - **Bulk Import**: DataImporter component integrated in 6 modules (Teams, Safety, Documents, Subcontractors, Training, RAMS) — CSV import with column mapping + CSV/JSON export
 - **Edit Modals**: 27 modules have edit modals; 28 modules are intentionally read-only (analytics, dashboards, logs, reports, settings)
-- **Database**: 42 tables, all aligned with backend generic.js ALLOWED_COLUMNS, all with organization_id/company_id columns for multi-tenancy
+- **Database**: 45 tables, all aligned with backend generic.js ALLOWED_COLUMNS, all with organization_id/company_id columns for multi-tenancy
 - **Auth**: JWT middleware active on all API endpoints — JWT includes organization_id and company_id
 - **Multi-Tenancy**: All generic.js CRUD routes filter by organization_id (super_admin bypasses filter). Tables have organization_id and company_id columns.
 - **Security**: 0 npm vulnerabilities (vercel package removed as it was unused)
