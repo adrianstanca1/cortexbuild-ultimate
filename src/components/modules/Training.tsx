@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { Plus, Search, GraduationCap, Award, Clock, AlertCircle, FileCheck, Upload } from 'lucide-react';
+import { Plus, Search, GraduationCap, Award, Clock, AlertCircle, FileCheck, Upload, Trash2, X } from 'lucide-react';
 import { trainingApi, uploadFile } from '../../services/api';
 
 export default function Training() {
@@ -9,6 +9,9 @@ export default function Training() {
   const [uploading, setUploading] = useState(false);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [showCreateModal, setShowCreateModal] = useState(false);
+  const [creating, setCreating] = useState(false);
+  const [form, setForm] = useState({ title: '', provider: '', type: '', status: 'scheduled', scheduledDate: '', completedDate: '', certification: '' });
 
   useEffect(() => {
     trainingApi.getAll().then((data: any[]) => {
@@ -19,12 +22,46 @@ export default function Training() {
 
   const filtered = training.filter((t: any) =>
     (t.title || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
-    (t.project || '').toLowerCase().includes(searchTerm.toLowerCase())
+    (t.provider || '').toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   const validCount = training.filter((t: any) => t.status === 'completed' || t.status === 'certified').length;
   const expiringCount = training.filter((t: any) => t.status === 'scheduled').length;
   const totalCount = training.length;
+
+  const handleCreate = async () => {
+    if (!form.title) return;
+    setCreating(true);
+    try {
+      const newRecord = {
+        title: form.title,
+        provider: form.provider || 'CortexBuild Training',
+        type: form.type || 'General',
+        status: form.status,
+        scheduled_date: form.scheduledDate || null,
+        completed_date: form.completedDate || null,
+        certification: form.certification || '',
+      };
+      const created = await trainingApi.create(newRecord);
+      setTraining(prev => [created, ...prev]);
+      setShowCreateModal(false);
+      setForm({ title: '', provider: '', type: '', status: 'scheduled', scheduledDate: '', completedDate: '', certification: '' });
+    } catch (err) {
+      console.error('Failed to create:', err);
+    } finally {
+      setCreating(false);
+    }
+  };
+
+  const handleDelete = async (id: string) => {
+    if (!confirm('Delete this training record?')) return;
+    try {
+      await trainingApi.delete(id);
+      setTraining(prev => prev.filter((t: any) => String(t.id) !== String(id)));
+    } catch (err) {
+      console.error('Failed to delete:', err);
+    }
+  };
 
   const handleUploadCert = async (id: string, file: File) => {
     setUploading(true);
@@ -52,7 +89,7 @@ export default function Training() {
           <h2 className="text-2xl font-bold text-white">Training & Certifications</h2>
           <p className="text-gray-400 text-sm mt-1">Track worker training records and qualifications</p>
         </div>
-        <button type="button" className="flex items-center gap-2 px-4 py-2 bg-orange-500 hover:bg-orange-600 text-white rounded-lg font-semibold">
+        <button type="button" onClick={() => setShowCreateModal(true)} className="flex items-center gap-2 px-4 py-2 bg-orange-500 hover:bg-orange-600 text-white rounded-lg font-semibold">
           <Plus size={18} /> Add Training Record
         </button>
       </div>
@@ -103,12 +140,83 @@ export default function Training() {
                   >
                     {uploading && selectedId === String(t.id) ? <Clock size={16} className="animate-spin" /> : <FileCheck size={16} />}
                   </button>
+                  <button
+                    type="button"
+                    onClick={() => handleDelete(String(t.id))}
+                    className="p-2 hover:bg-red-900/30 rounded"
+                    title="Delete"
+                  >
+                    <Trash2 size={16} className="text-red-400" />
+                  </button>
                 </div>
               </div>
             ))}
           </div>
         )}
       </div>
+
+      {showCreateModal && (
+        <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
+          <div className="bg-gray-900 border border-gray-700 rounded-xl w-full max-w-lg">
+            <div className="p-6 border-b border-gray-700 flex items-center justify-between">
+              <h3 className="text-xl font-bold text-white">Add Training Record</h3>
+              <button type="button" onClick={() => setShowCreateModal(false)} className="text-gray-400 hover:text-white"><X size={20} /></button>
+            </div>
+            <div className="p-6 space-y-4">
+              <div>
+                <label className="block text-gray-400 text-xs mb-1">Title *</label>
+                <input type="text" value={form.title} onChange={e => setForm(f => ({ ...f, title: e.target.value }))} placeholder="e.g. CSCS Health & Safety" className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500" />
+              </div>
+              <div>
+                <label className="block text-gray-400 text-xs mb-1">Provider</label>
+                <input type="text" value={form.provider} onChange={e => setForm(f => ({ ...f, provider: e.target.value }))} placeholder="e.g. CITB" className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500" />
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-gray-400 text-xs mb-1">Type</label>
+                  <select value={form.type} onChange={e => setForm(f => ({ ...f, type: e.target.value }))} className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white">
+                    <option value="">Select type...</option>
+                    <option value="Health & Safety">Health & Safety</option>
+                    <option value="Technical">Technical</option>
+                    <option value="Management">Management</option>
+                    <option value="Compliance">Compliance</option>
+                    <option value="General">General</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-gray-400 text-xs mb-1">Status</label>
+                  <select value={form.status} onChange={e => setForm(f => ({ ...f, status: e.target.value }))} className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white">
+                    <option value="scheduled">Scheduled</option>
+                    <option value="in_progress">In Progress</option>
+                    <option value="completed">Completed</option>
+                    <option value="expired">Expired</option>
+                  </select>
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-gray-400 text-xs mb-1">Scheduled Date</label>
+                  <input type="date" value={form.scheduledDate} onChange={e => setForm(f => ({ ...f, scheduledDate: e.target.value }))} className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white" />
+                </div>
+                <div>
+                  <label className="block text-gray-400 text-xs mb-1">Completed Date</label>
+                  <input type="date" value={form.completedDate} onChange={e => setForm(f => ({ ...f, completedDate: e.target.value }))} className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white" />
+                </div>
+              </div>
+              <div>
+                <label className="block text-gray-400 text-xs mb-1">Certification Reference</label>
+                <input type="text" value={form.certification} onChange={e => setForm(f => ({ ...f, certification: e.target.value }))} placeholder="e.g. CSCS-123456" className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500" />
+              </div>
+            </div>
+            <div className="p-6 border-t border-gray-700 flex justify-end gap-3">
+              <button type="button" onClick={() => setShowCreateModal(false)} className="px-4 py-2 text-gray-400 hover:text-white">Cancel</button>
+              <button type="button" onClick={handleCreate} disabled={creating || !form.title} className="px-4 py-2 bg-orange-500 hover:bg-orange-600 text-white rounded-lg font-semibold disabled:opacity-50">
+                {creating ? 'Creating...' : 'Add Record'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

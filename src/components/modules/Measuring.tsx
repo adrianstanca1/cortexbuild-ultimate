@@ -1,11 +1,14 @@
 import { useState, useEffect } from 'react';
-import { Plus, Search, Ruler, MapPin, Camera, FileText } from 'lucide-react';
+import { Plus, Search, Ruler, MapPin, Camera, FileText, Trash2, X } from 'lucide-react';
 import { measuringApi } from '../../services/api';
 
 export default function Measuring() {
   const [searchTerm, setSearchTerm] = useState('');
   const [measurements, setMeasurements] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [showCreateModal, setShowCreateModal] = useState(false);
+  const [creating, setCreating] = useState(false);
+  const [form, setForm] = useState({ location: '', surveyType: '', surveyor: '', surveyDate: '', totalArea: '', unit: 'm²', status: 'pending' });
 
   useEffect(() => {
     measuringApi.getAll().then((data: any[]) => {
@@ -22,6 +25,40 @@ export default function Measuring() {
   const completedCount = measurements.filter((m: any) => m.status === 'completed').length;
   const pendingCount = measurements.filter((m: any) => m.status === 'pending' || m.status === 'scheduled').length;
 
+  const handleCreate = async () => {
+    if (!form.location) return;
+    setCreating(true);
+    try {
+      const newRecord = {
+        location: form.location,
+        survey_type: form.surveyType || '',
+        surveyor: form.surveyor || '',
+        survey_date: form.surveyDate || null,
+        total_area: parseFloat(form.totalArea) || 0,
+        unit: form.unit,
+        status: form.status,
+      };
+      const created = await measuringApi.create(newRecord);
+      setMeasurements(prev => [created, ...prev]);
+      setShowCreateModal(false);
+      setForm({ location: '', surveyType: '', surveyor: '', surveyDate: '', totalArea: '', unit: 'm²', status: 'pending' });
+    } catch (err) {
+      console.error('Failed to create:', err);
+    } finally {
+      setCreating(false);
+    }
+  };
+
+  const handleDelete = async (id: string) => {
+    if (!confirm('Delete this measurement?')) return;
+    try {
+      await measuringApi.delete(id);
+      setMeasurements(prev => prev.filter((m: any) => String(m.id) !== String(id)));
+    } catch (err) {
+      console.error('Failed to delete:', err);
+    }
+  };
+
   return (
     <div className="p-6 space-y-6">
       <div className="flex items-center justify-between">
@@ -29,7 +66,7 @@ export default function Measuring() {
           <h2 className="text-2xl font-bold text-white">Site Measuring & Surveys</h2>
           <p className="text-gray-400 text-sm mt-1">Record site measurements, surveys and as-built data</p>
         </div>
-        <button type="button" className="flex items-center gap-2 px-4 py-2 bg-orange-500 hover:bg-orange-600 text-white rounded-lg font-semibold">
+        <button type="button" onClick={() => setShowCreateModal(true)} className="flex items-center gap-2 px-4 py-2 bg-orange-500 hover:bg-orange-600 text-white rounded-lg font-semibold">
           <Plus size={18} /> New Measurement
         </button>
       </div>
@@ -53,15 +90,94 @@ export default function Measuring() {
                   <p className="text-gray-400 text-sm">{m.survey_type || 'Survey'} - Surveyor: {m.surveyor || 'TBC'}</p>
                   <p className="text-gray-500 text-xs">Date: {m.survey_date || 'TBD'}</p>
                 </div>
-                <div className="text-right">
-                  <span className={`px-2 py-1 rounded text-xs ${m.status === 'completed' ? 'bg-green-500/10 text-green-400' : 'bg-amber-500/10 text-amber-400'}`}>{m.status || 'unknown'}</span>
-                  <p className="text-white font-medium mt-1">{m.total_area || 0} {m.unit || 'm²'}</p>
+                <div className="text-right flex items-center gap-3">
+                  <div>
+                    <span className={`px-2 py-1 rounded text-xs ${m.status === 'completed' ? 'bg-green-500/10 text-green-400' : 'bg-amber-500/10 text-amber-400'}`}>{m.status || 'unknown'}</span>
+                    <p className="text-white font-medium mt-1">{m.total_area || 0} {m.unit || 'm²'}</p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => handleDelete(String(m.id))}
+                    className="p-2 hover:bg-red-900/30 rounded"
+                    title="Delete"
+                  >
+                    <Trash2 size={16} className="text-red-400" />
+                  </button>
                 </div>
               </div>
             ))}
           </div>
         )}
       </div>
+
+      {showCreateModal && (
+        <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
+          <div className="bg-gray-900 border border-gray-700 rounded-xl w-full max-w-lg">
+            <div className="p-6 border-b border-gray-700 flex items-center justify-between">
+              <h3 className="text-xl font-bold text-white">New Measurement</h3>
+              <button type="button" onClick={() => setShowCreateModal(false)} className="text-gray-400 hover:text-white"><X size={20} /></button>
+            </div>
+            <div className="p-6 space-y-4">
+              <div>
+                <label htmlFor="measLoc" className="block text-gray-400 text-xs mb-1">Location *</label>
+                <input id="measLoc" type="text" value={form.location} onChange={e => setForm(f => ({ ...f, location: e.target.value }))} placeholder="e.g. Building A - Level 2" className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500" />
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label htmlFor="measType" className="block text-gray-400 text-xs mb-1">Survey Type</label>
+                  <select id="measType" value={form.surveyType} onChange={e => setForm(f => ({ ...f, surveyType: e.target.value }))} className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white">
+                    <option value="">Select type...</option>
+                    <option value="Area Survey">Area Survey</option>
+                    <option value="Level Survey">Level Survey</option>
+                    <option value="As-Built">As-Built</option>
+                    <option value="Setting Out">Setting Out</option>
+                    <option value="Topographic">Topographic</option>
+                  </select>
+                </div>
+                <div>
+                  <label htmlFor="measSurveyor" className="block text-gray-400 text-xs mb-1">Surveyor</label>
+                  <input id="measSurveyor" type="text" value={form.surveyor} onChange={e => setForm(f => ({ ...f, surveyor: e.target.value }))} placeholder="Surveyor name" className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500" />
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label htmlFor="measDate" className="block text-gray-400 text-xs mb-1">Survey Date</label>
+                  <input id="measDate" type="date" value={form.surveyDate} onChange={e => setForm(f => ({ ...f, surveyDate: e.target.value }))} className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white" />
+                </div>
+                <div>
+                  <label htmlFor="measStatus" className="block text-gray-400 text-xs mb-1">Status</label>
+                  <select id="measStatus" value={form.status} onChange={e => setForm(f => ({ ...f, status: e.target.value }))} className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white">
+                    <option value="pending">Pending</option>
+                    <option value="scheduled">Scheduled</option>
+                    <option value="completed">Completed</option>
+                  </select>
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label htmlFor="measArea" className="block text-gray-400 text-xs mb-1">Total Area</label>
+                  <input id="measArea" type="number" value={form.totalArea} onChange={e => setForm(f => ({ ...f, totalArea: e.target.value }))} placeholder="0.00" className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500" />
+                </div>
+                <div>
+                  <label htmlFor="measUnit" className="block text-gray-400 text-xs mb-1">Unit</label>
+                  <select id="measUnit" value={form.unit} onChange={e => setForm(f => ({ ...f, unit: e.target.value }))} className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white">
+                    <option value="m²">m²</option>
+                    <option value="m³">m³</option>
+                    <option value="lin m">lin m</option>
+                    <option value="items">items</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+            <div className="p-6 border-t border-gray-700 flex justify-end gap-3">
+              <button type="button" onClick={() => setShowCreateModal(false)} className="px-4 py-2 text-gray-400 hover:text-white">Cancel</button>
+              <button type="button" onClick={handleCreate} disabled={creating || !form.location} className="px-4 py-2 bg-orange-500 hover:bg-orange-600 text-white rounded-lg font-semibold disabled:opacity-50">
+                {creating ? 'Creating...' : 'Create Measurement'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

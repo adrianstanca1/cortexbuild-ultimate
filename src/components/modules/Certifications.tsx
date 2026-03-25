@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Plus, Search, Shield, FileCheck, Clock, AlertTriangle, FileText, Upload } from 'lucide-react';
+import { Plus, Search, Shield, FileCheck, Clock, AlertTriangle, FileText, Upload, Trash2, X } from 'lucide-react';
 import { certificationsApi, uploadFile } from '../../services/api';
 
 export default function Certifications() {
@@ -7,6 +7,9 @@ export default function Certifications() {
   const [certs, setCerts] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState<string | null>(null);
+  const [showCreateModal, setShowCreateModal] = useState(false);
+  const [creating, setCreating] = useState(false);
+  const [form, setForm] = useState({ certificationType: '', company: '', body: '', accreditationNumber: '', grade: '', expiryDate: '', status: 'active' });
 
   useEffect(() => {
     certificationsApi.getAll().then((data: any[]) => {
@@ -26,6 +29,40 @@ export default function Certifications() {
     const daysUntil = (new Date(c.expiry_date).getTime() - Date.now()) / (1000 * 60 * 60 * 24);
     return daysUntil > 0 && daysUntil <= 90;
   }).length;
+
+  const handleCreate = async () => {
+    if (!form.certificationType) return;
+    setCreating(true);
+    try {
+      const newRecord = {
+        certification_type: form.certificationType,
+        company: form.company || 'CortexBuild Ltd',
+        body: form.body || '',
+        accreditation_number: form.accreditationNumber || '',
+        grade: form.grade || '',
+        expiry_date: form.expiryDate || null,
+        status: form.status,
+      };
+      const created = await certificationsApi.create(newRecord);
+      setCerts(prev => [created, ...prev]);
+      setShowCreateModal(false);
+      setForm({ certificationType: '', company: '', body: '', accreditationNumber: '', grade: '', expiryDate: '', status: 'active' });
+    } catch (err) {
+      console.error('Failed to create:', err);
+    } finally {
+      setCreating(false);
+    }
+  };
+
+  const handleDelete = async (id: string) => {
+    if (!confirm('Delete this certification?')) return;
+    try {
+      await certificationsApi.delete(id);
+      setCerts(prev => prev.filter((c: any) => String(c.id) !== String(id)));
+    } catch (err) {
+      console.error('Failed to delete:', err);
+    }
+  };
 
   const handleUpload = async (certId: string, file: File) => {
     setUploading(certId);
@@ -51,7 +88,7 @@ export default function Certifications() {
           <h2 className="text-2xl font-bold text-white">Certifications & Licenses</h2>
           <p className="text-gray-400 text-sm mt-1">Manage company certifications, accreditations and licenses</p>
         </div>
-        <button type="button" className="flex items-center gap-2 px-4 py-2 bg-orange-500 hover:bg-orange-600 text-white rounded-lg font-semibold">
+        <button type="button" onClick={() => setShowCreateModal(true)} className="flex items-center gap-2 px-4 py-2 bg-orange-500 hover:bg-orange-600 text-white rounded-lg font-semibold">
           <Plus size={18} /> Add Certification
         </button>
       </div>
@@ -108,6 +145,14 @@ export default function Certifications() {
                     >
                       {uploading === String(c.id) ? <Clock size={16} className="animate-spin" /> : <Upload size={16} />}
                     </button>
+                    <button
+                      type="button"
+                      onClick={() => handleDelete(String(c.id))}
+                      className="p-2 hover:bg-red-900/30 rounded"
+                      title="Delete"
+                    >
+                      <Trash2 size={16} className="text-red-400" />
+                    </button>
                   </div>
                 </div>
               </div>
@@ -115,6 +160,62 @@ export default function Certifications() {
           </div>
         )}
       </div>
+
+      {showCreateModal && (
+        <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
+          <div className="bg-gray-900 border border-gray-700 rounded-xl w-full max-w-lg">
+            <div className="p-6 border-b border-gray-700 flex items-center justify-between">
+              <h3 className="text-xl font-bold text-white">Add Certification</h3>
+              <button type="button" onClick={() => setShowCreateModal(false)} className="text-gray-400 hover:text-white"><X size={20} /></button>
+            </div>
+            <div className="p-6 space-y-4">
+              <div>
+                <label htmlFor="certType" className="block text-gray-400 text-xs mb-1">Certification Type *</label>
+                <input id="certType" type="text" value={form.certificationType} onChange={e => setForm(f => ({ ...f, certificationType: e.target.value }))} placeholder="e.g. ISO 9001" className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500" />
+              </div>
+              <div>
+                <label htmlFor="certCompany" className="block text-gray-400 text-xs mb-1">Company</label>
+                <input id="certCompany" type="text" value={form.company} onChange={e => setForm(f => ({ ...f, company: e.target.value }))} placeholder="Company name" className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500" />
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label htmlFor="certBody" className="block text-gray-400 text-xs mb-1">Issuing Body</label>
+                  <input id="certBody" type="text" value={form.body} onChange={e => setForm(f => ({ ...f, body: e.target.value }))} placeholder="e.g. BSI" className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500" />
+                </div>
+                <div>
+                  <label htmlFor="certGrade" className="block text-gray-400 text-xs mb-1">Grade</label>
+                  <input id="certGrade" type="text" value={form.grade} onChange={e => setForm(f => ({ ...f, grade: e.target.value }))} placeholder="e.g. A" className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500" />
+                </div>
+              </div>
+              <div>
+                <label htmlFor="certAccred" className="block text-gray-400 text-xs mb-1">Accreditation Number</label>
+                <input id="certAccred" type="text" value={form.accreditationNumber} onChange={e => setForm(f => ({ ...f, accreditationNumber: e.target.value }))} placeholder="e.g. ABC-12345" className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500" />
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label htmlFor="certExpiry" className="block text-gray-400 text-xs mb-1">Expiry Date</label>
+                  <input id="certExpiry" type="date" value={form.expiryDate} onChange={e => setForm(f => ({ ...f, expiryDate: e.target.value }))} className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white" />
+                </div>
+                <div>
+                  <label htmlFor="certStatus" className="block text-gray-400 text-xs mb-1">Status</label>
+                  <select id="certStatus" value={form.status} onChange={e => setForm(f => ({ ...f, status: e.target.value }))} className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white">
+                    <option value="active">Active</option>
+                    <option value="pending">Pending</option>
+                    <option value="expired">Expired</option>
+                    <option value="revoked">Revoked</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+            <div className="p-6 border-t border-gray-700 flex justify-end gap-3">
+              <button type="button" onClick={() => setShowCreateModal(false)} className="px-4 py-2 text-gray-400 hover:text-white">Cancel</button>
+              <button type="button" onClick={handleCreate} disabled={creating || !form.certificationType} className="px-4 py-2 bg-orange-500 hover:bg-orange-600 text-white rounded-lg font-semibold disabled:opacity-50">
+                {creating ? 'Creating...' : 'Add Certification'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

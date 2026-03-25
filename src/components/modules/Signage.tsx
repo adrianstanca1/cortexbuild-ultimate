@@ -1,11 +1,14 @@
 import { useState, useEffect } from 'react';
-import { Plus, Search, AlertTriangle, CheckCircle, Eye, Edit } from 'lucide-react';
+import { Plus, Search, AlertTriangle, CheckCircle, Eye, Edit, Trash2, X } from 'lucide-react';
 import { signageApi } from '../../services/api';
 
 export default function Signage() {
   const [searchTerm, setSearchTerm] = useState('');
   const [signage, setSignage] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [showCreateModal, setShowCreateModal] = useState(false);
+  const [creating, setCreating] = useState(false);
+  const [form, setForm] = useState({ description: '', location: '', type: 'safety', status: 'required' });
 
   useEffect(() => {
     signageApi.getAll().then((data: any[]) => {
@@ -19,6 +22,37 @@ export default function Signage() {
     (s.location || '').toLowerCase().includes(searchTerm.toLowerCase())
   );
 
+  const handleCreate = async () => {
+    if (!form.description) return;
+    setCreating(true);
+    try {
+      const newRecord = {
+        description: form.description,
+        location: form.location || '',
+        type: form.type,
+        status: form.status,
+      };
+      const created = await signageApi.create(newRecord);
+      setSignage(prev => [created, ...prev]);
+      setShowCreateModal(false);
+      setForm({ description: '', location: '', type: 'safety', status: 'required' });
+    } catch (err) {
+      console.error('Failed to create:', err);
+    } finally {
+      setCreating(false);
+    }
+  };
+
+  const handleDelete = async (id: string) => {
+    if (!confirm('Delete this signage item?')) return;
+    try {
+      await signageApi.delete(id);
+      setSignage(prev => prev.filter((s: any) => String(s.id) !== String(id)));
+    } catch (err) {
+      console.error('Failed to delete:', err);
+    }
+  };
+
   return (
     <div className="p-6 space-y-6">
       <div className="flex items-center justify-between">
@@ -26,7 +60,7 @@ export default function Signage() {
           <h2 className="text-2xl font-bold text-white">Site Signage</h2>
           <p className="text-gray-400 text-sm mt-1">Manage safety, warning and information signage</p>
         </div>
-        <button type="button" className="flex items-center gap-2 px-4 py-2 bg-orange-500 hover:bg-orange-600 text-white rounded-lg font-semibold">
+        <button type="button" onClick={() => setShowCreateModal(true)} className="flex items-center gap-2 px-4 py-2 bg-orange-500 hover:bg-orange-600 text-white rounded-lg font-semibold">
           <Plus size={18} /> Add Sign
         </button>
       </div>
@@ -55,12 +89,69 @@ export default function Signage() {
                     {s.status || 'unknown'}
                   </span>
                   <button type="button" className="p-2 hover:bg-gray-700 rounded"><Eye size={16} className="text-gray-400" /></button>
+                  <button
+                    type="button"
+                    onClick={() => handleDelete(String(s.id))}
+                    className="p-2 hover:bg-red-900/30 rounded"
+                    title="Delete"
+                  >
+                    <Trash2 size={16} className="text-red-400" />
+                  </button>
                 </div>
               </div>
             ))}
           </div>
         )}
       </div>
+
+      {showCreateModal && (
+        <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
+          <div className="bg-gray-900 border border-gray-700 rounded-xl w-full max-w-lg">
+            <div className="p-6 border-b border-gray-700 flex items-center justify-between">
+              <h3 className="text-xl font-bold text-white">Add Signage</h3>
+              <button type="button" onClick={() => setShowCreateModal(false)} className="text-gray-400 hover:text-white"><X size={20} /></button>
+            </div>
+            <div className="p-6 space-y-4">
+              <div>
+                <label htmlFor="signDesc" className="block text-gray-400 text-xs mb-1">Description *</label>
+                <input id="signDesc" type="text" value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))} placeholder="e.g. Hard Hat Area" className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500" />
+              </div>
+              <div>
+                <label htmlFor="signLocation" className="block text-gray-400 text-xs mb-1">Location</label>
+                <input id="signLocation" type="text" value={form.location} onChange={e => setForm(f => ({ ...f, location: e.target.value }))} placeholder="e.g. Site Entrance" className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500" />
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label htmlFor="signType" className="block text-gray-400 text-xs mb-1">Type</label>
+                  <select id="signType" value={form.type} onChange={e => setForm(f => ({ ...f, type: e.target.value }))} className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white">
+                    <option value="safety">Safety</option>
+                    <option value="warning">Warning</option>
+                    <option value="information">Information</option>
+                    <option value="mandatory">Mandatory</option>
+                    <option value="prohibition">Prohibition</option>
+                    <option value="fire">Fire</option>
+                  </select>
+                </div>
+                <div>
+                  <label htmlFor="signStatus" className="block text-gray-400 text-xs mb-1">Status</label>
+                  <select id="signStatus" value={form.status} onChange={e => setForm(f => ({ ...f, status: e.target.value }))} className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white">
+                    <option value="required">Required</option>
+                    <option value="ordered">Ordered</option>
+                    <option value="installed">Installed</option>
+                    <option value="damaged">Damaged</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+            <div className="p-6 border-t border-gray-700 flex justify-end gap-3">
+              <button type="button" onClick={() => setShowCreateModal(false)} className="px-4 py-2 text-gray-400 hover:text-white">Cancel</button>
+              <button type="button" onClick={handleCreate} disabled={creating || !form.description} className="px-4 py-2 bg-orange-500 hover:bg-orange-600 text-white rounded-lg font-semibold disabled:opacity-50">
+                {creating ? 'Creating...' : 'Add Sign'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
