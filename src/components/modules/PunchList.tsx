@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { ClipboardList, Plus, Search, Filter, Camera, CheckCircle2, AlertCircle, Clock, X, ChevronRight, Edit2, Trash2, Image, Tag, MapPin, User, ChevronDown, ChevronUp } from 'lucide-react';
+import { ClipboardList, Plus, Search, Filter, Camera, CheckCircle2, AlertCircle, Clock, X, ChevronRight, Edit2, Trash2, Image, Tag, MapPin, User, ChevronDown, ChevronUp, CheckSquare, Square } from 'lucide-react';
+import { BulkActionsBar, useBulkSelection } from '../ui/BulkActions';
 import { usePunchList } from '../../hooks/useData';
 import { toast } from 'sonner';
 
@@ -51,6 +52,19 @@ export function PunchList() {
   const [form, setForm] = useState({ ...emptyForm });
   const [expandedTrade, setExpandedTrade] = useState<string | null>(null);
   const [expandedDetail, setExpandedDetail] = useState<string | null>(null);
+
+  const { selectedIds, toggle, clearSelection } = useBulkSelection();
+
+  async function handleBulkDelete(ids: string[]) {
+    if (!confirm(`Delete ${ids.length} item(s)?`)) return;
+    try {
+      await Promise.all(ids.map(id => deleteMutation.mutateAsync(id)));
+      toast.success(`Deleted ${ids.length} item(s)`);
+      clearSelection();
+    } catch {
+      toast.error('Bulk delete failed');
+    }
+  }
 
   // Stats
   const openCount = items.filter(i => i.status === 'Open').length;
@@ -288,10 +302,12 @@ export function PunchList() {
               <p>No items match your filters</p>
             </div>
           ) : (
+            <>
             <div className="overflow-x-auto bg-gray-900 border border-gray-700 rounded-lg">
               <table className="w-full text-sm">
                 <thead>
                   <tr className="border-b border-gray-700 bg-gray-800">
+                    <th className="px-4 py-3 w-10"></th>
                     <th className="px-4 py-3 text-left font-semibold text-gray-300">#</th>
                     <th className="px-4 py-3 text-left font-semibold text-gray-300">Description</th>
                     <th className="px-4 py-3 text-left font-semibold text-gray-300">Location</th>
@@ -307,12 +323,18 @@ export function PunchList() {
                 <tbody>
                   {filtered.map((item, idx) => {
                     const id = String(item.id ?? '');
+                    const isSelected = selectedIds.has(id);
                     const priority = String(item.priority ?? 'Medium');
                     const status = String(item.status ?? 'Open');
                     const isExp = expandedDetail === id;
                     return (
                       <React.Fragment key={id}>
                         <tr className="border-b border-gray-700 hover:bg-gray-800/50 transition-colors">
+                          <td className="px-4 py-3">
+                            <button type="button" onClick={e => { e.stopPropagation(); toggle(id); }}>
+                              {isSelected ? <CheckSquare size={16} className="text-blue-400"/> : <Square size={16} className="text-gray-500"/>}
+                            </button>
+                          </td>
                           <td className="px-4 py-3 text-gray-400 font-mono">{idx + 1}</td>
                           <td className="px-4 py-3 text-gray-200 max-w-xs truncate">{String(item.description ?? '')}</td>
                           <td className="px-4 py-3 text-gray-400 text-xs">{String(item.location ?? '')}</td>
@@ -406,7 +428,15 @@ export function PunchList() {
                   })}
                 </tbody>
               </table>
+              <BulkActionsBar
+                selectedIds={Array.from(selectedIds)}
+                actions={[
+                  { id: 'delete', label: 'Delete Selected', icon: Trash2, variant: 'danger', onClick: handleBulkDelete, confirm: 'This action cannot be undone.' },
+                ]}
+                onClearSelection={clearSelection}
+              />
             </div>
+            </>
           )}
         </>
       ) : mainTab === 'trade' ? (

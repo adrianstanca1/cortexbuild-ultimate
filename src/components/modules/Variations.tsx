@@ -3,9 +3,10 @@ import {
   FileText, Plus, Search, Filter, Download, Clock, AlertCircle,
   CheckCircle, XCircle, ArrowUpRight, ArrowDownRight, AlertTriangle,
   ChevronDown, ChevronRight, Calendar, Building2, User, PoundSterling,
-  FileCheck, RefreshCw, Eye, Edit, Trash2, X
+  FileCheck, RefreshCw, Eye, Edit, Trash2, X, CheckSquare, Square
 } from 'lucide-react';
 import { variationsApi } from '../../services/api';
+import { BulkActionsBar, useBulkSelection } from '../ui/BulkActions';
 
 interface Variation {
   id: string;
@@ -174,6 +175,19 @@ export default function Variations() {
   const [form, setForm] = useState({
     title: '', project: '', subcontractor: '', type: 'addition', value: '', reason: '', description: ''
   });
+
+  const { selectedIds, toggle, clearSelection } = useBulkSelection();
+
+  async function handleBulkDelete(ids: string[]) {
+    if (!confirm(`Delete ${ids.length} item(s)?`)) return;
+    try {
+      await Promise.all(ids.map(id => variationsApi.delete(id)));
+      setVariations(prev => prev.filter(v => !ids.includes(String(v.id))));
+      clearSelection();
+    } catch {
+      console.error('Bulk delete failed');
+    }
+  }
 
   useEffect(() => {
     variationsApi.getAll().then(data => {
@@ -394,11 +408,12 @@ export default function Variations() {
             const StatusIcon = status.icon;
             const isExpanded = expandedCards.includes(variation.id);
             const isPositive = variation.value > 0;
+            const isSelected = selectedIds.has(String(variation.id));
 
             return (
               <div
                 key={variation.id}
-                className="border border-gray-700 rounded-lg overflow-hidden hover:border-orange-500/50 transition-colors"
+                className={`border border-gray-700 rounded-lg overflow-hidden hover:border-orange-500/50 transition-colors ${isSelected ? 'border-blue-500/50 bg-blue-900/10' : ''}`}
               >
                 <div
                   className="flex items-center justify-between p-4 cursor-pointer bg-gray-800/50 hover:bg-gray-800"
@@ -409,10 +424,18 @@ export default function Variations() {
                 >
                   <div className="flex items-center gap-4">
                     <button
+                      type="button"
                       onClick={(e) => { e.stopPropagation(); toggleExpand(variation.id); }}
                       className="text-gray-400 hover:text-white"
                     >
                       {isExpanded ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={(e) => { e.stopPropagation(); toggle(String(variation.id)); }}
+                      className="text-gray-400 hover:text-white"
+                    >
+                      {isSelected ? <CheckSquare size={16} className="text-blue-400"/> : <Square size={16} className="text-gray-500"/>}
                     </button>
                     <div>
                       <div className="flex items-center gap-2">
@@ -520,6 +543,13 @@ export default function Variations() {
             );
           })}
         </div>
+        <BulkActionsBar
+          selectedIds={Array.from(selectedIds)}
+          actions={[
+            { id: 'delete', label: 'Delete Selected', icon: Trash2, variant: 'danger' as const, onClick: handleBulkDelete, confirm: 'This action cannot be undone.' },
+          ]}
+          onClearSelection={clearSelection}
+        />
       </div>
 
       {showCreateModal && (

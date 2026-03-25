@@ -1,10 +1,11 @@
 import { useState } from 'react';
 import {
   Plus, Search, Filter, TrendingUp, Clock, CheckCircle2, XCircle, Edit2, Trash2, X,
-  ChevronRight, Calendar, DollarSign, Target, Award, BarChart3, Brain, Zap, AlertCircle
+  ChevronRight, Calendar, DollarSign, Target, Award, BarChart3, Brain, Zap, AlertCircle, CheckSquare, Square
 } from 'lucide-react';
 import { useTenders } from '../../hooks/useData';
 import { toast } from 'sonner';
+import { BulkActionsBar, useBulkSelection } from '../ui/BulkActions';
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer,
   LineChart, Line, Cell, PieChart, Pie
@@ -67,6 +68,19 @@ export function Tenders() {
   const [form, setForm] = useState({ ...emptyForm });
   const [selectedDetail, setSelectedDetail] = useState<AnyRow | null>(null);
   const [aiFilter, setAiFilter] = useState<'all' | 'high' | 'medium' | 'low'>('all');
+
+  const { selectedIds, toggle, clearSelection } = useBulkSelection();
+
+  async function handleBulkDelete(ids: string[]) {
+    if (!confirm(`Delete ${ids.length} tender(s)?`)) return;
+    try {
+      await Promise.all(ids.map(id => deleteMutation.mutateAsync(id)));
+      toast.success(`Deleted ${ids.length} tender(s)`);
+      clearSelection();
+    } catch {
+      toast.error('Bulk delete failed');
+    }
+  }
 
   // Filtering logic
   const filtered = tenders.filter(t => {
@@ -494,12 +508,19 @@ export function Tenders() {
             <tbody className="divide-y divide-gray-700">
               {filtered.map((t, idx) => {
                 const days = getDaysToDeadline(t.deadline);
+                const tId = String(t.id);
+                const isSelected = selectedIds.has(tId);
                 return (
                   <tr
-                    key={String(t.id)}
-                    className="hover:bg-gray-700/50 transition-colors cursor-pointer"
+                    key={tId}
+                    className={`hover:bg-gray-700/50 transition-colors cursor-pointer ${isSelected ? 'bg-blue-900/20' : ''}`}
                     onClick={() => setSelectedDetail(t)}
                   >
+                    <td className="px-4 py-3" onClick={e => e.stopPropagation()}>
+                      <button type="button" onClick={() => toggle(tId)}>
+                        {isSelected ? <CheckSquare size={16} className="text-blue-400"/> : <Square size={16} className="text-gray-500"/>}
+                      </button>
+                    </td>
                     <td className="px-4 py-3 text-gray-400 text-xs font-mono">
                       T{String(idx + 1).padStart(4, '0')}
                     </td>
@@ -565,6 +586,13 @@ export function Tenders() {
               <p>No tenders match your filters</p>
             </div>
           )}
+          <BulkActionsBar
+            selectedIds={Array.from(selectedIds)}
+            actions={[
+              { id: 'delete', label: 'Delete Selected', icon: Trash2, variant: 'danger', onClick: handleBulkDelete, confirm: 'This action cannot be undone.' },
+            ]}
+            onClearSelection={clearSelection}
+          />
         </div>
       ) : activeTab === 'analytics' ? (
         // Analytics Tab

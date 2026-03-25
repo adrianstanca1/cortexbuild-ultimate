@@ -1,8 +1,9 @@
 import { useState } from 'react';
-import { Layers, Plus, Search, Eye, Download, Edit2, Trash2, X, ChevronDown, ChevronUp, FileText, Cloud, GitBranch, Send, Filter, CheckCircle2, AlertTriangle, BarChart3 } from 'lucide-react';
+import { Layers, Plus, Search, Eye, Download, Edit2, Trash2, X, ChevronDown, ChevronUp, FileText, Cloud, GitBranch, Send, Filter, CheckCircle2, AlertTriangle, BarChart3, CheckSquare, Square } from 'lucide-react';
 import { useDocuments } from '../../hooks/useData';
 import { toast } from 'sonner';
 import { PieChart, Pie, BarChart, Bar, CartesianGrid, Tooltip, Legend, ResponsiveContainer, Cell } from 'recharts';
+import { BulkActionsBar, useBulkSelection } from '../ui/BulkActions';
 
 type AnyRow = Record<string, unknown>;
 
@@ -68,6 +69,19 @@ export function Drawings() {
   const [revisionForm, setRevisionForm] = useState({ drawingNumber:'', newRevision:'', description:'', reason:'' });
   const [transmittalForm, setTransmittalForm] = useState({ project:'', drawings:'', issuedTo:'', purpose:'IFC' });
   const [expandedDiscipline, setExpandedDiscipline] = useState<string | null>(null);
+
+  const { selectedIds, toggle, clearSelection } = useBulkSelection();
+
+  async function handleBulkDelete(ids: string[]) {
+    if (!confirm(`Delete ${ids.length} drawing(s)?`)) return;
+    try {
+      await Promise.all(ids.map(id => deleteMutation.mutateAsync(id)));
+      toast.success(`Deleted ${ids.length} drawing(s)`);
+      clearSelection();
+    } catch {
+      toast.error('Bulk delete failed');
+    }
+  }
 
   const projects = ['All', ...Array.from(new Set(drawings.map(d=>String(d.project_id??'')).filter(Boolean)))];
 
@@ -290,6 +304,11 @@ export function Drawings() {
                       onClick={()=>setSelectedDrawing(d)}
                       className={`cursor-pointer transition-colors ${idx % 2 === 0 ? 'bg-gray-800/50' : 'bg-gray-800/30'} hover:bg-gray-700/50`}
                     >
+                      <td className="px-4 py-3">
+                        <button type="button" onClick={e => { e.stopPropagation(); toggle(String(d.id)); }}>
+                          {selectedIds.has(String(d.id)) ? <CheckSquare size={16} className="text-blue-400"/> : <Square size={16} className="text-gray-500"/>}
+                        </button>
+                      </td>
                       <td className="px-4 py-3 font-mono text-xs text-gray-400">{String(d.drawing_number??'—')}</td>
                       <td className="px-4 py-3 font-medium text-gray-200 max-w-xs truncate">{String(d.title??'—')}</td>
                       <td className="px-4 py-3 text-sm text-gray-400">{String(d.discipline??'—')}</td>
@@ -311,6 +330,13 @@ export function Drawings() {
                 </tbody>
               </table>
               {filtered.length === 0 && <div className="text-center py-16 text-gray-500"><FileText size={40} className="mx-auto mb-3 opacity-30"/><p>No drawings found</p></div>}
+              <BulkActionsBar
+                selectedIds={Array.from(selectedIds)}
+                actions={[
+                  { id: 'delete', label: 'Delete Selected', icon: Trash2, variant: 'danger', onClick: handleBulkDelete, confirm: 'This action cannot be undone.' },
+                ]}
+                onClearSelection={clearSelection}
+              />
             </div>
           )}
         </>

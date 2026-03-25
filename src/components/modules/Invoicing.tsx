@@ -1,9 +1,11 @@
 // Module: Invoicing — CortexBuild Ultimate (Enhanced)
 import { useState } from 'react';
-import { Plus, X, Loader2, FileText, Download, Send, Edit2, Trash2, RefreshCw, Search } from 'lucide-react';
+import { Plus, X, Loader2, FileText, Download, Send, Edit2, Trash2, RefreshCw, Search, CheckSquare, Square } from 'lucide-react';
 import { useInvoices, useProjects } from '../../hooks/useData';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 import clsx from 'clsx';
+import { toast } from 'sonner';
+import { BulkActionsBar, useBulkSelection } from '../ui/BulkActions';
 
 const statusConfig: Record<string, { label: string; color: string; bg: string }> = {
   draft:    { label: 'Draft',    color: 'text-gray-400',   bg: 'bg-gray-700' },
@@ -57,6 +59,19 @@ export function Invoicing() {
   const [editId, setEditId] = useState<string | null>(null);
   const [form, setForm] = useState<FormData>(defaultForm);
   const [selectedId, setSelectedId] = useState<string | null>(null);
+
+  const { selectedIds, toggle, clearSelection } = useBulkSelection();
+
+  async function handleBulkDelete(ids: string[]) {
+    if (!confirm(`Delete ${ids.length} invoice(s)?`)) return;
+    try {
+      await Promise.all(ids.map(id => deleteMutation.mutateAsync(id)));
+      toast.success(`Deleted ${ids.length} invoice(s)`);
+      clearSelection();
+    } catch {
+      toast.error('Bulk delete failed');
+    }
+  }
 
   // Valuations state
   const [showValuationModal, setShowValuationModal] = useState(false);
@@ -570,12 +585,19 @@ export function Invoicing() {
                     <tbody className="divide-y divide-gray-800">
                       {filtered.map((inv: Record<string, unknown>) => {
                         const cfg = statusConfig[String(inv.status)] ?? statusConfig.draft;
+                        const invId = String(inv.id);
+                        const isSelected = selectedIds.has(invId);
                         return (
                           <tr
-                            key={String(inv.id)}
-                            className="hover:bg-gray-800/50 cursor-pointer transition-colors"
-                            onClick={() => setSelectedId(String(inv.id))}
+                            key={invId}
+                            className={`hover:bg-gray-800/50 cursor-pointer transition-colors ${isSelected ? 'bg-blue-900/20' : ''}`}
+                            onClick={() => setSelectedId(invId)}
                           >
+                            <td className="px-4 py-3" onClick={e => e.stopPropagation()}>
+                              <button type="button" onClick={() => toggle(invId)}>
+                                {isSelected ? <CheckSquare size={16} className="text-blue-400"/> : <Square size={16} className="text-gray-500"/>}
+                              </button>
+                            </td>
                             <td className="px-4 py-3">
                               <div className="flex items-center gap-2">
                                 <FileText className="w-4 h-4 text-emerald-400 shrink-0" />
@@ -653,6 +675,13 @@ export function Invoicing() {
                     </button>
                   </div>
                 )}
+                <BulkActionsBar
+                  selectedIds={Array.from(selectedIds)}
+                  actions={[
+                    { id: 'delete', label: 'Delete Selected', icon: Trash2, variant: 'danger', onClick: handleBulkDelete, confirm: 'This action cannot be undone.' },
+                  ]}
+                  onClearSelection={clearSelection}
+                />
               </div>
             </>
           )}

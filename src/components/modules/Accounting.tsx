@@ -4,8 +4,9 @@ import {
   BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid,
   Tooltip, Legend, ResponsiveContainer,
 } from 'recharts';
-import { FileText, AlertCircle, Plus, Edit2, Trash2, X, CheckCircle2, PoundSterling } from 'lucide-react';
+import { FileText, AlertCircle, Plus, Edit2, Trash2, X, CheckCircle2, PoundSterling, CheckSquare, Square } from 'lucide-react';
 import { useProjects, useInvoices } from '../../hooks/useData';
+import { BulkActionsBar, useBulkSelection } from '../ui/BulkActions';
 import { toast } from 'sonner';
 
 type AnyRow = Record<string, unknown>;
@@ -72,6 +73,19 @@ export function Accounting() {
   const [fStatus, setFStatus]     = useState('draft');
   const [fDue, setFDue]           = useState('');
   const [fDesc, setFDesc]         = useState('');
+
+  const { selectedIds, toggle, clearSelection } = useBulkSelection();
+
+  async function handleBulkDelete(ids: string[]) {
+    if (!confirm(`Delete ${ids.length} item(s)?`)) return;
+    try {
+      await Promise.all(ids.map(id => deleteMut.mutateAsync(id)));
+      toast.success(`Deleted ${ids.length} item(s)`);
+      clearSelection();
+    } catch {
+      toast.error('Bulk delete failed');
+    }
+  }
 
   const { useList: useInvList, useCreate, useUpdate, useDelete } = useInvoices;
   const { useList: useProjList } = useProjects;
@@ -395,47 +409,64 @@ export function Accounting() {
       )}
 
       {tab==='invoices' && (
-        <div className="bg-gray-800 border border-gray-700 rounded-xl overflow-hidden">
-          {isLoading ? <div className="p-8 text-center text-gray-400">Loading…</div> : (
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead className="bg-gray-900 border-b border-gray-700">
-                  <tr>{['Invoice #','Client','Project','Amount','Status','Due',''].map(h=>(
-                    <th key={h} className="px-4 py-3 text-left text-xs font-semibold text-gray-400 uppercase tracking-wide">{h}</th>
-                  ))}</tr>
-                </thead>
-                <tbody className="divide-y divide-gray-700">
-                  {invoices.map(inv=>(
-                    <tr key={String(inv.id)} className="hover:bg-gray-900/40 transition-colors">
-                      <td className="px-4 py-3 font-mono text-xs text-blue-400 font-bold">{String(inv.number??inv.invoice_number??'—')}</td>
-                      <td className="px-4 py-3 text-white font-medium">{String(inv.client??'—')}</td>
-                      <td className="px-4 py-3 text-gray-400 max-w-[180px] truncate">{String(inv.project??'—')}</td>
-                      <td className="px-4 py-3 text-white font-bold">{fmt(Number(inv.amount??0))}</td>
-                      <td className="px-4 py-3">
-                        <span className={`text-xs px-2 py-1 rounded-full font-medium ${STATUS_COLOUR[String(inv.status??'')]??'bg-gray-700 text-gray-300'}`}>
-                          {String(inv.status??'')}
-                        </span>
-                      </td>
-                      <td className="px-4 py-3 text-gray-400 text-sm">{String(inv.dueDate??inv.due_date??'—')}</td>
-                      <td className="px-4 py-3">
-                        <div className="flex items-center gap-2">
-                          {inv.status!=='paid' && (
-                            <button type="button" onClick={()=>updateMut.mutate({id:String(inv.id),data:{status:'paid'}})}
-                              className="text-xs px-2 py-1 bg-green-900/40 hover:bg-green-800 text-green-400 rounded font-medium transition-colors">
-                              Mark Paid
-                            </button>
-                          )}
-                          <button type="button" onClick={()=>openEdit(inv)} className="p-1 text-gray-400 hover:text-white rounded"><Edit2 className="w-3.5 h-3.5"/></button>
-                          <button type="button" onClick={()=>{if(confirm('Delete?'))deleteMut.mutate(String(inv.id));}} className="p-1 text-gray-400 hover:text-red-400 rounded"><Trash2 className="w-3.5 h-3.5"/></button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
-        </div>
+        <>
+          <div className="bg-gray-800 border border-gray-700 rounded-xl overflow-hidden">
+            {isLoading ? <div className="p-8 text-center text-gray-400">Loading…</div> : (
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead className="bg-gray-900 border-b border-gray-700">
+                    <tr>{['Invoice #','Client','Project','Amount','Status','Due',''].map(h=>(
+                      <th key={h} className="px-4 py-3 text-left text-xs font-semibold text-gray-400 uppercase tracking-wide">{h}</th>
+                    ))}</tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-700">
+                    {invoices.map(inv=>{
+                      const isSelected = selectedIds.has(String(inv.id));
+                      return (
+                      <tr key={String(inv.id)} className="hover:bg-gray-900/40 transition-colors">
+                        <td className="px-4 py-3">
+                          <button type="button" onClick={e => { e.stopPropagation(); toggle(String(inv.id)); }}>
+                            {isSelected ? <CheckSquare size={16} className="text-blue-400"/> : <Square size={16} className="text-gray-500"/>}
+                          </button>
+                        </td>
+                        <td className="px-4 py-3 font-mono text-xs text-blue-400 font-bold">{String(inv.number??inv.invoice_number??'—')}</td>
+                        <td className="px-4 py-3 text-white font-medium">{String(inv.client??'—')}</td>
+                        <td className="px-4 py-3 text-gray-400 max-w-[180px] truncate">{String(inv.project??'—')}</td>
+                        <td className="px-4 py-3 text-white font-bold">{fmt(Number(inv.amount??0))}</td>
+                        <td className="px-4 py-3">
+                          <span className={`text-xs px-2 py-1 rounded-full font-medium ${STATUS_COLOUR[String(inv.status??'')]??'bg-gray-700 text-gray-300'}`}>
+                            {String(inv.status??'')}
+                          </span>
+                        </td>
+                        <td className="px-4 py-3 text-gray-400 text-sm">{String(inv.dueDate??inv.due_date??'—')}</td>
+                        <td className="px-4 py-3">
+                          <div className="flex items-center gap-2">
+                            {inv.status!=='paid' && (
+                              <button type="button" onClick={()=>updateMut.mutate({id:String(inv.id),data:{status:'paid'}})}
+                                className="text-xs px-2 py-1 bg-green-900/40 hover:bg-green-800 text-green-400 rounded font-medium transition-colors">
+                                Mark Paid
+                              </button>
+                            )}
+                            <button type="button" onClick={()=>openEdit(inv)} className="p-1 text-gray-400 hover:text-white rounded"><Edit2 className="w-3.5 h-3.5"/></button>
+                            <button type="button" onClick={()=>{if(confirm('Delete?'))deleteMut.mutate(String(inv.id));}} className="p-1 text-gray-400 hover:text-red-400 rounded"><Trash2 className="w-3.5 h-3.5"/></button>
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
+          <BulkActionsBar
+            selectedIds={Array.from(selectedIds)}
+            actions={[
+              { id: 'delete', label: 'Delete Selected', icon: Trash2, variant: 'danger', onClick: handleBulkDelete, confirm: 'This action cannot be undone.' },
+            ]}
+            onClearSelection={clearSelection}
+          />
+        </>
       )}
 
       {tab==='cash' && (

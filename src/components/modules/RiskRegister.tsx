@@ -1,8 +1,9 @@
 import { useState, useMemo } from 'react';
-import { AlertTriangle, Plus, Search, Shield, AlertOctagon, Edit2, Trash2, X, ChevronDown, ChevronUp, TrendingUp, BarChart3, Filter, Eye, CheckCircle2, Clock, Users, Target, Calendar } from 'lucide-react';
+import { AlertTriangle, Plus, Search, Shield, AlertOctagon, Edit2, Trash2, X, ChevronDown, ChevronUp, TrendingUp, BarChart3, Filter, Eye, CheckCircle2, Clock, Users, Target, Calendar, CheckSquare, Square } from 'lucide-react';
 import { useRiskRegister } from '../../hooks/useData';
 import { toast } from 'sonner';
 import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, Cell } from 'recharts';
+import { BulkActionsBar, useBulkSelection } from '../ui/BulkActions';
 
 type AnyRow = Record<string, unknown>;
 
@@ -64,6 +65,19 @@ export function RiskRegister() {
   const [form, setForm] = useState({ ...emptyForm });
   const [expanded, setExpanded] = useState<string | null>(null);
   const [selectedMatrixCell, setSelectedMatrixCell] = useState<{lik:string; imp:string} | null>(null);
+
+  const { selectedIds, toggle, clearSelection } = useBulkSelection();
+
+  async function handleBulkDelete(ids: string[]) {
+    if (!confirm(`Delete ${ids.length} risk(s)?`)) return;
+    try {
+      await Promise.all(ids.map(id => deleteMutation.mutateAsync(id)));
+      toast.success(`Deleted ${ids.length} risk(s)`);
+      clearSelection();
+    } catch {
+      toast.error('Bulk delete failed');
+    }
+  }
 
   const filtered = useMemo(() => {
     return risks.filter(r => {
@@ -464,6 +478,7 @@ export function RiskRegister() {
                   filtered.map(r => {
                     const id = String(r.id??'');
                     const isExp = expanded === id;
+                    const isSelected = selectedIds.has(id);
                     const score = riskScore(String(r.likelihood??''), String(r.impact??''));
                     const level = riskLevel(score);
                     const statusClass = statusColour[String(r.status??'Open')] || statusColour['Open'];
@@ -471,6 +486,9 @@ export function RiskRegister() {
                       <div key={id} className="bg-gray-800 border border-gray-700 rounded-xl overflow-hidden hover:border-gray-600 transition-colors">
                         <div className="p-4 cursor-pointer hover:bg-gray-750" onClick={()=>setExpanded(isExp?null:id)}>
                           <div className="flex items-start justify-between gap-3 mb-2">
+                            <button type="button" onClick={e => { e.stopPropagation(); toggle(id); }} className="mt-1 flex-shrink-0">
+                              {isSelected ? <CheckSquare size={16} className="text-blue-400"/> : <Square size={16} className="text-gray-500"/>}
+                            </button>
                             <div className="flex-1 min-w-0">
                               <p className="font-semibold text-white truncate">{String(r.title??'Untitled')}</p>
                               <div className="flex flex-wrap gap-2 mt-1 text-xs text-gray-400">
@@ -523,6 +541,13 @@ export function RiskRegister() {
                     );
                   })
                 )}
+                <BulkActionsBar
+                  selectedIds={Array.from(selectedIds)}
+                  actions={[
+                    { id: 'delete', label: 'Delete Selected', icon: Trash2, variant: 'danger', onClick: handleBulkDelete, confirm: 'This action cannot be undone.' },
+                  ]}
+                  onClearSelection={clearSelection}
+                />
               </div>
             )}
           </div>

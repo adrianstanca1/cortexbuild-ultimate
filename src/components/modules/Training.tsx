@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
-import { Plus, Search, GraduationCap, Award, Clock, AlertCircle, FileCheck, Upload, Trash2, X, Edit } from 'lucide-react';
+import { Plus, Search, GraduationCap, Award, Clock, AlertCircle, FileCheck, Upload, Trash2, X, Edit, CheckSquare, Square } from 'lucide-react';
 import { trainingApi, uploadFile } from '../../services/api';
+import { BulkActionsBar, useBulkSelection } from '../ui/BulkActions';
 import { toast } from 'sonner';
 
 export default function Training() {
@@ -15,6 +16,20 @@ export default function Training() {
   const [form, setForm] = useState({ title: '', provider: '', type: '', status: 'scheduled', scheduledDate: '', completedDate: '', certification: '' });
   const [editItem, setEditItem] = useState<Record<string, any> | null>(null);
   const [saving, setSaving] = useState(false);
+
+  const { selectedIds, toggle, clearSelection } = useBulkSelection();
+
+  async function handleBulkDelete(ids: string[]) {
+    if (!confirm(`Delete ${ids.length} item(s)?`)) return;
+    try {
+      await Promise.all(ids.map(id => trainingApi.delete(id)));
+      setTraining(prev => prev.filter((t: any) => !ids.includes(String(t.id))));
+      toast.success(`Deleted ${ids.length} item(s)`);
+      clearSelection();
+    } catch {
+      toast.error('Bulk delete failed');
+    }
+  }
 
   useEffect(() => {
     trainingApi.getAll().then((data: any[]) => {
@@ -132,8 +147,15 @@ export default function Training() {
           <div className="space-y-3">
             {filtered.length === 0 ? (
               <div className="text-center py-8 text-gray-500">No training records found</div>
-            ) : filtered.map((t) => (
+            ) : filtered.map((t) => {
+              const isSelected = selectedIds.has(String(t.id));
+              return (
               <div key={t.id} className="border border-gray-700 rounded-lg p-4 flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <button type="button" onClick={() => toggle(String(t.id))}>
+                    {isSelected ? <CheckSquare size={18} className="text-blue-400"/> : <Square size={18} className="text-gray-500"/>}
+                  </button>
+                </div>
                 <div>
                   <h3 className="text-white font-medium">{t.title || 'Training'}</h3>
                   <p className="text-gray-400 text-sm">{t.provider || 'Provider TBC'} - {t.type || 'General'}</p>
@@ -177,10 +199,19 @@ export default function Training() {
                   </button>
                 </div>
               </div>
-            ))}
+              );
+            })}
           </div>
         )}
       </div>
+
+      <BulkActionsBar
+        selectedIds={Array.from(selectedIds)}
+        actions={[
+          { id: 'delete', label: 'Delete Selected', icon: Trash2, variant: 'danger', onClick: handleBulkDelete, confirm: 'This action cannot be undone.' },
+        ]}
+        onClearSelection={clearSelection}
+      />
 
       {showCreateModal && (
         <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">

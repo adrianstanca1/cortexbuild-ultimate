@@ -1,7 +1,8 @@
 import { useState } from 'react';
-import { UserCheck, Plus, Search, Phone, Mail, MapPin, Star, Edit2, Trash2, X, ChevronDown, ChevronUp, Building2, TrendingUp, Users, MessageSquare, PhoneCall, Calendar, LogOut } from 'lucide-react';
+import { UserCheck, Plus, Search, Phone, Mail, MapPin, Star, Edit2, Trash2, X, ChevronDown, ChevronUp, Building2, TrendingUp, Users, MessageSquare, PhoneCall, Calendar, LogOut, CheckSquare, Square } from 'lucide-react';
 import { useContacts } from '../../hooks/useData';
 import { toast } from 'sonner';
+import { BulkActionsBar, useBulkSelection } from '../ui/BulkActions';
 
 type AnyRow = Record<string, unknown>;
 
@@ -97,6 +98,19 @@ export function CRM() {
   const [expanded, setExpanded] = useState<string | null>(null);
   const [showInteractionForm, setShowInteractionForm] = useState<string | null>(null);
   const [interactionForm, setInteractionForm] = useState({ type: 'call', note: '' });
+
+  const { selectedIds, toggle, clearSelection } = useBulkSelection();
+
+  async function handleBulkDelete(ids: string[]) {
+    if (!confirm(`Delete ${ids.length} contact(s)?`)) return;
+    try {
+      await Promise.all(ids.map(id => deleteMutation.mutateAsync(id)));
+      toast.success(`Deleted ${ids.length} contact(s)`);
+      clearSelection();
+    } catch {
+      toast.error('Bulk delete failed');
+    }
+  }
 
   const filtered = contacts.filter(c => {
     const name = String(c.name??'').toLowerCase();
@@ -275,6 +289,7 @@ export function CRM() {
               {filtered.map(c=>{
                 const id = String(c.id??'');
                 const isExp = expanded === id;
+                const isSelected = selectedIds.has(id);
                 const rating = Number(c.rating??0);
                 const daysSince = daysSinceContact(id);
                 const lastContactStatus = getLastContactStatus(daysSince);
@@ -284,6 +299,9 @@ export function CRM() {
                   <div key={id} className="bg-gray-800 border-gray-700 rounded-xl border hover:shadow-md hover:shadow-gray-900/50 transition-shadow">
                     <div className="p-4 cursor-pointer" onClick={()=>setExpanded(isExp?null:id)}>
                       <div className="flex items-start gap-3">
+                        <button type="button" onClick={e => { e.stopPropagation(); toggle(id); }} className="mt-1 flex-shrink-0">
+                          {isSelected ? <CheckSquare size={18} className="text-blue-400"/> : <Square size={18} className="text-gray-500"/>}
+                        </button>
                         <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-400 to-indigo-600 flex items-center justify-center text-white font-bold text-sm flex-shrink-0">
                           {String(c.name??'?').split(' ').map((n:string)=>n[0]).slice(0,2).join('')}
                         </div>
@@ -367,6 +385,13 @@ export function CRM() {
                   </div>
                 );
               })}
+              <BulkActionsBar
+                selectedIds={Array.from(selectedIds)}
+                actions={[
+                  { id: 'delete', label: 'Delete Selected', icon: Trash2, variant: 'danger', onClick: handleBulkDelete, confirm: 'This action cannot be undone.' },
+                ]}
+                onClearSelection={clearSelection}
+              />
             </div>
           )}
         </>

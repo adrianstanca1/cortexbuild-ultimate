@@ -1,7 +1,8 @@
 import { useState } from 'react';
-import { ClipboardCheck, Plus, Search, CheckCircle, XCircle, Clock, AlertTriangle, Edit2, Trash2, X, ChevronDown, ChevronUp } from 'lucide-react';
+import { ClipboardCheck, Plus, Search, CheckCircle, XCircle, Clock, AlertTriangle, Edit2, Trash2, X, ChevronDown, ChevronUp, CheckSquare, Square } from 'lucide-react';
 import { useInspections } from '../../hooks/useData';
 import { toast } from 'sonner';
+import { BulkActionsBar, useBulkSelection } from '../ui/BulkActions';
 
 type AnyRow = Record<string, unknown>;
 
@@ -115,6 +116,19 @@ export function Inspections() {
   const [form, setForm] = useState({ ...emptyForm });
   const [formChecklist, setFormChecklist] = useState<{item: string; result: 'pass'|'fail'|'na'; defect?: string}[]>([]);
   const [expanded, setExpanded] = useState<string | null>(null);
+
+  const { selectedIds, toggle, clearSelection } = useBulkSelection();
+
+  async function handleBulkDelete(ids: string[]) {
+    if (!confirm(`Delete ${ids.length} item(s)?`)) return;
+    try {
+      await Promise.all(ids.map(id => deleteMutation.mutateAsync(id)));
+      toast.success(`Deleted ${ids.length} item(s)`);
+      clearSelection();
+    } catch {
+      toast.error('Bulk delete failed');
+    }
+  }
 
   const today = new Date().toISOString().slice(0,10);
 
@@ -262,6 +276,7 @@ export function Inspections() {
               {filtered.length === 0 && <div className="text-center py-16 text-gray-500 bg-gray-800 rounded-xl border border-gray-700"><ClipboardCheck size={40} className="mx-auto mb-3 opacity-30"/><p>No inspections found</p></div>}
               {filtered.map(i => {
                 const id = String(i.id??'');
+                const isSelected = selectedIds.has(id);
                 const isExp = expanded === id;
                 const score = Number(i.overall_score??0);
                 const scoreColour = getScoreColour(score);
@@ -270,6 +285,9 @@ export function Inspections() {
                   <div key={id} className="bg-gray-800 border border-gray-700 rounded-xl overflow-hidden hover:border-gray-600 transition-colors">
                     <div className="p-4 cursor-pointer hover:bg-gray-750" onClick={()=>setExpanded(isExp?null:id)}>
                       <div className="flex items-start justify-between gap-4">
+                        <button type="button" onClick={e => { e.stopPropagation(); toggle(id); }}>
+                          {isSelected ? <CheckSquare size={16} className="text-blue-400"/> : <Square size={16} className="text-gray-500"/>}
+                        </button>
                         <div className="flex-1 min-w-0">
                           <p className="font-semibold text-white truncate">{String(i.title??'Untitled')}</p>
                           <p className="text-sm text-gray-400 mt-1">{String(i.inspection_type??'')} · {String(i.inspection_date??'—')} {i.inspector?`· ${i.inspector}`:''}</p>
@@ -317,6 +335,13 @@ export function Inspections() {
               })}
             </div>
           )}
+          <BulkActionsBar
+            selectedIds={Array.from(selectedIds)}
+            actions={[
+              { id: 'delete', label: 'Delete Selected', icon: Trash2, variant: 'danger', onClick: handleBulkDelete, confirm: 'This action cannot be undone.' },
+            ]}
+            onClearSelection={clearSelection}
+          />
         </>
       )}
 

@@ -2,8 +2,9 @@ import { useState } from 'react';
 import {
   ClipboardList, Plus, Search, CloudRain, Sun, Cloud, Wind, Users, Edit2,
   Trash2, X, ChevronDown, ChevronUp, Calendar, AlertTriangle, Download, FileText,
-  Camera, Brain, BarChart3, CheckCircle2, ThumbsUp, Eye
+  Camera, Brain, BarChart3, CheckCircle2, ThumbsUp, Eye, CheckSquare, Square
 } from 'lucide-react';
+import { BulkActionsBar, useBulkSelection } from '../ui/BulkActions';
 import { LineChart, Line, CartesianGrid, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
 import { useProjects, useDailyReports } from '../../hooks/useData';
 import { toast } from 'sonner';
@@ -70,6 +71,19 @@ export function DailyReports() {
   const [form, setForm] = useState({ ...emptyForm });
   const [expanded, setExpanded] = useState<string | null>(null);
   const [detailView, setDetailView] = useState<AnyRow | null>(null);
+
+  const { selectedIds, toggle, clearSelection } = useBulkSelection();
+
+  async function handleBulkDelete(ids: string[]) {
+    if (!confirm(`Delete ${ids.length} item(s)?`)) return;
+    try {
+      await Promise.all(ids.map(id => deleteMutation.mutateAsync(id)));
+      toast.success(`Deleted ${ids.length} item(s)`);
+      clearSelection();
+    } catch {
+      toast.error('Bulk delete failed');
+    }
+  }
 
   const today = new Date().toISOString().slice(0, 10);
 
@@ -371,6 +385,7 @@ export function DailyReports() {
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-600" />
             </div>
           ) : (
+            <>
             <div className="bg-gray-800 rounded-xl border border-gray-700 divide-y divide-gray-700">
               {filtered.length === 0 && (
                 <div className="text-center py-16 text-gray-500">
@@ -380,6 +395,7 @@ export function DailyReports() {
               )}
               {filtered.map(r => {
                 const id = String(r.id ?? '');
+                const isSelected = selectedIds.has(id);
                 const isExp = expanded === id;
                 const reportDate = String(r.report_date ?? '');
                 const isToday = reportDate === today;
@@ -390,6 +406,9 @@ export function DailyReports() {
                       className="flex items-center gap-4 p-4 hover:bg-gray-700/30 cursor-pointer transition-colors"
                       onClick={() => setExpanded(isExp ? null : id)}
                     >
+                      <button type="button" onClick={e => { e.stopPropagation(); toggle(id); }}>
+                        {isSelected ? <CheckSquare size={16} className="text-blue-400"/> : <Square size={16} className="text-gray-500"/>}
+                      </button>
                       <div className="w-24 flex-shrink-0 text-center">
                         <p className={`text-sm font-bold ${isToday ? 'text-orange-400' : 'text-white'}`}>{reportDate}</p>
                         {isToday && <p className="text-xs text-orange-400 mt-0.5">Today</p>}
@@ -424,6 +443,7 @@ export function DailyReports() {
                       <div className="flex items-center gap-1">
                         {r.status === 'Draft' && (
                           <button
+                            type="button"
                             onClick={e => {
                               e.stopPropagation();
                               submitReport(r);
@@ -435,6 +455,7 @@ export function DailyReports() {
                           </button>
                         )}
                         <button
+                          type="button"
                           onClick={e => {
                             e.stopPropagation();
                             setDetailView(r);
@@ -445,6 +466,7 @@ export function DailyReports() {
                           <FileText size={14} />
                         </button>
                         <button
+                          type="button"
                           onClick={e => {
                             e.stopPropagation();
                             openEdit(r);
@@ -454,6 +476,7 @@ export function DailyReports() {
                           <Edit2 size={14} />
                         </button>
                         <button
+                          type="button"
                           onClick={e => {
                             e.stopPropagation();
                             handleDelete(id);
@@ -507,6 +530,14 @@ export function DailyReports() {
                 );
               })}
             </div>
+            <BulkActionsBar
+              selectedIds={Array.from(selectedIds)}
+              actions={[
+                { id: 'delete', label: 'Delete Selected', icon: Trash2, variant: 'danger', onClick: handleBulkDelete, confirm: 'This action cannot be undone.' },
+              ]}
+              onClearSelection={clearSelection}
+            />
+            </>
           )}
         </>
       )}

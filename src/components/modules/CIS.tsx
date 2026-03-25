@@ -1,7 +1,8 @@
 import { useState } from 'react';
-import { Receipt, Plus, Search, PoundSterling, Calculator, CheckCircle, Clock, Edit2, Trash2, X, AlertCircle } from 'lucide-react';
+import { Receipt, Plus, Search, PoundSterling, Calculator, CheckCircle, Clock, Edit2, Trash2, X, AlertCircle, CheckSquare, Square } from 'lucide-react';
 import { useCIS } from '../../hooks/useData';
 import { toast } from 'sonner';
+import { BulkActionsBar, useBulkSelection } from '../ui/BulkActions';
 
 type AnyRow = Record<string, unknown>;
 
@@ -57,6 +58,19 @@ export function CIS() {
   const [calcGross, setCalcGross] = useState('');
   const [calcMaterials, setCalcMaterials] = useState('');
   const [calcRate, setCalcRate] = useState('20');
+
+  const { selectedIds, toggle, clearSelection } = useBulkSelection();
+
+  async function handleBulkDelete(ids: string[]) {
+    if (!confirm(`Delete ${ids.length} CIS return(s)?`)) return;
+    try {
+      await Promise.all(ids.map(id => deleteMutation.mutateAsync(id)));
+      toast.success(`Deleted ${ids.length} CIS return(s)`);
+      clearSelection();
+    } catch {
+      toast.error('Bulk delete failed');
+    }
+  }
 
   const filtered = returns.filter(r => {
     const name = String(r.subcontractor_name??'').toLowerCase();
@@ -219,8 +233,14 @@ export function CIS() {
                   {filtered.map(r=>{
                     const deduction = calcDeduction(r);
                     const net = calcNet(r);
+                    const isSelected = selectedIds.has(String(r.id));
                     return (
                       <tr key={String(r.id)} className="hover:bg-gray-900/40 transition-colors">
+                        <td className="px-4 py-3">
+                          <button type="button" onClick={e => { e.stopPropagation(); toggle(String(r.id)); }}>
+                            {isSelected ? <CheckSquare size={16} className="text-blue-400"/> : <Square size={16} className="text-gray-500"/>}
+                          </button>
+                        </td>
                         <td className="px-4 py-3 font-medium text-white">{String(r.subcontractor_name??'—')}</td>
                         <td className="px-4 py-3 text-gray-400 font-mono text-xs">{String(r.utr_number??'—')}</td>
                         <td className="px-4 py-3 text-gray-400">{String(r.tax_period??'—')}</td>
@@ -243,6 +263,13 @@ export function CIS() {
                 </tbody>
               </table>
               {filtered.length === 0 && <div className="text-center py-16 text-gray-500"><Receipt size={40} className="mx-auto mb-3 opacity-30"/><p>No CIS returns found</p></div>}
+              <BulkActionsBar
+                selectedIds={Array.from(selectedIds)}
+                actions={[
+                  { id: 'delete', label: 'Delete Selected', icon: Trash2, variant: 'danger', onClick: handleBulkDelete, confirm: 'This action cannot be undone.' },
+                ]}
+                onClearSelection={clearSelection}
+              />
             </div>
           )}
         </div>

@@ -3,10 +3,11 @@ import { useState, useMemo } from 'react';
 import {
   Plus, Edit2, Trash2, X, Truck, CheckCircle2, AlertTriangle,
   Clock, Package, Search, Filter, DollarSign, BarChart3, Building2,
-  Calendar, TrendingUp, Users, ChevronRight,
+  Calendar, TrendingUp, Users, ChevronRight, CheckSquare, Square,
 } from 'lucide-react';
 import { useProcurement, useProjects } from '../../hooks/useData';
 import { toast } from 'sonner';
+import { BulkActionsBar, useBulkSelection } from '../ui/BulkActions';
 import {
   BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid,
   Tooltip, Legend, ResponsiveContainer, PieChart, Cell,
@@ -90,6 +91,19 @@ export function Procurement() {
   const createMut = useCreate();
   const updateMut = useUpdate();
   const deleteMut = useDelete();
+
+  const { selectedIds, toggle, clearSelection } = useBulkSelection();
+
+  async function handleBulkDelete(ids: string[]) {
+    if (!confirm(`Delete ${ids.length} item(s)?`)) return;
+    try {
+      await Promise.all(ids.map(id => deleteMut.mutateAsync(id)));
+      toast.success(`Deleted ${ids.length} item(s)`);
+      clearSelection();
+    } catch {
+      toast.error('Bulk delete failed');
+    }
+  }
 
   const SUBTAB_STATUSES: Record<string, string[]> = {
     pending:  ['pending_approval'],
@@ -383,11 +397,18 @@ export function Procurement() {
                   </thead>
                   <tbody className="divide-y divide-gray-800">
                     {filtered.map(po=>{
+                      const id = String(po.id);
+                      const isSelected = selectedIds.has(id);
                       const StatusIcon = STATUS_ICON[String(po.status??'')] ?? Package;
                       const delDate = String(po.delivery_date ?? po.deliveryDate ?? '');
                       const urgency = getUrgency(delDate);
                       return (
-                        <tr key={String(po.id)} className="hover:bg-gray-800/40 transition-colors cursor-pointer" onClick={()=>openDetail(po)}>
+                        <tr key={id} className="hover:bg-gray-800/40 transition-colors cursor-pointer" onClick={()=>openDetail(po)}>
+                          <td className="px-4 py-3">
+                            <button type="button" onClick={e => { e.stopPropagation(); toggle(id); }}>
+                              {isSelected ? <CheckSquare size={16} className="text-blue-400"/> : <Square size={16} className="text-gray-500"/>}
+                            </button>
+                          </td>
                           <td className="px-4 py-3 font-mono text-xs text-blue-400 font-bold">{String(po.po_number??'—')}</td>
                           <td className="px-4 py-3 text-white font-medium">{String(po.supplier??'—')}</td>
                           <td className="px-4 py-3 text-gray-300 max-w-[180px] truncate text-sm">{String(po.description??'—')}</td>
@@ -426,6 +447,13 @@ export function Procurement() {
                 </table>
               </div>
             )}
+            <BulkActionsBar
+              selectedIds={Array.from(selectedIds)}
+              actions={[
+                { id: 'delete', label: 'Delete Selected', icon: Trash2, variant: 'danger', onClick: handleBulkDelete, confirm: 'This action cannot be undone.' },
+              ]}
+              onClearSelection={clearSelection}
+            />
           </div>
         </div>
       )}

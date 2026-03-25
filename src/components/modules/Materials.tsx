@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { Package, Plus, Search, Truck, BarChart3, AlertTriangle, CheckCircle2, Clock, Edit2, Trash2, X, ChevronRight, DollarSign, TrendingUp, Filter } from 'lucide-react';
+import { Package, Plus, Search, Truck, BarChart3, AlertTriangle, CheckCircle2, Clock, Edit2, Trash2, X, ChevronRight, DollarSign, TrendingUp, Filter, CheckSquare, Square } from 'lucide-react';
+import { BulkActionsBar, useBulkSelection } from '../ui/BulkActions';
 import { BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { useMaterials } from '../../hooks/useData';
 import { toast } from 'sonner';
@@ -40,6 +41,19 @@ export function Materials() {
   const [editing, setEditing] = useState<AnyRow | null>(null);
   const [selectedDetail, setSelectedDetail] = useState<AnyRow | null>(null);
   const [form, setForm] = useState({ ...emptyForm });
+
+  const { selectedIds, toggle, clearSelection } = useBulkSelection();
+
+  async function handleBulkDelete(ids: string[]) {
+    if (!confirm(`Delete ${ids.length} material(s)?`)) return;
+    try {
+      await Promise.all(ids.map(id => deleteMutation.mutateAsync(id)));
+      toast.success(`Deleted ${ids.length} material(s)`);
+      clearSelection();
+    } catch {
+      toast.error('Bulk delete failed');
+    }
+  }
 
   // Filtered materials for register tab
   const registerFiltered = materials.filter(m => {
@@ -276,6 +290,8 @@ export function Materials() {
                 </thead>
                 <tbody className="divide-y divide-gray-700">
                   {registerFiltered.map(m=>{
+                    const id = String(m.id);
+                    const isSelected = selectedIds.has(id);
                     const total = Number(m.quantity??0)*Number(m.unit_cost??0);
                     const isOverdue = m.delivery_date && !['Delivered','On Site','Used','Returned'].includes(String(m.status??'')) && new Date(String(m.delivery_date))<new Date();
                     return (
@@ -284,6 +300,11 @@ export function Materials() {
                         onClick={()=>openDetail(m)}
                         className="hover:bg-gray-700/50 cursor-pointer transition-colors"
                       >
+                        <td className="px-4 py-3">
+                          <button type="button" onClick={e => { e.stopPropagation(); toggle(id); }}>
+                            {isSelected ? <CheckSquare size={16} className="text-blue-400"/> : <Square size={16} className="text-gray-500"/>}
+                          </button>
+                        </td>
                         <td className="px-4 py-3 font-medium text-gray-100">{String(m.name??'—')}</td>
                         <td className="px-4 py-3 text-gray-400 text-sm">{String(m.category??'—')}</td>
                         <td className="px-4 py-3 text-gray-400 text-sm">{String(m.project_id??'—')}</td>
@@ -306,11 +327,18 @@ export function Materials() {
                           </div>
                         </td>
                       </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-              {registerFiltered.length === 0 && (
+                  );
+                })}
+              </tbody>
+            </table>
+            <BulkActionsBar
+              selectedIds={Array.from(selectedIds)}
+              actions={[
+                { id: 'delete', label: 'Delete Selected', icon: Trash2, variant: 'danger', onClick: handleBulkDelete, confirm: 'This action cannot be undone.' },
+              ]}
+              onClearSelection={clearSelection}
+            />
+            {registerFiltered.length === 0 && (
                 <div className="text-center py-16 text-gray-400">
                   <Package size={40} className="mx-auto mb-3 opacity-30"/>
                   <p>No materials found</p>

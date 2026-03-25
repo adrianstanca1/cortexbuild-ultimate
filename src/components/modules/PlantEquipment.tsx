@@ -2,10 +2,11 @@ import { useState, useMemo } from 'react';
 import {
   Truck, Plus, Search, Wrench, AlertTriangle, CheckCircle2, Clock, Edit2, Trash2, X,
   ChevronDown, ChevronUp, Calendar, DollarSign, Filter, MapPin, Tag, Activity, Settings,
-  RefreshCw, BarChart3, ChevronRight
+  RefreshCw, BarChart3, ChevronRight, CheckSquare, Square
 } from 'lucide-react';
 import { useEquipment } from '../../hooks/useData';
 import { toast } from 'sonner';
+import { BulkActionsBar, useBulkSelection } from '../ui/BulkActions';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 
 type AnyRow = Record<string, unknown>;
@@ -79,6 +80,19 @@ export function PlantEquipment() {
   const [equipmentForm, setEquipmentForm] = useState(emptyEquipmentForm);
   const [serviceForm, setServiceForm] = useState(emptyServiceForm);
   const [hireForm, setHireForm] = useState(emptyHireForm);
+
+  const { selectedIds, toggle, clearSelection } = useBulkSelection();
+
+  async function handleBulkDelete(ids: string[]) {
+    if (!confirm(`Delete ${ids.length} item(s)?`)) return;
+    try {
+      await Promise.all(ids.map(id => deleteMutation.mutateAsync(id)));
+      toast.success(`Deleted ${ids.length} item(s)`);
+      clearSelection();
+    } catch {
+      toast.error('Bulk delete failed');
+    }
+  }
 
   // Filter fleet by status and search
   const filteredFleet = useMemo(() => {
@@ -312,16 +326,22 @@ export function PlantEquipment() {
               <p className="text-sm text-gray-500 mt-1">Try adjusting filters or add new equipment</p>
             </div>
           ) : (
+            <>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {filteredFleet.map((e) => {
+                const id = String(e.id ?? '');
+                const isSelected = selectedIds.has(id);
                 const statusColor = statusColors[String(e.status ?? 'Available')] || statusColors['Available'];
                 return (
                   <div
-                    key={String(e.id ?? '')}
+                    key={id}
                     className="bg-gray-800 rounded-lg border border-gray-700 p-4 hover:border-gray-600 transition-colors cursor-pointer"
                     onClick={() => handleDetailClick(e)}
                   >
                     <div className="flex items-start justify-between mb-3">
+                      <button type="button" onClick={ev => { ev.stopPropagation(); toggle(id); }}>
+                        {isSelected ? <CheckSquare size={16} className="text-blue-400"/> : <Square size={16} className="text-gray-500"/>}
+                      </button>
                       <div className="flex-1">
                         <h3 className="font-semibold text-gray-100 text-sm">{String(e.name ?? 'Unknown')}</h3>
                         <p className="text-xs text-gray-400 mt-0.5">{String(e.type ?? '')}</p>
@@ -380,6 +400,14 @@ export function PlantEquipment() {
                 );
               })}
             </div>
+            <BulkActionsBar
+              selectedIds={Array.from(selectedIds)}
+              actions={[
+                { id: 'delete', label: 'Delete Selected', icon: Trash2, variant: 'danger', onClick: handleBulkDelete, confirm: 'This action cannot be undone.' },
+              ]}
+              onClearSelection={clearSelection}
+            />
+            </>
           )}
         </div>
       )}

@@ -1,10 +1,12 @@
 import { useState, useEffect, useRef } from 'react';
-import { valuationsApi, uploadFile } from '../../services/api';
 import {
   FileText, Plus, Search, Filter, Download, Clock, AlertCircle,
   CheckCircle, XCircle, DollarSign, Building2, User, Calendar,
-  FileCheck, Eye, Edit, X, Percent, CreditCard, Receipt, Trash2
+  FileCheck, Eye, Edit, X, Percent, CreditCard, Receipt, Trash2,
+  CheckSquare, Square
 } from 'lucide-react';
+import { valuationsApi, uploadFile } from '../../services/api';
+import { BulkActionsBar, useBulkSelection } from '../ui/BulkActions';
 
 interface Valuation {
   id: string;
@@ -155,6 +157,19 @@ export default function Valuations() {
   const [editItem, setEditItem] = useState<Record<string, any> | null>(null);
   const [saving, setSaving] = useState(false);
   const [form, setForm] = useState({ project: '', contractor: '', grossValue: '', retention: '', periodStart: '', periodEnd: '' });
+
+  const { selectedIds, toggle, clearSelection } = useBulkSelection();
+
+  async function handleBulkDelete(ids: string[]) {
+    if (!confirm(`Delete ${ids.length} item(s)?`)) return;
+    try {
+      await Promise.all(ids.map(id => valuationsApi.delete(id)));
+      setValuations(prev => prev.filter(v => !ids.includes(String(v.id))));
+      clearSelection();
+    } catch {
+      console.error('Bulk delete failed');
+    }
+  }
 
   useEffect(() => {
     valuationsApi.getAll()
@@ -361,6 +376,7 @@ export default function Valuations() {
           <table className="w-full">
             <thead>
               <tr className="text-left text-gray-400 text-xs uppercase tracking-wider border-b border-gray-700">
+                <th className="pb-3 w-10"></th>
                 <th className="pb-3">Ref</th>
                 <th className="pb-3">Project</th>
                 <th className="pb-3">Contractor</th>
@@ -374,8 +390,18 @@ export default function Valuations() {
             <tbody className="text-white">
               {filteredValuations.map((val) => {
                 const status = statusConfig[val.status];
+                const isSelected = selectedIds.has(String(val.id));
                 return (
-                  <tr key={val.id} className="border-b border-gray-700/50 hover:bg-gray-800/50">
+                  <tr key={val.id} className={`border-b border-gray-700/50 hover:bg-gray-800/50 ${isSelected ? 'bg-blue-900/20' : ''}`}>
+                    <td className="py-3">
+                      <button
+                        type="button"
+                        onClick={() => toggle(String(val.id))}
+                        className="text-gray-400 hover:text-white"
+                      >
+                        {isSelected ? <CheckSquare size={16} className="text-blue-400"/> : <Square size={16} className="text-gray-500"/>}
+                      </button>
+                    </td>
                     <td className="py-3 font-mono text-orange-400">{val.ref}</td>
                     <td className="py-3">{val.project}</td>
                     <td className="py-3 text-gray-300">{val.contractor}</td>
@@ -445,6 +471,13 @@ export default function Valuations() {
             </tbody>
           </table>
         </div>
+        <BulkActionsBar
+          selectedIds={Array.from(selectedIds)}
+          actions={[
+            { id: 'delete', label: 'Delete Selected', icon: Trash2, variant: 'danger' as const, onClick: handleBulkDelete, confirm: 'This action cannot be undone.' },
+          ]}
+          onClearSelection={clearSelection}
+        />
       </div>
 
       {showCreateModal && (

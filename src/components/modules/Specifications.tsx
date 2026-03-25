@@ -1,9 +1,11 @@
 import { useState, useEffect } from 'react';
 import {
   FileText, Plus, Search, Filter, Download, Clock, BookOpen,
-  CheckCircle, AlertTriangle, FileCheck, Eye, Edit, X, Building2, Upload, Trash2
+  CheckCircle, AlertTriangle, FileCheck, Eye, Edit, X, Building2, Upload, Trash2,
+  CheckSquare, Square
 } from 'lucide-react';
 import { specificationsApi, uploadFile } from '../../services/api';
+import { BulkActionsBar, useBulkSelection } from '../ui/BulkActions';
 
 interface Specification {
   id: string;
@@ -31,6 +33,19 @@ export default function Specifications() {
   const [form, setForm] = useState({ title: '', project: '', section: '', discipline: '', description: '' });
   const [editItem, setEditItem] = useState<Record<string, any> | null>(null);
   const [saving, setSaving] = useState(false);
+
+  const { selectedIds, toggle, clearSelection } = useBulkSelection();
+
+  async function handleBulkDelete(ids: string[]) {
+    if (!confirm(`Delete ${ids.length} item(s)?`)) return;
+    try {
+      await Promise.all(ids.map(id => specificationsApi.delete(id)));
+      setSpecifications(prev => prev.filter(s => !ids.includes(String(s.id))));
+      clearSelection();
+    } catch {
+      console.error('Bulk delete failed');
+    }
+  }
 
   useEffect(() => {
     async function loadSpecifications() {
@@ -180,17 +195,27 @@ export default function Specifications() {
         <div className="space-y-3">
           {filtered.map((spec) => {
             const status = statusConfig[spec.status] || statusConfig.draft;
+            const isSelected = selectedIds.has(String(spec.id));
             return (
-              <div key={spec.id} className="border border-gray-700 rounded-lg p-4 hover:border-orange-500/50 transition-colors">
+              <div key={spec.id} className={`border border-gray-700 rounded-lg p-4 hover:border-orange-500/50 transition-colors ${isSelected ? 'border-blue-500/50 bg-blue-900/10' : ''}`}>
                 <div className="flex items-start justify-between">
-                  <div>
-                    <div className="flex items-center gap-2 mb-1">
-                      <span className="font-mono text-sm text-orange-400">{spec.ref || `SPEC-${spec.id}`}</span>
-                      <span className={`px-2 py-0.5 rounded text-xs ${status.bg} ${status.color}`}>{status.label}</span>
-                      <span className="px-2 py-0.5 rounded text-xs bg-gray-500/10 text-gray-400">v{spec.version || '1.0'}</span>
+                  <div className="flex items-start gap-3">
+                    <button
+                      type="button"
+                      onClick={() => toggle(String(spec.id))}
+                      className="text-gray-400 hover:text-white mt-1"
+                    >
+                      {isSelected ? <CheckSquare size={16} className="text-blue-400"/> : <Square size={16} className="text-gray-500"/>}
+                    </button>
+                    <div>
+                      <div className="flex items-center gap-2 mb-1">
+                        <span className="font-mono text-sm text-orange-400">{spec.ref || `SPEC-${spec.id}`}</span>
+                        <span className={`px-2 py-0.5 rounded text-xs ${status.bg} ${status.color}`}>{status.label}</span>
+                        <span className="px-2 py-0.5 rounded text-xs bg-gray-500/10 text-gray-400">v{spec.version || '1.0'}</span>
+                      </div>
+                      <h3 className="text-white font-medium">{spec.title || 'Specification'}</h3>
+                      <p className="text-gray-400 text-sm mt-1">{spec.project || 'No project'}</p>
                     </div>
-                    <h3 className="text-white font-medium">{spec.title || 'Specification'}</h3>
-                    <p className="text-gray-400 text-sm mt-1">{spec.project || 'No project'}</p>
                   </div>
                   <div className="flex gap-2">
                     <button type="button" className="p-2 hover:bg-gray-700 rounded text-gray-400 hover:text-white"><Eye size={16} /></button>
@@ -253,6 +278,13 @@ export default function Specifications() {
             );
           })}
         </div>
+        <BulkActionsBar
+          selectedIds={Array.from(selectedIds)}
+          actions={[
+            { id: 'delete', label: 'Delete Selected', icon: Trash2, variant: 'danger' as const, onClick: handleBulkDelete, confirm: 'This action cannot be undone.' },
+          ]}
+          onClearSelection={clearSelection}
+        />
       </div>
 
       {showCreateModal && (

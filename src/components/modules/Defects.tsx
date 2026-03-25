@@ -1,10 +1,12 @@
 import { useState, useEffect, useRef } from 'react';
-import { defectsApi, uploadFile } from '../../services/api';
 import {
   AlertTriangle, Plus, Search, Filter, Download, Clock, AlertCircle,
   CheckCircle, XCircle, ArrowRight, Calendar, Building2, User,
-  FileText, Eye, Edit, Trash2, X, Wrench, MapPin, Camera, MessageSquare
+  FileText, Eye, Edit, Trash2, X, Wrench, MapPin, Camera, MessageSquare,
+  CheckSquare, Square
 } from 'lucide-react';
+import { defectsApi, uploadFile } from '../../services/api';
+import { BulkActionsBar, useBulkSelection } from '../ui/BulkActions';
 
 interface Defect {
   id: string;
@@ -200,6 +202,19 @@ export default function Defects() {
     title: '', project: '', location: '', trade: '', priority: 'medium', status: 'identified',
     description: '', identifiedBy: '', assignedTo: '', targetDate: ''
   });
+
+  const { selectedIds, toggle, clearSelection } = useBulkSelection();
+
+  async function handleBulkDelete(ids: string[]) {
+    if (!confirm(`Delete ${ids.length} item(s)?`)) return;
+    try {
+      await Promise.all(ids.map(id => defectsApi.delete(id)));
+      setDefects(prev => prev.filter(d => !ids.includes(String(d.id))));
+      clearSelection();
+    } catch {
+      console.error('Bulk delete failed');
+    }
+  }
 
   useEffect(() => {
     const fetchDefects = async () => {
@@ -440,11 +455,12 @@ export default function Defects() {
             const priority = priorityConfig[defect.priority];
             const StatusIcon = status.icon;
             const isExpanded = expandedCards.includes(defect.id);
+            const isSelected = selectedIds.has(String(defect.id));
 
             return (
               <div
                 key={defect.id}
-                className="border border-gray-700 rounded-lg overflow-hidden hover:border-orange-500/50 transition-colors"
+                className={`border border-gray-700 rounded-lg overflow-hidden hover:border-orange-500/50 transition-colors ${isSelected ? 'border-blue-500/50 bg-blue-900/10' : ''}`}
               >
                 <div
                   className="flex items-center justify-between p-4 cursor-pointer bg-gray-800/50 hover:bg-gray-800"
@@ -460,6 +476,13 @@ export default function Defects() {
                       className="text-gray-400 hover:text-white"
                     >
                       {isExpanded ? '▼' : '▶'}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={(e) => { e.stopPropagation(); toggle(String(defect.id)); }}
+                      className="text-gray-400 hover:text-white"
+                    >
+                      {isSelected ? <CheckSquare size={16} className="text-blue-400"/> : <Square size={16} className="text-gray-500"/>}
                     </button>
                     <div>
                       <div className="flex items-center gap-2">
@@ -613,6 +636,13 @@ export default function Defects() {
             );
           })}
         </div>
+        <BulkActionsBar
+          selectedIds={Array.from(selectedIds)}
+          actions={[
+            { id: 'delete', label: 'Delete Selected', icon: Trash2, variant: 'danger' as const, onClick: handleBulkDelete, confirm: 'This action cannot be undone.' },
+          ]}
+          onClearSelection={clearSelection}
+        />
       </div>
 
       {showCreateModal && (

@@ -1,8 +1,9 @@
 import { useState, useMemo } from 'react';
 import {
   Calendar, Plus, Search, Clock, CheckCircle2, Users, MapPin, Edit2, Trash2, X,
-  ChevronDown, ChevronUp, Video, Filter, AlertCircle, FileText, MoreVertical, Building2, ChevronRight
+  ChevronDown, ChevronUp, Video, Filter, AlertCircle, FileText, MoreVertical, Building2, ChevronRight, CheckSquare, Square
 } from 'lucide-react';
+import { BulkActionsBar, useBulkSelection } from '../ui/BulkActions';
 import { useMeetings } from '../../hooks/useData';
 import { toast } from 'sonner';
 
@@ -53,6 +54,19 @@ export function Meetings() {
   const [form, setForm] = useState({ ...emptyForm });
   const [actionFilter, setActionFilter] = useState('Open');
   const [calendarMonth, setCalendarMonth] = useState(new Date());
+
+  const { selectedIds, toggle, clearSelection } = useBulkSelection();
+
+  async function handleBulkDelete(ids: string[]) {
+    if (!confirm(`Delete ${ids.length} meeting(s)?`)) return;
+    try {
+      await Promise.all(ids.map(id => deleteMutation.mutateAsync(id)));
+      toast.success(`Deleted ${ids.length} meeting(s)`);
+      clearSelection();
+    } catch {
+      toast.error('Bulk delete failed');
+    }
+  }
 
   const today = new Date().toISOString().slice(0,10);
 
@@ -254,6 +268,7 @@ export function Meetings() {
             <div className="grid gap-4">
               {filteredMeetings.map(m => {
                 const id = String(m.id??'');
+                const isSelected = selectedIds.has(id);
                 const isToday = String(m.date??'') === today;
                 const attendeeCount = String(m.attendees??'').split(',').filter(a=>a.trim()).length;
                 const agendaCount = String(m.agenda??'').split('\n').filter(a=>a.trim()).length;
@@ -262,6 +277,9 @@ export function Meetings() {
                 return (
                   <div key={id} className="bg-gray-800 rounded-xl border border-gray-700 p-4 hover:border-gray-600 transition-colors cursor-pointer" onClick={()=>openDetail(m)}>
                     <div className="flex items-start justify-between gap-4">
+                      <button type="button" onClick={e => { e.stopPropagation(); toggle(id); }}>
+                        {isSelected ? <CheckSquare size={16} className="text-blue-400"/> : <Square size={16} className="text-gray-500"/>}
+                      </button>
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 mb-2">
                           <h3 className="font-semibold text-gray-100 truncate">{String(m.title??'Untitled')}</h3>
@@ -294,6 +312,13 @@ export function Meetings() {
                   </div>
                 );
               })}
+              <BulkActionsBar
+                selectedIds={Array.from(selectedIds)}
+                actions={[
+                  { id: 'delete', label: 'Delete Selected', icon: Trash2, variant: 'danger', onClick: handleBulkDelete, confirm: 'This action cannot be undone.' },
+                ]}
+                onClearSelection={clearSelection}
+              />
             </div>
           )}
         </div>
