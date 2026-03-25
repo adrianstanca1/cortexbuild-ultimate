@@ -1,8 +1,10 @@
 import { useState } from 'react';
-import { Users, Plus, Search, Phone, Mail, Briefcase, Edit2, Trash2, X, ChevronDown, ChevronUp, Shield, Clock, Award, AlertTriangle, PoundSterling, MapPin, CheckCircle2, AlertCircle, Calendar, Upload } from 'lucide-react';
+import { Users, Plus, Search, Phone, Mail, Briefcase, Edit2, Trash2, X, ChevronDown, ChevronUp, Shield, Clock, Award, AlertTriangle, PoundSterling, MapPin, CheckCircle2, AlertCircle, Calendar, Upload, CheckSquare, Square, Download, FileSpreadsheet } from 'lucide-react';
 import { useTeam } from '../../hooks/useData';
 import { uploadFile } from '../../services/api';
 import { toast } from 'sonner';
+import { BulkActionsBar, useBulkSelection } from '../ui/BulkActions';
+import { DataImporter, ExportButton } from '../ui/DataImportExport';
 
 type AnyRow = Record<string, unknown>;
 
@@ -65,6 +67,30 @@ export function Teams() {
   const [form, setForm] = useState({ ...emptyForm });
   const [expanded, setExpanded] = useState<string | null>(null);
   const [uploadingCscs, setUploadingCscs] = useState<string | null>(null);
+  const [showBulkImport, setShowBulkImport] = useState(false);
+  const { selectedIds, toggle, toggleAll, clearSelection, isAllSelected } = useBulkSelection();
+
+  const selectedCount = selectedIds.size;
+
+  async function handleBulkDelete(ids: string[]) {
+    if (!confirm(`Delete ${ids.length} team member(s)?`)) return;
+    try {
+      await Promise.all(ids.map(id => deleteMutation.mutateAsync(id)));
+      toast.success(`Deleted ${ids.length} member(s)`);
+      clearSelection();
+    } catch {
+      toast.error('Bulk delete failed');
+    }
+  }
+
+  async function handleBulkImport(data: Record<string, unknown>[], mapping: any[]) {
+    for (const row of data) {
+      const mapped: Record<string, unknown> = {};
+      mapping.forEach(m => { if (m.target) mapped[m.target] = row[m.source]; });
+      try { await createMutation.mutateAsync(mapped as any); } catch { /* skip failed rows */ }
+    }
+    toast.success(`Imported ${data.length} members`);
+  }
 
   const filtered = members.filter(m => {
     const name = String(m.name ?? '').toLowerCase();
@@ -153,6 +179,7 @@ export function Teams() {
   function MemberRow({ m }: { m: AnyRow }) {
     const id = String(m.id??'');
     const isExp = expanded === id;
+    const isSelected = selectedIds.has(id);
     const expiring = (() => {
       if (!m.cscs_expiry) return false;
       const d = (new Date(String(m.cscs_expiry)).getTime() - Date.now()) / 86400000;
@@ -163,8 +190,15 @@ export function Teams() {
       return new Date(String(m.cscs_expiry)).getTime() < Date.now();
     })();
     return (
-      <div>
-        <div className="flex items-center gap-4 p-4 hover:bg-gray-800 cursor-pointer border-b border-gray-700" onClick={()=>setExpanded(isExp?null:id)}>
+      <>
+        <div className={`flex items-center gap-4 p-4 hover:bg-gray-800 cursor-pointer border-b border-gray-700 ${isSelected ? 'bg-blue-900/20' : ''}`} onClick={()=>setExpanded(isExp?null:id)}>
+          <button
+            type="button"
+            onClick={e => { e.stopPropagation(); toggle(id); }}
+            className="flex-shrink-0 p-1"
+          >
+            {isSelected ? <CheckSquare size={16} className="text-blue-400"/> : <Square size={16} className="text-gray-500"/>}
+          </button>
           <div className="w-10 h-10 rounded-full bg-gradient-to-br from-orange-400 to-orange-600 flex items-center justify-center text-white font-bold text-sm flex-shrink-0">
             {String(m.name??'?').split(' ').map((n:string)=>n[0]).slice(0,2).join('')}
           </div>
@@ -196,7 +230,7 @@ export function Teams() {
             {!!m.notes && <div className="col-span-2 md:col-span-4"><p className="text-xs text-gray-400 mb-1">Notes</p><p className="text-gray-300">{String(m.notes)}</p></div>}
           </div>
         )}
-      </div>
+      </>
     );
   }
 
@@ -208,9 +242,15 @@ export function Teams() {
           <h1 className="text-3xl font-bold text-white">Team Management</h1>
           <p className="text-sm text-gray-400 mt-1">Site workforce & personnel records</p>
         </div>
-        <button type="button" onClick={openCreate} className="flex items-center gap-2 px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 text-sm font-medium">
-          <Plus size={16}/><span>Add Member</span>
-        </button>
+        <div className="flex items-center gap-2">
+          <button type="button" onClick={() => setShowBulkImport(true)} className="flex items-center gap-2 px-3 py-2 bg-gray-700 text-white rounded-lg hover:bg-gray-600 text-sm font-medium">
+            <Download size={16}/><span>Import</span>
+          </button>
+          <ExportButton data={members} filename="team-members" />
+          <button type="button" onClick={openCreate} className="flex items-center gap-2 px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 text-sm font-medium">
+            <Plus size={16}/><span>Add Member</span>
+          </button>
+        </div>
       </div>
 
       {/* Labour Cost KPI Strip */}
@@ -282,6 +322,32 @@ export function Teams() {
               )}
             </div>
           )}
+        </div>
+      )}
+
+      <BulkActionsBar
+        selectedIds={Array.from(selectedIds)}
+        actions={[
+          { id: 'delete', label: 'Delete Selected', icon: Trash2, variant: 'danger', onClick: handleBulkDelete, confirm: `Delete ${selectedCount} member(s)?` },
+        ]}
+        onClearSelection={clearSelection}
+      />
+
+      {showBulkImport && (
+        <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
+          <div className="bg-gray-900 rounded-2xl shadow-2xl w-full max-w-xl border border-gray-700">
+            <div className="flex items-center justify-between p-6 border-b border-gray-700">
+              <h2 className="text-lg font-semibold text-white">Import Team Members</h2>
+              <button type="button" onClick={() => setShowBulkImport(false)} className="p-2 hover:bg-gray-800 rounded-lg"><X size={18} className="text-gray-400"/></button>
+            </div>
+            <div className="p-6">
+              <DataImporter
+                onImport={handleBulkImport}
+                format="csv"
+                exampleData={{ name: '', role: '', trade_type: '', email: '', phone: '', daily_rate: '', cscs_card: '', cscs_type: 'Gold', status: 'Active', notes: '' }}
+              />
+            </div>
+          </div>
         </div>
       )}
 

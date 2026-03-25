@@ -1,11 +1,12 @@
 import { useState } from 'react';
 import {
   FileText, Plus, Search, Download, Eye, Edit2, Trash2, X, ChevronDown, ChevronUp, ChevronRight, Clock, Upload,
-  Shield, FileCheck, Image, FolderOpen, CheckCircle2, BarChart3, Activity, Calendar, HardDrive
+  Shield, FileCheck, Image, FolderOpen, CheckCircle2, BarChart3, Activity, Calendar, HardDrive, CheckSquare, Square
 } from 'lucide-react';
 import { useDocuments } from '../../hooks/useData';
 import { uploadFile } from '../../services/api';
 import { toast } from 'sonner';
+import { BulkActionsBar, useBulkSelection } from '../ui/BulkActions';
 
 type AnyRow = Record<string, unknown>;
 
@@ -90,6 +91,29 @@ export function Documents() {
   const [selectedCategoryTab, setSelectedCategoryTab] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
   const [uploadCategory, setUploadCategory] = useState<string>('PLANS');
+
+  const { selectedIds, toggle, clearSelection } = useBulkSelection();
+
+  async function handleBulkDelete(ids: string[]) {
+    if (!confirm(`Delete ${ids.length} document(s)?`)) return;
+    try {
+      await Promise.all(ids.map(id => deleteMutation.mutateAsync(id)));
+      toast.success(`Deleted ${ids.length} document(s)`);
+      clearSelection();
+    } catch {
+      toast.error('Bulk delete failed');
+    }
+  }
+
+  async function handleBulkUpdateStatus(ids: string[], status: string) {
+    try {
+      await Promise.all(ids.map(id => updateMutation.mutateAsync({ id, data: { status } })));
+      toast.success(`Updated ${ids.length} document(s) to ${status}`);
+      clearSelection();
+    } catch {
+      toast.error('Bulk update failed');
+    }
+  }
 
   const filtered = docs.filter(d => {
     const matchSearch = d.name.toLowerCase().includes(search.toLowerCase());
@@ -317,18 +341,31 @@ export function Documents() {
               <table className="w-full">
                 <thead className="bg-gray-900 border-b border-gray-700">
                   <tr>
+                    <th className="w-12 px-4 py-3">
+                      <button type="button" onClick={() => selectedIds.size > 0 ? clearSelection() : null} className="flex items-center justify-center">
+                        {selectedIds.size > 0 ? <CheckSquare size={16} className="text-blue-400"/> : <Square size={16} className="text-gray-500"/>}
+                      </button>
+                    </th>
                     {['Name', 'Category', 'Project', 'Version', 'Status', 'Uploaded By', 'Date', 'Size', 'Actions'].map(h => (
                       <th key={h} className="px-4 py-3 text-left text-xs font-semibold text-gray-300 uppercase tracking-wider">{h}</th>
                     ))}
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-700">
-                  {filtered.map((d, idx) => (
+                  {filtered.map((d, idx) => {
+                    const docId = String(d.id);
+                    const isSelected = selectedIds.has(docId);
+                    return (
                     <tr
-                      key={String(d.id)}
+                      key={docId}
                       onClick={() => setSelectedDoc(d)}
-                      className={`cursor-pointer transition-colors ${idx % 2 === 0 ? 'bg-gray-800/50' : 'bg-gray-800/30'} hover:bg-gray-700/50`}
+                      className={`cursor-pointer transition-colors ${isSelected ? 'bg-blue-900/20' : idx % 2 === 0 ? 'bg-gray-800/50' : 'bg-gray-800/30'} hover:bg-gray-700/50`}
                     >
+                      <td className="px-4 py-3" onClick={e => e.stopPropagation()}>
+                        <button type="button" onClick={() => toggle(docId)} className="flex items-center justify-center">
+                          {isSelected ? <CheckSquare size={16} className="text-blue-400"/> : <Square size={16} className="text-gray-500"/>}
+                        </button>
+                      </td>
                       <td className="px-4 py-3 font-medium text-gray-200 max-w-xs truncate">{d.name}</td>
                       <td className="px-4 py-3 text-sm text-gray-300 flex items-center gap-2">
                         {categoryIcons[d.category]}{d.category}
@@ -357,7 +394,8 @@ export function Documents() {
                         </div>
                       </td>
                     </tr>
-                  ))}
+                    );
+                  })}
                 </tbody>
               </table>
               {filtered.length === 0 && (
@@ -370,6 +408,16 @@ export function Documents() {
           )}
         </>
       )}
+
+      <BulkActionsBar
+        selectedIds={Array.from(selectedIds)}
+        actions={[
+          { id: 'delete', label: 'Delete Selected', icon: Trash2, variant: 'danger', onClick: handleBulkDelete, confirm: 'This action cannot be undone.' },
+          { id: 'approve', label: 'Mark Current', icon: CheckCircle2, variant: 'primary', onClick: (ids) => handleBulkUpdateStatus(ids, 'current') },
+          { id: 'review', label: 'Mark for Review', icon: FileCheck, variant: 'default', onClick: (ids) => handleBulkUpdateStatus(ids, 'for review') },
+        ]}
+        onClearSelection={clearSelection}
+      />
 
       {/* Categories Tab */}
       {activeTab === 'categories' && (

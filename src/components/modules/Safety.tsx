@@ -1,11 +1,12 @@
 // Module: Safety — CortexBuild Ultimate (Enhanced with RIDDOR, Permits, Toolbox Talks)
 import { useState } from 'react';
-import { Plus, X, Loader2, Shield, AlertTriangle, CheckCircle2, RefreshCw, Search, Edit2, Trash2, FileText, AlertCircle, Clock, TrendingUp, Upload } from 'lucide-react';
+import { Plus, X, Loader2, Shield, AlertTriangle, CheckCircle2, RefreshCw, Search, Edit2, Trash2, FileText, AlertCircle, Clock, TrendingUp, Upload, CheckSquare, Square } from 'lucide-react';
 import { useSafety } from '../../hooks/useData';
 import { uploadFile } from '../../services/api';
 import { toast } from 'sonner';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import clsx from 'clsx';
+import { BulkActionsBar, useBulkSelection } from '../ui/BulkActions';
 
 const SAFETY_TREND_DATA = [
   { month:'Sep', incidents:3, nearMisses:8,  toolboxTalks:12 },
@@ -126,6 +127,20 @@ export function Safety() {
   const [editTalkId, setEditTalkId] = useState<string | null>(null);
   const [uploadingPermit, setUploadingPermit] = useState<string | null>(null);
   const [uploadingTalk, setUploadingTalk] = useState<string | null>(null);
+
+  // Bulk selection
+  const { selectedIds, toggle, clearSelection } = useBulkSelection();
+
+  async function handleBulkDelete(ids: string[]) {
+    if (!confirm(`Delete ${ids.length} incident(s)?`)) return;
+    try {
+      await Promise.all(ids.map(id => deleteM.mutateAsync(id)));
+      toast.success(`Deleted ${ids.length} incident(s)`);
+      clearSelection();
+    } catch {
+      toast.error('Bulk delete failed');
+    }
+  }
 
   const TYPE_MAP: Record<string, string[]> = {
     all:          [],
@@ -380,15 +395,25 @@ export function Safety() {
               const stat = statusConfig[String(inc.status)] ?? statusConfig.open;
               const typeInfo = typeConfig[String(inc.type)] ?? { label: String(inc.type), icon: Shield };
               const TypeIcon = typeInfo.icon;
+              const incId = String(inc.id);
+              const isSelected = selectedIds.has(incId);
               return (
-                <div key={String(inc.id)}
+                <div key={incId}
                   className={clsx(
                     'rounded-2xl border bg-gray-900 p-5 cursor-pointer transition-all hover:border-gray-700',
-                    selectedId === String(inc.id) ? 'border-red-600/50 ring-1 ring-red-500/20' : 'border-gray-800'
+                    selectedId === incId ? 'border-red-600/50 ring-1 ring-red-500/20' : 'border-gray-800',
+                    isSelected && 'border-blue-500/50 ring-1 ring-blue-500/20'
                   )}
-                  onClick={() => setSelectedId(prev => prev===String(inc.id)?null:String(inc.id))}>
+                  onClick={() => setSelectedId(prev => prev===incId?null:incId)}>
                   <div className="flex items-start justify-between gap-3">
                     <div className="flex items-start gap-3 flex-1 min-w-0">
+                      <button
+                        type="button"
+                        onClick={e => { e.stopPropagation(); toggle(incId); }}
+                        className="flex-shrink-0 p-1 mt-1"
+                      >
+                        {isSelected ? <CheckSquare size={16} className="text-blue-400"/> : <Square size={16} className="text-gray-500"/>}
+                      </button>
                       <div className={clsx('p-2 rounded-xl shrink-0', sev.bg)}>
                         <TypeIcon className={clsx('w-4 h-4', sev.color)} />
                       </div>
@@ -405,7 +430,7 @@ export function Safety() {
                           {!!inc.date && <span>{String(inc.date)}</span>}
                           {(inc.reported_by_name || inc.reportedBy) ? <span>By: {String(inc.reported_by_name ?? inc.reportedBy)}</span> : null}
                         </div>
-                        {selectedId === String(inc.id) && !!inc.description && (
+                        {selectedId === incId && !!inc.description && (
                           <p className="mt-2 text-xs text-gray-400 leading-relaxed">{String(inc.description)}</p>
                         )}
                       </div>
@@ -492,6 +517,15 @@ export function Safety() {
           </div>
         </div>
       )}
+
+      <BulkActionsBar
+        selectedIds={Array.from(selectedIds)}
+        actions={[
+          { id: 'delete', label: 'Delete Selected', icon: Trash2, variant: 'danger', onClick: handleBulkDelete, confirm: 'This action cannot be undone.' },
+          { id: 'close', label: 'Close Incidents', icon: CheckCircle2, variant: 'primary', onClick: async (ids) => { await Promise.all(ids.map(id => updateM.mutateAsync({ id, data: { status: 'closed' } }))); toast.success(`Closed ${ids.length} incident(s)`); clearSelection(); } },
+        ]}
+        onClearSelection={clearSelection}
+      />
 
       {/* PERMITS TAB */}
       {mainTab === 'permits' && (
