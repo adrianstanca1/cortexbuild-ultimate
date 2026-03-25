@@ -75,7 +75,6 @@ router.post('/login', async (req, res) => {
     );
 
     const { password_hash, ...safeUser } = user;
-    logAudit({ auth: { userId: user.id, organization_id: user.organization_id, company_id: user.company_id }, action: 'login', entityType: 'users', entityId: user.id, newData: { email: user.email } });
     res.json({ token, user: safeUser });
   } catch (err) {
     console.error('[auth/login]', err);
