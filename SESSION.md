@@ -12,7 +12,7 @@ Full system audit complete — all CRUD + upload working, code-splitting improve
 2026-03-25
 
 ## Last Commit
-`011cfae` — "feat: wire Dashboard KPIs to real API"
+`4128381` — "feat: wire all remaining mock data to real APIs + audit logging"
 
 ## What Works
 - **Upload**: All 16 modules have file upload (Teams, Documents, Safety, RAMS, Certifications, Training, Specifications, Valuations, Defects, Signage, Lettings, Measuring, Prequalification, Sustainability, WasteManagement, TempWorks)
@@ -34,8 +34,10 @@ Full system audit complete — all CRUD + upload working, code-splitting improve
 - **Form Validation**: Zod schemas added to 7 modules: Teams, Safety, RAMS, Documents, Subcontractors, RFIs, ChangeOrders
 - **WebSocket Event Bus**: `src/lib/eventBus.ts` singleton enables WS messages to invalidate React Query caches. `useNotifications.ts` emits events on WS connect/disconnect/message. `useData.ts` hooks subscribe and invalidate on WS messages.
 - **Team Member Data API**: Backend routes at `/api/team-member-data/` for skills, inductions, and availability with dedicated DB tables (`team_member_skills`, `team_member_inductions`, `team_member_availability`). Teams module tabs now use real API instead of mock data.
-- **Real API Wiring**: FieldView permits, PlantEquipment service/hire logs, RiskRegister mitigation actions, CRM interactions, Analytics overtime/VAT charts, Safety permits, Safety toolbox talks, FinancialReports summary/project/cashflow, Dashboard KPIs. All hardcoded mock data removed from these modules.
-- **Dashboard Aggregation API**: `/api/dashboard-data/overview` (KPIs from projects/invoices/rfis/safety/team), `/api/dashboard-data/revenue` (monthly revenue from invoices).
+- **All Mock Data Wired**: Dashboard (KPIs, projects, alerts, activity), Documents (activity feed), ExecutiveReports (KPIs, projects, trends), Drawings (transmittals), PredictiveAnalytics (weather), Insights (rule-based from real tables), Safety (permits, talks), RiskRegister (actions), CRM (interactions), Analytics (overtime, VAT), FinancialReports, FieldView (permits), PlantEquipment (service/hire logs), FieldView (permits)
+- **Audit Logging**: All entity mutations (create/update/delete via generic.js) logged to audit_log table. Auth events (login, register, user create/delete) also audited. Historical entries seeded from existing data.
+- **Aggregation APIs**: /api/dashboard-data (KPIs + revenue), /api/analytics-data (overtime + VAT), /api/executive-reports (summary + trends), /api/insights (rule-based insights), /api/weather-forecast
+- **New DB Tables**: risk_mitigation_actions, contact_interactions, safety_permits, toolbox_talks, drawing_transmittals, drawing_revisions (pending). Total: 50+ tables.
 - **Analytics Aggregation API**: `/api/analytics-data/overtime` (monthly OT% from timesheets), `/api/analytics-data/vat` (quarterly VAT liability from invoices). Fallback to hardcoded data on API error.
 - **New DB Tables**: risk_mitigation_actions (5 seed), contact_interactions (9 seed), safety_permits (5 seed), toolbox_talks (4 seed), drawing_transmittals (5 seed). Total: 50 tables.
 
@@ -53,13 +55,11 @@ RAMS, Subcontractors, Documents, Safety, Projects, Tenders, Invoicing, Accountin
 Analytics, FieldView, SiteOperations, AuditLog, FinancialReports, PredictiveAnalytics, Insights, AIAssistant, Marketplace, Settings, ExecutiveReports, PermissionsManager, Valuations, Variations, Defects, Specifications, Certifications, Signage, Sustainability, Training, WasteManagement, EmailHistory, Prequalification, Measuring, Dashboard, GlobalSearch
 
 ## Remaining Mock Data (Lower Priority)
-These modules still use hardcoded mock data but have infrastructure in place for future wiring:
-- **ExecutiveReports** — KPIs, project RAG status, trend data (needs aggregation API)
-- **Insights** — AI-generated insights, category breakdown (needs AI insights API)
-- **PredictiveAnalytics** — Risk forecasts, ML models, weather predictions (needs ML/forecast API)
-- **Drawings** — Revisions history (MOCK_REVISIONS keyed by drawing number, complex), Transmittals (table created but not wired — needs junction table for drawings field)
-- **Documents** — Activity feed (MOCK_ACTIVITY, needs activity log API)
-- **Dashboard** — Projects table, alerts, activity feed, revenue/cost chart (partially wired via dashboard-data)
+These modules have minimal hardcoded data or need ML infrastructure:
+- **PredictiveAnalytics** — Cost Prediction and Schedule tabs (need statistical/ML algorithms), ML Models tab (display-only)
+- **Drawings** — MOCK_REVISIONS (keyed by drawing number, complex relational model)
+- **Subcontractors** — paymentData/ratingHistory derived client-side with Math.random()
+- **Dashboard** — projectStatusData (RAG derived from hardcoded projects), safety metrics
 
 ## Current Position
 WebSocket event bus for real-time query invalidation implemented, multi-tenancy filtering active in generic.js. JWT payload includes organization_id and company_id. All generic.js CRUD routes (34 tables) now filter by organization_id unless user is super_admin/company_owner. Demo org/company seeded (ID: 00000000-0000-0000-0000-000000000001/00000000-0000-0000-0000-000000000002). API running as Docker container with host networking. Build passes, 18 tests passing, deployed to VPS.
