@@ -1,6 +1,7 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Layers, Plus, Search, Eye, Download, Edit2, Trash2, X, ChevronDown, ChevronUp, FileText, Cloud, GitBranch, Send, Filter, CheckCircle2, AlertTriangle, BarChart3, CheckSquare, Square } from 'lucide-react';
 import { useDocuments } from '../../hooks/useData';
+import { documentsApi } from '../../services/api';
 import { toast } from 'sonner';
 import { PieChart, Pie, BarChart, Bar, CartesianGrid, Tooltip, Legend, ResponsiveContainer, Cell } from 'recharts';
 import { BulkActionsBar, useBulkSelection } from '../ui/BulkActions';
@@ -28,6 +29,16 @@ interface RevisionRecord {
   status: string;
 }
 
+interface Transmittal {
+  id: string;
+  project: string;
+  issuedTo: string;
+  date: string;
+  purpose: string;
+  status: string;
+  drawings: string[];
+}
+
 const MOCK_REVISIONS: Record<string,RevisionRecord[]> = {
   'CW-ARC-001': [
     { letter:'A', date:'2024-01-15', issuedBy:'John Smith', description:'Initial issue', status:'Superseded' },
@@ -37,14 +48,6 @@ const MOCK_REVISIONS: Record<string,RevisionRecord[]> = {
     { letter:'A', date:'2024-01-20', issuedBy:'Bob Jones', description:'Structural schemes', status:'Current' },
   ],
 };
-
-const MOCK_TRANSMITTALS = [
-  { id:'TRX-001', project:'Cityview Offices', drawings:['CW-ARC-001','CW-STR-002'], issuedTo:'Main Contractor', date:'2024-02-25', purpose:'IFC', status:'Issued' },
-  { id:'TRX-002', project:'Riverside Residential', drawings:['CW-MEP-003','CW-MEP-004'], issuedTo:'Design Team', date:'2024-03-01', purpose:'IFR', status:'Issued' },
-  { id:'TRX-003', project:'Tech Hub', drawings:['CW-ARC-005','CW-STR-006','CW-MEP-007'], issuedTo:'Planning Authority', date:'2024-03-05', purpose:'IFT', status:'Pending' },
-  { id:'TRX-004', project:'Cityview Offices', drawings:['CW-ARC-001'], issuedTo:'Client', date:'2024-03-08', purpose:'IFI', status:'Issued' },
-  { id:'TRX-005', project:'Riverside Residential', drawings:['CW-MEP-003'], issuedTo:'MEP Contractor', date:'2024-03-10', purpose:'IFC', status:'Issued' },
-];
 
 export function Drawings() {
   const { useList, useCreate, useUpdate, useDelete } = useDocuments;
@@ -69,6 +72,35 @@ export function Drawings() {
   const [revisionForm, setRevisionForm] = useState({ drawingNumber:'', newRevision:'', description:'', reason:'' });
   const [transmittalForm, setTransmittalForm] = useState({ project:'', drawings:'', issuedTo:'', purpose:'IFC' });
   const [expandedDiscipline, setExpandedDiscipline] = useState<string | null>(null);
+  const [transmittals, setTransmittals] = useState<Transmittal[]>([]);
+  const [transmittalsLoading, setTransmittalsLoading] = useState(false);
+
+  useEffect(() => {
+    async function fetchTransmittals() {
+      setTransmittalsLoading(true);
+      try {
+        const data = await documentsApi.getTransmittals();
+        const mapped = (data as AnyRow[]).map((t: AnyRow): Transmittal => ({
+          id: String(t.id ?? ''),
+          project: String(t.project ?? ''),
+          issuedTo: String(t.issued_to ?? ''),
+          date: String(t.date ?? ''),
+          purpose: String(t.purpose ?? ''),
+          status: String(t.status ?? ''),
+          drawings: ['Drawing'], // placeholder since no junction table
+        }));
+        setTransmittals(mapped);
+      } catch (err) {
+        console.error('Failed to fetch transmittals:', err);
+        toast.error('Failed to load transmittals');
+      } finally {
+        setTransmittalsLoading(false);
+      }
+    }
+    if (activeTab === 'transmittals') {
+      fetchTransmittals();
+    }
+  }, [activeTab]);
 
   const { selectedIds, toggle, clearSelection } = useBulkSelection();
 
@@ -408,20 +440,25 @@ export function Drawings() {
                 <tr>{['Transmittal No.','Project','Drawings Included','Issued To','Issue Date','Purpose','Status'].map(h=><th key={h} className="px-4 py-3 text-left text-xs font-semibold text-gray-300 uppercase tracking-wider">{h}</th>)}</tr>
               </thead>
               <tbody className="divide-y divide-gray-700">
-                {MOCK_TRANSMITTALS.map((t, idx)=>(
-                  <tr key={t.id} className={`transition-colors ${idx % 2 === 0 ? 'bg-gray-800/50' : 'bg-gray-800/30'}`}>
-                    <td className="px-4 py-3 font-mono text-xs text-gray-400 font-bold">{t.id}</td>
-                    <td className="px-4 py-3 text-sm text-gray-200">{t.project}</td>
-                    <td className="px-4 py-3 text-sm text-gray-400">{t.drawings.length} drawing{t.drawings.length !== 1 ? 's' : ''}</td>
-                    <td className="px-4 py-3 text-sm text-gray-400">{t.issuedTo}</td>
-                    <td className="px-4 py-3 text-sm text-gray-400">{t.date}</td>
-                    <td className="px-4 py-3"><span className="text-xs px-2 py-1 rounded-full font-medium bg-purple-900/40 text-purple-300">{t.purpose}</span></td>
-                    <td className="px-4 py-3"><span className={`text-xs px-2 py-1 rounded-full font-medium ${t.status==='Issued'?'bg-emerald-900/40 text-emerald-300':'bg-amber-900/40 text-amber-300'}`}>{t.status}</span></td>
-                  </tr>
-                ))}
+                {transmittalsLoading ? (
+                  <tr><td colSpan={7} className="px-4 py-12 text-center text-gray-400">Loading transmittals...</td></tr>
+                ) : transmittals.length === 0 ? (
+                  <tr><td colSpan={7} className="px-4 py-12 text-center text-gray-400">No transmittals</td></tr>
+                ) : (
+                  transmittals.map((t, idx)=>(
+                    <tr key={t.id} className={`transition-colors ${idx % 2 === 0 ? 'bg-gray-800/50' : 'bg-gray-800/30'}`}>
+                      <td className="px-4 py-3 font-mono text-xs text-gray-400 font-bold">{t.id}</td>
+                      <td className="px-4 py-3 text-sm text-gray-200">{t.project}</td>
+                      <td className="px-4 py-3 text-sm text-gray-400">1 drawing</td>
+                      <td className="px-4 py-3 text-sm text-gray-400">{t.issuedTo}</td>
+                      <td className="px-4 py-3 text-sm text-gray-400">{t.date}</td>
+                      <td className="px-4 py-3"><span className="text-xs px-2 py-1 rounded-full font-medium bg-purple-900/40 text-purple-300">{t.purpose}</span></td>
+                      <td className="px-4 py-3"><span className={`text-xs px-2 py-1 rounded-full font-medium ${t.status==='Issued'?'bg-emerald-900/40 text-emerald-300':'bg-amber-900/40 text-amber-300'}`}>{t.status}</span></td>
+                    </tr>
+                  ))
+                )}
               </tbody>
             </table>
-            {MOCK_TRANSMITTALS.length === 0 && <div className="text-center py-12 text-gray-500"><p>No transmittals</p></div>}
           </div>
         </>
       )}

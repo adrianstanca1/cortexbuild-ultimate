@@ -1,11 +1,11 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
   FileText, Plus, Search, Download, Eye, Edit2, Trash2, X, ChevronDown, ChevronUp, ChevronRight, Clock, Upload,
   Shield, FileCheck, Image, FolderOpen, CheckCircle2, BarChart3, Activity, Calendar, HardDrive, CheckSquare, Square
 } from 'lucide-react';
 import { DataImporter, ExportButton } from '../ui/DataImportExport';
 import { useDocuments } from '../../hooks/useData';
-import { uploadFile } from '../../services/api';
+import { uploadFile, notificationsApi } from '../../services/api';
 import { toast } from 'sonner';
 import { z } from 'zod';
 import { BulkActionsBar, useBulkSelection } from '../ui/BulkActions';
@@ -65,14 +65,37 @@ const emptyForm = {
   description: '', size: '0 MB'
 };
 
-const MOCK_ACTIVITY = [
-  { id: '1', action: 'uploaded', doc: 'Foundation Plans Rev B', user: 'John Smith', time: '2 hours ago', icon: 'upload' },
-  { id: '2', action: 'approved', doc: 'Structural Drawings', user: 'Sarah Jones', time: '4 hours ago', icon: 'check' },
-  { id: '3', action: 'superseded', doc: 'Health & Safety Plan', user: 'Mike Brown', time: '1 day ago', icon: 'archive' },
-  { id: '4', action: 'uploaded', doc: 'Site Photos - Week 3', user: 'Tom Wilson', time: '1 day ago', icon: 'upload' },
-  { id: '5', action: 'downloaded', doc: 'Building Permits', user: 'Emma Davis', time: '2 days ago', icon: 'download' },
-  { id: '6', action: 'approved', doc: 'Electrical Specifications', user: 'John Smith', time: '3 days ago', icon: 'check' },
-];
+/**
+ * Format an ISO date string as a relative time (e.g., "2 hours ago")
+ */
+function formatTimeAgo(dateStr: string): string {
+  const date = new Date(dateStr);
+  const now = new Date();
+  const seconds = Math.floor((now.getTime() - date.getTime()) / 1000);
+  
+  if (seconds < 60) return 'just now';
+  const minutes = Math.floor(seconds / 60);
+  if (minutes < 60) return `${minutes} minute${minutes === 1 ? '' : 's'} ago`;
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) return `${hours} hour${hours === 1 ? '' : 's'} ago`;
+  const days = Math.floor(hours / 24);
+  if (days < 7) return `${days} day${days === 1 ? '' : 's'} ago`;
+  const weeks = Math.floor(days / 7);
+  if (weeks < 4) return `${weeks} week${weeks === 1 ? '' : 's'} ago`;
+  const months = Math.floor(days / 30);
+  if (months < 12) return `${months} month${months === 1 ? '' : 's'} ago`;
+  const years = Math.floor(days / 365);
+  return `${years} year${years === 1 ? '' : 's'} ago`;
+}
+
+interface ActivityEntry {
+  id: string;
+  action: string;
+  doc: string;
+  user: string;
+  time: string;
+  icon: 'upload' | 'check' | 'alert' | 'download';
+}
 
 export function Documents() {
   const { useList, useCreate, useUpdate, useDelete } = useDocuments;
@@ -106,8 +129,72 @@ export function Documents() {
   const [uploading, setUploading] = useState(false);
   const [uploadCategory, setUploadCategory] = useState<string>('PLANS');
   const [showBulkImport, setShowBulkImport] = useState(false);
+  const [activity, setActivity] = useState<ActivityEntry[]>([]);
+  const [activityLoading, setActivityLoading] = useState(true);
+  const [activityError, setActivityError] = useState<string | null>(null);
 
   const { selectedIds, toggle, clearSelection } = useBulkSelection();
+
+  // Fetch activity feed from notifications API
+  useEffect(() => {
+    async function fetchActivity() {
+      if (activeTab !== 'activity') return;
+      
+      setActivityLoading(true);
+      setActivityError(null);
+      
+      try {
+        const notifications = await notificationsApi.getAll() as Array<{
+          id: string | number;
+          title?: string;
+          type?: string;
+          description?: string;
+          severity?: string;
+          created_at?: string;
+        }>;
+        
+        const mapped: ActivityEntry[] = notifications.map((n) => {
+          // Map notification type to action/icon
+          const type = n.type || 'notification';
+          let action = 'notification';
+          let icon: ActivityEntry['icon'] = 'alert';
+          
+          if (type === 'alert' || type === 'system') {
+            action = 'alert';
+            icon = 'alert';
+          } else if (type === 'dashboard_update') {
+            action = 'update';
+            icon = 'check';
+          } else if (type === 'collaboration') {
+            action = 'collaboration';
+            icon = 'upload';
+          } else {
+            // Default notification type
+            action = 'info';
+            icon = 'alert';
+          }
+          
+          return {
+            id: String(n.id),
+            action,
+            doc: n.description || n.title || 'Notification',
+            user: n.severity || type,
+            time: n.created_at ? formatTimeAgo(n.created_at) : 'Unknown',
+            icon,
+          };
+        });
+        
+        setActivity(mapped);
+      } catch (err) {
+        console.error('[Activity] Failed to load:', err);
+        setActivityError('Failed to load activity feed');
+      } finally {
+        setActivityLoading(false);
+      }
+    }
+    
+    fetchActivity();
+  }, [activeTab]);
 
   async function handleBulkDelete(ids: string[]) {
     if (!confirm(`Delete ${ids.length} document(s)?`)) return;
@@ -584,19 +671,38 @@ export function Documents() {
       {/* Recent Activity Tab */}
       {activeTab === 'activity' && (
         <div className="space-y-4">
-          {MOCK_ACTIVITY.map((entry, idx) => (
+          {activityLoading && (
+            <div className="flex justify-center py-20">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600" />
+            </div>
+          )}
+          {activityError && (
+            <div className="text-center py-12 text-red-400 bg-red-900/20 border border-red-700 rounded-lg">
+              <Activity size={40} className="mx-auto mb-3 opacity-50" />
+              <p>{activityError}</p>
+            </div>
+          )}
+          {!activityLoading && !activityError && activity.length === 0 && (
+            <div className="text-center py-12 text-gray-500">
+              <Activity size={40} className="mx-auto mb-3 opacity-30" />
+              <p>No activity yet</p>
+            </div>
+          )}
+          {!activityLoading && !activityError && activity.map((entry) => (
             <div key={entry.id} className="flex items-start gap-4 p-4 bg-gray-800 border border-gray-700 rounded-lg hover:border-gray-600 transition-colors">
               <div className="flex-shrink-0 mt-1">
                 {entry.icon === 'upload' && <Upload size={18} className="text-blue-400" />}
                 {entry.icon === 'check' && <CheckCircle2 size={18} className="text-emerald-400" />}
-                {entry.icon === 'archive' && <FolderOpen size={18} className="text-gray-400" />}
+                {entry.icon === 'alert' && <Activity size={18} className="text-amber-400" />}
                 {entry.icon === 'download' && <Download size={18} className="text-blue-400" />}
               </div>
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-medium text-gray-200">
-                  Document <span className="text-blue-400">{entry.doc}</span> was <span className="font-semibold text-gray-100">{entry.action}</span>
+                  <span className="text-blue-400">{entry.doc}</span>
                 </p>
-                <p className="text-xs text-gray-400 mt-1">by {entry.user} • {entry.time}</p>
+                <p className="text-xs text-gray-400 mt-1">
+                  <span className="font-semibold text-gray-300">{entry.action}</span> • {entry.user} • {entry.time}
+                </p>
               </div>
             </div>
           ))}

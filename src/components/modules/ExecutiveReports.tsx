@@ -1,5 +1,5 @@
 // Module: ExecutiveReports — CortexBuild Ultimate Enhanced
-import { useState, useMemo } from 'react';
+import { useState, useEffect } from 'react';
 import {
   FileText, Download, Calendar, Clock, Send, BarChart3, PieChart,
   TrendingUp, Users, Shield, PoundSterling, Activity, CheckCircle,
@@ -13,8 +13,10 @@ import {
   PolarGrid, PolarAngleAxis, PolarRadiusAxis,
 } from 'recharts';
 import { toast } from 'sonner';
+import { executiveReportsApi } from '../../services/api';
 
 type AnyRow = Record<string, unknown>;
+type RAG = 'red' | 'amber' | 'green';
 
 interface ReportTab {
   id: 'dashboard' | 'portfolio' | 'financial' | 'safety' | 'kpis' | 'trends';
@@ -28,8 +30,8 @@ const fmtCurrency = (n: number) => {
   return `£${n.toLocaleString()}`;
 };
 
-const RAGStatus = ({ status }: { status: 'red' | 'amber' | 'green' }) => {
-  const colors: Record<'red' | 'amber' | 'green', string> = {
+const RAGStatus = ({ status }: { status: RAG }) => {
+  const colors: Record<RAG, string> = {
     red: 'bg-red-500',
     amber: 'bg-amber-500',
     green: 'bg-emerald-500',
@@ -39,10 +41,119 @@ const RAGStatus = ({ status }: { status: 'red' | 'amber' | 'green' }) => {
   );
 };
 
+// Helper to convert string to RAG type
+const toRAG = (value: string): RAG => {
+  if (value === 'red' || value === 'amber' || value === 'green') {
+    return value;
+  }
+  return 'amber'; // default fallback
+};
+
+// Fallback data when API fails
+const FALLBACK_PROJECTS: Array<{
+  id: string;
+  name: string;
+  client: string;
+  value: number;
+  phase: string;
+  completion: number;
+  nextMilestone: string;
+  pm: string;
+  programme: RAG;
+  cost: RAG;
+  quality: RAG;
+  safety: RAG;
+}> = [
+  { id: 'p1', name: 'Riverside Tower', client: 'AC Properties', value: 4200000, phase: 'Construction', completion: 68, nextMilestone: 'Structural complete', pm: 'SC', programme: 'green', cost: 'green', quality: 'green', safety: 'green' },
+  { id: 'p2', name: 'Tech Hub Phase 2', client: 'TechCorp', value: 2850000, phase: 'M&E', completion: 54, nextMilestone: 'HVAC commissioning', pm: 'JM', programme: 'amber', cost: 'amber', quality: 'green', safety: 'green' },
+  { id: 'p3', name: 'Retail Centre Fit-out', client: 'Developers Ltd', value: 1950000, phase: 'Fit-out', completion: 42, nextMilestone: 'FF&E installation', pm: 'PW', programme: 'red', cost: 'green', quality: 'amber', safety: 'green' },
+];
+
+const FALLBACK_KPIS: Array<{ label: string; value: string; target: string; rag: RAG }> = [
+  { label: 'Portfolio Value', value: fmtCurrency(9000000), target: fmtCurrency(9500000), rag: 'green' },
+  { label: 'Projects Active', value: '3', target: '3', rag: 'green' },
+  { label: 'Revenue YTD', value: fmtCurrency(1850000), target: fmtCurrency(2000000), rag: 'amber' },
+  { label: 'Margin %', value: '25%', target: '26%', rag: 'green' },
+];
+
+const FALLBACK_TRENDS = [
+  { month: 'Jan', revenue: 185000, margin: 23, headcount: 142 },
+  { month: 'Feb', revenue: 220000, margin: 25, headcount: 156 },
+  { month: 'Mar', revenue: 198000, margin: 25, headcount: 165 },
+  { month: 'Apr', revenue: 289000, margin: 24, headcount: 178 },
+  { month: 'May', revenue: 267000, margin: 25, headcount: 172 },
+  { month: 'Jun', revenue: 310000, margin: 25, headcount: 185 },
+];
+
+type ProjectData = {
+  id: string;
+  name: string;
+  client: string;
+  value: number;
+  phase: string;
+  completion: number;
+  nextMilestone: string;
+  pm: string;
+  programme: RAG;
+  cost: RAG;
+  quality: RAG;
+  safety: RAG;
+};
+
 export function ExecutiveReports() {
   const [activeTab, setActiveTab] = useState<'dashboard' | 'portfolio' | 'financial' | 'safety' | 'kpis' | 'trends'>('dashboard');
   const [reportType, setReportType] = useState<'weekly' | 'monthly' | 'quarterly'>('weekly');
   const { selectedIds, toggle, clearSelection } = useBulkSelection();
+
+  const [summaryData, setSummaryData] = useState<{
+    kpis: { portfolioValue: number; projectsActive: number; revenueYtd: number; margin: number; workforce: number };
+    projects: Array<{
+      id: string;
+      name: string;
+      client: string;
+      value: number;
+      phase: string;
+      completion: number;
+      nextMilestone: string;
+      pm: string;
+      programme: string;
+      cost: string;
+      quality: string;
+      safety: string;
+    }>;
+  } | null>(null);
+
+  const [trendsData, setTrendsData] = useState<Array<{
+    month: string;
+    revenue: number;
+    margin: number;
+    headcount: number;
+  }> | null>(null);
+
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    async function fetchData() {
+      setLoading(true);
+      setError(null);
+      try {
+        const [summary, trends] = await Promise.all([
+          executiveReportsApi.getSummary(),
+          executiveReportsApi.getTrends(),
+        ]);
+        setSummaryData(summary);
+        setTrendsData(trends);
+      } catch (err) {
+        console.error('Failed to fetch executive reports data:', err);
+        setError('Failed to load report data');
+        toast.error('Failed to load report data, using fallback');
+      } finally {
+        setLoading(false);
+      }
+    }
+    fetchData();
+  }, []);
 
   async function handleBulkDelete(ids: string[]) {
     if (!confirm(`Delete ${ids.length} report(s)?`)) return;
@@ -63,41 +174,47 @@ export function ExecutiveReports() {
     { id: 'trends', label: 'Trends', icon: TrendingUp },
   ];
 
-  // Mock data
-  const projects: Array<{
-    id: string;
-    name: string;
-    client: string;
-    value: number;
-    phase: string;
-    completion: number;
-    nextMilestone: string;
-    pm: string;
-    programme: 'red' | 'amber' | 'green';
-    cost: 'red' | 'amber' | 'green';
-    quality: 'red' | 'amber' | 'green';
-    safety: 'red' | 'amber' | 'green';
-  }> = [
-    { id: 'p1', name: 'Riverside Tower', client: 'AC Properties', value: 4200000, phase: 'Construction', completion: 68, nextMilestone: 'Structural complete', pm: 'SC', programme: 'green', cost: 'green', quality: 'green', safety: 'green' },
-    { id: 'p2', name: 'Tech Hub Phase 2', client: 'TechCorp', value: 2850000, phase: 'M&E', completion: 54, nextMilestone: 'HVAC commissioning', pm: 'JM', programme: 'amber', cost: 'amber', quality: 'green', safety: 'green' },
-    { id: 'p3', name: 'Retail Centre Fit-out', client: 'Developers Ltd', value: 1950000, phase: 'Fit-out', completion: 42, nextMilestone: 'FF&E installation', pm: 'PW', programme: 'red', cost: 'green', quality: 'amber', safety: 'green' },
-  ];
+  // Map API response to frontend expected types
+  const projects: ProjectData[] = summaryData?.projects?.map((p): ProjectData => ({
+    id: p.id,
+    name: p.name,
+    client: p.client,
+    value: p.value,
+    phase: p.phase,
+    completion: p.completion,
+    nextMilestone: p.nextMilestone,
+    pm: p.pm,
+    programme: toRAG(p.programme),
+    cost: toRAG(p.cost),
+    quality: toRAG(p.quality),
+    safety: toRAG(p.safety),
+  })) ?? FALLBACK_PROJECTS;
 
-  const kpis: Array<{ label: string; value: string; target: string; rag: 'red' | 'amber' | 'green' }> = [
-    { label: 'Portfolio Value', value: fmtCurrency(9000000), target: fmtCurrency(9500000), rag: 'green' },
-    { label: 'Projects Active', value: '3', target: '3', rag: 'green' },
-    { label: 'Revenue YTD', value: fmtCurrency(1850000), target: fmtCurrency(2000000), rag: 'amber' },
-    { label: 'Margin %', value: '25%', target: '26%', rag: 'green' },
-  ];
+  // Map API KPIs to frontend format
+  const kpis: Array<{ label: string; value: string; target: string; rag: RAG }> = summaryData?.kpis ? [
+    { label: 'Portfolio Value', value: fmtCurrency(summaryData.kpis.portfolioValue), target: fmtCurrency(summaryData.kpis.portfolioValue * 1.05), rag: 'green' },
+    { label: 'Projects Active', value: String(summaryData.kpis.projectsActive), target: '3', rag: 'green' },
+    { label: 'Revenue YTD', value: fmtCurrency(summaryData.kpis.revenueYtd), target: fmtCurrency(summaryData.kpis.revenueYtd * 1.08), rag: summaryData.kpis.revenueYtd > 1800000 ? 'green' : 'amber' },
+    { label: 'Margin %', value: `${summaryData.kpis.margin}%`, target: '26%', rag: summaryData.kpis.margin >= 25 ? 'green' : 'amber' },
+  ] : FALLBACK_KPIS;
 
-  const trendData = [
-    { month: 'Jan', revenue: 185000, margin: 23, headcount: 142 },
-    { month: 'Feb', revenue: 220000, margin: 25, headcount: 156 },
-    { month: 'Mar', revenue: 198000, margin: 25, headcount: 165 },
-    { month: 'Apr', revenue: 289000, margin: 24, headcount: 178 },
-    { month: 'May', revenue: 267000, margin: 25, headcount: 172 },
-    { month: 'Jun', revenue: 310000, margin: 25, headcount: 185 },
-  ];
+  const trendData = trendsData ?? FALLBACK_TRENDS;
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="text-gray-400">Loading...</div>
+      </div>
+    );
+  }
+
+  if (error && !summaryData) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="text-red-400">{error}</div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -367,12 +484,12 @@ export function ExecutiveReports() {
           <h3 className="text-lg font-bold text-white mb-4">KPI Scorecard</h3>
           <div className="space-y-3">
             {[
-              { category: 'Financial', kpi: 'Gross Margin %', target: '26%', actual: '25%', rag: 'amber' as const },
-              { category: 'Financial', kpi: 'Debtor Days', target: '40', actual: '42', rag: 'amber' as const },
-              { category: 'Operational', kpi: 'Schedule Compliance', target: '95%', actual: '92%', rag: 'amber' as const },
-              { category: 'Quality', kpi: 'Defects/1000 sqm', target: '2.5', actual: '3.2', rag: 'red' as const },
-              { category: 'Safety', kpi: 'RIDDOR Rate', target: '<0.5', actual: '0.2', rag: 'green' as const },
-              { category: 'HR', kpi: 'Headcount Growth %', target: '12%', actual: '30%', rag: 'green' as const },
+              { category: 'Financial', kpi: 'Gross Margin %', target: '26%', actual: '25%', rag: 'amber' as RAG },
+              { category: 'Financial', kpi: 'Debtor Days', target: '40', actual: '42', rag: 'amber' as RAG },
+              { category: 'Operational', kpi: 'Schedule Compliance', target: '95%', actual: '92%', rag: 'amber' as RAG },
+              { category: 'Quality', kpi: 'Defects/1000 sqm', target: '2.5', actual: '3.2', rag: 'red' as RAG },
+              { category: 'Safety', kpi: 'RIDDOR Rate', target: '<0.5', actual: '0.2', rag: 'green' as RAG },
+              { category: 'HR', kpi: 'Headcount Growth %', target: '12%', actual: '30%', rag: 'green' as RAG },
             ].map((item, idx) => (
               <div key={idx} className="p-4 bg-gray-800/50 rounded-lg flex items-center justify-between">
                 <div>

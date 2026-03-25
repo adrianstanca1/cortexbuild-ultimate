@@ -1,5 +1,6 @@
 const express = require('express');
 const pool    = require('../db');
+const { logAudit } = require('./audit-helper');
 
 // Per-table column whitelists — prevents column-name injection
 const ALLOWED_COLUMNS = {
@@ -174,6 +175,7 @@ function makeRouter(tableName, orderCol = 'created_at') {
         `INSERT INTO ${tableName} (${cols}${colSuffix}) VALUES (${placeholders}${valSuffix}) RETURNING *`,
         [...values, ...tenantValues]
       );
+      logAudit({ auth: req.user, action: 'create', entityType: tableName, entityId: rows[0]?.id, newData: rows[0] });
       res.status(201).json(rows[0]);
     } catch (err) {
       console.error(`[POST ${tableName}]`, err.message);
@@ -198,6 +200,7 @@ function makeRouter(tableName, orderCol = 'created_at') {
         values
       );
       if (!rows[0]) return res.status(404).json({ message: 'Not found' });
+      logAudit({ auth: req.user, action: 'update', entityType: tableName, entityId: rows[0]?.id, newData: rows[0] });
       res.json(rows[0]);
     } catch (err) {
       console.error(`[PUT ${tableName}]`, err.message);
@@ -209,8 +212,10 @@ function makeRouter(tableName, orderCol = 'created_at') {
   router.delete('/:id', async (req, res) => {
     try {
       const { filter, params } = buildFilterWithId(req, 1);
+      const oldRows = await pool.query(`SELECT * FROM ${tableName}${filter}`, params);
+      if (!oldRows.rowCount) return res.status(404).json({ message: 'Not found' });
       const { rowCount } = await pool.query(`DELETE FROM ${tableName}${filter}`, params);
-      if (!rowCount) return res.status(404).json({ message: 'Not found' });
+      logAudit({ auth: req.user, action: 'delete', entityType: tableName, entityId: req.params.id, oldData: oldRows.rows[0] });
       res.json({ message: 'Deleted successfully' });
     } catch (err) {
       res.status(500).json({ message: err.message });

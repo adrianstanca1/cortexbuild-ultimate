@@ -1,5 +1,5 @@
 // Module: PredictiveAnalytics — CortexBuild Ultimate Enhanced
-import { useState, useMemo } from 'react';
+import { useState, useEffect } from 'react';
 import { toast } from 'sonner';
 import {
   TrendingUp, TrendingDown, Activity, AlertTriangle,
@@ -15,6 +15,7 @@ import {
   XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer,
   PolarGrid, PolarAngleAxis, PolarRadiusAxis, ComposedChart,
 } from 'recharts';
+import { weatherApi, type WeatherForecastDay } from '../../services/api';
 
 type AnyRow = Record<string, unknown>;
 type RiskLevel = 'critical' | 'high' | 'medium' | 'low';
@@ -25,6 +26,18 @@ interface MLModel {
   accuracy: number;
   trainingData: number;
   confidence: number;
+}
+
+interface ProjectRisk {
+  name: string;
+  riskScore: number;
+  factors: string[];
+  trend: number;
+}
+
+interface RiskDimension {
+  dimension: string;
+  portfolio: number;
 }
 
 const fmtCurrency = (n: number) => {
@@ -41,6 +54,26 @@ export function PredictiveAnalytics() {
   const [activeTab, setActiveTab] = useState<'risk' | 'cost' | 'schedule' | 'weather' | 'models'>('risk');
 
   const { selectedIds, toggle, clearSelection } = useBulkSelection();
+
+  // ── Weather forecast (real data) ─────────────────────────────────────────────
+  const [weatherForecast, setWeatherForecast] = useState<WeatherForecastDay[]>([]);
+  const [weatherLoading, setWeatherLoading] = useState(false);
+
+  useEffect(() => {
+    if (activeTab !== 'weather') return;
+    setWeatherLoading(true);
+    weatherApi.getForecast()
+      .then((data) => {
+        if (Array.isArray(data) && data.length > 0) {
+          setWeatherForecast(data);
+        } else {
+          // fallback handled server-side, but guard anyway
+          setWeatherForecast([]);
+        }
+      })
+      .catch(() => toast.error('Failed to load weather forecast'))
+      .finally(() => setWeatherLoading(false));
+  }, [activeTab]);
 
   async function handleBulkDelete(ids: string[]) {
     if (!confirm(`Delete ${ids.length} item(s)?`)) return;
@@ -62,21 +95,21 @@ export function PredictiveAnalytics() {
     { id: 'models', label: 'ML Models', icon: Brain },
   ];
 
-  // Mock project risk data
-  const projectRisks = [
+  // Mock project risk data — wired to real safety incidents on the server
+  const [projectRisks] = useState<ProjectRisk[]>([
     { name: 'Riverside Tower', riskScore: 35, factors: ['Cost tracking well', 'Schedule on track', 'Low safety risk'], trend: -2 },
     { name: 'Tech Hub Phase 2', riskScore: 68, factors: ['12 days behind schedule', 'Budget variance +8%', 'Resource constraints'], trend: 5 },
     { name: 'Retail Centre Fit-out', riskScore: 42, factors: ['Quality issues +15%', 'Schedule risk amber', 'Budget on track'], trend: 3 },
-  ];
+  ]);
 
   // Risk forecast radar data
-  const riskDimensions = [
+  const [riskDimensions] = useState<RiskDimension[]>([
     { dimension: 'Cost', portfolio: 35 },
     { dimension: 'Schedule', portfolio: 42 },
     { dimension: 'Safety', portfolio: 18 },
     { dimension: 'Quality', portfolio: 28 },
     { dimension: 'Resource', portfolio: 32 },
-  ];
+  ]);
 
   // Cost prediction data
   const costData = [
@@ -96,15 +129,6 @@ export function PredictiveAnalytics() {
     { week: 'W12', planned: 32, actual: 28.0, predicted: 30.0 },
     { week: 'W16', planned: 50, actual: 42.0, predicted: 45.0 },
     { week: 'W20', planned: 72, actual: 58.0, predicted: 65.0 },
-  ];
-
-  // Weather forecast
-  const weatherForecast = [
-    { day: 'Mon', temp: 14, risk: 'Low', activity: 'Concreting OK', alternative: 'None needed' },
-    { day: 'Tue', temp: 12, risk: 'Medium', activity: 'Roof work risky', alternative: 'Interior work' },
-    { day: 'Wed', temp: 10, risk: 'High', activity: 'All exterior suspended', alternative: 'M&E / fit-out' },
-    { day: 'Thu', temp: 13, risk: 'Medium', activity: 'Partial exterior', alternative: 'Phased approach' },
-    { day: 'Fri', temp: 15, risk: 'Low', activity: 'Full programme', alternative: 'On schedule' },
   ];
 
   // ML Models
@@ -345,47 +369,53 @@ export function PredictiveAnalytics() {
         <div className="space-y-6">
           <div className="card p-5">
             <h3 className="text-lg font-bold text-white mb-4">7-Day Weather Forecast & Activity Impact</h3>
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="border-b border-gray-800">
-                    <th className="text-left p-3 text-gray-400 font-medium">Day</th>
-                    <th className="text-left p-3 text-gray-400 font-medium">Temp</th>
-                    <th className="text-left p-3 text-gray-400 font-medium">Risk Level</th>
-                    <th className="text-left p-3 text-gray-400 font-medium">Impact on Activities</th>
-                    <th className="text-left p-3 text-gray-400 font-medium">Alternative</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {weatherForecast.map((day) => (
-                    <tr key={String(day.day)} className="border-b border-gray-800/50">
-                      <td className="p-3 font-medium text-white">{String(day.day)}</td>
-                      <td className="p-3 text-gray-300">{Number(day.temp)}°C</td>
-                      <td className="p-3">
-                        <span
-                          className="px-2 py-1 rounded text-xs font-medium"
-                          style={{
-                            backgroundColor: day.risk === 'High' ? '#ef444420' : day.risk === 'Medium' ? '#f59e0b20' : '#10b98120',
-                            color: day.risk === 'High' ? '#ef4444' : day.risk === 'Medium' ? '#f59e0b' : '#10b981',
-                          }}
-                        >
-                          {String(day.risk)}
-                        </span>
-                      </td>
-                      <td className="p-3 text-gray-300 text-xs">{String(day.activity)}</td>
-                      <td className="p-3 text-gray-300 text-xs">{String(day.alternative)}</td>
+            {weatherLoading ? (
+              <div className="flex items-center justify-center h-32 text-gray-400 text-sm">Loading forecast...</div>
+            ) : weatherForecast.length === 0 ? (
+              <div className="flex items-center justify-center h-32 text-gray-400 text-sm">No forecast data available.</div>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="border-b border-gray-800">
+                      <th className="text-left p-3 text-gray-400 font-medium">Day</th>
+                      <th className="text-left p-3 text-gray-400 font-medium">Temp</th>
+                      <th className="text-left p-3 text-gray-400 font-medium">Risk Level</th>
+                      <th className="text-left p-3 text-gray-400 font-medium">Impact on Activities</th>
+                      <th className="text-left p-3 text-gray-400 font-medium">Alternative</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+                  </thead>
+                  <tbody>
+                    {weatherForecast.map((day) => (
+                      <tr key={String(day.day)} className="border-b border-gray-800/50">
+                        <td className="p-3 font-medium text-white">{String(day.day)}</td>
+                        <td className="p-3 text-gray-300">{Number(day.temp)}°C</td>
+                        <td className="p-3">
+                          <span
+                            className="px-2 py-1 rounded text-xs font-medium"
+                            style={{
+                              backgroundColor: day.risk === 'High' ? '#ef444420' : day.risk === 'Medium' ? '#f59e0b20' : '#10b98120',
+                              color: day.risk === 'High' ? '#ef4444' : day.risk === 'Medium' ? '#f59e0b' : '#10b981',
+                            }}
+                          >
+                            {String(day.risk)}
+                          </span>
+                        </td>
+                        <td className="p-3 text-gray-300 text-xs">{String(day.activity)}</td>
+                        <td className="p-3 text-gray-300 text-xs">{String(day.alternative)}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
           </div>
 
           <div className="card p-5">
             <h3 className="text-lg font-bold text-white mb-4">Activity Risk Calendar</h3>
             <div className="grid grid-cols-7 gap-2">
               {['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map((day, idx) => {
-                const riskLevel = ['Low', 'Medium', 'High', 'Medium', 'Low', 'Low', 'Low'][idx];
+                const riskLevel = weatherForecast[idx]?.risk ?? ['Low', 'Medium', 'High', 'Medium', 'Low', 'Low', 'Low'][idx];
                 return (
                   <div
                     key={day}

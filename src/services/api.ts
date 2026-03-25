@@ -656,3 +656,51 @@ export const dashboardApi = {
   }>('/dashboard-data/overview'),
   getRevenueData: () => apiFetch<{ month: string; revenue: number }[]>('/dashboard-data/revenue'),
 };
+
+export const executiveReportsApi = {
+  getSummary: () => apiFetch<{
+    kpis: {
+      portfolioValue: number;
+      projectsActive: number;
+      revenueYtd: number;
+      margin: number;
+      workforce: number;
+    };
+    projects: Array<{
+      id: string;
+      name: string;
+      client: string;
+      value: number;
+      phase: string;
+      completion: number;
+      nextMilestone: string;
+      pm: string;
+      programme: string;
+      cost: string;
+      quality: string;
+      safety: string;
+    }>;
+  }>('/executive-reports/summary'),
+  getTrends: () => apiFetch<Array<{
+    month: string;
+    revenue: number;
+    margin: number;
+    headcount: number;
+  }>>('/executive-reports/trends'),
+};
+
+
+// ─── Weather / Predictive ───────────────────────────────────────────────────────
+
+export interface WeatherForecastDay {
+  day: string;
+  temp: number;
+  conditions?: string;
+  risk: 'Low' | 'Medium' | 'High';
+  activity: string;
+  alternative: string;
+}
+
+export const weatherApi = {
+  getForecast: () => apiFetch<WeatherForecastDay[]>('/weather-forecast'),
+};

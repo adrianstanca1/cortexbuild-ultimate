@@ -3,6 +3,7 @@ const bcrypt  = require('bcrypt');
 const jwt     = require('jsonwebtoken');
 const pool    = require('../db');
 const authMiddleware = require('../middleware/auth');
+const { logAudit } = require('./audit-helper');
 
 const router = express.Router();
 const SECRET = process.env.JWT_SECRET || 'cortexbuild_secret';
@@ -39,6 +40,7 @@ router.post('/register', async (req, res) => {
       [name.trim(), email.toLowerCase().trim(), hash, company.trim(), phone || null]
     );
     const newUser = rows[0];
+    logAudit({ auth: { userId: newUser.id, organization_id: newUser.organization_id, company_id: newUser.company_id }, action: 'create', entityType: 'users', entityId: newUser.id, newData: { email: newUser.email, role: newUser.role, name: newUser.name } });
 
     const token = jwt.sign(
       { id: newUser.id, email: newUser.email, role: newUser.role, name: newUser.name, company: newUser.company, organization_id: newUser.organization_id, company_id: newUser.company_id },
@@ -73,6 +75,7 @@ router.post('/login', async (req, res) => {
     );
 
     const { password_hash, ...safeUser } = user;
+    logAudit({ auth: { userId: user.id, organization_id: user.organization_id, company_id: user.company_id }, action: 'login', entityType: 'users', entityId: user.id, newData: { email: user.email } });
     res.json({ token, user: safeUser });
   } catch (err) {
     console.error('[auth/login]', err);
@@ -160,6 +163,8 @@ router.post('/users', authMiddleware, async (req, res) => {
       'INSERT INTO users (name,email,password_hash,role,company,phone,organization_id,company_id) VALUES ($1,$2,$3,$4,$5,$6,$7,$8) RETURNING id,name,email,role,company,phone,organization_id,company_id,created_at',
       [name, email.toLowerCase().trim(), hash, role, company || 'CortexBuild Ltd', phone || null, req.user.organization_id, req.user.company_id]
     );
+    const newUser = rows[0];
+    logAudit({ auth: req.user, action: 'create', entityType: 'users', entityId: newUser.id, newData: { email: newUser.email, role: newUser.role, name: newUser.name } });
     res.status(201).json(rows[0]);
   } catch (err) {
     if (err.code === '23505') return res.status(409).json({ message: 'Email already in use' });
@@ -176,8 +181,10 @@ router.delete('/users/:id', authMiddleware, async (req, res) => {
   if (String(req.params.id) === String(req.user.id)) return res.status(400).json({ message: 'Cannot delete your own account' });
 
   try {
+    const oldRows = await pool.query('SELECT * FROM users WHERE id = $1', [req.params.id]);
+    if (!oldRows.rowCount) return res.status(404).json({ message: 'User not found' });
     const { rowCount } = await pool.query('DELETE FROM users WHERE id = $1', [req.params.id]);
-    if (!rowCount) return res.status(404).json({ message: 'User not found' });
+    logAudit({ auth: req.user, action: 'delete', entityType: 'users', entityId: req.params.id, oldData: oldRows.rows[0] });
     res.json({ message: 'User deleted' });
   } catch (err) {
     res.status(500).json({ message: 'Server error' });

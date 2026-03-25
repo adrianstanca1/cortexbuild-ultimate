@@ -1,6 +1,6 @@
 // Module: Dashboard — CortexBuild Ultimate
 // World-class construction BI dashboard with KPI bar, sub-tabs, and live feeds
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import {
   TrendingUp, TrendingDown, BarChart2, Activity, PieChart, DollarSign,
   Users, Building2, CheckCircle, AlertTriangle, Clock, Plus, Search,
@@ -12,7 +12,7 @@ import {
   AreaChart, Area, BarChart, Bar, LineChart, Line, PieChart as RechartsPie,
   Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer,
 } from 'recharts';
-import { dashboardApi } from '../../services/api';
+import { dashboardApi, projectsApi, notificationsApi } from '../../services/api';
 
 type AnyRow = Record<string, unknown>;
 
@@ -105,43 +105,16 @@ export function Dashboard() {
   const [dashboardKpi, setDashboardKpi] = useState<{activeProjects: number; totalRevenue: number; outstanding: number; openRfis: number; hsScore: number; workforce: number} | null>(null);
   const [revenueFromApi, setRevenueFromApi] = useState<{month: string; revenue: number}[]>([]);
 
-  useEffect(() => {
-    dashboardApi.getOverview().then(data => {
-      setDashboardKpi(data.kpi);
-    }).catch(() => {});
-    dashboardApi.getRevenueData().then(data => {
-      setRevenueFromApi(data as {month: string; revenue: number}[]);
-    }).catch(() => {});
-  }, []);
+  // Projects state
+  const [projects, setProjects] = useState<Project[]>([]);
 
-  const fmtCurrency = (n: number) => {
-    if (n >= 1_000_000) return `£${(n / 1_000_000).toFixed(1)}M`;
-    if (n >= 1_000) return `£${(n / 1_000).toFixed(0)}K`;
-    return `£${n.toFixed(0)}`;
-  };
+  // Alerts state
+  const [alerts, setAlerts] = useState<Alert[]>([]);
 
-  // Mock project data
-  const projects: Project[] = [
-    { id: 1, name: 'Riverside Tower', client: 'AC Properties', value: 4200000, progress: 68, budgetRAG: 'green', programmeRAG: 'green', qualityRAG: 'green', daysToCompletion: 45, pmInitials: 'SC' },
-    { id: 2, name: 'Tech Hub Phase 2', client: 'TechCorp', value: 2850000, progress: 54, budgetRAG: 'amber', programmeRAG: 'amber', qualityRAG: 'green', daysToCompletion: 78, pmInitials: 'JM' },
-    { id: 3, name: 'Retail Centre Fit-out', client: 'Developers Ltd', value: 1950000, progress: 42, budgetRAG: 'green', programmeRAG: 'red', qualityRAG: 'amber', daysToCompletion: 92, pmInitials: 'PW' },
-  ];
+  // Activity feed state
+  const [activityFeed, setActivityFeed] = useState<ActivityFeed[]>([]);
 
-  // Mock alerts
-  const alerts: Alert[] = [
-    { id: '1', level: 'red', title: 'Schedule Variance Alert', description: 'Tech Hub Phase 2 is 12 days behind baseline' },
-    { id: '2', level: 'amber', title: 'Budget Watch', description: 'Retail Centre materials costs tracking 8% over budget' },
-  ];
-
-  // Mock activity feed
-  const activityFeed: ActivityFeed[] = [
-    { id: '1', user: 'Sarah Chen', action: 'Logged safety incident', module: 'Safety', time: '14 mins ago' },
-    { id: '2', user: 'James Miller', action: 'Raised change order CO-285', module: 'Projects', time: '32 mins ago' },
-    { id: '3', user: 'Patricia Watson', action: 'Approved invoice INV-5847', module: 'Finance', time: '1 hour ago' },
-    { id: '4', user: 'Michael Brown', action: 'Created RFI-1203', module: 'Quality', time: '2 hours ago' },
-  ];
-
-  // Mock chart data
+  // Mock chart data (used for cost comparison in revenue chart)
   const revenueData = [
     { month: 'Jan', revenue: 185000, cost: 142000 },
     { month: 'Feb', revenue: 220000, cost: 165000 },
@@ -150,6 +123,93 @@ export function Dashboard() {
     { month: 'May', revenue: 267000, cost: 200000 },
     { month: 'Jun', revenue: 310000, cost: 232000 },
   ];
+
+  useEffect(() => {
+    // Fetch KPI and revenue data from dashboardApi
+    dashboardApi.getOverview().then(data => {
+      setDashboardKpi(data.kpi);
+    }).catch(() => {});
+    dashboardApi.getRevenueData().then(data => {
+      setRevenueFromApi(data as {month: string; revenue: number}[]);
+    }).catch(() => {});
+
+    // Fetch projects from projectsApi
+    projectsApi.getAll().then((data: unknown) => {
+      const rows = data as AnyRow[];
+      setProjects(rows.slice(0, 10).map((row, idx) => ({
+        id: Number(row.id) || idx + 1,
+        name: String(row.name || `Project ${idx + 1}`),
+        client: String(row.client || row.company || 'Unknown Client'),
+        value: Number(row.value) || 0,
+        progress: Number(row.progress) || 0,
+        budgetRAG: (row.budgetRAG as 'red' | 'amber' | 'green') || 'green',
+        programmeRAG: (row.programmeRAG as 'red' | 'amber' | 'green') || 'green',
+        qualityRAG: (row.qualityRAG as 'red' | 'amber' | 'green') || 'green',
+        daysToCompletion: Number(row.daysToCompletion || row.daysRemaining) || 0,
+        pmInitials: String(row.pmInitials || row.projectManagerInitials || 'PM'),
+      })));
+    }).catch(() => {});
+
+    // Fetch notifications for alerts and activity feed
+    notificationsApi.getAll().then((data: unknown) => {
+      const rows = data as AnyRow[];
+      
+      // Map to alerts (limit 5, prefer amber/red level notifications)
+      const alertRows = rows
+        .filter((row) => row.level === 'amber' || row.level === 'red' || row.type === 'alert')
+        .slice(0, 5)
+        .map((row) => ({
+          id: String(row.id),
+          level: (row.level as 'amber' | 'red') || 'amber',
+          title: String(row.title || row.subject || 'Notification'),
+          description: String(row.message || row.description || ''),
+        }));
+      setAlerts(alertRows.length > 0 ? alertRows : [
+        { id: '1', level: 'amber' as const, title: 'No Alerts', description: 'No active alerts at this time' },
+      ]);
+
+      // Map to activity feed
+      const feedRows = rows.slice(0, 10).map((row) => ({
+        id: String(row.id),
+        user: String(row.userName || row.createdBy || row.actor || 'System'),
+        action: String(row.title || row.subject || row.message || 'Activity'),
+        module: String(row.module || row.category || row.type || 'General'),
+        time: String(row.createdAt ? formatTimeAgo(String(row.createdAt)) : 'Just now'),
+      }));
+      setActivityFeed(feedRows);
+    }).catch(() => {
+      // Fallback alerts and activity feed on error
+      setAlerts([
+        { id: '1', level: 'red' as const, title: 'Schedule Variance Alert', description: 'Tech Hub Phase 2 is 12 days behind baseline' },
+        { id: '2', level: 'amber' as const, title: 'Budget Watch', description: 'Retail Centre materials costs tracking 8% over budget' },
+      ]);
+      setActivityFeed([
+        { id: '1', user: 'Sarah Chen', action: 'Logged safety incident', module: 'Safety', time: '14 mins ago' },
+        { id: '2', user: 'James Miller', action: 'Raised change order CO-285', module: 'Projects', time: '32 mins ago' },
+        { id: '3', user: 'Patricia Watson', action: 'Approved invoice INV-5847', module: 'Finance', time: '1 hour ago' },
+        { id: '4', user: 'Michael Brown', action: 'Created RFI-1203', module: 'Quality', time: '2 hours ago' },
+      ]);
+    });
+  }, []);
+
+  function formatTimeAgo(dateString: string): string {
+    try {
+      const date = new Date(dateString);
+      const now = new Date();
+      const diffMs = now.getTime() - date.getTime();
+      const diffMins = Math.floor(diffMs / 60000);
+      const diffHours = Math.floor(diffMins / 60);
+      const diffDays = Math.floor(diffHours / 24);
+
+      if (diffMins < 1) return 'Just now';
+      if (diffMins < 60) return `${diffMins} mins ago`;
+      if (diffHours < 24) return `${diffHours} hour${diffHours > 1 ? 's' : ''} ago`;
+      if (diffDays < 7) return `${diffDays} day${diffDays > 1 ? 's' : ''} ago`;
+      return date.toLocaleDateString();
+    } catch {
+      return 'Recently';
+    }
+  }
 
   const projectStatusData = [
     { name: 'On Track', value: 7, fill: '#10b981' },
@@ -289,7 +349,7 @@ export function Dashboard() {
               <h3 className="text-lg font-bold text-white mb-4">Revenue vs Cost (12 Months)</h3>
               <div className="h-64">
                 <ResponsiveContainer width="100%" height="100%">
-                  <AreaChart data={revenueData}>
+                  <AreaChart data={revenueFromApi.length > 0 ? revenueFromApi : revenueData}>
                     <defs>
                       <linearGradient id="colorRev" x1="0" y1="0" x2="0" y2="1">
                         <stop offset="5%" stopColor="#10b981" stopOpacity={0.3} />
@@ -317,7 +377,7 @@ export function Dashboard() {
               <div className="h-64">
                 <ResponsiveContainer width="100%" height="100%">
                   <RechartsPie>
-                    <Pie data={projectStatusData as any} cx="50%" cy="50%" innerRadius={40} outerRadius={80} paddingAngle={2} dataKey="value">
+                    <Pie data={projectStatusData as unknown as AnyRow[]} cx="50%" cy="50%" innerRadius={40} outerRadius={80} paddingAngle={2} dataKey="value">
                       {projectStatusData.map((entry, index) => (
                         <Cell key={`cell-${index}`} fill={String(entry.fill)} />
                       ))}
@@ -353,6 +413,9 @@ export function Dashboard() {
                     <p className="text-sm font-bold text-emerald-400">{fmtCurrency(proj.value)}</p>
                   </div>
                 ))}
+                {projects.length === 0 && (
+                  <p className="text-xs text-gray-400 text-center py-4">No projects available</p>
+                )}
               </div>
             </div>
 
@@ -379,6 +442,9 @@ export function Dashboard() {
                     <span className="px-2 py-1 rounded-full bg-blue-500/20 text-blue-400 text-xs font-medium">{Number(proj.daysToCompletion)} days</span>
                   </div>
                 ))}
+                {projects.length === 0 && (
+                  <p className="text-xs text-gray-400 text-center py-4">No deadlines available</p>
+                )}
               </div>
             </div>
           </div>
@@ -434,6 +500,9 @@ export function Dashboard() {
                   </div>
                 </div>
               ))}
+              {projects.length === 0 && (
+                <p className="text-xs text-gray-400 text-center py-8 col-span-3">No projects available</p>
+              )}
             </div>
           </div>
 
@@ -441,7 +510,7 @@ export function Dashboard() {
             <h3 className="text-lg font-bold text-white mb-4">Project Values</h3>
             <div className="h-64">
               <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={projects.map((p) => ({ name: p.name, value: p.value }))}>
+                <BarChart data={projects.map((p) => ({ name: p.name, value: p.value })) as unknown as AnyRow[]}>
                   <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
                   <XAxis dataKey="name" stroke="#9ca3af" />
                   <YAxis stroke="#9ca3af" />
@@ -565,6 +634,9 @@ export function Dashboard() {
                 </div>
               </div>
             ))}
+            {activityFeed.length === 0 && (
+              <p className="text-xs text-gray-400 text-center py-8">No activity available</p>
+            )}
           </div>
         </div>
       )}
