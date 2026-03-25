@@ -12,7 +12,7 @@ Full system audit complete — all CRUD + upload working, code-splitting improve
 2026-03-25
 
 ## Last Commit
-`2838bad` — "feat: add bulk CSV import/export to Safety, Documents, Subcontractors, Training, RAMS"
+`973eaf4` — "Add Zod validation to Teams and Safety modules"
 
 ## What Works
 - **Upload**: All 16 modules have file upload (Teams, Documents, Safety, RAMS, Certifications, Training, Specifications, Valuations, Defects, Signage, Lettings, Measuring, Prequalification, Sustainability, WasteManagement, TempWorks)
@@ -40,15 +40,18 @@ RAMS, Subcontractors, Documents, Safety, Projects, Tenders, Invoicing, Accountin
 Analytics, FieldView, SiteOperations, AuditLog, FinancialReports, PredictiveAnalytics, Insights, AIAssistant, Marketplace, Settings, ExecutiveReports, PermissionsManager, Valuations, Variations, Defects, Specifications, Certifications, Signage, Sustainability, Training, WasteManagement, EmailHistory, Prequalification, Measuring, Dashboard, GlobalSearch
 
 ## Current Position
-All major CRUD features complete: bulk actions (40+ modules), bulk import (6 modules), edit modals (27 modules), file upload (16 modules). 0 security vulnerabilities. Deployed to VPS.
+All major CRUD features complete: bulk actions (40+ modules), bulk import (6 modules), edit modals (27 modules), file upload (16 modules). 0 security vulnerabilities. Zod validation added to Teams + Safety. Notification system DB table created + seeded. Deployed to VPS.
 
-## Blockers
-None — all previous blockers resolved.
+## Form Validation (Zod)
+Modules with Zod schemas: Teams, Safety (done). Next: RAMS, Documents, Subcontractors, RFIs, ChangeOrders.
+
+## Notification System
+DB table `notifications` created (VPS). 5 sample notifications seeded. Backend WebSocket + routes exist. Frontend `NotificationsPanel.tsx` + `useNotifications.ts` hook built.
 
 ## Resume Instructions
 1. `npm run build` locally (verify build passes)
-2. `ssh root@72.62.132.43` → `cd /var/www/cortexbuild-ultimate && git pull && npm run build && pm2 restart cortexbuild-api`
-3. Next: Explore new features, optimize performance, or enhance existing modules
+2. `ssh root@72.62.132.43` → `cd /var/www/cortexbuild-ultimate && git pull && npm run build` (API runs via `node server/index.js`, not PM2)
+3. Next: Continue Zod validation, add dark/light theme toggle, dashboard customization, API rate limiting, data export, unit/E2E tests
 
 ## Key Patterns
 - Upload: `uploadFile(file, 'CATEGORY')` from `src/services/api.ts`
