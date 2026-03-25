@@ -12,7 +12,7 @@ Full system audit complete — all CRUD + upload working, code-splitting improve
 2026-03-25
 
 ## Last Commit
-`9f11139` — "feat: wire Safety permits and toolbox talks to real API"
+`de5697b` — "feat: add drawing_transmittals table and API method"
 
 ## What Works
 - **Upload**: All 16 modules have file upload (Teams, Documents, Safety, RAMS, Certifications, Training, Specifications, Valuations, Defects, Signage, Lettings, Measuring, Prequalification, Sustainability, WasteManagement, TempWorks)
@@ -34,9 +34,9 @@ Full system audit complete — all CRUD + upload working, code-splitting improve
 - **Form Validation**: Zod schemas added to 7 modules: Teams, Safety, RAMS, Documents, Subcontractors, RFIs, ChangeOrders
 - **WebSocket Event Bus**: `src/lib/eventBus.ts` singleton enables WS messages to invalidate React Query caches. `useNotifications.ts` emits events on WS connect/disconnect/message. `useData.ts` hooks subscribe and invalidate on WS messages.
 - **Team Member Data API**: Backend routes at `/api/team-member-data/` for skills, inductions, and availability with dedicated DB tables (`team_member_skills`, `team_member_inductions`, `team_member_availability`). Teams module tabs now use real API instead of mock data.
-- **Real API Wiring**: FieldView permits (site_permits), PlantEquipment service/hire logs, RiskRegister mitigation actions (risk_mitigation_actions), CRM interactions (contact_interactions), Analytics overtime/VAT charts (aggregated from timesheets/invoices via /api/analytics-data/), Safety permits (safety_permits), Safety toolbox talks (toolbox_talks). All hardcoded mock data removed from these modules.
+- **Real API Wiring**: FieldView permits (site_permits), PlantEquipment service/hire logs, RiskRegister mitigation actions (risk_mitigation_actions), CRM interactions (contact_interactions), Analytics overtime/VAT charts (aggregated from timesheets/invoices via /api/analytics-data/), Safety permits (safety_permits), Safety toolbox talks (toolbox_talks), FinancialReports (financialReportsApi). All hardcoded mock data removed from these modules.
 - **Analytics Aggregation API**: `/api/analytics-data/overtime` (monthly OT% from timesheets), `/api/analytics-data/vat` (quarterly VAT liability from invoices). Fallback to hardcoded data on API error.
-- **New DB Tables**: risk_mitigation_actions (5 seed records), contact_interactions (9 seed records), bringing total to 47 tables.
+- **New DB Tables**: risk_mitigation_actions (5 seed), contact_interactions (9 seed), safety_permits (5 seed), toolbox_talks (4 seed), drawing_transmittals (5 seed). Total: 50 tables.
 
 ## Architecture (Two API Patterns)
 1. **Direct api.ts** (19 modules): `useEffect` → `api.getAll()` — legacy pattern
