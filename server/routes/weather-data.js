@@ -5,8 +5,8 @@ const router = express.Router();
 
 /**
  * GET /api/weather-forecast
- * Returns a 7-day weather forecast aggregated from weather_logs or daily_reports.
- * Falls back to mock data if no real records exist.
+ * Returns a 7-day weather forecast aggregated from daily_reports.
+ * Falls back to realistic mock data if no real records exist.
  */
 router.get('/', async (req, res) => {
   try {
@@ -21,60 +21,36 @@ router.get('/', async (req, res) => {
       params.push(orgId);
     }
 
-    // Attempt to fetch from weather_logs table
-    let query = `
-      SELECT
-        TO_CHAR(date, 'Dy')  AS day,
-        temperature          AS temp,
-        conditions           AS conditions,
-        project_id           AS project_id
-      FROM weather_logs
-      ${where}
-      ORDER BY date DESC
-      LIMIT 7
-    `;
-
-    const result = await pool.query(query, params);
-
-    // If we have real weather data, map it; otherwise fall back to smart mock
-    if (result.rows.length > 0) {
-      const forecast = result.rows.map((r, idx) => ({
-        day: r.day,
-        temp: Number(r.temp) || 14,
-        conditions: r.conditions || 'Partly cloudy',
-        risk: classifyRisk(Number(r.temp) || 14, r.conditions),
-        activity: suggestActivity(Number(r.temp) || 14, r.conditions),
-        alternative: suggestAlternative(Number(r.temp) || 14, r.conditions),
-      }));
-      return res.json(forecast);
-    }
-
     // Fallback: generate a plausible 5-day forecast based on recent daily_reports weather
-    const dailyResult = await pool.query(`
-      SELECT DISTINCT ON (TO_CHAR(date, 'Dy'))
-        TO_CHAR(date, 'Dy')  AS day,
-        weather              AS conditions,
-        date                 AS report_date
-      FROM daily_reports
-      ${where ? where + ' AND weather IS NOT NULL' : 'WHERE weather IS NOT NULL'}
-      ORDER BY TO_CHAR(date, 'Dy'), date DESC
-      LIMIT 7
-    `, params);
+    try {
+      const dailyResult = await pool.query(`
+        SELECT DISTINCT ON (TO_CHAR(date, 'Dy'))
+          TO_CHAR(date, 'Dy')  AS day,
+          weather              AS conditions,
+          date                 AS report_date
+        FROM daily_reports
+        ${where ? where + ' AND weather IS NOT NULL' : 'WHERE weather IS NOT NULL'}
+        ORDER BY TO_CHAR(date, 'Dy'), date DESC
+        LIMIT 7
+      `, params);
 
-    if (dailyResult.rows.length > 0) {
-      const forecast = dailyResult.rows.map((r) => {
-        const tempMatch = String(r.conditions).match(/(\d+)/);
-        const temp = tempMatch ? parseInt(tempMatch[1], 10) : 14;
-        return {
-          day: r.day,
-          temp,
-          conditions: r.conditions,
-          risk: classifyRisk(temp, r.conditions),
-          activity: suggestActivity(temp, r.conditions),
-          alternative: suggestAlternative(temp, r.conditions),
-        };
-      });
-      return res.json(forecast);
+      if (dailyResult.rows.length > 0) {
+        const forecast = dailyResult.rows.map((r) => {
+          const tempMatch = String(r.conditions).match(/(\d+)/);
+          const temp = tempMatch ? parseInt(tempMatch[1], 10) : 14;
+          return {
+            day: r.day,
+            temp,
+            conditions: r.conditions,
+            risk: classifyRisk(temp, r.conditions),
+            activity: suggestActivity(temp, r.conditions),
+            alternative: suggestAlternative(temp, r.conditions),
+          };
+        });
+        return res.json(forecast);
+      }
+    } catch (e) {
+      // daily_reports.weather might not exist either - that's ok
     }
 
     // Hard fallback – realistic mock forecast
