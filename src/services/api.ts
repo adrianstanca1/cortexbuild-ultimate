@@ -185,6 +185,21 @@ export const equipmentApi = {
   create: (data: Row) => insertRow('equipment', data),
   update: (id: string, data: Row) => updateRow('equipment', id, data),
   delete: (id: string) => deleteRow('equipment', id),
+  getServiceLogs: () => fetchAll('equipment-service-logs'),
+  createServiceLog: (data: Row) => insertRow('equipment-service-logs', data),
+  deleteServiceLog: (id: string) => deleteRow('equipment-service-logs', id),
+  getHireLogs: () => fetchAll('equipment-hire-logs'),
+  createHireLog: (data: Row) => insertRow('equipment-hire-logs', data),
+  updateHireLog: (id: string, data: Row) => updateRow('equipment-hire-logs', id, data),
+  deleteHireLog: (id: string) => deleteRow('equipment-hire-logs', id),
+};
+
+export const sitePermitsApi = {
+  getAll: () => fetchAll('site-permits'),
+  getById: (id: string) => apiFetch(`/site-permits/${id}`),
+  create: (data: Row) => insertRow('site-permits', data),
+  update: (id: string, data: Row) => updateRow('site-permits', id, data),
+  delete: (id: string) => deleteRow('site-permits', id),
 };
 
 export const subcontractorsApi = {

@@ -1,10 +1,11 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import {
   Truck, Plus, Search, Wrench, AlertTriangle, CheckCircle2, Clock, Edit2, Trash2, X,
   ChevronDown, ChevronUp, Calendar, DollarSign, Filter, MapPin, Tag, Activity, Settings,
   RefreshCw, BarChart3, ChevronRight, CheckSquare, Square
 } from 'lucide-react';
 import { useEquipment } from '../../hooks/useData';
+import { equipmentApi } from '../../services/api';
 import { toast } from 'sonner';
 import { BulkActionsBar, useBulkSelection } from '../ui/BulkActions';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
@@ -41,25 +42,6 @@ const emptyHireForm = {
   endDate: '', project: ''
 };
 
-// Mock data for service history
-const mockServiceHistory = [
-  { date: '2025-02-15', type: 'Routine', technician: 'John Smith', notes: 'Oil change, filter replacement' },
-  { date: '2025-01-20', type: 'Inspection', technician: 'Sarah Jones', notes: 'LOLER inspection passed' },
-  { date: '2024-12-10', type: 'Major', technician: 'Mike Brown', notes: 'Hydraulic system overhaul' }
-];
-
-const mockServiceLog = [
-  { id: 1, equipment: 'CAT 320 Excavator', date: '2025-02-20', type: 'Routine', technician: 'John Smith', nextDue: '2025-05-20' },
-  { id: 2, equipment: 'JCB 3CX Backhoe', date: '2025-02-15', type: 'LOLER', technician: 'Sarah Jones', nextDue: '2026-02-15' },
-  { id: 3, equipment: 'Liebherr 450 Crane', date: '2025-02-10', type: 'Major', technician: 'Mike Brown', nextDue: '2025-08-10' }
-];
-
-const mockHireLog = [
-  { id: 1, name: 'Manitowoc 18000 Crane', company: 'Mammoet UK', dailyRate: 2500, startDate: '2025-02-01', endDate: '2025-03-15', project: 'London High Rise', status: 'Active' },
-  { id: 2, name: 'JLG 1200SJP MEWP', company: 'HSS Hire', dailyRate: 150, startDate: '2025-02-10', endDate: '2025-03-10', project: 'Office Renovation', status: 'Active' },
-  { id: 3, name: 'Volvo EC480E Excavator', company: 'Hitachi Sales', dailyRate: 800, startDate: '2025-01-15', endDate: '2025-02-28', project: 'Site Prep', status: 'Completed' }
-];
-
 export function PlantEquipment() {
   const { useList, useCreate, useUpdate, useDelete } = useEquipment;
   const { data: raw = [], isLoading } = useList();
@@ -80,6 +62,14 @@ export function PlantEquipment() {
   const [equipmentForm, setEquipmentForm] = useState(emptyEquipmentForm);
   const [serviceForm, setServiceForm] = useState(emptyServiceForm);
   const [hireForm, setHireForm] = useState(emptyHireForm);
+
+  const [serviceLogs, setServiceLogs] = useState<AnyRow[]>([]);
+  const [hireLogs, setHireLogs] = useState<AnyRow[]>([]);
+
+  useEffect(() => {
+    equipmentApi.getServiceLogs().then(data => setServiceLogs(data as AnyRow[])).catch(() => {});
+    equipmentApi.getHireLogs().then(data => setHireLogs(data as AnyRow[])).catch(() => {});
+  }, []);
 
   const { selectedIds, toggle, clearSelection } = useBulkSelection();
 
@@ -126,8 +116,8 @@ export function PlantEquipment() {
   };
 
   // Hire management
-  const activeHires = mockHireLog.filter(h => h.status === 'Active');
-  const totalHireCost = activeHires.reduce((sum, h) => sum + (h.dailyRate * 30), 0); // Monthly projection
+  const activeHires = hireLogs.filter(h => h.status === 'Active');
+  const totalHireCost = activeHires.reduce((sum, h) => sum + (Number(h.daily_rate) * 30), 0); // Monthly projection
 
   // Utilisation data
   const utilisationData = equipment.map(e => ({
@@ -493,13 +483,13 @@ export function PlantEquipment() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-700">
-                  {mockServiceLog.map((row) => (
-                    <tr key={row.id} className="hover:bg-gray-700/50">
-                      <td className="px-4 py-3 text-gray-100 font-medium">{row.equipment}</td>
-                      <td className="px-4 py-3 text-gray-300">{row.date}</td>
-                      <td className="px-4 py-3 text-gray-300">{row.type}</td>
-                      <td className="px-4 py-3 text-gray-300">{row.technician}</td>
-                      <td className="px-4 py-3 text-gray-200">{row.nextDue}</td>
+                  {serviceLogs.map((row) => (
+                    <tr key={String(row.id)} className="hover:bg-gray-700/50">
+                      <td className="px-4 py-3 text-gray-100 font-medium">{String(row.equipment_id ?? '').slice(0, 8)}</td>
+                      <td className="px-4 py-3 text-gray-300">{String(row.date ?? '')}</td>
+                      <td className="px-4 py-3 text-gray-300">{String(row.type ?? '')}</td>
+                      <td className="px-4 py-3 text-gray-300">{String(row.technician ?? '')}</td>
+                      <td className="px-4 py-3 text-gray-200">{String(row.next_due ?? '')}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -529,7 +519,7 @@ export function PlantEquipment() {
           </div>
 
           {/* Hire Table */}
-          {mockHireLog.length === 0 ? (
+          {hireLogs.length === 0 ? (
             <div className="text-center py-12 bg-gray-800 rounded-lg border border-gray-700">
               <Tag size={40} className="mx-auto mb-3 text-gray-600" />
               <p className="text-gray-400 font-medium">No hired equipment</p>
@@ -547,26 +537,26 @@ export function PlantEquipment() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-700">
-                  {mockHireLog.map((row) => {
+                  {hireLogs.map((row) => {
                     const days = Math.ceil(
-                      (new Date(row.endDate).getTime() - new Date(row.startDate).getTime()) / 86400000
+                      (new Date(String(row.end_date)).getTime() - new Date(String(row.start_date)).getTime()) / 86400000
                     );
-                    const totalCost = row.dailyRate * days;
+                    const totalCost = Number(row.daily_rate) * days;
                     return (
-                      <tr key={row.id} className="hover:bg-gray-700/50">
-                        <td className="px-4 py-3 text-gray-100 font-medium">{row.name}</td>
-                        <td className="px-4 py-3 text-gray-300">{row.company}</td>
-                        <td className="px-4 py-3 text-gray-100 font-medium">£{row.dailyRate.toLocaleString()}</td>
-                        <td className="px-4 py-3 text-gray-300">{row.startDate}</td>
-                        <td className="px-4 py-3 text-gray-300">{row.endDate}</td>
-                        <td className="px-4 py-3 text-gray-300">{row.project}</td>
+                      <tr key={String(row.id)} className="hover:bg-gray-700/50">
+                        <td className="px-4 py-3 text-gray-100 font-medium">{String(row.name ?? '')}</td>
+                        <td className="px-4 py-3 text-gray-300">{String(row.company ?? '')}</td>
+                        <td className="px-4 py-3 text-gray-100 font-medium">£{Number(row.daily_rate).toLocaleString()}</td>
+                        <td className="px-4 py-3 text-gray-300">{String(row.start_date ?? '')}</td>
+                        <td className="px-4 py-3 text-gray-300">{String(row.end_date ?? '')}</td>
+                        <td className="px-4 py-3 text-gray-300">{String(row.project ?? '')}</td>
                         <td className="px-4 py-3">
                           <span className={`text-xs px-2 py-1 rounded font-medium ${
                             row.status === 'Active'
-                              ? 'bg-green-900/30 text-green-300'
-                              : 'bg-gray-700/50 text-gray-300'
+                                ? 'bg-green-900/30 text-green-300'
+                                : 'bg-gray-700/50 text-gray-300'
                           }`}>
-                            {row.status}
+                            {String(row.status ?? '')}
                           </span>
                         </td>
                         <td className="px-4 py-3 text-gray-100 font-semibold">£{totalCost.toLocaleString()}</td>
@@ -701,13 +691,13 @@ export function PlantEquipment() {
               <div className="border-t border-gray-700 pt-6">
                 <h3 className="text-sm font-semibold text-gray-100 mb-4">Service History</h3>
                 <div className="space-y-3">
-                  {mockServiceHistory.map((item, idx) => (
-                    <div key={idx} className="flex items-start gap-3 pb-3 border-b border-gray-700">
+                  {serviceLogs.slice(0, 10).map((item: AnyRow, idx: number) => (
+                    <div key={String(item.id ?? idx)} className="flex items-start gap-3 pb-3 border-b border-gray-700">
                       <Calendar size={16} className="text-gray-500 mt-0.5 flex-shrink-0" />
                       <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium text-gray-100">{item.type}</p>
-                        <p className="text-xs text-gray-400">{item.date} • {item.technician}</p>
-                        <p className="text-xs text-gray-300 mt-1">{item.notes}</p>
+                        <p className="text-sm font-medium text-gray-100">{String(item.type ?? '')}</p>
+                        <p className="text-xs text-gray-400">{String(item.date ?? '')} • {String(item.technician ?? '')}</p>
+                        <p className="text-xs text-gray-300 mt-1">{String(item.notes ?? '')}</p>
                       </div>
                     </div>
                   ))}

@@ -1,10 +1,11 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
   MapPin, Users, AlertTriangle, CheckCircle, Clock, Building2, Layers,
   Navigation2, CloudRain, Sun, Cloud, FileText, ShieldAlert, Wind,
   Map, Calendar, BarChart3, FileCheck, Zap, CheckSquare, Square, Trash2
 } from 'lucide-react';
 import { useProjects, useDailyReports, useSafety } from '../../hooks/useData';
+import { sitePermitsApi } from '../../services/api';
 import { BulkActionsBar, useBulkSelection } from '../ui/BulkActions';
 import { toast } from 'sonner';
 
@@ -72,6 +73,19 @@ export function FieldView() {
   const [subTab, setSubTab] = useState<SubTab>('live');
   const [selectedProject, setSelectedProject] = useState<string>('all');
   const [selectedWeatherProject, setSelectedWeatherProject] = useState<string>('london');
+  const [permits, setPermits] = useState<AnyRow[]>([]);
+
+  useEffect(() => {
+    sitePermitsApi.getAll().then(data => {
+      const mapped = (data as AnyRow[]).map(p => ({
+        ...p,
+        issuedBy: p.issued_by,
+        from: p.from_date,
+        to: p.to_date,
+      }));
+      setPermits(mapped);
+    }).catch(() => {});
+  }, []);
 
   const { selectedIds, toggle, clearSelection } = useBulkSelection();
 
@@ -132,14 +146,6 @@ export function FieldView() {
       suitable: !['Heavy Rain', 'Light Rain'].includes(weatherSeq[i]),
     }));
   };
-
-  // Mock permits
-  const mockPermits = [
-    { id: '1', type: 'Hot Work', site: 'London E14', issuedBy: 'Sarah Johnson', from: '2026-03-20', to: '2026-03-27', status: 'Active' },
-    { id: '2', type: 'Confined Space', site: 'Manchester M1', issuedBy: 'Mike Chen', from: '2026-03-18', to: '2026-03-25', status: 'Active' },
-    { id: '3', type: 'Working at Height', site: 'Birmingham B1', issuedBy: 'Emma Davis', from: '2026-03-15', to: '2026-03-22', status: 'Expired' },
-    { id: '4', type: 'Excavation', site: 'Coventry CV1', issuedBy: 'John Smith', from: '2026-03-21', to: '2026-03-28', status: 'Active' },
-  ];
 
   return (
     <div className="p-6 space-y-6 bg-gray-900 min-h-screen">
@@ -439,20 +445,20 @@ export function FieldView() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-700">
-                {mockPermits.map(permit => {
-                  const isSelected = selectedIds.has(permit.id);
+                {permits.map(permit => {
+                  const isSelected = selectedIds.has(String(permit.id));
                   return (
-                    <tr key={permit.id} className="hover:bg-gray-700/30 transition-colors">
+                    <tr key={String(permit.id)} className="hover:bg-gray-700/30 transition-colors">
                       <td className="px-4 py-3">
-                        <button type="button" onClick={e => { e.stopPropagation(); toggle(permit.id); }}>
+                        <button type="button" onClick={e => { e.stopPropagation(); toggle(String(permit.id)); }}>
                           {isSelected ? <CheckSquare size={16} className="text-blue-400"/> : <Square size={16} className="text-gray-500"/>}
                         </button>
                       </td>
-                      <td className="px-4 py-3 text-gray-300">{permit.type}</td>
-                      <td className="px-4 py-3 text-gray-300">{permit.site}</td>
-                      <td className="px-4 py-3 text-gray-400">{permit.issuedBy}</td>
-                      <td className="px-4 py-3 text-gray-400">{permit.from}</td>
-                      <td className="px-4 py-3 text-gray-400">{permit.to}</td>
+                      <td className="px-4 py-3 text-gray-300">{String(permit.type ?? '')}</td>
+                      <td className="px-4 py-3 text-gray-300">{String(permit.site ?? '')}</td>
+                      <td className="px-4 py-3 text-gray-400">{String(permit.issuedBy ?? '')}</td>
+                      <td className="px-4 py-3 text-gray-400">{String(permit.from ?? '')}</td>
+                      <td className="px-4 py-3 text-gray-400">{String(permit.to ?? '')}</td>
                       <td className="px-4 py-3">
                         <span
                           className={`text-xs px-2 py-0.5 rounded-full font-medium border ${
@@ -463,7 +469,7 @@ export function FieldView() {
                                 : 'bg-gray-500/20 text-gray-300 border-gray-500/30'
                           }`}
                         >
-                          {permit.status}
+                          {String(permit.status ?? '')}
                         </span>
                       </td>
                     </tr>
