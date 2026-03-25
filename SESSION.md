@@ -12,25 +12,25 @@ Full system audit complete — all CRUD + upload working, code-splitting improve
 2026-03-25
 
 ## Last Commit
-`e6d2546` — "feat: add bulk actions to RAMS, RFIs, ChangeOrders, Subcontractors, Timesheets"
+`93c5643` — "feat: add bulk actions to 15 more modules"
 
 ## What Works
 - **Upload**: All 16 modules have file upload (Teams, Documents, Safety, RAMS, Certifications, Training, Specifications, Valuations, Defects, Signage, Lettings, Measuring, Prequalification, Sustainability, WasteManagement, TempWorks)
 - **CRUD**: All 32+ backend routes via generic.js router — fully functional
 - **Code Splitting**: index.js 170KB (88% reduction) — modules lazy-loaded
-- **Bulk Actions**: BulkActionsBar + useBulkSelection integrated in 8 modules: Teams, Safety, Documents, RAMS, RFIs, ChangeOrders, Subcontractors, Timesheets
+- **Bulk Actions**: BulkActionsBar + useBulkSelection integrated in 23 modules (bulk delete on all, plus status actions on some)
 - **Bulk Import**: DataImporter component integrated in Teams module (CSV import with column mapping)
 - **Database**: 43 tables, all aligned with backend generic.js ALLOWED_COLUMNS
 - **Auth**: JWT middleware active on all API endpoints
-- **Deployment**: GitHub → VPS pull → build → PM2 restart working
+- **Deployment**: GitHub → VPS pull → build → PM2 restart working (PM2 #74)
 
 ## Architecture (Two API Patterns)
 1. **Direct api.ts** (19 modules): `useEffect` → `api.getAll()` — legacy pattern
 2. **React Query useData hook** (28 modules): `useList()`, `useCreate()` — modern pattern
 
-## Modules with Bulk Actions
+## Modules with Bulk Actions (23 modules)
 | Module | Bulk Delete | Bulk Status | Bulk Import |
-|--------|-------------|------------|------------|
+|--------|-------------|------------|-------------|
 | Teams | ✓ | — | ✓ CSV |
 | Safety | ✓ | ✓ Close | — |
 | Documents | ✓ | ✓ Current/Review | — |
@@ -39,9 +39,31 @@ Full system audit complete — all CRUD + upload working, code-splitting improve
 | ChangeOrders | ✓ | ✓ Approve | — |
 | Subcontractors | ✓ | — | — |
 | Timesheets | ✓ | — | — |
+| Procurement | ✓ | — | — |
+| PlantEquipment | ✓ | — | — |
+| Inspections | ✓ | — | — |
+| Variations | ✓ | — | — |
+| Defects | ✓ | — | — |
+| Valuations | ✓ | — | — |
+| Specifications | ✓ | — | — |
+| DailyReports | ✓ | — | — |
+| Meetings | ✓ | — | — |
+| Materials | ✓ | — | — |
+| PunchList | ✓ | — | — |
+| RiskRegister | ✓ | — | — |
+| Drawings | ✓ | — | — |
+| CRM | ✓ | — | — |
+| CIS | ✓ | — | — |
+| Accounting | ✓ | — | — |
+| Invoicing | ✓ | — | — |
+| Tenders | ✓ | — | — |
+| Training | ✓ | — | — |
+
+## Modules WITHOUT Bulk Actions
+Lettings, Measuring, Prequalification, Sustainability, WasteManagement, TempWorks, Signage, Certifications, Analytics, FieldView, Calendar, SiteOperations, ExecutiveReports, Insights, Marketplace, Settings, AIAssistant, AuditLog, FinancialReports, PredictiveAnalytics, Notifications, Permissions, Projects
 
 ## Current Position
-Bulk actions fully integrated across 8 modules. All deployed to VPS.
+Bulk actions integrated across 23 modules. All deployed to VPS. 27 modules remain without bulk actions.
 
 ## Blockers
 - 5 static/mock modules: ExecutiveReports, Insights, Marketplace, Settings, AIAssistant (no CRUD)
@@ -51,7 +73,7 @@ Bulk actions fully integrated across 8 modules. All deployed to VPS.
 ## Resume Instructions
 1. `npm run build` locally (verify build passes)
 2. `ssh root@72.62.132.43` → `cd /var/www/cortexbuild-ultimate && git pull && npm run build && pm2 restart cortexbuild-api`
-3. Next: Add bulk actions to remaining modules (Procurement, PlantEquipment, Inspections, Variations, Defects, Valuations, etc.)
+3. Next: Add bulk actions to remaining modules or work on other features
 
 ## Key Patterns
 - Upload: `uploadFile(file, 'CATEGORY')` from `src/services/api.ts`
