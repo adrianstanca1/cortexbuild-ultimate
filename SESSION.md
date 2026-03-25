@@ -12,7 +12,7 @@ Full system audit complete — all CRUD + upload working, code-splitting improve
 2026-03-25
 
 ## Last Commit
-`d7ca3be` — "feat: wire CRM interactions and Analytics charts to real API"
+`9f11139` — "feat: wire Safety permits and toolbox talks to real API"
 
 ## What Works
 - **Upload**: All 16 modules have file upload (Teams, Documents, Safety, RAMS, Certifications, Training, Specifications, Valuations, Defects, Signage, Lettings, Measuring, Prequalification, Sustainability, WasteManagement, TempWorks)
@@ -21,7 +21,7 @@ Full system audit complete — all CRUD + upload working, code-splitting improve
 - **Bulk Actions**: BulkActionsBar + useBulkSelection integrated in ALL 40+ modules with bulk delete
 - **Bulk Import**: DataImporter component integrated in 6 modules (Teams, Safety, Documents, Subcontractors, Training, RAMS) — CSV import with column mapping + CSV/JSON export
 - **Edit Modals**: 27 modules have edit modals; 28 modules are intentionally read-only (analytics, dashboards, logs, reports, settings)
-- **Database**: 47 tables, all aligned with backend generic.js ALLOWED_COLUMNS, all with organization_id/company_id columns for multi-tenancy
+- **Database**: 49 tables, all aligned with backend generic.js ALLOWED_COLUMNS, all with organization_id/company_id columns for multi-tenancy
 - **Auth**: JWT middleware active on all API endpoints — JWT includes organization_id and company_id
 - **Multi-Tenancy**: All generic.js CRUD routes filter by organization_id (super_admin bypasses filter). Tables have organization_id and company_id columns.
 - **Security**: 0 npm vulnerabilities (vercel package removed as it was unused)
@@ -34,7 +34,7 @@ Full system audit complete — all CRUD + upload working, code-splitting improve
 - **Form Validation**: Zod schemas added to 7 modules: Teams, Safety, RAMS, Documents, Subcontractors, RFIs, ChangeOrders
 - **WebSocket Event Bus**: `src/lib/eventBus.ts` singleton enables WS messages to invalidate React Query caches. `useNotifications.ts` emits events on WS connect/disconnect/message. `useData.ts` hooks subscribe and invalidate on WS messages.
 - **Team Member Data API**: Backend routes at `/api/team-member-data/` for skills, inductions, and availability with dedicated DB tables (`team_member_skills`, `team_member_inductions`, `team_member_availability`). Teams module tabs now use real API instead of mock data.
-- **Real API Wiring**: FieldView permits (site_permits), PlantEquipment service/hire logs, RiskRegister mitigation actions (risk_mitigation_actions), CRM interactions (contact_interactions), Analytics overtime/VAT charts (aggregated from timesheets/invoices via /api/analytics-data/). All hardcoded mock data removed from these modules.
+- **Real API Wiring**: FieldView permits (site_permits), PlantEquipment service/hire logs, RiskRegister mitigation actions (risk_mitigation_actions), CRM interactions (contact_interactions), Analytics overtime/VAT charts (aggregated from timesheets/invoices via /api/analytics-data/), Safety permits (safety_permits), Safety toolbox talks (toolbox_talks). All hardcoded mock data removed from these modules.
 - **Analytics Aggregation API**: `/api/analytics-data/overtime` (monthly OT% from timesheets), `/api/analytics-data/vat` (quarterly VAT liability from invoices). Fallback to hardcoded data on API error.
 - **New DB Tables**: risk_mitigation_actions (5 seed records), contact_interactions (9 seed records), bringing total to 47 tables.
 
