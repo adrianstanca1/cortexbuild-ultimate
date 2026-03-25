@@ -187,7 +187,7 @@ export function Drawings() {
           <h1 className="text-3xl font-bold text-white">Drawings</h1>
           <p className="text-sm text-gray-400 mt-1">Drawing register & revision control</p>
         </div>
-        <button onClick={openCreateDrawing} className="flex items-center gap-2 px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 text-sm font-medium transition-colors">
+        <button type="button" onClick={openCreateDrawing} className="flex items-center gap-2 px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 text-sm font-medium transition-colors">
           <Plus size={16}/><span>Add Drawing</span>
         </button>
       </div>
@@ -302,8 +302,8 @@ export function Drawings() {
                       <td className="px-4 py-3">
                         <div className="flex items-center gap-1">
                           {!!d.file_url && <a href={String(d.file_url)} target="_blank" rel="noopener noreferrer" className="p-1.5 text-blue-400 hover:bg-blue-900/30 rounded" onClick={e=>e.stopPropagation()} title="View"><Eye size={14}/></a>}
-                          <button onClick={(e)=>{e.stopPropagation();openEdit(d);}} className="p-1.5 text-gray-400 hover:text-blue-400 hover:bg-blue-900/30 rounded" title="Edit"><Edit2 size={14}/></button>
-                          <button onClick={(e)=>{e.stopPropagation();handleDelete(String(d.id));}} className="p-1.5 text-gray-400 hover:text-red-400 hover:bg-red-900/30 rounded" title="Delete"><Trash2 size={14}/></button>
+                          <button type="button" onClick={(e)=>{e.stopPropagation();openEdit(d);}} className="p-1.5 text-gray-400 hover:text-blue-400 hover:bg-blue-900/30 rounded" title="Edit"><Edit2 size={14}/></button>
+                          <button type="button" onClick={(e)=>{e.stopPropagation();handleDelete(String(d.id));}} className="p-1.5 text-gray-400 hover:text-red-400 hover:bg-red-900/30 rounded" title="Delete"><Trash2 size={14}/></button>
                         </div>
                       </td>
                     </tr>
@@ -328,7 +328,7 @@ export function Drawings() {
                 className="w-full pl-9 pr-4 py-2 text-sm bg-gray-700 border border-gray-600 rounded-lg text-gray-200 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-orange-500"
               />
             </div>
-            <button onClick={openRevisionModal} className="flex items-center gap-2 px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 text-sm font-medium transition-colors">
+            <button type="button" onClick={openRevisionModal} className="flex items-center gap-2 px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 text-sm font-medium transition-colors">
               <Plus size={16}/><span>Issue New Revision</span>
             </button>
           </div>
@@ -368,10 +368,10 @@ export function Drawings() {
       {activeTab === 'transmittals' && (
         <>
           <div className="flex gap-3 items-center justify-between mb-4">
-            <button onClick={openTransmittalModal} className="flex items-center gap-2 px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 text-sm font-medium transition-colors">
+            <button type="button" onClick={openTransmittalModal} className="flex items-center gap-2 px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 text-sm font-medium transition-colors">
               <Plus size={16}/><span>New Transmittal</span>
             </button>
-            <button onClick={downloadRegister} className="flex items-center gap-2 px-4 py-2 bg-gray-700 text-gray-200 rounded-lg hover:bg-gray-600 text-sm font-medium transition-colors">
+            <button type="button" onClick={downloadRegister} className="flex items-center gap-2 px-4 py-2 bg-gray-700 text-gray-200 rounded-lg hover:bg-gray-600 text-sm font-medium transition-colors">
               <Download size={16}/><span>Download Register</span>
             </button>
           </div>
@@ -470,7 +470,7 @@ export function Drawings() {
           <div className="p-6 space-y-6">
             <div className="flex items-center justify-between">
               <h3 className="text-lg font-semibold text-white">Drawing Details</h3>
-              <button onClick={() => setSelectedDrawing(null)} className="p-1 hover:bg-gray-700 rounded"><X size={20} className="text-gray-400"/></button>
+              <button type="button" onClick={() => setSelectedDrawing(null)} className="p-1 hover:bg-gray-700 rounded"><X size={20} className="text-gray-400"/></button>
             </div>
 
             <div className="space-y-4">
@@ -547,7 +547,7 @@ export function Drawings() {
 
               <div className="flex gap-2 pt-4 border-t border-gray-700">
                 {!!selectedDrawing.file_url && <a href={String(selectedDrawing.file_url)} target="_blank" rel="noopener noreferrer" className="flex-1 flex items-center justify-center gap-2 px-3 py-2 bg-blue-900/30 hover:bg-blue-900/50 text-blue-300 rounded border border-blue-700 text-sm font-medium"><Download size={14}/>View</a>}
-                <button onClick={()=>{setSelectedDrawing(null);openEdit(selectedDrawing);}} className="flex-1 flex items-center justify-center gap-2 px-3 py-2 bg-gray-700 hover:bg-gray-600 text-gray-200 rounded text-sm font-medium"><Edit2 size={14}/>Edit</button>
+                <button type="button" onClick={()=>{setSelectedDrawing(null);openEdit(selectedDrawing);}} className="flex-1 flex items-center justify-center gap-2 px-3 py-2 bg-gray-700 hover:bg-gray-600 text-gray-200 rounded text-sm font-medium"><Edit2 size={14}/>Edit</button>
               </div>
             </div>
           </div>
@@ -561,7 +561,7 @@ export function Drawings() {
               <h2 className="text-lg font-semibold text-white">
                 {modalMode === 'drawing' ? (editing ? 'Edit Drawing' : 'Register Drawing') : modalMode === 'revision' ? 'Issue New Revision' : 'New Transmittal'}
               </h2>
-              <button onClick={()=>setShowModal(false)} className="p-2 hover:bg-gray-700 rounded-lg"><X size={18} className="text-gray-400"/></button>
+              <button type="button" onClick={()=>setShowModal(false)} className="p-2 hover:bg-gray-700 rounded-lg"><X size={18} className="text-gray-400"/></button>
             </div>
             <form onSubmit={handleSubmit} className="p-6 space-y-4">
 

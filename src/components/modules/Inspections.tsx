@@ -194,10 +194,10 @@ export function Inspections() {
           <p className="text-sm text-gray-400 mt-1">Quality, safety & compliance inspections</p>
         </div>
         <div className="flex gap-2">
-          <button onClick={()=>openFormModal('Quality')} className="flex items-center gap-2 px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 text-sm font-medium">
+          <button type="button" onClick={()=>openFormModal('Quality')} className="flex items-center gap-2 px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 text-sm font-medium">
             <Plus size={16}/><span>Quick Inspection</span>
           </button>
-          <button onClick={openCreate} className="flex items-center gap-2 px-4 py-2 bg-gray-700 text-white rounded-lg hover:bg-gray-600 text-sm font-medium">
+          <button type="button" onClick={openCreate} className="flex items-center gap-2 px-4 py-2 bg-gray-700 text-white rounded-lg hover:bg-gray-600 text-sm font-medium">
             <Plus size={16}/><span>Manual Entry</span>
           </button>
         </div>
@@ -231,7 +231,7 @@ export function Inspections() {
           { key:'defects', label:'Defects', count:inspections.reduce((sum, i) => sum + Number(i.defect_count??0), 0) },
           { key:'schedule', label:'Schedule', count:scheduledCount },
         ]).map(t=>(
-          <button key={t.key} onClick={()=>setSubTab(t.key)}
+          <button type="button"  key={t.key} onClick={()=>setSubTab(t.key)}
             className={`flex items-center gap-2 px-4 py-2.5 text-sm font-medium border-b-2 -mb-px transition-colors whitespace-nowrap ${subTab===t.key?'border-orange-500 text-orange-500':'border-transparent text-gray-400 hover:text-gray-300'}`}>
             {t.label}
             <span className={`text-xs px-1.5 py-0.5 rounded-full ${t.key==='results'?'bg-gray-700 text-gray-400':'bg-gray-700 text-gray-400'}`}>{t.count}</span>
@@ -287,8 +287,8 @@ export function Inspections() {
                           </div>
                         )}
                         <div className="flex items-center gap-1 flex-shrink-0">
-                          <button onClick={e=>{e.stopPropagation();openEdit(i);}} className="p-1.5 text-blue-400 hover:text-blue-300 hover:bg-gray-700 rounded"><Edit2 size={14}/></button>
-                          <button onClick={e=>{e.stopPropagation();handleDelete(id);}} className="p-1.5 text-red-400 hover:text-red-300 hover:bg-gray-700 rounded"><Trash2 size={14}/></button>
+                          <button type="button" onClick={e=>{e.stopPropagation();openEdit(i);}} className="p-1.5 text-blue-400 hover:text-blue-300 hover:bg-gray-700 rounded"><Edit2 size={14}/></button>
+                          <button type="button" onClick={e=>{e.stopPropagation();handleDelete(id);}} className="p-1.5 text-red-400 hover:text-red-300 hover:bg-gray-700 rounded"><Trash2 size={14}/></button>
                           {isExp?<ChevronUp size={16} className="text-gray-500"/>:<ChevronDown size={16} className="text-gray-500"/>}
                         </div>
                       </div>
@@ -371,7 +371,7 @@ export function Inspections() {
           <div className="bg-gray-800 rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto border border-gray-700">
             <div className="flex items-center justify-between p-6 border-b border-gray-700 sticky top-0 bg-gray-800 z-10">
               <h2 className="text-lg font-semibold text-white">Inspection Checklist</h2>
-              <button onClick={()=>setShowFormModal(false)} className="p-2 hover:bg-gray-700 rounded-lg text-gray-400"><X size={18}/></button>
+              <button type="button" onClick={()=>setShowFormModal(false)} className="p-2 hover:bg-gray-700 rounded-lg text-gray-400"><X size={18}/></button>
             </div>
             <form onSubmit={handleFormSubmit} className="p-6 space-y-4">
               <div className="grid grid-cols-2 gap-4 mb-4">
@@ -427,7 +427,7 @@ export function Inspections() {
           <div className="bg-gray-800 rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto border border-gray-700">
             <div className="flex items-center justify-between p-6 border-b border-gray-700 sticky top-0 bg-gray-800 z-10">
               <h2 className="text-lg font-semibold text-white">{editing?'Edit Inspection':'Manual Entry'}</h2>
-              <button onClick={()=>setShowModal(false)} className="p-2 hover:bg-gray-700 rounded-lg text-gray-400"><X size={18}/></button>
+              <button type="button" onClick={()=>setShowModal(false)} className="p-2 hover:bg-gray-700 rounded-lg text-gray-400"><X size={18}/></button>
             </div>
             <form onSubmit={handleSubmit} className="p-6 space-y-4">
               <div className="grid grid-cols-2 gap-4">

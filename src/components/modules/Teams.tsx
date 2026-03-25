@@ -182,8 +182,8 @@ export function Teams() {
             <span className={`text-xs px-2 py-1 rounded-full font-medium ${statusColour[String(m.status??'')] ?? 'bg-gray-800 text-gray-400'}`}>{String(m.status??'')}</span>
           </div>
           <div className="flex items-center gap-1 ml-2">
-            <button onClick={e=>{e.stopPropagation();openEdit(m);}} className="p-1.5 text-gray-500 hover:text-blue-400 hover:bg-blue-900/30 rounded"><Edit2 size={14}/></button>
-            <button onClick={e=>{e.stopPropagation();handleDelete(id);}} className="p-1.5 text-gray-500 hover:text-red-400 hover:bg-red-900/30 rounded"><Trash2 size={14}/></button>
+            <button type="button" onClick={e=>{e.stopPropagation();openEdit(m);}} className="p-1.5 text-gray-500 hover:text-blue-400 hover:bg-blue-900/30 rounded"><Edit2 size={14}/></button>
+            <button type="button" onClick={e=>{e.stopPropagation();handleDelete(id);}} className="p-1.5 text-gray-500 hover:text-red-400 hover:bg-red-900/30 rounded"><Trash2 size={14}/></button>
             {isExp?<ChevronUp size={16} className="text-gray-500"/>:<ChevronDown size={16} className="text-gray-500"/>}
           </div>
         </div>
@@ -208,7 +208,7 @@ export function Teams() {
           <h1 className="text-3xl font-bold text-white">Team Management</h1>
           <p className="text-sm text-gray-400 mt-1">Site workforce & personnel records</p>
         </div>
-        <button onClick={openCreate} className="flex items-center gap-2 px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 text-sm font-medium">
+        <button type="button" onClick={openCreate} className="flex items-center gap-2 px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 text-sm font-medium">
           <Plus size={16}/><span>Add Member</span>
         </button>
       </div>
@@ -250,7 +250,7 @@ export function Teams() {
           { key:'inductions' as const, label:'Inductions',  icon:Calendar },
           { key:'onsite'     as const, label:'On Site',     icon:MapPin },
         ]).map(t=>(
-          <button key={t.key} onClick={()=>setSubTab(t.key)}
+          <button type="button"  key={t.key} onClick={()=>setSubTab(t.key)}
             className={`flex items-center gap-2 px-4 py-2.5 text-sm font-medium border-b-2 -mb-px transition-colors whitespace-nowrap ${subTab===t.key?'border-orange-600 text-orange-400':'border-transparent text-gray-400 hover:text-gray-300'}`}>
             <t.icon size={16}/>
             {t.label}
@@ -384,7 +384,7 @@ export function Teams() {
                   <div className="w-full h-24 bg-gray-700 rounded-lg mt-4 flex items-center justify-center text-xs opacity-50">QR Code Placeholder</div>
 
                   {Boolean(m.cscs_card) && isExpiring && (
-                    <button onClick={()=>renewCSCS(String(m.id))} className="w-full mt-4 px-3 py-2 bg-gray-800/20 hover:bg-gray-800/30 rounded-lg text-sm font-medium transition-colors">
+                    <button type="button" onClick={()=>renewCSCS(String(m.id))} className="w-full mt-4 px-3 py-2 bg-gray-800/20 hover:bg-gray-800/30 rounded-lg text-sm font-medium transition-colors">
                       Renew Certificate
                     </button>
                   )}
@@ -497,7 +497,7 @@ export function Teams() {
           <div className="bg-gray-900 rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto border border-gray-700">
             <div className="flex items-center justify-between p-6 border-b border-gray-700 sticky top-0 bg-gray-900 z-10">
               <h2 className="text-lg font-semibold text-white">{editing?'Edit Member':'Add Team Member'}</h2>
-              <button onClick={()=>setShowModal(false)} className="p-2 hover:bg-gray-800 rounded-lg"><X size={18} className="text-gray-400"/></button>
+              <button type="button" onClick={()=>setShowModal(false)} className="p-2 hover:bg-gray-800 rounded-lg"><X size={18} className="text-gray-400"/></button>
             </div>
             <form onSubmit={handleSubmit} className="p-6 space-y-4">
               <div className="grid grid-cols-2 gap-4">

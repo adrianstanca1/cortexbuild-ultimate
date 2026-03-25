@@ -246,7 +246,7 @@ export function Timesheets() {
           <h1 className="text-3xl font-bold text-white">Timesheets & Payroll</h1>
           <p className="text-sm text-gray-400 mt-1">Construction timesheet tracking, labour costing & payroll management</p>
         </div>
-        <button onClick={openCreate} className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm font-medium">
+        <button type="button" onClick={openCreate} className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm font-medium">
           <Plus size={16}/><span>Add Timesheet</span>
         </button>
       </div>
@@ -280,7 +280,7 @@ export function Timesheets() {
           { key:'payroll' as const, label:'Payroll Run', count:payrollData.length },
           { key:'overtime' as const, label:'Overtime & Daywork', count:overtimeSummary.length },
         ]).map(t=>(
-          <button key={t.key} onClick={()=>setSubTab(t.key)}
+          <button type="button"  key={t.key} onClick={()=>setSubTab(t.key)}
             className={`flex items-center gap-2 px-3 py-2.5 text-sm font-medium border-b-2 -mb-px transition-colors whitespace-nowrap ${subTab===t.key?'border-blue-500 text-blue-400':'border-transparent text-gray-400 hover:text-gray-300'}`}>
             {t.label}
             <span className={`text-xs px-1.5 py-0.5 rounded-full ${subTab===t.key?'bg-blue-900 text-blue-200':'bg-gray-800 text-gray-400'}`}>{t.count}</span>
@@ -295,9 +295,9 @@ export function Timesheets() {
           <div className="bg-gray-900 rounded-lg border border-gray-700 p-4 space-y-3">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <button onClick={()=>setCurrentWeek(w=>w-1)} className="p-2 hover:bg-gray-800 rounded"><ChevronLeft size={18}/></button>
+                <button type="button" onClick={()=>setCurrentWeek(w=>w-1)} className="p-2 hover:bg-gray-800 rounded"><ChevronLeft size={18}/></button>
                 <span className="text-sm font-medium text-white min-w-48 text-center">{weekLabel}</span>
-                <button onClick={()=>setCurrentWeek(w=>w+1)} className="p-2 hover:bg-gray-800 rounded"><ChevronRight size={18}/></button>
+                <button type="button" onClick={()=>setCurrentWeek(w=>w+1)} className="p-2 hover:bg-gray-800 rounded"><ChevronRight size={18}/></button>
               </div>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
@@ -322,7 +322,7 @@ export function Timesheets() {
               </div>
             </div>
             {awaitingApproval > 0 && (
-              <button onClick={approveAllSubmitted} className="w-full flex items-center justify-center gap-2 px-4 py-2 bg-green-900 text-green-100 rounded hover:bg-green-800 text-sm font-medium border border-green-700">
+              <button type="button" onClick={approveAllSubmitted} className="w-full flex items-center justify-center gap-2 px-4 py-2 bg-green-900 text-green-100 rounded hover:bg-green-800 text-sm font-medium border border-green-700">
                 <CheckCircle2 size={16}/><span>Approve All Submitted ({awaitingApproval})</span>
               </button>
             )}
@@ -373,12 +373,12 @@ export function Timesheets() {
                           <div className="flex items-center gap-1">
                             {t.status==='submitted' && (
                               <>
-                                <button onClick={()=>approve(t)} className="p-1.5 text-green-400 hover:bg-green-900/30 rounded" title="Approve"><CheckCircle2 size={14}/></button>
-                                <button onClick={()=>{setRejectingId(String(t.id)); setShowRejectModal(true);}} className="p-1.5 text-red-400 hover:bg-red-900/30 rounded" title="Reject"><X size={14}/></button>
+                                <button type="button" onClick={()=>approve(t)} className="p-1.5 text-green-400 hover:bg-green-900/30 rounded" title="Approve"><CheckCircle2 size={14}/></button>
+                                <button type="button" onClick={()=>{setRejectingId(String(t.id)); setShowRejectModal(true);}} className="p-1.5 text-red-400 hover:bg-red-900/30 rounded" title="Reject"><X size={14}/></button>
                               </>
                             )}
-                            <button onClick={()=>openEdit(t)} className="p-1.5 text-gray-500 hover:text-blue-400 hover:bg-blue-900/30 rounded"><Edit2 size={14}/></button>
-                            <button onClick={()=>handleDelete(String(t.id))} className="p-1.5 text-gray-500 hover:text-red-400 hover:bg-red-900/30 rounded"><Trash2 size={14}/></button>
+                            <button type="button" onClick={()=>openEdit(t)} className="p-1.5 text-gray-500 hover:text-blue-400 hover:bg-blue-900/30 rounded"><Edit2 size={14}/></button>
+                            <button type="button" onClick={()=>handleDelete(String(t.id))} className="p-1.5 text-gray-500 hover:text-red-400 hover:bg-red-900/30 rounded"><Trash2 size={14}/></button>
                           </div>
                         </td>
                       </tr>
@@ -461,7 +461,7 @@ export function Timesheets() {
           ) : (
             <>
               <div className="flex gap-3">
-                <button onClick={runPayroll} className="flex items-center gap-2 px-4 py-2 bg-green-900 text-green-100 rounded-lg hover:bg-green-800 text-sm font-medium border border-green-700">
+                <button type="button" onClick={runPayroll} className="flex items-center gap-2 px-4 py-2 bg-green-900 text-green-100 rounded-lg hover:bg-green-800 text-sm font-medium border border-green-700">
                   <TrendingUp size={16}/><span>Run Payroll for Week</span>
                 </button>
                 <button className="flex items-center gap-2 px-4 py-2 bg-gray-800 text-gray-300 rounded-lg hover:bg-gray-700 text-sm font-medium border border-gray-700">
@@ -571,7 +571,7 @@ export function Timesheets() {
           <div className="bg-gray-900 rounded-xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto border border-gray-700">
             <div className="flex items-center justify-between p-6 border-b border-gray-700 sticky top-0 bg-gray-900 z-10">
               <h2 className="text-lg font-semibold text-white">{editing?'Edit Timesheet':'Add Timesheet'}</h2>
-              <button onClick={()=>setShowModal(false)} className="p-2 hover:bg-gray-800 rounded"><X size={18} className="text-gray-400"/></button>
+              <button type="button" onClick={()=>setShowModal(false)} className="p-2 hover:bg-gray-800 rounded"><X size={18} className="text-gray-400"/></button>
             </div>
             <form onSubmit={handleSubmit} className="p-6 space-y-4">
               {formTotalPay > 0 && (
@@ -652,7 +652,7 @@ export function Timesheets() {
           <div className="bg-gray-900 rounded-xl shadow-2xl w-full max-w-lg border border-gray-700">
             <div className="flex items-center justify-between p-6 border-b border-gray-700">
               <h2 className="text-lg font-semibold text-white">{String(detailRow.worker_name??'')}'s Timesheet</h2>
-              <button onClick={()=>setShowDetailModal(false)} className="p-2 hover:bg-gray-800 rounded"><X size={18} className="text-gray-400"/></button>
+              <button type="button" onClick={()=>setShowDetailModal(false)} className="p-2 hover:bg-gray-800 rounded"><X size={18} className="text-gray-400"/></button>
             </div>
             <div className="p-6 space-y-4">
               <div className="grid grid-cols-2 gap-4">
@@ -676,8 +676,8 @@ export function Timesheets() {
               <div className="flex gap-2 pt-4">
                 {detailRow.status==='submitted' && (
                   <>
-                    <button onClick={()=>{approve(detailRow); setShowDetailModal(false);}} className="flex-1 px-4 py-2 bg-green-900 text-green-100 rounded text-sm font-medium hover:bg-green-800">Approve</button>
-                    <button onClick={()=>{setRejectingId(String(detailRow.id)); setShowDetailModal(false); setShowRejectModal(true);}} className="flex-1 px-4 py-2 bg-red-900 text-red-100 rounded text-sm font-medium hover:bg-red-800">Reject</button>
+                    <button type="button" onClick={()=>{approve(detailRow); setShowDetailModal(false);}} className="flex-1 px-4 py-2 bg-green-900 text-green-100 rounded text-sm font-medium hover:bg-green-800">Approve</button>
+                    <button type="button" onClick={()=>{setRejectingId(String(detailRow.id)); setShowDetailModal(false); setShowRejectModal(true);}} className="flex-1 px-4 py-2 bg-red-900 text-red-100 rounded text-sm font-medium hover:bg-red-800">Reject</button>
                   </>
                 )}
                 <button type="button" onClick={()=>setShowDetailModal(false)} className="flex-1 px-4 py-2 border border-gray-700 rounded text-sm text-gray-300 hover:bg-gray-800">Close</button>
@@ -693,7 +693,7 @@ export function Timesheets() {
           <div className="bg-gray-900 rounded-xl shadow-2xl w-full max-w-md border border-gray-700">
             <div className="flex items-center justify-between p-6 border-b border-gray-700">
               <h2 className="text-lg font-semibold text-white">Reject Timesheet</h2>
-              <button onClick={()=>{setShowRejectModal(false); setRejectingId(null); setRejectionReason('');}} className="p-2 hover:bg-gray-800 rounded"><X size={18} className="text-gray-400"/></button>
+              <button type="button" onClick={()=>{setShowRejectModal(false); setRejectingId(null); setRejectionReason('');}} className="p-2 hover:bg-gray-800 rounded"><X size={18} className="text-gray-400"/></button>
             </div>
             <div className="p-6 space-y-4">
               <div>

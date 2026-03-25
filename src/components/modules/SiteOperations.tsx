@@ -300,7 +300,7 @@ export function SiteOperations() {
               <div className="bg-gray-800 border border-gray-700 rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto">
                 <div className="sticky top-0 bg-gray-800 border-b border-gray-700 px-6 py-4 flex items-center justify-between">
                   <h2 className="text-lg font-semibold text-gray-100">New Daily Report</h2>
-                  <button onClick={() => setShowNewEntry(false)} className="text-gray-400 hover:text-gray-300">
+                  <button type="button" onClick={() => setShowNewEntry(false)} className="text-gray-400 hover:text-gray-300">
                     <X size={20} />
                   </button>
                 </div>
@@ -716,7 +716,7 @@ export function SiteOperations() {
               <div className="bg-gray-800 border border-gray-700 rounded-lg max-w-2xl w-full">
                 <div className="bg-gray-800 border-b border-gray-700 px-6 py-4 flex items-center justify-between">
                   <h2 className="text-lg font-semibold text-gray-100">Log Delay</h2>
-                  <button onClick={() => setShowNewDelay(false)} className="text-gray-400 hover:text-gray-300">
+                  <button type="button" onClick={() => setShowNewDelay(false)} className="text-gray-400 hover:text-gray-300">
                     <X size={20} />
                   </button>
                 </div>

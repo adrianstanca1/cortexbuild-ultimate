@@ -343,7 +343,7 @@ export function EmailHistory() {
           <div className="bg-gray-900 rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between p-6 border-b border-gray-700 sticky top-0 bg-gray-900 z-10">
               <h2 className="text-lg font-semibold text-white">Compose Email</h2>
-              <button onClick={() => setShowComposeModal(false)} className="p-2 hover:bg-gray-800 rounded-lg">
+              <button type="button" onClick={() => setShowComposeModal(false)} className="p-2 hover:bg-gray-800 rounded-lg">
                 <X size={18} />
               </button>
             </div>

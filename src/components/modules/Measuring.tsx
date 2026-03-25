@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Plus, Search, Ruler, MapPin, Camera, FileText, Trash2, X, Upload } from 'lucide-react';
+import { Plus, Search, Ruler, MapPin, Camera, FileText, Trash2, X, Upload, Pencil } from 'lucide-react';
 import { measuringApi, uploadFile } from '../../services/api';
 import { toast } from 'sonner';
 
@@ -10,6 +10,8 @@ export default function Measuring() {
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [creating, setCreating] = useState(false);
   const [uploading, setUploading] = useState<string | null>(null);
+  const [editItem, setEditItem] = useState<Record<string, any> | null>(null);
+  const [saving, setSaving] = useState(false);
   const [form, setForm] = useState({ location: '', surveyType: '', surveyor: '', surveyDate: '', totalArea: '', unit: 'm²', status: 'pending' });
 
   useEffect(() => {
@@ -58,6 +60,28 @@ export default function Measuring() {
       setMeasurements(prev => prev.filter((m: any) => String(m.id) !== String(id)));
     } catch (err) {
       console.error('Failed to delete:', err);
+    }
+  };
+
+  const handleUpdate = async () => {
+    if (!editItem || !editItem.id) return;
+    setSaving(true);
+    try {
+      const updated = await measuringApi.update(editItem.id, {
+        location: editItem.location,
+        survey_type: editItem.surveyType || '',
+        surveyor: editItem.surveyor || '',
+        survey_date: editItem.surveyDate || null,
+        total_area: parseFloat(editItem.totalArea) || 0,
+        unit: editItem.unit,
+        status: editItem.status,
+      });
+      setMeasurements(prev => prev.map((m: any) => String(m.id) === String(editItem.id) ? updated : m));
+      setEditItem(null);
+    } catch (err) {
+      console.error('Failed to update:', err);
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -117,6 +141,23 @@ export default function Measuring() {
                     title="Delete"
                   >
                     <Trash2 size={16} className="text-red-400" />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setEditItem({
+                      id: m.id,
+                      location: m.location || '',
+                      surveyType: m.survey_type || '',
+                      surveyor: m.surveyor || '',
+                      surveyDate: m.survey_date || '',
+                      totalArea: String(m.total_area || ''),
+                      unit: m.unit || 'm²',
+                      status: m.status || 'pending',
+                    })}
+                    className="p-2 hover:bg-blue-900/30 rounded"
+                    title="Edit"
+                  >
+                    <Pencil size={16} className="text-blue-400" />
                   </button>
                   <input
                     type="file"
@@ -208,6 +249,75 @@ export default function Measuring() {
               <button type="button" onClick={() => setShowCreateModal(false)} className="px-4 py-2 text-gray-400 hover:text-white">Cancel</button>
               <button type="button" onClick={handleCreate} disabled={creating || !form.location} className="px-4 py-2 bg-orange-500 hover:bg-orange-600 text-white rounded-lg font-semibold disabled:opacity-50">
                 {creating ? 'Creating...' : 'Create Measurement'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {editItem && (
+        <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
+          <div className="bg-gray-900 border border-gray-700 rounded-xl w-full max-w-lg">
+            <div className="p-6 border-b border-gray-700 flex items-center justify-between">
+              <h3 className="text-xl font-bold text-white">Edit Measurement</h3>
+              <button type="button" onClick={() => setEditItem(null)} className="text-gray-400 hover:text-white"><X size={20} /></button>
+            </div>
+            <div className="p-6 space-y-4">
+              <div>
+                <label htmlFor="editMeasLoc" className="block text-gray-400 text-xs mb-1">Location *</label>
+                <input id="editMeasLoc" type="text" value={editItem.location} onChange={e => setEditItem(item => item ? { ...item, location: e.target.value } : null)} placeholder="e.g. Building A - Level 2" className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500" />
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label htmlFor="editMeasType" className="block text-gray-400 text-xs mb-1">Survey Type</label>
+                  <select id="editMeasType" value={editItem.surveyType} onChange={e => setEditItem(item => item ? { ...item, surveyType: e.target.value } : null)} className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white">
+                    <option value="">Select type...</option>
+                    <option value="Area Survey">Area Survey</option>
+                    <option value="Level Survey">Level Survey</option>
+                    <option value="As-Built">As-Built</option>
+                    <option value="Setting Out">Setting Out</option>
+                    <option value="Topographic">Topographic</option>
+                  </select>
+                </div>
+                <div>
+                  <label htmlFor="editMeasSurveyor" className="block text-gray-400 text-xs mb-1">Surveyor</label>
+                  <input id="editMeasSurveyor" type="text" value={editItem.surveyor} onChange={e => setEditItem(item => item ? { ...item, surveyor: e.target.value } : null)} placeholder="Surveyor name" className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500" />
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label htmlFor="editMeasDate" className="block text-gray-400 text-xs mb-1">Survey Date</label>
+                  <input id="editMeasDate" type="date" value={editItem.surveyDate} onChange={e => setEditItem(item => item ? { ...item, surveyDate: e.target.value } : null)} className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white" />
+                </div>
+                <div>
+                  <label htmlFor="editMeasStatus" className="block text-gray-400 text-xs mb-1">Status</label>
+                  <select id="editMeasStatus" value={editItem.status} onChange={e => setEditItem(item => item ? { ...item, status: e.target.value } : null)} className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white">
+                    <option value="pending">Pending</option>
+                    <option value="scheduled">Scheduled</option>
+                    <option value="completed">Completed</option>
+                  </select>
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label htmlFor="editMeasArea" className="block text-gray-400 text-xs mb-1">Total Area</label>
+                  <input id="editMeasArea" type="number" value={editItem.totalArea} onChange={e => setEditItem(item => item ? { ...item, totalArea: e.target.value } : null)} placeholder="0.00" className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500" />
+                </div>
+                <div>
+                  <label htmlFor="editMeasUnit" className="block text-gray-400 text-xs mb-1">Unit</label>
+                  <select id="editMeasUnit" value={editItem.unit} onChange={e => setEditItem(item => item ? { ...item, unit: e.target.value } : null)} className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white">
+                    <option value="m²">m²</option>
+                    <option value="m³">m³</option>
+                    <option value="lin m">lin m</option>
+                    <option value="items">items</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+            <div className="p-6 border-t border-gray-700 flex justify-end gap-3">
+              <button type="button" onClick={() => setEditItem(null)} className="px-4 py-2 text-gray-400 hover:text-white">Cancel</button>
+              <button type="button" onClick={handleUpdate} disabled={saving || !editItem.location} className="px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg font-semibold disabled:opacity-50">
+                {saving ? 'Saving...' : 'Save Changes'}
               </button>
             </div>
           </div>

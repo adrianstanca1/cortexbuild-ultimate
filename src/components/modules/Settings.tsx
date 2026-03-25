@@ -18,7 +18,7 @@ const PLAN_FEATURES: Record<string, string[]> = {
 // ─── Notification toggle item ───────────────────────────────────────────────
 function Toggle({ on, onToggle }: { on: boolean; onToggle: () => void }) {
   return (
-    <button onClick={onToggle} className={`relative w-10 h-5 rounded-full transition-colors ${on?'bg-blue-600':'bg-gray-700'}`}>
+    <button type="button" onClick={onToggle} className={`relative w-10 h-5 rounded-full transition-colors ${on?'bg-blue-600':'bg-gray-700'}`}>
       <span className={`absolute top-0.5 w-4 h-4 bg-gray-800 rounded-full shadow transition-transform ${on?'translate-x-5':'translate-x-0.5'}`}/>
     </button>
   );
@@ -114,7 +114,7 @@ export function Settings() {
         {TABS.map(t => {
           const Icon = t.icon;
           return (
-            <button key={t.id} onClick={()=>setTab(t.id)}
+            <button type="button"  key={t.id} onClick={()=>setTab(t.id)}
               className={`flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-all ${tab===t.id?'bg-blue-600 text-white':'text-gray-400 hover:text-white hover:bg-gray-800'}`}>
               <Icon className="w-4 h-4"/>{t.label}
             </button>
@@ -196,7 +196,7 @@ export function Settings() {
             </div>
           </div>
 
-          <button onClick={()=>toast.success('Company settings saved')}
+          <button type="button" onClick={()=>toast.success('Company settings saved')}
             className="flex items-center gap-2 px-5 py-2.5 bg-blue-600 hover:bg-blue-700 rounded-lg text-white text-sm font-semibold transition-colors">
             <Save className="w-4 h-4"/>Save Company Settings
           </button>
@@ -208,7 +208,7 @@ export function Settings() {
         <div className="space-y-4">
           <div className="flex items-center justify-between">
             <p className="text-gray-400 text-sm">{users.filter(u=>u.status==='active').length} active users · {users.length} total</p>
-            <button onClick={()=>setShowInviteModal(true)}
+            <button type="button" onClick={()=>setShowInviteModal(true)}
               className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded-lg text-white text-sm font-medium transition-colors">
               <Plus className="w-4 h-4"/>Invite User
             </button>
@@ -234,7 +234,7 @@ export function Settings() {
                     <td className="px-4 py-3"><span className={`text-xs px-2 py-1 rounded-full font-medium ${u.status==='active'?'bg-green-900/30 text-green-300':'bg-gray-700/50 text-gray-500'}`}>{u.status}</span></td>
                     <td className="px-4 py-3 text-gray-400 text-xs">{u.lastLogin}</td>
                     <td className="px-4 py-3">
-                      <button onClick={()=>toast.success(`Removed ${u.name}`)} className="p-1 text-gray-400 hover:text-red-400 rounded transition-colors"><Trash2 className="w-3.5 h-3.5"/></button>
+                      <button type="button" onClick={()=>toast.success(`Removed ${u.name}`)} className="p-1 text-gray-400 hover:text-red-400 rounded transition-colors"><Trash2 className="w-3.5 h-3.5"/></button>
                     </td>
                   </tr>
                 ))}
@@ -247,7 +247,7 @@ export function Settings() {
               <div className="bg-gray-900 border border-gray-700 rounded-2xl w-full max-w-md shadow-2xl">
                 <div className="flex items-center justify-between px-6 py-4 border-b border-gray-800">
                   <h2 className="text-base font-bold text-white">Invite Team Member</h2>
-                  <button onClick={()=>setShowInviteModal(false)} className="text-gray-400 hover:text-white"><X className="w-5 h-5"/></button>
+                  <button type="button" onClick={()=>setShowInviteModal(false)} className="text-gray-400 hover:text-white"><X className="w-5 h-5"/></button>
                 </div>
                 <div className="p-6 space-y-4">
                   <div>
@@ -264,9 +264,9 @@ export function Settings() {
                   </div>
                 </div>
                 <div className="flex gap-3 px-6 py-4 border-t border-gray-800">
-                  <button onClick={()=>{toast.success(`Invite sent to ${inviteEmail}`);setShowInviteModal(false);}}
+                  <button type="button" onClick={()=>{toast.success(`Invite sent to ${inviteEmail}`);setShowInviteModal(false);}}
                     className="flex-1 bg-blue-600 hover:bg-blue-700 text-white rounded-lg py-2 text-sm font-semibold transition-colors">Send Invite</button>
-                  <button onClick={()=>setShowInviteModal(false)} className="flex-1 bg-gray-800 hover:bg-gray-700 text-white rounded-lg py-2 text-sm font-semibold transition-colors">Cancel</button>
+                  <button type="button" onClick={()=>setShowInviteModal(false)} className="flex-1 bg-gray-800 hover:bg-gray-700 text-white rounded-lg py-2 text-sm font-semibold transition-colors">Cancel</button>
                 </div>
               </div>
             </div>
@@ -289,7 +289,7 @@ export function Settings() {
                   ))}
                 </ul>
                 {plan!==currentPlan && (
-                  <button onClick={()=>toast.success(`Contact sales to switch to ${plan}`)}
+                  <button type="button" onClick={()=>toast.success(`Contact sales to switch to ${plan}`)}
                     className="w-full py-2 rounded-lg text-sm font-medium bg-gray-800 hover:bg-gray-700 text-white transition-colors">
                     {plan==='Enterprise'?'Contact Sales':'Upgrade'}
                   </button>
@@ -301,7 +301,7 @@ export function Settings() {
           <div className="bg-gray-900 border border-gray-800 rounded-xl p-5">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-base font-bold text-white">Payment Method</h3>
-              <button onClick={()=>toast.success('Update card details in your billing portal')} className="text-sm text-blue-400 hover:text-blue-300">Update</button>
+              <button type="button" onClick={()=>toast.success('Update card details in your billing portal')} className="text-sm text-blue-400 hover:text-blue-300">Update</button>
             </div>
             <div className="flex items-center gap-4 bg-gray-800 rounded-xl p-4">
               <CreditCard className="w-8 h-8 text-blue-400"/>
@@ -325,7 +325,7 @@ export function Settings() {
                     <td className="px-4 py-3 text-white">{b.desc}</td>
                     <td className="px-4 py-3 text-white font-bold">£{b.amount}</td>
                     <td className="px-4 py-3"><span className="text-xs px-2 py-0.5 rounded-full bg-green-900/30 text-green-300 font-medium">{b.status}</span></td>
-                    <td className="px-4 py-3"><button onClick={()=>toast.success('Invoice downloaded')} className="text-xs text-blue-400 hover:text-blue-300">Download</button></td>
+                    <td className="px-4 py-3"><button type="button" onClick={()=>toast.success('Invoice downloaded')} className="text-xs text-blue-400 hover:text-blue-300">Download</button></td>
                   </tr>
                 ))}
               </tbody>
@@ -387,7 +387,7 @@ export function Settings() {
               </div>
             </div>
           ))}
-          <button onClick={()=>toast.success('Notification preferences saved')}
+          <button type="button" onClick={()=>toast.success('Notification preferences saved')}
             className="flex items-center gap-2 px-5 py-2.5 bg-blue-600 hover:bg-blue-700 rounded-lg text-white text-sm font-semibold transition-colors">
             <Save className="w-4 h-4"/>Save Preferences
           </button>
@@ -430,8 +430,8 @@ export function Settings() {
               <code className="flex-1 bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-green-400 text-xs font-mono">
                 cb_live_••••••••••••••••••••••••••••••••
               </code>
-              <button onClick={()=>toast.success('API key copied to clipboard')} className="px-3 py-2 bg-gray-700 hover:bg-gray-600 text-white text-xs rounded-lg transition-colors">Copy</button>
-              <button onClick={()=>toast.success('New API key generated')} className="px-3 py-2 bg-gray-700 hover:bg-gray-600 text-white text-xs rounded-lg transition-colors flex items-center gap-1"><RefreshCw className="w-3 h-3"/>Rotate</button>
+              <button type="button" onClick={()=>toast.success('API key copied to clipboard')} className="px-3 py-2 bg-gray-700 hover:bg-gray-600 text-white text-xs rounded-lg transition-colors">Copy</button>
+              <button type="button" onClick={()=>toast.success('New API key generated')} className="px-3 py-2 bg-gray-700 hover:bg-gray-600 text-white text-xs rounded-lg transition-colors flex items-center gap-1"><RefreshCw className="w-3 h-3"/>Rotate</button>
             </div>
           </div>
         </div>
@@ -449,13 +449,13 @@ export function Settings() {
                   <div className="relative">
                     <input type={showPass?'text':'password'} placeholder="••••••••••••"
                       className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-blue-500 pr-10"/>
-                    <button onClick={()=>setShowPass(p=>!p)} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-white">
+                    <button type="button" onClick={()=>setShowPass(p=>!p)} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-white">
                       {showPass ? <EyeOff className="w-4 h-4"/> : <Eye className="w-4 h-4"/>}
                     </button>
                   </div>
                 </div>
               ))}
-              <button onClick={()=>toast.success('Password updated successfully')}
+              <button type="button" onClick={()=>toast.success('Password updated successfully')}
                 className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded-lg text-white text-sm font-semibold transition-colors">
                 <Save className="w-4 h-4"/>Update Password
               </button>
@@ -498,7 +498,7 @@ export function Settings() {
                   {s.current ? (
                     <span className="text-xs text-green-400 font-medium">This session</span>
                   ) : (
-                    <button onClick={()=>toast.success('Session terminated')} className="text-xs text-red-400 hover:text-red-300 transition-colors">Revoke</button>
+                    <button type="button" onClick={()=>toast.success('Session terminated')} className="text-xs text-red-400 hover:text-red-300 transition-colors">Revoke</button>
                   )}
                 </div>
               ))}
@@ -509,11 +509,11 @@ export function Settings() {
             <h3 className="text-base font-bold text-red-400 mb-2">Danger Zone</h3>
             <p className="text-gray-400 text-sm mb-4">These actions are permanent and cannot be undone.</p>
             <div className="flex gap-3">
-              <button onClick={()=>toast.error('Please contact support to delete your account')}
+              <button type="button" onClick={()=>toast.error('Please contact support to delete your account')}
                 className="px-4 py-2 bg-red-900/40 hover:bg-red-900/60 border border-red-700/50 text-red-400 rounded-lg text-sm font-medium transition-colors">
                 Delete Account
               </button>
-              <button onClick={()=>toast.error('Please contact support to export your data')}
+              <button type="button" onClick={()=>toast.error('Please contact support to export your data')}
                 className="px-4 py-2 bg-gray-800 hover:bg-gray-700 text-white rounded-lg text-sm font-medium transition-colors">
                 Export All Data
               </button>

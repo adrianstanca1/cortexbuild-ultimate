@@ -194,6 +194,8 @@ export default function Defects() {
   const [defects, setDefects] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [creating, setCreating] = useState(false);
+  const [editItem, setEditItem] = useState<Record<string, any> | null>(null);
+  const [saving, setSaving] = useState(false);
   const [form, setForm] = useState({
     title: '', project: '', location: '', trade: '', priority: 'medium', status: 'identified',
     description: '', identifiedBy: '', assignedTo: '', targetDate: ''
@@ -251,6 +253,31 @@ export default function Defects() {
       setDefects(prev => prev.filter(d => String(d.id) !== String(id)));
     } catch (err) {
       console.error('Failed to delete:', err);
+    }
+  };
+
+  const handleUpdate = async () => {
+    if (!editItem || !editItem.id) return;
+    setSaving(true);
+    try {
+      const updated = await defectsApi.update(editItem.id, {
+        title: editItem.title,
+        project: editItem.project,
+        location: editItem.location,
+        trade: editItem.trade,
+        priority: editItem.priority,
+        status: editItem.status,
+        description: editItem.description,
+        identified_by: editItem.identifiedBy,
+        assigned_to: editItem.assignedTo,
+        due_date: editItem.targetDate,
+      });
+      setDefects(prev => prev.map(d => String(d.id) === String(editItem.id) ? updated : d));
+      setEditItem(null);
+    } catch (err) {
+      console.error('Failed to update defect:', err);
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -463,6 +490,27 @@ export default function Defects() {
                       <p className="text-white text-sm">{defect.targetDate}</p>
                       <p className="text-gray-400 text-xs">Target</p>
                     </div>
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setEditItem(defect);
+                        setShowCreateModal(false);
+                      }}
+                      className="p-2 text-blue-400 hover:text-blue-300"
+                    >
+                      <Edit size={16} />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleDelete(defect.id);
+                      }}
+                      className="p-2 text-red-400 hover:text-red-300"
+                    >
+                      <Trash2 size={16} />
+                    </button>
                   </div>
                 </div>
 
@@ -631,9 +679,89 @@ export default function Defects() {
               </div>
             </div>
             <div className="p-6 border-t border-gray-700 flex justify-end gap-3">
-              <button type="button" onClick={() => setShowCreateModal(false)} className="px-4 py-2 text-gray-400 hover:text-white">Cancel</button>
               <button type="button" onClick={handleCreate} disabled={creating || !form.title || !form.project} className="px-4 py-2 bg-orange-500 hover:bg-orange-600 text-white rounded-lg font-semibold disabled:opacity-50">
                 {creating ? 'Creating...' : 'Report Defect'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {editItem && (
+        <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
+          <div className="bg-gray-900 border border-gray-700 rounded-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+            <div className="p-6 border-b border-gray-700 flex items-center justify-between">
+              <h3 className="text-xl font-bold text-white">Edit Defect</h3>
+              <button type="button" onClick={() => setEditItem(null)} className="text-gray-400 hover:text-white">
+                <X size={20} />
+              </button>
+            </div>
+            <div className="p-6 space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-gray-400 text-xs mb-1">Project</label>
+                  <input type="text" value={editItem.project || ''} onChange={e => setEditItem((prev: any) => ({ ...prev, project: e.target.value }))} className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white" />
+                </div>
+                <div>
+                  <label className="block text-gray-400 text-xs mb-1">Priority</label>
+                  <select value={editItem.priority || 'medium'} onChange={e => setEditItem((prev: any) => ({ ...prev, priority: e.target.value }))} className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white">
+                    <option value="critical">Critical</option>
+                    <option value="high">High</option>
+                    <option value="medium">Medium</option>
+                    <option value="low">Low</option>
+                  </select>
+                </div>
+              </div>
+              <div>
+                <label className="block text-gray-400 text-xs mb-1">Title</label>
+                <input type="text" value={editItem.title || ''} onChange={e => setEditItem((prev: any) => ({ ...prev, title: e.target.value }))} className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500" />
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-gray-400 text-xs mb-1">Location</label>
+                  <input type="text" value={editItem.location || ''} onChange={e => setEditItem((prev: any) => ({ ...prev, location: e.target.value }))} className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500" />
+                </div>
+                <div>
+                  <label className="block text-gray-400 text-xs mb-1">Trade</label>
+                  <input type="text" value={editItem.trade || ''} onChange={e => setEditItem((prev: any) => ({ ...prev, trade: e.target.value }))} className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500" />
+                </div>
+              </div>
+              <div>
+                <label className="block text-gray-400 text-xs mb-1">Description</label>
+                <textarea rows={3} value={editItem.description || ''} onChange={e => setEditItem((prev: any) => ({ ...prev, description: e.target.value }))} className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500" />
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-gray-400 text-xs mb-1">Status</label>
+                  <select value={editItem.status || 'identified'} onChange={e => setEditItem((prev: any) => ({ ...prev, status: e.target.value }))} className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white">
+                    <option value="identified">Identified</option>
+                    <option value="assigned">Assigned</option>
+                    <option value="in_progress">In Progress</option>
+                    <option value="completed">Completed</option>
+                    <option value="closed">Closed</option>
+                    <option value="disputed">Disputed</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-gray-400 text-xs mb-1">Identified By</label>
+                  <input type="text" value={editItem.identifiedBy || ''} onChange={e => setEditItem((prev: any) => ({ ...prev, identifiedBy: e.target.value }))} className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500" />
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-gray-400 text-xs mb-1">Assigned To</label>
+                  <input type="text" value={editItem.assignedTo || ''} onChange={e => setEditItem((prev: any) => ({ ...prev, assignedTo: e.target.value }))} className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500" />
+                </div>
+                <div>
+                  <label className="block text-gray-400 text-xs mb-1">Target Date</label>
+                  <input type="date" value={editItem.targetDate || ''} onChange={e => setEditItem((prev: any) => ({ ...prev, targetDate: e.target.value }))} className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white" />
+                </div>
+              </div>
+            </div>
+            <div className="p-6 border-t border-gray-700 flex justify-end gap-3">
+              <button type="button" onClick={() => setEditItem(null)} className="px-4 py-2 text-gray-400 hover:text-white">Cancel</button>
+              <button type="button" onClick={handleUpdate} disabled={saving || !editItem?.title || !editItem?.project} className="px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg font-semibold disabled:opacity-50">
+                {saving ? 'Saving...' : 'Save Changes'}
               </button>
             </div>
           </div>

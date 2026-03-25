@@ -169,6 +169,8 @@ export default function Variations() {
   const [variations, setVariations] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [creating, setCreating] = useState(false);
+  const [editItem, setEditItem] = useState<Record<string, any> | null>(null);
+  const [saving, setSaving] = useState(false);
   const [form, setForm] = useState({
     title: '', project: '', subcontractor: '', type: 'addition', value: '', reason: '', description: ''
   });
@@ -226,6 +228,33 @@ export default function Variations() {
       setVariations(prev => prev.filter(v => String(v.id) !== String(id)));
     } catch (err) {
       console.error('Failed to delete:', err);
+    }
+  };
+
+  const handleUpdate = async () => {
+    if (!editItem || !editItem.id) return;
+    setSaving(true);
+    try {
+      const updated = await variationsApi.update(editItem.id, {
+        ref: editItem.ref,
+        title: editItem.title,
+        project: editItem.project,
+        subcontractor: editItem.subcontractor,
+        type: editItem.type,
+        status: editItem.status,
+        value: parseFloat(editItem.value) || 0,
+        original_value: parseFloat(editItem.originalValue) || 0,
+        impact: editItem.impact,
+        description: editItem.description,
+        reason: editItem.reason,
+        submitted_date: editItem.submittedDate,
+      });
+      setVariations(prev => prev.map(v => String(v.id) === String(editItem.id) ? updated : v));
+      setEditItem(null);
+    } catch (err) {
+      console.error('Failed to update variation:', err);
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -410,7 +439,7 @@ export default function Variations() {
                     {isExpanded && (
                       <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
                         <button type="button" className="p-2 hover:bg-gray-700 rounded"><Eye size={16} className="text-gray-400" /></button>
-                        <button type="button" className="p-2 hover:bg-gray-700 rounded"><Edit size={16} className="text-gray-400" /></button>
+                        <button type="button" onClick={() => setEditItem({ ...variation, ref: variation.ref || '', title: variation.title || '', project: variation.project || '', subcontractor: variation.subcontractor || '', status: variation.status, type: variation.type || '', value: String(variation.value || ''), originalValue: String(variation.original_value || ''), impact: variation.impact || '', submittedDate: variation.submitted_date || '', description: variation.description || '', reason: variation.reason || '' })} className="p-2 hover:bg-gray-700 rounded"><Edit size={16} className="text-gray-400" /></button>
                         <button
                           type="button"
                           onClick={() => handleDelete(String(variation.id))}
@@ -601,6 +630,172 @@ export default function Variations() {
                 className="px-4 py-2 bg-orange-500 hover:bg-orange-600 text-white rounded-lg font-semibold disabled:opacity-50"
               >
                 {creating ? 'Creating...' : 'Create Variation'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {editItem && (
+        <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
+          <div className="bg-gray-900 border border-gray-700 rounded-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+            <div className="p-6 border-b border-gray-700 flex items-center justify-between">
+              <h3 className="text-xl font-bold text-white">Edit Variation</h3>
+              <button type="button" onClick={() => setEditItem(null)} className="text-gray-400 hover:text-white">
+                <X size={20} />
+              </button>
+            </div>
+            <div className="p-6 space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-gray-400 text-xs mb-1">Ref</label>
+                  <input
+                    type="text"
+                    value={editItem.ref}
+                    onChange={e => setEditItem((f: any) => ({ ...f, ref: e.target.value }))}
+                    className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500"
+                  />
+                </div>
+                <div>
+                  <label className="block text-gray-400 text-xs mb-1">Status</label>
+                  <select
+                    value={editItem.status}
+                    onChange={e => setEditItem((f: any) => ({ ...f, status: e.target.value }))}
+                    className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white"
+                  >
+                    <option value="draft">Draft</option>
+                    <option value="pending">Pending</option>
+                    <option value="submitted">Submitted</option>
+                    <option value="approved">Approved</option>
+                    <option value="rejected">Rejected</option>
+                    <option value="executed">Executed</option>
+                  </select>
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-gray-400 text-xs mb-1">Project</label>
+                  <input
+                    type="text"
+                    value={editItem.project}
+                    onChange={e => setEditItem((f: any) => ({ ...f, project: e.target.value }))}
+                    className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500"
+                  />
+                </div>
+                <div>
+                  <label className="block text-gray-400 text-xs mb-1">Type</label>
+                  <select
+                    value={editItem.type}
+                    onChange={e => setEditItem((f: any) => ({ ...f, type: e.target.value }))}
+                    className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white"
+                  >
+                    <option value="addition">Addition</option>
+                    <option value="omission">Omission</option>
+                    <option value="deletion">Deletion</option>
+                    <option value="remeasurement">Remeasurement</option>
+                    <option value="provisional">Provisional Sum</option>
+                  </select>
+                </div>
+              </div>
+              <div>
+                <label className="block text-gray-400 text-xs mb-1">Title</label>
+                <input
+                  type="text"
+                  value={editItem.title}
+                  onChange={e => setEditItem((f: any) => ({ ...f, title: e.target.value }))}
+                  className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500"
+                />
+              </div>
+              <div>
+                <label className="block text-gray-400 text-xs mb-1">Description</label>
+                <textarea
+                  rows={3}
+                  value={editItem.description}
+                  onChange={e => setEditItem((f: any) => ({ ...f, description: e.target.value }))}
+                  className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500"
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-gray-400 text-xs mb-1">Value (£)</label>
+                  <input
+                    type="number"
+                    value={editItem.value}
+                    onChange={e => setEditItem((f: any) => ({ ...f, value: e.target.value }))}
+                    className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500"
+                  />
+                </div>
+                <div>
+                  <label className="block text-gray-400 text-xs mb-1">Original Value (£)</label>
+                  <input
+                    type="number"
+                    value={editItem.originalValue}
+                    onChange={e => setEditItem((f: any) => ({ ...f, originalValue: e.target.value }))}
+                    className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500"
+                  />
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-gray-400 text-xs mb-1">Reason</label>
+                  <select
+                    value={editItem.reason}
+                    onChange={e => setEditItem((f: any) => ({ ...f, reason: e.target.value }))}
+                    className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white"
+                  >
+                    <option value="">Select reason...</option>
+                    <option>Site condition</option>
+                    <option>Design coordination</option>
+                    <option>Regulatory requirement</option>
+                    <option>Client instruction</option>
+                    <option>Ground condition</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-gray-400 text-xs mb-1">Impact</label>
+                  <select
+                    value={editItem.impact}
+                    onChange={e => setEditItem((f: any) => ({ ...f, impact: e.target.value }))}
+                    className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white"
+                  >
+                    <option value="increase">Increase</option>
+                    <option value="decrease">Decrease</option>
+                    <option value="neutral">Neutral</option>
+                  </select>
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-gray-400 text-xs mb-1">Subcontractor</label>
+                  <input
+                    type="text"
+                    value={editItem.subcontractor}
+                    onChange={e => setEditItem((f: any) => ({ ...f, subcontractor: e.target.value }))}
+                    className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500"
+                  />
+                </div>
+                <div>
+                  <label className="block text-gray-400 text-xs mb-1">Submitted Date</label>
+                  <input
+                    type="date"
+                    value={editItem.submittedDate}
+                    onChange={e => setEditItem((f: any) => ({ ...f, submittedDate: e.target.value }))}
+                    className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500"
+                  />
+                </div>
+              </div>
+            </div>
+            <div className="p-6 border-t border-gray-700 flex justify-end gap-3">
+              <button type="button" onClick={() => setEditItem(null)} className="px-4 py-2 text-gray-400 hover:text-white">
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleUpdate}
+                disabled={saving}
+                className="px-4 py-2 bg-orange-500 hover:bg-orange-600 text-white rounded-lg font-semibold disabled:opacity-50"
+              >
+                {saving ? 'Saving...' : 'Save Changes'}
               </button>
             </div>
           </div>

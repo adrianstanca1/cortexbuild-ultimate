@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Plus, Search, Users, FileCheck, Clock, AlertTriangle, Trash2, X, Upload } from 'lucide-react';
+import { Plus, Search, Users, FileCheck, Clock, AlertTriangle, Trash2, X, Upload, Edit } from 'lucide-react';
 import { prequalificationApi, uploadFile } from '../../services/api';
 import { toast } from 'sonner';
 
@@ -9,6 +9,8 @@ export default function Prequalification() {
   const [loading, setLoading] = useState(true);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [creating, setCreating] = useState(false);
+  const [editItem, setEditItem] = useState<Record<string, any> | null>(null);
+  const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState<string | null>(null);
   const [form, setForm] = useState({ contractor: '', project: '', questionnaireType: 'PAS 91', status: 'pending', score: '' });
 
@@ -56,6 +58,27 @@ export default function Prequalification() {
       setPrequal(prev => prev.filter((p: any) => String(p.id) !== String(id)));
     } catch (err) {
       console.error('Failed to delete:', err);
+    }
+  };
+
+  const handleUpdate = async () => {
+    if (!editItem || !editItem.id) return;
+    setSaving(true);
+    try {
+      const updated = {
+        contractor: editItem.contractor,
+        project: editItem.project || '',
+        questionnaire_type: editItem.questionnaire_type,
+        status: editItem.status,
+        score: parseInt(editItem.score) || 0,
+      };
+      const result = await prequalificationApi.update(editItem.id, updated);
+      setPrequal(prev => prev.map((p: any) => String(p.id) === String(editItem.id) ? result : p));
+      setEditItem(null);
+    } catch (err) {
+      console.error('Failed to update:', err);
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -114,6 +137,14 @@ export default function Prequalification() {
                     title="Delete"
                   >
                     <Trash2 size={16} className="text-red-400" />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setEditItem({ ...p, questionnaire_type: p.questionnaire_type || p.questionnaireType, score: p.score || '' })}
+                    className="p-2 hover:bg-blue-900/30 rounded"
+                    title="Edit"
+                  >
+                    <Edit size={16} className="text-blue-400" />
                   </button>
                   <input
                     type="file"
@@ -187,6 +218,57 @@ export default function Prequalification() {
               <button type="button" onClick={() => setShowCreateModal(false)} className="px-4 py-2 text-gray-400 hover:text-white">Cancel</button>
               <button type="button" onClick={handleCreate} disabled={creating || !form.contractor} className="px-4 py-2 bg-orange-500 hover:bg-orange-600 text-white rounded-lg font-semibold disabled:opacity-50">
                 {creating ? 'Creating...' : 'Send PQQ'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {editItem && (
+        <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
+          <div className="bg-gray-900 border border-gray-700 rounded-xl w-full max-w-lg">
+            <div className="p-6 border-b border-gray-700 flex items-center justify-between">
+              <h3 className="text-xl font-bold text-white">Edit PQQ</h3>
+              <button type="button" onClick={() => setEditItem(null)} className="text-gray-400 hover:text-white"><X size={20} /></button>
+            </div>
+            <div className="p-6 space-y-4">
+              <div>
+                <label htmlFor="editContractor" className="block text-gray-400 text-xs mb-1">Contractor *</label>
+                <input id="editContractor" type="text" value={editItem.contractor || ''} onChange={e => setEditItem((prev: any) => ({ ...prev, contractor: e.target.value }))} placeholder="Contractor name" className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500" />
+              </div>
+              <div>
+                <label htmlFor="editProject" className="block text-gray-400 text-xs mb-1">Project</label>
+                <input id="editProject" type="text" value={editItem.project || ''} onChange={e => setEditItem((prev: any) => ({ ...prev, project: e.target.value }))} placeholder="Project name" className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500" />
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label htmlFor="editType" className="block text-gray-400 text-xs mb-1">Questionnaire Type</label>
+                  <select id="editType" value={editItem.questionnaire_type || 'PAS 91'} onChange={e => setEditItem((prev: any) => ({ ...prev, questionnaire_type: e.target.value }))} className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white">
+                    <option value="PAS 91">PAS 91</option>
+                    <option value="SHE Q">SHE Q</option>
+                    <option value="Financial">Financial</option>
+                    <option value="Technical">Technical</option>
+                    <option value="Custom">Custom</option>
+                  </select>
+                </div>
+                <div>
+                  <label htmlFor="editStatus" className="block text-gray-400 text-xs mb-1">Status</label>
+                  <select id="editStatus" value={editItem.status || 'pending'} onChange={e => setEditItem((prev: any) => ({ ...prev, status: e.target.value }))} className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white">
+                    <option value="pending">Pending</option>
+                    <option value="approved">Approved</option>
+                    <option value="rejected">Rejected</option>
+                  </select>
+                </div>
+              </div>
+              <div>
+                <label htmlFor="editScore" className="block text-gray-400 text-xs mb-1">Score (%)</label>
+                <input id="editScore" type="number" value={editItem.score || ''} onChange={e => setEditItem((prev: any) => ({ ...prev, score: e.target.value }))} placeholder="0" className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500" />
+              </div>
+            </div>
+            <div className="p-6 border-t border-gray-700 flex justify-end gap-3">
+              <button type="button" onClick={() => setEditItem(null)} className="px-4 py-2 text-gray-400 hover:text-white">Cancel</button>
+              <button type="button" onClick={handleUpdate} disabled={saving || !editItem.contractor} className="px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg font-semibold disabled:opacity-50">
+                {saving ? 'Saving...' : 'Save Changes'}
               </button>
             </div>
           </div>

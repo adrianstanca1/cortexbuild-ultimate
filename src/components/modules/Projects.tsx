@@ -249,7 +249,7 @@ function ProjectWorkspace({ project, onBack, onEdit }: WorkspaceProps) {
     <div className="space-y-0">
       {/* Breadcrumb */}
       <div className="flex items-center gap-2 mb-4 text-sm">
-        <button onClick={onBack} className="flex items-center gap-1 text-gray-400 hover:text-white transition-colors">
+        <button type="button" onClick={onBack} className="flex items-center gap-1 text-gray-400 hover:text-white transition-colors">
           <ArrowLeft className="w-4 h-4"/> Projects
         </button>
         <ChevronRight className="w-4 h-4 text-gray-600"/>
@@ -269,7 +269,7 @@ function ProjectWorkspace({ project, onBack, onEdit }: WorkspaceProps) {
             <p className="text-gray-400 text-sm">{String(project.client??'')} &nbsp;·&nbsp; <MapPin className="inline w-3.5 h-3.5"/> {String(project.location??project.address??'')}</p>
           </div>
           <div className="flex items-center gap-2 ml-4 flex-shrink-0">
-            <button onClick={onEdit} className="flex items-center gap-1.5 px-3 py-1.5 bg-gray-800 hover:bg-gray-700 text-white text-sm rounded-lg transition-colors">
+            <button type="button" onClick={onEdit} className="flex items-center gap-1.5 px-3 py-1.5 bg-gray-800 hover:bg-gray-700 text-white text-sm rounded-lg transition-colors">
               <Edit2 className="w-3.5 h-3.5"/> Edit
             </button>
           </div>
@@ -322,7 +322,7 @@ function ProjectWorkspace({ project, onBack, onEdit }: WorkspaceProps) {
         {TABS.map(t => {
           const Icon = t.icon;
           return (
-            <button key={t.id} onClick={()=>setTab(t.id)}
+            <button type="button"  key={t.id} onClick={()=>setTab(t.id)}
               className={clsx('flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-all',
                 tab===t.id ? 'bg-blue-600 text-white shadow' : 'text-gray-400 hover:text-white hover:bg-gray-800')}>
               <Icon className="w-3.5 h-3.5"/>{t.label}
@@ -886,8 +886,8 @@ export function Projects() {
           <p className="text-gray-400 text-sm mt-0.5">{counts.active} active · £{(totalCV/1_000_000).toFixed(1)}M pipeline · {totalWorkers} workers</p>
         </div>
         <div className="flex items-center gap-2">
-          <button onClick={()=>refetch()} className="p-2 text-gray-400 hover:text-white rounded-lg hover:bg-gray-800 transition-colors"><RefreshCw className="w-4 h-4"/></button>
-          <button onClick={openCreate} className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded-lg text-white font-medium transition-colors">
+          <button type="button" onClick={()=>refetch()} className="p-2 text-gray-400 hover:text-white rounded-lg hover:bg-gray-800 transition-colors"><RefreshCw className="w-4 h-4"/></button>
+          <button type="button" onClick={openCreate} className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded-lg text-white font-medium transition-colors">
             <Plus className="w-4 h-4"/>New Project
           </button>
         </div>
@@ -896,7 +896,7 @@ export function Projects() {
       {/* Filter tabs */}
       <div className="flex gap-2 flex-wrap">
         {[{k:'all',l:'All'},{k:'active',l:'Active'},{k:'planning',l:'Planning'},{k:'on_hold',l:'On Hold'},{k:'completed',l:'Completed'}].map(({k,l})=>(
-          <button key={k} onClick={()=>setFilter(k as ProjectStatus|'all')}
+          <button type="button"  key={k} onClick={()=>setFilter(k as ProjectStatus|'all')}
             className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${filter===k?'bg-blue-600 text-white':'bg-gray-800 text-gray-400 hover:bg-gray-700 hover:text-white'}`}>
             {l} <span className="ml-1 text-xs opacity-70">{counts[k]}</span>
           </button>
@@ -935,8 +935,8 @@ export function Projects() {
                     <p className="text-gray-400 text-xs truncate">{String(p.client??'')} · {String(p.location??'')}</p>
                   </div>
                   <div className="flex items-center gap-1 ml-2 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0">
-                    <button onClick={e=>{e.stopPropagation();openEdit(p);}} className="p-1.5 text-gray-400 hover:text-white rounded-lg hover:bg-gray-700"><Edit2 className="w-3.5 h-3.5"/></button>
-                    <button onClick={e=>{e.stopPropagation();if(confirm('Delete?'))deleteMutation.mutate(String(p.id));}} className="p-1.5 text-gray-400 hover:text-red-400 rounded-lg hover:bg-gray-700"><Trash2 className="w-3.5 h-3.5"/></button>
+                    <button type="button" onClick={e=>{e.stopPropagation();openEdit(p);}} className="p-1.5 text-gray-400 hover:text-white rounded-lg hover:bg-gray-700"><Edit2 className="w-3.5 h-3.5"/></button>
+                    <button type="button" onClick={e=>{e.stopPropagation();if(confirm('Delete?'))deleteMutation.mutate(String(p.id));}} className="p-1.5 text-gray-400 hover:text-red-400 rounded-lg hover:bg-gray-700"><Trash2 className="w-3.5 h-3.5"/></button>
                   </div>
                 </div>
 
@@ -990,7 +990,7 @@ export function Projects() {
           <div className="bg-gray-900 border border-gray-700 rounded-2xl w-full max-w-2xl shadow-2xl max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between px-6 py-4 border-b border-gray-800 sticky top-0 bg-gray-900">
               <h2 className="text-lg font-bold text-white">{editMode?'Edit Project':'New Project'}</h2>
-              <button onClick={()=>setShowModal(false)} className="text-gray-400 hover:text-white"><X className="w-5 h-5"/></button>
+              <button type="button" onClick={()=>setShowModal(false)} className="text-gray-400 hover:text-white"><X className="w-5 h-5"/></button>
             </div>
             <div className="p-6 space-y-4">
               <div className="grid grid-cols-2 gap-4">
@@ -1055,10 +1055,10 @@ export function Projects() {
               </div>
             </div>
             <div className="flex gap-3 px-6 py-4 border-t border-gray-800 sticky bottom-0 bg-gray-900">
-              <button onClick={handleSave} className="flex-1 bg-blue-600 hover:bg-blue-700 text-white rounded-lg py-2 text-sm font-semibold transition-colors">
+              <button type="button" onClick={handleSave} className="flex-1 bg-blue-600 hover:bg-blue-700 text-white rounded-lg py-2 text-sm font-semibold transition-colors">
                 {editMode?'Save Changes':'Create Project'}
               </button>
-              <button onClick={()=>setShowModal(false)} className="flex-1 bg-gray-800 hover:bg-gray-700 text-white rounded-lg py-2 text-sm font-semibold transition-colors">Cancel</button>
+              <button type="button" onClick={()=>setShowModal(false)} className="flex-1 bg-gray-800 hover:bg-gray-700 text-white rounded-lg py-2 text-sm font-semibold transition-colors">Cancel</button>
             </div>
           </div>
         </div>

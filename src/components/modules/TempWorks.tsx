@@ -36,6 +36,8 @@ export default function TempWorks() {
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [creating, setCreating] = useState(false);
   const [uploading, setUploading] = useState<string | null>(null);
+  const [editItem, setEditItem] = useState<Record<string, any> | null>(null);
+  const [saving, setSaving] = useState(false);
   const [form, setForm] = useState({ title: '', project: '', type: 'Structural Support', designer: '', installer: '', description: '', status: 'design' });
 
   useEffect(() => {
@@ -78,6 +80,42 @@ export default function TempWorks() {
     }
   };
 
+  const handleUpdate = async () => {
+    if (!editItem || !editItem.id) return;
+    setSaving(true);
+    try {
+      const updated = await tempWorksApi.update(editItem.id, {
+        title: form.title,
+        project: form.project || '',
+        type: form.type,
+        designer: form.designer || '',
+        installer: form.installer || '',
+        description: form.description || '',
+        status: form.status,
+      });
+      setTempWorks(prev => prev.map((t: any) => String(t.id) === String(editItem.id) ? updated : t));
+      setEditItem(null);
+      setForm({ title: '', project: '', type: 'Structural Support', designer: '', installer: '', description: '', status: 'design' });
+    } catch (err) {
+      console.error('Failed to update:', err);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const openEditModal = (item: any) => {
+    setEditItem(item);
+    setForm({
+      title: item.title || '',
+      project: item.project || '',
+      type: item.type || 'Structural Support',
+      designer: item.designer || '',
+      installer: item.installer || '',
+      description: item.description || '',
+      status: item.status || 'design',
+    });
+  };
+
   const handleDelete = async (id: string) => {
     if (!confirm('Delete this temporary work?')) return;
     try {
@@ -110,7 +148,7 @@ export default function TempWorks() {
           </h2>
           <p className="text-gray-400 text-sm mt-1">Manage temporary works design, approval and installation</p>
         </div>
-        <button onClick={() => setShowCreateModal(true)} className="flex items-center gap-2 px-4 py-2 bg-orange-500 hover:bg-orange-600 text-white rounded-lg font-semibold">
+        <button type="button" onClick={() => setShowCreateModal(true)} className="flex items-center gap-2 px-4 py-2 bg-orange-500 hover:bg-orange-600 text-white rounded-lg font-semibold">
           <Plus size={18} /> New Temporary Work
         </button>
       </div>
@@ -194,8 +232,17 @@ export default function TempWorks() {
                     <p className="text-gray-400 text-sm mt-1">{tw.project}</p>
                   </div>
                   <div className="flex gap-2">
-                    <button className="p-2 hover:bg-gray-700 rounded text-gray-400 hover:text-white"><Eye size={16} /></button>
+                    <button type="button" className="p-2 hover:bg-gray-700 rounded text-gray-400 hover:text-white"><Eye size={16} /></button>
                     <button
+                      type="button"
+                      onClick={() => openEditModal(tw)}
+                      className="p-2 hover:bg-blue-900/30 rounded"
+                      title="Edit"
+                    >
+                      <Edit size={16} className="text-blue-400" />
+                    </button>
+                    <button
+                      type="button"
                       onClick={() => handleDelete(String(tw.id))}
                       className="p-2 hover:bg-red-900/30 rounded"
                       title="Delete"
@@ -214,6 +261,7 @@ export default function TempWorks() {
                       }}
                     />
                     <button
+                      type="button"
                       onClick={() => document.getElementById(`upload-temp-${tw.id}`)?.click()}
                       disabled={uploading === String(tw.id)}
                       className="p-2 hover:bg-blue-900/30 rounded disabled:opacity-50"
@@ -248,7 +296,7 @@ export default function TempWorks() {
           <div className="bg-gray-900 border border-gray-700 rounded-xl w-full max-w-lg">
             <div className="p-6 border-b border-gray-700 flex items-center justify-between">
               <h3 className="text-xl font-bold text-white">New Temporary Work</h3>
-              <button onClick={() => setShowCreateModal(false)} className="text-gray-400 hover:text-white"><X size={20} /></button>
+              <button type="button" onClick={() => setShowCreateModal(false)} className="text-gray-400 hover:text-white"><X size={20} /></button>
             </div>
             <div className="p-6 space-y-4">
               <div>
@@ -297,9 +345,73 @@ export default function TempWorks() {
               </div>
             </div>
             <div className="p-6 border-t border-gray-700 flex justify-end gap-3">
-              <button onClick={() => setShowCreateModal(false)} className="px-4 py-2 text-gray-400 hover:text-white">Cancel</button>
-              <button onClick={handleCreate} disabled={creating || !form.title} className="px-4 py-2 bg-orange-500 hover:bg-orange-600 text-white rounded-lg font-semibold disabled:opacity-50">
+              <button type="button" onClick={() => setShowCreateModal(false)} className="px-4 py-2 text-gray-400 hover:text-white">Cancel</button>
+              <button type="button" onClick={handleCreate} disabled={creating || !form.title} className="px-4 py-2 bg-orange-500 hover:bg-orange-600 text-white rounded-lg font-semibold disabled:opacity-50">
                 {creating ? 'Creating...' : 'Create'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {editItem && (
+        <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
+          <div className="bg-gray-900 border border-gray-700 rounded-xl w-full max-w-lg">
+            <div className="p-6 border-b border-gray-700 flex items-center justify-between">
+              <h3 className="text-xl font-bold text-white">Edit Temporary Work</h3>
+              <button type="button" onClick={() => setEditItem(null)} className="text-gray-400 hover:text-white"><X size={20} /></button>
+            </div>
+            <div className="p-6 space-y-4">
+              <div>
+                <label htmlFor="twTitle" className="block text-gray-400 text-xs mb-1">Title *</label>
+                <input id="twTitle" type="text" value={form.title} onChange={e => setForm(f => ({ ...f, title: e.target.value }))} placeholder="e.g. Tower Crane Bases" className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500" />
+              </div>
+              <div>
+                <label htmlFor="twProject" className="block text-gray-400 text-xs mb-1">Project</label>
+                <input id="twProject" type="text" value={form.project} onChange={e => setForm(f => ({ ...f, project: e.target.value }))} placeholder="Project name" className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500" />
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label htmlFor="twType" className="block text-gray-400 text-xs mb-1">Type</label>
+                  <select id="twType" value={form.type} onChange={e => setForm(f => ({ ...f, type: e.target.value }))} className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white">
+                    <option value="Structural Support">Structural Support</option>
+                    <option value="Propping">Propping</option>
+                    <option value="Scaffolding">Scaffolding</option>
+                    <option value="Excavation">Excavation</option>
+                    <option value="Formwork">Formwork</option>
+                    <option value="Other">Other</option>
+                  </select>
+                </div>
+                <div>
+                  <label htmlFor="twStatus" className="block text-gray-400 text-xs mb-1">Status</label>
+                  <select id="twStatus" value={form.status} onChange={e => setForm(f => ({ ...f, status: e.target.value }))} className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white">
+                    <option value="design">In Design</option>
+                    <option value="approval">Pending Approval</option>
+                    <option value="installed">Installed</option>
+                    <option value="in_use">In Use</option>
+                    <option value="removed">Removed</option>
+                  </select>
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label htmlFor="twDesigner" className="block text-gray-400 text-xs mb-1">Designer</label>
+                  <input id="twDesigner" type="text" value={form.designer} onChange={e => setForm(f => ({ ...f, designer: e.target.value }))} placeholder="Designer name" className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500" />
+                </div>
+                <div>
+                  <label htmlFor="twInstaller" className="block text-gray-400 text-xs mb-1">Installer</label>
+                  <input id="twInstaller" type="text" value={form.installer} onChange={e => setForm(f => ({ ...f, installer: e.target.value }))} placeholder="Installer name" className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500" />
+                </div>
+              </div>
+              <div>
+                <label htmlFor="twDesc" className="block text-gray-400 text-xs mb-1">Description</label>
+                <textarea id="twDesc" value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))} placeholder="Description..." rows={3} className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500" />
+              </div>
+            </div>
+            <div className="p-6 border-t border-gray-700 flex justify-end gap-3">
+              <button type="button" onClick={() => setEditItem(null)} className="px-4 py-2 text-gray-400 hover:text-white">Cancel</button>
+              <button type="button" onClick={handleUpdate} disabled={saving || !form.title} className="px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg font-semibold disabled:opacity-50">
+                {saving ? 'Saving...' : 'Save Changes'}
               </button>
             </div>
           </div>

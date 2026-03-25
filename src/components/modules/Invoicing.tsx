@@ -648,7 +648,7 @@ export function Invoicing() {
                 {!isLoading && filtered.length === 0 && (
                   <div className="text-center py-12 text-gray-500">
                     No invoices found.{' '}
-                    <button onClick={openCreate} className="text-emerald-400 hover:text-emerald-300">
+                    <button type="button" onClick={openCreate} className="text-emerald-400 hover:text-emerald-300">
                       Create one →
                     </button>
                   </div>

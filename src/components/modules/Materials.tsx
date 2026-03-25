@@ -175,7 +175,7 @@ export function Materials() {
           <h1 className="text-2xl font-bold text-gray-100">Materials Management</h1>
           <p className="text-sm text-gray-400 mt-1">Procurement, deliveries & analytics</p>
         </div>
-        <button onClick={openCreate} className="flex items-center gap-2 px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 text-sm font-medium">
+        <button type="button" onClick={openCreate} className="flex items-center gap-2 px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 text-sm font-medium">
           <Plus size={16}/><span>Add Material</span>
         </button>
       </div>
@@ -301,8 +301,8 @@ export function Materials() {
                         <td className="px-4 py-3 text-gray-400 font-mono text-xs">{String(m.po_number??'—')}</td>
                         <td className="px-4 py-3">
                           <div className="flex items-center gap-1" onClick={e=>e.stopPropagation()}>
-                            <button onClick={()=>openEdit(m)} className="p-1.5 text-gray-400 hover:text-blue-400 hover:bg-blue-900/30 rounded"><Edit2 size={14}/></button>
-                            <button onClick={()=>handleDelete(String(m.id))} className="p-1.5 text-gray-400 hover:text-red-400 hover:bg-red-900/30 rounded"><Trash2 size={14}/></button>
+                            <button type="button" onClick={()=>openEdit(m)} className="p-1.5 text-gray-400 hover:text-blue-400 hover:bg-blue-900/30 rounded"><Edit2 size={14}/></button>
+                            <button type="button" onClick={()=>handleDelete(String(m.id))} className="p-1.5 text-gray-400 hover:text-red-400 hover:bg-red-900/30 rounded"><Trash2 size={14}/></button>
                           </div>
                         </td>
                       </tr>
@@ -463,7 +463,7 @@ export function Materials() {
           <div className="bg-gray-800 rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between p-6 border-b border-gray-700 sticky top-0 bg-gray-800 z-10">
               <h2 className="text-lg font-semibold text-gray-100">{editing?'Edit Material':'Add Material'}</h2>
-              <button onClick={()=>setShowModal(false)} className="p-2 hover:bg-gray-700 rounded-lg"><X size={18}/></button>
+              <button type="button" onClick={()=>setShowModal(false)} className="p-2 hover:bg-gray-700 rounded-lg"><X size={18}/></button>
             </div>
             <form onSubmit={handleSubmit} className="p-6 space-y-4">
               <div className="grid grid-cols-2 gap-4">
@@ -621,7 +621,7 @@ export function Materials() {
                 <h2 className="text-lg font-semibold text-gray-100">{String(selectedDetail.name??'')}</h2>
                 <p className="text-sm text-gray-400 mt-1">Material Details</p>
               </div>
-              <button onClick={()=>setShowDetailModal(false)} className="p-2 hover:bg-gray-700 rounded-lg"><X size={18}/></button>
+              <button type="button" onClick={()=>setShowDetailModal(false)} className="p-2 hover:bg-gray-700 rounded-lg"><X size={18}/></button>
             </div>
             <div className="p-6 space-y-6">
               <div className="grid grid-cols-2 gap-6">

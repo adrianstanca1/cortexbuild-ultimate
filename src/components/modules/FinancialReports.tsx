@@ -478,7 +478,7 @@ export function FinancialReports() {
             <option value="this_quarter">This Quarter</option>
             <option value="this_year">This Year</option>
           </select>
-          <button onClick={() => {}} className="btn btn-secondary">
+          <button type="button" onClick={() => {}} className="btn btn-secondary">
             <RefreshCw className="h-4 w-4 mr-2" />
             Refresh
           </button>

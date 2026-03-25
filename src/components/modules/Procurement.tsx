@@ -276,7 +276,7 @@ export function Procurement() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h1 className="text-3xl font-bold text-white">Procurement & Purchase Orders</h1>
-        <button onClick={openCreate} className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded-lg text-white font-medium transition-colors">
+        <button type="button" onClick={openCreate} className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded-lg text-white font-medium transition-colors">
           <Plus className="w-4 h-4"/>Raise PO
         </button>
       </div>
@@ -315,7 +315,7 @@ export function Procurement() {
           {key:'analytics'   as const, label:'Spend Analysis',  icon:BarChart3},
           {key:'schedule'    as const, label:'Delivery Schedule',icon:Calendar},
         ]).map(t=>(
-          <button key={t.key} onClick={()=>setMainTab(t.key)}
+          <button type="button"  key={t.key} onClick={()=>setMainTab(t.key)}
             className={`flex items-center gap-2 px-4 py-2.5 text-sm font-medium border-b-2 -mb-px transition-colors ${mainTab===t.key?'border-blue-500 text-blue-400':'border-transparent text-gray-400 hover:text-gray-200'}`}>
             <t.icon className="w-4 h-4"/>
             {t.label}
@@ -335,7 +335,7 @@ export function Procurement() {
               { key:'delivery'  as const, label:'In Transit / On Site',count:pos.filter(p=>['pending_delivery','on_site'].includes(String(p.status??''))).length },
               { key:'delivered' as const, label:'Delivered',           count:delivered },
             ]).map(t=>(
-              <button key={t.key} onClick={()=>setSubTab(t.key)}
+              <button type="button"  key={t.key} onClick={()=>setSubTab(t.key)}
                 className={`flex items-center gap-2 px-4 py-2 text-sm font-medium border-b-2 -mb-px transition-colors ${subTab===t.key?'border-blue-500 text-blue-400':'border-transparent text-gray-400 hover:text-gray-200'}`}>
                 {t.label}
                 {t.count > 0 && <span className="text-xs px-1.5 py-0.5 rounded-full bg-gray-800 text-gray-400">{t.count}</span>}
@@ -407,13 +407,13 @@ export function Procurement() {
                           <td className="px-4 py-3">
                             <div className="flex items-center gap-1" onClick={e=>e.stopPropagation()}>
                               {String(po.status??'') === 'pending_approval' && (
-                                <button onClick={()=>{setSelectedPO(po);setShowDetailModal(true);}}
+                                <button type="button" onClick={()=>{setSelectedPO(po);setShowDetailModal(true);}}
                                   className="text-xs px-2 py-1 bg-green-900/40 hover:bg-green-800 text-green-400 rounded font-medium transition-colors">
                                   Approve
                                 </button>
                               )}
-                              <button onClick={()=>openEdit(po)} className="p-1 text-gray-400 hover:text-white rounded"><Edit2 className="w-3.5 h-3.5"/></button>
-                              <button onClick={()=>{if(confirm('Delete PO?'))deleteMut.mutate(String(po.id));}} className="p-1 text-gray-400 hover:text-red-400 rounded"><Trash2 className="w-3.5 h-3.5"/></button>
+                              <button type="button" onClick={()=>openEdit(po)} className="p-1 text-gray-400 hover:text-white rounded"><Edit2 className="w-3.5 h-3.5"/></button>
+                              <button type="button" onClick={()=>{if(confirm('Delete PO?'))deleteMut.mutate(String(po.id));}} className="p-1 text-gray-400 hover:text-red-400 rounded"><Trash2 className="w-3.5 h-3.5"/></button>
                             </div>
                           </td>
                         </tr>
@@ -433,7 +433,7 @@ export function Procurement() {
       {/* TAB: Suppliers */}
       {mainTab === 'suppliers' && (
         <div className="space-y-6">
-          <button onClick={()=>setShowSupplierModal(true)} className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded-lg text-white font-medium transition-colors">
+          <button type="button" onClick={()=>setShowSupplierModal(true)} className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded-lg text-white font-medium transition-colors">
             <Plus className="w-4 h-4"/>Add Supplier
           </button>
           <div className="relative flex-1 max-w-xs">
@@ -630,7 +630,7 @@ export function Procurement() {
                         </td>
                         <td className="px-4 py-3" onClick={e=>e.stopPropagation()}>
                           {String(po.status??'') !== 'delivered' && (
-                            <button onClick={()=>markDelivered(po)}
+                            <button type="button" onClick={()=>markDelivered(po)}
                               className="text-xs px-2 py-1 bg-green-900/40 hover:bg-green-800 text-green-400 rounded font-medium transition-colors">
                               Mark Delivered
                             </button>
@@ -655,7 +655,7 @@ export function Procurement() {
           <div className="bg-gray-900 border border-gray-700 rounded-2xl w-full max-w-xl shadow-2xl max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between px-6 py-4 border-b border-gray-800 sticky top-0 bg-gray-900 z-10">
               <h2 className="text-lg font-bold text-white">{editId?'Edit Purchase Order':'Raise Purchase Order'}</h2>
-              <button onClick={()=>setShowModal(false)} className="text-gray-400 hover:text-white"><X className="w-5 h-5"/></button>
+              <button type="button" onClick={()=>setShowModal(false)} className="text-gray-400 hover:text-white"><X className="w-5 h-5"/></button>
             </div>
             <div className="p-6 space-y-4">
               <div className="grid grid-cols-2 gap-4">
@@ -713,10 +713,10 @@ export function Procurement() {
               </div>
             </div>
             <div className="flex gap-3 px-6 py-4 border-t border-gray-800 sticky bottom-0 bg-gray-900">
-              <button onClick={handleSave} className="flex-1 bg-blue-600 hover:bg-blue-700 text-white rounded-lg py-2 text-sm font-semibold transition-colors">
+              <button type="button" onClick={handleSave} className="flex-1 bg-blue-600 hover:bg-blue-700 text-white rounded-lg py-2 text-sm font-semibold transition-colors">
                 {editId?'Save Changes':'Raise PO'}
               </button>
-              <button onClick={()=>setShowModal(false)} className="flex-1 bg-gray-800 hover:bg-gray-700 text-white rounded-lg py-2 text-sm font-semibold transition-colors">
+              <button type="button" onClick={()=>setShowModal(false)} className="flex-1 bg-gray-800 hover:bg-gray-700 text-white rounded-lg py-2 text-sm font-semibold transition-colors">
                 Cancel
               </button>
             </div>
@@ -730,7 +730,7 @@ export function Procurement() {
           <div className="bg-gray-900 border border-gray-700 rounded-2xl w-full max-w-2xl shadow-2xl max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between px-6 py-4 border-b border-gray-800 sticky top-0 bg-gray-900 z-10">
               <h2 className="text-lg font-bold text-white">PO Details: {String(selectedPO.po_number??'')}</h2>
-              <button onClick={()=>setShowDetailModal(false)} className="text-gray-400 hover:text-white"><X className="w-5 h-5"/></button>
+              <button type="button" onClick={()=>setShowDetailModal(false)} className="text-gray-400 hover:text-white"><X className="w-5 h-5"/></button>
             </div>
             <div className="p-6 space-y-6">
               <div className="grid grid-cols-2 gap-6">
@@ -795,24 +795,24 @@ export function Procurement() {
             <div className="flex gap-3 px-6 py-4 border-t border-gray-800 sticky bottom-0 bg-gray-900">
               {String(selectedPO.status??'') === 'pending_approval' ? (
                 <>
-                  <button onClick={approveApprovalPO} className="flex-1 bg-green-600 hover:bg-green-700 text-white rounded-lg py-2 text-sm font-semibold transition-colors">
+                  <button type="button" onClick={approveApprovalPO} className="flex-1 bg-green-600 hover:bg-green-700 text-white rounded-lg py-2 text-sm font-semibold transition-colors">
                     <CheckCircle2 className="inline w-4 h-4 mr-2"/>Approve
                   </button>
-                  <button onClick={rejectApprovalPO} className="flex-1 bg-red-600 hover:bg-red-700 text-white rounded-lg py-2 text-sm font-semibold transition-colors">
+                  <button type="button" onClick={rejectApprovalPO} className="flex-1 bg-red-600 hover:bg-red-700 text-white rounded-lg py-2 text-sm font-semibold transition-colors">
                     Reject & Delete
                   </button>
                 </>
               ) : (
                 <>
-                  <button onClick={()=>{openEdit(selectedPO);setShowDetailModal(false);}} className="flex-1 bg-blue-600 hover:bg-blue-700 text-white rounded-lg py-2 text-sm font-semibold transition-colors">
+                  <button type="button" onClick={()=>{openEdit(selectedPO);setShowDetailModal(false);}} className="flex-1 bg-blue-600 hover:bg-blue-700 text-white rounded-lg py-2 text-sm font-semibold transition-colors">
                     <Edit2 className="inline w-4 h-4 mr-2"/>Edit
                   </button>
-                  <button onClick={()=>advanceStatus(selectedPO)} className="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg py-2 text-sm font-semibold transition-colors">
+                  <button type="button" onClick={()=>advanceStatus(selectedPO)} className="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg py-2 text-sm font-semibold transition-colors">
                     Advance Status
                   </button>
                 </>
               )}
-              <button onClick={()=>setShowDetailModal(false)} className="flex-1 bg-gray-800 hover:bg-gray-700 text-white rounded-lg py-2 text-sm font-semibold transition-colors">
+              <button type="button" onClick={()=>setShowDetailModal(false)} className="flex-1 bg-gray-800 hover:bg-gray-700 text-white rounded-lg py-2 text-sm font-semibold transition-colors">
                 Close
               </button>
             </div>
@@ -826,7 +826,7 @@ export function Procurement() {
           <div className="bg-gray-900 border border-gray-700 rounded-2xl w-full max-w-md shadow-2xl">
             <div className="flex items-center justify-between px-6 py-4 border-b border-gray-800">
               <h2 className="text-lg font-bold text-white">Add New Supplier</h2>
-              <button onClick={()=>setShowSupplierModal(false)} className="text-gray-400 hover:text-white"><X className="w-5 h-5"/></button>
+              <button type="button" onClick={()=>setShowSupplierModal(false)} className="text-gray-400 hover:text-white"><X className="w-5 h-5"/></button>
             </div>
             <div className="p-6 space-y-4">
               <div>
@@ -850,10 +850,10 @@ export function Procurement() {
               </div>
             </div>
             <div className="flex gap-3 px-6 py-4 border-t border-gray-800">
-              <button onClick={()=>{setShowSupplierModal(false);toast.success('Supplier added (static)');}} className="flex-1 bg-blue-600 hover:bg-blue-700 text-white rounded-lg py-2 text-sm font-semibold transition-colors">
+              <button type="button" onClick={()=>{setShowSupplierModal(false);toast.success('Supplier added (static)');}} className="flex-1 bg-blue-600 hover:bg-blue-700 text-white rounded-lg py-2 text-sm font-semibold transition-colors">
                 Add Supplier
               </button>
-              <button onClick={()=>setShowSupplierModal(false)} className="flex-1 bg-gray-800 hover:bg-gray-700 text-white rounded-lg py-2 text-sm font-semibold transition-colors">
+              <button type="button" onClick={()=>setShowSupplierModal(false)} className="flex-1 bg-gray-800 hover:bg-gray-700 text-white rounded-lg py-2 text-sm font-semibold transition-colors">
                 Cancel
               </button>
             </div>

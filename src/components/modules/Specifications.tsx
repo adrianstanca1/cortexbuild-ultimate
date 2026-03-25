@@ -29,6 +29,8 @@ export default function Specifications() {
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [creating, setCreating] = useState(false);
   const [form, setForm] = useState({ title: '', project: '', section: '', discipline: '', description: '' });
+  const [editItem, setEditItem] = useState<Record<string, any> | null>(null);
+  const [saving, setSaving] = useState(false);
 
   useEffect(() => {
     async function loadSpecifications() {
@@ -66,6 +68,26 @@ export default function Specifications() {
       console.error('Failed to create:', err);
     } finally {
       setCreating(false);
+    }
+  };
+
+  const handleUpdate = async () => {
+    if (!editItem || !editItem.id) return;
+    setSaving(true);
+    try {
+      const updated = await specificationsApi.update(editItem.id, {
+        title: editItem.title,
+        project: editItem.project,
+        section: editItem.section,
+        discipline: editItem.discipline,
+        description: editItem.description,
+      }) as Specification;
+      setSpecifications(prev => prev.map(s => String(s.id) === String(editItem.id) ? updated : s));
+      setEditItem(null);
+    } catch (err) {
+      console.error('Failed to update:', err);
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -197,6 +219,14 @@ export default function Specifications() {
                     </button>
                     <button
                       type="button"
+                      onClick={() => setEditItem({ ...spec, title: spec.title || '', project: spec.project || '', section: spec.section || '', discipline: spec.discipline || '', description: spec.description || '' })}
+                      className="p-2 hover:bg-gray-700 rounded text-gray-400 hover:text-white"
+                      title="Edit"
+                    >
+                      <Edit size={16} />
+                    </button>
+                    <button
+                      type="button"
                       onClick={() => handleDelete(String(spec.id))}
                       className="p-2 hover:bg-red-900/30 rounded"
                       title="Delete"
@@ -265,6 +295,52 @@ export default function Specifications() {
               <button type="button" onClick={() => setShowCreateModal(false)} className="px-4 py-2 text-gray-400 hover:text-white">Cancel</button>
               <button type="button" onClick={handleCreate} disabled={creating || !form.title || !form.project} className="px-4 py-2 bg-orange-500 hover:bg-orange-600 text-white rounded-lg font-semibold disabled:opacity-50">
                 {creating ? 'Creating...' : 'Create Specification'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {editItem && (
+        <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
+          <div className="bg-gray-900 border border-gray-700 rounded-xl w-full max-w-lg">
+            <div className="p-6 border-b border-gray-700 flex items-center justify-between">
+              <h3 className="text-xl font-bold text-white">Edit Specification</h3>
+              <button type="button" onClick={() => setEditItem(null)} className="text-gray-400 hover:text-white"><X size={20} /></button>
+            </div>
+            <div className="p-6 space-y-4">
+              <div>
+                <label htmlFor="edit-title" className="block text-gray-400 text-xs mb-1">Title</label>
+                <input id="edit-title" type="text" value={editItem.title} onChange={e => setEditItem((f: any) => ({ ...f, title: e.target.value }))} placeholder="Specification title..." className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500" />
+              </div>
+              <div>
+                <label htmlFor="edit-project" className="block text-gray-400 text-xs mb-1">Project</label>
+                <select id="edit-project" value={editItem.project} onChange={e => setEditItem((f: any) => ({ ...f, project: e.target.value }))} className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white">
+                  <option value="">Select project...</option>
+                  <option>Canary Wharf Office Complex</option>
+                  <option>Manchester City Apartments</option>
+                  <option>Birmingham Road Bridge</option>
+                </select>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label htmlFor="edit-section" className="block text-gray-400 text-xs mb-1">Section</label>
+                  <input id="edit-section" type="text" value={editItem.section} onChange={e => setEditItem((f: any) => ({ ...f, section: e.target.value }))} placeholder="e.g. 05 00 00" className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500" />
+                </div>
+                <div>
+                  <label htmlFor="edit-discipline" className="block text-gray-400 text-xs mb-1">Discipline</label>
+                  <input id="edit-discipline" type="text" value={editItem.discipline} onChange={e => setEditItem((f: any) => ({ ...f, discipline: e.target.value }))} placeholder="e.g. Structural" className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500" />
+                </div>
+              </div>
+              <div>
+                <label htmlFor="edit-description" className="block text-gray-400 text-xs mb-1">Description</label>
+                <textarea id="edit-description" rows={3} value={editItem.description} onChange={e => setEditItem((f: any) => ({ ...f, description: e.target.value }))} placeholder="Specification details..." className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500" />
+              </div>
+            </div>
+            <div className="p-6 border-t border-gray-700 flex justify-end gap-3">
+              <button type="button" onClick={() => setEditItem(null)} className="px-4 py-2 text-gray-400 hover:text-white">Cancel</button>
+              <button type="button" onClick={handleUpdate} disabled={saving || !editItem.title || !editItem.project} className="px-4 py-2 bg-orange-500 hover:bg-orange-600 text-white rounded-lg font-semibold disabled:opacity-50">
+                {saving ? 'Saving...' : 'Save Changes'}
               </button>
             </div>
           </div>

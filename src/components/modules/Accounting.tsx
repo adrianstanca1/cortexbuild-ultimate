@@ -159,7 +159,7 @@ export function Accounting() {
     <div className="space-y-6 bg-gray-900 min-h-screen p-6">
       <div className="flex items-center justify-between">
         <h1 className="text-3xl font-bold text-white">Accounting &amp; Finance</h1>
-        <button onClick={openCreate} className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded-lg text-white font-medium transition-colors">
+        <button type="button" onClick={openCreate} className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded-lg text-white font-medium transition-colors">
           <Plus className="w-4 h-4"/>New Invoice
         </button>
       </div>
@@ -190,7 +190,7 @@ export function Accounting() {
 
       <div className="flex gap-2 flex-wrap border-b border-gray-700 pb-2">
         {TABS.map(t=>(
-          <button key={t.id} onClick={()=>setTab(t.id)}
+          <button type="button"  key={t.id} onClick={()=>setTab(t.id)}
             className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${tab===t.id?'bg-blue-600 text-white':'bg-gray-800 text-gray-400 hover:bg-gray-700 hover:text-white'}`}>
             {t.label}
           </button>
@@ -420,13 +420,13 @@ export function Accounting() {
                       <td className="px-4 py-3">
                         <div className="flex items-center gap-2">
                           {inv.status!=='paid' && (
-                            <button onClick={()=>updateMut.mutate({id:String(inv.id),data:{status:'paid'}})}
+                            <button type="button" onClick={()=>updateMut.mutate({id:String(inv.id),data:{status:'paid'}})}
                               className="text-xs px-2 py-1 bg-green-900/40 hover:bg-green-800 text-green-400 rounded font-medium transition-colors">
                               Mark Paid
                             </button>
                           )}
-                          <button onClick={()=>openEdit(inv)} className="p-1 text-gray-400 hover:text-white rounded"><Edit2 className="w-3.5 h-3.5"/></button>
-                          <button onClick={()=>{if(confirm('Delete?'))deleteMut.mutate(String(inv.id));}} className="p-1 text-gray-400 hover:text-red-400 rounded"><Trash2 className="w-3.5 h-3.5"/></button>
+                          <button type="button" onClick={()=>openEdit(inv)} className="p-1 text-gray-400 hover:text-white rounded"><Edit2 className="w-3.5 h-3.5"/></button>
+                          <button type="button" onClick={()=>{if(confirm('Delete?'))deleteMut.mutate(String(inv.id));}} className="p-1 text-gray-400 hover:text-red-400 rounded"><Trash2 className="w-3.5 h-3.5"/></button>
                         </div>
                       </td>
                     </tr>
@@ -515,7 +515,7 @@ export function Accounting() {
           <div className="bg-gray-800 border border-gray-700 rounded-2xl w-full max-w-lg shadow-2xl">
             <div className="flex items-center justify-between px-6 py-4 border-b border-gray-700">
               <h2 className="text-lg font-bold text-white">{editId?'Edit Invoice':'New Invoice'}</h2>
-              <button onClick={()=>setShowModal(false)} className="text-gray-400 hover:text-white"><X className="w-5 h-5"/></button>
+              <button type="button" onClick={()=>setShowModal(false)} className="text-gray-400 hover:text-white"><X className="w-5 h-5"/></button>
             </div>
             <div className="p-6 space-y-4">
               <div className="grid grid-cols-2 gap-4">
@@ -557,10 +557,10 @@ export function Accounting() {
               </div>
             </div>
             <div className="flex gap-3 px-6 py-4 border-t border-gray-700">
-              <button onClick={handleSave} className="flex-1 bg-blue-600 hover:bg-blue-700 text-white rounded-lg py-2 text-sm font-semibold transition-colors">
+              <button type="button" onClick={handleSave} className="flex-1 bg-blue-600 hover:bg-blue-700 text-white rounded-lg py-2 text-sm font-semibold transition-colors">
                 {editId?'Save Changes':'Create Invoice'}
               </button>
-              <button onClick={()=>setShowModal(false)} className="flex-1 bg-gray-700 hover:bg-gray-600 text-white rounded-lg py-2 text-sm font-semibold transition-colors">
+              <button type="button" onClick={()=>setShowModal(false)} className="flex-1 bg-gray-700 hover:bg-gray-600 text-white rounded-lg py-2 text-sm font-semibold transition-colors">
                 Cancel
               </button>
             </div>

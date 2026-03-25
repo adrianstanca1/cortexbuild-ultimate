@@ -133,7 +133,7 @@ export function RiskRegister() {
           <h1 className="text-3xl font-bold text-white">Risk Register</h1>
           <p className="text-sm text-gray-400 mt-1">UK construction project risk identification, assessment & mitigation</p>
         </div>
-        <button onClick={openCreate} className="flex items-center gap-2 px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 text-sm font-medium transition-colors">
+        <button type="button" onClick={openCreate} className="flex items-center gap-2 px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 text-sm font-medium transition-colors">
           <Plus size={16}/><span>Add Risk</span>
         </button>
       </div>
@@ -172,7 +172,7 @@ export function RiskRegister() {
           { key:'actions',  label:'Mitigation Actions', count:null },
           { key:'trends',   label:'Trends',        count:null },
         ] as const).map(t=>(
-          <button key={t.key} onClick={()=>setSubTab(t.key)}
+          <button type="button"  key={t.key} onClick={()=>setSubTab(t.key)}
             className={`flex items-center gap-2 px-4 py-2.5 text-sm font-medium border-b-2 -mb-px transition-colors whitespace-nowrap ${subTab===t.key?'border-orange-500 text-orange-500':'border-transparent text-gray-400 hover:text-gray-300'}`}>
             {t.label}
             {t.count!==null && <span className={`text-xs px-1.5 py-0.5 rounded-full bg-gray-700 text-gray-300`}>{t.count}</span>}
@@ -277,7 +277,7 @@ export function RiskRegister() {
               <h3 className="font-semibold text-white">Mitigation Action Items</h3>
               <p className="text-sm text-gray-400 mt-1">Track and manage risk mitigation actions</p>
             </div>
-            <button onClick={openCreate} className="flex items-center gap-2 px-3 py-1.5 bg-orange-600 text-white rounded text-sm font-medium hover:bg-orange-700 transition-colors">
+            <button type="button" onClick={openCreate} className="flex items-center gap-2 px-3 py-1.5 bg-orange-600 text-white rounded text-sm font-medium hover:bg-orange-700 transition-colors">
               <Plus size={14}/><span>Add Action</span>
             </button>
           </div>
@@ -505,14 +505,14 @@ export function RiskRegister() {
                             {!!r.mitigation && <div><p className="text-xs font-semibold text-yellow-400 mb-1">MITIGATION PLAN</p><p className="text-gray-300">{String(r.mitigation)}</p></div>}
                             {!!r.contingency && <div><p className="text-xs font-semibold text-blue-400 mb-1">CONTINGENCY PLAN</p><p className="text-gray-300">{String(r.contingency)}</p></div>}
                             <div className="flex gap-2 pt-2 border-t border-gray-700">
-                              <button onClick={()=>openEdit(r)} className="flex items-center gap-1 text-xs px-3 py-1.5 bg-orange-900/40 border border-orange-700 text-orange-300 rounded hover:bg-orange-900/60 font-medium transition-colors">
+                              <button type="button" onClick={()=>openEdit(r)} className="flex items-center gap-1 text-xs px-3 py-1.5 bg-orange-900/40 border border-orange-700 text-orange-300 rounded hover:bg-orange-900/60 font-medium transition-colors">
                                 <Edit2 size={14}/><span>Edit</span>
                               </button>
-                              <button onClick={()=>handleDelete(id)} className="flex items-center gap-1 text-xs px-3 py-1.5 bg-red-900/40 border border-red-700 text-red-300 rounded hover:bg-red-900/60 font-medium transition-colors">
+                              <button type="button" onClick={()=>handleDelete(id)} className="flex items-center gap-1 text-xs px-3 py-1.5 bg-red-900/40 border border-red-700 text-red-300 rounded hover:bg-red-900/60 font-medium transition-colors">
                                 <Trash2 size={14}/><span>Delete</span>
                               </button>
                               {r.status === 'Open' && (
-                                <button onClick={async ()=>{await updateMutation.mutateAsync({ id, data:{ status:'Mitigated' } }); toast.success('Risk marked as mitigated');}} className="flex items-center gap-1 text-xs px-3 py-1.5 bg-green-900/40 border border-green-700 text-green-300 rounded hover:bg-green-900/60 font-medium transition-colors">
+                                <button type="button" onClick={async ()=>{await updateMutation.mutateAsync({ id, data:{ status:'Mitigated' } }); toast.success('Risk marked as mitigated');}} className="flex items-center gap-1 text-xs px-3 py-1.5 bg-green-900/40 border border-green-700 text-green-300 rounded hover:bg-green-900/60 font-medium transition-colors">
                                   <CheckCircle2 size={14}/><span>Mark Mitigated</span>
                                 </button>
                               )}
@@ -534,7 +534,7 @@ export function RiskRegister() {
           <div className="bg-gray-800 rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto border border-gray-700">
             <div className="flex items-center justify-between p-6 border-b border-gray-700 sticky top-0 bg-gray-800 z-10">
               <h2 className="text-lg font-semibold text-white">{editing?'Edit Risk':'Add Risk'}</h2>
-              <button onClick={()=>setShowModal(false)} className="p-2 hover:bg-gray-700 rounded-lg text-gray-400"><X size={18}/></button>
+              <button type="button" onClick={()=>setShowModal(false)} className="p-2 hover:bg-gray-700 rounded-lg text-gray-400"><X size={18}/></button>
             </div>
             <form onSubmit={handleSubmit} className="p-6 space-y-4">
               {formScore > 0 && (

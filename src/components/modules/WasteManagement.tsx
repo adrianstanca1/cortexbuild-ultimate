@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Plus, Search, Leaf, Recycle, AlertCircle, Trash2, X, Upload } from 'lucide-react';
+import { Plus, Search, Leaf, Recycle, AlertCircle, Trash2, X, Upload, Edit } from 'lucide-react';
 import { wasteManagementApi, uploadFile } from '../../services/api';
 import { toast } from 'sonner';
 
@@ -11,6 +11,8 @@ export default function WasteManagement() {
   const [creating, setCreating] = useState(false);
   const [uploading, setUploading] = useState<string | null>(null);
   const [form, setForm] = useState({ wasteType: '', quantity: '', unit: 'tonnes', carrier: '', collectionDate: '', recyclingRate: '75', status: 'pending' });
+  const [editItem, setEditItem] = useState<Record<string, any> | null>(null);
+  const [saving, setSaving] = useState(false);
 
   useEffect(() => {
     wasteManagementApi.getAll().then((data: any[]) => {
@@ -52,8 +54,33 @@ export default function WasteManagement() {
       setForm({ wasteType: '', quantity: '', unit: 'tonnes', carrier: '', collectionDate: '', recyclingRate: '75', status: 'pending' });
     } catch (err) {
       console.error('Failed to create:', err);
+      toast.error('Failed to create waste record');
     } finally {
       setCreating(false);
+    }
+  };
+
+  const handleUpdate = async () => {
+    if (!editItem || !editItem.id) return;
+    setSaving(true);
+    try {
+      const updated = await wasteManagementApi.update(editItem.id, {
+        waste_type: editItem.wasteType,
+        quantity: parseFloat(editItem.quantity) || 0,
+        unit: editItem.unit,
+        carrier: editItem.carrier || '',
+        collection_date: editItem.collectionDate || null,
+        recycling_rate: parseInt(editItem.recyclingRate) || 0,
+        status: editItem.status,
+      });
+      setWaste(prev => prev.map((w: any) => String(w.id) === String(editItem.id) ? updated : w));
+      setEditItem(null);
+      toast.success('Waste record updated');
+    } catch (err) {
+      console.error('Failed to update:', err);
+      toast.error('Failed to update waste record');
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -163,6 +190,14 @@ export default function WasteManagement() {
                   >
                     <Trash2 size={16} className="text-red-400" />
                   </button>
+                  <button
+                    type="button"
+                    onClick={() => setEditItem({ ...w, wasteType: w.waste_type, quantity: String(w.quantity), unit: w.unit || 'tonnes', carrier: w.carrier || '', collectionDate: w.collection_date || '', recyclingRate: String(w.recycling_rate || 75), status: w.status })}
+                    className="p-2 hover:bg-gray-700 rounded"
+                    title="Edit"
+                  >
+                    <Edit size={16} className="text-gray-400" />
+                  </button>
                   <input
                     type="file"
                     id={`upload-waste-${w.id}`}
@@ -252,6 +287,74 @@ export default function WasteManagement() {
               <button type="button" onClick={() => setShowCreateModal(false)} className="px-4 py-2 text-gray-400 hover:text-white">Cancel</button>
               <button type="button" onClick={handleCreate} disabled={creating || !form.wasteType} className="px-4 py-2 bg-orange-500 hover:bg-orange-600 text-white rounded-lg font-semibold disabled:opacity-50">
                 {creating ? 'Creating...' : 'Log Waste'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {editItem && (
+        <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
+          <div className="bg-gray-900 border border-gray-700 rounded-xl w-full max-w-lg">
+            <div className="p-6 border-b border-gray-700 flex items-center justify-between">
+              <h3 className="text-xl font-bold text-white">Edit Waste Record</h3>
+              <button type="button" onClick={() => setEditItem(null)} className="text-gray-400 hover:text-white"><X size={20} /></button>
+            </div>
+            <div className="p-6 space-y-4">
+              <div>
+                <label htmlFor="editWmType" className="block text-gray-400 text-xs mb-1">Waste Type *</label>
+                <select id="editWmType" value={editItem.wasteType || ''} onChange={e => setEditItem((f: any) => ({ ...f, wasteType: e.target.value }))} className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white">
+                  <option value="">Select type...</option>
+                  <option value="Hardcore">Hardcore</option>
+                  <option value="Concrete">Concrete</option>
+                  <option value="Timber">Timber</option>
+                  <option value="Metal">Metal</option>
+                  <option value="Plasterboard">Plasterboard</option>
+                  <option value="Mixed Construction">Mixed Construction</option>
+                  <option value="Hazardous">Hazardous</option>
+                  <option value="General Waste">General Waste</option>
+                </select>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label htmlFor="editWmQty" className="block text-gray-400 text-xs mb-1">Quantity</label>
+                  <input id="editWmQty" type="number" value={editItem.quantity || ''} onChange={e => setEditItem((f: any) => ({ ...f, quantity: e.target.value }))} className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500" />
+                </div>
+                <div>
+                  <label htmlFor="editWmUnit" className="block text-gray-400 text-xs mb-1">Unit</label>
+                  <select id="editWmUnit" value={editItem.unit || 'tonnes'} onChange={e => setEditItem((f: any) => ({ ...f, unit: e.target.value }))} className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white">
+                    <option value="tonnes">Tonnes</option>
+                    <option value="kg">Kilograms</option>
+                    <option value="m3">Cubic Metres</option>
+                  </select>
+                </div>
+              </div>
+              <div>
+                <label htmlFor="editWmCarrier" className="block text-gray-400 text-xs mb-1">Waste Carrier</label>
+                <input id="editWmCarrier" type="text" value={editItem.carrier || ''} onChange={e => setEditItem((f: any) => ({ ...f, carrier: e.target.value }))} className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500" />
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label htmlFor="editWmDate" className="block text-gray-400 text-xs mb-1">Collection Date</label>
+                  <input id="editWmDate" type="date" value={editItem.collectionDate || ''} onChange={e => setEditItem((f: any) => ({ ...f, collectionDate: e.target.value }))} className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white" />
+                </div>
+                <div>
+                  <label htmlFor="editWmRate" className="block text-gray-400 text-xs mb-1">Recycling Rate (%)</label>
+                  <input id="editWmRate" type="number" value={editItem.recyclingRate || '75'} onChange={e => setEditItem((f: any) => ({ ...f, recyclingRate: e.target.value }))} className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500" />
+                </div>
+              </div>
+              <div>
+                <label htmlFor="editWmStatus" className="block text-gray-400 text-xs mb-1">Status</label>
+                <select id="editWmStatus" value={editItem.status || 'pending'} onChange={e => setEditItem((f: any) => ({ ...f, status: e.target.value }))} className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white">
+                  <option value="pending">Pending Collection</option>
+                  <option value="collected">Collected</option>
+                </select>
+              </div>
+            </div>
+            <div className="p-6 border-t border-gray-700 flex justify-end gap-3">
+              <button type="button" onClick={() => setEditItem(null)} className="px-4 py-2 text-gray-400 hover:text-white">Cancel</button>
+              <button type="button" onClick={handleUpdate} disabled={saving || !editItem.wasteType} className="px-4 py-2 bg-orange-500 hover:bg-orange-600 text-white rounded-lg font-semibold disabled:opacity-50">
+                {saving ? 'Saving...' : 'Save Changes'}
               </button>
             </div>
           </div>

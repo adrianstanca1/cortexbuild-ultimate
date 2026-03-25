@@ -152,6 +152,8 @@ export default function Valuations() {
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [selectedValId, setSelectedValId] = useState<string | null>(null);
   const [creating, setCreating] = useState(false);
+  const [editItem, setEditItem] = useState<Record<string, any> | null>(null);
+  const [saving, setSaving] = useState(false);
   const [form, setForm] = useState({ project: '', contractor: '', grossValue: '', retention: '', periodStart: '', periodEnd: '' });
 
   useEffect(() => {
@@ -188,6 +190,31 @@ export default function Valuations() {
       console.error('Failed to create:', err);
     } finally {
       setCreating(false);
+    }
+  };
+
+  const handleUpdate = async () => {
+    if (!editItem?.id) return;
+    setSaving(true);
+    try {
+      const updated = await valuationsApi.update(editItem.id, {
+        project: editItem.project,
+        contractor_name: editItem.contractorName || 'CortexBuild Ltd',
+        period_start: editItem.periodStart || new Date().toISOString().split('T')[0],
+        period_end: editItem.periodEnd || new Date().toISOString().split('T')[0],
+        original_value: parseFloat(editItem.originalValue) || 0,
+        variations: parseFloat(editItem.variations) || 0,
+        total_value: parseFloat(editItem.totalValue) || 0,
+        retention: parseFloat(editItem.retention) || 0,
+        amount_due: parseFloat(editItem.amountDue) || 0,
+        status: editItem.status,
+      });
+      setValuations(prev => prev.map(v => String(v.id) === String(editItem.id) ? updated : v));
+      setEditItem(null);
+    } catch (err) {
+      console.error('Failed to update:', err);
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -245,6 +272,7 @@ export default function Valuations() {
           <p className="text-gray-400 text-sm mt-1">Manage payment applications, interim certificates and valuations</p>
         </div>
         <button
+          type="button"
           onClick={() => setShowCreateModal(true)}
           className="flex items-center gap-2 px-4 py-2 bg-orange-500 hover:bg-orange-600 text-white rounded-lg font-semibold transition-colors"
         >
@@ -395,6 +423,14 @@ export default function Valuations() {
                         </button>
                         <button
                           type="button"
+                          onClick={() => setEditItem({ ...val, project: val.project || '', contractorName: val.contractor_name || '', clientName: val.client_name || '', periodStart: val.period_start || '', periodEnd: val.period_end || '', originalValue: String(val.original_value || ''), variations: String(val.variations || ''), totalValue: String(val.total_value || ''), retention: String(val.retention || ''), amountDue: String(val.amount_due || ''), status: val.status })}
+                          className="p-1.5 hover:bg-gray-700 rounded text-gray-400 hover:text-white"
+                          title="Edit"
+                        >
+                          <Edit size={16} />
+                        </button>
+                        <button
+                          type="button"
                           onClick={() => handleDelete(String(val.id))}
                           className="p-1.5 hover:bg-red-900/30 rounded"
                           title="Delete"
@@ -457,6 +493,83 @@ export default function Valuations() {
               <button type="button" onClick={() => setShowCreateModal(false)} className="px-4 py-2 text-gray-400 hover:text-white">Cancel</button>
               <button type="button" onClick={handleCreate} disabled={creating || !form.project} className="px-4 py-2 bg-orange-500 hover:bg-orange-600 text-white rounded-lg font-semibold disabled:opacity-50">
                 {creating ? 'Creating...' : 'Create Valuation'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {editItem && (
+        <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
+          <div className="bg-gray-900 border border-gray-700 rounded-xl w-full max-w-lg">
+            <div className="p-6 border-b border-gray-700 flex items-center justify-between">
+              <h3 className="text-xl font-bold text-white">Edit Valuation</h3>
+              <button type="button" onClick={() => setEditItem(null)} className="text-gray-400 hover:text-white"><X size={20} /></button>
+            </div>
+            <div className="p-6 space-y-4">
+              <div>
+                <label className="block text-gray-400 text-xs mb-1">Project</label>
+                <select value={editItem.project} onChange={e => setEditItem(f => ({ ...f, project: e.target.value }))} className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white">
+                  <option value="">Select project...</option>
+                  <option>Canary Wharf Office Complex</option>
+                  <option>Manchester City Apartments</option>
+                  <option>Birmingham Road Bridge</option>
+                </select>
+              </div>
+              <div>
+                <label className="block text-gray-400 text-xs mb-1">Contractor</label>
+                <input type="text" value={editItem.contractorName || ''} onChange={e => setEditItem(f => ({ ...f, contractorName: e.target.value }))} placeholder="Contractor name..." className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500" />
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-gray-400 text-xs mb-1">Original Value (£)</label>
+                  <input type="number" value={editItem.originalValue || ''} onChange={e => setEditItem(f => ({ ...f, originalValue: e.target.value }))} placeholder="0.00" className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500" />
+                </div>
+                <div>
+                  <label className="block text-gray-400 text-xs mb-1">Variations (£)</label>
+                  <input type="number" value={editItem.variations || ''} onChange={e => setEditItem(f => ({ ...f, variations: e.target.value }))} placeholder="0.00" className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500" />
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-gray-400 text-xs mb-1">Total Value (£)</label>
+                  <input type="number" value={editItem.totalValue || ''} onChange={e => setEditItem(f => ({ ...f, totalValue: e.target.value }))} placeholder="0.00" className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500" />
+                </div>
+                <div>
+                  <label className="block text-gray-400 text-xs mb-1">Retention (£)</label>
+                  <input type="number" value={editItem.retention || ''} onChange={e => setEditItem(f => ({ ...f, retention: e.target.value }))} placeholder="0.00" className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500" />
+                </div>
+              </div>
+              <div>
+                <label className="block text-gray-400 text-xs mb-1">Amount Due (£)</label>
+                <input type="number" value={editItem.amountDue || ''} onChange={e => setEditItem(f => ({ ...f, amountDue: e.target.value }))} placeholder="0.00" className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500" />
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-gray-400 text-xs mb-1">Period Start</label>
+                  <input type="date" value={editItem.periodStart || ''} onChange={e => setEditItem(f => ({ ...f, periodStart: e.target.value }))} className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white" />
+                </div>
+                <div>
+                  <label className="block text-gray-400 text-xs mb-1">Period End</label>
+                  <input type="date" value={editItem.periodEnd || ''} onChange={e => setEditItem(f => ({ ...f, periodEnd: e.target.value }))} className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white" />
+                </div>
+              </div>
+              <div>
+                <label className="block text-gray-400 text-xs mb-1">Status</label>
+                <select value={editItem.status || 'draft'} onChange={e => setEditItem(f => ({ ...f, status: e.target.value }))} className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white">
+                  <option value="draft">Draft</option>
+                  <option value="submitted">Submitted</option>
+                  <option value="valued">Valued</option>
+                  <option value="certified">Certified</option>
+                  <option value="paid">Paid</option>
+                  <option value="rejected">Rejected</option>
+                </select>
+              </div>
+            </div>
+            <div className="p-6 border-t border-gray-700 flex justify-end gap-3">
+              <button type="button" onClick={() => setEditItem(null)} className="px-4 py-2 text-gray-400 hover:text-white">Cancel</button>
+              <button type="button" onClick={handleUpdate} disabled={saving} className="px-4 py-2 bg-orange-500 hover:bg-orange-600 text-white rounded-lg font-semibold disabled:opacity-50">
+                {saving ? 'Saving...' : 'Save Changes'}
               </button>
             </div>
           </div>

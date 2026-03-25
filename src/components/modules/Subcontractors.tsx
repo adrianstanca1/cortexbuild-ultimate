@@ -414,7 +414,7 @@ export function Subcontractors() {
                         <span className={`text-xs px-2 py-1 rounded-full font-medium ${insStatus.color}`}>{insStatus.label}</span>
                       </td>
                       <td className="px-4 py-3">
-                        <button onClick={() => openEdit(s)} className="text-xs px-3 py-1 bg-orange-900/30 text-orange-400 rounded-lg hover:bg-orange-900/50 font-medium">
+                        <button type="button" onClick={() => openEdit(s)} className="text-xs px-3 py-1 bg-orange-900/30 text-orange-400 rounded-lg hover:bg-orange-900/50 font-medium">
                           Update
                         </button>
                       </td>
@@ -615,7 +615,7 @@ export function Subcontractors() {
           <div className="bg-gray-800 rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto border border-gray-700">
             <div className="flex items-center justify-between p-6 border-b sticky top-0 bg-gray-800 z-10 border-gray-700">
               <h2 className="text-lg font-semibold text-gray-100">{editing ? 'Edit Subcontractor' : 'Add Subcontractor'}</h2>
-              <button onClick={() => setShowAddModal(false)} className="p-2 hover:bg-gray-700 rounded-lg">
+              <button type="button" onClick={() => setShowAddModal(false)} className="p-2 hover:bg-gray-700 rounded-lg">
                 <X size={18} />
               </button>
             </div>
@@ -746,7 +746,7 @@ export function Subcontractors() {
           <div className="bg-gray-800 rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto border border-gray-700">
             <div className="flex items-center justify-between p-6 border-b sticky top-0 bg-gray-800 z-10 border-gray-700">
               <h2 className="text-lg font-semibold text-gray-100">{String(selectedSub.company ?? '')}</h2>
-              <button onClick={() => setShowDetailModal(false)} className="p-2 hover:bg-gray-700 rounded-lg">
+              <button type="button" onClick={() => setShowDetailModal(false)} className="p-2 hover:bg-gray-700 rounded-lg">
                 <X size={18} />
               </button>
             </div>

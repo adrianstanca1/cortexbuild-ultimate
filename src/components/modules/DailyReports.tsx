@@ -762,7 +762,7 @@ export function DailyReports() {
           <div className="bg-gray-800 rounded-2xl border border-gray-700 shadow-2xl w-full max-w-3xl max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between p-6 border-b border-gray-700 sticky top-0 bg-gray-800 z-10">
               <h2 className="text-lg font-semibold text-white">{editing ? 'Edit Daily Report' : 'New Daily Report'}</h2>
-              <button onClick={() => setShowModal(false)} className="p-2 hover:bg-gray-700 rounded-lg transition-colors text-gray-400">
+              <button type="button" onClick={() => setShowModal(false)} className="p-2 hover:bg-gray-700 rounded-lg transition-colors text-gray-400">
                 <X size={18} />
               </button>
             </div>

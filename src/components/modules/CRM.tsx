@@ -208,7 +208,7 @@ export function CRM() {
           <h1 className="text-2xl font-bold text-white">CRM</h1>
           <p className="text-sm text-gray-400 mt-1">Clients, consultants & supply chain contacts</p>
         </div>
-        <button onClick={openCreate} className="flex items-center gap-2 px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 text-sm font-medium">
+        <button type="button" onClick={openCreate} className="flex items-center gap-2 px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 text-sm font-medium">
           <Plus size={16}/><span>Add Contact</span>
         </button>
       </div>
@@ -238,7 +238,7 @@ export function CRM() {
           { key:'pipeline', label:'By Type', icon:TrendingUp, count:null },
           { key:'companies', label:'Companies', icon:Users, count:companiesMap.size },
         ] as const).map(t=>(
-          <button key={t.key} onClick={()=>setSubTab(t.key)}
+          <button type="button"  key={t.key} onClick={()=>setSubTab(t.key)}
             className={`flex items-center gap-2 px-4 py-2.5 text-sm font-medium border-b-2 -mb-px transition-colors whitespace-nowrap ${subTab===t.key?'border-orange-400 text-orange-400':'border-transparent text-gray-400 hover:text-gray-300'}`}>
             <t.icon size={14}/>{t.label}
             {t.count!==null && <span className="text-xs px-1.5 py-0.5 rounded-full bg-gray-700 text-gray-300">{t.count}</span>}
@@ -292,8 +292,8 @@ export function CRM() {
                           {!!c.company && <p className="text-sm text-gray-400 truncate flex items-center gap-1"><Building2 size={11}/>{String(c.company)}</p>}
                         </div>
                         <div className="flex gap-1 flex-shrink-0">
-                          <button onClick={e=>{e.stopPropagation();openEdit(c);}} className="p-1.5 text-gray-500 hover:text-blue-400 hover:bg-blue-900/30 rounded"><Edit2 size={13}/></button>
-                          <button onClick={e=>{e.stopPropagation();handleDelete(id);}} className="p-1.5 text-gray-500 hover:text-red-400 hover:bg-red-900/30 rounded"><Trash2 size={13}/></button>
+                          <button type="button" onClick={e=>{e.stopPropagation();openEdit(c);}} className="p-1.5 text-gray-500 hover:text-blue-400 hover:bg-blue-900/30 rounded"><Edit2 size={13}/></button>
+                          <button type="button" onClick={e=>{e.stopPropagation();handleDelete(id);}} className="p-1.5 text-gray-500 hover:text-red-400 hover:bg-red-900/30 rounded"><Trash2 size={13}/></button>
                         </div>
                       </div>
                       <div className="flex flex-wrap items-center gap-2 mt-3">
@@ -347,12 +347,12 @@ export function CRM() {
                               </select>
                               <input type="text" value={interactionForm.note} onChange={e=>setInteractionForm(f=>({...f,note:e.target.value}))} placeholder="Add note…" className="w-full text-xs bg-gray-600 border-gray-500 text-white placeholder-gray-400 border rounded px-2 py-1 focus:outline-none focus:ring-2 focus:ring-orange-500"/>
                               <div className="flex gap-1">
-                                <button onClick={()=>handleAddInteraction(id)} className="flex-1 text-xs px-2 py-1 bg-orange-600 text-white rounded hover:bg-orange-700">Save</button>
-                                <button onClick={()=>setShowInteractionForm(null)} className="flex-1 text-xs px-2 py-1 bg-gray-600 hover:bg-gray-500 text-gray-300 rounded">Cancel</button>
+                                <button type="button" onClick={()=>handleAddInteraction(id)} className="flex-1 text-xs px-2 py-1 bg-orange-600 text-white rounded hover:bg-orange-700">Save</button>
+                                <button type="button" onClick={()=>setShowInteractionForm(null)} className="flex-1 text-xs px-2 py-1 bg-gray-600 hover:bg-gray-500 text-gray-300 rounded">Cancel</button>
                               </div>
                             </div>
                           ) : (
-                            <button onClick={e=>{e.stopPropagation();setShowInteractionForm(id);}} className="w-full text-xs px-2 py-1 text-orange-400 bg-orange-900/30 hover:bg-orange-900/50 rounded font-medium">+ Log Interaction</button>
+                            <button type="button" onClick={e=>{e.stopPropagation();setShowInteractionForm(id);}} className="w-full text-xs px-2 py-1 text-orange-400 bg-orange-900/30 hover:bg-orange-900/50 rounded font-medium">+ Log Interaction</button>
                           )}
                         </div>
 
@@ -360,7 +360,7 @@ export function CRM() {
                         <div className="flex gap-2 pt-2 border-t border-gray-700">
                           {Boolean(c.email) && <a href={`mailto:${String(c.email)}`} onClick={e=>e.stopPropagation()} className="flex-1 px-2 py-1.5 text-xs font-medium text-white bg-blue-900/40 hover:bg-blue-900/60 rounded flex items-center justify-center gap-1"><Mail size={11}/>Email</a>}
                           {Boolean(c.phone) && <a href={`tel:${String(c.phone)}`} onClick={e=>e.stopPropagation()} className="flex-1 px-2 py-1.5 text-xs font-medium text-white bg-green-900/40 hover:bg-green-900/60 rounded flex items-center justify-center gap-1"><Phone size={11}/>Call</a>}
-                          <button onClick={e=>{e.stopPropagation();setShowInteractionForm(id);}} className="flex-1 px-2 py-1.5 text-xs font-medium text-white bg-purple-900/40 hover:bg-purple-900/60 rounded flex items-center justify-center gap-1"><MessageSquare size={11}/>Note</button>
+                          <button type="button" onClick={e=>{e.stopPropagation();setShowInteractionForm(id);}} className="flex-1 px-2 py-1.5 text-xs font-medium text-white bg-purple-900/40 hover:bg-purple-900/60 rounded flex items-center justify-center gap-1"><MessageSquare size={11}/>Note</button>
                         </div>
                       </div>
                     )}
@@ -429,10 +429,10 @@ export function CRM() {
                   </div>
 
                   <div className="flex gap-2">
-                    <button onClick={() => openEdit(opp)} className="flex-1 px-3 py-2 text-xs font-medium text-white bg-blue-900/40 hover:bg-blue-900/60 rounded flex items-center justify-center gap-1">
+                    <button type="button" onClick={() => openEdit(opp)} className="flex-1 px-3 py-2 text-xs font-medium text-white bg-blue-900/40 hover:bg-blue-900/60 rounded flex items-center justify-center gap-1">
                       <Edit2 size={11}/>Edit
                     </button>
-                    <button onClick={() => setShowInteractionForm(String(opp.id))} className="flex-1 px-3 py-2 text-xs font-medium text-white bg-purple-900/40 hover:bg-purple-900/60 rounded flex items-center justify-center gap-1">
+                    <button type="button" onClick={() => setShowInteractionForm(String(opp.id))} className="flex-1 px-3 py-2 text-xs font-medium text-white bg-purple-900/40 hover:bg-purple-900/60 rounded flex items-center justify-center gap-1">
                       <MessageSquare size={11}/>Note
                     </button>
                   </div>
@@ -469,7 +469,7 @@ export function CRM() {
                       {!!c.phone && <a href={`tel:${c.phone}`} className="flex items-center gap-1 text-blue-400 hover:underline"><Phone size={11}/>{String(c.phone)}</a>}
                     </div>
                     <span className={`text-xs px-2 py-0.5 rounded-full font-medium flex-shrink-0 ${statusColour[String(c.status??'')] ?? 'bg-gray-700 text-gray-300'}`}>{String(c.status??'')}</span>
-                    <button onClick={()=>openEdit(c)} className="p-1 text-gray-500 hover:text-blue-400 rounded flex-shrink-0"><Edit2 size={13}/></button>
+                    <button type="button" onClick={()=>openEdit(c)} className="p-1 text-gray-500 hover:text-blue-400 rounded flex-shrink-0"><Edit2 size={13}/></button>
                   </div>
                 ))}
               </div>
@@ -506,7 +506,7 @@ export function CRM() {
                       <p className="text-sm text-white truncate">{String(c.name??'')}</p>
                     </div>
                     <span className={`text-xs px-1.5 py-0.5 rounded-full font-medium flex-shrink-0 ${typeColour[String(c.type??'')] ?? 'bg-gray-700 text-gray-300'}`}>{String(c.type??'')}</span>
-                    <button onClick={()=>openEdit(c)} className="p-1 text-gray-500 hover:text-blue-400 rounded flex-shrink-0"><Edit2 size={12}/></button>
+                    <button type="button" onClick={()=>openEdit(c)} className="p-1 text-gray-500 hover:text-blue-400 rounded flex-shrink-0"><Edit2 size={12}/></button>
                   </div>
                 ))}
               </div>
@@ -521,7 +521,7 @@ export function CRM() {
           <div className="bg-gray-800 border-gray-700 rounded-2xl shadow-2xl w-full max-w-xl max-h-[90vh] overflow-y-auto border">
             <div className="flex items-center justify-between p-6 border-gray-700 bg-gray-800 border-b sticky top-0 z-10">
               <h2 className="text-lg font-semibold text-white">{editing?'Edit Contact':'Add Contact'}</h2>
-              <button onClick={()=>setShowModal(false)} className="p-2 hover:bg-gray-700 rounded-lg"><X size={18}/></button>
+              <button type="button" onClick={()=>setShowModal(false)} className="p-2 hover:bg-gray-700 rounded-lg"><X size={18}/></button>
             </div>
             <form onSubmit={handleSubmit} className="p-6 space-y-4">
               <div className="grid grid-cols-2 gap-4">

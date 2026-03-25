@@ -304,7 +304,7 @@ export function Documents() {
             >
               {uniqueProjects.map(p => <option key={p} value={p}>{p}</option>)}
             </select>
-            <button onClick={handleDownloadAll} className="flex items-center gap-1 px-3 py-2 bg-gray-700 hover:bg-gray-600 rounded-lg text-gray-300 text-sm transition-colors">
+            <button type="button" onClick={handleDownloadAll} className="flex items-center gap-1 px-3 py-2 bg-gray-700 hover:bg-gray-600 rounded-lg text-gray-300 text-sm transition-colors">
               <Download size={14} />Download All
             </button>
             <span className="text-sm text-gray-400 ml-auto">{filtered.length} documents</span>
@@ -345,13 +345,13 @@ export function Documents() {
                       <td className="px-4 py-3 text-sm text-gray-400">{d.size}</td>
                       <td className="px-4 py-3" onClick={e => e.stopPropagation()}>
                         <div className="flex items-center gap-1">
-                          <button onClick={() => toast.success('Document viewed')} className="p-1.5 text-blue-400 hover:bg-blue-900/30 rounded" title="View">
+                          <button type="button" onClick={() => toast.success('Document viewed')} className="p-1.5 text-blue-400 hover:bg-blue-900/30 rounded" title="View">
                             <Eye size={14} />
                           </button>
-                          <button onClick={() => openEdit(d)} className="p-1.5 text-gray-400 hover:text-blue-400 hover:bg-blue-900/30 rounded" title="Edit">
+                          <button type="button" onClick={() => openEdit(d)} className="p-1.5 text-gray-400 hover:text-blue-400 hover:bg-blue-900/30 rounded" title="Edit">
                             <Edit2 size={14} />
                           </button>
-                          <button onClick={() => handleDelete(String(d.id))} className="p-1.5 text-gray-400 hover:text-red-400 hover:bg-red-900/30 rounded" title="Delete">
+                          <button type="button" onClick={() => handleDelete(String(d.id))} className="p-1.5 text-gray-400 hover:text-red-400 hover:bg-red-900/30 rounded" title="Delete">
                             <Trash2 size={14} />
                           </button>
                         </div>
@@ -375,7 +375,7 @@ export function Documents() {
       {activeTab === 'categories' && (
         selectedCategoryTab ? (
           <>
-            <button onClick={() => setSelectedCategoryTab(null)} className="flex items-center gap-2 text-blue-400 hover:text-blue-300 mb-4 text-sm font-medium">
+            <button type="button" onClick={() => setSelectedCategoryTab(null)} className="flex items-center gap-2 text-blue-400 hover:text-blue-300 mb-4 text-sm font-medium">
               <ChevronUp size={16} />Back to Categories
             </button>
             <div className="bg-gray-800 rounded-lg border border-gray-700 overflow-hidden">
@@ -526,7 +526,7 @@ export function Documents() {
           <div className="p-6 space-y-6">
             <div className="flex items-center justify-between">
               <h3 className="text-lg font-semibold text-white">Document Details</h3>
-              <button onClick={() => setSelectedDoc(null)} className="p-1 hover:bg-gray-700 rounded"><X size={20} className="text-gray-400" /></button>
+              <button type="button" onClick={() => setSelectedDoc(null)} className="p-1 hover:bg-gray-700 rounded"><X size={20} className="text-gray-400" /></button>
             </div>
 
             <div className="space-y-4">
@@ -584,10 +584,10 @@ export function Documents() {
                 </div>
               )}
               <div className="flex gap-2 pt-4">
-                <button onClick={() => { toast.success('Document downloaded'); }} className="flex-1 flex items-center justify-center gap-2 px-3 py-2 bg-blue-900/30 hover:bg-blue-900/50 text-blue-300 rounded border border-blue-700 text-sm font-medium">
+                <button type="button" onClick={() => { toast.success('Document downloaded'); }} className="flex-1 flex items-center justify-center gap-2 px-3 py-2 bg-blue-900/30 hover:bg-blue-900/50 text-blue-300 rounded border border-blue-700 text-sm font-medium">
                   <Download size={14} />Download
                 </button>
-                <button onClick={() => openEdit(selectedDoc)} className="flex-1 flex items-center justify-center gap-2 px-3 py-2 bg-gray-700 hover:bg-gray-600 text-gray-200 rounded text-sm font-medium">
+                <button type="button" onClick={() => openEdit(selectedDoc)} className="flex-1 flex items-center justify-center gap-2 px-3 py-2 bg-gray-700 hover:bg-gray-600 text-gray-200 rounded text-sm font-medium">
                   <Edit2 size={14} />Edit
                 </button>
               </div>
@@ -602,7 +602,7 @@ export function Documents() {
           <div className="bg-gray-800 rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto border border-gray-700">
             <div className="flex items-center justify-between p-6 border-b border-gray-700 sticky top-0 bg-gray-800 z-10">
               <h2 className="text-lg font-semibold text-white">{editing ? 'Edit Document' : 'Upload Document'}</h2>
-              <button onClick={() => setShowModal(false)} className="p-2 hover:bg-gray-700 rounded-lg"><X size={18} className="text-gray-400" /></button>
+              <button type="button" onClick={() => setShowModal(false)} className="p-2 hover:bg-gray-700 rounded-lg"><X size={18} className="text-gray-400" /></button>
             </div>
             <form onSubmit={handleSubmit} className="p-6 space-y-4">
               <div className="grid grid-cols-2 gap-4">

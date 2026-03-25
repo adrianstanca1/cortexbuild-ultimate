@@ -134,7 +134,7 @@ export function CIS() {
           <p className="text-sm text-gray-400 mt-1">Construction Industry Scheme — tax deduction tracking</p>
         </div>
         {mainTab==='returns' && (
-          <button onClick={openCreate} className="flex items-center gap-2 px-4 py-2 bg-orange-600 hover:bg-orange-700 text-white rounded-lg text-sm font-medium transition-colors">
+          <button type="button" onClick={openCreate} className="flex items-center gap-2 px-4 py-2 bg-orange-600 hover:bg-orange-700 text-white rounded-lg text-sm font-medium transition-colors">
             <Plus size={16}/><span>New Return</span>
           </button>
         )}
@@ -171,7 +171,7 @@ export function CIS() {
           {id:'calculator', label:'Deduction Calculator'},
           {id:'submissions', label:'Submission History'},
         ].map(t=>(
-          <button key={t.id} onClick={()=>setMainTab(t.id as any)}
+          <button type="button"  key={t.id} onClick={()=>setMainTab(t.id as any)}
             className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${mainTab===t.id?'bg-orange-600 text-white':'bg-gray-800 text-gray-400 hover:bg-gray-700 hover:text-white'}`}>
             {t.label}
           </button>
@@ -189,7 +189,7 @@ export function CIS() {
               { key:'verified', label:'Verified', filter:'Verified', count:verifiedCount },
               { key:'overdue', label:'Overdue', filter:'Overdue', count:overdueCount },
             ]).map(t=>(
-              <button key={t.key} onClick={()=>setTab(t.key, t.filter)}
+              <button type="button"  key={t.key} onClick={()=>setTab(t.key, t.filter)}
                 className={`flex items-center gap-2 px-4 py-2.5 text-sm font-medium border-b-2 -mb-px transition-colors ${subTab===t.key?'border-orange-600 text-orange-600':'border-transparent text-gray-500 hover:text-gray-300'}`}>
                 {t.label}
                 <span className={`text-xs px-1.5 py-0.5 rounded-full ${t.key==='overdue'?'bg-red-900/40 text-red-400':'bg-gray-700 text-gray-300'}`}>{t.count}</span>
@@ -232,9 +232,9 @@ export function CIS() {
                         <td className="px-4 py-3"><span className={`text-xs px-2 py-1 rounded-full font-medium ${STATUS_COLOUR_DARK[String(r.status??'')] ?? 'bg-gray-700 text-gray-300'}`}>{String(r.status??'')}</span></td>
                         <td className="px-4 py-3">
                           <div className="flex items-center gap-1">
-                            {r.status === 'Draft' && <button onClick={()=>markSubmitted(r)} className="p-1.5 text-green-400 hover:bg-green-900/30 rounded" title="Submit"><CheckCircle size={14}/></button>}
-                            <button onClick={()=>openEdit(r)} className="p-1.5 text-gray-400 hover:text-blue-400 hover:bg-blue-900/20 rounded"><Edit2 size={14}/></button>
-                            <button onClick={()=>handleDelete(String(r.id))} className="p-1.5 text-gray-400 hover:text-red-400 hover:bg-red-900/20 rounded"><Trash2 size={14}/></button>
+                            {r.status === 'Draft' && <button type="button" onClick={()=>markSubmitted(r)} className="p-1.5 text-green-400 hover:bg-green-900/30 rounded" title="Submit"><CheckCircle size={14}/></button>}
+                            <button type="button" onClick={()=>openEdit(r)} className="p-1.5 text-gray-400 hover:text-blue-400 hover:bg-blue-900/20 rounded"><Edit2 size={14}/></button>
+                            <button type="button" onClick={()=>handleDelete(String(r.id))} className="p-1.5 text-gray-400 hover:text-red-400 hover:bg-red-900/20 rounded"><Trash2 size={14}/></button>
                           </div>
                         </td>
                       </tr>
@@ -388,7 +388,7 @@ export function CIS() {
           <div className="bg-gray-800 border border-gray-700 rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between p-6 border-b border-gray-700 sticky top-0 bg-gray-800 z-10">
               <h2 className="text-lg font-semibold text-white">{editing?'Edit CIS Return':'New CIS Return'}</h2>
-              <button onClick={()=>setShowModal(false)} className="p-2 hover:bg-gray-700 rounded-lg text-gray-400 hover:text-white"><X size={18}/></button>
+              <button type="button" onClick={()=>setShowModal(false)} className="p-2 hover:bg-gray-700 rounded-lg text-gray-400 hover:text-white"><X size={18}/></button>
             </div>
             <form onSubmit={handleSubmit} className="p-6 space-y-4">
               {(formGross > 0) && (

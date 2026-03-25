@@ -149,7 +149,7 @@ export function RAMS() {
           <h1 className="text-2xl font-bold text-white">RAMS</h1>
           <p className="text-sm text-gray-400 mt-1">Risk assessments, method statements & approvals</p>
         </div>
-        <button onClick={openCreate} className="flex items-center gap-2 px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 text-sm font-medium">
+        <button type="button" onClick={openCreate} className="flex items-center gap-2 px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 text-sm font-medium">
           <Plus size={16} /><span>New RAMS</span>
         </button>
       </div>
@@ -185,7 +185,7 @@ export function RAMS() {
           { key: 'templates', label: 'Templates', count: TEMPLATES.length },
           { key: 'approvals', label: 'Approvals', count: reviewCount },
         ] as const).map(t => (
-          <button key={t.key} onClick={() => setSubTab(t.key)}
+          <button type="button"  key={t.key} onClick={() => setSubTab(t.key)}
             className={`flex items-center gap-2 px-4 py-2.5 text-sm font-medium border-b-2 -mb-px transition-colors ${subTab === t.key ? 'border-orange-500 text-orange-500' : 'border-transparent text-gray-400 hover:text-gray-200'}`}>
             {t.label}
             <span className={`text-xs px-1.5 py-0.5 rounded-full ${t.key === 'approvals' && t.count > 0 ? 'bg-yellow-900/40 text-yellow-400' : 'bg-gray-800 text-gray-400'}`}>{t.count}</span>
@@ -234,9 +234,9 @@ export function RAMS() {
                         <span className={`text-xs px-2 py-1 rounded-full font-medium ${statusColour[String(r.status ?? '')] ?? 'bg-gray-700 text-gray-400'}`}>{String(r.status ?? '')}</span>
                       </div>
                       <div className="flex items-center gap-1">
-                        {r.status === 'Under Review' && <button onClick={e => { e.stopPropagation(); approve(r); }} className="p-1.5 text-green-400 hover:bg-green-500/20 rounded" title="Approve"><CheckCircle size={14} /></button>}
-                        <button onClick={e => { e.stopPropagation(); openEdit(r); }} className="p-1.5 text-gray-500 hover:text-blue-400 hover:bg-blue-500/20 rounded"><Edit2 size={14} /></button>
-                        <button onClick={e => { e.stopPropagation(); handleDelete(id); }} className="p-1.5 text-gray-500 hover:text-red-400 hover:bg-red-500/20 rounded"><Trash2 size={14} /></button>
+                        {r.status === 'Under Review' && <button type="button" onClick={e => { e.stopPropagation(); approve(r); }} className="p-1.5 text-green-400 hover:bg-green-500/20 rounded" title="Approve"><CheckCircle size={14} /></button>}
+                        <button type="button" onClick={e => { e.stopPropagation(); openEdit(r); }} className="p-1.5 text-gray-500 hover:text-blue-400 hover:bg-blue-500/20 rounded"><Edit2 size={14} /></button>
+                        <button type="button" onClick={e => { e.stopPropagation(); handleDelete(id); }} className="p-1.5 text-gray-500 hover:text-red-400 hover:bg-red-500/20 rounded"><Trash2 size={14} /></button>
                         <button className="p-1.5 text-gray-500 hover:text-gray-300 hover:bg-gray-700 rounded" title="Download"><Download size={14} /></button>
                         {isExp ? <ChevronUp size={16} className="text-gray-500" /> : <ChevronDown size={16} className="text-gray-500" />}
                       </div>
@@ -337,7 +337,7 @@ export function RAMS() {
                 <h3 className="font-semibold text-white">{template.name}</h3>
               </div>
               <p className="text-xs text-gray-400 mb-3">{template.hazards}</p>
-              <button onClick={() => useTemplate(template)} className="w-full px-3 py-2 bg-orange-600 text-white rounded-lg text-xs font-medium hover:bg-orange-700">
+              <button type="button" onClick={() => useTemplate(template)} className="w-full px-3 py-2 bg-orange-600 text-white rounded-lg text-xs font-medium hover:bg-orange-700">
                 Use Template
               </button>
             </div>
@@ -364,7 +364,7 @@ export function RAMS() {
                     <td className="px-4 py-3 text-gray-400">{String(r.created_by ?? '—')}</td>
                     <td className="px-4 py-3 text-xs text-gray-400">Principal Contractor → Client</td>
                     <td className="px-4 py-3"><input type="text" placeholder="Name" className="w-32 bg-gray-800 border border-gray-700 rounded px-2 py-1 text-xs text-white" /></td>
-                    <td className="px-4 py-3"><button onClick={() => approve(r)} className="text-xs px-3 py-1 bg-green-600 text-white rounded-lg hover:bg-green-700 font-medium">Approve</button></td>
+                    <td className="px-4 py-3"><button type="button" onClick={() => approve(r)} className="text-xs px-3 py-1 bg-green-600 text-white rounded-lg hover:bg-green-700 font-medium">Approve</button></td>
                   </tr>
                 ))}
               </tbody>
@@ -378,7 +378,7 @@ export function RAMS() {
           <div className="bg-gray-900 rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto border border-gray-700">
             <div className="flex items-center justify-between p-6 border-b border-gray-800 sticky top-0 bg-gray-900 z-10">
               <h2 className="text-lg font-semibold text-white">{editing ? 'Edit RAMS' : 'New RAMS Document'}</h2>
-              <button onClick={() => setShowModal(false)} className="p-2 hover:bg-gray-800 rounded-lg text-gray-400"><X size={18} /></button>
+              <button type="button" onClick={() => setShowModal(false)} className="p-2 hover:bg-gray-800 rounded-lg text-gray-400"><X size={18} /></button>
             </div>
             <form onSubmit={handleSubmit} className="p-6 space-y-4">
               <div className="grid grid-cols-2 gap-4">

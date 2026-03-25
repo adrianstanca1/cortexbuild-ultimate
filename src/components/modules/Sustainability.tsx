@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Plus, Search, Leaf, Cloud, Factory, Gauge, Trash2, X, Upload } from 'lucide-react';
+import { Plus, Search, Leaf, Cloud, Factory, Gauge, Trash2, X, Upload, Pencil } from 'lucide-react';
 import { sustainabilityApi, uploadFile } from '../../services/api';
 import { toast } from 'sonner';
 
@@ -9,6 +9,8 @@ export default function Sustainability() {
   const [loading, setLoading] = useState(true);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [creating, setCreating] = useState(false);
+  const [editItem, setEditItem] = useState<Record<string, any> | null>(null);
+  const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState<string | null>(null);
   const [form, setForm] = useState({ metricType: '', project: '', period: '', actual: '', target: '', unit: 'kgCO2' });
 
@@ -47,6 +49,27 @@ export default function Sustainability() {
       console.error('Failed to create:', err);
     } finally {
       setCreating(false);
+    }
+  };
+
+  const handleUpdate = async () => {
+    if (!editItem || !editItem.id) return;
+    setSaving(true);
+    try {
+      const updated = await sustainabilityApi.update(editItem.id, {
+        metric_type: editItem.metric_type,
+        project: editItem.project || '',
+        period: editItem.period || '',
+        actual: parseFloat(editItem.actual) || 0,
+        target: parseFloat(editItem.target) || 0,
+        unit: editItem.unit,
+      });
+      setMetrics(prev => prev.map((m: any) => String(m.id) === String(editItem.id) ? updated : m));
+      setEditItem(null);
+    } catch (err) {
+      console.error('Failed to update:', err);
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -123,6 +146,14 @@ export default function Sustainability() {
                     <p className="text-lg font-bold text-white">{d.actual || 0} {d.unit || ''}</p>
                     <p className="text-gray-400 text-xs">Target: {d.target || 0}</p>
                   </div>
+                  <button
+                    type="button"
+                    onClick={() => setEditItem(d)}
+                    className="p-2 hover:bg-blue-900/30 rounded"
+                    title="Edit"
+                  >
+                    <Pencil size={16} className="text-blue-400" />
+                  </button>
                   <button
                     type="button"
                     onClick={() => handleDelete(String(d.id))}
@@ -212,6 +243,66 @@ export default function Sustainability() {
               <button type="button" onClick={() => setShowCreateModal(false)} className="px-4 py-2 text-gray-400 hover:text-white">Cancel</button>
               <button type="button" onClick={handleCreate} disabled={creating || !form.metricType} className="px-4 py-2 bg-orange-500 hover:bg-orange-600 text-white rounded-lg font-semibold disabled:opacity-50">
                 {creating ? 'Creating...' : 'Log Metric'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {editItem && (
+        <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
+          <div className="bg-gray-900 border border-gray-700 rounded-xl w-full max-w-lg">
+            <div className="p-6 border-b border-gray-700 flex items-center justify-between">
+              <h3 className="text-xl font-bold text-white">Edit Sustainability Metric</h3>
+              <button type="button" onClick={() => setEditItem(null)} className="text-gray-400 hover:text-white"><X size={20} /></button>
+            </div>
+            <div className="p-6 space-y-4">
+              <div>
+                <label htmlFor="editSustType" className="block text-gray-400 text-xs mb-1">Metric Type *</label>
+                <select id="editSustType" value={editItem.metric_type || ''} onChange={e => setEditItem((prev: any) => ({ ...prev, metric_type: e.target.value }))} className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white">
+                  <option value="">Select type...</option>
+                  <option value="Carbon Emissions">Carbon Emissions</option>
+                  <option value="Energy Consumption">Energy Consumption</option>
+                  <option value="Water Usage">Water Usage</option>
+                  <option value="Waste Recycled">Waste Recycled</option>
+                  <option value="Renewable Energy">Renewable Energy</option>
+                </select>
+              </div>
+              <div>
+                <label htmlFor="editSustProject" className="block text-gray-400 text-xs mb-1">Project</label>
+                <input id="editSustProject" type="text" value={editItem.project || ''} onChange={e => setEditItem((prev: any) => ({ ...prev, project: e.target.value }))} placeholder="Project name" className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500" />
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label htmlFor="editSustPeriod" className="block text-gray-400 text-xs mb-1">Period</label>
+                  <input id="editSustPeriod" type="text" value={editItem.period || ''} onChange={e => setEditItem((prev: any) => ({ ...prev, period: e.target.value }))} placeholder="e.g. Q1 2026" className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500" />
+                </div>
+                <div>
+                  <label htmlFor="editSustUnit" className="block text-gray-400 text-xs mb-1">Unit</label>
+                  <select id="editSustUnit" value={editItem.unit || 'kgCO2'} onChange={e => setEditItem((prev: any) => ({ ...prev, unit: e.target.value }))} className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white">
+                    <option value="kgCO2">kgCO2</option>
+                    <option value="kWh">kWh</option>
+                    <option value="m3">m3</option>
+                    <option value="tonnes">tonnes</option>
+                    <option value="%">%</option>
+                  </select>
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label htmlFor="editSustActual" className="block text-gray-400 text-xs mb-1">Actual Value</label>
+                  <input id="editSustActual" type="number" value={editItem.actual || ''} onChange={e => setEditItem((prev: any) => ({ ...prev, actual: e.target.value }))} placeholder="0" className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500" />
+                </div>
+                <div>
+                  <label htmlFor="editSustTarget" className="block text-gray-400 text-xs mb-1">Target</label>
+                  <input id="editSustTarget" type="number" value={editItem.target || ''} onChange={e => setEditItem((prev: any) => ({ ...prev, target: e.target.value }))} placeholder="0" className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500" />
+                </div>
+              </div>
+            </div>
+            <div className="p-6 border-t border-gray-700 flex justify-end gap-3">
+              <button type="button" onClick={() => setEditItem(null)} className="px-4 py-2 text-gray-400 hover:text-white">Cancel</button>
+              <button type="button" onClick={handleUpdate} disabled={saving || !editItem.metric_type} className="px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg font-semibold disabled:opacity-50">
+                {saving ? 'Saving...' : 'Save Changes'}
               </button>
             </div>
           </div>

@@ -181,7 +181,7 @@ export function GlobalSearch({ onClose }: { onClose?: () => void }) {
               className="flex-1 bg-transparent text-white text-lg outline-none placeholder-gray-500"
             />
             {query && (
-              <button onClick={() => setQuery('')} className="text-gray-500 hover:text-white">
+              <button type="button" onClick={() => setQuery('')} className="text-gray-500 hover:text-white">
                 <X className="h-5 w-5" />
               </button>
             )}
@@ -225,7 +225,7 @@ export function GlobalSearch({ onClose }: { onClose?: () => void }) {
                       <History className="h-4 w-4" />
                       Recent searches
                     </div>
-                    <button onClick={clearHistory} className="text-xs text-gray-500 hover:text-white">
+                    <button type="button" onClick={clearHistory} className="text-xs text-gray-500 hover:text-white">
                       Clear
                     </button>
                   </div>

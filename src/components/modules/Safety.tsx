@@ -260,20 +260,20 @@ export function Safety() {
           <p className="text-sm text-gray-400 mt-1">{incidents.length} records · {counts.open} open · {counts.riddor} RIDDOR reportable</p>
         </div>
         <div className="flex gap-2">
-          <button onClick={() => refetch()} className="p-2 rounded-xl bg-gray-800 text-gray-400 hover:text-white"><RefreshCw className="w-4 h-4" /></button>
+          <button type="button" onClick={() => refetch()} className="p-2 rounded-xl bg-gray-800 text-gray-400 hover:text-white"><RefreshCw className="w-4 h-4" /></button>
           {mainTab === 'incidents' && (
-            <button onClick={openCreate} className="flex items-center gap-2 rounded-xl bg-gradient-to-r from-red-600 to-rose-600 px-4 py-2 text-sm font-semibold text-white hover:from-red-500 transition-all shadow-lg shadow-red-500/20">
+            <button type="button" onClick={openCreate} className="flex items-center gap-2 rounded-xl bg-gradient-to-r from-red-600 to-rose-600 px-4 py-2 text-sm font-semibold text-white hover:from-red-500 transition-all shadow-lg shadow-red-500/20">
               <Plus className="w-4 h-4" /> Report Incident
             </button>
           )}
           {mainTab === 'permits' && (
-            <button onClick={() => { setPermitForm(defaultPermit); setEditPermitId(null); setShowPermitModal(true); }}
+            <button type="button" onClick={() => { setPermitForm(defaultPermit); setEditPermitId(null); setShowPermitModal(true); }}
               className="flex items-center gap-2 rounded-xl bg-gradient-to-r from-blue-600 to-cyan-600 px-4 py-2 text-sm font-semibold text-white hover:from-blue-500 transition-all shadow-lg shadow-blue-500/20">
               <Plus className="w-4 h-4" /> New Permit
             </button>
           )}
           {mainTab === 'talks' && (
-            <button onClick={() => { setTalkForm(defaultTalk); setEditTalkId(null); setShowTalkModal(true); }}
+            <button type="button" onClick={() => { setTalkForm(defaultTalk); setEditTalkId(null); setShowTalkModal(true); }}
               className="flex items-center gap-2 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 px-4 py-2 text-sm font-semibold text-white hover:from-emerald-500 transition-all shadow-lg shadow-emerald-500/20">
               <Plus className="w-4 h-4" /> New Talk
             </button>
@@ -305,7 +305,7 @@ export function Safety() {
           { id: 'permits', label: 'Permits' },
           { id: 'talks', label: 'Toolbox Talks' },
         ].map(t => (
-          <button key={t.id} onClick={() => setMainTab(t.id)}
+          <button type="button"  key={t.id} onClick={() => setMainTab(t.id)}
             className={clsx('px-4 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-all',
               mainTab === t.id ? 'bg-red-600 text-white' : 'text-gray-400 hover:text-white hover:bg-gray-800')}>
             {t.label}
@@ -343,7 +343,7 @@ export function Safety() {
               {id:'hazards',    label:'Hazards'},
               {id:'riddor',     label:'RIDDOR'},
             ].map(t => (
-              <button key={t.id} onClick={() => setCategoryTab(t.id)}
+              <button type="button"  key={t.id} onClick={() => setCategoryTab(t.id)}
                 className={clsx('px-3 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-all',
                   categoryTab===t.id ? 'bg-red-600 text-white' : 'text-gray-400 hover:text-white hover:bg-gray-800')}>
                 {t.label}
@@ -363,7 +363,7 @@ export function Safety() {
                 className="w-full bg-gray-800 border border-gray-700 rounded-xl pl-9 pr-3 py-2 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-red-500" />
             </div>
             {['all','open','investigating','closed'].map(s => (
-              <button key={s} onClick={() => setFilter(s)}
+              <button type="button"  key={s} onClick={() => setFilter(s)}
                 className={clsx('rounded-full px-3.5 py-1.5 text-xs font-semibold transition-all capitalize',
                   filter===s ? 'bg-red-600 text-white' : 'bg-gray-800 text-gray-300 hover:bg-gray-700')}>
                 {s==='all' ? 'All' : s}
@@ -462,17 +462,17 @@ export function Safety() {
 
                       {/* Action Buttons */}
                       <div className="flex gap-2 pt-2 border-t border-gray-800" onClick={e => e.stopPropagation()}>
-                        <button onClick={() => openEdit(inc)}
+                        <button type="button" onClick={() => openEdit(inc)}
                           className="flex-1 flex items-center justify-center gap-1.5 rounded-xl bg-gray-800 hover:bg-gray-700 py-2 text-xs font-semibold text-white transition-colors">
                           <Edit2 className="w-3.5 h-3.5" /> Edit Record
                         </button>
                         {String(inc.status) !== 'closed' && (
-                          <button onClick={() => updateM.mutateAsync({ id: String(inc.id), data: { status: 'closed' } })}
+                          <button type="button" onClick={() => updateM.mutateAsync({ id: String(inc.id), data: { status: 'closed' } })}
                             className="flex-1 flex items-center justify-center gap-1.5 rounded-xl bg-green-600/20 hover:bg-green-600/30 border border-green-600/30 py-2 text-xs font-semibold text-green-400 transition-colors">
                             <CheckCircle2 className="w-3.5 h-3.5" /> Close Incident
                           </button>
                         )}
-                        <button onClick={() => handleDelete(String(inc.id))}
+                        <button type="button" onClick={() => handleDelete(String(inc.id))}
                           className="rounded-xl bg-gray-800 hover:bg-red-900/20 px-3 py-2 text-red-500 hover:text-red-400 transition-colors">
                           <Trash2 className="w-3.5 h-3.5" />
                         </button>
@@ -486,7 +486,7 @@ export function Safety() {
               <div className="text-center py-16 text-gray-500">
                 <Shield className="w-12 h-12 mx-auto mb-3 text-gray-700" />
                 <p className="font-medium">No incidents recorded</p>
-                <button onClick={openCreate} className="mt-3 text-sm text-red-400 hover:text-red-300">+ Report an incident</button>
+                <button type="button" onClick={openCreate} className="mt-3 text-sm text-red-400 hover:text-red-300">+ Report an incident</button>
               </div>
             )}
           </div>
@@ -550,11 +550,11 @@ export function Safety() {
                         >
                           <Upload className="w-3 h-3" /> {uploadingPermit === permit.id ? '...' : 'Upload'}
                         </button>
-                        <button onClick={() => { setPermitForm(permit); setEditPermitId(permit.id); setShowPermitModal(true); }}
+                        <button type="button" onClick={() => { setPermitForm(permit); setEditPermitId(permit.id); setShowPermitModal(true); }}
                           className="inline-flex items-center gap-1 rounded-lg bg-gray-800 hover:bg-gray-700 px-2 py-1 text-xs text-white transition-colors">
                           <Edit2 className="w-3 h-3" /> Edit
                         </button>
-                        <button onClick={() => handleDeletePermit(permit.id)}
+                        <button type="button" onClick={() => handleDeletePermit(permit.id)}
                           className="inline-flex items-center gap-1 rounded-lg bg-red-900/20 hover:bg-red-900/30 px-2 py-1 text-xs text-red-400 transition-colors">
                           <Trash2 className="w-3 h-3" /> Delete
                         </button>
@@ -608,11 +608,11 @@ export function Safety() {
                   >
                     <Upload className="w-4 h-4" />
                   </button>
-                  <button onClick={() => { setTalkForm(talk); setEditTalkId(talk.id); setShowTalkModal(true); }}
+                  <button type="button" onClick={() => { setTalkForm(talk); setEditTalkId(talk.id); setShowTalkModal(true); }}
                     className="rounded-xl bg-gray-800 hover:bg-gray-700 p-2 text-gray-400 hover:text-white transition-colors">
                     <Edit2 className="w-4 h-4" />
                   </button>
-                  <button onClick={() => handleDeleteTalk(talk.id)}
+                  <button type="button" onClick={() => handleDeleteTalk(talk.id)}
                     className="rounded-xl bg-gray-800 hover:bg-red-900/20 p-2 text-red-500 hover:text-red-400 transition-colors">
                     <Trash2 className="w-4 h-4" />
                   </button>
@@ -632,7 +632,7 @@ export function Safety() {
                 <h2 className="text-xl font-bold text-white">{editId ? 'Edit Incident' : 'Report Incident'}</h2>
                 <p className="text-xs text-gray-400 mt-0.5">Record safety incident with enhanced RIDDOR fields</p>
               </div>
-              <button onClick={() => setShowModal(false)} className="text-gray-400 hover:text-white p-2 rounded-xl hover:bg-gray-800"><X className="w-5 h-5" /></button>
+              <button type="button" onClick={() => setShowModal(false)} className="text-gray-400 hover:text-white p-2 rounded-xl hover:bg-gray-800"><X className="w-5 h-5" /></button>
             </div>
             <form onSubmit={handleSubmit} className="p-6 grid grid-cols-2 gap-4 overflow-y-auto max-h-[70vh]">
               {/* Basic Info */}
@@ -761,7 +761,7 @@ export function Safety() {
                 <h2 className="text-xl font-bold text-white">{editPermitId ? 'Edit Permit' : 'New Permit to Work'}</h2>
                 <p className="text-xs text-gray-400 mt-0.5">Create or edit a Permit to Work</p>
               </div>
-              <button onClick={() => setShowPermitModal(false)} className="text-gray-400 hover:text-white p-2 rounded-xl hover:bg-gray-800"><X className="w-5 h-5" /></button>
+              <button type="button" onClick={() => setShowPermitModal(false)} className="text-gray-400 hover:text-white p-2 rounded-xl hover:bg-gray-800"><X className="w-5 h-5" /></button>
             </div>
             <form onSubmit={(e) => { e.preventDefault(); handleSavePermit(); }} className="p-6 grid grid-cols-2 gap-4">
               <div>
@@ -822,7 +822,7 @@ export function Safety() {
                 <h2 className="text-xl font-bold text-white">{editTalkId ? 'Edit Toolbox Talk' : 'Record Toolbox Talk'}</h2>
                 <p className="text-xs text-gray-400 mt-0.5">Log a new toolbox talk or safety briefing</p>
               </div>
-              <button onClick={() => setShowTalkModal(false)} className="text-gray-400 hover:text-white p-2 rounded-xl hover:bg-gray-800"><X className="w-5 h-5" /></button>
+              <button type="button" onClick={() => setShowTalkModal(false)} className="text-gray-400 hover:text-white p-2 rounded-xl hover:bg-gray-800"><X className="w-5 h-5" /></button>
             </div>
             <form onSubmit={(e) => { e.preventDefault(); handleSaveTalk(); }} className="p-6 grid grid-cols-2 gap-4">
               <div>
