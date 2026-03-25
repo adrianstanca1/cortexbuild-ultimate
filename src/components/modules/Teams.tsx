@@ -3,6 +3,7 @@ import { Users, Plus, Search, Phone, Mail, Briefcase, Edit2, Trash2, X, ChevronD
 import { useTeam } from '../../hooks/useData';
 import { uploadFile } from '../../services/api';
 import { toast } from 'sonner';
+import { z } from 'zod';
 import { BulkActionsBar, useBulkSelection } from '../ui/BulkActions';
 import { DataImporter, ExportButton } from '../ui/DataImportExport';
 
@@ -14,6 +15,22 @@ const STATUS_OPTIONS = ['Active','On Leave','Signed Off','Inactive'];
 
 const SKILLS = ['CSCS', 'First Aid', 'Working at Height', 'Confined Space', 'Asbestos Awareness', 'Scaffold Inspection', 'MEWP', 'Plant Operator'];
 const CSCS_TYPES = ['Gold', 'Blue', 'Green', 'White'];
+
+const teamMemberSchema = z.object({
+  name: z.string().min(2, 'Name must be at least 2 characters'),
+  role: z.string().min(1, 'Role is required'),
+  trade_type: z.string().optional(),
+  email: z.string().email('Invalid email address').or(z.literal('')).optional(),
+  phone: z.string().min(10, 'Phone must be at least 10 digits').optional(),
+  daily_rate: z.union([z.string(), z.number()]).optional(),
+  cscs_card: z.string().optional(),
+  cscs_expiry: z.string().optional(),
+  cscs_type: z.enum(['Gold', 'Blue', 'Green', 'White']).optional(),
+  status: z.enum(['Active', 'On Leave', 'Signed Off', 'Inactive']).optional(),
+  notes: z.string().optional(),
+});
+
+type TeamMemberForm = z.infer<typeof teamMemberSchema>;
 
 const statusColour: Record<string,string> = {
   'Active':'bg-green-900 text-green-100','On Leave':'bg-amber-900 text-amber-100',
@@ -127,6 +144,12 @@ export function Teams() {
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
+    const result = teamMemberSchema.safeParse(form);
+    if (!result.success) {
+      const firstError = result.error.issues[0];
+      toast.error(firstError.message);
+      return;
+    }
     const payload = { ...form, daily_rate: Number(form.daily_rate)||0 };
     if (editing) { await updateMutation.mutateAsync({ id: String(editing.id), data: payload }); toast.success('Member updated'); }
     else { await createMutation.mutateAsync(payload); toast.success('Member added'); }

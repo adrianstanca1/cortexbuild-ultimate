@@ -7,7 +7,21 @@ import { uploadFile } from '../../services/api';
 import { toast } from 'sonner';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import clsx from 'clsx';
+import { z } from 'zod';
 import { BulkActionsBar, useBulkSelection } from '../ui/BulkActions';
+
+const incidentSchema = z.object({
+  title: z.string().min(3, 'Title must be at least 3 characters'),
+  type: z.string().min(1, 'Incident type is required'),
+  severity: z.enum(['low', 'medium', 'high', 'critical']).optional(),
+  status: z.string().optional(),
+  description: z.string().optional(),
+  location: z.string().optional(),
+  reported_by_name: z.string().optional(),
+  date: z.string().optional(),
+});
+
+type IncidentForm = z.infer<typeof incidentSchema>;
 
 const SAFETY_TREND_DATA = [
   { month:'Sep', incidents:3, nearMisses:8,  toolboxTalks:12 },
@@ -197,6 +211,11 @@ export function Safety() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    const result = incidentSchema.safeParse(form);
+    if (!result.success) {
+      toast.error(result.error.issues[0].message);
+      return;
+    }
     if (editId) { await updateM.mutateAsync({ id: editId, data: form }); }
     else { await createM.mutateAsync(form); }
     setShowModal(false);
