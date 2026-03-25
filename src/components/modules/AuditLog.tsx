@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { auditApi } from '@/services/api';
+import { backupApi } from '@/services/api';
 import { toast } from 'sonner';
 import {
   Filter,
@@ -70,6 +71,8 @@ export function AuditLog() {
   const [filterDateFrom, setFilterDateFrom] = useState('');
   const [filterDateTo, setFilterDateTo] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
+  const [exportFormat, setExportFormat] = useState<'csv' | 'json'>('csv');
+  const [exporting, setExporting] = useState(false);
 
   const { selectedIds, toggle, clearSelection } = useBulkSelection();
 
@@ -476,42 +479,105 @@ export function AuditLog() {
 
       {/* Export Tab */}
       {subTab === 'export' && (
-        <div className="bg-gray-900 border border-gray-700 rounded-lg p-6 max-w-md">
-          <h3 className="text-lg font-bold text-white mb-4">Export Audit Trail</h3>
-          <div className="space-y-4">
-            <div>
-              <label className="block text-sm text-gray-400 mb-2">Date From</label>
-              <input
-                type="date"
-                value={filterDateFrom}
-                onChange={e => setFilterDateFrom(e.target.value)}
-                className="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-2 text-white text-sm"
-              />
+        <div className="space-y-6">
+          <div className="card p-6 max-w-md">
+            <h3 className="text-lg font-bold text-white mb-4">Export Audit Trail</h3>
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm text-gray-400 mb-2">Date From</label>
+                <input
+                  id="audit-date-from"
+                  type="date"
+                  value={filterDateFrom}
+                  onChange={e => setFilterDateFrom(e.target.value)}
+                  className="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-2 text-white text-sm"
+                />
+              </div>
+              <div>
+                <label className="block text-sm text-gray-400 mb-2">Date To</label>
+                <input
+                  id="audit-date-to"
+                  type="date"
+                  value={filterDateTo}
+                  onChange={e => setFilterDateTo(e.target.value)}
+                  className="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-2 text-white text-sm"
+                />
+              </div>
+              <div>
+                <label className="block text-sm text-gray-400 mb-2">Format</label>
+                <select
+                  id="audit-export-format"
+                  value={exportFormat}
+                  onChange={e => setExportFormat(e.target.value as 'csv' | 'json')}
+                  className="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-2 text-white text-sm"
+                >
+                  <option value="csv">CSV</option>
+                  <option value="json">JSON</option>
+                </select>
+              </div>
+              <button
+                type="button"
+                onClick={async () => {
+                  setExporting(true);
+                  try {
+                    const data = await backupApi.exportTable('audit_log', exportFormat);
+                    if (exportFormat === 'csv') {
+                      const blob = new Blob([data as string], { type: 'text/csv' });
+                      const url = URL.createObjectURL(blob);
+                      const a = document.createElement('a');
+                      a.href = url;
+                      a.download = `audit-log-${Date.now()}.csv`;
+                      a.click();
+                      URL.revokeObjectURL(url);
+                    } else {
+                      const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+                      const url = URL.createObjectURL(blob);
+                      const a = document.createElement('a');
+                      a.href = url;
+                      a.download = `audit-log-${Date.now()}.json`;
+                      a.click();
+                      URL.revokeObjectURL(url);
+                    }
+                    toast.success('Audit log exported');
+                  } catch {
+                    toast.error('Export failed');
+                  } finally {
+                    setExporting(false);
+                  }
+                }}
+                disabled={exporting}
+                className="w-full px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white rounded-lg font-medium flex items-center justify-center gap-2"
+              >
+                <Download className="h-4 w-4" />
+                {exporting ? 'Exporting...' : 'Export'}
+              </button>
+              <button
+                type="button"
+                onClick={async () => {
+                  setExporting(true);
+                  try {
+                    const data = await backupApi.exportAll();
+                    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = `cortexbuild-full-backup-${Date.now()}.json`;
+                    a.click();
+                    URL.revokeObjectURL(url);
+                    toast.success('Full backup exported');
+                  } catch {
+                    toast.error('Backup failed');
+                  } finally {
+                    setExporting(false);
+                  }
+                }}
+                disabled={exporting}
+                className="w-full px-4 py-2 bg-green-600/20 hover:bg-green-600/30 disabled:opacity-50 text-green-400 rounded-lg font-medium text-sm flex items-center justify-center gap-2"
+              >
+                <Download className="h-4 w-4" />
+                Full Platform Backup
+              </button>
             </div>
-            <div>
-              <label className="block text-sm text-gray-400 mb-2">Date To</label>
-              <input
-                type="date"
-                value={filterDateTo}
-                onChange={e => setFilterDateTo(e.target.value)}
-                className="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-2 text-white text-sm"
-              />
-            </div>
-            <div>
-              <label className="block text-sm text-gray-400 mb-2">Format</label>
-              <select className="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-2 text-white text-sm">
-                <option>CSV</option>
-                <option>PDF</option>
-                <option>Excel</option>
-              </select>
-            </div>
-            <button className="w-full px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium">
-              <Download className="h-4 w-4 inline mr-2" />
-              Export
-            </button>
-            <button className="w-full px-4 py-2 bg-green-600/20 hover:bg-green-600/30 text-green-400 rounded-lg font-medium text-sm">
-              Generate Compliance Report
-            </button>
           </div>
         </div>
       )}

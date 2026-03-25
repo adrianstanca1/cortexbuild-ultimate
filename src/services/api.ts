@@ -588,4 +588,27 @@ export const measuringApi = {
   delete: (id: string) => deleteRow('measuring', id),
 };
 
+export const backupApi = {
+  getTables: () => apiFetch<{ tables: string[] }>('/backup/tables'),
+  exportTable: (table: string, format: 'json' | 'csv' = 'json') => {
+    const url = `/backup/export/${table}?format=${format}`;
+    return fetch(`${API_BASE}${url}`, {
+      headers: { Authorization: `Bearer ${getToken()}` },
+    }).then(r => {
+      if (!r.ok) throw new Error(`Export failed: ${r.statusText}`);
+      if (format === 'csv') return r.text();
+      return r.json();
+    });
+  },
+  exportAll: () => {
+    const url = '/backup/export-all';
+    return fetch(`${API_BASE}${url}`, {
+      headers: { Authorization: `Bearer ${getToken()}` },
+    }).then(r => {
+      if (!r.ok) throw new Error(`Export failed: ${r.statusText}`);
+      return r.json();
+    });
+  },
+};
+
 export { uploadFile };
