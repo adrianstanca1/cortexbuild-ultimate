@@ -3,7 +3,7 @@ import { valuationsApi, uploadFile } from '../../services/api';
 import {
   FileText, Plus, Search, Filter, Download, Clock, AlertCircle,
   CheckCircle, XCircle, DollarSign, Building2, User, Calendar,
-  FileCheck, Eye, Edit, X, Percent, CreditCard, Receipt
+  FileCheck, Eye, Edit, X, Percent, CreditCard, Receipt, Trash2
 } from 'lucide-react';
 
 interface Valuation {
@@ -151,6 +151,8 @@ export default function Valuations() {
   const [filterStatus, setFilterStatus] = useState<string>('all');
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [selectedValId, setSelectedValId] = useState<string | null>(null);
+  const [creating, setCreating] = useState(false);
+  const [form, setForm] = useState({ project: '', contractor: '', grossValue: '', retention: '', periodStart: '', periodEnd: '' });
 
   useEffect(() => {
     valuationsApi.getAll()
@@ -158,6 +160,46 @@ export default function Valuations() {
       .catch(console.error)
       .finally(() => setLoading(false));
   }, []);
+
+  const handleCreate = async () => {
+    if (!form.project) return;
+    setCreating(true);
+    try {
+      const ref = `VAL-${String(Date.now()).slice(-6)}`;
+      const newRecord = {
+        reference: ref,
+        project: form.project,
+        contractor_name: form.contractor || 'CortexBuild Ltd',
+        application_number: 1,
+        period_start: form.periodStart || new Date().toISOString().split('T')[0],
+        period_end: form.periodEnd || new Date().toISOString().split('T')[0],
+        status: 'draft',
+        original_value: parseFloat(form.grossValue) || 0,
+        variations: 0,
+        total_value: parseFloat(form.grossValue) || 0,
+        retention: parseFloat(form.retention) || 0,
+        amount_due: parseFloat(form.grossValue) || 0,
+      };
+      const created = await valuationsApi.create(newRecord);
+      setValuations(prev => [created, ...prev]);
+      setShowCreateModal(false);
+      setForm({ project: '', contractor: '', grossValue: '', retention: '', periodStart: '', periodEnd: '' });
+    } catch (err) {
+      console.error('Failed to create:', err);
+    } finally {
+      setCreating(false);
+    }
+  };
+
+  const handleDelete = async (id: string) => {
+    if (!confirm('Delete this valuation?')) return;
+    try {
+      await valuationsApi.delete(id);
+      setValuations(prev => prev.filter(v => String(v.id) !== String(id)));
+    } catch (err) {
+      console.error('Failed to delete:', err);
+    }
+  };
 
   const handleUploadDoc = async (valId: string, file: File) => {
     setUploading(true);
@@ -351,6 +393,14 @@ export default function Valuations() {
                         >
                           <FileCheck size={16} />
                         </button>
+                        <button
+                          type="button"
+                          onClick={() => handleDelete(String(val.id))}
+                          className="p-1.5 hover:bg-red-900/30 rounded"
+                          title="Delete"
+                        >
+                          <Trash2 size={16} className="text-red-400" />
+                        </button>
                       </div>
                     </td>
                   </tr>
@@ -360,6 +410,58 @@ export default function Valuations() {
           </table>
         </div>
       </div>
+
+      {showCreateModal && (
+        <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
+          <div className="bg-gray-900 border border-gray-700 rounded-xl w-full max-w-lg">
+            <div className="p-6 border-b border-gray-700 flex items-center justify-between">
+              <h3 className="text-xl font-bold text-white">Create Valuation</h3>
+              <button type="button" onClick={() => setShowCreateModal(false)} className="text-gray-400 hover:text-white"><X size={20} /></button>
+            </div>
+            <div className="p-6 space-y-4">
+              <div>
+                <label className="block text-gray-400 text-xs mb-1">Project</label>
+                <select value={form.project} onChange={e => setForm(f => ({ ...f, project: e.target.value }))} className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white">
+                  <option value="">Select project...</option>
+                  <option>Canary Wharf Office Complex</option>
+                  <option>Manchester City Apartments</option>
+                  <option>Birmingham Road Bridge</option>
+                </select>
+              </div>
+              <div>
+                <label className="block text-gray-400 text-xs mb-1">Contractor</label>
+                <input type="text" value={form.contractor} onChange={e => setForm(f => ({ ...f, contractor: e.target.value }))} placeholder="Contractor name..." className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500" />
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-gray-400 text-xs mb-1">Gross Value (£)</label>
+                  <input type="number" value={form.grossValue} onChange={e => setForm(f => ({ ...f, grossValue: e.target.value }))} placeholder="0.00" className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500" />
+                </div>
+                <div>
+                  <label className="block text-gray-400 text-xs mb-1">Retention (£)</label>
+                  <input type="number" value={form.retention} onChange={e => setForm(f => ({ ...f, retention: e.target.value }))} placeholder="0.00" className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500" />
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-gray-400 text-xs mb-1">Period Start</label>
+                  <input type="date" value={form.periodStart} onChange={e => setForm(f => ({ ...f, periodStart: e.target.value }))} className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white" />
+                </div>
+                <div>
+                  <label className="block text-gray-400 text-xs mb-1">Period End</label>
+                  <input type="date" value={form.periodEnd} onChange={e => setForm(f => ({ ...f, periodEnd: e.target.value }))} className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white" />
+                </div>
+              </div>
+            </div>
+            <div className="p-6 border-t border-gray-700 flex justify-end gap-3">
+              <button type="button" onClick={() => setShowCreateModal(false)} className="px-4 py-2 text-gray-400 hover:text-white">Cancel</button>
+              <button type="button" onClick={handleCreate} disabled={creating || !form.project} className="px-4 py-2 bg-orange-500 hover:bg-orange-600 text-white rounded-lg font-semibold disabled:opacity-50">
+                {creating ? 'Creating...' : 'Create Valuation'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
