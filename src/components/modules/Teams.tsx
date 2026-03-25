@@ -1,7 +1,7 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Users, Plus, Search, Phone, Mail, Briefcase, Edit2, Trash2, X, ChevronDown, ChevronUp, Shield, Clock, Award, AlertTriangle, PoundSterling, MapPin, CheckCircle2, AlertCircle, Calendar, Upload, CheckSquare, Square, Download, FileSpreadsheet } from 'lucide-react';
 import { useTeam } from '../../hooks/useData';
-import { uploadFile } from '../../services/api';
+import { uploadFile, teamApi } from '../../services/api';
 import { toast } from 'sonner';
 import { z } from 'zod';
 import { BulkActionsBar, useBulkSelection } from '../ui/BulkActions';
@@ -39,34 +39,9 @@ const statusColour: Record<string,string> = {
 
 const emptyForm = { name:'',role:'',trade_type:'',email:'',phone:'',daily_rate:'',cscs_card:'',cscs_expiry:'',cscs_type:'Gold',status:'Active',notes:'' };
 
-// Mock skill assignments (in real app, would come from API)
-function getMemberSkills(name: string): Record<string, 'yes'|'no'|'expired'> {
-  const mockSkills: Record<string, Record<string, 'yes'|'no'|'expired'>> = {
-    'John Smith': { 'CSCS': 'yes', 'First Aid': 'yes', 'Working at Height': 'yes', 'Confined Space': 'no', 'Asbestos Awareness': 'yes', 'Scaffold Inspection': 'no', 'MEWP': 'expired', 'Plant Operator': 'yes' },
-    'Sarah Johnson': { 'CSCS': 'yes', 'First Aid': 'yes', 'Working at Height': 'yes', 'Confined Space': 'yes', 'Asbestos Awareness': 'no', 'Scaffold Inspection': 'yes', 'MEWP': 'yes', 'Plant Operator': 'no' },
-    'Mike Davis': { 'CSCS': 'yes', 'First Aid': 'no', 'Working at Height': 'yes', 'Confined Space': 'yes', 'Asbestos Awareness': 'yes', 'Scaffold Inspection': 'yes', 'MEWP': 'no', 'Plant Operator': 'yes' },
-  };
-  return mockSkills[name] || {};
-}
-
-// Mock induction records
-function getMemberInductions(name: string): Array<{ project: string; date: string; nextDue: string; status: 'current'|'due_soon'|'overdue' }> {
-  const today = new Date();
-  return [
-    { project: 'Central Tower', date: '2025-09-15', nextDue: '2026-03-15', status: today.getTime() < new Date('2026-03-15').getTime() ? 'current' : 'due_soon' },
-    { project: 'Metro Link', date: '2025-11-20', nextDue: '2026-05-20', status: 'current' },
-  ];
-}
-
-// Mock availability
-function getMemberAvailability(name: string): Record<string, 'onsite'|'office'|'off'|'sick'> {
-  const mockAvail: Record<string, Record<string, 'onsite'|'office'|'off'|'sick'>> = {
-    'John Smith': { 'Mon': 'onsite', 'Tue': 'onsite', 'Wed': 'onsite', 'Thu': 'office', 'Fri': 'onsite' },
-    'Sarah Johnson': { 'Mon': 'onsite', 'Tue': 'office', 'Wed': 'onsite', 'Thu': 'onsite', 'Fri': 'onsite' },
-    'Mike Davis': { 'Mon': 'onsite', 'Tue': 'onsite', 'Wed': 'onsite', 'Thu': 'onsite', 'Fri': 'off' },
-  };
-  return mockAvail[name] || { 'Mon': 'off', 'Tue': 'off', 'Wed': 'off', 'Thu': 'off', 'Fri': 'off' };
-}
+type Skill = { skill_name: string; status: 'yes' | 'no' | 'expired' };
+type Induction = { project: string; date: string; next_due: string; status: 'current' | 'due_soon' | 'overdue' };
+type Availability = { project: string; status: 'onsite' | 'office' | 'off' | 'sick' };
 
 export function Teams() {
   const { useList, useCreate, useUpdate, useDelete } = useTeam;
@@ -88,6 +63,25 @@ export function Teams() {
   const { selectedIds, toggle, toggleAll, clearSelection, isAllSelected } = useBulkSelection();
 
   const selectedCount = selectedIds.size;
+
+  const [memberSkills, setMemberSkills] = useState<Record<string, Skill[]>>({});
+  const [memberInductions, setMemberInductions] = useState<Record<string, Induction[]>>({});
+  const [memberAvailability, setMemberAvailability] = useState<Record<string, Availability[]>>({});
+
+  useEffect(() => {
+    if (members.length === 0) return;
+    const memberId = members[0]?.id;
+    if (!memberId) return;
+    Promise.all([
+      teamApi.getMemberSkills(String(memberId)).catch(() => []),
+      teamApi.getMemberInductions(String(memberId)).catch(() => []),
+      teamApi.getMemberAvailability(String(memberId)).catch(() => []),
+    ]).then(([skills, inductions, availability]) => {
+      setMemberSkills({ [String(memberId)]: skills as Skill[] });
+      setMemberInductions({ [String(memberId)]: inductions as Induction[] });
+      setMemberAvailability({ [String(memberId)]: availability as Availability[] });
+    });
+  }, [members]);
 
   async function handleBulkDelete(ids: string[]) {
     if (!confirm(`Delete ${ids.length} team member(s)?`)) return;
@@ -391,12 +385,14 @@ export function Teams() {
             </thead>
             <tbody className="divide-y divide-gray-700">
               {members.filter(m=>m.status==='Active').map(m=>{
-                const skills = getMemberSkills(String(m.name??''));
+                const memberSkillList = memberSkills[String(m.id)] || [];
+                const skillsMap: Record<string, string> = {};
+                memberSkillList.forEach((s: Skill) => { skillsMap[s.skill_name] = s.status; });
                 return (
                   <tr key={String(m.id)} className="hover:bg-gray-800">
                     <td className="px-6 py-4 font-medium text-white">{String(m.name??'Unknown')}</td>
                     {SKILLS.map(skill=>{
-                      const status = skills[skill];
+                      const status = skillsMap[skill];
                       return (
                         <td key={skill} className="text-center px-3 py-4">
                           {status === 'yes' && <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-green-900 text-green-100"><CheckCircle2 size={14}/></span>}
@@ -524,13 +520,14 @@ export function Teams() {
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-700">
-              {members.filter(m=>m.status==='Active').flatMap(m=>
-                getMemberInductions(String(m.name??'')).map(ind=>(
+              {members.filter(m=>m.status==='Active').flatMap(m=>{
+                const inds = memberInductions[String(m.id)] || [];
+                return inds.map(ind=>(
                   <tr key={`${m.id}-${ind.project}`} className="hover:bg-gray-800">
                     <td className="px-6 py-4 font-medium text-white">{String(m.name??'Unknown')}</td>
                     <td className="px-6 py-4 text-gray-300">{ind.project}</td>
                     <td className="px-6 py-4 text-gray-400">{new Date(ind.date).toLocaleDateString()}</td>
-                    <td className="px-6 py-4 text-gray-400">{new Date(ind.nextDue).toLocaleDateString()}</td>
+                    <td className="px-6 py-4 text-gray-400">{new Date(ind.next_due).toLocaleDateString()}</td>
                     <td className="px-6 py-4">
                       <span className={`text-xs px-3 py-1 rounded-full font-medium ${getInductionColor(ind.status)}`}>
                         {ind.status === 'current' && 'Current'}
@@ -539,8 +536,8 @@ export function Teams() {
                       </span>
                     </td>
                   </tr>
-                ))
-              )}
+                ));
+              })}
             </tbody>
           </table>
           {members.filter(m=>m.status==='Active').length === 0 && <div className="text-center py-12 text-gray-500"><Calendar size={32} className="mx-auto mb-2 opacity-30"/><p>No active members to display</p></div>}
@@ -559,12 +556,13 @@ export function Teams() {
             </thead>
             <tbody className="divide-y divide-gray-700">
               {members.filter(m=>m.status==='Active').map(m=>{
-                const avail = getMemberAvailability(String(m.name??''));
+                const availList = memberAvailability[String(m.id)] || [];
                 return (
                   <tr key={String(m.id)} className="hover:bg-gray-800">
                     <td className="px-6 py-4 font-medium text-white">{String(m.name??'Unknown')}</td>
                     {['Mon', 'Tue', 'Wed', 'Thu', 'Fri'].map(day=>{
-                      const status = avail[day];
+                      const projAvail = availList.find(a => a.project.toLowerCase().includes(day.toLowerCase()));
+                      const status = projAvail?.status || 'off';
                       return (
                         <td key={day} className="text-center px-4 py-4">
                           <span className={`inline-block px-3 py-1 rounded text-xs font-medium ${getAvailabilityColor(status)}`}>

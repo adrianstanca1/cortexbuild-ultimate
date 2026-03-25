@@ -76,6 +76,7 @@ app.use('/api/prequalification',   makeRouter('prequalification'));
 app.use('/api/lettings',            makeRouter('lettings'));
 app.use('/api/measuring',          makeRouter('measuring'));
 app.use('/api/notifications',   require('./routes/notifications'));
+app.use('/api/team-member-data', require('./routes/team-member-data'));
 app.use('/api/financial-reports', require('./routes/financial-reports'));
 app.use('/api/search',          require('./routes/search'));
 app.use('/api/audit',           require('./routes/audit'));

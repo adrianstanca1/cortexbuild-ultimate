@@ -134,6 +134,9 @@ export const teamApi = {
   create: (data: Row) => insertRow('team', data),
   update: (id: string, data: Row) => updateRow('team', id, data),
   delete: (id: string) => deleteRow('team', id),
+  getMemberSkills: (memberId: string) => apiFetch(`/team-member-data/members/${memberId}/skills`),
+  getMemberInductions: (memberId: string) => apiFetch(`/team-member-data/members/${memberId}/inductions`),
+  getMemberAvailability: (memberId: string) => apiFetch(`/team-member-data/members/${memberId}/availability`),
 };
 
 export const safetyApi = {
