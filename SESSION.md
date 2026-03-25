@@ -12,11 +12,18 @@ Full system audit complete — all CRUD + upload working, code-splitting improve
 2026-03-25
 
 ## Last Commit
-`0c0d06e` — "fix: add dist volume mount to nginx container"
+`0395c11` — "fix: add www.cortexbuildpro.com to nginx server_name"
 
 ## Site Status
-✅ www.cortexbuildpro.com — returning 200 OK
+✅ www.cortexbuildpro.com — returning 200 OK (HTTPS)
 ✅ API health: http://72.62.132.43:3001/api/health
+✅ Auth working: adrian.stanca1@gmail.com / Lolozania1
+
+## All Fixes Applied This Session
+1. `c0c274d` — Standardize pool import across all routes (use pool directly)
+2. `7b20bec` — Fix safety_incidents uses 'date' column not 'reported_at'
+3. `0677973` — Fix use req.user instead of req.auth in all routes
+4. `0395c11` — Add www.cortexbuildpro.com to nginx server_name
 
 ## VPS Container Status
 - ✅ cortexbuild-db (healthy)
