@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
-import { Plus, Search, Shield, FileCheck, Clock, AlertTriangle, FileText, Upload, Trash2, X } from 'lucide-react';
+import { Plus, Search, Shield, FileCheck, Clock, AlertTriangle, FileText, Upload, Trash2, X, Edit } from 'lucide-react';
 import { certificationsApi, uploadFile } from '../../services/api';
+import { toast } from 'sonner';
 
 export default function Certifications() {
   const [searchTerm, setSearchTerm] = useState('');
@@ -10,6 +11,8 @@ export default function Certifications() {
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [creating, setCreating] = useState(false);
   const [form, setForm] = useState({ certificationType: '', company: '', body: '', accreditationNumber: '', grade: '', expiryDate: '', status: 'active' });
+  const [editItem, setEditItem] = useState<Record<string, any> | null>(null);
+  const [saving, setSaving] = useState(false);
 
   useEffect(() => {
     certificationsApi.getAll().then((data: any[]) => {
@@ -61,6 +64,29 @@ export default function Certifications() {
       setCerts(prev => prev.filter((c: any) => String(c.id) !== String(id)));
     } catch (err) {
       console.error('Failed to delete:', err);
+    }
+  };
+
+  const handleUpdate = async () => {
+    if (!editItem || !editItem.certificationType) return;
+    setSaving(true);
+    try {
+      const updated = await certificationsApi.update(editItem.id, {
+        certification_type: editItem.certificationType,
+        company: editItem.company,
+        body: editItem.body,
+        accreditation_number: editItem.accreditationNumber,
+        grade: editItem.grade,
+        expiry_date: editItem.expiryDate || null,
+        status: editItem.status,
+      });
+      setCerts(prev => prev.map((c: any) => String(c.id) === String(editItem.id) ? updated : c));
+      setEditItem(null);
+      toast.success('Certification updated');
+    } catch (err) {
+      console.error('Failed to update:', err);
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -145,6 +171,7 @@ export default function Certifications() {
                     >
                       {uploading === String(c.id) ? <Clock size={16} className="animate-spin" /> : <Upload size={16} />}
                     </button>
+                    <button type="button" onClick={() => setEditItem({ ...c, certificationType: c.certification_type, accreditationNumber: c.accreditation_number, expiryDate: c.expiry_date || '' })} className="p-2 hover:bg-gray-700 rounded"><Edit size={16} className="text-gray-400" /></button>
                     <button
                       type="button"
                       onClick={() => handleDelete(String(c.id))}
@@ -211,6 +238,62 @@ export default function Certifications() {
               <button type="button" onClick={() => setShowCreateModal(false)} className="px-4 py-2 text-gray-400 hover:text-white">Cancel</button>
               <button type="button" onClick={handleCreate} disabled={creating || !form.certificationType} className="px-4 py-2 bg-orange-500 hover:bg-orange-600 text-white rounded-lg font-semibold disabled:opacity-50">
                 {creating ? 'Creating...' : 'Add Certification'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {editItem && (
+        <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
+          <div className="bg-gray-900 border border-gray-700 rounded-xl w-full max-w-lg">
+            <div className="p-6 border-b border-gray-700 flex items-center justify-between">
+              <h3 className="text-xl font-bold text-white">Edit Certification</h3>
+              <button type="button" onClick={() => setEditItem(null)} className="text-gray-400 hover:text-white"><X size={20} /></button>
+            </div>
+            <div className="p-6 space-y-4">
+              <div>
+                <label htmlFor="editCertType" className="block text-gray-400 text-xs mb-1">Certification Type *</label>
+                <input id="editCertType" type="text" value={editItem.certificationType} onChange={e => setEditItem(f => ({ ...f, certificationType: e.target.value }))} className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500" />
+              </div>
+              <div>
+                <label htmlFor="editCertCompany" className="block text-gray-400 text-xs mb-1">Company</label>
+                <input id="editCertCompany" type="text" value={editItem.company} onChange={e => setEditItem(f => ({ ...f, company: e.target.value }))} className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500" />
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label htmlFor="editCertBody" className="block text-gray-400 text-xs mb-1">Issuing Body</label>
+                  <input id="editCertBody" type="text" value={editItem.body} onChange={e => setEditItem(f => ({ ...f, body: e.target.value }))} className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500" />
+                </div>
+                <div>
+                  <label htmlFor="editCertGrade" className="block text-gray-400 text-xs mb-1">Grade</label>
+                  <input id="editCertGrade" type="text" value={editItem.grade} onChange={e => setEditItem(f => ({ ...f, grade: e.target.value }))} className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500" />
+                </div>
+              </div>
+              <div>
+                <label htmlFor="editCertAccred" className="block text-gray-400 text-xs mb-1">Accreditation Number</label>
+                <input id="editCertAccred" type="text" value={editItem.accreditationNumber} onChange={e => setEditItem(f => ({ ...f, accreditationNumber: e.target.value }))} className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500" />
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label htmlFor="editCertExpiry" className="block text-gray-400 text-xs mb-1">Expiry Date</label>
+                  <input id="editCertExpiry" type="date" value={editItem.expiryDate} onChange={e => setEditItem(f => ({ ...f, expiryDate: e.target.value }))} className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white" />
+                </div>
+                <div>
+                  <label htmlFor="editCertStatus" className="block text-gray-400 text-xs mb-1">Status</label>
+                  <select id="editCertStatus" value={editItem.status} onChange={e => setEditItem(f => ({ ...f, status: e.target.value }))} className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white">
+                    <option value="active">Active</option>
+                    <option value="pending">Pending</option>
+                    <option value="expired">Expired</option>
+                    <option value="revoked">Revoked</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+            <div className="p-6 border-t border-gray-700 flex justify-end gap-3">
+              <button type="button" onClick={() => setEditItem(null)} className="px-4 py-2 text-gray-400 hover:text-white">Cancel</button>
+              <button type="button" onClick={handleUpdate} disabled={saving || !editItem.certificationType} className="px-4 py-2 bg-orange-500 hover:bg-orange-600 text-white rounded-lg font-semibold disabled:opacity-50">
+                {saving ? 'Saving...' : 'Save Changes'}
               </button>
             </div>
           </div>

@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
-import { Plus, Search, GraduationCap, Award, Clock, AlertCircle, FileCheck, Upload, Trash2, X } from 'lucide-react';
+import { Plus, Search, GraduationCap, Award, Clock, AlertCircle, FileCheck, Upload, Trash2, X, Edit } from 'lucide-react';
 import { trainingApi, uploadFile } from '../../services/api';
+import { toast } from 'sonner';
 
 export default function Training() {
   const [searchTerm, setSearchTerm] = useState('');
@@ -12,6 +13,8 @@ export default function Training() {
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [creating, setCreating] = useState(false);
   const [form, setForm] = useState({ title: '', provider: '', type: '', status: 'scheduled', scheduledDate: '', completedDate: '', certification: '' });
+  const [editItem, setEditItem] = useState<Record<string, any> | null>(null);
+  const [saving, setSaving] = useState(false);
 
   useEffect(() => {
     trainingApi.getAll().then((data: any[]) => {
@@ -60,6 +63,29 @@ export default function Training() {
       setTraining(prev => prev.filter((t: any) => String(t.id) !== String(id)));
     } catch (err) {
       console.error('Failed to delete:', err);
+    }
+  };
+
+  const handleUpdate = async () => {
+    if (!editItem || !editItem.title) return;
+    setSaving(true);
+    try {
+      const updated = await trainingApi.update(editItem.id, {
+        title: editItem.title,
+        provider: editItem.provider,
+        type: editItem.type,
+        status: editItem.status,
+        scheduled_date: editItem.scheduledDate || null,
+        completed_date: editItem.completedDate || null,
+        certification: editItem.certification,
+      });
+      setTraining(prev => prev.map((t: any) => String(t.id) === String(editItem.id) ? updated : t));
+      setEditItem(null);
+      toast.success('Training record updated');
+    } catch (err) {
+      console.error('Failed to update:', err);
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -140,6 +166,7 @@ export default function Training() {
                   >
                     {uploading && selectedId === String(t.id) ? <Clock size={16} className="animate-spin" /> : <FileCheck size={16} />}
                   </button>
+                  <button type="button" onClick={() => setEditItem({ ...t, scheduledDate: t.scheduled_date || '', completedDate: t.completed_date || '' })} className="p-2 hover:bg-gray-700 rounded"><Edit size={16} className="text-gray-400" /></button>
                   <button
                     type="button"
                     onClick={() => handleDelete(String(t.id))}
@@ -212,6 +239,69 @@ export default function Training() {
               <button type="button" onClick={() => setShowCreateModal(false)} className="px-4 py-2 text-gray-400 hover:text-white">Cancel</button>
               <button type="button" onClick={handleCreate} disabled={creating || !form.title} className="px-4 py-2 bg-orange-500 hover:bg-orange-600 text-white rounded-lg font-semibold disabled:opacity-50">
                 {creating ? 'Creating...' : 'Add Record'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {editItem && (
+        <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
+          <div className="bg-gray-900 border border-gray-700 rounded-xl w-full max-w-lg">
+            <div className="p-6 border-b border-gray-700 flex items-center justify-between">
+              <h3 className="text-xl font-bold text-white">Edit Training Record</h3>
+              <button type="button" onClick={() => setEditItem(null)} className="text-gray-400 hover:text-white"><X size={20} /></button>
+            </div>
+            <div className="p-6 space-y-4">
+              <div>
+                <label className="block text-gray-400 text-xs mb-1">Title *</label>
+                <input type="text" value={editItem.title} onChange={e => setEditItem(f => ({ ...f, title: e.target.value }))} className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500" />
+              </div>
+              <div>
+                <label className="block text-gray-400 text-xs mb-1">Provider</label>
+                <input type="text" value={editItem.provider} onChange={e => setEditItem(f => ({ ...f, provider: e.target.value }))} className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500" />
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-gray-400 text-xs mb-1">Type</label>
+                  <select value={editItem.type} onChange={e => setEditItem(f => ({ ...f, type: e.target.value }))} className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white">
+                    <option value="">Select type...</option>
+                    <option value="Health & Safety">Health & Safety</option>
+                    <option value="Technical">Technical</option>
+                    <option value="Management">Management</option>
+                    <option value="Compliance">Compliance</option>
+                    <option value="General">General</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-gray-400 text-xs mb-1">Status</label>
+                  <select value={editItem.status} onChange={e => setEditItem(f => ({ ...f, status: e.target.value }))} className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white">
+                    <option value="scheduled">Scheduled</option>
+                    <option value="in_progress">In Progress</option>
+                    <option value="completed">Completed</option>
+                    <option value="expired">Expired</option>
+                  </select>
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-gray-400 text-xs mb-1">Scheduled Date</label>
+                  <input type="date" value={editItem.scheduledDate} onChange={e => setEditItem(f => ({ ...f, scheduledDate: e.target.value }))} className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white" />
+                </div>
+                <div>
+                  <label className="block text-gray-400 text-xs mb-1">Completed Date</label>
+                  <input type="date" value={editItem.completedDate} onChange={e => setEditItem(f => ({ ...f, completedDate: e.target.value }))} className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white" />
+                </div>
+              </div>
+              <div>
+                <label className="block text-gray-400 text-xs mb-1">Certification Reference</label>
+                <input type="text" value={editItem.certification} onChange={e => setEditItem(f => ({ ...f, certification: e.target.value }))} className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500" />
+              </div>
+            </div>
+            <div className="p-6 border-t border-gray-700 flex justify-end gap-3">
+              <button type="button" onClick={() => setEditItem(null)} className="px-4 py-2 text-gray-400 hover:text-white">Cancel</button>
+              <button type="button" onClick={handleUpdate} disabled={saving || !editItem.title} className="px-4 py-2 bg-orange-500 hover:bg-orange-600 text-white rounded-lg font-semibold disabled:opacity-50">
+                {saving ? 'Saving...' : 'Save Changes'}
               </button>
             </div>
           </div>
