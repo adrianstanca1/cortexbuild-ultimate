@@ -1,9 +1,9 @@
 import { useState, useEffect } from 'react';
 import {
   FileText, Plus, Search, Filter, Download, Clock, BookOpen,
-  CheckCircle, AlertTriangle, FileCheck, Eye, Edit, X, Building2
+  CheckCircle, AlertTriangle, FileCheck, Eye, Edit, X, Building2, Upload
 } from 'lucide-react';
-import { specificationsApi } from '../../services/api';
+import { specificationsApi, uploadFile } from '../../services/api';
 
 interface Specification {
   id: string;
@@ -17,6 +17,7 @@ interface Specification {
   issuedDate?: string;
   description: string;
   approvedBy?: string;
+  documents?: { name: string; url: string }[];
 }
 
 export default function Specifications() {
@@ -24,6 +25,7 @@ export default function Specifications() {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState<string>('all');
+  const [uploading, setUploading] = useState<string | null>(null);
 
   useEffect(() => {
     async function loadSpecifications() {
@@ -39,10 +41,30 @@ export default function Specifications() {
     loadSpecifications();
   }, []);
 
+  const handleUpload = async (specId: string, file: File) => {
+    setUploading(specId);
+    try {
+      const result = await uploadFile(file, 'SPECS');
+      setSpecifications(prev => prev.map(s => {
+        if (String(s.id) === String(specId)) {
+          return {
+            ...s,
+            documents: [...(s.documents || []), { name: file.name, url: result.file_url || result.name }]
+          };
+        }
+        return s;
+      }));
+    } catch (err) {
+      console.error('Upload failed:', err);
+    } finally {
+      setUploading(null);
+    }
+  };
+
   const filtered = specifications.filter(s => {
-    const matchesSearch = s.ref.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      s.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      s.project.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesSearch = (s.ref || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (s.title || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (s.project || '').toLowerCase().includes(searchTerm.toLowerCase());
     const matchesStatus = filterStatus === 'all' || s.status === filterStatus;
     return matchesSearch && matchesStatus;
   });
@@ -63,7 +85,7 @@ export default function Specifications() {
           </h2>
           <p className="text-gray-400 text-sm mt-1">Technical specifications management and versioning</p>
         </div>
-        <button className="flex items-center gap-2 px-4 py-2 bg-orange-500 hover:bg-orange-600 text-white rounded-lg font-semibold">
+        <button type="button" className="flex items-center gap-2 px-4 py-2 bg-orange-500 hover:bg-orange-600 text-white rounded-lg font-semibold">
           <Plus size={18} /> Add Specification
         </button>
       </div>
@@ -97,29 +119,60 @@ export default function Specifications() {
 
         <div className="space-y-3">
           {filtered.map((spec) => {
-            const status = statusConfig[spec.status];
+            const status = statusConfig[spec.status] || statusConfig.draft;
             return (
               <div key={spec.id} className="border border-gray-700 rounded-lg p-4 hover:border-orange-500/50 transition-colors">
                 <div className="flex items-start justify-between">
                   <div>
                     <div className="flex items-center gap-2 mb-1">
-                      <span className="font-mono text-sm text-orange-400">{spec.ref}</span>
+                      <span className="font-mono text-sm text-orange-400">{spec.ref || `SPEC-${spec.id}`}</span>
                       <span className={`px-2 py-0.5 rounded text-xs ${status.bg} ${status.color}`}>{status.label}</span>
-                      <span className="px-2 py-0.5 rounded text-xs bg-gray-500/10 text-gray-400">{spec.version}</span>
+                      <span className="px-2 py-0.5 rounded text-xs bg-gray-500/10 text-gray-400">v{spec.version || '1.0'}</span>
                     </div>
-                    <h3 className="text-white font-medium">{spec.title}</h3>
-                    <p className="text-gray-400 text-sm mt-1">{spec.project}</p>
+                    <h3 className="text-white font-medium">{spec.title || 'Specification'}</h3>
+                    <p className="text-gray-400 text-sm mt-1">{spec.project || 'No project'}</p>
                   </div>
                   <div className="flex gap-2">
-                    <button className="p-2 hover:bg-gray-700 rounded text-gray-400 hover:text-white"><Eye size={16} /></button>
-                    <button className="p-2 hover:bg-gray-700 rounded text-gray-400 hover:text-white"><Download size={16} /></button>
+                    <button type="button" className="p-2 hover:bg-gray-700 rounded text-gray-400 hover:text-white"><Eye size={16} /></button>
+                    <button type="button" className="p-2 hover:bg-gray-700 rounded text-gray-400 hover:text-white"><Download size={16} /></button>
+                    <input
+                      type="file"
+                      id={`upload-spec-${spec.id}`}
+                      className="hidden"
+                      accept=".pdf,.doc,.docx"
+                      onChange={async (e) => {
+                        const file = e.target.files?.[0];
+                        if (file) {
+                          await handleUpload(String(spec.id), file);
+                          e.target.value = '';
+                        }
+                      }}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => document.getElementById(`upload-spec-${spec.id}`)?.click()}
+                      disabled={uploading === String(spec.id)}
+                      className="p-2 hover:bg-gray-700 rounded text-gray-400 hover:text-white disabled:opacity-50"
+                      title="Upload spec document"
+                    >
+                      {uploading === String(spec.id) ? <Clock size={16} className="animate-spin" /> : <Upload size={16} />}
+                    </button>
                   </div>
                 </div>
                 <div className="mt-3 flex gap-4 text-sm text-gray-400">
-                  <span>Section: {spec.section}</span>
-                  <span>Discipline: {spec.discipline}</span>
+                  <span>Section: {spec.section || 'N/A'}</span>
+                  <span>Discipline: {spec.discipline || 'General'}</span>
                   {spec.issuedDate && <span>Issued: {spec.issuedDate}</span>}
                 </div>
+                {spec.documents && spec.documents.length > 0 && (
+                  <div className="mt-3 flex gap-2 flex-wrap">
+                    {spec.documents.map((doc, idx) => (
+                      <span key={idx} className="px-2 py-1 bg-gray-700 rounded text-xs text-gray-300 flex items-center gap-1">
+                        <FileText size={12} /> {doc.name}
+                      </span>
+                    ))}
+                  </div>
+                )}
               </div>
             );
           })}
