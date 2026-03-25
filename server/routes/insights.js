@@ -6,11 +6,11 @@ const router = express.Router();
 /**
  * GET /api/insights
  * Returns rule-based insights derived from real project data.
- * Multi-tenant: filters by organization_id from req.auth.
+ * Multi-tenant: filters by organization_id from req.user.
  */
 router.get('/', async (req, res) => {
   try {
-    const auth = req.auth || {};
+    const auth = req.user || {};
     const orgId = auth.organization_id;
     const isSuper = ['super_admin', 'company_owner'].includes(auth.role);
 

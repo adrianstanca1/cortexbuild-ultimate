@@ -5,7 +5,7 @@ const router = express.Router();
 
 router.get('/overview', async (req, res) => {
   try {
-    const auth = req.auth || {};
+    const auth = req.user || {};
     const orgId = auth.organization_id;
     const isSuper = ['super_admin', 'company_owner'].includes(auth.role);
 
@@ -56,7 +56,7 @@ router.get('/overview', async (req, res) => {
 
 router.get('/revenue', async (req, res) => {
   try {
-    const auth = req.auth || {};
+    const auth = req.user || {};
     const orgId = auth.organization_id;
     const isSuper = ['super_admin', 'company_owner'].includes(auth.role);
 

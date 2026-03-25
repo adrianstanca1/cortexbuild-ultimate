@@ -5,7 +5,7 @@ const router = express.Router();
 
 // Multi-tenancy: extract org/company context from auth
 function getTenantFilter(req) {
-  const auth = req.auth || {};
+  const auth = req.user || {};
   if (!auth.role) return { filter: '', params: [] };
   // Super admins see all data
   if (['super_admin', 'company_owner'].includes(auth.role)) {
