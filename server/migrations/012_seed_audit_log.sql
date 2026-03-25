@@ -63,16 +63,6 @@ BEGIN
     WHERE organization_id = demo_org_id
     ON CONFLICT DO NOTHING;
 
-    -- Recent login events
-    INSERT INTO audit_log (user_id, action, table_name, record_id, changes, organization_id, company_id, created_at)
-    VALUES
-        (demo_user_id, 'login', 'users', demo_user_id, '{"new":{"email":"admin@cortexbuild.com"}}', demo_org_id, demo_company_id, now_ts - INTERVAL '5 days'),
-        (demo_user_id, 'login', 'users', demo_user_id, '{"new":{"email":"admin@cortexbuild.com"}}', demo_org_id, demo_company_id, now_ts - INTERVAL '4 days'),
-        (demo_user_id, 'login', 'users', demo_user_id, '{"new":{"email":"admin@cortexbuild.com"}}', demo_org_id, demo_company_id, now_ts - INTERVAL '3 days'),
-        (demo_user_id, 'login', 'users', demo_user_id, '{"new":{"email":"admin@cortexbuild.com"}}', demo_org_id, demo_company_id, now_ts - INTERVAL '2 days'),
-        (demo_user_id, 'login', 'users', demo_user_id, '{"new":{"email":"admin@cortexbuild.com"}}', demo_org_id, demo_company_id, now_ts - INTERVAL '1 day'),
-        (demo_user_id, 'login', 'users', demo_user_id, '{"new":{"email":"admin@cortexbuild.com"}}', demo_org_id, demo_company_id, now_ts)
-    ON CONFLICT DO NOTHING;
-
+    -- Note: login events omitted — audit_log.action CHECK constraint only allows create/update/delete
     RAISE NOTICE 'Seeded audit_log with % entries', (SELECT COUNT(*) FROM audit_log);
 END $$;
