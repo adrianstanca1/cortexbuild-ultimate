@@ -127,10 +127,10 @@ async function generateSafetyInsights(orgFilter, params, auth, insights) {
 
   const incidentResult = await pool.query(`
     SELECT
-      COALESCE(SUM(CASE WHEN reported_at >= CURRENT_DATE - INTERVAL '30 days' THEN 1 ELSE 0 END), 0) AS recent,
-      COALESCE(SUM(CASE WHEN reported_at >= CURRENT_DATE - INTERVAL '60 days' AND reported_at < CURRENT_DATE - INTERVAL '30 days' THEN 1 ELSE 0 END), 0) AS previous
+      COALESCE(SUM(CASE WHEN date >= CURRENT_DATE - INTERVAL '30 days' THEN 1 ELSE 0 END), 0) AS recent,
+      COALESCE(SUM(CASE WHEN date >= CURRENT_DATE - INTERVAL '60 days' AND date < CURRENT_DATE - INTERVAL '30 days' THEN 1 ELSE 0 END), 0) AS previous
     FROM safety_incidents
-    ${whereClause} reported_at >= CURRENT_DATE - INTERVAL '60 days'
+    ${whereClause} date >= CURRENT_DATE - INTERVAL '60 days'
   `, p);
 
   const row = incidentResult.rows[0];
@@ -165,7 +165,7 @@ async function generateSafetyInsights(orgFilter, params, auth, insights) {
     SELECT COUNT(*) AS count
     FROM safety_incidents
     ${whereClause} status != 'closed'
-      AND reported_at < CURRENT_DATE - INTERVAL '7 days'
+      AND date < CURRENT_DATE - INTERVAL '7 days'
   `, p);
 
   const unclosedCount = parseInt(unclosedResult.rows[0]?.count ?? 0, 10);
