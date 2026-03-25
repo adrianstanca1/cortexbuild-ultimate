@@ -41,6 +41,7 @@ const ALLOWED_COLUMNS = {
   equipment_service_logs: ['equipment_id','date','type','technician','notes','next_due'],
   equipment_hire_logs:   ['equipment_id','name','company','daily_rate','start_date','end_date','project','status'],
   risk_mitigation_actions: ['risk_id','title','owner','due_date','status','progress'],
+  contact_interactions: ['contact_id','type','date','note'],
 };
 
 const VALID_ORDER_COLS = new Set([

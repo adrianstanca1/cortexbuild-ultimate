@@ -1,6 +1,7 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { UserCheck, Plus, Search, Phone, Mail, MapPin, Star, Edit2, Trash2, X, ChevronDown, ChevronUp, Building2, TrendingUp, Users, MessageSquare, PhoneCall, Calendar, LogOut, CheckSquare, Square } from 'lucide-react';
 import { useContacts } from '../../hooks/useData';
+import { contactsApi } from '../../services/api';
 import { toast } from 'sonner';
 import { BulkActionsBar, useBulkSelection } from '../ui/BulkActions';
 
@@ -29,19 +30,6 @@ const statusColour: Record<string,string> = {
 };
 
 const emptyForm = { name:'',company:'',type:'Client',email:'',phone:'',address:'',status:'Active',rating:'3',notes:'',website:'',pipelineStage:'Prospect',contractValue:'0' };
-
-// Mock interaction data for demo
-function getMockInteractions(id: string) {
-  const interactions: Array<{ type: 'call'|'email'|'meeting'; date: string; note: string }> = [];
-  const hash = String(id).charCodeAt(0) || 1;
-
-  if (hash % 3 === 0) interactions.push({ type: 'call', date: '2 days ago', note: 'Discussed project timeline and budget' });
-  if (hash % 3 === 1) interactions.push({ type: 'email', date: '5 days ago', note: 'Sent proposal document' });
-  if (hash % 3 === 2) interactions.push({ type: 'meeting', date: '1 day ago', note: 'Kickoff meeting completed' });
-  interactions.push({ type: 'email', date: '12 days ago', note: 'Initial contact made' });
-
-  return interactions;
-}
 
 // Calculate days since contact
 function daysSinceContact(id: string): number {
@@ -100,6 +88,16 @@ export function CRM() {
   const [interactionForm, setInteractionForm] = useState({ type: 'call', note: '' });
 
   const { selectedIds, toggle, clearSelection } = useBulkSelection();
+
+  const [allInteractions, setAllInteractions] = useState<AnyRow[]>([]);
+
+  useEffect(() => {
+    contactsApi.getInteractions('').then(data => setAllInteractions(data as AnyRow[])).catch(() => {});
+  }, []);
+
+  function getInteractionsForContact(contactId: string): AnyRow[] {
+    return allInteractions.filter(i => String(i.contact_id) === contactId);
+  }
 
   async function handleBulkDelete(ids: string[]) {
     if (!confirm(`Delete ${ids.length} contact(s)?`)) return;
@@ -294,7 +292,7 @@ export function CRM() {
                 const daysSince = daysSinceContact(id);
                 const lastContactStatus = getLastContactStatus(daysSince);
                 const health = getHealthScore(c);
-                const interactions = getMockInteractions(id);
+                const interactions = getInteractionsForContact(id);
                 return (
                   <div key={id} className="bg-gray-800 border-gray-700 rounded-xl border hover:shadow-md hover:shadow-gray-900/50 transition-shadow">
                     <div className="p-4 cursor-pointer" onClick={()=>setExpanded(isExp?null:id)}>
@@ -350,8 +348,8 @@ export function CRM() {
                                 {int.type === 'email' && <Mail size={12} className="mt-0.5 flex-shrink-0 text-green-400"/>}
                                 {int.type === 'meeting' && <Calendar size={12} className="mt-0.5 flex-shrink-0 text-purple-400"/>}
                                 <div className="flex-1">
-                                  <p className="text-gray-300">{int.note}</p>
-                                  <p className="text-gray-500">{int.date}</p>
+                                  <p className="text-gray-300">{String(int.note ?? '')}</p>
+                                  <p className="text-gray-500">{String(int.date ?? '')}</p>
                                 </div>
                               </div>
                             ))}

@@ -295,6 +295,7 @@ export const contactsApi = {
   create: (data: Row) => insertRow('contacts', data),
   update: (id: string, data: Row) => updateRow('contacts', id, data),
   delete: (id: string) => deleteRow('contacts', id),
+  getInteractions: (contactId: string) => apiFetch(`/contact-interactions?contact_id=${contactId}`),
 };
 
 export const riskRegisterApi = {
@@ -631,3 +632,8 @@ export const backupApi = {
 };
 
 export { uploadFile };
+
+export const analyticsApi = {
+  getOvertimeData: () => apiFetch('/analytics-data/overtime'),
+  getVatData: () => apiFetch('/analytics-data/vat'),
+};
