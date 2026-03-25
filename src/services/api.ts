@@ -303,6 +303,7 @@ export const riskRegisterApi = {
   create: (data: Row) => insertRow('risk-register', data),
   update: (id: string, data: Row) => updateRow('risk-register', id, data),
   delete: (id: string) => deleteRow('risk-register', id),
+  getMitigationActions: () => fetchAll('risk-mitigation-actions'),
 };
 
 export const purchaseOrdersApi = {

@@ -1,6 +1,7 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { AlertTriangle, Plus, Search, Shield, AlertOctagon, Edit2, Trash2, X, ChevronDown, ChevronUp, TrendingUp, BarChart3, Filter, Eye, CheckCircle2, Clock, Users, Target, Calendar, CheckSquare, Square } from 'lucide-react';
 import { useRiskRegister } from '../../hooks/useData';
+import { riskRegisterApi } from '../../services/api';
 import { toast } from 'sonner';
 import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, Cell } from 'recharts';
 import { BulkActionsBar, useBulkSelection } from '../ui/BulkActions';
@@ -32,14 +33,6 @@ function riskLevel(score: number): { label:string; colour:string; bg:string; tex
 
 const emptyForm = { title:'',category:'Commercial',description:'',likelihood:'Possible',impact:'Moderate',status:'Open',owner:'',response_type:'Reduce',mitigation:'',contingency:'',residual_likelihood:'Unlikely',residual_impact:'Minor',project_id:'',review_date:'',notes:'' };
 
-const mockMitigationActions: AnyRow[] = [
-  { id:'m1', risk_id:'r1', title:'Implement backup power system', owner:'John Smith', due_date:'2026-04-15', status:'In Progress', progress:65 },
-  { id:'m2', risk_id:'r2', title:'Review supplier contracts', owner:'Jane Doe', due_date:'2026-03-28', status:'Not Started', progress:0 },
-  { id:'m3', risk_id:'r3', title:'Weather protection measures', owner:'Mike Johnson', due_date:'2026-04-01', status:'Completed', progress:100 },
-  { id:'m4', risk_id:'r4', title:'Staff training program', owner:'Sarah Williams', due_date:'2026-03-20', status:'Overdue', progress:40 },
-  { id:'m5', risk_id:'r5', title:'Schedule optimization', owner:'Tom Brown', due_date:'2026-04-30', status:'In Progress', progress:30 },
-];
-
 const actionStatusColor: Record<string,string> = {
   'Not Started':'bg-gray-800 text-gray-300',
   'In Progress':'bg-blue-900/40 text-blue-300 border border-blue-700',
@@ -67,6 +60,12 @@ export function RiskRegister() {
   const [selectedMatrixCell, setSelectedMatrixCell] = useState<{lik:string; imp:string} | null>(null);
 
   const { selectedIds, toggle, clearSelection } = useBulkSelection();
+
+  const [mitigationActions, setMitigationActions] = useState<AnyRow[]>([]);
+
+  useEffect(() => {
+    riskRegisterApi.getMitigationActions().then(data => setMitigationActions(data as AnyRow[])).catch(() => {});
+  }, []);
 
   async function handleBulkDelete(ids: string[]) {
     if (!confirm(`Delete ${ids.length} risk(s)?`)) return;
@@ -309,7 +308,7 @@ export function RiskRegister() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-700">
-                {mockMitigationActions.sort((a, b) => new Date(String(a.due_date??'')).getTime() - new Date(String(b.due_date??'')).getTime()).map(action => {
+                {mitigationActions.sort((a: AnyRow, b: AnyRow) => new Date(String(a.due_date??'')).getTime() - new Date(String(b.due_date??'')).getTime()).map((action: AnyRow) => {
                   const isOverdue = new Date(String(action.due_date??'')) < new Date() && action.status !== 'Completed';
                   const rowClass = isOverdue ? 'bg-red-900/10' : '';
                   return (
@@ -342,7 +341,7 @@ export function RiskRegister() {
                 })}
               </tbody>
             </table>
-            {mockMitigationActions.length === 0 && (
+            {mitigationActions.length === 0 && (
               <div className="text-center py-12 text-gray-500">
                 <Target size={40} className="mx-auto mb-3 opacity-30"/>
                 <p className="text-sm">No mitigation actions yet</p>
