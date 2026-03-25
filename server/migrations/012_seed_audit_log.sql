@@ -46,7 +46,7 @@ BEGIN
     -- Audit entries from existing RFIs
     INSERT INTO audit_log (user_id, action, table_name, record_id, changes, organization_id, company_id, created_at)
     SELECT demo_user_id, 'create', 'rfis', id,
-           jsonb_build_object('new', jsonb_build_object('title', title, 'status', status)),
+           jsonb_build_object('new', jsonb_build_object('subject', subject, 'status', status)),
            demo_org_id, demo_company_id,
            created_at + (floor(random() * 30)::int || ' days')::interval
     FROM rfis
