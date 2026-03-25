@@ -18,6 +18,13 @@ Full system audit complete — all CRUD + upload working, code-splitting improve
 ✅ www.cortexbuildpro.com — returning 200 OK (HTTPS)
 ✅ API health: http://72.62.132.43:3001/api/health
 ✅ Auth working: adrian.stanca1@gmail.com / Lolozania1
+✅ All 62 API endpoints verified working
+
+## IMPORTANT: Deploy Notes
+The `dist/` folder is gitignored. When frontend changes are made:
+1. Run `npm run build` locally
+2. Copy dist to VPS: `scp -r dist/* root@72.62.132.43:/var/www/cortexbuild-ultimate/dist/`
+3. Restart nginx: `docker restart cortexbuild-nginx`
 
 ## All Fixes Applied This Session
 1. `c0c274d` — Standardize pool import across all routes (use pool directly)
