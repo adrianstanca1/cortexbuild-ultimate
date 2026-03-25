@@ -12,7 +12,7 @@ Full system audit complete — all CRUD + upload working, code-splitting improve
 2026-03-25
 
 ## Last Commit
-`0395c11` — "fix: add www.cortexbuildpro.com to nginx server_name"
+`b3a96d7` — "fix: executive-reports trends query AND placement, notifications use org_id/company_id"
 
 ## Site Status
 ✅ www.cortexbuildpro.com — returning 200 OK (HTTPS)
@@ -24,6 +24,11 @@ Full system audit complete — all CRUD + upload working, code-splitting improve
 2. `7b20bec` — Fix safety_incidents uses 'date' column not 'reported_at'
 3. `0677973` — Fix use req.user instead of req.auth in all routes
 4. `0395c11` — Add www.cortexbuildpro.com to nginx server_name
+5. `692c8eb` — Fix calendar route - change_orders uses submitted_date not due_date
+6. `b3a96d7` — Fix executive-reports trends SQL AND placement, notifications use org_id/company_id
+
+## All 60+ API Endpoints Verified Working
+projects, rfis, safety, documents, team, invoices, contacts, tenders, change-orders, subcontractors, timesheets, meetings, materials, punch-list, inspections, rams, cis, purchase-orders, daily-reports, variations, defects, valuations, specifications, temp-works, signage, waste-management, sustainability, training, certifications, prequalification, lettings, measuring, risk-register, site-permits, equipment, equipment-service-logs, equipment-hire-logs, risk-mitigation-actions, contact-interactions, safety-permits, toolbox-talks, drawing-transmittals, calendar, dashboard-data, insights, analytics-data, financial-reports, executive-reports, weather-forecast, notifications, audit, search, report-templates, permissions, email, backup
 
 ## VPS Container Status
 - ✅ cortexbuild-db (healthy)
