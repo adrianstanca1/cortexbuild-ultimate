@@ -12,20 +12,18 @@ Full system audit complete — all CRUD + upload working, code-splitting improve
 2026-03-25
 
 ## Last Commit
-`5f49d62` — "Audit fixes: SQL injection prevention, auth credential leak removal, ALLOWED_COLUMNS completeness, bulk import error toasts, try/catch coverage"
-
-## Pending Commit
-SESSION.md update (this file)
+`ad9a3a5` — "feat: WebSocket event bus for real-time React Query invalidation, multi-tenancy filtering in generic.js, JWT org/company payload"
 
 ## What Works
 - **Upload**: All 16 modules have file upload (Teams, Documents, Safety, RAMS, Certifications, Training, Specifications, Valuations, Defects, Signage, Lettings, Measuring, Prequalification, Sustainability, WasteManagement, TempWorks)
-- **CRUD**: All 32+ backend routes via generic.js router — fully functional
+- **CRUD**: All 32+ backend routes via generic.js router with multi-tenancy filtering (org/company)
 - **Code Splitting**: index.js 171KB (88% reduction) — modules lazy-loaded
 - **Bulk Actions**: BulkActionsBar + useBulkSelection integrated in ALL 40+ modules with bulk delete
 - **Bulk Import**: DataImporter component integrated in 6 modules (Teams, Safety, Documents, Subcontractors, Training, RAMS) — CSV import with column mapping + CSV/JSON export
 - **Edit Modals**: 27 modules have edit modals; 28 modules are intentionally read-only (analytics, dashboards, logs, reports, settings)
-- **Database**: 43 tables, all aligned with backend generic.js ALLOWED_COLUMNS
-- **Auth**: JWT middleware active on all API endpoints
+- **Database**: 42 tables, all aligned with backend generic.js ALLOWED_COLUMNS, all with organization_id/company_id columns for multi-tenancy
+- **Auth**: JWT middleware active on all API endpoints — JWT includes organization_id and company_id
+- **Multi-Tenancy**: All generic.js CRUD routes filter by organization_id (super_admin bypasses filter). Tables have organization_id and company_id columns.
 - **Security**: 0 npm vulnerabilities (vercel package removed as it was unused)
 - **Rate Limiting**: In-memory rate limiter middleware (100 req/min per token) at `server/middleware/rateLimiter.js`
 - **Dark/Light Theme**: Toggle already built — ThemeProvider + useTheme in Header with light/dark/system options + localStorage persistence
@@ -34,6 +32,7 @@ SESSION.md update (this file)
 - **Unit Tests**: Vitest suite with 18 tests passing (BulkActions, DataImportExport, usePWA, rateLimiter)
 - **Audit Log**: Export tab fully functional — audit trail export (CSV/JSON) and full platform backup via backup API
 - **Form Validation**: Zod schemas added to 7 modules: Teams, Safety, RAMS, Documents, Subcontractors, RFIs, ChangeOrders
+- **WebSocket Event Bus**: `src/lib/eventBus.ts` singleton enables WS messages to invalidate React Query caches. `useNotifications.ts` emits events on WS connect/disconnect/message. `useData.ts` hooks subscribe and invalidate on WS messages.
 
 ## Architecture (Two API Patterns)
 1. **Direct api.ts** (19 modules): `useEffect` → `api.getAll()` — legacy pattern
@@ -49,13 +48,14 @@ RAMS, Subcontractors, Documents, Safety, Projects, Tenders, Invoicing, Accountin
 Analytics, FieldView, SiteOperations, AuditLog, FinancialReports, PredictiveAnalytics, Insights, AIAssistant, Marketplace, Settings, ExecutiveReports, PermissionsManager, Valuations, Variations, Defects, Specifications, Certifications, Signage, Sustainability, Training, WasteManagement, EmailHistory, Prequalification, Measuring, Dashboard, GlobalSearch
 
 ## Current Position
-All remaining tasks from the previous session have been completed. The platform now has: Zod validation (7 modules), dark/light theme toggle, dashboard customization (7 toggleable widgets), API rate limiting (100 req/min), data export/backup (CSV/JSON, per-table or full), vitest unit tests (18 passing), and functional Audit Log export with backup API integration. Build passes, all tests pass, deployed to VPS.
+WebSocket event bus for real-time query invalidation implemented, multi-tenancy filtering active in generic.js. JWT payload includes organization_id and company_id. All generic.js CRUD routes (34 tables) now filter by organization_id unless user is super_admin/company_owner. Demo org/company seeded (ID: 00000000-0000-0000-0000-000000000001/00000000-0000-0000-0000-000000000002). API running as Docker container with host networking. Build passes, 18 tests passing, deployed to VPS.
 
 ## Resume Instructions
 1. `npm run build` locally (verify build passes)
 2. `npm test` to run unit tests (18 tests)
-3. `ssh root@72.62.132.43` → `cd /var/www/cortexbuild-ultimate && git pull && npm run build && pkill -f "node server/index.js"; node server/index.js &` (API runs via `node server/index.js`, not PM2)
-4. Next: Explore new features, enhance existing modules, or optimize performance
+3. Deploy: `git push origin main` → on VPS: `cd /var/www/cortexbuild-ultimate && git pull && docker build -f Dockerfile.api -t cortexbuild-ultimate-api:latest . && docker rm -f cortexbuild-api && docker run -d --network host -e DATABASE_URL="..." --name cortexbuild-api -v ... --restart always cortexbuild-ultimate-api:latest`
+4. Note: API runs as Docker container (NOT PM2). DB migrations run via: `cat migration.sql | docker exec -i cortexbuild-db psql -U cortexbuild -d cortexbuild`
+5. Next: Explore new features, enhance existing modules, or optimize performance
 
 ## Key Patterns
 - Upload: `uploadFile(file, 'CATEGORY')` from `src/services/api.ts`
