@@ -12,16 +12,25 @@ Full system audit complete — all CRUD + upload working, code-splitting improve
 2026-03-25
 
 ## Last Commit
-`1f273ea` — "fix: change Grafana port 3001->3002 to avoid API conflict"
+`0c0d06e` — "fix: add dist volume mount to nginx container"
+
+## Site Status
+✅ www.cortexbuildpro.com — returning 200 OK
+✅ API health: http://72.62.132.43:3001/api/health
 
 ## VPS Container Status
 - ✅ cortexbuild-db (healthy)
 - ✅ cortexbuild-redis
 - ✅ cortexbuild-ollama
-- ✅ cortexbuild-api
-- ⚠️ cortexbuild-prometheus (Up)
-- ❌ cortexbuild-nginx (Created - not started)
-- ❌ cortexbuild-grafana (Created - port 3001 conflict resolved to 3002)
+- ✅ cortexbuild-api (port 3001)
+- ✅ cortexbuild-nginx (port 80/443)
+- ✅ cortexbuild-prometheus (port 9090)
+- ✅ cortexbuild-grafana (port 3002)
+
+## Super Admin Account
+- Email: `adrian.stanca1@gmail.com`
+- Password: `Lolozania1`
+- Role: `super_admin`
 
 ## What Works
 - **Upload**: All 16 modules have file upload (Teams, Documents, Safety, RAMS, Certifications, Training, Specifications, Valuations, Defects, Signage, Lettings, Measuring, Prequalification, Sustainability, WasteManagement, TempWorks)
