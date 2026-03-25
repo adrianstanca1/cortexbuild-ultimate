@@ -12,7 +12,16 @@ Full system audit complete — all CRUD + upload working, code-splitting improve
 2026-03-25
 
 ## Last Commit
-`4128381` — "feat: wire all remaining mock data to real APIs + audit logging"
+`1f273ea` — "fix: change Grafana port 3001->3002 to avoid API conflict"
+
+## VPS Container Status
+- ✅ cortexbuild-db (healthy)
+- ✅ cortexbuild-redis
+- ✅ cortexbuild-ollama
+- ✅ cortexbuild-api
+- ⚠️ cortexbuild-prometheus (Up)
+- ❌ cortexbuild-nginx (Created - not started)
+- ❌ cortexbuild-grafana (Created - port 3001 conflict resolved to 3002)
 
 ## What Works
 - **Upload**: All 16 modules have file upload (Teams, Documents, Safety, RAMS, Certifications, Training, Specifications, Valuations, Defects, Signage, Lettings, Measuring, Prequalification, Sustainability, WasteManagement, TempWorks)
@@ -62,7 +71,7 @@ These modules have minimal hardcoded data or need ML infrastructure:
 - **Dashboard** — projectStatusData (RAG derived from hardcoded projects), safety metrics
 
 ## Current Position
-WebSocket event bus for real-time query invalidation implemented, multi-tenancy filtering active in generic.js. JWT payload includes organization_id and company_id. All generic.js CRUD routes (34 tables) now filter by organization_id unless user is super_admin/company_owner. Demo org/company seeded (ID: 00000000-0000-0000-0000-000000000001/00000000-0000-0000-0000-000000000002). API running as Docker container with host networking. Build passes, 18 tests passing, deployed to VPS.
+All mock data wired to real backend APIs. Grafana port conflict fixed (3001→3002). nginx and grafana containers need starting. Prometheus is running. API running as Docker container. Build passes, 18 tests passing, deployed to VPS.
 
 ## Resume Instructions
 1. `npm run build` locally (verify build passes)
