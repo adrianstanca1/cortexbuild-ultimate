@@ -35,8 +35,11 @@ const ALLOWED_COLUMNS = {
   training:          ['reference','title','project_id','project','type','provider','duration','cost','attendees','status','scheduled_date','completed_date','certification','expiry_date','notes'],
   certifications:   ['reference','company','certification_type','body','grade','expiry_date','status','renewal_date','cost','scope','accreditation_number','notes'],
   prequalification: ['reference','contractor','project_id','project','questionnaire_type','status','score','approved_by','approved_date','expiry_date','documents','sections_completed','total_sections','notes'],
-  lettings:        ['reference','project_id','project','package_name','trade','status','tender_closing_date','award_date','contractor','contract_value','notes'],
-  measuring:       ['reference','project_id','project','survey_type','location','status','surveyor','survey_date','completed_date','areas','total_area','unit','notes'],
+  lettings:         ['reference','project_id','project','package_name','trade','status','tender_closing_date','award_date','contractor','contract_value','notes'],
+  measuring:        ['reference','project_id','project','survey_type','location','status','surveyor','survey_date','completed_date','areas','total_area','unit','notes'],
+  site_permits:      ['type','site','issued_by','from_date','to_date','status'],
+  equipment_service_logs: ['equipment_id','date','type','technician','notes','next_due'],
+  equipment_hire_logs:   ['equipment_id','name','company','daily_rate','start_date','end_date','project','status'],
 };
 
 const VALID_ORDER_COLS = new Set([
