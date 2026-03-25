@@ -12,6 +12,7 @@ import {
   AreaChart, Area, BarChart, Bar, LineChart, Line, PieChart as RechartsPie,
   Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer,
 } from 'recharts';
+import { dashboardApi } from '../../services/api';
 
 type AnyRow = Record<string, unknown>;
 
@@ -100,15 +101,24 @@ export function Dashboard() {
     });
   }
 
-  // Mock KPI data
-  const kpiCards: KPIData[] = [
-    { label: 'Active Projects', value: '12', trend: 8, positive: true, icon: Building2, color: 'emerald' },
-    { label: 'Total Revenue (£)', value: fmtCurrency(2450000), trend: 12, positive: true, icon: DollarSign, color: 'emerald' },
-    { label: 'Outstanding (£)', value: fmtCurrency(385000), trend: -5, positive: true, icon: AlertTriangle, color: 'amber' },
-    { label: 'Open RFIs', value: '24', trend: -15, positive: true, icon: FileText, color: 'emerald' },
-    { label: 'H&S Score (%)', value: '92', trend: 3, positive: true, icon: CheckCircle, color: 'emerald' },
-    { label: 'Workforce Today', value: '147', trend: 2, positive: true, icon: Users, color: 'emerald' },
-  ];
+  // KPI data loaded from API
+  const [dashboardKpi, setDashboardKpi] = useState<{activeProjects: number; totalRevenue: number; outstanding: number; openRfis: number; hsScore: number; workforce: number} | null>(null);
+  const [revenueFromApi, setRevenueFromApi] = useState<{month: string; revenue: number}[]>([]);
+
+  useEffect(() => {
+    dashboardApi.getOverview().then(data => {
+      setDashboardKpi(data.kpi);
+    }).catch(() => {});
+    dashboardApi.getRevenueData().then(data => {
+      setRevenueFromApi(data as {month: string; revenue: number}[]);
+    }).catch(() => {});
+  }, []);
+
+  const fmtCurrency = (n: number) => {
+    if (n >= 1_000_000) return `£${(n / 1_000_000).toFixed(1)}M`;
+    if (n >= 1_000) return `£${(n / 1_000).toFixed(0)}K`;
+    return `£${n.toFixed(0)}`;
+  };
 
   // Mock project data
   const projects: Project[] = [
@@ -225,30 +235,27 @@ export function Dashboard() {
       )}
 
       {/* KPI Bar — 6 cards */}
-      {visibleWidgets.kpiBar && (
+      {visibleWidgets.kpiBar && dashboardKpi && (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-4">
-          {kpiCards.map((kpi, idx) => {
+          {[
+            { label: 'Active Projects', value: String(dashboardKpi.activeProjects), icon: Building2, color: 'emerald' },
+            { label: 'Total Revenue', value: fmtCurrency(dashboardKpi.totalRevenue), icon: DollarSign, color: 'emerald' },
+            { label: 'Outstanding', value: fmtCurrency(dashboardKpi.outstanding), icon: AlertTriangle, color: 'amber' },
+            { label: 'Open RFIs', value: String(dashboardKpi.openRfis), icon: FileText, color: 'emerald' },
+            { label: 'H&S Score', value: `${dashboardKpi.hsScore}%`, icon: CheckCircle, color: 'emerald' },
+            { label: 'Workforce Today', value: String(dashboardKpi.workforce), icon: Users, color: 'emerald' },
+          ].map((kpi, idx) => {
             const Icon = kpi.icon;
             return (
               <div key={idx} className="card p-4 hover:border-gray-600 transition-colors">
                 <div className="flex items-start justify-between mb-3">
-                  <span className="text-xs text-gray-400 uppercase tracking-wider">{String(kpi.label)}</span>
+                  <span className="text-xs text-gray-400 uppercase tracking-wider">{kpi.label}</span>
                   <div className={`p-2 rounded-lg bg-${kpi.color}-500/10`}>
                     <Icon className={`h-4 w-4 text-${kpi.color}-400`} />
                   </div>
                 </div>
                 <div className="mb-3">
-                  <p className="text-xl font-bold text-white font-display">{String(kpi.value)}</p>
-                </div>
-                <div className="flex items-center gap-1">
-                  {Boolean(kpi.positive) && kpi.trend > 0 ? (
-                    <ArrowUp className="h-3 w-3 text-emerald-400" />
-                  ) : (
-                    <ArrowDown className="h-3 w-3 text-red-400" />
-                  )}
-                  <span className={kpi.positive && kpi.trend > 0 ? 'text-emerald-400 text-xs' : 'text-red-400 text-xs'}>
-                    {String(Math.abs(kpi.trend))}% vs last month
-                  </span>
+                  <p className="text-xl font-bold text-white font-display">{kpi.value}</p>
                 </div>
               </div>
             );

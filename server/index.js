@@ -86,6 +86,7 @@ app.use('/api/safety-permits',         makeRouter('safety_permits'));
 app.use('/api/toolbox-talks',          makeRouter('toolbox_talks'));
 app.use('/api/drawing-transmittals',  makeRouter('drawing_transmittals'));
 app.use('/api/analytics-data',       require('./routes/analytics-data'));
+app.use('/api/dashboard-data',     require('./routes/dashboard-data'));
 app.use('/api/financial-reports', require('./routes/financial-reports'));
 app.use('/api/search',          require('./routes/search'));
 app.use('/api/audit',           require('./routes/audit'));

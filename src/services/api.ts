@@ -646,3 +646,13 @@ export const analyticsApi = {
   getOvertimeData: () => apiFetch('/analytics-data/overtime'),
   getVatData: () => apiFetch('/analytics-data/vat'),
 };
+
+export const dashboardApi = {
+  getOverview: () => apiFetch<{
+    kpi: {
+      activeProjects: number; totalRevenue: number; outstanding: number;
+      openRfis: number; hsScore: number; workforce: number;
+    };
+  }>('/dashboard-data/overview'),
+  getRevenueData: () => apiFetch<{ month: string; revenue: number }[]>('/dashboard-data/revenue'),
+};
