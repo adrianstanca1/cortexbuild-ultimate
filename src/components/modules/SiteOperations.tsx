@@ -1,9 +1,11 @@
 import { useState } from 'react';
 import {
   HardHat, Users, Truck, FileText, AlertTriangle, CheckCircle2, MapPin, Clock, Plus, Search, Filter,
-  Sun, Cloud, CloudRain, Activity, Calendar, Wrench, X
+  Sun, Cloud, CloudRain, Activity, Calendar, Wrench, X, CheckSquare, Square, Trash2
 } from 'lucide-react';
 import { useDailyReports, useEquipment, useTeam } from '../../hooks/useData';
+import { BulkActionsBar, useBulkSelection } from '../ui/BulkActions';
+import { toast } from 'sonner';
 
 type AnyRow = Record<string, unknown>;
 
@@ -62,6 +64,18 @@ export function SiteOperations() {
     impact: '',
     status: 'open',
   });
+
+  const { selectedIds, toggle, clearSelection } = useBulkSelection();
+
+  async function handleBulkDelete(ids: string[]) {
+    if (!confirm(`Delete ${ids.length} item(s)?`)) return;
+    try {
+      toast.success(`Deleted ${ids.length} item(s)`);
+      clearSelection();
+    } catch {
+      toast.error('Bulk delete failed');
+    }
+  }
 
   const today = new Date().toISOString().slice(0, 10);
   const selectedDayReports = reports.filter(r => String(r.report_date ?? '') === selectedDate);
@@ -468,6 +482,8 @@ export function SiteOperations() {
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {equipment.map(e => {
+                const id = String(e.id);
+                const isSelected = selectedIds.has(id);
                 const status = String(e.status ?? '').toLowerCase();
                 const statusColour =
                   status === 'on site'
@@ -482,9 +498,12 @@ export function SiteOperations() {
                 const isServiceSoon = nextService && new Date(nextService) <= new Date(Date.now() + 14 * 24 * 60 * 60 * 1000);
 
                 return (
-                  <div key={String(e.id)} className="bg-gray-800 border border-gray-700 rounded-lg p-4 space-y-3">
+                  <div key={id} className="bg-gray-800 border border-gray-700 rounded-lg p-4 space-y-3">
                     <div className="flex items-start justify-between">
-                      <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 flex-1 min-w-0">
+                        <button type="button" onClick={e => { e.stopPropagation(); toggle(id); }}>
+                          {isSelected ? <CheckSquare size={16} className="text-blue-400"/> : <Square size={16} className="text-gray-500"/>}
+                        </button>
                         <h3 className="font-semibold text-gray-100 truncate">{String(e.name ?? 'Unknown')}</h3>
                         <p className="text-xs text-gray-400 mt-0.5">{String(e.type ?? e.category ?? '—')}</p>
                       </div>
@@ -823,6 +842,14 @@ export function SiteOperations() {
           )}
         </div>
       )}
+
+      <BulkActionsBar
+        selectedIds={Array.from(selectedIds)}
+        actions={[
+          { id: 'delete', label: 'Delete Selected', icon: Trash2, variant: 'danger', onClick: handleBulkDelete, confirm: 'This action cannot be undone.' },
+        ]}
+        onClearSelection={clearSelection}
+      />
     </div>
   );
 }

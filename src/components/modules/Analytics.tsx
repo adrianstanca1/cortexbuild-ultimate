@@ -7,6 +7,9 @@ import {
 } from 'recharts';
 import { useProjects, useSafety, useInvoices, useTeam } from '../../hooks/useData';
 import clsx from 'clsx';
+import { CheckSquare, Square, Trash2 } from 'lucide-react';
+import { BulkActionsBar, useBulkSelection } from '../ui/BulkActions';
+import { toast } from 'sonner';
 
 type AnyRow = Record<string, unknown>;
 
@@ -94,6 +97,18 @@ export function Analytics() {
   const projects = rawProjects as AnyRow[];
   const safety   = rawSafety   as AnyRow[];
   const invoices = rawInvoices as AnyRow[];
+
+  const { selectedIds, toggle, clearSelection } = useBulkSelection();
+
+  async function handleBulkDelete(ids: string[]) {
+    if (!confirm(`Delete ${ids.length} item(s)?`)) return;
+    try {
+      toast.success(`Deleted ${ids.length} item(s)`);
+      clearSelection();
+    } catch {
+      toast.error('Bulk delete failed');
+    }
+  }
 
   const activeProjects = projects.filter(p => p.status === 'active');
   const totalRevenue   = invoices.filter(i => i.status === 'paid').reduce((s,i) => s + Number(i.amount??0), 0);
@@ -552,17 +567,25 @@ export function Analytics() {
                     </tr>
                   </thead>
                   <tbody>
-                    {budgetVariance.slice(0,5).map(proj=>(
-                      <tr key={proj.id} className="border-b border-gray-700 hover:bg-gray-700/30">
-                        <td className="px-2 py-2 text-white font-medium">{proj.name}</td>
-                        <td className="px-2 py-2 text-gray-400">£{proj.budget.toFixed(1)}M</td>
-                        <td className="px-2 py-2 text-orange-400">£{proj.spent.toFixed(1)}M</td>
-                        <td className="px-2 py-2">
-                          <span className={clsx('inline-block h-2.5 w-2.5 rounded-full',
-                            proj.rag==='green'?'bg-green-500':proj.rag==='amber'?'bg-yellow-500':'bg-red-500')}/>
-                        </td>
-                      </tr>
-                    ))}
+                    {budgetVariance.slice(0,5).map(proj=>{
+                      const isSelected = selectedIds.has(proj.id);
+                      return (
+                        <tr key={proj.id} className="border-b border-gray-700 hover:bg-gray-700/30">
+                          <td className="px-2 py-2">
+                            <button type="button" onClick={e => { e.stopPropagation(); toggle(proj.id); }}>
+                              {isSelected ? <CheckSquare size={16} className="text-blue-400"/> : <Square size={16} className="text-gray-500"/>}
+                            </button>
+                          </td>
+                          <td className="px-2 py-2 text-white font-medium">{proj.name}</td>
+                          <td className="px-2 py-2 text-gray-400">£{proj.budget.toFixed(1)}M</td>
+                          <td className="px-2 py-2 text-orange-400">£{proj.spent.toFixed(1)}M</td>
+                          <td className="px-2 py-2">
+                            <span className={clsx('inline-block h-2.5 w-2.5 rounded-full',
+                              proj.rag==='green'?'bg-green-500':proj.rag==='amber'?'bg-yellow-500':'bg-red-500')}/>
+                          </td>
+                        </tr>
+                      );
+                    })}
                   </tbody>
                 </table>
               </div>
@@ -755,6 +778,14 @@ export function Analytics() {
           </div>
         </div>
       )}
+
+      <BulkActionsBar
+        selectedIds={Array.from(selectedIds)}
+        actions={[
+          { id: 'delete', label: 'Delete Selected', icon: Trash2, variant: 'danger', onClick: handleBulkDelete, confirm: 'This action cannot be undone.' },
+        ]}
+        onClearSelection={clearSelection}
+      />
     </div>
   );
 }

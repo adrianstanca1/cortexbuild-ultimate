@@ -3,8 +3,9 @@ import { useProjects } from '../../hooks/useData';
 import { toast } from 'sonner';
 import {
   Plus, X, ChevronLeft, ChevronRight, Clock, MapPin, Users, AlertTriangle,
-  CheckCircle, Calendar as CalendarIcon, Flag, Zap,
+  CheckCircle, Calendar as CalendarIcon, Flag, Zap, CheckSquare, Square, Trash2
 } from 'lucide-react';
+import { BulkActionsBar, useBulkSelection } from '../ui/BulkActions';
 
 type AnyRow = Record<string, unknown>;
 type SubTab = 'month' | 'week' | 'events' | 'deadlines' | 'resources';
@@ -42,6 +43,19 @@ export function Calendar() {
     description: '',
     recurring: false,
   });
+
+  const { selectedIds, toggle, clearSelection } = useBulkSelection();
+
+  async function handleBulkDelete(ids: string[]) {
+    if (!confirm(`Delete ${ids.length} item(s)?`)) return;
+    try {
+      await Promise.all(ids.map(id => deleteMutation.mutateAsync(id)));
+      toast.success(`Deleted ${ids.length} item(s)`);
+      clearSelection();
+    } catch {
+      toast.error('Bulk delete failed');
+    }
+  }
 
   const today = new Date().toISOString().split('T')[0];
   const year = currentDate.getFullYear();
@@ -318,71 +332,80 @@ export function Calendar() {
                   <p>No upcoming events</p>
                 </div>
               ) : (
-                upcomingEvents.map((e) => (
-                  <div key={String(e.id)} className="p-4 hover:bg-gray-800/50 transition-colors">
-                    <div className="flex items-start gap-4">
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2 mb-1">
-                          <h3 className="font-semibold text-white truncate">{String(e.title ?? 'Event')}</h3>
-                          <span
-                            className={`text-xs px-2 py-0.5 rounded-full whitespace-nowrap ${
-                              EVENT_TYPES[String(e.type ?? '')] || 'bg-gray-800 text-gray-300'
-                            }`}
+                upcomingEvents.map((e) => {
+                  const id = String(e.id);
+                  const isSelected = selectedIds.has(id);
+                  return (
+                    <div key={id} className="p-4 hover:bg-gray-800/50 transition-colors">
+                      <div className="flex items-start gap-4">
+                        <div className="flex items-center">
+                          <button type="button" onClick={e => { e.stopPropagation(); toggle(id); }}>
+                            {isSelected ? <CheckSquare size={16} className="text-blue-400"/> : <Square size={16} className="text-gray-500"/>}
+                          </button>
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 mb-1">
+                            <h3 className="font-semibold text-white truncate">{String(e.title ?? 'Event')}</h3>
+                            <span
+                              className={`text-xs px-2 py-0.5 rounded-full whitespace-nowrap ${
+                                EVENT_TYPES[String(e.type ?? '')] || 'bg-gray-800 text-gray-300'
+                              }`}
+                            >
+                              {String(e.type ?? '')}
+                            </span>
+                          </div>
+                          <div className="flex items-center gap-3 text-sm text-gray-400">
+                            <span>{String(e.date ?? '')}</span>
+                            {!!e.start_time && <span>{String(e.start_time)}</span>}
+                            {!!e.location && (
+                              <span className="flex items-center gap-1">
+                                <MapPin size={12} />
+                                {String(e.location)}
+                              </span>
+                            )}
+                            {!!e.attendees && (
+                              <span className="flex items-center gap-1">
+                                <Users size={12} />
+                                {String(e.attendees).split(',').length}
+                              </span>
+                            )}
+                          </div>
+                          {!!e.description && (
+                            <p className="text-sm text-gray-400 mt-2">{String(e.description)}</p>
+                          )}
+                        </div>
+                        <div className="flex gap-1 flex-shrink-0">
+                          <button
+                            onClick={() => {
+                              setEditing(e);
+                              setForm({
+                                title: String(e.title ?? ''),
+                                type: String(e.type ?? 'meeting'),
+                                date: String(e.date ?? ''),
+                                start_time: String(e.start_time ?? '09:00'),
+                                end_time: String(e.end_time ?? '10:00'),
+                                location: String(e.location ?? ''),
+                                attendees: String(e.attendees ?? ''),
+                                description: String(e.description ?? ''),
+                                recurring: Boolean(e.recurring),
+                              });
+                              setShowModal(true);
+                            }}
+                            className="p-2 text-gray-400 hover:text-blue-400 hover:bg-blue-500/20 rounded"
                           >
-                            {String(e.type ?? '')}
-                          </span>
+                            <Zap size={14} />
+                          </button>
+                          <button
+                            onClick={() => handleDelete(String(e.id))}
+                            className="p-2 text-gray-400 hover:text-red-400 hover:bg-red-500/20 rounded"
+                          >
+                            <X size={14} />
+                          </button>
                         </div>
-                        <div className="flex items-center gap-3 text-sm text-gray-400">
-                          <span>{String(e.date ?? '')}</span>
-                          {!!e.start_time && <span>{String(e.start_time)}</span>}
-                          {!!e.location && (
-                            <span className="flex items-center gap-1">
-                              <MapPin size={12} />
-                              {String(e.location)}
-                            </span>
-                          )}
-                          {!!e.attendees && (
-                            <span className="flex items-center gap-1">
-                              <Users size={12} />
-                              {String(e.attendees).split(',').length}
-                            </span>
-                          )}
-                        </div>
-                        {!!e.description && (
-                          <p className="text-sm text-gray-400 mt-2">{String(e.description)}</p>
-                        )}
-                      </div>
-                      <div className="flex gap-1 flex-shrink-0">
-                        <button
-                          onClick={() => {
-                            setEditing(e);
-                            setForm({
-                              title: String(e.title ?? ''),
-                              type: String(e.type ?? 'meeting'),
-                              date: String(e.date ?? ''),
-                              start_time: String(e.start_time ?? '09:00'),
-                              end_time: String(e.end_time ?? '10:00'),
-                              location: String(e.location ?? ''),
-                              attendees: String(e.attendees ?? ''),
-                              description: String(e.description ?? ''),
-                              recurring: Boolean(e.recurring),
-                            });
-                            setShowModal(true);
-                          }}
-                          className="p-2 text-gray-400 hover:text-blue-400 hover:bg-blue-500/20 rounded"
-                        >
-                          <Zap size={14} />
-                        </button>
-                        <button
-                          onClick={() => handleDelete(String(e.id))}
-                          className="p-2 text-gray-400 hover:text-red-400 hover:bg-red-500/20 rounded"
-                        >
-                          <X size={14} />
-                        </button>
                       </div>
                     </div>
-                  </div>
-                ))
+                  );
+                })
               )}
             </div>
           )}
@@ -627,6 +650,14 @@ export function Calendar() {
           </div>
         </div>
       )}
+
+      <BulkActionsBar
+        selectedIds={Array.from(selectedIds)}
+        actions={[
+          { id: 'delete', label: 'Delete Selected', icon: Trash2, variant: 'danger', onClick: handleBulkDelete, confirm: 'This action cannot be undone.' },
+        ]}
+        onClearSelection={clearSelection}
+      />
     </div>
   );
 }

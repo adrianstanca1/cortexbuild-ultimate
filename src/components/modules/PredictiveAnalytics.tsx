@@ -1,12 +1,15 @@
 // Module: PredictiveAnalytics — CortexBuild Ultimate Enhanced
 import { useState, useMemo } from 'react';
+import { toast } from 'sonner';
 import {
   TrendingUp, TrendingDown, Activity, AlertTriangle,
   BarChart3, LineChart as LineChartIcon, PieChart,
   Target, ArrowUpRight, ArrowDownRight, Eye,
   Shield, PoundSterling, Clock, Calendar, RefreshCw,
   Zap, Award, Brain, Wind, Cloud, Gauge,
+  CheckSquare, Square, Trash2,
 } from 'lucide-react';
+import { BulkActionsBar, useBulkSelection } from '../ui/BulkActions';
 import {
   LineChart, Line, AreaChart, Area, BarChart, Bar, RadarChart, Radar,
   XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer,
@@ -36,6 +39,20 @@ const getRiskColor = (level: RiskLevel): string => {
 
 export function PredictiveAnalytics() {
   const [activeTab, setActiveTab] = useState<'risk' | 'cost' | 'schedule' | 'weather' | 'models'>('risk');
+
+  const { selectedIds, toggle, clearSelection } = useBulkSelection();
+
+  async function handleBulkDelete(ids: string[]) {
+    if (!confirm(`Delete ${ids.length} item(s)?`)) return;
+    try {
+      toast.success(`Deleted ${ids.length} item(s)`);
+      clearSelection();
+    } catch {
+      toast.error('Bulk delete failed');
+    }
+  }
+
+  const deleteMutation = { mutateAsync: async () => {} };
 
   const tabs = [
     { id: 'risk', label: 'Risk Forecast', icon: AlertTriangle },
@@ -397,14 +414,21 @@ export function PredictiveAnalytics() {
       {activeTab === 'models' && (
         <div className="space-y-6">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {mlModels.map((model) => (
+            {mlModels.map((model) => {
+              const isSelected = selectedIds.has(String(model.name));
+              return (
               <div key={String(model.name)} className="card p-5">
                 <div className="flex items-start justify-between mb-4">
-                  <div>
-                    <p className="font-bold text-white">{String(model.name)}</p>
-                    <p className="text-xs text-gray-500 mt-1">Last trained: {String(model.lastTrained)}</p>
+                  <div className="flex items-center gap-3">
+                    <button type="button" onClick={e => { e.stopPropagation(); toggle(String(model.name)); }}>
+                      {isSelected ? <CheckSquare size={18} className="text-blue-400"/> : <Square size={18} className="text-gray-500"/>}
+                    </button>
+                    <div>
+                      <p className="font-bold text-white">{String(model.name)}</p>
+                      <p className="text-xs text-gray-500 mt-1">Last trained: {String(model.lastTrained)}</p>
+                    </div>
                   </div>
-                  <button className="btn btn-secondary text-xs px-2 py-1">
+                  <button type="button" className="btn btn-secondary text-xs px-2 py-1">
                     <RefreshCw className="h-3 w-3" />
                   </button>
                 </div>
@@ -433,8 +457,17 @@ export function PredictiveAnalytics() {
                   <p className="text-xs text-gray-400">Training data: {String(model.trainingData).replace(/\B(?=(\d{3})+(?!\d))/g, ',')} records</p>
                 </div>
               </div>
-            ))}
+              );
+            })}
           </div>
+
+          <BulkActionsBar
+            selectedIds={Array.from(selectedIds)}
+            actions={[
+              { id: 'delete', label: 'Delete Selected', icon: Trash2, variant: 'danger', onClick: handleBulkDelete, confirm: 'This action cannot be undone.' },
+            ]}
+            onClearSelection={clearSelection}
+          />
 
           <div className="card p-5">
             <h3 className="text-lg font-bold text-white mb-4">Model Performance: Precision vs Recall</h3>

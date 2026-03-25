@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
-import { Plus, Search, Shield, FileCheck, Clock, AlertTriangle, FileText, Upload, Trash2, X, Edit } from 'lucide-react';
+import { Plus, Search, Shield, FileCheck, Clock, AlertTriangle, FileText, Upload, Trash2, X, Edit, CheckSquare, Square } from 'lucide-react';
+import { BulkActionsBar, useBulkSelection } from '../ui/BulkActions';
 import { certificationsApi, uploadFile } from '../../services/api';
 import { toast } from 'sonner';
 
@@ -13,6 +14,20 @@ export default function Certifications() {
   const [form, setForm] = useState({ certificationType: '', company: '', body: '', accreditationNumber: '', grade: '', expiryDate: '', status: 'active' });
   const [editItem, setEditItem] = useState<Record<string, any> | null>(null);
   const [saving, setSaving] = useState(false);
+
+  const { selectedIds, toggle, clearSelection } = useBulkSelection();
+
+  async function handleBulkDelete(ids: string[]) {
+    if (!confirm(`Delete ${ids.length} certification(s)?`)) return;
+    try {
+      await Promise.all(ids.map(id => certificationsApi.delete(id)));
+      setCerts(prev => prev.filter((c: any) => !ids.includes(String(c.id))));
+      toast.success(`Deleted ${ids.length} certification(s)`);
+      clearSelection();
+    } catch {
+      toast.error('Bulk delete failed');
+    }
+  }
 
   useEffect(() => {
     certificationsApi.getAll().then((data: any[]) => {
@@ -131,9 +146,14 @@ export default function Certifications() {
           <div className="space-y-3">
             {filtered.length === 0 ? (
               <div className="text-center py-8 text-gray-500">No certifications found</div>
-            ) : filtered.map((c) => (
+            ) : filtered.map((c) => {
+              const isSelected = selectedIds.has(String(c.id));
+              return (
               <div key={c.id} className="border border-gray-700 rounded-lg p-4">
                 <div className="flex items-center justify-between">
+                  <button type="button" onClick={e => { e.stopPropagation(); toggle(String(c.id)); }}>
+                    {isSelected ? <CheckSquare size={16} className="text-blue-400"/> : <Square size={16} className="text-gray-500"/>}
+                  </button>
                   <div>
                     <h3 className="text-white font-medium">{c.certification_type || 'Certification'}</h3>
                     <p className="text-gray-400 text-sm">{c.company || 'CortexBuild Ltd'} - {c.body || 'Body'}</p>
@@ -183,10 +203,19 @@ export default function Certifications() {
                   </div>
                 </div>
               </div>
-            ))}
+              );
+            })}
           </div>
         )}
       </div>
+
+      <BulkActionsBar
+        selectedIds={Array.from(selectedIds)}
+        actions={[
+          { id: 'delete', label: 'Delete Selected', icon: Trash2, variant: 'danger', onClick: handleBulkDelete, confirm: 'This action cannot be undone.' },
+        ]}
+        onClearSelection={clearSelection}
+      />
 
       {showCreateModal && (
         <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">

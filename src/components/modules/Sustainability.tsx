@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
-import { Plus, Search, Leaf, Cloud, Factory, Gauge, Trash2, X, Upload, Pencil } from 'lucide-react';
+import { Plus, Search, Leaf, Cloud, Factory, Gauge, Trash2, X, Upload, Pencil, CheckSquare, Square } from 'lucide-react';
+import { BulkActionsBar, useBulkSelection } from '../ui/BulkActions';
 import { sustainabilityApi, uploadFile } from '../../services/api';
 import { toast } from 'sonner';
 
@@ -13,6 +14,20 @@ export default function Sustainability() {
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState<string | null>(null);
   const [form, setForm] = useState({ metricType: '', project: '', period: '', actual: '', target: '', unit: 'kgCO2' });
+
+  const { selectedIds, toggle, clearSelection } = useBulkSelection();
+
+  async function handleBulkDelete(ids: string[]) {
+    if (!confirm(`Delete ${ids.length} metric(s)?`)) return;
+    try {
+      await Promise.all(ids.map(id => sustainabilityApi.delete(id)));
+      setMetrics(prev => prev.filter((m: any) => !ids.includes(String(m.id))));
+      toast.success(`Deleted ${ids.length} metric(s)`);
+      clearSelection();
+    } catch {
+      toast.error('Bulk delete failed');
+    }
+  }
 
   useEffect(() => {
     sustainabilityApi.getAll().then((data: any[]) => {
@@ -135,8 +150,13 @@ export default function Sustainability() {
           <div className="space-y-3">
             {filtered.length === 0 ? (
               <div className="text-center py-8 text-gray-500">No metrics found</div>
-            ) : filtered.map((d) => (
+            ) : filtered.map((d) => {
+              const isSelected = selectedIds.has(String(d.id));
+              return (
               <div key={d.id} className="border border-gray-700 rounded-lg p-4 flex items-center justify-between">
+                <button type="button" onClick={e => { e.stopPropagation(); toggle(String(d.id)); }}>
+                  {isSelected ? <CheckSquare size={16} className="text-blue-400"/> : <Square size={16} className="text-gray-500"/>}
+                </button>
                 <div>
                   <h3 className="text-white font-medium">{d.metric_type || 'Metric'}</h3>
                   <p className="text-gray-400 text-sm">{d.project || 'All Projects'} - {d.period || 'Q1 2026'}</p>
@@ -184,10 +204,19 @@ export default function Sustainability() {
                   </button>
                 </div>
               </div>
-            ))}
+              );
+            })}
           </div>
         )}
       </div>
+
+      <BulkActionsBar
+        selectedIds={Array.from(selectedIds)}
+        actions={[
+          { id: 'delete', label: 'Delete Selected', icon: Trash2, variant: 'danger', onClick: handleBulkDelete, confirm: 'This action cannot be undone.' },
+        ]}
+        onClearSelection={clearSelection}
+      />
 
       {showCreateModal && (
         <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">

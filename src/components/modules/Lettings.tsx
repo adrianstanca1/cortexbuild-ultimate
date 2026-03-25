@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
-import { Plus, Search, FileText, Clock, CheckCircle, XCircle, Trash2, X, Upload, Pencil } from 'lucide-react';
+import { Plus, Search, FileText, Clock, CheckCircle, XCircle, Trash2, X, Upload, Pencil, CheckSquare, Square } from 'lucide-react';
+import { BulkActionsBar, useBulkSelection } from '../ui/BulkActions';
 import { lettingsApi, uploadFile } from '../../services/api';
 import { toast } from 'sonner';
 
@@ -13,6 +14,20 @@ export default function Lettings() {
   const [editItem, setEditItem] = useState<Record<string, any> | null>(null);
   const [saving, setSaving] = useState(false);
   const [form, setForm] = useState({ packageName: '', trade: '', contractor: '', contractValue: '', status: 'tendering' });
+
+  const { selectedIds, toggle, clearSelection } = useBulkSelection();
+
+  async function handleBulkDelete(ids: string[]) {
+    if (!confirm(`Delete ${ids.length} item(s)?`)) return;
+    try {
+      await Promise.all(ids.map(id => lettingsApi.delete(id)));
+      setLettings(prev => prev.filter((l: any) => !ids.includes(String(l.id))));
+      toast.success(`Deleted ${ids.length} item(s)`);
+      clearSelection();
+    } catch {
+      toast.error('Bulk delete failed');
+    }
+  }
 
   useEffect(() => {
     lettingsApi.getAll().then((data: any[]) => {
@@ -118,8 +133,13 @@ export default function Lettings() {
           <div className="space-y-3">
             {filtered.length === 0 ? (
               <div className="text-center py-8 text-gray-500">No packages found</div>
-            ) : filtered.map((l) => (
+            ) : filtered.map((l) => {
+              const isSelected = selectedIds.has(String(l.id));
+              return (
               <div key={l.id} className="border border-gray-700 rounded-lg p-4 flex items-center justify-between">
+                <button type="button" onClick={e => { e.stopPropagation(); toggle(String(l.id)); }}>
+                  {isSelected ? <CheckSquare size={16} className="text-blue-400"/> : <Square size={16} className="text-gray-500"/>}
+                </button>
                 <div>
                   <h3 className="text-white font-medium">{l.package_name || 'Package'}</h3>
                   <p className="text-gray-400 text-sm">{l.trade || 'General'} - {l.contractor || 'TBD'}</p>
@@ -167,10 +187,19 @@ export default function Lettings() {
                   </button>
                 </div>
               </div>
-            ))}
+              );
+            })}
           </div>
         )}
       </div>
+
+      <BulkActionsBar
+        selectedIds={Array.from(selectedIds)}
+        actions={[
+          { id: 'delete', label: 'Delete Selected', icon: Trash2, variant: 'danger', onClick: handleBulkDelete, confirm: 'This action cannot be undone.' },
+        ]}
+        onClearSelection={clearSelection}
+      />
 
       {showCreateModal && (
         <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">

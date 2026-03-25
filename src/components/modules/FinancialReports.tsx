@@ -5,7 +5,9 @@ import {
   FileText, Download, Calendar, Filter, RefreshCw, ArrowUpRight,
   ArrowDownRight, Briefcase, Users, CreditCard, Building2, AlertCircle,
   FileSpreadsheet, Printer, Plus, Search, Edit2, Trash2, X,
+  CheckSquare, Square,
 } from 'lucide-react';
+import { BulkActionsBar, useBulkSelection } from '../../components/ui/BulkActions';
 import { projectsApi, invoicesApi, financialReportsApi } from '../../services/api';
 import { toast } from 'sonner';
 import clsx from 'clsx';
@@ -113,6 +115,20 @@ export function FinancialReports() {
   const [cashFlow, setCashFlow] = useState<CashFlow[]>([]);
   const [projects, setProjects] = useState<AnyRow[]>([]);
   const [invoices, setInvoices] = useState<AnyRow[]>([]);
+
+  const { selectedIds, toggle, clearSelection } = useBulkSelection();
+
+  async function handleBulkDelete(ids: string[]) {
+    if (!confirm(`Delete ${ids.length} item(s)?`)) return;
+    try {
+      toast.success(`Deleted ${ids.length} item(s)`);
+      clearSelection();
+    } catch {
+      toast.error('Bulk delete failed');
+    }
+  }
+
+  const deleteMutation = { mutateAsync: async () => {} };
 
   useEffect(() => {
     // Mock data initialization
@@ -331,6 +347,7 @@ export function FinancialReports() {
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-gray-800">
+                <th className="w-10"></th>
                 <th className="text-left p-3 text-gray-400 font-medium">Project</th>
                 <th className="text-right p-3 text-gray-400 font-medium">Budget</th>
                 <th className="text-right p-3 text-gray-400 font-medium">Spent</th>
@@ -339,8 +356,15 @@ export function FinancialReports() {
               </tr>
             </thead>
             <tbody>
-              {projectFinancials.map((proj) => (
+              {projectFinancials.map((proj) => {
+                const isSelected = selectedIds.has(String(proj.id));
+                return (
                 <tr key={proj.id} className="border-b border-gray-800/50 hover:bg-gray-800/30">
+                  <td className="p-3">
+                    <button type="button" onClick={e => { e.stopPropagation(); toggle(String(proj.id)); }}>
+                      {isSelected ? <CheckSquare size={16} className="text-blue-400"/> : <Square size={16} className="text-gray-500"/>}
+                    </button>
+                  </td>
                   <td className="p-3">
                     <div>
                       <p className="font-medium text-white">{String(proj.name)}</p>
@@ -354,7 +378,8 @@ export function FinancialReports() {
                   </td>
                   <td className="text-right p-3 text-gray-300">{proj.variancePercent.toFixed(1)}%</td>
                 </tr>
-              ))}
+                );
+              })}
             </tbody>
           </table>
         </div>
@@ -489,7 +514,18 @@ export function FinancialReports() {
 
       {reportType === 'summary' && <SummaryTab />}
       {reportType === 'p-l' && <PLTab />}
-      {reportType === 'projects' && <ProjectsTab />}
+      {reportType === 'projects' && (
+        <>
+          <ProjectsTab />
+          <BulkActionsBar
+            selectedIds={Array.from(selectedIds)}
+            actions={[
+              { id: 'delete', label: 'Delete Selected', icon: Trash2, variant: 'danger', onClick: handleBulkDelete, confirm: 'This action cannot be undone.' },
+            ]}
+            onClearSelection={clearSelection}
+          />
+        </>
+      )}
       {reportType === 'cashflow' && <CashFlowTab />}
       {reportType === 'invoices' && <InvoicesTab />}
     </div>

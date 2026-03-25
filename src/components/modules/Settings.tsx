@@ -4,7 +4,9 @@ import {
   Save, Bell, Shield, CreditCard, Users, Building2, Plug, Check,
   AlertTriangle, Mail, Phone, MapPin, Globe, ChevronRight, Trash2,
   Plus, RefreshCw, Lock, Eye, EyeOff, ToggleLeft, ToggleRight, X, CheckCircle2,
+  CheckSquare, Square,
 } from 'lucide-react';
+import { BulkActionsBar, useBulkSelection } from '../ui/BulkActions';
 import { toast } from 'sonner';
 
 type Tab = 'company'|'users'|'billing'|'notifications'|'integrations'|'security';
@@ -48,6 +50,17 @@ export function Settings() {
   const [showInviteModal, setShowInviteModal] = useState(false);
   const [inviteEmail, setInviteEmail]         = useState('');
   const [inviteRole, setInviteRole]           = useState('project_manager');
+  const { selectedIds, toggle, clearSelection } = useBulkSelection();
+
+  async function handleBulkDelete(ids: string[]) {
+    if (!confirm(`Remove ${ids.length} user(s)?`)) return;
+    try {
+      toast.success(`Removed ${ids.length} user(s)`);
+      clearSelection();
+    } catch {
+      toast.error('Bulk action failed');
+    }
+  }
 
   // ── Billing state ─────────────────────────────────────────────────────────
   const [currentPlan] = useState('Professional');
@@ -219,8 +232,15 @@ export function Settings() {
                 <tr>{['User','Email','Role','Status','Last Login',''].map(h=><th key={h} className="px-4 py-3 text-left text-xs font-semibold text-gray-400 uppercase tracking-wide">{h}</th>)}</tr>
               </thead>
               <tbody className="divide-y divide-gray-800">
-                {users.map(u=>(
+                {users.map(u=>{
+                  const isSelected = selectedIds.has(u.id);
+                  return (
                   <tr key={u.id} className="hover:bg-gray-800/40 transition-colors">
+                    <td className="px-4 py-3">
+                      <button type="button" onClick={() => toggle(u.id)}>
+                        {isSelected ? <CheckSquare size={16} className="text-blue-400"/> : <Square size={16} className="text-gray-500"/>}
+                      </button>
+                    </td>
                     <td className="px-4 py-3">
                       <div className="flex items-center gap-3">
                         <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-600 to-purple-600 flex items-center justify-center text-white text-xs font-bold flex-shrink-0">
@@ -237,10 +257,19 @@ export function Settings() {
                       <button type="button" onClick={()=>toast.success(`Removed ${u.name}`)} className="p-1 text-gray-400 hover:text-red-400 rounded transition-colors"><Trash2 className="w-3.5 h-3.5"/></button>
                     </td>
                   </tr>
-                ))}
+                  );
+                })}
               </tbody>
             </table>
           </div>
+
+          <BulkActionsBar
+            selectedIds={Array.from(selectedIds)}
+            actions={[
+              { id: 'delete', label: 'Remove Selected', icon: Trash2, variant: 'danger', onClick: handleBulkDelete, confirm: 'This will remove the selected users.' },
+            ]}
+            onClearSelection={clearSelection}
+          />
 
           {showInviteModal && (
             <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">

@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { toast } from 'sonner';
 import {
   CheckCircle2,
   Zap,
@@ -15,7 +16,11 @@ import {
   MessageCircle,
   AlertCircle,
   Star,
+  CheckSquare,
+  Square,
+  Trash2,
 } from 'lucide-react';
+import { BulkActionsBar, useBulkSelection } from '../ui/BulkActions';
 
 type SubTab = 'apps' | 'integrations' | 'templates' | 'training' | 'support';
 type AnyRow = Record<string, unknown>;
@@ -147,6 +152,18 @@ export function Marketplace() {
   const [subTab, setSubTab] = useState<SubTab>('apps');
   const [installedApps, setInstalledApps] = useState(['safety-analyzer', 'rfi-responder', 'daily-reporter']);
   const [searchQuery, setSearchQuery] = useState('');
+  const { selectedIds, toggle, clearSelection } = useBulkSelection();
+
+  async function handleBulkDelete(ids: string[]) {
+    if (!confirm(`Remove ${ids.length} app(s)?`)) return;
+    try {
+      setInstalledApps(prev => prev.filter(id => !ids.includes(id)));
+      toast.success(`Removed ${ids.length} app(s)`);
+      clearSelection();
+    } catch {
+      toast.error('Bulk action failed');
+    }
+  }
 
   const statusColor = (status: string): string => {
     switch (status) {
@@ -234,6 +251,7 @@ export function Marketplace() {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-4">
             {APPS.map(app => {
               const isInstalled = installedApps.includes(app.id);
+              const isSelected = selectedIds.has(app.id);
               return (
                 <div
                   key={app.id}
@@ -242,9 +260,14 @@ export function Marketplace() {
                   }`}
                 >
                   <div className="flex justify-between items-start mb-2">
-                    <div>
-                      <h4 className="font-bold text-white">{String(app.name)}</h4>
-                      <p className="text-xs text-blue-400">{String(app.category)}</p>
+                    <div className="flex items-center gap-2 flex-1">
+                      <button type="button" onClick={() => toggle(app.id)}>
+                        {isSelected ? <CheckSquare size={16} className="text-blue-400"/> : <Square size={16} className="text-gray-500"/>}
+                      </button>
+                      <div>
+                        <h4 className="font-bold text-white">{String(app.name)}</h4>
+                        <p className="text-xs text-blue-400">{String(app.category)}</p>
+                      </div>
                     </div>
                     <span className={`px-2 py-1 rounded-full text-xs font-medium whitespace-nowrap ${statusColor(isInstalled ? 'connected' : 'available')}`}>
                       {Boolean(isInstalled) && 'Installed'}
@@ -275,6 +298,14 @@ export function Marketplace() {
               );
             })}
           </div>
+
+          <BulkActionsBar
+            selectedIds={Array.from(selectedIds)}
+            actions={[
+              { id: 'delete', label: 'Uninstall Selected', icon: Trash2, variant: 'danger', onClick: handleBulkDelete, confirm: 'This will uninstall the selected apps.' },
+            ]}
+            onClearSelection={clearSelection}
+          />
         </div>
       )}
 

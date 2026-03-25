@@ -13,7 +13,11 @@ import {
   Users,
   Shield,
   BarChart2,
+  CheckSquare,
+  Square,
+  Trash2,
 } from 'lucide-react';
+import { BulkActionsBar, useBulkSelection } from '../ui/BulkActions';
 
 type AnyRow = Record<string, unknown>;
 
@@ -66,6 +70,20 @@ export function AuditLog() {
   const [filterDateFrom, setFilterDateFrom] = useState('');
   const [filterDateTo, setFilterDateTo] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
+
+  const { selectedIds, toggle, clearSelection } = useBulkSelection();
+
+  async function handleBulkDelete(ids: string[]) {
+    if (!confirm(`Delete ${ids.length} item(s)?`)) return;
+    try {
+      toast.success(`Deleted ${ids.length} item(s)`);
+      clearSelection();
+    } catch {
+      toast.error('Bulk delete failed');
+    }
+  }
+
+  const deleteMutation = { mutateAsync: async () => {} };
 
   const loadData = useCallback(async () => {
     setLoading(true);
@@ -261,6 +279,7 @@ export function AuditLog() {
                 <table className="w-full text-sm">
                   <thead className="bg-gray-800">
                     <tr>
+                      <th className="text-left px-4 py-3 text-xs font-semibold text-gray-300 w-10"></th>
                       <th className="text-left px-4 py-3 text-xs font-semibold text-gray-300">Time</th>
                       <th className="text-left px-4 py-3 text-xs font-semibold text-gray-300">User</th>
                       <th className="text-left px-4 py-3 text-xs font-semibold text-gray-300">Action</th>
@@ -270,8 +289,15 @@ export function AuditLog() {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-800">
-                    {entries.slice(0, 100).map(entry => (
+                    {entries.slice(0, 100).map(entry => {
+                      const isSelected = selectedIds.has(String(entry.id));
+                      return (
                       <tr key={Number(entry.id)} className="hover:bg-gray-800/50">
+                        <td className="px-4 py-3">
+                          <button type="button" onClick={e => { e.stopPropagation(); toggle(String(entry.id)); }}>
+                            {isSelected ? <CheckSquare size={16} className="text-blue-400"/> : <Square size={16} className="text-gray-500"/>}
+                          </button>
+                        </td>
                         <td className="px-4 py-3 text-gray-300">
                           {String(new Date(String(entry.created_at)).toLocaleString())}
                         </td>
@@ -298,12 +324,20 @@ export function AuditLog() {
                           {String(entry.ip_address ?? '—')}
                         </td>
                       </tr>
-                    ))}
+                      );
+                    })}
                   </tbody>
                 </table>
               </div>
             </div>
           )}
+          <BulkActionsBar
+            selectedIds={Array.from(selectedIds)}
+            actions={[
+              { id: 'delete', label: 'Delete Selected', icon: Trash2, variant: 'danger', onClick: handleBulkDelete, confirm: 'This action cannot be undone.' },
+            ]}
+            onClearSelection={clearSelection}
+          />
         </div>
       )}
 

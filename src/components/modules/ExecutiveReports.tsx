@@ -4,12 +4,15 @@ import {
   FileText, Download, Calendar, Clock, Send, BarChart3, PieChart,
   TrendingUp, Users, Shield, PoundSterling, Activity, CheckCircle,
   AlertTriangle, Mail, Printer, Share2, Award, Eye, Settings,
+  CheckSquare, Square, Trash2,
 } from 'lucide-react';
+import { BulkActionsBar, useBulkSelection } from '../ui/BulkActions';
 import {
   AreaChart, Area, BarChart, Bar, PieChart as RechartsPie, Pie, Cell,
   XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, RadarChart, Radar,
   PolarGrid, PolarAngleAxis, PolarRadiusAxis,
 } from 'recharts';
+import { toast } from 'sonner';
 
 type AnyRow = Record<string, unknown>;
 
@@ -39,6 +42,17 @@ const RAGStatus = ({ status }: { status: 'red' | 'amber' | 'green' }) => {
 export function ExecutiveReports() {
   const [activeTab, setActiveTab] = useState<'dashboard' | 'portfolio' | 'financial' | 'safety' | 'kpis' | 'trends'>('dashboard');
   const [reportType, setReportType] = useState<'weekly' | 'monthly' | 'quarterly'>('weekly');
+  const { selectedIds, toggle, clearSelection } = useBulkSelection();
+
+  async function handleBulkDelete(ids: string[]) {
+    if (!confirm(`Delete ${ids.length} report(s)?`)) return;
+    try {
+      toast.success(`Deleted ${ids.length} report(s)`);
+      clearSelection();
+    } catch {
+      toast.error('Bulk delete failed');
+    }
+  }
 
   const tabs: ReportTab[] = [
     { id: 'dashboard', label: 'Dashboard', icon: BarChart3 },
@@ -51,6 +65,7 @@ export function ExecutiveReports() {
 
   // Mock data
   const projects: Array<{
+    id: string;
     name: string;
     client: string;
     value: number;
@@ -63,9 +78,9 @@ export function ExecutiveReports() {
     quality: 'red' | 'amber' | 'green';
     safety: 'red' | 'amber' | 'green';
   }> = [
-    { name: 'Riverside Tower', client: 'AC Properties', value: 4200000, phase: 'Construction', completion: 68, nextMilestone: 'Structural complete', pm: 'SC', programme: 'green', cost: 'green', quality: 'green', safety: 'green' },
-    { name: 'Tech Hub Phase 2', client: 'TechCorp', value: 2850000, phase: 'M&E', completion: 54, nextMilestone: 'HVAC commissioning', pm: 'JM', programme: 'amber', cost: 'amber', quality: 'green', safety: 'green' },
-    { name: 'Retail Centre Fit-out', client: 'Developers Ltd', value: 1950000, phase: 'Fit-out', completion: 42, nextMilestone: 'FF&E installation', pm: 'PW', programme: 'red', cost: 'green', quality: 'amber', safety: 'green' },
+    { id: 'p1', name: 'Riverside Tower', client: 'AC Properties', value: 4200000, phase: 'Construction', completion: 68, nextMilestone: 'Structural complete', pm: 'SC', programme: 'green', cost: 'green', quality: 'green', safety: 'green' },
+    { id: 'p2', name: 'Tech Hub Phase 2', client: 'TechCorp', value: 2850000, phase: 'M&E', completion: 54, nextMilestone: 'HVAC commissioning', pm: 'JM', programme: 'amber', cost: 'amber', quality: 'green', safety: 'green' },
+    { id: 'p3', name: 'Retail Centre Fit-out', client: 'Developers Ltd', value: 1950000, phase: 'Fit-out', completion: 42, nextMilestone: 'FF&E installation', pm: 'PW', programme: 'red', cost: 'green', quality: 'amber', safety: 'green' },
   ];
 
   const kpis: Array<{ label: string; value: string; target: string; rag: 'red' | 'amber' | 'green' }> = [
@@ -187,12 +202,19 @@ export function ExecutiveReports() {
         <div className="space-y-6">
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             <div className="lg:col-span-2 space-y-4">
-              {projects.map((proj) => (
+              {projects.map((proj) => {
+                const isSelected = selectedIds.has(proj.id);
+                return (
                 <div key={String(proj.name)} className="card p-4">
                   <div className="flex items-start justify-between mb-3">
-                    <div>
-                      <p className="font-bold text-white">{String(proj.name)}</p>
-                      <p className="text-xs text-gray-400">{String(proj.client)}</p>
+                    <div className="flex items-center gap-2 flex-1">
+                      <button type="button" onClick={() => toggle(proj.id)}>
+                        {isSelected ? <CheckSquare size={16} className="text-blue-400"/> : <Square size={16} className="text-gray-500"/>}
+                      </button>
+                      <div>
+                        <p className="font-bold text-white">{String(proj.name)}</p>
+                        <p className="text-xs text-gray-400">{String(proj.client)}</p>
+                      </div>
                     </div>
                     <span className="px-2 py-1 rounded bg-blue-500/20 text-blue-400 text-xs font-medium">{String(proj.phase)}</span>
                   </div>
@@ -208,7 +230,8 @@ export function ExecutiveReports() {
                   </div>
                   <p className="text-xs text-gray-400">Next: {String(proj.nextMilestone)}</p>
                 </div>
-              ))}
+                );
+              })}
             </div>
 
             <div className="card p-5">
@@ -227,6 +250,14 @@ export function ExecutiveReports() {
               </div>
             </div>
           </div>
+
+          <BulkActionsBar
+            selectedIds={Array.from(selectedIds)}
+            actions={[
+              { id: 'delete', label: 'Delete Selected', icon: Trash2, variant: 'danger', onClick: handleBulkDelete, confirm: 'This action cannot be undone.' },
+            ]}
+            onClearSelection={clearSelection}
+          />
         </div>
       )}
 

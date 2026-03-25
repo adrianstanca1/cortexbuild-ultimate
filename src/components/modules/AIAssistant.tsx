@@ -2,14 +2,16 @@
 import { useState, useEffect, useRef } from 'react';
 import {
   Send, Bot, Zap, Shield, TrendingUp, FileText, Calendar,
-  MessageSquare, Award, Brain, Clock, Archive, Plus
+  MessageSquare, Award, Brain, Clock, Archive, Plus, CheckSquare, Square, Trash2,
 } from 'lucide-react';
+import { BulkActionsBar, useBulkSelection } from '../ui/BulkActions';
 import clsx from 'clsx';
 import {
   projects, invoices, safetyIncidents, rfis, changeOrders,
   teamMembers
 } from '../../data/mockData';
 import { sendChatMessage } from '../../services/ai';
+import { toast } from 'sonner';
 
 interface Message {
   id: string;
@@ -42,7 +44,19 @@ export function AIAssistant() {
   const [isTyping, setIsTyping] = useState(false);
   const [chatSessions, setChatSessions] = useState<ChatSession[]>([]);
   const [currentSessionId, setCurrentSessionId] = useState<string | null>(null);
+  const { selectedIds, toggle, clearSelection } = useBulkSelection();
   const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  async function handleBulkDelete(ids: string[]) {
+    if (!confirm(`Delete ${ids.length} chat session(s)?`)) return;
+    try {
+      setChatSessions(prev => prev.filter(s => !ids.includes(s.id)));
+      toast.success(`Deleted ${ids.length} session(s)`);
+      clearSelection();
+    } catch {
+      toast.error('Bulk delete failed');
+    }
+  }
 
   const agents: Agent[] = [
     {
@@ -411,27 +425,35 @@ export function AIAssistant() {
           <div className="mb-6">
             <h3 className="mb-2 text-xs font-bold uppercase tracking-widest text-gray-500">Today's Chats</h3>
             <div className="space-y-1">
-              {chatSessions.map(session => (
-                <button
-                  key={session.id}
-                  onClick={() => {
-                    setCurrentSessionId(session.id);
-                    // In a real app, load messages from this session
-                  }}
-                  className={clsx(
-                    'w-full rounded-lg border px-3 py-2 text-left text-xs transition',
-                    currentSessionId === session.id
-                      ? 'border-blue-600 bg-blue-900/30 text-white'
-                      : 'border-gray-700 bg-gray-800/20 text-gray-400 hover:text-gray-300'
-                  )}
-                >
-                  <div className="flex items-center gap-2 mb-1">
-                    <Clock className="h-3 w-3" />
-                    <span className="truncate font-medium">{session.firstMessage.slice(0, 40)}</span>
-                  </div>
-                  <div className="text-xs text-gray-500">{session.date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</div>
-                </button>
-              ))}
+              {chatSessions.map(session => {
+                const isSelected = selectedIds.has(session.id);
+                return (
+                  <button
+                    key={session.id}
+                    onClick={() => {
+                      setCurrentSessionId(session.id);
+                      // In a real app, load messages from this session
+                    }}
+                    className={clsx(
+                      'w-full rounded-lg border px-3 py-2 text-left text-xs transition flex items-start gap-2',
+                      currentSessionId === session.id
+                        ? 'border-blue-600 bg-blue-900/30 text-white'
+                        : 'border-gray-700 bg-gray-800/20 text-gray-400 hover:text-gray-300'
+                    )}
+                  >
+                    <button type="button" onClick={e => { e.stopPropagation(); toggle(session.id); }} className="mt-0.5">
+                      {isSelected ? <CheckSquare size={14} className="text-blue-400"/> : <Square size={14} className="text-gray-500"/>}
+                    </button>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 mb-1">
+                        <Clock className="h-3 w-3" />
+                        <span className="truncate font-medium">{session.firstMessage.slice(0, 40)}</span>
+                      </div>
+                      <div className="text-xs text-gray-500">{session.date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</div>
+                    </div>
+                  </button>
+                );
+              })}
             </div>
           </div>
         )}
@@ -622,6 +644,14 @@ export function AIAssistant() {
             </button>
           </div>
         </div>
+
+        <BulkActionsBar
+          selectedIds={Array.from(selectedIds)}
+          actions={[
+            { id: 'delete', label: 'Delete Selected', icon: Trash2, variant: 'danger', onClick: handleBulkDelete, confirm: 'This action cannot be undone.' },
+          ]}
+          onClearSelection={clearSelection}
+        />
       </div>
     </div>
   );

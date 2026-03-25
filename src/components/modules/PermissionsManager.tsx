@@ -14,7 +14,10 @@ import {
   Save,
   AlertTriangle,
   Activity,
+  CheckSquare,
+  Square,
 } from 'lucide-react';
+import { BulkActionsBar, useBulkSelection } from '../ui/BulkActions';
 import { permissionsApi, type Role, type Permissions } from '../../services/api';
 import { toast } from 'sonner';
 import clsx from 'clsx';
@@ -50,6 +53,19 @@ export function PermissionsManager() {
   const [saving, setSaving] = useState(false);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  const { selectedIds, toggle, clearSelection } = useBulkSelection();
+
+  async function handleBulkDelete(ids: string[]) {
+    if (!confirm(`Delete ${ids.length} role(s)?`)) return;
+    try {
+      await Promise.all(ids.map(id => permissionsApi.deleteRole(String(id))));
+      toast.success(`Deleted ${ids.length} role(s)`);
+      loadData();
+      clearSelection();
+    } catch {
+      toast.error('Bulk delete failed');
+    }
+  }
 
   useEffect(() => {
     loadData();
@@ -204,6 +220,7 @@ export function PermissionsManager() {
 
       {/* ROLES TAB */}
       {subTab === 'roles' && (
+        <>
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
           <div className="lg:col-span-1">
             <div className="bg-gray-900 border border-gray-700 rounded-lg overflow-hidden">
@@ -222,141 +239,49 @@ export function PermissionsManager() {
                     <RefreshCw className="h-5 w-5 text-blue-500 animate-spin" />
                   </div>
                 ) : (
-                  filteredRoles.map(role => (
+                  filteredRoles.map(role => {
+                    const isSelected = selectedIds.has(String(role.id));
+                    return (
                     <button
                       key={String(role.id)}
                       onClick={() => selectRole(role)}
                       className={clsx(
-                        'w-full text-left p-4 transition-colors border-l-2',
+                        'w-full text-left p-4 transition-colors border-l-2 flex items-start gap-2',
                         String(selectedRole?.id) === String(role.id)
                           ? 'bg-blue-600/20 border-blue-500'
                           : 'hover:bg-gray-800/50 border-transparent'
                       )}
                     >
-                      <p className="font-medium text-white text-sm">{String(role.name ?? 'Untitled')}</p>
-                      <p className="text-xs text-gray-500">{String(role.description ?? '')}</p>
-                      {Boolean(role.isSystem) && (
-                        <div className="mt-2 flex items-center gap-1">
-                          <Lock className="h-3 w-3 text-gray-600" />
-                          <span className="text-xs text-gray-500">System Role</span>
-                        </div>
-                      )}
+                      <button type="button" onClick={e => { e.stopPropagation(); toggle(String(role.id)); }} className="mt-0.5">
+                        {isSelected ? <CheckSquare size={16} className="text-blue-400"/> : <Square size={16} className="text-gray-500"/>}
+                      </button>
+                      <div>
+                        <p className="font-medium text-white text-sm">{String(role.name ?? 'Untitled')}</p>
+                        <p className="text-xs text-gray-500">{String(role.description ?? '')}</p>
+                        {Boolean(role.isSystem) && (
+                          <div className="mt-2 flex items-center gap-1">
+                            <Lock className="h-3 w-3 text-gray-600" />
+                            <span className="text-xs text-gray-500">System Role</span>
+                          </div>
+                        )}
+                      </div>
                     </button>
-                  ))
+                    );
+                  })
                 )}
               </div>
             </div>
           </div>
-
-          <div className="lg:col-span-3">
-            {selectedRole ? (
-              <div className="bg-gray-900 border border-gray-700 rounded-lg overflow-hidden">
-                <div className="p-4 border-b border-gray-800 flex justify-between items-center">
-                  <div>
-                    <h3 className="text-lg font-bold text-white">{String(selectedRole.name ?? 'Untitled')}</h3>
-                    <p className="text-sm text-gray-500">{String(selectedRole.description ?? '')}</p>
-                  </div>
-                  {!selectedRole.isSystem && (
-                    <div className="flex items-center gap-2">
-                      <button
-                        onClick={saveChanges}
-                        disabled={saving}
-                        className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium flex items-center gap-2"
-                      >
-                        <Save className="h-4 w-4" />
-                        Save
-                      </button>
-                      <button
-                        onClick={() => deleteRole(String(selectedRole.id))}
-                        className="p-2 hover:bg-red-500/20 text-red-400 rounded-lg transition"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </button>
-                    </div>
-                  )}
-                </div>
-
-                {Boolean(selectedRole.isSystem) && (
-                  <div className="p-4 bg-amber-500/10 border-b border-amber-500/20 flex items-center gap-3">
-                    <AlertTriangle className="h-5 w-5 text-amber-400 flex-shrink-0" />
-                    <p className="text-sm text-amber-400">System roles are read-only</p>
-                  </div>
-                )}
-
-                <div className="p-4 max-h-96 overflow-y-auto space-y-1">
-                  {Object.entries(modules).map(([module, info]) => {
-                    const isExpanded = expandedModules.has(String(module));
-                    const hasAll = editedPermissions[String(module)]?.includes('*');
-                    const hasSome = (editedPermissions[String(module)]?.length || 0) > 0;
-                    return (
-                      <div key={String(module)} className="border border-gray-800 rounded-lg overflow-hidden">
-                        <button
-                          onClick={() => toggleModule(String(module))}
-                          className="w-full flex items-center justify-between p-3 hover:bg-gray-800/50 transition-colors"
-                        >
-                          <div className="flex items-center gap-3">
-                            {isExpanded ? (
-                              <ChevronDown className="h-4 w-4 text-gray-500" />
-                            ) : (
-                              <ChevronRight className="h-4 w-4 text-gray-500" />
-                            )}
-                            <span className="font-medium text-white text-sm">
-                              {String((info as AnyRow).label ?? module)}
-                            </span>
-                          </div>
-                          <div className="flex items-center gap-2">
-                            {Boolean(hasAll) && (
-                              <span className="px-2 py-0.5 bg-purple-500/20 text-purple-400 rounded text-xs">Full</span>
-                            )}
-                            {Boolean(hasSome && !hasAll) && (
-                              <span className="px-2 py-0.5 bg-blue-500/20 text-blue-400 rounded text-xs">Partial</span>
-                            )}
-                            {Boolean(!hasSome) && (
-                              <span className="px-2 py-0.5 bg-gray-700 text-gray-500 rounded text-xs">None</span>
-                            )}
-                          </div>
-                        </button>
-                        {Boolean(isExpanded) && (
-                          <div className="border-t border-gray-800 p-3 bg-gray-900/50 space-y-2">
-                            {Object.entries(actions).map(([action, actionInfo]) => (
-                              <button
-                                key={String(action)}
-                                onClick={() =>
-                                  !hasAll &&
-                                  togglePermission(String(module), String(action))
-                                }
-                                disabled={Boolean(hasAll)}
-                                className={clsx(
-                                  'w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm transition-colors text-left',
-                                  hasPermission(String(module), String(action)) && !hasAll
-                                    ? 'bg-emerald-500/20 text-emerald-400'
-                                    : 'bg-gray-800 text-gray-400 hover:bg-gray-700',
-                                  Boolean(hasAll) && 'opacity-50 cursor-not-allowed'
-                                )}
-                              >
-                                {Boolean(hasPermission(String(module), String(action))) && !hasAll ? (
-                                  <Check className="h-4 w-4" />
-                                ) : (
-                                  <div className="h-4 w-4" />
-                                )}
-                                {String((actionInfo as AnyRow).label ?? action)}
-                              </button>
-                            ))}
-                          </div>
-                        )}
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-            ) : (
-              <div className="bg-gray-900 border border-gray-700 rounded-lg p-8 text-center">
-                <Shield className="h-12 w-12 text-gray-700 mx-auto mb-3" />
-                <p className="text-gray-400">Select a role to view and edit permissions</p>
-              </div>
-            )}
           </div>
-        </div>
+
+          <BulkActionsBar
+          selectedIds={Array.from(selectedIds)}
+          actions={[
+            { id: 'delete', label: 'Delete Selected', icon: Trash2, variant: 'danger', onClick: handleBulkDelete, confirm: 'This action cannot be undone.' },
+          ]}
+          onClearSelection={clearSelection}
+        />
+        </>
       )}
 
       {/* PERMISSIONS TAB */}

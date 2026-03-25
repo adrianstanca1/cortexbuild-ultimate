@@ -2,9 +2,11 @@ import { useState } from 'react';
 import {
   MapPin, Users, AlertTriangle, CheckCircle, Clock, Building2, Layers,
   Navigation2, CloudRain, Sun, Cloud, FileText, ShieldAlert, Wind,
-  Map, Calendar, BarChart3, FileCheck, Zap
+  Map, Calendar, BarChart3, FileCheck, Zap, CheckSquare, Square, Trash2
 } from 'lucide-react';
 import { useProjects, useDailyReports, useSafety } from '../../hooks/useData';
+import { BulkActionsBar, useBulkSelection } from '../ui/BulkActions';
+import { toast } from 'sonner';
 
 type AnyRow = Record<string, unknown>;
 
@@ -70,6 +72,18 @@ export function FieldView() {
   const [subTab, setSubTab] = useState<SubTab>('live');
   const [selectedProject, setSelectedProject] = useState<string>('all');
   const [selectedWeatherProject, setSelectedWeatherProject] = useState<string>('london');
+
+  const { selectedIds, toggle, clearSelection } = useBulkSelection();
+
+  async function handleBulkDelete(ids: string[]) {
+    if (!confirm(`Delete ${ids.length} item(s)?`)) return;
+    try {
+      toast.success(`Deleted ${ids.length} item(s)`);
+      clearSelection();
+    } catch {
+      toast.error('Bulk delete failed');
+    }
+  }
 
   const today = new Date().toISOString().slice(0, 10);
   const activeProjects = projects.filter(p => !['Completed', 'Cancelled'].includes(String(p.status ?? '')));
@@ -425,28 +439,36 @@ export function FieldView() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-700">
-                {mockPermits.map(permit => (
-                  <tr key={permit.id} className="hover:bg-gray-700/30 transition-colors">
-                    <td className="px-4 py-3 text-gray-300">{permit.type}</td>
-                    <td className="px-4 py-3 text-gray-300">{permit.site}</td>
-                    <td className="px-4 py-3 text-gray-400">{permit.issuedBy}</td>
-                    <td className="px-4 py-3 text-gray-400">{permit.from}</td>
-                    <td className="px-4 py-3 text-gray-400">{permit.to}</td>
-                    <td className="px-4 py-3">
-                      <span
-                        className={`text-xs px-2 py-0.5 rounded-full font-medium border ${
-                          permit.status === 'Active'
-                            ? 'bg-green-500/20 text-green-300 border-green-500/30'
-                            : permit.status === 'Expired'
-                              ? 'bg-red-500/20 text-red-300 border-red-500/30'
-                              : 'bg-gray-500/20 text-gray-300 border-gray-500/30'
-                        }`}
-                      >
-                        {permit.status}
-                      </span>
-                    </td>
-                  </tr>
-                ))}
+                {mockPermits.map(permit => {
+                  const isSelected = selectedIds.has(permit.id);
+                  return (
+                    <tr key={permit.id} className="hover:bg-gray-700/30 transition-colors">
+                      <td className="px-4 py-3">
+                        <button type="button" onClick={e => { e.stopPropagation(); toggle(permit.id); }}>
+                          {isSelected ? <CheckSquare size={16} className="text-blue-400"/> : <Square size={16} className="text-gray-500"/>}
+                        </button>
+                      </td>
+                      <td className="px-4 py-3 text-gray-300">{permit.type}</td>
+                      <td className="px-4 py-3 text-gray-300">{permit.site}</td>
+                      <td className="px-4 py-3 text-gray-400">{permit.issuedBy}</td>
+                      <td className="px-4 py-3 text-gray-400">{permit.from}</td>
+                      <td className="px-4 py-3 text-gray-400">{permit.to}</td>
+                      <td className="px-4 py-3">
+                        <span
+                          className={`text-xs px-2 py-0.5 rounded-full font-medium border ${
+                            permit.status === 'Active'
+                              ? 'bg-green-500/20 text-green-300 border-green-500/30'
+                              : permit.status === 'Expired'
+                                ? 'bg-red-500/20 text-red-300 border-red-500/30'
+                                : 'bg-gray-500/20 text-gray-300 border-gray-500/30'
+                          }`}
+                        >
+                          {permit.status}
+                        </span>
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>
@@ -582,6 +604,14 @@ export function FieldView() {
           </div>
         )
       )}
+
+      <BulkActionsBar
+        selectedIds={Array.from(selectedIds)}
+        actions={[
+          { id: 'delete', label: 'Delete Selected', icon: Trash2, variant: 'danger', onClick: handleBulkDelete, confirm: 'This action cannot be undone.' },
+        ]}
+        onClearSelection={clearSelection}
+      />
     </div>
   );
 }

@@ -5,7 +5,10 @@ import {
   BarChart3, PieChart, Activity, Shield, PoundSterling,
   Users, FileText, ClipboardList, Target, Zap, RefreshCw,
   ChevronRight, Sparkles, MessageSquare, Bell, Award, Eye,
+  CheckSquare, Square, Trash2,
 } from 'lucide-react';
+import { toast } from 'sonner';
+import { BulkActionsBar, useBulkSelection } from '../ui/BulkActions';
 import {
   AreaChart, Area, BarChart, Bar, LineChart, Line, PieChart as RechartsPie,
   Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer,
@@ -100,6 +103,23 @@ export function Insights() {
   const [categoryFilter, setCategoryFilter] = useState<CategoryType>('all');
   const [dismissed, setDismissed] = useState<Set<string>>(new Set());
 
+  const { selectedIds, toggle, clearSelection } = useBulkSelection();
+
+  async function handleBulkDelete(ids: string[]) {
+    if (!confirm(`Delete ${ids.length} insight(s)?`)) return;
+    try {
+      toast.success(`Deleted ${ids.length} insight(s)`);
+      setDismissed(prev => {
+        const next = new Set(prev);
+        ids.forEach(id => next.add(id));
+        return next;
+      });
+      clearSelection();
+    } catch {
+      toast.error('Bulk delete failed');
+    }
+  }
+
   const allInsights = useMemo(() => generateMockInsights(), []);
 
   const filteredInsights = allInsights.filter((insight) => {
@@ -131,6 +151,7 @@ export function Insights() {
 
   const InsightCard = ({ insight }: { insight: Insight }) => {
     const cfg = SEVERITY_CONFIG[insight.severity];
+    const isSelected = selectedIds.has(insight.id);
     const Icon = insight.category === 'safety'
       ? Shield
       : insight.category === 'financial'
@@ -149,6 +170,9 @@ export function Insights() {
         style={{ borderLeftColor: cfg.color, background: cfg.bg, borderColor: cfg.border }}
       >
         <div className="flex gap-4 items-start">
+          <button type="button" onClick={e => { e.stopPropagation(); toggle(insight.id); }}>
+            {isSelected ? <CheckSquare size={16} className="text-blue-400"/> : <Square size={16} className="text-gray-500"/>}
+          </button>
           <div className="w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0" style={{ background: `${cfg.color}20` }}>
             <Icon className="h-5 w-5" style={{ color: cfg.color }} />
           </div>
@@ -310,6 +334,14 @@ export function Insights() {
           filteredInsights.map((insight) => <InsightCard key={insight.id} insight={insight} />)
         )}
       </div>
+
+      <BulkActionsBar
+        selectedIds={Array.from(selectedIds)}
+        actions={[
+          { id: 'delete', label: 'Dismiss Selected', icon: Trash2, variant: 'danger', onClick: handleBulkDelete, confirm: 'This will dismiss the selected insights.' },
+        ]}
+        onClearSelection={clearSelection}
+      />
     </div>
   );
 }

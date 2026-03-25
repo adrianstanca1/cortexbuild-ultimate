@@ -4,8 +4,9 @@ import {
   Plus, X, Trash2, Edit2, Search, ChevronRight, MapPin, Users, Calendar,
   PoundSterling, TrendingUp, AlertTriangle, CheckCircle2, Clock, Building2,
   BarChart3, FileText, Shield, ClipboardList, HardHat, ArrowLeft,
-  Loader2, RefreshCw, MessageSquare, AlertCircle, CheckSquare, Circle,
+  Loader2, RefreshCw, MessageSquare, AlertCircle, CheckSquare, Square, Circle,
 } from 'lucide-react';
+import { BulkActionsBar, useBulkSelection } from '../ui/BulkActions';
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend,
   ResponsiveContainer, LineChart, Line,
@@ -816,6 +817,19 @@ export function Projects() {
   const [editMode,     setEditMode]     = useState(false);
   const [form,         setForm]         = useState<FormData>(defaultForm);
 
+  const { selectedIds, toggle, clearSelection } = useBulkSelection();
+
+  async function handleBulkDelete(ids: string[]) {
+    if (!confirm(`Delete ${ids.length} project(s)?`)) return;
+    try {
+      await Promise.all(ids.map(id => deleteMutation.mutateAsync(id)));
+      toast.success(`Deleted ${ids.length} project(s)`);
+      clearSelection();
+    } catch {
+      toast.error('Bulk delete failed');
+    }
+  }
+
   const selectedProject = projects.find(p => String(p.id) === selectedId);
 
   const filtered = projects
@@ -913,6 +927,7 @@ export function Projects() {
       {isLoading ? (
         <div className="flex items-center justify-center py-16"><Loader2 className="w-8 h-8 text-blue-400 animate-spin"/></div>
       ) : (
+        <>
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
           {filtered.map(p => {
             const cfg    = STATUS_CFG[String(p.status??'')] ?? STATUS_CFG.planning;
@@ -922,17 +937,23 @@ export function Projects() {
             const endDate= String(p.endDate??p.end_date??'');
             const days   = endDate ? daysDiff(endDate) : null;
             const budgetHealth = getBudgetHealth(spent, budget);
+            const isSelected = selectedIds.has(String(p.id));
             return (
               <div key={String(p.id)}
                 onClick={()=>setSelectedId(String(p.id))}
                 className="group bg-gray-900 border border-gray-800 rounded-2xl p-5 cursor-pointer hover:border-blue-700/50 hover:bg-gray-900/80 transition-all">
                 <div className="flex items-start justify-between mb-3">
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 mb-0.5 flex-wrap">
-                      <h3 className="font-semibold text-white text-sm">{String(p.name??'')}</h3>
-                      <span className={`text-xs px-2 py-0.5 rounded-full border ${cfg.bg} ${cfg.color}`}>{cfg.label}</span>
+                  <div className="flex items-center gap-2 flex-1 min-w-0">
+                    <button type="button" onClick={e => { e.stopPropagation(); toggle(String(p.id)); }}>
+                      {isSelected ? <CheckSquare size={16} className="text-blue-400"/> : <Square size={16} className="text-gray-500"/>}
+                    </button>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 mb-0.5 flex-wrap">
+                        <h3 className="font-semibold text-white text-sm">{String(p.name??'')}</h3>
+                        <span className={`text-xs px-2 py-0.5 rounded-full border ${cfg.bg} ${cfg.color}`}>{cfg.label}</span>
+                      </div>
+                      <p className="text-gray-400 text-xs truncate">{String(p.client??'')} · {String(p.location??'')}</p>
                     </div>
-                    <p className="text-gray-400 text-xs truncate">{String(p.client??'')} · {String(p.location??'')}</p>
                   </div>
                   <div className="flex items-center gap-1 ml-2 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0">
                     <button type="button" onClick={e=>{e.stopPropagation();openEdit(p);}} className="p-1.5 text-gray-400 hover:text-white rounded-lg hover:bg-gray-700"><Edit2 className="w-3.5 h-3.5"/></button>
@@ -982,6 +1003,15 @@ export function Projects() {
           })}
           {filtered.length===0&&<p className="col-span-3 py-16 text-center text-gray-500">No projects match the current filter</p>}
         </div>
+
+        <BulkActionsBar
+          selectedIds={Array.from(selectedIds)}
+          actions={[
+            { id: 'delete', label: 'Delete Selected', icon: Trash2, variant: 'danger', onClick: handleBulkDelete, confirm: 'This action cannot be undone.' },
+          ]}
+          onClearSelection={clearSelection}
+        />
+        </>
       )}
 
       {/* Modal */}
