@@ -145,6 +145,14 @@ export const safetyApi = {
   create: (data: Row) => insertRow('safety', data),
   update: (id: string, data: Row) => updateRow('safety', id, data),
   delete: (id: string) => deleteRow('safety', id),
+  getPermits: () => fetchAll('safety-permits'),
+  createPermit: (data: Row) => insertRow('safety-permits', data),
+  updatePermit: (id: string, data: Row) => updateRow('safety-permits', id, data),
+  deletePermit: (id: string) => deleteRow('safety-permits', id),
+  getTalks: () => fetchAll('toolbox-talks'),
+  createTalk: (data: Row) => insertRow('toolbox-talks', data),
+  updateTalk: (id: string, data: Row) => updateRow('toolbox-talks', id, data),
+  deleteTalk: (id: string) => deleteRow('toolbox-talks', id),
 };
 
 export const rfisApi = {

@@ -82,6 +82,8 @@ app.use('/api/equipment-service-logs', makeRouter('equipment_service_logs'));
 app.use('/api/equipment-hire-logs',   makeRouter('equipment_hire_logs'));
 app.use('/api/risk-mitigation-actions', makeRouter('risk_mitigation_actions'));
 app.use('/api/contact-interactions',    makeRouter('contact_interactions'));
+app.use('/api/safety-permits',         makeRouter('safety_permits'));
+app.use('/api/toolbox-talks',          makeRouter('toolbox_talks'));
 app.use('/api/analytics-data',       require('./routes/analytics-data'));
 app.use('/api/financial-reports', require('./routes/financial-reports'));
 app.use('/api/search',          require('./routes/search'));

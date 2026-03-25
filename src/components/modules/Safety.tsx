@@ -1,9 +1,9 @@
 // Module: Safety — CortexBuild Ultimate (Enhanced with RIDDOR, Permits, Toolbox Talks)
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Plus, X, Loader2, Shield, AlertTriangle, CheckCircle2, RefreshCw, Search, Edit2, Trash2, FileText, AlertCircle, Clock, TrendingUp, Upload, CheckSquare, Square, Download } from 'lucide-react';
 import { DataImporter, ExportButton } from '../ui/DataImportExport';
 import { useSafety } from '../../hooks/useData';
-import { uploadFile } from '../../services/api';
+import { uploadFile, safetyApi } from '../../services/api';
 import { toast } from 'sonner';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import clsx from 'clsx';
@@ -38,23 +38,6 @@ const INCIDENT_TIMELINE = [
   { date: '2026-03-20', status: 'open', note: 'Incident reported' },
   { date: '2026-03-21', status: 'investigating', note: 'Investigation started' },
   { date: '2026-03-22', status: 'action_required', note: 'Root cause identified, actions assigned' },
-];
-
-// Mock Permits Data
-const MOCK_PERMITS = [
-  { id: '1', permitNo: 'HW-2026-001', type: 'Hot Works', project: 'Main Tower', location: 'Level 5', startDate: '2026-03-20', endDate: '2026-03-25', issuedBy: 'John Smith', status: 'Active' },
-  { id: '2', permitNo: 'CS-2026-002', type: 'Confined Space', project: 'Tank Maintenance', location: 'Tank A', startDate: '2026-03-18', endDate: '2026-03-20', issuedBy: 'Sarah Jones', status: 'Expired' },
-  { id: '3', permitNo: 'EX-2026-003', type: 'Excavation', project: 'Foundation Work', location: 'Grid F2', startDate: '2026-03-21', endDate: '2026-03-28', issuedBy: 'Mike Brown', status: 'Active' },
-  { id: '4', permitNo: 'MW-2026-004', type: 'MEWP', project: 'Facade Cleaning', location: 'South Face', startDate: '2026-03-19', endDate: '2026-03-19', issuedBy: 'Emma Wilson', status: 'Expired' },
-  { id: '5', permitNo: 'EI-2026-005', type: 'Electrical Isolation', project: 'Rewiring', location: 'Level 3', startDate: '2026-03-22', endDate: '2026-03-30', issuedBy: 'David Lee', status: 'Active' },
-];
-
-// Mock Toolbox Talks Data
-const MOCK_TOOLBOX_TALKS = [
-  { id: '1', date: '2026-03-20', topic: 'Fall Protection Best Practices', location: 'Site Induction', presenter: 'Health & Safety Team', attendees: 24, signedOff: true },
-  { id: '2', date: '2026-03-18', topic: 'Confined Space Entry Procedures', location: 'Tank Area', presenter: 'Sarah Jones', attendees: 8, signedOff: true },
-  { id: '3', date: '2026-03-15', topic: 'PPE Requirements Update', location: 'Main Office', presenter: 'John Smith', attendees: 32, signedOff: true },
-  { id: '4', date: '2026-03-10', topic: 'Fire Safety & Evacuation', location: 'All Zones', presenter: 'Emergency Coordinator', attendees: 47, signedOff: true },
 ];
 
 type AnyRow = Record<string, unknown>;
@@ -130,13 +113,13 @@ export function Safety() {
   const [selectedId, setSelectedId] = useState<string | null>(null);
 
   // Permits state
-  const [permits, setPermits] = useState(MOCK_PERMITS);
+  const [permits, setPermits] = useState<AnyRow[]>([]);
   const [showPermitModal, setShowPermitModal] = useState(false);
   const [permitForm, setPermitForm] = useState<PermitFormData>(defaultPermit);
   const [editPermitId, setEditPermitId] = useState<string | null>(null);
 
   // Toolbox Talks state
-  const [talks, setTalks] = useState(MOCK_TOOLBOX_TALKS);
+  const [talks, setTalks] = useState<AnyRow[]>([]);
   const [showTalkModal, setShowTalkModal] = useState(false);
   const [talkForm, setTalkForm] = useState<TalkFormData>(defaultTalk);
   const [editTalkId, setEditTalkId] = useState<string | null>(null);
@@ -146,6 +129,26 @@ export function Safety() {
 
   // Bulk selection
   const { selectedIds, toggle, clearSelection } = useBulkSelection();
+
+  useEffect(() => {
+    safetyApi.getPermits().then(data => {
+      const mapped = (data as AnyRow[]).map(p => ({
+        ...p,
+        permitNo: p.permit_no,
+        startDate: p.start_date,
+        endDate: p.end_date,
+        issuedBy: p.issued_by,
+      }));
+      setPermits(mapped);
+    }).catch(() => {});
+    safetyApi.getTalks().then(data => {
+      const mapped = (data as AnyRow[]).map(t => ({
+        ...t,
+        signedOff: t.signed_off,
+      }));
+      setTalks(mapped);
+    }).catch(() => {});
+  }, []);
 
   async function handleBulkDelete(ids: string[]) {
     if (!confirm(`Delete ${ids.length} incident(s)?`)) return;
@@ -226,38 +229,68 @@ export function Safety() {
     await deleteM.mutateAsync(id); setSelectedId(null);
   };
 
-  const handleSavePermit = () => {
-    if (editPermitId) {
-      setPermits(permits.map(p => p.id === editPermitId ? { ...permitForm, id: editPermitId } : p));
-    } else {
-      setPermits([...permits, { ...permitForm, id: String(Date.now()) }]);
-    }
-    setShowPermitModal(false);
-    setPermitForm(defaultPermit);
-    setEditPermitId(null);
+  const handleSavePermit = async () => {
+    const payload = {
+      permit_no: permitForm.permitNo,
+      type: permitForm.type,
+      project: permitForm.project,
+      location: permitForm.location,
+      start_date: permitForm.startDate,
+      end_date: permitForm.endDate,
+      issued_by: permitForm.issuedBy,
+      status: permitForm.status,
+    };
+    try {
+      if (editPermitId) {
+        await safetyApi.updatePermit(editPermitId, payload);
+        setPermits(permits.map(p => p.id === editPermitId ? { ...p, ...payload } : p));
+      } else {
+        const newPermit = await safetyApi.createPermit(payload);
+        setPermits([...permits, { ...payload, id: (newPermit as AnyRow).id }]);
+      }
+      setShowPermitModal(false);
+      setPermitForm(defaultPermit);
+      setEditPermitId(null);
+    } catch { toast.error('Failed to save permit'); }
   };
 
-  const handleDeletePermit = (id: string) => {
-    if (confirm('Delete this permit?')) {
+  const handleDeletePermit = async (id: string) => {
+    if (!confirm('Delete this permit?')) return;
+    try {
+      await safetyApi.deletePermit(id);
       setPermits(permits.filter(p => p.id !== id));
-    }
+    } catch { toast.error('Failed to delete permit'); }
   };
 
-  const handleSaveTalk = () => {
-    if (editTalkId) {
-      setTalks(talks.map(t => t.id === editTalkId ? { ...talkForm, id: editTalkId } : t));
-    } else {
-      setTalks([...talks, { ...talkForm, id: String(Date.now()) }]);
-    }
-    setShowTalkModal(false);
-    setTalkForm(defaultTalk);
-    setEditTalkId(null);
+  const handleSaveTalk = async () => {
+    const payload = {
+      date: talkForm.date,
+      topic: talkForm.topic,
+      location: talkForm.location,
+      presenter: talkForm.presenter,
+      attendees: talkForm.attendees,
+      signed_off: talkForm.signedOff,
+    };
+    try {
+      if (editTalkId) {
+        await safetyApi.updateTalk(editTalkId, payload);
+        setTalks(talks.map(t => t.id === editTalkId ? { ...t, ...payload } : t));
+      } else {
+        const newTalk = await safetyApi.createTalk(payload);
+        setTalks([...talks, { ...payload, id: (newTalk as AnyRow).id }]);
+      }
+      setShowTalkModal(false);
+      setTalkForm(defaultTalk);
+      setEditTalkId(null);
+    } catch { toast.error('Failed to save talk'); }
   };
 
-  const handleDeleteTalk = (id: string) => {
-    if (confirm('Delete this toolbox talk record?')) {
+  const handleDeleteTalk = async (id: string) => {
+    if (!confirm('Delete this toolbox talk record?')) return;
+    try {
+      await safetyApi.deleteTalk(id);
       setTalks(talks.filter(t => t.id !== id));
-    }
+    } catch { toast.error('Failed to delete talk'); }
   };
 
   const handleUploadPermitDoc = async (permitId: string, file: File) => {
@@ -579,22 +612,22 @@ export function Safety() {
                   </tr>
                 </thead>
                 <tbody>
-                  {permits.map((permit) => (
-                    <tr key={permit.id} className={clsx('border-b border-gray-800 transition-colors',
+                  {permits.map((permit: AnyRow) => (
+                    <tr key={String(permit.id)} className={clsx('border-b border-gray-800 transition-colors',
                       permit.status === 'Active' ? 'bg-green-500/5 hover:bg-green-500/10' : 'bg-red-500/5 hover:bg-red-500/10')}>
-                      <td className="px-4 py-3 text-white font-semibold">{permit.permitNo}</td>
-                      <td className="px-4 py-3 text-gray-300">{permit.type}</td>
-                      <td className="px-4 py-3 text-gray-300">{permit.project}</td>
-                      <td className="px-4 py-3 text-gray-300">{permit.location}</td>
-                      <td className="px-4 py-3 text-gray-300">{permit.startDate}</td>
-                      <td className="px-4 py-3 text-gray-300">{permit.endDate}</td>
-                      <td className="px-4 py-3 text-gray-300">{permit.issuedBy}</td>
+                      <td className="px-4 py-3 text-white font-semibold">{String(permit.permitNo ?? '')}</td>
+                      <td className="px-4 py-3 text-gray-300">{String(permit.type ?? '')}</td>
+                      <td className="px-4 py-3 text-gray-300">{String(permit.project ?? '')}</td>
+                      <td className="px-4 py-3 text-gray-300">{String(permit.location ?? '')}</td>
+                      <td className="px-4 py-3 text-gray-300">{String(permit.startDate ?? '')}</td>
+                      <td className="px-4 py-3 text-gray-300">{String(permit.endDate ?? '')}</td>
+                      <td className="px-4 py-3 text-gray-300">{String(permit.issuedBy ?? '')}</td>
                       <td className="px-4 py-3">
                         <span className={clsx('rounded-full px-2 py-1 text-xs font-bold',
                           permit.status === 'Active'
                             ? 'bg-green-500/20 text-green-400 border border-green-600/40'
                             : 'bg-red-500/20 text-red-400 border border-red-600/40')}>
-                          {permit.status}
+                          {String(permit.status ?? '')}
                         </span>
                       </td>
                       <td className="px-4 py-3 space-x-2">
@@ -605,22 +638,22 @@ export function Safety() {
                           accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
                           onChange={async (e) => {
                             const file = e.target.files?.[0];
-                            if (file) { await handleUploadPermitDoc(permit.id, file); e.target.value = ''; }
+                            if (file) { await handleUploadPermitDoc(String(permit.id), file); e.target.value = ''; }
                           }}
                         />
                         <button
                           type="button"
-                          onClick={() => document.getElementById(`upload-permit-${permit.id}`)?.click()}
-                          disabled={uploadingPermit === permit.id}
+                          onClick={() => document.getElementById(`upload-permit-${String(permit.id)}`)?.click()}
+                          disabled={uploadingPermit === String(permit.id)}
                           className="inline-flex items-center gap-1 rounded-lg bg-blue-900/30 hover:bg-blue-900/50 px-2 py-1 text-xs text-blue-400 transition-colors disabled:opacity-50"
                         >
-                          <Upload className="w-3 h-3" /> {uploadingPermit === permit.id ? '...' : 'Upload'}
+                          <Upload className="w-3 h-3" /> {uploadingPermit === String(permit.id) ? '...' : 'Upload'}
                         </button>
-                        <button type="button" onClick={() => { setPermitForm(permit); setEditPermitId(permit.id); setShowPermitModal(true); }}
+                        <button type="button" onClick={() => { setPermitForm(permit as unknown as PermitFormData); setEditPermitId(String(permit.id)); setShowPermitModal(true); }}
                           className="inline-flex items-center gap-1 rounded-lg bg-gray-800 hover:bg-gray-700 px-2 py-1 text-xs text-white transition-colors">
                           <Edit2 className="w-3 h-3" /> Edit
                         </button>
-                        <button type="button" onClick={() => handleDeletePermit(permit.id)}
+                        <button type="button" onClick={() => handleDeletePermit(String(permit.id))}
                           className="inline-flex items-center gap-1 rounded-lg bg-red-900/20 hover:bg-red-900/30 px-2 py-1 text-xs text-red-400 transition-colors">
                           <Trash2 className="w-3 h-3" /> Delete
                         </button>
@@ -637,48 +670,48 @@ export function Safety() {
       {/* TOOLBOX TALKS TAB */}
       {mainTab === 'talks' && (
         <div className="space-y-3">
-          {talks.map((talk) => (
-            <div key={talk.id} className="rounded-2xl border border-gray-800 bg-gray-900 p-5">
+          {talks.map((talk: AnyRow) => (
+            <div key={String(talk.id)} className="rounded-2xl border border-gray-800 bg-gray-900 p-5">
               <div className="flex items-start justify-between gap-4">
                 <div className="flex-1">
                   <div className="flex items-center gap-2 mb-1">
-                    <h3 className="font-semibold text-white text-sm">{talk.topic}</h3>
-                    {talk.signedOff && (
+                    <h3 className="font-semibold text-white text-sm">{String(talk.topic ?? '')}</h3>
+                    {Boolean(talk.signedOff) && (
                       <span className="rounded-full bg-green-500/20 border border-green-600/40 px-2 py-0.5 text-xs font-bold text-green-400">Signed Off</span>
                     )}
                   </div>
                   <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-gray-400">
-                    <span>{talk.date}</span>
-                    <span>{talk.location}</span>
-                    <span>By: {talk.presenter}</span>
-                    <span>{talk.attendees} attendees</span>
+                    <span>{String(talk.date ?? '')}</span>
+                    <span>{String(talk.location ?? '')}</span>
+                    <span>By: {String(talk.presenter ?? '')}</span>
+                    <span>{Number(talk.attendees ?? 0)} attendees</span>
                   </div>
                 </div>
                 <div className="flex gap-2 shrink-0">
                   <input
                     type="file"
-                    id={`upload-talk-${talk.id}`}
+                    id={`upload-talk-${String(talk.id)}`}
                     className="hidden"
                     accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
                     onChange={async (e) => {
                       const file = e.target.files?.[0];
-                      if (file) { await handleUploadTalkDoc(talk.id, file); e.target.value = ''; }
+                      if (file) { await handleUploadTalkDoc(String(talk.id), file); e.target.value = ''; }
                     }}
                   />
                   <button
                     type="button"
-                    onClick={() => document.getElementById(`upload-talk-${talk.id}`)?.click()}
-                    disabled={uploadingTalk === talk.id}
+                    onClick={() => document.getElementById(`upload-talk-${String(talk.id)}`)?.click()}
+                    disabled={uploadingTalk === String(talk.id)}
                     className="rounded-xl bg-blue-900/30 hover:bg-blue-900/50 p-2 text-blue-400 hover:text-blue-300 transition-colors disabled:opacity-50"
                     title="Upload document"
                   >
                     <Upload className="w-4 h-4" />
                   </button>
-                  <button type="button" onClick={() => { setTalkForm(talk); setEditTalkId(talk.id); setShowTalkModal(true); }}
+                  <button type="button" onClick={() => { setTalkForm(talk as unknown as TalkFormData); setEditTalkId(String(talk.id)); setShowTalkModal(true); }}
                     className="rounded-xl bg-gray-800 hover:bg-gray-700 p-2 text-gray-400 hover:text-white transition-colors">
                     <Edit2 className="w-4 h-4" />
                   </button>
-                  <button type="button" onClick={() => handleDeleteTalk(talk.id)}
+                  <button type="button" onClick={() => handleDeleteTalk(String(talk.id))}
                     className="rounded-xl bg-gray-800 hover:bg-red-900/20 p-2 text-red-500 hover:text-red-400 transition-colors">
                     <Trash2 className="w-4 h-4" />
                   </button>
