@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
-import { Plus, Search, Leaf, Cloud, Factory, Gauge, Trash2, X } from 'lucide-react';
-import { sustainabilityApi } from '../../services/api';
+import { Plus, Search, Leaf, Cloud, Factory, Gauge, Trash2, X, Upload } from 'lucide-react';
+import { sustainabilityApi, uploadFile } from '../../services/api';
+import { toast } from 'sonner';
 
 export default function Sustainability() {
   const [searchTerm, setSearchTerm] = useState('');
@@ -8,6 +9,7 @@ export default function Sustainability() {
   const [loading, setLoading] = useState(true);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [creating, setCreating] = useState(false);
+  const [uploading, setUploading] = useState<string | null>(null);
   const [form, setForm] = useState({ metricType: '', project: '', period: '', actual: '', target: '', unit: 'kgCO2' });
 
   useEffect(() => {
@@ -57,6 +59,19 @@ export default function Sustainability() {
       console.error('Failed to delete:', err);
     }
   };
+
+  async function handleUploadDoc(id: string, file: File) {
+    setUploading(id);
+    try {
+      await uploadFile(file, 'REPORTS');
+      toast.success(`Uploaded: ${file.name}`);
+    } catch (err) {
+      console.error('Upload failed:', err);
+      toast.error('Upload failed');
+    } finally {
+      setUploading(null);
+    }
+  }
 
   return (
     <div className="p-6 space-y-6">
@@ -115,6 +130,26 @@ export default function Sustainability() {
                     title="Delete"
                   >
                     <Trash2 size={16} className="text-red-400" />
+                  </button>
+                  <input
+                    type="file"
+                    id={`upload-sust-${d.id}`}
+                    className="hidden"
+                    accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
+                    onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      if (file) handleUploadDoc(String(d.id), file);
+                      e.target.value = '';
+                    }}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => document.getElementById(`upload-sust-${d.id}`)?.click()}
+                    disabled={uploading === String(d.id)}
+                    className="p-2 hover:bg-blue-900/30 rounded disabled:opacity-50"
+                    title="Upload Document"
+                  >
+                    <Upload size={16} className="text-blue-400" />
                   </button>
                 </div>
               </div>

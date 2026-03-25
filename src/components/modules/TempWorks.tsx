@@ -1,9 +1,10 @@
 import { useState, useEffect } from 'react';
 import {
   Plus, Search, Clock, CheckCircle, AlertTriangle, Construction,
-  Shield, Eye, Edit, X, Trash2
+  Shield, Eye, Edit, X, Trash2, Upload
 } from 'lucide-react';
-import { tempWorksApi } from '../../services/api';
+import { tempWorksApi, uploadFile } from '../../services/api';
+import { toast } from 'sonner';
 
 interface TempWork {
   id: string;
@@ -34,6 +35,7 @@ export default function TempWorks() {
   const [loading, setLoading] = useState(true);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [creating, setCreating] = useState(false);
+  const [uploading, setUploading] = useState<string | null>(null);
   const [form, setForm] = useState({ title: '', project: '', type: 'Structural Support', designer: '', installer: '', description: '', status: 'design' });
 
   useEffect(() => {
@@ -85,6 +87,19 @@ export default function TempWorks() {
       console.error('Failed to delete:', err);
     }
   };
+
+  async function handleUploadDoc(id: string, file: File) {
+    setUploading(id);
+    try {
+      await uploadFile(file, 'REPORTS');
+      toast.success(`Uploaded: ${file.name}`);
+    } catch (err) {
+      console.error('Upload failed:', err);
+      toast.error('Upload failed');
+    } finally {
+      setUploading(null);
+    }
+  }
 
   return (
     <div className="p-6 space-y-6">
@@ -186,6 +201,25 @@ export default function TempWorks() {
                       title="Delete"
                     >
                       <Trash2 size={16} className="text-red-400" />
+                    </button>
+                    <input
+                      type="file"
+                      id={`upload-temp-${tw.id}`}
+                      className="hidden"
+                      accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        if (file) handleUploadDoc(String(tw.id), file);
+                        e.target.value = '';
+                      }}
+                    />
+                    <button
+                      onClick={() => document.getElementById(`upload-temp-${tw.id}`)?.click()}
+                      disabled={uploading === String(tw.id)}
+                      className="p-2 hover:bg-blue-900/30 rounded disabled:opacity-50"
+                      title="Upload Document"
+                    >
+                      <Upload size={16} className="text-blue-400" />
                     </button>
                   </div>
                 </div>

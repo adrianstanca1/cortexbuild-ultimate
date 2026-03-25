@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
-import { Plus, Search, AlertTriangle, CheckCircle, Eye, Edit, Trash2, X } from 'lucide-react';
-import { signageApi } from '../../services/api';
+import { Plus, Search, AlertTriangle, CheckCircle, Eye, Edit, Trash2, X, Upload } from 'lucide-react';
+import { signageApi, uploadFile } from '../../services/api';
+import { toast } from 'sonner';
 
 export default function Signage() {
   const [searchTerm, setSearchTerm] = useState('');
@@ -9,6 +10,7 @@ export default function Signage() {
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [creating, setCreating] = useState(false);
   const [form, setForm] = useState({ description: '', location: '', type: 'safety', status: 'required' });
+  const [uploading, setUploading] = useState<string | null>(null);
 
   useEffect(() => {
     signageApi.getAll().then((data: any[]) => {
@@ -44,7 +46,7 @@ export default function Signage() {
   };
 
   const handleDelete = async (id: string) => {
-    if (!confirm('Delete this signage item?')) return;
+    if (!confirm('Delete this signage record?')) return;
     try {
       await signageApi.delete(id);
       setSignage(prev => prev.filter((s: any) => String(s.id) !== String(id)));
@@ -52,6 +54,19 @@ export default function Signage() {
       console.error('Failed to delete:', err);
     }
   };
+
+  async function handleUploadDoc(id: string, file: File) {
+    setUploading(id);
+    try {
+      await uploadFile(file, 'REPORTS');
+      toast.success(`Uploaded: ${file.name}`);
+    } catch (err) {
+      console.error('Upload failed:', err);
+      toast.error('Upload failed');
+    } finally {
+      setUploading(null);
+    }
+  }
 
   return (
     <div className="p-6 space-y-6">
@@ -96,6 +111,26 @@ export default function Signage() {
                     title="Delete"
                   >
                     <Trash2 size={16} className="text-red-400" />
+                  </button>
+                  <input
+                    type="file"
+                    id={`upload-sign-${s.id}`}
+                    className="hidden"
+                    accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
+                    onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      if (file) handleUploadDoc(String(s.id), file);
+                      e.target.value = '';
+                    }}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => document.getElementById(`upload-sign-${s.id}`)?.click()}
+                    disabled={uploading === String(s.id)}
+                    className="p-2 hover:bg-blue-900/30 rounded disabled:opacity-50"
+                    title="Upload Document"
+                  >
+                    <Upload size={16} className="text-blue-400" />
                   </button>
                 </div>
               </div>

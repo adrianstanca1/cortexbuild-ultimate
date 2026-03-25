@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
-import { Plus, Search, FileText, Clock, CheckCircle, XCircle, Trash2, X } from 'lucide-react';
-import { lettingsApi } from '../../services/api';
+import { Plus, Search, FileText, Clock, CheckCircle, XCircle, Trash2, X, Upload } from 'lucide-react';
+import { lettingsApi, uploadFile } from '../../services/api';
+import { toast } from 'sonner';
 
 export default function Lettings() {
   const [searchTerm, setSearchTerm] = useState('');
@@ -8,6 +9,7 @@ export default function Lettings() {
   const [loading, setLoading] = useState(true);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [creating, setCreating] = useState(false);
+  const [uploading, setUploading] = useState<string | null>(null);
   const [form, setForm] = useState({ packageName: '', trade: '', contractor: '', contractValue: '', status: 'tendering' });
 
   useEffect(() => {
@@ -57,6 +59,19 @@ export default function Lettings() {
     }
   };
 
+  async function handleUploadDoc(id: string, file: File) {
+    setUploading(id);
+    try {
+      await uploadFile(file, 'REPORTS');
+      toast.success(`Uploaded: ${file.name}`);
+    } catch (err) {
+      console.error('Upload failed:', err);
+      toast.error('Upload failed');
+    } finally {
+      setUploading(null);
+    }
+  }
+
   return (
     <div className="p-6 space-y-6">
       <div className="flex items-center justify-between">
@@ -99,6 +114,26 @@ export default function Lettings() {
                     title="Delete"
                   >
                     <Trash2 size={16} className="text-red-400" />
+                  </button>
+                  <input
+                    type="file"
+                    id={`upload-let-${l.id}`}
+                    className="hidden"
+                    accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
+                    onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      if (file) handleUploadDoc(String(l.id), file);
+                      e.target.value = '';
+                    }}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => document.getElementById(`upload-let-${l.id}`)?.click()}
+                    disabled={uploading === String(l.id)}
+                    className="p-2 hover:bg-blue-900/30 rounded disabled:opacity-50"
+                    title="Upload Document"
+                  >
+                    <Upload size={16} className="text-blue-400" />
                   </button>
                 </div>
               </div>
