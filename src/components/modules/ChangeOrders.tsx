@@ -483,8 +483,9 @@ export function ChangeOrders() {
                     const id = String(o.id);
                     const isSelected = selectedIds.has(id);
                     return (
-                    <div key={id}>
+                    <>
                       <tr
+                        key={id}
                         className="hover:bg-gray-700/50 cursor-pointer"
                         onClick={() => setExpandedCoId(expandedCoId === id ? null : id)}
                       >
@@ -598,7 +599,7 @@ export function ChangeOrders() {
                           </td>
                         </tr>
                       )}
-                    </div>
+                    </>
                   );
                   })}
                 </tbody>

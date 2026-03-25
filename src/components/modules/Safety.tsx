@@ -265,9 +265,7 @@ export function Safety() {
     try {
       await uploadFile(file, 'PERMITS');
       toast.success(`Uploaded: ${file.name}`);
-    } catch (err) {
-      console.error('Upload failed:', err);
-    } finally {
+    } catch { toast.error('Upload failed'); } finally {
       setUploadingPermit(null);
     }
   };
@@ -277,20 +275,20 @@ export function Safety() {
     try {
       await uploadFile(file, 'REPORTS');
       toast.success(`Uploaded: ${file.name}`);
-    } catch (err) {
-      console.error('Upload failed:', err);
-    } finally {
+    } catch { toast.error('Upload failed'); } finally {
       setUploadingTalk(null);
     }
   };
 
   async function handleBulkImport(data: Record<string, unknown>[], mapping: any[]) {
+    let failed = 0;
     for (const row of data) {
       const mapped: Record<string, unknown> = {};
       mapping.forEach(m => { if (m.target) mapped[m.target] = row[m.source]; });
-      try { await createM.mutateAsync(mapped as any); } catch { /* skip failed rows */ }
+      try { await createM.mutateAsync(mapped as any); } catch { failed++; }
     }
-    toast.success(`Imported ${data.length} item(s)`);
+    if (failed > 0) toast.error(`${failed} row(s) failed to import`);
+    toast.success(`${data.length - failed} item(s) imported`);
   }
 
   const inp = "w-full bg-gray-800 border border-gray-700 rounded-xl px-4 py-2.5 text-white text-sm placeholder-gray-600 focus:outline-none focus:border-red-500 transition-colors";

@@ -101,12 +101,14 @@ export function Teams() {
   }
 
   async function handleBulkImport(data: Record<string, unknown>[], mapping: any[]) {
+    let failed = 0;
     for (const row of data) {
       const mapped: Record<string, unknown> = {};
       mapping.forEach(m => { if (m.target) mapped[m.target] = row[m.source]; });
-      try { await createMutation.mutateAsync(mapped as any); } catch { /* skip failed rows */ }
+      try { await createMutation.mutateAsync(mapped as any); } catch { failed++; }
     }
-    toast.success(`Imported ${data.length} members`);
+    if (failed > 0) toast.error(`${failed} row(s) failed to import`);
+    toast.success(`${data.length - failed} members imported`);
   }
 
   const filtered = members.filter(m => {
@@ -158,14 +160,19 @@ export function Teams() {
 
   async function handleDelete(id: string) {
     if (!confirm('Remove this team member?')) return;
-    await deleteMutation.mutateAsync(id); toast.success('Member removed');
+    try {
+      await deleteMutation.mutateAsync(id);
+      toast.success('Member removed');
+    } catch { toast.error('Failed to remove member'); }
   }
 
   async function renewCSCS(id: string) {
-    const nextYear = new Date();
-    nextYear.setFullYear(nextYear.getFullYear() + 1);
-    await updateMutation.mutateAsync({ id, data: { cscs_expiry: nextYear.toISOString().split('T')[0] } });
-    toast.success('CSCS card renewed');
+    try {
+      const nextYear = new Date();
+      nextYear.setFullYear(nextYear.getFullYear() + 1);
+      await updateMutation.mutateAsync({ id, data: { cscs_expiry: nextYear.toISOString().split('T')[0] } });
+      toast.success('CSCS card renewed');
+    } catch { toast.error('Failed to renew CSCS card'); }
   }
 
   async function handleUploadCscsCert(memberId: string, file: File) {
@@ -173,9 +180,7 @@ export function Teams() {
     try {
       await uploadFile(file, 'REPORTS');
       toast.success(`Uploaded: ${file.name}`);
-    } catch (err) {
-      console.error('Upload failed:', err);
-    } finally {
+    } catch { toast.error('Upload failed'); } finally {
       setUploadingCscs(null);
     }
   }

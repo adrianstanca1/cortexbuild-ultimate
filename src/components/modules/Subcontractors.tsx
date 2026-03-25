@@ -179,12 +179,14 @@ export function Subcontractors() {
   }
 
   async function handleBulkImport(data: Record<string, unknown>[], mapping: any[]) {
+    let failed = 0;
     for (const row of data) {
       const mapped: Record<string, unknown> = {};
       mapping.forEach(m => { if (m.target) mapped[m.target] = row[m.source]; });
-      try { await createMutation.mutateAsync(mapped as any); } catch { /* skip failed rows */ }
+      try { await createMutation.mutateAsync(mapped as any); } catch { failed++; }
     }
-    toast.success(`Imported ${data.length} subcontractor(s)`);
+    if (failed > 0) toast.error(`${failed} row(s) failed to import`);
+    toast.success(`${data.length - failed} subcontractor(s) imported`);
   }
 
   const insuranceStatus = (expiry?: string) => {

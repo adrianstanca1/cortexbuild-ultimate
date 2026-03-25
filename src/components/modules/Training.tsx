@@ -126,6 +126,7 @@ export default function Training() {
   };
 
   async function handleBulkImport(data: Record<string, unknown>[], mapping: any[]) {
+    let failed = 0;
     for (const row of data) {
       const mapped: Record<string, unknown> = {};
       mapping.forEach(m => { if (m.target) mapped[m.target] = row[m.source]; });
@@ -139,9 +140,10 @@ export default function Training() {
           completed_date: mapped.completed_date || null,
           certification: String(mapped.certification || ''),
         });
-      } catch { /* skip failed rows */ }
+      } catch { failed++; }
     }
-    toast.success(`Imported ${data.length} training record(s)`);
+    if (failed > 0) toast.error(`${failed} row(s) failed to import`);
+    toast.success(`${data.length - failed} training record(s) imported`);
   }
 
   return (

@@ -193,12 +193,14 @@ export function RAMS() {
   }
 
   async function handleBulkImport(data: Record<string, unknown>[], mapping: any[]) {
+    let failed = 0;
     for (const row of data) {
       const mapped: Record<string, unknown> = {};
       mapping.forEach(m => { if (m.target) mapped[m.target] = row[m.source]; });
-      try { await createMutation.mutateAsync(mapped as any); } catch { /* skip failed rows */ }
+      try { await createMutation.mutateAsync(mapped as any); } catch { failed++; }
     }
-    toast.success(`Imported ${data.length} RAMS document(s)`);
+    if (failed > 0) toast.error(`${failed} row(s) failed to import`);
+    toast.success(`${data.length - failed} RAMS document(s) imported`);
   }
 
   const inputCls = 'w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-orange-500';

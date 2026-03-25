@@ -47,19 +47,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const signIn = async (email: string, password: string) => {
-    console.log('[Auth] signIn called with:', email);
     const res = await fetch(`${API_BASE}/auth/login`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ email, password }),
     });
     const data = await res.json();
-    console.log('[Auth] Response:', { ok: res.ok, hasToken: !!data.token, user: data.user });
     if (!res.ok) throw new Error(data.message || 'Login failed');
     setToken(data.token);
     setStoredUser(data.user);
     setUser(data.user as Profile);
-    console.log('[Auth] User set, isAuthenticated should be true');
   };
 
   const signUp = async (email: string, password: string, name: string, company: string) => {
