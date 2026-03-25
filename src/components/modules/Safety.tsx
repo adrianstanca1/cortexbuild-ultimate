@@ -1,7 +1,9 @@
 // Module: Safety — CortexBuild Ultimate (Enhanced with RIDDOR, Permits, Toolbox Talks)
 import { useState } from 'react';
-import { Plus, X, Loader2, Shield, AlertTriangle, CheckCircle2, RefreshCw, Search, Edit2, Trash2, FileText, AlertCircle, Clock, TrendingUp } from 'lucide-react';
+import { Plus, X, Loader2, Shield, AlertTriangle, CheckCircle2, RefreshCw, Search, Edit2, Trash2, FileText, AlertCircle, Clock, TrendingUp, Upload } from 'lucide-react';
 import { useSafety } from '../../hooks/useData';
+import { uploadFile } from '../../services/api';
+import { toast } from 'sonner';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import clsx from 'clsx';
 
@@ -122,6 +124,8 @@ export function Safety() {
   const [showTalkModal, setShowTalkModal] = useState(false);
   const [talkForm, setTalkForm] = useState<TalkFormData>(defaultTalk);
   const [editTalkId, setEditTalkId] = useState<string | null>(null);
+  const [uploadingPermit, setUploadingPermit] = useState<string | null>(null);
+  const [uploadingTalk, setUploadingTalk] = useState<string | null>(null);
 
   const TYPE_MAP: Record<string, string[]> = {
     all:          [],
@@ -217,6 +221,30 @@ export function Safety() {
   const handleDeleteTalk = (id: string) => {
     if (confirm('Delete this toolbox talk record?')) {
       setTalks(talks.filter(t => t.id !== id));
+    }
+  };
+
+  const handleUploadPermitDoc = async (permitId: string, file: File) => {
+    setUploadingPermit(permitId);
+    try {
+      await uploadFile(file, 'PERMITS');
+      toast.success(`Uploaded: ${file.name}`);
+    } catch (err) {
+      console.error('Upload failed:', err);
+    } finally {
+      setUploadingPermit(null);
+    }
+  };
+
+  const handleUploadTalkDoc = async (talkId: string, file: File) => {
+    setUploadingTalk(talkId);
+    try {
+      await uploadFile(file, 'REPORTS');
+      toast.success(`Uploaded: ${file.name}`);
+    } catch (err) {
+      console.error('Upload failed:', err);
+    } finally {
+      setUploadingTalk(null);
     }
   };
 
@@ -504,6 +532,24 @@ export function Safety() {
                         </span>
                       </td>
                       <td className="px-4 py-3 space-x-2">
+                        <input
+                          type="file"
+                          id={`upload-permit-${permit.id}`}
+                          className="hidden"
+                          accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
+                          onChange={async (e) => {
+                            const file = e.target.files?.[0];
+                            if (file) { await handleUploadPermitDoc(permit.id, file); e.target.value = ''; }
+                          }}
+                        />
+                        <button
+                          type="button"
+                          onClick={() => document.getElementById(`upload-permit-${permit.id}`)?.click()}
+                          disabled={uploadingPermit === permit.id}
+                          className="inline-flex items-center gap-1 rounded-lg bg-blue-900/30 hover:bg-blue-900/50 px-2 py-1 text-xs text-blue-400 transition-colors disabled:opacity-50"
+                        >
+                          <Upload className="w-3 h-3" /> {uploadingPermit === permit.id ? '...' : 'Upload'}
+                        </button>
                         <button onClick={() => { setPermitForm(permit); setEditPermitId(permit.id); setShowPermitModal(true); }}
                           className="inline-flex items-center gap-1 rounded-lg bg-gray-800 hover:bg-gray-700 px-2 py-1 text-xs text-white transition-colors">
                           <Edit2 className="w-3 h-3" /> Edit
@@ -543,6 +589,25 @@ export function Safety() {
                   </div>
                 </div>
                 <div className="flex gap-2 shrink-0">
+                  <input
+                    type="file"
+                    id={`upload-talk-${talk.id}`}
+                    className="hidden"
+                    accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
+                    onChange={async (e) => {
+                      const file = e.target.files?.[0];
+                      if (file) { await handleUploadTalkDoc(talk.id, file); e.target.value = ''; }
+                    }}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => document.getElementById(`upload-talk-${talk.id}`)?.click()}
+                    disabled={uploadingTalk === talk.id}
+                    className="rounded-xl bg-blue-900/30 hover:bg-blue-900/50 p-2 text-blue-400 hover:text-blue-300 transition-colors disabled:opacity-50"
+                    title="Upload document"
+                  >
+                    <Upload className="w-4 h-4" />
+                  </button>
                   <button onClick={() => { setTalkForm(talk); setEditTalkId(talk.id); setShowTalkModal(true); }}
                     className="rounded-xl bg-gray-800 hover:bg-gray-700 p-2 text-gray-400 hover:text-white transition-colors">
                     <Edit2 className="w-4 h-4" />

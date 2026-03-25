@@ -4,6 +4,7 @@ import {
   Shield, FileCheck, Image, FolderOpen, CheckCircle2, BarChart3, Activity, Calendar, HardDrive
 } from 'lucide-react';
 import { useDocuments } from '../../hooks/useData';
+import { uploadFile } from '../../services/api';
 import { toast } from 'sonner';
 
 type AnyRow = Record<string, unknown>;
@@ -87,6 +88,8 @@ export function Documents() {
   const [editing, setEditing] = useState<AnyRow | null>(null);
   const [form, setForm] = useState({ ...emptyForm });
   const [selectedCategoryTab, setSelectedCategoryTab] = useState<string | null>(null);
+  const [uploading, setUploading] = useState(false);
+  const [uploadCategory, setUploadCategory] = useState<string>('PLANS');
 
   const filtered = docs.filter(d => {
     const matchSearch = d.name.toLowerCase().includes(search.toLowerCase());
@@ -169,6 +172,19 @@ export function Documents() {
     toast.success('Download started for all documents');
   }
 
+  async function handleQuickUpload(file: File) {
+    setUploading(true);
+    try {
+      await uploadFile(file, uploadCategory);
+      toast.success(`Uploaded: ${file.name}`);
+    } catch (err) {
+      console.error('Upload failed:', err);
+      toast.error('Upload failed');
+    } finally {
+      setUploading(false);
+    }
+  }
+
   const getDaysPending = (date: string): number => {
     const days = Math.floor((new Date().getTime() - new Date(date).getTime()) / (1000 * 60 * 60 * 24));
     return days;
@@ -182,9 +198,33 @@ export function Documents() {
           <h1 className="text-3xl font-bold text-white">Documents</h1>
           <p className="text-sm text-gray-400 mt-1">UK construction document control & version management</p>
         </div>
-        <button onClick={openCreate} className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm font-medium transition-colors">
-          <Upload size={16} /><span>Upload Document</span>
-        </button>
+        <div className="flex items-center gap-2">
+          <select
+            value={uploadCategory}
+            onChange={e => setUploadCategory(e.target.value)}
+            className="text-sm bg-gray-700 border border-gray-600 rounded-lg px-2 py-2 text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500"
+          >
+            {CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
+          </select>
+          <input
+            type="file"
+            id="quick-upload-doc"
+            className="hidden"
+            accept=".pdf,.doc,.docx,.xls,.xlsx,.png,.jpg,.jpeg,.dwg,.zip"
+            onChange={async (e) => {
+              const file = e.target.files?.[0];
+              if (file) { await handleQuickUpload(file); e.target.value = ''; }
+            }}
+          />
+          <button
+            type="button"
+            onClick={() => document.getElementById('quick-upload-doc')?.click()}
+            disabled={uploading}
+            className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm font-medium transition-colors disabled:opacity-50"
+          >
+            <Upload size={16} /><span>{uploading ? 'Uploading...' : 'Upload Document'}</span>
+          </button>
+        </div>
       </div>
 
       {/* Stats Cards */}

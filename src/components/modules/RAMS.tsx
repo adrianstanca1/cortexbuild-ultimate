@@ -1,6 +1,7 @@
-import { useState } from 'react';
-import { Shield, Plus, Search, FileCheck, AlertTriangle, Clock, CheckCircle, Edit2, Trash2, X, ChevronDown, ChevronUp, Download, Award } from 'lucide-react';
+import { useState, useRef } from 'react';
+import { Shield, Plus, Search, FileCheck, AlertTriangle, Clock, CheckCircle, Edit2, Trash2, X, ChevronDown, ChevronUp, Download, Award, Upload } from 'lucide-react';
 import { useRAMS } from '../../hooks/useData';
+import { uploadFile } from '../../services/api';
 import { toast } from 'sonner';
 
 type AnyRow = Record<string, unknown>;
@@ -42,6 +43,9 @@ export function RAMS() {
   const [editing, setEditing] = useState<AnyRow | null>(null);
   const [form, setForm] = useState({ ...emptyForm });
   const [expanded, setExpanded] = useState<string | null>(null);
+  const [uploading, setUploading] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [selectedUploadId, setSelectedUploadId] = useState<string | null>(null);
 
   const filtered = rams.filter(r => {
     const title = String(r.title ?? '').toLowerCase();
@@ -120,6 +124,19 @@ export function RAMS() {
       hazards: template.hazards,
     });
     setShowModal(true);
+  }
+
+  async function handleUploadDoc(ramId: string, file: File) {
+    setUploading(ramId);
+    try {
+      const result = await uploadFile(file, 'RAMS');
+      toast.success(`Document uploaded: ${file.name}`);
+    } catch (err) {
+      console.error('Upload failed:', err);
+      toast.error('Upload failed');
+    } finally {
+      setUploading(null);
+    }
   }
 
   const inputCls = 'w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-orange-500';
@@ -233,6 +250,26 @@ export function RAMS() {
                           {!!(r.reviewed_by ?? r.reviewedBy) && <div><p className="text-xs text-gray-500">Reviewed By</p><p className="text-gray-300">{String(r.reviewed_by ?? r.reviewedBy)}</p></div>}
                           {!!(r.approved_by ?? r.approvedBy) && <div><p className="text-xs text-gray-500">Approved By</p><p className="text-gray-300">{String(r.approved_by ?? r.approvedBy)}</p></div>}
                           {!!(r.created_by ?? r.createdBy) && <div><p className="text-xs text-gray-500">Created By</p><p className="text-gray-300">{String(r.created_by ?? r.createdBy)}</p></div>}
+                        </div>
+                        <div className="flex gap-2 pt-2 border-t border-gray-700">
+                          <input
+                            type="file"
+                            id={`upload-rams-${r.id}`}
+                            className="hidden"
+                            accept=".pdf,.doc,.docx,.xls,.xlsx"
+                            onChange={async (e) => {
+                              const file = e.target.files?.[0];
+                              if (file) { await handleUploadDoc(String(r.id), file); e.target.value = ''; }
+                            }}
+                          />
+                          <button
+                            type="button"
+                            onClick={() => document.getElementById(`upload-rams-${r.id}`)?.click()}
+                            disabled={uploading === String(r.id)}
+                            className="flex items-center gap-2 px-3 py-2 bg-gray-700 hover:bg-gray-600 text-gray-300 rounded-lg text-xs transition-colors disabled:opacity-50"
+                          >
+                            <Upload size={14} /> {uploading === String(r.id) ? 'Uploading...' : 'Upload Document'}
+                          </button>
                         </div>
                       </div>
                     )}

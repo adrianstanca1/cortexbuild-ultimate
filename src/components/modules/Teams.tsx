@@ -1,6 +1,7 @@
 import { useState } from 'react';
-import { Users, Plus, Search, Phone, Mail, Briefcase, Edit2, Trash2, X, ChevronDown, ChevronUp, Shield, Clock, Award, AlertTriangle, PoundSterling, MapPin, CheckCircle2, AlertCircle, Calendar } from 'lucide-react';
+import { Users, Plus, Search, Phone, Mail, Briefcase, Edit2, Trash2, X, ChevronDown, ChevronUp, Shield, Clock, Award, AlertTriangle, PoundSterling, MapPin, CheckCircle2, AlertCircle, Calendar, Upload } from 'lucide-react';
 import { useTeam } from '../../hooks/useData';
+import { uploadFile } from '../../services/api';
 import { toast } from 'sonner';
 
 type AnyRow = Record<string, unknown>;
@@ -63,6 +64,7 @@ export function Teams() {
   const [editing, setEditing] = useState<AnyRow | null>(null);
   const [form, setForm] = useState({ ...emptyForm });
   const [expanded, setExpanded] = useState<string | null>(null);
+  const [uploadingCscs, setUploadingCscs] = useState<string | null>(null);
 
   const filtered = members.filter(m => {
     const name = String(m.name ?? '').toLowerCase();
@@ -115,6 +117,18 @@ export function Teams() {
     nextYear.setFullYear(nextYear.getFullYear() + 1);
     await updateMutation.mutateAsync({ id, data: { cscs_expiry: nextYear.toISOString().split('T')[0] } });
     toast.success('CSCS card renewed');
+  }
+
+  async function handleUploadCscsCert(memberId: string, file: File) {
+    setUploadingCscs(memberId);
+    try {
+      await uploadFile(file, 'REPORTS');
+      toast.success(`Uploaded: ${file.name}`);
+    } catch (err) {
+      console.error('Upload failed:', err);
+    } finally {
+      setUploadingCscs(null);
+    }
   }
 
   function getAvailabilityColor(status: string): string {
@@ -374,6 +388,26 @@ export function Teams() {
                       Renew Certificate
                     </button>
                   )}
+
+                  <input
+                    type="file"
+                    id={`upload-cscs-${m.id}`}
+                    className="hidden"
+                    accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
+                    onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      if (file) handleUploadCscsCert(String(m.id), file);
+                      e.target.value = '';
+                    }}
+                  />
+                  <button
+                    onClick={() => document.getElementById(`upload-cscs-${m.id}`)?.click()}
+                    disabled={uploadingCscs === String(m.id)}
+                    className="w-full mt-2 px-3 py-2 bg-blue-900/30 hover:bg-blue-900/50 disabled:opacity-50 rounded-lg text-sm font-medium transition-colors flex items-center justify-center gap-2"
+                  >
+                    <Upload size={14} />
+                    {uploadingCscs === String(m.id) ? 'Uploading...' : 'Upload CSCS Certificate'}
+                  </button>
                 </div>
               );
             })}
