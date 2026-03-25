@@ -53,7 +53,7 @@ router.get('/', async (req, res) => {
     });
 
     const { rows: inspections } = await pool.query(
-      `SELECT id, title, date, status, project FROM inspections 
+      `SELECT id, type as title, date, status, project FROM inspections 
        WHERE date IS NOT NULL ORDER BY date`
     );
     inspections.forEach(i => {
@@ -73,8 +73,8 @@ router.get('/', async (req, res) => {
       `SELECT id, subject as title, due_date as date, status, project FROM rfis 
        WHERE due_date IS NOT NULL
        UNION ALL
-       SELECT id, title, due_date, status, project FROM change_orders 
-       WHERE due_date IS NOT NULL`
+       SELECT id, title, submitted_date as date, status, project FROM change_orders 
+       WHERE submitted_date IS NOT NULL`
     );
     deadlines.forEach(d => {
       events.push({
