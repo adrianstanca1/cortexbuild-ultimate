@@ -3,6 +3,7 @@ import {
   FileText, Plus, Search, Download, Eye, Edit2, Trash2, X, ChevronDown, ChevronUp, ChevronRight, Clock, Upload,
   Shield, FileCheck, Image, FolderOpen, CheckCircle2, BarChart3, Activity, Calendar, HardDrive, CheckSquare, Square
 } from 'lucide-react';
+import { DataImporter, ExportButton } from '../ui/DataImportExport';
 import { useDocuments } from '../../hooks/useData';
 import { uploadFile } from '../../services/api';
 import { toast } from 'sonner';
@@ -91,6 +92,7 @@ export function Documents() {
   const [selectedCategoryTab, setSelectedCategoryTab] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
   const [uploadCategory, setUploadCategory] = useState<string>('PLANS');
+  const [showBulkImport, setShowBulkImport] = useState(false);
 
   const { selectedIds, toggle, clearSelection } = useBulkSelection();
 
@@ -209,6 +211,15 @@ export function Documents() {
     }
   }
 
+  async function handleBulkImport(data: Record<string, unknown>[], mapping: any[]) {
+    for (const row of data) {
+      const mapped: Record<string, unknown> = {};
+      mapping.forEach(m => { if (m.target) mapped[m.target] = row[m.source]; });
+      try { await createMutation.mutateAsync(mapped as any); } catch { /* skip failed rows */ }
+    }
+    toast.success(`Imported ${data.length} document(s)`);
+  }
+
   const getDaysPending = (date: string): number => {
     const days = Math.floor((new Date().getTime() - new Date(date).getTime()) / (1000 * 60 * 60 * 24));
     return days;
@@ -223,6 +234,10 @@ export function Documents() {
           <p className="text-sm text-gray-400 mt-1">UK construction document control & version management</p>
         </div>
         <div className="flex items-center gap-2">
+          <button type="button" onClick={() => setShowBulkImport(true)} className="flex items-center gap-2 px-3 py-2 bg-gray-700 text-white rounded-lg hover:bg-gray-600 text-sm font-medium">
+            <Download size={16}/><span>Import</span>
+          </button>
+          <ExportButton data={docs} filename="documents" />
           <select
             value={uploadCategory}
             onChange={e => setUploadCategory(e.target.value)}
@@ -704,6 +719,24 @@ export function Documents() {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {showBulkImport && (
+        <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
+          <div className="bg-gray-900 rounded-2xl shadow-2xl w-full max-w-xl border border-gray-700">
+            <div className="flex items-center justify-between p-6 border-b border-gray-700">
+              <h2 className="text-lg font-semibold text-white">Import Items</h2>
+              <button type="button" onClick={() => setShowBulkImport(false)} className="p-2 hover:bg-gray-800 rounded-lg"><X size={18} className="text-gray-400"/></button>
+            </div>
+            <div className="p-6">
+              <DataImporter
+                onImport={handleBulkImport}
+                format="csv"
+                exampleData={{ name: '', category: '', project: '', version: '', status: '' }}
+              />
+            </div>
           </div>
         </div>
       )}

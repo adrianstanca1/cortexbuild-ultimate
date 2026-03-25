@@ -1,6 +1,7 @@
 // Module: Safety — CortexBuild Ultimate (Enhanced with RIDDOR, Permits, Toolbox Talks)
 import { useState } from 'react';
-import { Plus, X, Loader2, Shield, AlertTriangle, CheckCircle2, RefreshCw, Search, Edit2, Trash2, FileText, AlertCircle, Clock, TrendingUp, Upload, CheckSquare, Square } from 'lucide-react';
+import { Plus, X, Loader2, Shield, AlertTriangle, CheckCircle2, RefreshCw, Search, Edit2, Trash2, FileText, AlertCircle, Clock, TrendingUp, Upload, CheckSquare, Square, Download } from 'lucide-react';
+import { DataImporter, ExportButton } from '../ui/DataImportExport';
 import { useSafety } from '../../hooks/useData';
 import { uploadFile } from '../../services/api';
 import { toast } from 'sonner';
@@ -127,6 +128,7 @@ export function Safety() {
   const [editTalkId, setEditTalkId] = useState<string | null>(null);
   const [uploadingPermit, setUploadingPermit] = useState<string | null>(null);
   const [uploadingTalk, setUploadingTalk] = useState<string | null>(null);
+  const [showBulkImport, setShowBulkImport] = useState(false);
 
   // Bulk selection
   const { selectedIds, toggle, clearSelection } = useBulkSelection();
@@ -263,6 +265,15 @@ export function Safety() {
     }
   };
 
+  async function handleBulkImport(data: Record<string, unknown>[], mapping: any[]) {
+    for (const row of data) {
+      const mapped: Record<string, unknown> = {};
+      mapping.forEach(m => { if (m.target) mapped[m.target] = row[m.source]; });
+      try { await createM.mutateAsync(mapped as any); } catch { /* skip failed rows */ }
+    }
+    toast.success(`Imported ${data.length} item(s)`);
+  }
+
   const inp = "w-full bg-gray-800 border border-gray-700 rounded-xl px-4 py-2.5 text-white text-sm placeholder-gray-600 focus:outline-none focus:border-red-500 transition-colors";
   const lbl = "block text-xs font-semibold text-gray-400 mb-1.5 uppercase tracking-wide";
 
@@ -276,6 +287,10 @@ export function Safety() {
         </div>
         <div className="flex gap-2">
           <button type="button" onClick={() => refetch()} className="p-2 rounded-xl bg-gray-800 text-gray-400 hover:text-white"><RefreshCw className="w-4 h-4" /></button>
+          <button type="button" onClick={() => setShowBulkImport(true)} className="flex items-center gap-2 px-3 py-2 bg-gray-700 text-white rounded-lg hover:bg-gray-600 text-sm font-medium">
+            <Download size={16}/><span>Import</span>
+          </button>
+          <ExportButton data={incidents} filename="safety-incidents" />
           {mainTab === 'incidents' && (
             <button type="button" onClick={openCreate} className="flex items-center gap-2 rounded-xl bg-gradient-to-r from-red-600 to-rose-600 px-4 py-2 text-sm font-semibold text-white hover:from-red-500 transition-all shadow-lg shadow-red-500/20">
               <Plus className="w-4 h-4" /> Report Incident
@@ -896,6 +911,24 @@ export function Safety() {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {showBulkImport && (
+        <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
+          <div className="bg-gray-900 rounded-2xl shadow-2xl w-full max-w-xl border border-gray-700">
+            <div className="flex items-center justify-between p-6 border-b border-gray-700">
+              <h2 className="text-lg font-semibold text-white">Import Items</h2>
+              <button type="button" onClick={() => setShowBulkImport(false)} className="p-2 hover:bg-gray-800 rounded-lg"><X size={18} className="text-gray-400"/></button>
+            </div>
+            <div className="p-6">
+              <DataImporter
+                onImport={handleBulkImport}
+                format="csv"
+                exampleData={{ title: '', type: '', severity: '', status: '', description: '', reported_by_name: '' }}
+              />
+            </div>
           </div>
         </div>
       )}

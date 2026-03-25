@@ -1,5 +1,6 @@
 import { useState, useRef } from 'react';
 import { Shield, Plus, Search, FileCheck, AlertTriangle, Clock, CheckCircle, Edit2, Trash2, X, ChevronDown, ChevronUp, Download, Award, Upload, CheckSquare, Square } from 'lucide-react';
+import { DataImporter, ExportButton } from '../ui/DataImportExport';
 import { useRAMS } from '../../hooks/useData';
 import { uploadFile } from '../../services/api';
 import { toast } from 'sonner';
@@ -47,6 +48,7 @@ export function RAMS() {
   const [uploading, setUploading] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [selectedUploadId, setSelectedUploadId] = useState<string | null>(null);
+  const [showBulkImport, setShowBulkImport] = useState(false);
 
   const { selectedIds, toggle, clearSelection } = useBulkSelection();
 
@@ -163,6 +165,15 @@ export function RAMS() {
     }
   }
 
+  async function handleBulkImport(data: Record<string, unknown>[], mapping: any[]) {
+    for (const row of data) {
+      const mapped: Record<string, unknown> = {};
+      mapping.forEach(m => { if (m.target) mapped[m.target] = row[m.source]; });
+      try { await createMutation.mutateAsync(mapped as any); } catch { /* skip failed rows */ }
+    }
+    toast.success(`Imported ${data.length} RAMS document(s)`);
+  }
+
   const inputCls = 'w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-orange-500';
   const labelCls = 'block text-sm font-medium text-gray-300 mb-1';
 
@@ -173,9 +184,15 @@ export function RAMS() {
           <h1 className="text-2xl font-bold text-white">RAMS</h1>
           <p className="text-sm text-gray-400 mt-1">Risk assessments, method statements & approvals</p>
         </div>
-        <button type="button" onClick={openCreate} className="flex items-center gap-2 px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 text-sm font-medium">
-          <Plus size={16} /><span>New RAMS</span>
-        </button>
+        <div className="flex items-center gap-2">
+          <button type="button" onClick={() => setShowBulkImport(true)} className="flex items-center gap-2 px-3 py-2 bg-gray-700 text-white rounded-lg hover:bg-gray-600 text-sm font-medium">
+            <Download size={16}/><span>Import</span>
+          </button>
+          <ExportButton data={rams} filename="rams" />
+          <button type="button" onClick={openCreate} className="flex items-center gap-2 px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 text-sm font-medium">
+            <Plus size={16} /><span>New RAMS</span>
+          </button>
+        </div>
       </div>
 
       {expiringSoon > 0 && (
@@ -501,6 +518,24 @@ export function RAMS() {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {showBulkImport && (
+        <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
+          <div className="bg-gray-900 rounded-2xl shadow-2xl w-full max-w-xl border border-gray-700">
+            <div className="flex items-center justify-between p-6 border-b border-gray-700">
+              <h2 className="text-lg font-semibold text-white">Import Items</h2>
+              <button type="button" onClick={() => setShowBulkImport(false)} className="p-2 hover:bg-gray-800 rounded-lg"><X size={18} className="text-gray-400"/></button>
+            </div>
+            <div className="p-6">
+              <DataImporter
+                onImport={handleBulkImport}
+                format="csv"
+                exampleData={{ title: '', activity: '', status: '', valid_until: '', reviewed_by: '' }}
+              />
+            </div>
           </div>
         </div>
       )}

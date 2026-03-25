@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { HardHat, CheckCircle2, AlertTriangle, XCircle, Star, DollarSign, Plus, Search, Filter, Shield, FileText, BarChart3, X, Edit2, Trash2, Phone, Mail, Building2, CheckSquare, Square } from 'lucide-react';
+import { HardHat, CheckCircle2, AlertTriangle, XCircle, Star, DollarSign, Plus, Search, Filter, Shield, FileText, BarChart3, X, Edit2, Trash2, Phone, Mail, Building2, CheckSquare, Square, Download } from 'lucide-react';
+import { DataImporter, ExportButton } from '../ui/DataImportExport';
 import { BulkActionsBar, useBulkSelection } from '../ui/BulkActions';
 import { useSubcontractors } from '../../hooks/useData';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
@@ -34,6 +35,7 @@ export function Subcontractors() {
   const [editing, setEditing] = useState<AnyRow | null>(null);
   const [form, setForm] = useState({ ...emptyForm });
   const { selectedIds, toggle, clearSelection } = useBulkSelection();
+  const [showBulkImport, setShowBulkImport] = useState(false);
 
   async function handleBulkDelete(ids: string[]) {
     if (!confirm(`Delete ${ids.length} subcontractor(s)?`)) return;
@@ -157,6 +159,15 @@ export function Subcontractors() {
     }
   }
 
+  async function handleBulkImport(data: Record<string, unknown>[], mapping: any[]) {
+    for (const row of data) {
+      const mapped: Record<string, unknown> = {};
+      mapping.forEach(m => { if (m.target) mapped[m.target] = row[m.source]; });
+      try { await createMutation.mutateAsync(mapped as any); } catch { /* skip failed rows */ }
+    }
+    toast.success(`Imported ${data.length} subcontractor(s)`);
+  }
+
   const insuranceStatus = (expiry?: string) => {
     if (!expiry) return { color: 'bg-red-900/30 text-red-300', label: 'Not recorded' };
     const diff = (new Date(expiry).getTime() - Date.now()) / 86400000;
@@ -174,13 +185,20 @@ export function Subcontractors() {
           <h1 className="text-2xl font-bold text-gray-100">Subcontractors</h1>
           <p className="text-sm text-gray-400 mt-1">Manage contractors, compliance & payments</p>
         </div>
-        <button
-          onClick={openCreate}
-          className="flex items-center gap-2 px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 text-sm font-medium"
-        >
-          <Plus size={16} />
-          <span>Add Subcontractor</span>
-        </button>
+        <div className="flex items-center gap-2">
+          <button type="button" onClick={() => setShowBulkImport(true)} className="flex items-center gap-2 px-3 py-2 bg-gray-700 text-white rounded-lg hover:bg-gray-600 text-sm font-medium">
+            <Download size={16}/><span>Import</span>
+          </button>
+          <ExportButton data={subs} filename="subcontractors" />
+          <button
+            type="button"
+            onClick={openCreate}
+            className="flex items-center gap-2 px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 text-sm font-medium"
+          >
+            <Plus size={16} />
+            <span>Add Subcontractor</span>
+          </button>
+        </div>
       </div>
 
       {/* Stats Cards - 5 KPIs */}
@@ -882,6 +900,24 @@ export function Subcontractors() {
                   Close
                 </button>
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showBulkImport && (
+        <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
+          <div className="bg-gray-900 rounded-2xl shadow-2xl w-full max-w-xl border border-gray-700">
+            <div className="flex items-center justify-between p-6 border-b border-gray-700">
+              <h2 className="text-lg font-semibold text-white">Import Items</h2>
+              <button type="button" onClick={() => setShowBulkImport(false)} className="p-2 hover:bg-gray-800 rounded-lg"><X size={18} className="text-gray-400"/></button>
+            </div>
+            <div className="p-6">
+              <DataImporter
+                onImport={handleBulkImport}
+                format="csv"
+                exampleData={{ name: '', company: '', trade: '', phone: '', email: '', status: '' }}
+              />
             </div>
           </div>
         </div>

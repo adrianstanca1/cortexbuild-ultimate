@@ -12,7 +12,7 @@ Full system audit complete — all CRUD + upload working, code-splitting improve
 2026-03-25
 
 ## Last Commit
-`76a09b5` — "feat: add bulk actions to all remaining modules"
+`89dcc2f` — "fix: remove unused vercel package - eliminates all 16 security vulnerabilities"
 
 ## What Works
 - **Upload**: All 16 modules have file upload (Teams, Documents, Safety, RAMS, Certifications, Training, Specifications, Valuations, Defects, Signage, Lettings, Measuring, Prequalification, Sustainability, WasteManagement, TempWorks)
@@ -22,7 +22,8 @@ Full system audit complete — all CRUD + upload working, code-splitting improve
 - **Bulk Import**: DataImporter component integrated in Teams module (CSV import with column mapping)
 - **Database**: 43 tables, all aligned with backend generic.js ALLOWED_COLUMNS
 - **Auth**: JWT middleware active on all API endpoints
-- **Deployment**: GitHub → VPS pull → build → PM2 restart working (PM2 #75)
+- **Security**: 0 npm vulnerabilities (vercel package removed as it was unused)
+- **Deployment**: GitHub → VPS pull → build → PM2 restart working (PM2 #76)
 
 ## Architecture (Two API Patterns)
 1. **Direct api.ts** (19 modules): `useEffect` → `api.getAll()` — legacy pattern
@@ -83,7 +84,6 @@ Every module now has checkbox multi-select with bulk delete via BulkActionsBar.
 Bulk actions completed across ALL 40+ modules. All deployed to VPS.
 
 ## Blockers
-- 16 GitHub Dependabot vulnerabilities (non-critical warnings)
 - Ollama model: `llama3.2:3b` (consider upgrading to `llama3.1:8b`)
 
 ## Resume Instructions
