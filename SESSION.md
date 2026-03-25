@@ -12,7 +12,7 @@ Full system audit complete — all CRUD + upload working, code-splitting improve
 2026-03-25
 
 ## Last Commit
-`ae318d8` — "feat: add site_permits, equipment_service_logs, equipment_hire_logs tables to generic.js router with multi-tenancy"
+`7e67710` — "feat: wire FieldView permits and PlantEquipment service/hire logs to real API"
 
 ## What Works
 - **Upload**: All 16 modules have file upload (Teams, Documents, Safety, RAMS, Certifications, Training, Specifications, Valuations, Defects, Signage, Lettings, Measuring, Prequalification, Sustainability, WasteManagement, TempWorks)
