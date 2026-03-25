@@ -8,7 +8,7 @@ const router = express.Router();
  * Returns a 7-day weather forecast aggregated from weather_logs or daily_reports.
  * Falls back to mock data if no real records exist.
  */
-router.get('/weather-forecast', async (req, res) => {
+router.get('/', async (req, res) => {
   try {
     const auth = req.user || {};
     const orgId = auth.organization_id;
