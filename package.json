@@ -15,7 +15,6 @@
     "test:coverage": "vitest run --coverage"
   },
   "dependencies": {
-    "@rolldown/binding-linux-arm64-gnu": "^1.0.0-rc.11",
     "@tanstack/react-query": "^5.91.3",
     "clsx": "^2.1.1",
     "date-fns": "^3.6.0",
@@ -26,7 +25,6 @@
     "recharts": "^2.12.2",
     "sonner": "^1.4.41",
     "tailwind-merge": "^2.3.0",
-    "vercel": "^32.3.0",
     "zustand": "^5.0.12"
   },
   "devDependencies": {
