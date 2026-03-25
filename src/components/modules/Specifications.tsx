@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import {
   FileText, Plus, Search, Filter, Download, Clock, BookOpen,
-  CheckCircle, AlertTriangle, FileCheck, Eye, Edit, X, Building2, Upload
+  CheckCircle, AlertTriangle, FileCheck, Eye, Edit, X, Building2, Upload, Trash2
 } from 'lucide-react';
 import { specificationsApi, uploadFile } from '../../services/api';
 
@@ -26,6 +26,9 @@ export default function Specifications() {
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState<string>('all');
   const [uploading, setUploading] = useState<string | null>(null);
+  const [showCreateModal, setShowCreateModal] = useState(false);
+  const [creating, setCreating] = useState(false);
+  const [form, setForm] = useState({ title: '', project: '', section: '', discipline: '', description: '' });
 
   useEffect(() => {
     async function loadSpecifications() {
@@ -40,6 +43,41 @@ export default function Specifications() {
     }
     loadSpecifications();
   }, []);
+
+  const handleCreate = async () => {
+    if (!form.title || !form.project) return;
+    setCreating(true);
+    try {
+      const ref = `SPEC-${String(Date.now()).slice(-6)}`;
+      const newRecord = {
+        reference: ref,
+        title: form.title,
+        project: form.project,
+        section: form.section,
+        version: '1.0',
+        status: 'draft',
+        description: form.description,
+      };
+      const created = await specificationsApi.create(newRecord) as Specification;
+      setSpecifications(prev => [...prev, created]);
+      setShowCreateModal(false);
+      setForm({ title: '', project: '', section: '', discipline: '', description: '' });
+    } catch (err) {
+      console.error('Failed to create:', err);
+    } finally {
+      setCreating(false);
+    }
+  };
+
+  const handleDelete = async (id: string) => {
+    if (!confirm('Delete this specification?')) return;
+    try {
+      await specificationsApi.delete(id);
+      setSpecifications(prev => prev.filter(s => String(s.id) !== String(id)));
+    } catch (err) {
+      console.error('Failed to delete:', err);
+    }
+  };
 
   const handleUpload = async (specId: string, file: File) => {
     setUploading(specId);
@@ -157,6 +195,14 @@ export default function Specifications() {
                     >
                       {uploading === String(spec.id) ? <Clock size={16} className="animate-spin" /> : <Upload size={16} />}
                     </button>
+                    <button
+                      type="button"
+                      onClick={() => handleDelete(String(spec.id))}
+                      className="p-2 hover:bg-red-900/30 rounded"
+                      title="Delete"
+                    >
+                      <Trash2 size={16} className="text-red-400" />
+                    </button>
                   </div>
                 </div>
                 <div className="mt-3 flex gap-4 text-sm text-gray-400">
@@ -178,6 +224,52 @@ export default function Specifications() {
           })}
         </div>
       </div>
+
+      {showCreateModal && (
+        <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
+          <div className="bg-gray-900 border border-gray-700 rounded-xl w-full max-w-lg">
+            <div className="p-6 border-b border-gray-700 flex items-center justify-between">
+              <h3 className="text-xl font-bold text-white">Add Specification</h3>
+              <button type="button" onClick={() => setShowCreateModal(false)} className="text-gray-400 hover:text-white"><X size={20} /></button>
+            </div>
+            <div className="p-6 space-y-4">
+              <div>
+                <label className="block text-gray-400 text-xs mb-1">Title</label>
+                <input type="text" value={form.title} onChange={e => setForm(f => ({ ...f, title: e.target.value }))} placeholder="Specification title..." className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500" />
+              </div>
+              <div>
+                <label className="block text-gray-400 text-xs mb-1">Project</label>
+                <select value={form.project} onChange={e => setForm(f => ({ ...f, project: e.target.value }))} className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white">
+                  <option value="">Select project...</option>
+                  <option>Canary Wharf Office Complex</option>
+                  <option>Manchester City Apartments</option>
+                  <option>Birmingham Road Bridge</option>
+                </select>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-gray-400 text-xs mb-1">Section</label>
+                  <input type="text" value={form.section} onChange={e => setForm(f => ({ ...f, section: e.target.value }))} placeholder="e.g. 05 00 00" className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500" />
+                </div>
+                <div>
+                  <label className="block text-gray-400 text-xs mb-1">Discipline</label>
+                  <input type="text" value={form.discipline} onChange={e => setForm(f => ({ ...f, discipline: e.target.value }))} placeholder="e.g. Structural" className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500" />
+                </div>
+              </div>
+              <div>
+                <label className="block text-gray-400 text-xs mb-1">Description</label>
+                <textarea rows={3} value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))} placeholder="Specification details..." className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500" />
+              </div>
+            </div>
+            <div className="p-6 border-t border-gray-700 flex justify-end gap-3">
+              <button type="button" onClick={() => setShowCreateModal(false)} className="px-4 py-2 text-gray-400 hover:text-white">Cancel</button>
+              <button type="button" onClick={handleCreate} disabled={creating || !form.title || !form.project} className="px-4 py-2 bg-orange-500 hover:bg-orange-600 text-white rounded-lg font-semibold disabled:opacity-50">
+                {creating ? 'Creating...' : 'Create Specification'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
