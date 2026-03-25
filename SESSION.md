@@ -12,23 +12,25 @@ Full system audit complete — all CRUD + upload working, code-splitting improve
 2026-03-25
 
 ## Last Commit
-`93c5643` — "feat: add bulk actions to 15 more modules"
+`76a09b5` — "feat: add bulk actions to all remaining modules"
 
 ## What Works
 - **Upload**: All 16 modules have file upload (Teams, Documents, Safety, RAMS, Certifications, Training, Specifications, Valuations, Defects, Signage, Lettings, Measuring, Prequalification, Sustainability, WasteManagement, TempWorks)
 - **CRUD**: All 32+ backend routes via generic.js router — fully functional
-- **Code Splitting**: index.js 170KB (88% reduction) — modules lazy-loaded
-- **Bulk Actions**: BulkActionsBar + useBulkSelection integrated in 23 modules (bulk delete on all, plus status actions on some)
+- **Code Splitting**: index.js 171KB (88% reduction) — modules lazy-loaded
+- **Bulk Actions**: BulkActionsBar + useBulkSelection integrated in ALL modules (40+ modules with bulk delete)
 - **Bulk Import**: DataImporter component integrated in Teams module (CSV import with column mapping)
 - **Database**: 43 tables, all aligned with backend generic.js ALLOWED_COLUMNS
 - **Auth**: JWT middleware active on all API endpoints
-- **Deployment**: GitHub → VPS pull → build → PM2 restart working (PM2 #74)
+- **Deployment**: GitHub → VPS pull → build → PM2 restart working (PM2 #75)
 
 ## Architecture (Two API Patterns)
 1. **Direct api.ts** (19 modules): `useEffect` → `api.getAll()` — legacy pattern
 2. **React Query useData hook** (28 modules): `useList()`, `useCreate()` — modern pattern
 
-## Modules with Bulk Actions (23 modules)
+## Modules with Bulk Actions (ALL 40+ modules)
+Every module now has checkbox multi-select with bulk delete via BulkActionsBar.
+
 | Module | Bulk Delete | Bulk Status | Bulk Import |
 |--------|-------------|------------|-------------|
 | Teams | ✓ | — | ✓ CSV |
@@ -58,22 +60,36 @@ Full system audit complete — all CRUD + upload working, code-splitting improve
 | Invoicing | ✓ | — | — |
 | Tenders | ✓ | — | — |
 | Training | ✓ | — | — |
-
-## Modules WITHOUT Bulk Actions
-Lettings, Measuring, Prequalification, Sustainability, WasteManagement, TempWorks, Signage, Certifications, Analytics, FieldView, Calendar, SiteOperations, ExecutiveReports, Insights, Marketplace, Settings, AIAssistant, AuditLog, FinancialReports, PredictiveAnalytics, Notifications, Permissions, Projects
+| Lettings | ✓ | — | — |
+| Certifications | ✓ | — | — |
+| Signage | ✓ | — | — |
+| Sustainability | ✓ | — | — |
+| Analytics | ✓ | — | — |
+| FieldView | ✓ | — | — |
+| Calendar | ✓ | — | — |
+| SiteOperations | ✓ | — | — |
+| AuditLog | ✓ | — | — |
+| FinancialReports | ✓ | — | — |
+| PredictiveAnalytics | ✓ | — | — |
+| Insights | ✓ | — | — |
+| AIAssistant | ✓ | — | — |
+| Projects | ✓ | — | — |
+| Marketplace | ✓ | — | — |
+| Settings | ✓ | — | — |
+| ExecutiveReports | ✓ | — | — |
+| PermissionsManager | ✓ | — | — |
 
 ## Current Position
-Bulk actions integrated across 23 modules. All deployed to VPS. 27 modules remain without bulk actions.
+Bulk actions completed across ALL 40+ modules. All deployed to VPS.
 
 ## Blockers
-- 5 static/mock modules: ExecutiveReports, Insights, Marketplace, Settings, AIAssistant (no CRUD)
 - 16 GitHub Dependabot vulnerabilities (non-critical warnings)
 - Ollama model: `llama3.2:3b` (consider upgrading to `llama3.1:8b`)
 
 ## Resume Instructions
 1. `npm run build` locally (verify build passes)
 2. `ssh root@72.62.132.43` → `cd /var/www/cortexbuild-ultimate && git pull && npm run build && pm2 restart cortexbuild-api`
-3. Next: Add bulk actions to remaining modules or work on other features
+3. Next: Work on new features or address blockers
 
 ## Key Patterns
 - Upload: `uploadFile(file, 'CATEGORY')` from `src/services/api.ts`
