@@ -1,4 +1,4 @@
-const { pool } = require('../db');
+const pool = require('../db');
 
 async function logAudit({ auth, action, entityType, entityId, oldData, newData, ipAddress }) {
   try {
