@@ -46,52 +46,27 @@ services:
       - "11434:11434"
     networks:
       - cortexbuild
-    deploy:
-      resources:
-        reservations:
-          devices:
-            - driver: nvidia
-              count: all
-              capabilities: [gpu]
-    # Note: GPU passthrough requires NVIDIA Container Toolkit
-    # For CPU-only: remove deploy section
 
-  # MinIO Object Storage (S3-compatible)
-  minio:
-    image: minio/minio:latest
-    container_name: cortexbuild-minio
-    restart: always
-    environment:
-      MINIO_ROOT_USER: cortexbuild-admin
-      MINIO_ROOT_PASSWORD: C0rt3xBu1ld_M1n10_S3cur3
-    volumes:
-      - minio_data:/data
-    ports:
-      - "9000:9000"
-      - "9001:9001"
-    networks:
-      - cortexbuild
-    command: server /data --console-address ":9001"
-
-  # Next.js Application
-  app:
+  # Express API Application
+  api:
     build:
       context: .
-      dockerfile: Dockerfile
-    container_name: cortexbuild-app
+      dockerfile: Dockerfile.api
+    container_name: cortexbuild-api
     restart: always
     environment:
       DATABASE_URL: postgresql://cortexbuild:C0rt3xBu1ld_S3cur3_P@ss@postgres:5432/cortexbuild?schema=public
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_NAME: cortexbuild
+      DB_USER: cortexbuild
+      DB_PASSWORD: C0rt3xBu1ld_S3cur3_P@ss
+      JWT_SECRET: cortexbuild_jwt_secret_change_this_in_production
+      PORT: 3001
       OLLAMA_HOST: http://ollama:11434
-      NEXTAUTH_URL: http://72.62.132.43:3000
-      REDIS_URL: redis://redis:6379
-      STORAGE_PROVIDER: minio
-      STORAGE_BUCKET: cortexbuild
-      MINIO_ENDPOINT: minio:9000
-      MINIO_ACCESS_KEY: cortexbuild-admin
-      MINIO_SECRET_KEY: C0rt3xBu1ld_M1n10_S3cur3
+      OLLAMA_MODEL: llama3.1:8b
     ports:
-      - "3000:3000"
+      - "3001:3001"
     networks:
       - cortexbuild
     depends_on:
@@ -118,7 +93,7 @@ services:
     networks:
       - cortexbuild
     depends_on:
-      - app
+      - api
 
   # Prometheus Monitoring
   prometheus:
@@ -145,7 +120,6 @@ services:
       GF_SECURITY_ADMIN_PASSWORD: C0rt3xBu1ld_Grafana
     volumes:
       - grafana_data:/var/lib/grafana
-      - ./monitoring/grafana:/etc/grafana/provisioning
     ports:
       - "3001:3001"
     networks:
@@ -161,6 +135,5 @@ volumes:
   postgres_data:
   redis_data:
   ollama_data:
-  minio_data:
   prometheus_data:
   grafana_data:
