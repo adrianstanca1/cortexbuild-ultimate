@@ -11,13 +11,14 @@ const router = express.Router();
 // Get notifications for user
 router.get('/', async (req, res) => {
   try {
-    const userId = req.user?.id;
+    const orgId = req.user?.organization_id;
+    const companyId = req.user?.company_id;
     const { rows } = await pool.query(
       `SELECT * FROM notifications 
-       WHERE user_id = $1 OR user_id IS NULL 
+       WHERE (organization_id = $1 OR company_id = $2 OR organization_id IS NULL)
        ORDER BY created_at DESC 
        LIMIT 100`,
-      [userId]
+      [orgId, companyId]
     );
     res.json(rows);
   } catch (err) {
@@ -29,11 +30,12 @@ router.get('/', async (req, res) => {
 // Get unread count
 router.get('/unread-count', async (req, res) => {
   try {
-    const userId = req.user?.id;
+    const orgId = req.user?.organization_id;
+    const companyId = req.user?.company_id;
     const { rows } = await pool.query(
       `SELECT COUNT(*) as count FROM notifications 
-       WHERE (user_id = $1 OR user_id IS NULL) AND read = false`,
-      [userId]
+       WHERE (organization_id = $1 OR company_id = $2 OR organization_id IS NULL) AND read = false`,
+      [orgId, companyId]
     );
     res.json({ count: parseInt(rows[0].count) });
   } catch (err) {

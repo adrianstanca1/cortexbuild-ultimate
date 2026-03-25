@@ -114,14 +114,15 @@ router.get('/trends', async (req, res) => {
     const { filter: tenantFilter, params: tenantParams } = getTenantFilter(req);
 
     // Monthly revenue from paid invoices (last 6 months)
+    const revenueWhere = tenantFilter 
+      ? `${tenantFilter} AND status = 'paid' AND issue_date >= DATE_TRUNC('month', CURRENT_DATE) - INTERVAL '5 months'`
+      : `status = 'paid' AND issue_date >= DATE_TRUNC('month', CURRENT_DATE) - INTERVAL '5 months'`;
     const revenueQuery = `
       SELECT 
         DATE_TRUNC('month', issue_date) as month,
         COALESCE(SUM(CASE WHEN status = 'paid' THEN amount ELSE 0 END), 0) as revenue
       FROM invoices
-      ${tenantFilter}
-        AND status = 'paid'
-        AND issue_date >= DATE_TRUNC('month', CURRENT_DATE) - INTERVAL '5 months'
+      WHERE ${revenueWhere}
       GROUP BY DATE_TRUNC('month', issue_date)
       ORDER BY DATE_TRUNC('month', issue_date)
     `;
