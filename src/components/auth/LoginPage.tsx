@@ -458,37 +458,6 @@ export default function LoginPage() {
             <FeaturePill icon={CheckCircle}    text="RAMS & Inspections"   delay="0.85s" />
           </div>
 
-          {/* Stats row */}
-          <div style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(3, 1fr)',
-            gap: '1px',
-            background: 'rgba(30,41,59,0.5)',
-            borderRadius: '14px',
-            overflow: 'hidden',
-            border: '1px solid rgba(30,41,59,0.8)',
-            animation: 'slideUp 0.7s ease 0.9s both',
-          }}>
-            {[
-              { value: 2800, suffix: '+', label: 'projects managed' },
-              { value: 47,   suffix: 'K', label: 'workers tracked' },
-              { value: 99,   suffix: '%', label: 'uptime SLA' },
-            ].map(({ value, suffix, label }, i) => (
-              <div key={i} style={{
-                padding: '20px 12px',
-                background: 'rgba(13,17,23,0.7)',
-                position: 'relative',
-              }}>
-                {i > 0 && (
-                  <div style={{
-                    position: 'absolute', left: 0, top: '20%', bottom: '20%', width: '1px',
-                    background: 'rgba(30,41,59,0.8)',
-                  }} />
-                )}
-                <StatBlock value={value} suffix={suffix} label={label} delay={1100 + i * 200} />
-              </div>
-            ))}
-          </div>
         </div>
 
         {/* Bottom ticker */}
