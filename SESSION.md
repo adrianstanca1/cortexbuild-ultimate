@@ -12,24 +12,36 @@ Full system audit complete — all CRUD + upload working, code-splitting improve
 2026-03-25
 
 ## Last Commit
-`HEAD` — WIP: Bulk actions, batch delete, bulk import added to Teams, Safety, Documents modules
+`e6d2546` — "feat: add bulk actions to RAMS, RFIs, ChangeOrders, Subcontractors, Timesheets"
 
 ## What Works
 - **Upload**: All 16 modules have file upload (Teams, Documents, Safety, RAMS, Certifications, Training, Specifications, Valuations, Defects, Signage, Lettings, Measuring, Prequalification, Sustainability, WasteManagement, TempWorks)
 - **CRUD**: All 32+ backend routes via generic.js router — fully functional
 - **Code Splitting**: index.js 170KB (88% reduction) — modules lazy-loaded
-- **Bulk Actions**: BulkActionsBar + useBulkSelection integrated in Teams, Safety, Documents — batch delete, status updates
+- **Bulk Actions**: BulkActionsBar + useBulkSelection integrated in 8 modules: Teams, Safety, Documents, RAMS, RFIs, ChangeOrders, Subcontractors, Timesheets
 - **Bulk Import**: DataImporter component integrated in Teams module (CSV import with column mapping)
 - **Database**: 43 tables, all aligned with backend generic.js ALLOWED_COLUMNS
 - **Auth**: JWT middleware active on all API endpoints
-- **Deployment**: GitHub → VPS pull → build → PM2 restart #69 working
+- **Deployment**: GitHub → VPS pull → build → PM2 restart working
 
 ## Architecture (Two API Patterns)
 1. **Direct api.ts** (19 modules): `useEffect` → `api.getAll()` — legacy pattern
 2. **React Query useData hook** (28 modules): `useList()`, `useCreate()` — modern pattern
 
+## Modules with Bulk Actions
+| Module | Bulk Delete | Bulk Status | Bulk Import |
+|--------|-------------|------------|------------|
+| Teams | ✓ | — | ✓ CSV |
+| Safety | ✓ | ✓ Close | — |
+| Documents | ✓ | ✓ Current/Review | — |
+| RAMS | ✓ | ✓ Approve | — |
+| RFIs | ✓ | ✓ Close | — |
+| ChangeOrders | ✓ | ✓ Approve | — |
+| Subcontractors | ✓ | — | — |
+| Timesheets | ✓ | — | — |
+
 ## Current Position
-Bulk actions implemented in Teams, Safety, Documents. Need to: commit changes, deploy to VPS, integrate remaining modules.
+Bulk actions fully integrated across 8 modules. All deployed to VPS.
 
 ## Blockers
 - 5 static/mock modules: ExecutiveReports, Insights, Marketplace, Settings, AIAssistant (no CRUD)
@@ -37,10 +49,9 @@ Bulk actions implemented in Teams, Safety, Documents. Need to: commit changes, d
 - Ollama model: `llama3.2:3b` (consider upgrading to `llama3.1:8b`)
 
 ## Resume Instructions
-1. Commit changes: `git add . && git commit -m "feat: add bulk actions, batch delete, bulk import"`
-2. `npm run build` locally (verify build passes)
-3. `ssh root@72.62.132.43` → `cd /var/www/cortexbuild-ultimate && git pull && npm run build && pm2 restart cortexbuild-api`
-4. Next: Integrate bulk actions into remaining modules (RAMS, RFIs, ChangeOrders, Subcontractors, etc.)
+1. `npm run build` locally (verify build passes)
+2. `ssh root@72.62.132.43` → `cd /var/www/cortexbuild-ultimate && git pull && npm run build && pm2 restart cortexbuild-api`
+3. Next: Add bulk actions to remaining modules (Procurement, PlantEquipment, Inspections, Variations, Defects, Valuations, etc.)
 
 ## Key Patterns
 - Upload: `uploadFile(file, 'CATEGORY')` from `src/services/api.ts`
