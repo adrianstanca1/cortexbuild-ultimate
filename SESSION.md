@@ -12,7 +12,7 @@ Full system audit complete — all CRUD + upload working, code-splitting improve
 2026-03-25
 
 ## Last Commit
-`ad9a3a5` — "feat: WebSocket event bus for real-time React Query invalidation, multi-tenancy filtering in generic.js, JWT org/company payload"
+`74ab88f` — "feat: replace Teams mock data with real API — skills, inductions, availability tabs now use backend tables and routes"
 
 ## What Works
 - **Upload**: All 16 modules have file upload (Teams, Documents, Safety, RAMS, Certifications, Training, Specifications, Valuations, Defects, Signage, Lettings, Measuring, Prequalification, Sustainability, WasteManagement, TempWorks)
@@ -33,6 +33,7 @@ Full system audit complete — all CRUD + upload working, code-splitting improve
 - **Audit Log**: Export tab fully functional — audit trail export (CSV/JSON) and full platform backup via backup API
 - **Form Validation**: Zod schemas added to 7 modules: Teams, Safety, RAMS, Documents, Subcontractors, RFIs, ChangeOrders
 - **WebSocket Event Bus**: `src/lib/eventBus.ts` singleton enables WS messages to invalidate React Query caches. `useNotifications.ts` emits events on WS connect/disconnect/message. `useData.ts` hooks subscribe and invalidate on WS messages.
+- **Team Member Data API**: Backend routes at `/api/team-member-data/` for skills, inductions, and availability with dedicated DB tables (`team_member_skills`, `team_member_inductions`, `team_member_availability`). Teams module tabs now use real API instead of mock data.
 
 ## Architecture (Two API Patterns)
 1. **Direct api.ts** (19 modules): `useEffect` → `api.getAll()` — legacy pattern
