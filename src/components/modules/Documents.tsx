@@ -7,9 +7,22 @@ import { DataImporter, ExportButton } from '../ui/DataImportExport';
 import { useDocuments } from '../../hooks/useData';
 import { uploadFile } from '../../services/api';
 import { toast } from 'sonner';
+import { z } from 'zod';
 import { BulkActionsBar, useBulkSelection } from '../ui/BulkActions';
 
 type AnyRow = Record<string, unknown>;
+
+const documentSchema = z.object({
+  name: z.string().min(1, 'Document name is required'),
+  category: z.enum(['PLANS', 'DRAWINGS', 'PERMITS', 'RAMS', 'CONTRACTS', 'REPORTS', 'SPECS', 'PHOTOS']).optional(),
+  project: z.string().optional(),
+  version: z.string().optional(),
+  status: z.enum(['draft', 'for review', 'current', 'superseded']).optional(),
+  uploadedBy: z.string().optional(),
+  uploadedDate: z.string().optional(),
+  description: z.string().optional(),
+  size: z.string().optional(),
+});
 
 interface Document {
   id: string;
@@ -168,6 +181,11 @@ export function Documents() {
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
+    const result = documentSchema.safeParse(form);
+    if (!result.success) {
+      toast.error(result.error.issues[0].message);
+      return;
+    }
     if (editing) {
       await updateMutation.mutateAsync({ id: String(editing.id), data: form });
       toast.success('Document updated');

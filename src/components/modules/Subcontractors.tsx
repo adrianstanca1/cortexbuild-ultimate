@@ -5,8 +5,22 @@ import { BulkActionsBar, useBulkSelection } from '../ui/BulkActions';
 import { useSubcontractors } from '../../hooks/useData';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { toast } from 'sonner';
+import { z } from 'zod';
 
 type AnyRow = Record<string, unknown>;
+
+const subcontractorSchema = z.object({
+  company: z.string().min(1, 'Company name is required'),
+  contact: z.string().min(1, 'Contact name is required'),
+  trade: z.string().min(1, 'Trade is required'),
+  email: z.string().email('Invalid email').or(z.literal('')).optional(),
+  phone: z.string().min(10, 'Phone must be at least 10 digits').optional(),
+  status: z.enum(['active', 'pending', 'inactive']).optional(),
+  cisVerified: z.boolean().optional(),
+  insuranceExpiry: z.string().optional(),
+  rating: z.union([z.string(), z.number()]).optional(),
+  contractValue: z.union([z.string(), z.number()]).optional(),
+});
 
 const TRADES = ['Groundworks','Concrete','Structural Steel','Brickwork','Carpentry','Roofing','Cladding','Electrical','Plumbing','HVAC','Plastering','Tiling','Painting','Scaffolding','Demolition','Landscaping'];
 const STATUS_MAP: Record<string,string> = {
@@ -134,6 +148,11 @@ export function Subcontractors() {
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
+    const result = subcontractorSchema.safeParse(form);
+    if (!result.success) {
+      toast.error(result.error.issues[0].message);
+      return;
+    }
     const payload = { ...form, rating: Number(form.rating) || 3, contractValue: Number(form.contractValue) || 0 };
     try {
       if (editing) {

@@ -6,6 +6,7 @@ const http       = require('http');
 const authMiddleware = require('./middleware/auth');
 const makeRouter     = require('./routes/generic');
 const authRoutes     = require('./routes/auth');
+const rateLimiter    = require('./middleware/rateLimiter');
 const { initWebSocket } = require('./lib/websocket');
 
 const app  = express();
@@ -19,6 +20,7 @@ initWebSocket(server);
 const corsOrigin = process.env.CORS_ORIGIN || '*';
 app.use(cors({ origin: corsOrigin, credentials: corsOrigin !== '*' }));
 app.use(express.json({ limit: '10mb' }));
+app.use(rateLimiter);
 
 // ─── Static file serving for uploads ─────────────────────────────────────────
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
@@ -79,6 +81,7 @@ app.use('/api/search',          require('./routes/search'));
 app.use('/api/audit',           require('./routes/audit'));
 app.use('/api/calendar',        require('./routes/calendar'));
 app.use('/api/email',          require('./routes/email'));
+app.use('/api/backup',         require('./routes/backup'));
 app.use('/api/report-templates', require('./routes/report-templates'));
 app.use('/api/permissions',    require('./routes/permissions'));
 

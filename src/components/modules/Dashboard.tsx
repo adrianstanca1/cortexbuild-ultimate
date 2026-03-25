@@ -1,11 +1,12 @@
 // Module: Dashboard — CortexBuild Ultimate
 // World-class construction BI dashboard with KPI bar, sub-tabs, and live feeds
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import {
   TrendingUp, TrendingDown, BarChart2, Activity, PieChart, DollarSign,
   Users, Building2, CheckCircle, AlertTriangle, Clock, Plus, Search,
   Edit2, Trash2, ChevronDown, ChevronUp, Filter, Download, FileText,
   Award, Zap, RefreshCw, Eye, Settings, Calendar, Target, ArrowUp, ArrowDown, Minus,
+  LayoutGrid, X,
 } from 'lucide-react';
 import {
   AreaChart, Area, BarChart, Bar, LineChart, Line, PieChart as RechartsPie,
@@ -62,6 +63,42 @@ const CHART_COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6'];
 export function Dashboard() {
   const [activeTab, setActiveTab] = useState<'overview' | 'projects' | 'finance' | 'safety' | 'activity'>('overview');
   const [filter, setFilter] = useState('');
+  const [customizeMode, setCustomizeMode] = useState(false);
+  const [visibleWidgets, setVisibleWidgets] = useState(() => {
+    try {
+      const stored = localStorage.getItem('dashboard-widgets');
+      if (stored) return JSON.parse(stored);
+    } catch { /* ignore */ }
+    return {
+      revenueChart: true,
+      projectStatus: true,
+      alertsPanel: true,
+      projectTable: true,
+      activityFeed: true,
+      safetyChart: true,
+      kpiBar: true,
+    };
+  });
+
+  useEffect(() => {
+    localStorage.setItem('dashboard-widgets', JSON.stringify(visibleWidgets));
+  }, [visibleWidgets]);
+
+  function toggleWidget(key: keyof typeof visibleWidgets) {
+    setVisibleWidgets((v: typeof visibleWidgets) => ({ ...v, [key]: !v[key] }));
+  }
+
+  function resetWidgets() {
+    setVisibleWidgets({
+      revenueChart: true,
+      projectStatus: true,
+      alertsPanel: true,
+      projectTable: true,
+      activityFeed: true,
+      safetyChart: true,
+      kpiBar: true,
+    });
+  }
 
   // Mock KPI data
   const kpiCards: KPIData[] = [
@@ -118,6 +155,16 @@ export function Dashboard() {
     { id: 'activity', label: 'Activity' },
   ];
 
+  const widgetLabels: Record<keyof typeof visibleWidgets, string> = {
+    kpiBar: 'KPI Bar',
+    revenueChart: 'Revenue vs Cost Chart',
+    projectStatus: 'Project Status Pie',
+    alertsPanel: 'Alerts Panel',
+    projectTable: 'Project Table',
+    activityFeed: 'Activity Feed',
+    safetyChart: 'Safety Chart',
+  };
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -126,41 +173,88 @@ export function Dashboard() {
           <h1 className="text-3xl font-bold text-white font-display">Dashboard</h1>
           <p className="text-sm text-gray-400 mt-1">Construction Intelligence Command Center</p>
         </div>
-        <button className="btn btn-secondary flex items-center gap-2">
-          <RefreshCw className="h-4 w-4" />
-          Refresh
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={() => setCustomizeMode(m => !m)}
+            className="btn btn-secondary flex items-center gap-2"
+          >
+            <LayoutGrid className="h-4 w-4" />
+            {customizeMode ? 'Done' : 'Customize'}
+          </button>
+          <button type="button" className="btn btn-secondary flex items-center gap-2">
+            <RefreshCw className="h-4 w-4" />
+            Refresh
+          </button>
+        </div>
       </div>
 
+      {/* Customize Mode Panel */}
+      {customizeMode && (
+        <div className="card p-4 border border-orange-500/30 bg-orange-500/5">
+          <div className="flex items-center justify-between mb-3">
+            <div className="flex items-center gap-2">
+              <LayoutGrid className="h-4 w-4 text-orange-500" />
+              <span className="text-sm font-medium text-white">Customize Dashboard</span>
+            </div>
+            <button
+              type="button"
+              onClick={resetWidgets}
+              className="text-xs text-gray-400 hover:text-white underline"
+            >
+              Reset to default
+            </button>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            {(Object.keys(visibleWidgets) as Array<keyof typeof visibleWidgets>).map(key => (
+              <button
+                key={String(key)}
+                type="button"
+                onClick={() => toggleWidget(key)}
+                className={`px-3 py-1.5 rounded-lg text-xs font-medium border transition-colors ${
+                  visibleWidgets[key]
+                    ? 'bg-orange-500/20 border-orange-500/50 text-orange-400'
+                    : 'bg-gray-800 border-gray-600 text-gray-400'
+                }`}
+              >
+                {visibleWidgets[key] ? '✓' : '✗'} {widgetLabels[key]}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* KPI Bar — 6 cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-4">
-        {kpiCards.map((kpi, idx) => {
-          const Icon = kpi.icon;
-          return (
-            <div key={idx} className="card p-4 hover:border-gray-600 transition-colors">
-              <div className="flex items-start justify-between mb-3">
-                <span className="text-xs text-gray-400 uppercase tracking-wider">{String(kpi.label)}</span>
-                <div className={`p-2 rounded-lg bg-${kpi.color}-500/10`}>
-                  <Icon className={`h-4 w-4 text-${kpi.color}-400`} />
+      {visibleWidgets.kpiBar && (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-4">
+          {kpiCards.map((kpi, idx) => {
+            const Icon = kpi.icon;
+            return (
+              <div key={idx} className="card p-4 hover:border-gray-600 transition-colors">
+                <div className="flex items-start justify-between mb-3">
+                  <span className="text-xs text-gray-400 uppercase tracking-wider">{String(kpi.label)}</span>
+                  <div className={`p-2 rounded-lg bg-${kpi.color}-500/10`}>
+                    <Icon className={`h-4 w-4 text-${kpi.color}-400`} />
+                  </div>
+                </div>
+                <div className="mb-3">
+                  <p className="text-xl font-bold text-white font-display">{String(kpi.value)}</p>
+                </div>
+                <div className="flex items-center gap-1">
+                  {Boolean(kpi.positive) && kpi.trend > 0 ? (
+                    <ArrowUp className="h-3 w-3 text-emerald-400" />
+                  ) : (
+                    <ArrowDown className="h-3 w-3 text-red-400" />
+                  )}
+                  <span className={kpi.positive && kpi.trend > 0 ? 'text-emerald-400 text-xs' : 'text-red-400 text-xs'}>
+                    {String(Math.abs(kpi.trend))}% vs last month
+                  </span>
                 </div>
               </div>
-              <div className="mb-3">
-                <p className="text-xl font-bold text-white font-display">{String(kpi.value)}</p>
-              </div>
-              <div className="flex items-center gap-1">
-                {Boolean(kpi.positive) && kpi.trend > 0 ? (
-                  <ArrowUp className="h-3 w-3 text-emerald-400" />
-                ) : (
-                  <ArrowDown className="h-3 w-3 text-red-400" />
-                )}
-                <span className={kpi.positive && kpi.trend > 0 ? 'text-emerald-400 text-xs' : 'text-red-400 text-xs'}>
-                  {String(Math.abs(kpi.trend))}% vs last month
-                </span>
-              </div>
-            </div>
-          );
-        })}
-      </div>
+            );
+          })}
+        </div>
+      )}
 
       {/* Sub-tabs */}
       <div className="flex gap-2 border-b border-gray-800">

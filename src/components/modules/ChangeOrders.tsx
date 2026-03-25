@@ -6,11 +6,27 @@ import {
 import { BulkActionsBar, useBulkSelection } from '../ui/BulkActions';
 import { useChangeOrders } from '../../hooks/useData';
 import { toast } from 'sonner';
+import { z } from 'zod';
 import {
   BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend, PieChart, Pie, Cell
 } from 'recharts';
 
 type AnyRow = Record<string, unknown>;
+
+const changeOrderSchema = z.object({
+  co_number: z.string().optional(),
+  title: z.string().min(1, 'Title is required'),
+  type: z.enum(['Addition', 'Omission', 'Substitution', 'Variation', 'Provisional Sum']).optional(),
+  reason: z.string().optional(),
+  value: z.union([z.string(), z.number()]).optional(),
+  days_extension: z.union([z.string(), z.number()]).optional(),
+  status: z.enum(['Draft', 'Submitted', 'Under Review', 'Approved', 'Rejected', 'Withdrawn']).optional(),
+  project_id: z.string().optional(),
+  submitted_date: z.string().optional(),
+  approved_date: z.string().optional(),
+  description: z.string().optional(),
+  rejection_reason: z.string().optional(),
+});
 
 const STATUS_OPTIONS = ['Draft', 'Submitted', 'Under Review', 'Approved', 'Rejected', 'Withdrawn'];
 const TYPES = ['Addition', 'Omission', 'Substitution', 'Variation', 'Provisional Sum'];
@@ -255,6 +271,11 @@ export function ChangeOrders() {
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
+    const result = changeOrderSchema.safeParse(form);
+    if (!result.success) {
+      toast.error(result.error.issues[0].message);
+      return;
+    }
     const payload = { ...form, value: Number(form.value) || 0, days_extension: Number(form.days_extension) || 0 };
     if (editing) {
       await updateMutation.mutateAsync({ id: String(editing.id), data: payload });

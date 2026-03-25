@@ -4,9 +4,31 @@ import { DataImporter, ExportButton } from '../ui/DataImportExport';
 import { useRAMS } from '../../hooks/useData';
 import { uploadFile } from '../../services/api';
 import { toast } from 'sonner';
+import { z } from 'zod';
 import { BulkActionsBar, useBulkSelection } from '../ui/BulkActions';
 
 type AnyRow = Record<string, unknown>;
+
+const ramsSchema = z.object({
+  title: z.string().min(1, 'Title is required'),
+  activity: z.string().min(1, 'Activity is required'),
+  project_id: z.string().optional(),
+  doc_type: z.enum(['RAMS', 'Method Statement', 'Risk Assessment']).optional(),
+  status: z.enum(['Draft', 'Under Review', 'Approved', 'Superseded']).optional(),
+  reviewed_by: z.string().optional(),
+  approved_by: z.string().optional(),
+  valid_from: z.string().optional(),
+  valid_until: z.string().optional(),
+  hazards: z.string().optional(),
+  controls: z.string().optional(),
+  ppe: z.string().optional(),
+  version: z.string().optional(),
+  created_by: z.string().optional(),
+  review_date: z.string().optional(),
+  likelihood: z.union([z.string(), z.number()]).optional(),
+  severity: z.union([z.string(), z.number()]).optional(),
+  notes: z.string().optional(),
+});
 
 const STATUS_OPTIONS = ['Draft','Under Review','Approved','Superseded'];
 const DOCUMENT_TYPES = ['RAMS','Method Statement','Risk Assessment'];
@@ -121,6 +143,11 @@ export function RAMS() {
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
+    const result = ramsSchema.safeParse(form);
+    if (!result.success) {
+      toast.error(result.error.issues[0].message);
+      return;
+    }
     if (editing) {
       await updateMutation.mutateAsync({ id: String(editing.id), data: form });
       toast.success('RAMS updated');

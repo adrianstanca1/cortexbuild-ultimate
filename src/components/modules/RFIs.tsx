@@ -6,34 +6,51 @@ import {
 } from 'lucide-react';
 import { useRFIs } from '../../hooks/useData';
 import { toast } from 'sonner';
+import { z } from 'zod';
 import { BulkActionsBar, useBulkSelection } from '../ui/BulkActions';
 
 type AnyRow = Record<string, unknown>;
 
-const STATUS_OPTIONS = ['Open','Pending Response','Answered','Closed','Overdue'];
-const PRIORITY_OPTIONS = ['Low','Medium','High','Critical'];
-const DISCIPLINE_OPTIONS = ['Architecture','Structural','MEP','Civil','Geotechnical','Planning','Other'];
-const BALL_OPTIONS = ['Awaiting Client','Awaiting Internal'];
+const rfiSchema = z.object({
+  rfi_number: z.string().optional(),
+  title: z.string().min(1, 'Title is required'),
+  question: z.string().min(1, 'Question is required'),
+  answer: z.string().optional(),
+  discipline: z.string().optional(),
+  priority: z.enum(['Low', 'Medium', 'High', 'Urgent']).optional(),
+  status: z.enum(['Open', 'In Review', 'Answered', 'Closed']).optional(),
+  assigned_to: z.string().optional(),
+  project_id: z.string().optional(),
+  due_date: z.string().optional(),
+  notes: z.string().optional(),
+  cost_impact: z.boolean().optional(),
+  schedule_impact: z.boolean().optional(),
+  submitted_by: z.string().optional(),
+  submitted_date: z.string().optional(),
+  ball_in_court: z.string().optional(),
+});
 
-// Dark theme color palette matching Projects.tsx
-const statusColour: Record<string,string> = {
-  'Open':'bg-blue-500/15 border border-blue-600/50 text-blue-300',
-  'Pending Response':'bg-yellow-500/15 border border-yellow-600/50 text-yellow-300',
-  'Answered':'bg-green-500/15 border border-green-600/50 text-green-300',
-  'Closed':'bg-gray-700/50 border border-gray-600 text-gray-400',
-  'Overdue':'bg-red-500/15 border border-red-600/50 text-red-300',
+const STATUS_OPTIONS = ['Open', 'In Review', 'Answered', 'Closed'];
+const PRIORITY_OPTIONS = ['Low', 'Medium', 'High', 'Urgent'];
+const DISCIPLINE_OPTIONS = ['Architectural', 'Structural', 'MEP', 'Civil', 'Landscape', 'Other'];
+const BALL_OPTIONS = ['Awaiting Client', 'With Us', 'Closed'];
+
+const ballColour: Record<string, string> = {
+  'Awaiting Client': 'bg-blue-900/30 text-blue-300',
+  'With Us': 'bg-amber-900/30 text-amber-300',
+  'Closed': 'bg-gray-700/50 text-gray-400',
 };
-
-const priorityColour: Record<string,string> = {
-  'Low':'bg-gray-700/50 border border-gray-600 text-gray-400',
-  'Medium':'bg-yellow-500/15 border border-yellow-600/50 text-yellow-300',
-  'High':'bg-orange-500/15 border border-orange-600/50 text-orange-300',
-  'Critical':'bg-red-500/15 border border-red-600/50 text-red-300',
+const priorityColour: Record<string, string> = {
+  'Low': 'bg-green-900/30 text-green-300',
+  'Medium': 'bg-yellow-900/30 text-yellow-300',
+  'High': 'bg-orange-900/30 text-orange-300',
+  'Urgent': 'bg-red-900/30 text-red-300',
 };
-
-const ballColour: Record<string,string> = {
-  'Awaiting Client':'bg-blue-500/15 border border-blue-600/50 text-blue-300',
-  'Awaiting Internal':'bg-orange-500/15 border border-orange-600/50 text-orange-300',
+const statusColour: Record<string, string> = {
+  'Open': 'bg-blue-900/30 text-blue-300',
+  'In Review': 'bg-yellow-900/30 text-yellow-300',
+  'Answered': 'bg-green-900/30 text-green-300',
+  'Closed': 'bg-gray-700/50 text-gray-400',
 };
 
 const emptyForm = {
@@ -191,6 +208,11 @@ export function RFIs() {
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
+    const result = rfiSchema.safeParse(form);
+    if (!result.success) {
+      toast.error(result.error.issues[0].message);
+      return;
+    }
     if (editing) {
       await updateMutation.mutateAsync({ id:String(editing.id), data:form });
       toast.success('RFI updated');
