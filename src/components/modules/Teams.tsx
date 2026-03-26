@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Users, Plus, Search, Phone, Mail, Briefcase, Edit2, Trash2, X, ChevronDown, ChevronUp, Shield, Clock, Award, AlertTriangle, PoundSterling, MapPin, CheckCircle2, AlertCircle, Calendar, Upload, CheckSquare, Square, Download, FileSpreadsheet } from 'lucide-react';
+import { Users, Plus, Search, Phone, Mail, Briefcase, Edit2, Trash2, X, ChevronDown, ChevronUp, Shield, Clock, Award, AlertTriangle, PoundSterling, MapPin, CheckCircle2, AlertCircle, Calendar, Upload, CheckSquare, Square, Download, FileSpreadsheet, Pencil } from 'lucide-react';
 import { useTeam } from '../../hooks/useData';
 import { uploadFile, teamApi } from '../../services/api';
 import { toast } from 'sonner';
@@ -39,9 +39,9 @@ const statusColour: Record<string,string> = {
 
 const emptyForm = { name:'',role:'',trade_type:'',email:'',phone:'',daily_rate:'',cscs_card:'',cscs_expiry:'',cscs_type:'Gold',status:'Active',notes:'' };
 
-type Skill = { skill_name: string; status: 'yes' | 'no' | 'expired' };
-type Induction = { project: string; date: string; next_due: string; status: 'current' | 'due_soon' | 'overdue' };
-type Availability = { project: string; status: 'onsite' | 'office' | 'off' | 'sick' };
+type Skill = { id: string; skill_name: string; status: 'yes' | 'no' | 'expired' };
+type Induction = { id: string; project: string; date: string; next_due?: string; status: 'current' | 'due_soon' | 'overdue' };
+type Availability = { id: string; project: string; status: 'onsite' | 'office' | 'off' | 'sick' };
 
 export function Teams() {
   const { useList, useCreate, useUpdate, useDelete } = useTeam;
@@ -60,6 +60,177 @@ export function Teams() {
   const [expanded, setExpanded] = useState<string | null>(null);
   const [uploadingCscs, setUploadingCscs] = useState<string | null>(null);
   const [showBulkImport, setShowBulkImport] = useState(false);
+
+  // Skills modal
+  const [showSkillModal, setShowSkillModal] = useState(false);
+  const [skillMember, setSkillMember] = useState<AnyRow | null>(null);
+  const [skillForm, setSkillForm] = useState({ skill_name: '', status: 'no' });
+  const [editingSkill, setEditingSkill] = useState<Skill | null>(null);
+
+  // Inductions modal
+  const [showInductionModal, setShowInductionModal] = useState(false);
+  const [inductionMember, setInductionMember] = useState<AnyRow | null>(null);
+  const [inductionForm, setInductionForm] = useState({ project: '', date: '', next_due: '', status: 'current' as Induction['status'] });
+  const [editingInduction, setEditingInduction] = useState<Induction | null>(null);
+
+  // Availability modal
+  const [showAvailModal, setShowAvailModal] = useState(false);
+  const [availMember, setAvailMember] = useState<AnyRow | null>(null);
+  const [availForm, setAvailForm] = useState({ project: '', status: 'off' as Availability['status'] });
+  const [editingAvail, setEditingAvail] = useState<Availability | null>(null);
+
+  const openAddSkill = (member: AnyRow) => {
+    setSkillMember(member);
+    setSkillForm({ skill_name: '', status: 'no' });
+    setEditingSkill(null);
+    setShowSkillModal(true);
+  };
+
+  const openEditSkill = (skill: Skill, member: AnyRow) => {
+    setSkillMember(member);
+    setSkillForm({ skill_name: skill.skill_name, status: skill.status });
+    setEditingSkill(skill);
+    setShowSkillModal(true);
+  };
+
+  const saveSkill = async () => {
+    if (!skillMember) return;
+    try {
+      if (editingSkill) {
+        const updated = await teamApi.updateMemberSkill(String(editingSkill.id), skillForm) as Skill;
+        setMemberSkills(prev => ({
+          ...prev,
+          [String(skillMember.id ?? '')]: prev[String(skillMember.id ?? '')].map(s => String(s.id ?? '') === String(updated.id ?? '') ? { ...s, ...updated } : s)
+        }));
+      } else {
+        const created = await teamApi.addMemberSkill(String(skillMember.id), skillForm.skill_name, skillForm.status) as Skill;
+        setMemberSkills(prev => ({
+          ...prev,
+          [String(skillMember.id)]: [...(prev[String(skillMember.id)] || []), created]
+        }));
+      }
+      setShowSkillModal(false);
+      toast.success(editingSkill ? 'Skill updated' : 'Skill added');
+    } catch {
+      toast.error('Failed to save skill');
+    }
+  };
+
+  const deleteSkill = async (id: string, memberId: string | number | undefined) => {
+    if (!confirm('Delete this skill?')) return;
+    try {
+      await teamApi.deleteMemberSkill(id);
+      setMemberSkills(prev => ({
+        ...prev,
+        [String(memberId)]: prev[String(memberId)].filter((s: Skill) => s.id !== id)
+      }));
+      toast.success('Skill removed');
+    } catch {
+      toast.error('Failed to delete skill');
+    }
+  };
+
+  const openAddInduction = (member: AnyRow) => {
+    setInductionMember(member);
+    setInductionForm({ project: '', date: new Date().toISOString().split('T')[0], next_due: '', status: 'current' });
+    setEditingInduction(null);
+    setShowInductionModal(true);
+  };
+
+  const openEditInduction = (ind: Induction, member: AnyRow) => {
+    setInductionMember(member);
+    setInductionForm({ project: ind.project, date: ind.date, next_due: ind.next_due ?? '', status: ind.status });
+    setEditingInduction(ind);
+    setShowInductionModal(true);
+  };
+
+  const saveInduction = async () => {
+    if (!inductionMember) return;
+    try {
+      if (editingInduction) {
+        const updated = await teamApi.updateMemberInduction(editingInduction.id, inductionForm) as Induction;
+        setMemberInductions(prev => ({
+          ...prev,
+          [String(inductionMember.id)]: prev[String(inductionMember.id)].map(i => i.id === updated.id ? { ...i, ...updated } : i)
+        }));
+      } else {
+        const created = await teamApi.addMemberInduction(String(inductionMember.id), inductionForm) as Induction;
+        setMemberInductions(prev => ({
+          ...prev,
+          [String(inductionMember.id)]: [...(prev[String(inductionMember.id)] || []), created]
+        }));
+      }
+      setShowInductionModal(false);
+      toast.success(editingInduction ? 'Induction updated' : 'Induction added');
+    } catch {
+      toast.error('Failed to save induction');
+    }
+  };
+
+  const deleteInduction = async (ind: Induction, memberId: string) => {
+    if (!confirm('Delete this induction?')) return;
+    try {
+      await teamApi.deleteMemberInduction(ind.id);
+      setMemberInductions(prev => ({
+        ...prev,
+        [String(memberId)]: prev[String(memberId)].filter(i => i.id !== ind.id)
+      }));
+      toast.success('Induction removed');
+    } catch {
+      toast.error('Failed to delete induction');
+    }
+  };
+
+  const openAddAvail = (member: AnyRow) => {
+    setAvailMember(member);
+    setAvailForm({ project: '', status: 'off' });
+    setEditingAvail(null);
+    setShowAvailModal(true);
+  };
+
+  const openEditAvail = (av: Availability, member: AnyRow) => {
+    setAvailMember(member);
+    setAvailForm({ project: av.project, status: av.status });
+    setEditingAvail(av);
+    setShowAvailModal(true);
+  };
+
+  const saveAvail = async () => {
+    if (!availMember) return;
+    try {
+      if (editingAvail) {
+        const updated = await teamApi.updateMemberAvailability(editingAvail.id, availForm.status) as Availability;
+        setMemberAvailability(prev => ({
+          ...prev,
+          [String(availMember.id)]: prev[String(availMember.id)].map(a => a.id === updated.id ? { ...a, ...updated } : a)
+        }));
+      } else {
+        const created = await teamApi.addMemberAvailability(String(availMember.id), availForm.project, availForm.status) as Availability;
+        setMemberAvailability(prev => ({
+          ...prev,
+          [String(availMember.id)]: [...(prev[String(availMember.id)] || []), created]
+        }));
+      }
+      setShowAvailModal(false);
+      toast.success(editingAvail ? 'Availability updated' : 'Availability added');
+    } catch {
+      toast.error('Failed to save availability');
+    }
+  };
+
+  const deleteAvail = async (av: Availability, memberId: string) => {
+    if (!confirm('Delete this availability entry?')) return;
+    try {
+      await teamApi.deleteMemberAvailability(av.id);
+      setMemberAvailability(prev => ({
+        ...prev,
+        [String(memberId)]: prev[String(memberId)].filter(a => a.id !== av.id)
+      }));
+      toast.success('Availability removed');
+    } catch {
+      toast.error('Failed to delete availability');
+    }
+  };
   const { selectedIds, toggle, toggleAll, clearSelection, isAllSelected } = useBulkSelection();
 
   const selectedCount = selectedIds.size;
@@ -376,11 +547,27 @@ export function Teams() {
       {/* Skills Matrix Tab */}
       {subTab === 'skills' && (
         <div className="bg-gray-900 rounded-xl border border-gray-700 overflow-x-auto">
+          <div className="flex justify-end p-4">
+            <button
+              type="button"
+              onClick={() => {
+                if (members.filter(m => m.status === 'Active').length === 0) { toast.error('No active members'); return; }
+                setSkillMember(members.filter(m => m.status === 'Active')[0]);
+                setSkillForm({ skill_name: '', status: 'no' });
+                setEditingSkill(null);
+                setShowSkillModal(true);
+              }}
+              className="flex items-center gap-2 px-3 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 text-sm font-medium"
+            >
+              <Plus size={14} /><span>Add Skill</span>
+            </button>
+          </div>
           <table className="w-full text-sm">
             <thead className="bg-gray-800 border-b border-gray-700">
               <tr>
                 <th className="text-left px-6 py-3 text-xs font-semibold text-gray-300 uppercase tracking-wider">Member</th>
                 {SKILLS.map(skill => <th key={skill} className="text-center px-3 py-3 text-xs font-semibold text-gray-300 uppercase tracking-wider min-w-24">{skill}</th>)}
+                <th className="px-4 py-3 text-xs font-semibold text-gray-300 uppercase tracking-wider text-center">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-700">
@@ -402,6 +589,14 @@ export function Teams() {
                         </td>
                       );
                     })}
+                    <td className="px-4 py-4 text-center">
+                      <div className="flex items-center justify-center gap-1">
+                        <button type="button" onClick={() => openAddSkill(m)} className="p-1 text-gray-500 hover:text-green-400" title="Add Skill"><Plus size={12}/></button>
+                        {memberSkillList.length > 0 && (
+                          <button type="button" onClick={() => openEditSkill(memberSkillList[0], m)} className="p-1 text-gray-500 hover:text-blue-400" title="Edit"><Pencil size={12}/></button>
+                        )}
+                      </div>
+                    </td>
                   </tr>
                 );
               })}
@@ -509,6 +704,19 @@ export function Teams() {
       {/* Inductions Tab */}
       {subTab === 'inductions' && (
         <div className="bg-gray-900 rounded-xl border border-gray-700 overflow-x-auto">
+          <div className="flex justify-end p-4">
+            <button
+              type="button"
+              onClick={() => {
+                const active = members.filter(m => m.status === 'Active');
+                if (active.length === 0) { toast.error('No active members'); return; }
+                openAddInduction(active[0]);
+              }}
+              className="flex items-center gap-2 px-3 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 text-sm font-medium"
+            >
+              <Plus size={14} /><span>Add Induction</span>
+            </button>
+          </div>
           <table className="w-full text-sm">
             <thead className="bg-gray-800 border-b border-gray-700">
               <tr>
@@ -517,6 +725,7 @@ export function Teams() {
                 <th className="text-left px-6 py-3 text-xs font-semibold text-gray-300 uppercase tracking-wider">Inducted</th>
                 <th className="text-left px-6 py-3 text-xs font-semibold text-gray-300 uppercase tracking-wider">Re-Induction Due</th>
                 <th className="text-left px-6 py-3 text-xs font-semibold text-gray-300 uppercase tracking-wider">Status</th>
+                <th className="px-6 py-3 text-xs font-semibold text-gray-300 uppercase tracking-wider text-center">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-700">
@@ -527,13 +736,19 @@ export function Teams() {
                     <td className="px-6 py-4 font-medium text-white">{String(m.name??'Unknown')}</td>
                     <td className="px-6 py-4 text-gray-300">{ind.project}</td>
                     <td className="px-6 py-4 text-gray-400">{new Date(ind.date).toLocaleDateString()}</td>
-                    <td className="px-6 py-4 text-gray-400">{new Date(ind.next_due).toLocaleDateString()}</td>
+                    <td className="px-6 py-4 text-gray-400">{(ind.next_due ? new Date(ind.next_due).toLocaleDateString() : '—')}</td>
                     <td className="px-6 py-4">
                       <span className={`text-xs px-3 py-1 rounded-full font-medium ${getInductionColor(ind.status)}`}>
                         {ind.status === 'current' && 'Current'}
                         {ind.status === 'due_soon' && 'Due Soon'}
                         {ind.status === 'overdue' && 'Overdue'}
                       </span>
+                    </td>
+                    <td className="px-6 py-4 text-center">
+                      <div className="flex items-center justify-center gap-1">
+                        <button type="button" onClick={() => openEditInduction(ind, m)} className="p-1 text-gray-500 hover:text-blue-400" title="Edit"><Pencil size={12}/></button>
+                        <button type="button" onClick={() => deleteInduction(ind, String(m.id))} className="p-1 text-gray-500 hover:text-red-400" title="Delete"><Trash2 size={12}/></button>
+                      </div>
                     </td>
                   </tr>
                 ));
@@ -547,11 +762,25 @@ export function Teams() {
       {/* On Site Tab */}
       {subTab === 'onsite' && (
         <div className="bg-gray-900 rounded-xl border border-gray-700 overflow-x-auto">
+          <div className="flex justify-end p-4">
+            <button
+              type="button"
+              onClick={() => {
+                const active = members.filter(m => m.status === 'Active');
+                if (active.length === 0) { toast.error('No active members'); return; }
+                openAddAvail(active[0]);
+              }}
+              className="flex items-center gap-2 px-3 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 text-sm font-medium"
+            >
+              <Plus size={14} /><span>Add Availability</span>
+            </button>
+          </div>
           <table className="w-full text-sm">
             <thead className="bg-gray-800 border-b border-gray-700">
               <tr>
                 <th className="text-left px-6 py-3 text-xs font-semibold text-gray-300 uppercase tracking-wider">Member</th>
                 {['Mon', 'Tue', 'Wed', 'Thu', 'Fri'].map(day=><th key={day} className="text-center px-4 py-3 text-xs font-semibold text-gray-300 uppercase">{day}</th>)}
+                <th className="px-4 py-3 text-xs font-semibold text-gray-300 uppercase tracking-wider text-center">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-700">
@@ -574,6 +803,14 @@ export function Teams() {
                         </td>
                       );
                     })}
+                    <td className="px-4 py-4 text-center">
+                      <div className="flex items-center justify-center gap-1">
+                        <button type="button" onClick={() => openAddAvail(m)} className="p-1 text-gray-500 hover:text-green-400" title="Add"><Plus size={12}/></button>
+                        {availList.length > 0 && (
+                          <button type="button" onClick={() => openEditAvail(availList[0], m)} className="p-1 text-gray-500 hover:text-blue-400" title="Edit"><Pencil size={12}/></button>
+                        )}
+                      </div>
+                    </td>
                   </tr>
                 );
               })}
@@ -655,6 +892,236 @@ export function Teams() {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Skill Modal */}
+      {showSkillModal && (
+        <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
+          <div className="bg-gray-900 rounded-2xl shadow-2xl w-full max-w-md border border-gray-700">
+            <div className="flex items-center justify-between p-6 border-b border-gray-700">
+              <h2 className="text-lg font-semibold text-white">{editingSkill ? 'Edit Skill' : 'Add Skill'}</h2>
+              <button type="button" onClick={() => setShowSkillModal(false)} className="p-2 hover:bg-gray-800 rounded-lg"><X size={18} className="text-gray-400"/></button>
+            </div>
+            <div className="p-6 space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-300 mb-1">Member</label>
+                <select
+                  value={skillMember ? String(skillMember.id) : ''}
+                  onChange={e => {
+                    const found = members.find(m => String(m.id) === e.target.value);
+                    if (found) setSkillMember(found);
+                  }}
+                  className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-orange-500"
+                >
+                  <option value="">Select member…</option>
+                  {members.filter(m => m.status === 'Active').map(m => <option key={String(m.id)} value={String(m.id)}>{String(m.name)}</option>)}
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-300 mb-1">Skill</label>
+                <select
+                  value={skillForm.skill_name}
+                  onChange={e => setSkillForm(f => ({ ...f, skill_name: e.target.value }))}
+                  className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-orange-500"
+                >
+                  <option value="">Select skill…</option>
+                  {SKILLS.map(s => <option key={s}>{s}</option>)}
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-300 mb-1">Status</label>
+                <select
+                  value={skillForm.status}
+                  onChange={e => setSkillForm(f => ({ ...f, status: e.target.value }))}
+                  className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-orange-500"
+                >
+                  <option value="no">No</option>
+                  <option value="yes">Yes</option>
+                  <option value="expired">Expired</option>
+                </select>
+              </div>
+            </div>
+            <div className="flex gap-3 px-6 pb-6">
+              {editingSkill && skillMember && (
+                <button
+                  type="button"
+                  onClick={() => { setShowSkillModal(false); deleteSkill(String(editingSkill.id), String(skillMember.id ?? '')); }}
+                  className="px-4 py-2 border border-red-700 text-red-400 rounded-lg text-sm hover:bg-red-900/30"
+                >
+                  Delete
+                </button>
+              )}
+              <button type="button" onClick={() => setShowSkillModal(false)} className="flex-1 px-4 py-2 border border-gray-700 rounded-lg text-sm text-gray-300 hover:bg-gray-800">Cancel</button>
+              <button
+                type="button"
+                onClick={saveSkill}
+                disabled={!skillMember || !skillForm.skill_name}
+                className="flex-1 px-4 py-2 bg-orange-600 text-white rounded-lg text-sm font-medium hover:bg-orange-700 disabled:opacity-50"
+              >
+                {editingSkill ? 'Update' : 'Add'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Induction Modal */}
+      {showInductionModal && (
+        <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
+          <div className="bg-gray-900 rounded-2xl shadow-2xl w-full max-w-md border border-gray-700">
+            <div className="flex items-center justify-between p-6 border-b border-gray-700">
+              <h2 className="text-lg font-semibold text-white">{editingInduction ? 'Edit Induction' : 'Add Induction'}</h2>
+              <button type="button" onClick={() => setShowInductionModal(false)} className="p-2 hover:bg-gray-800 rounded-lg"><X size={18} className="text-gray-400"/></button>
+            </div>
+            <div className="p-6 space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-300 mb-1">Member</label>
+                <select
+                  value={inductionMember ? String(inductionMember.id) : ''}
+                  onChange={e => {
+                    const found = members.find(m => String(m.id) === e.target.value);
+                    if (found) setInductionMember(found);
+                  }}
+                  className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-orange-500"
+                >
+                  <option value="">Select member…</option>
+                  {members.filter(m => m.status === 'Active').map(m => <option key={String(m.id)} value={String(m.id)}>{String(m.name)}</option>)}
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-300 mb-1">Project</label>
+                <input
+                  type="text"
+                  value={inductionForm.project}
+                  onChange={e => setInductionForm(f => ({ ...f, project: e.target.value }))}
+                  placeholder="e.g. Site A"
+                  className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-orange-500"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-300 mb-1">Induction Date</label>
+                <input
+                  type="date"
+                  value={inductionForm.date}
+                  onChange={e => setInductionForm(f => ({ ...f, date: e.target.value }))}
+                  className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-orange-500"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-300 mb-1">Re-Induction Due</label>
+                <input
+                  type="date"
+                  value={inductionForm.next_due}
+                  onChange={e => setInductionForm(f => ({ ...f, next_due: e.target.value }))}
+                  className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-orange-500"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-300 mb-1">Status</label>
+                <select
+                  value={inductionForm.status}
+                  onChange={e => setInductionForm(f => ({ ...f, status: e.target.value as Induction['status'] }))}
+                  className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-orange-500"
+                >
+                  <option value="current">Current</option>
+                  <option value="due_soon">Due Soon</option>
+                  <option value="overdue">Overdue</option>
+                </select>
+              </div>
+            </div>
+            <div className="flex gap-3 px-6 pb-6">
+              {editingInduction && inductionMember && (
+                <button
+                  type="button"
+                  onClick={() => { setShowInductionModal(false); deleteInduction(editingInduction, String(inductionMember.id)); }}
+                  className="px-4 py-2 border border-red-700 text-red-400 rounded-lg text-sm hover:bg-red-900/30"
+                >
+                  Delete
+                </button>
+              )}
+              <button type="button" onClick={() => setShowInductionModal(false)} className="flex-1 px-4 py-2 border border-gray-700 rounded-lg text-sm text-gray-300 hover:bg-gray-800">Cancel</button>
+              <button
+                type="button"
+                onClick={saveInduction}
+                disabled={!inductionMember || !inductionForm.project || !inductionForm.date}
+                className="flex-1 px-4 py-2 bg-orange-600 text-white rounded-lg text-sm font-medium hover:bg-orange-700 disabled:opacity-50"
+              >
+                {editingInduction ? 'Update' : 'Add'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Availability Modal */}
+      {showAvailModal && (
+        <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
+          <div className="bg-gray-900 rounded-2xl shadow-2xl w-full max-w-md border border-gray-700">
+            <div className="flex items-center justify-between p-6 border-b border-gray-700">
+              <h2 className="text-lg font-semibold text-white">{editingAvail ? 'Edit Availability' : 'Add Availability'}</h2>
+              <button type="button" onClick={() => setShowAvailModal(false)} className="p-2 hover:bg-gray-800 rounded-lg"><X size={18} className="text-gray-400"/></button>
+            </div>
+            <div className="p-6 space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-300 mb-1">Member</label>
+                <select
+                  value={availMember ? String(availMember.id) : ''}
+                  onChange={e => {
+                    const found = members.find(m => String(m.id) === e.target.value);
+                    if (found) setAvailMember(found);
+                  }}
+                  className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-orange-500"
+                >
+                  <option value="">Select member…</option>
+                  {members.filter(m => m.status === 'Active').map(m => <option key={String(m.id)} value={String(m.id)}>{String(m.name)}</option>)}
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-300 mb-1">Project</label>
+                <input
+                  type="text"
+                  value={availForm.project}
+                  onChange={e => setAvailForm(f => ({ ...f, project: e.target.value }))}
+                  placeholder="e.g. Site A or Mon/Tue/Wed/Thu/Fri"
+                  className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-orange-500"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-300 mb-1">Status</label>
+                <select
+                  value={availForm.status}
+                  onChange={e => setAvailForm(f => ({ ...f, status: e.target.value as Availability['status'] }))}
+                  className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-orange-500"
+                >
+                  <option value="onsite">On Site</option>
+                  <option value="office">Office</option>
+                  <option value="sick">Sick</option>
+                  <option value="off">Off</option>
+                </select>
+              </div>
+            </div>
+            <div className="flex gap-3 px-6 pb-6">
+              {editingAvail && availMember && (
+                <button
+                  type="button"
+                  onClick={() => { setShowAvailModal(false); deleteAvail(editingAvail, String(availMember.id)); }}
+                  className="px-4 py-2 border border-red-700 text-red-400 rounded-lg text-sm hover:bg-red-900/30"
+                >
+                  Delete
+                </button>
+              )}
+              <button type="button" onClick={() => setShowAvailModal(false)} className="flex-1 px-4 py-2 border border-gray-700 rounded-lg text-sm text-gray-300 hover:bg-gray-800">Cancel</button>
+              <button
+                type="button"
+                onClick={saveAvail}
+                disabled={!availMember || !availForm.project}
+                className="flex-1 px-4 py-2 bg-orange-600 text-white rounded-lg text-sm font-medium hover:bg-orange-700 disabled:opacity-50"
+              >
+                {editingAvail ? 'Update' : 'Add'}
+              </button>
+            </div>
           </div>
         </div>
       )}

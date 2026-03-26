@@ -137,6 +137,27 @@ export const teamApi = {
   getMemberSkills: (memberId: string) => apiFetch(`/team-member-data/members/${memberId}/skills`),
   getMemberInductions: (memberId: string) => apiFetch(`/team-member-data/members/${memberId}/inductions`),
   getMemberAvailability: (memberId: string) => apiFetch(`/team-member-data/members/${memberId}/availability`),
+  // Skills
+  addMemberSkill: (memberId: string, skill_name: string, status: string) =>
+    apiFetch(`/team-member-data/members/${memberId}/skills`, { method: 'POST', body: JSON.stringify({ skill_name, status }) }),
+  updateMemberSkill: (id: string, data: { skill_name?: string; status?: string }) =>
+    apiFetch(`/team-member-data/skills/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+  deleteMemberSkill: (id: string) =>
+    apiFetch(`/team-member-data/skills/${id}`, { method: 'DELETE' }),
+  // Inductions
+  addMemberInduction: (memberId: string, data: { project: string; date: string; next_due?: string; status?: string }) =>
+    apiFetch(`/team-member-data/members/${memberId}/inductions`, { method: 'POST', body: JSON.stringify(data) }),
+  updateMemberInduction: (id: string, data: { project?: string; date?: string; next_due?: string; status?: string }) =>
+    apiFetch(`/team-member-data/inductions/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+  deleteMemberInduction: (id: string) =>
+    apiFetch(`/team-member-data/inductions/${id}`, { method: 'DELETE' }),
+  // Availability
+  addMemberAvailability: (memberId: string, project: string, status: string) =>
+    apiFetch(`/team-member-data/members/${memberId}/availability`, { method: 'POST', body: JSON.stringify({ project, status }) }),
+  updateMemberAvailability: (id: string, status: string) =>
+    apiFetch(`/team-member-data/availability/${id}`, { method: 'PUT', body: JSON.stringify({ status }) }),
+  deleteMemberAvailability: (id: string) =>
+    apiFetch(`/team-member-data/availability/${id}`, { method: 'DELETE' }),
 };
 
 export const safetyApi = {

@@ -74,6 +74,9 @@ export function FieldView() {
   const [selectedProject, setSelectedProject] = useState<string>('all');
   const [selectedWeatherProject, setSelectedWeatherProject] = useState<string>('london');
   const [permits, setPermits] = useState<AnyRow[]>([]);
+  const [showPermitModal, setShowPermitModal] = useState(false);
+  const [permitForm, setPermitForm] = useState({ type: '', site: '', issuedBy: '', from_date: '', to_date: '', status: 'Active' });
+  const [savingPermit, setSavingPermit] = useState(false);
 
   useEffect(() => {
     sitePermitsApi.getAll().then(data => {
@@ -98,6 +101,21 @@ export function FieldView() {
       toast.error('Bulk delete failed');
     }
   }
+
+  const handleIssuePermit = async () => {
+    if (!permitForm.type || !permitForm.site) { toast.error('Type and site are required'); return; }
+    setSavingPermit(true);
+    try {
+      await (sitePermitsApi as any).create({ ...permitForm, from_date: permitForm.from_date || null, to_date: permitForm.to_date || null });
+      toast.success('Permit issued');
+      setShowPermitModal(false);
+      setPermitForm({ type: '', site: '', issuedBy: '', from_date: '', to_date: '', status: 'Active' });
+      const data = await sitePermitsApi.getAll();
+      const mapped = (data as AnyRow[]).map((p: AnyRow) => ({ ...p, issuedBy: (p as any).issued_by, from: (p as any).from_date, to: (p as any).to_date }));
+      setPermits(mapped);
+    } catch { toast.error('Failed to issue permit'); }
+    finally { setSavingPermit(false); }
+  };
 
   const today = new Date().toISOString().slice(0, 10);
   const activeProjects = projects.filter(p => !['Completed', 'Cancelled'].includes(String(p.status ?? '')));
@@ -428,7 +446,7 @@ export function FieldView() {
         <div className="bg-gray-800 rounded-xl border border-gray-700 overflow-hidden">
           <div className="px-6 py-4 border-b border-gray-700 flex items-center justify-between">
             <h2 className="text-lg font-semibold text-white">Active Permits to Work</h2>
-            <button className="px-3 py-2 text-xs bg-orange-600 hover:bg-orange-700 text-white rounded-lg font-medium transition-colors">
+            <button onClick={() => setShowPermitModal(true)} className="px-3 py-2 text-xs bg-orange-600 hover:bg-orange-700 text-white rounded-lg font-medium transition-colors">
               Issue New Permit
             </button>
           </div>
@@ -481,6 +499,53 @@ export function FieldView() {
         </div>
       )}
 
+
+      {/* Issue Permit Modal */}
+      {showPermitModal && (
+        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50" onClick={() => setShowPermitModal(false)}>
+          <div className="bg-gray-900 rounded-xl border border-gray-700 w-full max-w-md p-6" onClick={e => e.stopPropagation()}>
+            <h3 className="text-lg font-semibold text-white mb-4">Issue New Permit</h3>
+            <div className="space-y-3">
+              <div>
+                <label className="block text-xs text-gray-400 mb-1">Permit Type *</label>
+                <select value={permitForm.type} onChange={e => setPermitForm(p => ({ ...p, type: e.target.value }))} className="w-full bg-gray-800 border border-gray-600 rounded-lg px-3 py-2 text-white text-sm">
+                  <option value="">Select type…</option>
+                  <option>Hot Works</option>
+                  <option>Cold Works</option>
+                  <option>Electrical</option>
+                  <option>Excavation</option>
+                  <option>Confined Space</option>
+                  <option>Working at Height</option>
+                </select>
+              </div>
+              <div>
+                <label className="block text-xs text-gray-400 mb-1">Site *</label>
+                <input value={permitForm.site} onChange={e => setPermitForm(p => ({ ...p, site: e.target.value }))} placeholder="Site name" className="w-full bg-gray-800 border border-gray-600 rounded-lg px-3 py-2 text-white text-sm" />
+              </div>
+              <div>
+                <label className="block text-xs text-gray-400 mb-1">Issued By</label>
+                <input value={permitForm.issuedBy} onChange={e => setPermitForm(p => ({ ...p, issuedBy: e.target.value }))} placeholder="Name" className="w-full bg-gray-800 border border-gray-600 rounded-lg px-3 py-2 text-white text-sm" />
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs text-gray-400 mb-1">Valid From</label>
+                  <input type="date" value={permitForm.from_date} onChange={e => setPermitForm(p => ({ ...p, from_date: e.target.value }))} className="w-full bg-gray-800 border border-gray-600 rounded-lg px-3 py-2 text-white text-sm" />
+                </div>
+                <div>
+                  <label className="block text-xs text-gray-400 mb-1">Valid To</label>
+                  <input type="date" value={permitForm.to_date} onChange={e => setPermitForm(p => ({ ...p, to_date: e.target.value }))} className="w-full bg-gray-800 border border-gray-600 rounded-lg px-3 py-2 text-white text-sm" />
+                </div>
+              </div>
+            </div>
+            <div className="flex gap-3 mt-5 justify-end">
+              <button onClick={() => setShowPermitModal(false)} className="px-4 py-2 text-sm text-gray-400 hover:text-white">Cancel</button>
+              <button onClick={handleIssuePermit} disabled={savingPermit} className="px-4 py-2 text-sm bg-orange-600 hover:bg-orange-700 text-white rounded-lg disabled:opacity-50">
+                {savingPermit ? 'Saving…' : 'Issue Permit'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
       {/* DAILY REPORTS */}
       {subTab === 'reports' && (
         loadingReports ? (
