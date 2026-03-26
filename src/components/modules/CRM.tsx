@@ -208,7 +208,21 @@ export function CRM() {
 
   async function handleAddInteraction(contactId: string) {
     if (!interactionForm.note.trim()) { toast.error('Please enter a note'); return; }
-    toast.success(`${interactionForm.type} logged for contact`);
+    try {
+      await contactsApi.addInteraction({
+        contact_id: contactId,
+        type: interactionForm.type,
+        date: new Date().toISOString().slice(0, 10),
+        note: interactionForm.note,
+      });
+      toast.success(`${interactionForm.type} logged`);
+      // Refresh interactions for this contact
+      const updated = await contactsApi.getInteractions(contactId) as AnyRow[];
+      setAllInteractions(prev => [...prev.filter(i => String(i.contact_id) !== contactId), ...updated]);
+    } catch {
+      toast.error('Failed to log interaction');
+      return;
+    }
     setShowInteractionForm(null);
     setInteractionForm({ type: 'call', note: '' });
   }

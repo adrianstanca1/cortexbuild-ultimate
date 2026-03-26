@@ -326,6 +326,8 @@ export const contactsApi = {
   update: (id: string, data: Row) => updateRow('contacts', id, data),
   delete: (id: string) => deleteRow('contacts', id),
   getInteractions: (contactId: string) => apiFetch(`/contact-interactions?contact_id=${contactId}`),
+  addInteraction: (data: { contact_id: string; type: string; date: string; note: string }) =>
+    apiFetch('/contact-interactions', { method: 'POST', body: JSON.stringify(data) }),
 };
 
 export const riskRegisterApi = {

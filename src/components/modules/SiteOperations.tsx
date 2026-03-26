@@ -4,6 +4,7 @@ import {
   Sun, Cloud, CloudRain, Activity, Calendar, Wrench, X, CheckSquare, Square, Trash2
 } from 'lucide-react';
 import { useDailyReports, useEquipment, useTeam } from '../../hooks/useData';
+import { dailyReportsApi } from '../../services/api';
 import { BulkActionsBar, useBulkSelection } from '../ui/BulkActions';
 import { toast } from 'sonner';
 
@@ -40,6 +41,7 @@ export function SiteOperations() {
   const [projectFilter, setProjectFilter] = useState<string>('');
   const [showNewEntry, setShowNewEntry] = useState(false);
   const [showNewDelay, setShowNewDelay] = useState(false);
+  const [savingEntry, setSavingEntry] = useState(false);
 
   // Form state for new entry
   const [newEntry, setNewEntry] = useState({
@@ -101,21 +103,45 @@ export function SiteOperations() {
     setNewDelay(prev => ({ ...prev, [field]: value }));
   };
 
-  const handleSaveEntry = () => {
-    console.log('Saving entry:', newEntry);
-    setShowNewEntry(false);
-    setNewEntry({
-      project: '',
-      date: selectedDate,
-      weather: 'sunny',
-      temperature: 15,
-      workersOnSite: 0,
-      activities: '',
-      equipment: '',
-      materials: '',
-      issues: '',
-      progress: 50,
-    });
+  const handleSaveEntry = async () => {
+    if (!newEntry.project) { toast.error('Project is required'); return; }
+    setSavingEntry(true);
+    try {
+      const payload = {
+        project: newEntry.project,
+        report_date: newEntry.date || selectedDate,
+        weather: newEntry.weather,
+        temperature: newEntry.temperature,
+        workers_on_site: newEntry.workersOnSite,
+        activities: newEntry.activities,
+        equipment: newEntry.equipment,
+        materials: newEntry.materials,
+        issues: newEntry.issues,
+        progress: newEntry.progress,
+        submitted_by: 'Site Manager',
+      };
+      const created = await dailyReportsApi.create(payload) as AnyRow;
+      // Prepend to reports list
+      reports.unshift(created);
+      toast.success('Daily report saved');
+      setShowNewEntry(false);
+      setNewEntry({
+        project: '',
+        date: selectedDate,
+        weather: 'sunny',
+        temperature: 15,
+        workersOnSite: 0,
+        activities: '',
+        equipment: '',
+        materials: '',
+        issues: '',
+        progress: 50,
+      });
+    } catch (err) {
+      toast.error('Failed to save report');
+    } finally {
+      setSavingEntry(false);
+    }
   };
 
   const handleSaveDelay = () => {
@@ -437,7 +463,8 @@ export function SiteOperations() {
                   <div className="flex gap-3 pt-4">
                     <button
                       onClick={handleSaveEntry}
-                      className="flex-1 px-4 py-2 bg-orange-600 hover:bg-orange-700 text-white rounded font-medium transition-colors"
+                      disabled={savingEntry}
+                      className="flex-1 px-4 py-2 bg-orange-600 hover:bg-orange-700 text-white rounded font-medium transition-colors disabled:opacity-50"
                     >
                       Save Entry
                     </button>
