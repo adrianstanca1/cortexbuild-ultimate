@@ -151,7 +151,7 @@ router.post('/send', async (req, res) => {
       const { rows } = await pool.query(
         `INSERT INTO email_logs (recipient, subject, body, email_type, status, created_by)
          VALUES ($1, $2, $3, $4, $5, $6) RETURNING *`,
-        [to, subject, body, 'custom', 'pending', req.user?.id || 'system']
+        [to, subject, body, 'custom', 'queued', req.user?.id || 'system']
       );
       if (process.env.SMTP_HOST) {
         try {
