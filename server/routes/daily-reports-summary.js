@@ -87,9 +87,9 @@ router.post('/weekly-pdf', async (req, res) => {
       </tr>
     </thead>
     <tbody>
-      ${reports.map((r: Record<string, unknown>) => {
+      ${reports.map((r) => {
         const date = r.report_date ? new Date(String(r.report_date)).toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' }) : 'N/A';
-        const activities = Array.isArray(r.activities) ? r.activities.map((a: { description?: string }) => a.description || '').filter(Boolean).join('; ') : (r.work_carried_out as string || '');
+        const activities = Array.isArray(r.activities) ? r.activities.map((a: { description?: string }) => a.description || '').filter(Boolean).join('; ') : (r.work_carried_out || '');
         const issues = r.issues_delays ? String(r.issues_delays) : '';
         return `<tr>
           <td><strong>${date}</strong></td>
