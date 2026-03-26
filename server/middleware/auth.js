@@ -7,7 +7,7 @@ module.exports = function authMiddleware(req, res, next) {
   }
   const token = header.slice(7);
   try {
-    const payload = jwt.verify(token, process.env.JWT_SECRET || 'cortexbuild_secret');
+    const payload = jwt.verify(token, process.env.JWT_SECRET);
     req.user = payload;
     next();
   } catch {
