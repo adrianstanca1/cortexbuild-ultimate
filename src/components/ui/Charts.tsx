@@ -34,7 +34,7 @@ interface ChartWrapperProps {
 
 export function ChartContainer({ title, subtitle, children, className = '' }: ChartWrapperProps) {
   return (
-    <div className={`bg-gray-900 rounded-xl border border-gray-800 p-5 ${className}`}>
+    <div className={`card p-5 ${className}`}>
       {(title || subtitle) && (
         <div className="mb-4">
           {title && <h3 className="text-lg font-bold text-white">{title}</h3>}
