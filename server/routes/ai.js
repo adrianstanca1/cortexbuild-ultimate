@@ -2,7 +2,6 @@ const express = require('express');
 const pool    = require('../db');
 const https = require('https');
 const http = require('http');
-const textwrap = require('textwrap');
 
 const router = express.Router();
 
