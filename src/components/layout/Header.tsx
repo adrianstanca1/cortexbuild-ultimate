@@ -181,20 +181,20 @@ export function Header({ activeModule, onMenuToggle }: HeaderProps) {
           style={{
             display: 'flex', alignItems: 'center', gap: '5px',
             padding: '4px 10px', borderRadius: '20px',
-            background: online ? 'rgba(16,185,129,0.1)' : 'rgba(248,113,113,0.1)',
-            border: `1px solid ${online ? 'rgba(16,185,129,0.2)' : 'rgba(248,113,113,0.2)'}`,
+            background: isOnline ? 'rgba(16,185,129,0.1)' : 'rgba(248,113,113,0.1)',
+            border: `1px solid ${isOnline ? 'rgba(16,185,129,0.2)' : 'rgba(248,113,113,0.2)'}`,
           }}
         >
-          {online
+          {isOnline
             ? <Wifi style={{ width: '11px', height: '11px', color: 'var(--emerald-400)' }} />
             : <WifiOff style={{ width: '11px', height: '11px', color: 'var(--red-400)' }} />
           }
           <span style={{
             fontFamily: 'var(--font-mono)', fontSize: '9px', fontWeight: 600,
-            color: online ? 'var(--emerald-400)' : 'var(--red-400)',
+            color: isOnline ? 'var(--emerald-400)' : 'var(--red-400)',
             letterSpacing: '0.06em', textTransform: 'uppercase',
           }}>
-            {online ? 'Live' : 'Offline'}
+            {isOnline ? 'Live' : 'Offline'}
           </span>
         </div>
 

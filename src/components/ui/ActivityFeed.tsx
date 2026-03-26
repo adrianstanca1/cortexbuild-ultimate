@@ -15,6 +15,7 @@ import {
   ChevronRight,
 } from 'lucide-react';
 import clsx from 'clsx';
+import { notificationsApi } from '../../services/api';
 
 interface ActivityItem {
   id: string;
@@ -70,9 +71,22 @@ export function ActivityFeed({ items: propItems, limit = 20, showFilters = true,
       if (propItems) {
         setItems(propItems);
       } else {
-        const data = generateMockActivities();
-        setItems(data);
+        // Try to load from notifications API as activity source
+        const rows = await notificationsApi.getAll();
+        const mapped: ActivityItem[] = (rows as Record<string, unknown>[]).map((r: Record<string, unknown>) => ({
+          id: String(r.id ?? ''),
+          type: (r.type as ActivityItem['type']) || 'system',
+          action: (r.action as ActivityItem['action']) || 'updated',
+          title: String(r.title || r.subject || 'Activity'),
+          description: String(r.message || r.description || ''),
+          user: { name: String(r.userName || r.createdBy || r.actor || 'System') },
+          timestamp: String(r.createdAt || new Date().toISOString()),
+          metadata: {},
+        }));
+        setItems(mapped.length > 0 ? mapped : generateMockActivities());
       }
+    } catch {
+      setItems(generateMockActivities());
     } finally {
       setLoading(false);
     }

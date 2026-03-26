@@ -1,4 +1,4 @@
-import { useState, lazy, Suspense } from 'react';
+import { useState, lazy, Suspense, useEffect } from 'react';
 import { Toaster } from 'sonner';
 import { Sidebar } from './components/layout/Sidebar';
 import { Header } from './components/layout/Header';
@@ -79,6 +79,18 @@ function AppShell() {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [showShortcuts, setShowShortcuts] = useState(false);
   const [showGlobalSearch, setShowGlobalSearch] = useState(false);
+  const [isOnline, setIsOnline] = useState(typeof navigator !== 'undefined' ? navigator.onLine : true);
+
+  useEffect(() => {
+    const handleOnline = () => setIsOnline(true);
+    const handleOffline = () => setIsOnline(false);
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+    return () => {
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+    };
+  }, []);
 
   const toggleSearch = () => setShowGlobalSearch(p => !p);
 
@@ -163,6 +175,11 @@ function AppShell() {
           />
         </div>
         <div className="flex flex-col flex-1 overflow-hidden min-w-0">
+          {!isOnline && (
+            <div className="bg-yellow-500 text-black px-4 py-1.5 text-sm text-center font-medium">
+              You're offline. Some features may not work.
+            </div>
+          )}
           <Header
             activeModule={activeModule}
             onMenuToggle={() => setSidebarCollapsed(!sidebarCollapsed)}
