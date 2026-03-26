@@ -44,13 +44,43 @@ export function AIAssistant() {
   const [isTyping, setIsTyping] = useState(false);
   const [chatSessions, setChatSessions] = useState<ChatSession[]>([]);
   const [currentSessionId, setCurrentSessionId] = useState<string | null>(null);
+
+  // Load sessions from localStorage on mount
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem('cortex_ai_sessions');
+      if (saved) setChatSessions(JSON.parse(saved));
+    } catch {}
+  }, []);
+
+  // Save sessions to localStorage on change
+  useEffect(() => {
+    try { localStorage.setItem('cortex_ai_sessions', JSON.stringify(chatSessions)); } catch {}
+  }, [chatSessions]);
+
+  // Load session messages from localStorage
+  const loadSession = (sessionId: string) => {
+    setCurrentSessionId(sessionId);
+    try {
+      const saved = localStorage.getItem(`cortex_ai_session_${sessionId}`);
+      setMessages(saved ? JSON.parse(saved) : []);
+    } catch { setMessages([]); }
+  };
+
+  // Persist current session messages to localStorage
+  useEffect(() => {
+    if (!currentSessionId) return;
+    try { localStorage.setItem(`cortex_ai_session_${currentSessionId}`, JSON.stringify(messages)); } catch {}
+  }, [messages, currentSessionId]);
   const { selectedIds, toggle, clearSelection } = useBulkSelection();
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   async function handleBulkDelete(ids: string[]) {
     if (!confirm(`Delete ${ids.length} chat session(s)?`)) return;
     try {
+      ids.forEach(id => { try { localStorage.removeItem(`cortex_ai_session_${id}`); } catch {} });
       setChatSessions(prev => prev.filter(s => !ids.includes(s.id)));
+      if (ids.includes(currentSessionId || '')) { setCurrentSessionId(null); setMessages([]); }
       toast.success(`Deleted ${ids.length} session(s)`);
       clearSelection();
     } catch {
@@ -410,6 +440,9 @@ export function AIAssistant() {
         {/* New Chat Button */}
         <button
           onClick={() => {
+            if (currentSessionId) {
+              try { localStorage.setItem(`cortex_ai_session_${currentSessionId}`, JSON.stringify(messages)); } catch {}
+            }
             setMessages([]);
             setInput('');
             setCurrentSessionId(null);
@@ -431,8 +464,11 @@ export function AIAssistant() {
                   <button
                     key={session.id}
                     onClick={() => {
+                      if (currentSessionId) {
+                        try { localStorage.setItem(`cortex_ai_session_${currentSessionId}`, JSON.stringify(messages)); } catch {}
+                      }
                       setCurrentSessionId(session.id);
-                      // In a real app, load messages from this session
+                      loadSession(session.id);
                     }}
                     className={clsx(
                       'w-full rounded-lg border px-3 py-2 text-left text-xs transition flex items-start gap-2',
