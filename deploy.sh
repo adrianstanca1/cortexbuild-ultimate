@@ -9,13 +9,17 @@ VPS_PASS="Cumparavinde12@"
 echo "=== Building ==="
 npm run build
 
-echo "=== Syncing to VPS (nginx container runs as UID 101) ==="
+echo "=== Syncing to VPS ==="
 sshpass -p "$VPS_PASS" rsync -e "ssh -o StrictHostKeyChecking=accept-new" \
   -avz --delete \
-  --usermap=0:101 --groupmap=0:50 \
   ./dist/ "$VPS:$VPS_PATH/dist/"
 
+echo "=== Fixing permissions (nginx container UID 101 needs read) ==="
+sshpass -p "$VPS_PASS" ssh -o StrictHostKeyChecking=accept-new "$VPS" \
+  "chmod -R 755 $VPS_PATH/dist/"
+
 echo "=== Verifying ==="
-sshpass -p "$VPS_PASS" ssh -o StrictHostKeyChecking=accept-new "$VPS" "curl -sf -o /dev/null -w 'Site: %{http_code}' https://www.cortexbuildpro.com/ && echo ' ✓'"
+sshpass -p "$VPS_PASS" ssh -o StrictHostKeyChecking=accept-new "$VPS" \
+  "curl -sf -o /dev/null -w 'Site: %{http_code}' https://www.cortexbuildpro.com/ && echo ' ✓'"
 
 echo "=== Done ==="
