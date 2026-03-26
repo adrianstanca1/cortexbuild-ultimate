@@ -45,9 +45,7 @@ services:
       - cortexbuild
 
   api:
-    build:
-      context: .
-      dockerfile: Dockerfile.api
+    image: cortexbuild-ultimate-api:v4
     container_name: cortexbuild-api
     restart: always
     environment:
