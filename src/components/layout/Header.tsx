@@ -4,6 +4,7 @@ import { type Module } from '../../types';
 import { NotificationsPanel } from './NotificationsPanel';
 import { useTheme } from '../../context/ThemeContext';
 import { useAuth } from '../../context/AuthContext';
+import { getToken } from '../../lib/supabase';
 
 const MODULE_LABELS: Record<Module, string> = {
   'dashboard': 'Dashboard',
@@ -213,7 +214,7 @@ export function Header({ activeModule, onMenuToggle }: HeaderProps) {
             </span>
           )}
         </button>
-        {notificationsOpen && <NotificationsPanel authToken={null} onClose={() => setNotificationsOpen(false)} />}
+        {notificationsOpen && <NotificationsPanel authToken={getToken()} onClose={() => setNotificationsOpen(false)} />}
 
         {/* Theme Toggle */}
         <div style={{ position: 'relative' }}>
