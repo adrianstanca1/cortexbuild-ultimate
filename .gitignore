@@ -9,3 +9,4 @@ dist/
 tsconfig.tsbuildinfo
 dist_backup_*/
 .next/
+sendgrid.env
