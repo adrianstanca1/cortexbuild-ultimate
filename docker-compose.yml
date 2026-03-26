@@ -61,7 +61,7 @@ services:
       DB_NAME: cortexbuild
       DB_USER: cortexbuild
       DB_PASSWORD: C0rt3xBu1ld_S3cur3_P@ss
-      JWT_SECRET: cortexbuild_jwt_secret_change_this_in_production
+      JWT_SECRET: 1ba7ee87b4cd735fc62f37606743c823163363ce56f2a86830ecb0e238fe616a
       PORT: 3001
       OLLAMA_HOST: http://ollama:11434
       OLLAMA_MODEL: qwen3.5:latest

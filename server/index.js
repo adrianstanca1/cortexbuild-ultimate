@@ -30,6 +30,7 @@ app.use('/api/auth', authRoutes);
 app.get('/api/health', (_req, res) => res.json({ status: 'ok', version: '1.0.0' }));
 
 // ─── JWT auth on all other /api routes ───────────────────────────────────────
+  app.use('/api/metrics',       require('./routes/metrics'));
 app.use('/api', authMiddleware);
 
 // ─── Upload route ─────────────────────────────────────────────────────────────
