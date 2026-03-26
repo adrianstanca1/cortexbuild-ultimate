@@ -430,14 +430,8 @@ export function AIAssistant() {
       })
       .catch((error) => {
         console.error('AI Chat error:', error);
-        const errorMessage: Message = {
-          id: (Date.now() + 1).toString(),
-          role: 'assistant',
-          content: `Sorry, I encountered an error: ${error.message}. Please try again or check if the server is running.`,
-          timestamp: new Date(),
-          isStreaming: false
-        };
-        setMessages(prev => [...prev, errorMessage]);
+        toast.error('AI request failed — check the server connection');
+        setMessages(prev => prev.filter(m => !m.isStreaming));
         setIsTyping(false);
       });
   };
