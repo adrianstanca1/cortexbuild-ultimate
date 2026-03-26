@@ -1,5 +1,5 @@
 // Module: Insights — CortexBuild Ultimate Enhanced
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import {
   Brain, TrendingUp, AlertTriangle, CheckCircle, Lightbulb,
   BarChart3, PieChart, Activity, Shield, PoundSterling,
@@ -8,6 +8,7 @@ import {
   CheckSquare, Square, Trash2,
 } from 'lucide-react';
 import { toast } from 'sonner';
+import { insightsApi, type Insight as ApiInsight } from '../../services/api';
 import { BulkActionsBar, useBulkSelection } from '../ui/BulkActions';
 import {
   AreaChart, Area, BarChart, Bar, LineChart, Line, PieChart as RechartsPie,
@@ -102,8 +103,22 @@ export function Insights() {
   const [severityFilter, setSeverityFilter] = useState<SeverityLevel | 'all'>('all');
   const [categoryFilter, setCategoryFilter] = useState<CategoryType>('all');
   const [dismissed, setDismissed] = useState<Set<string>>(new Set());
+  const [allInsights, setAllInsights] = useState<ApiInsight[]>([]);
+  const [loading, setLoading] = useState(true);
 
   const { selectedIds, toggle, clearSelection } = useBulkSelection();
+
+  useEffect(() => {
+    insightsApi.getAll()
+      .then(setAllInsights)
+      .catch(() => toast.error('Failed to load insights'))
+      .finally(() => setLoading(false));
+  }, []);
+
+  // Dismiss an insight (local state only — backend generates fresh)
+  const dismissInsight = (id: string) => {
+    setDismissed(prev => new Set([...prev, id]));
+  };
 
   async function handleBulkDelete(ids: string[]) {
     if (!confirm(`Delete ${ids.length} insight(s)?`)) return;
@@ -119,8 +134,6 @@ export function Insights() {
       toast.error('Bulk delete failed');
     }
   }
-
-  const allInsights = useMemo(() => generateMockInsights(), []);
 
   const filteredInsights = allInsights.filter((insight) => {
     if (dismissed.has(insight.id)) return false;

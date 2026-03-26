@@ -389,6 +389,23 @@ export const notificationsApi = {
   generateAlerts: () => apiFetch<{ generated: number }>('/notifications/generate-alerts', { method: 'POST' }),
 };
 
+export interface Insight {
+  id: string;
+  category: 'financial' | 'safety' | 'programme' | 'resource' | 'quality' | 'risk';
+  severity: 'critical' | 'high' | 'medium' | 'low' | 'info';
+  title: string;
+  description: string;
+  recommendation: string;
+  impact: string;
+  confidence: number;
+  dataPoints: number;
+  generatedAt?: string;
+}
+
+export const insightsApi = {
+  getAll: () => apiFetch<Insight[]>('/insights'),
+};
+
 export const financialReportsApi = {
   getSummary: () => apiFetch<{
     totalRevenue: number;

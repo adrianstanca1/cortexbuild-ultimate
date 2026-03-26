@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useProjects } from '../../hooks/useData';
+import { useMeetings } from '../../hooks/useData';
 import { toast } from 'sonner';
 import {
   Plus, X, ChevronLeft, ChevronRight, Clock, MapPin, Users, AlertTriangle,
@@ -21,7 +21,7 @@ const WEEKDAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 const HOURS = Array.from({ length: 13 }, (_, i) => `${7 + i}:00`);
 
 export function Calendar() {
-  const { useList, useCreate, useUpdate, useDelete } = useProjects;
+  const { useList, useCreate, useUpdate, useDelete } = useMeetings;
   const { data: raw = [], isLoading } = useList();
   const events = raw as AnyRow[];
   const createMutation = useCreate();
