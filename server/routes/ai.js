@@ -719,6 +719,94 @@ async function handleRisk() {
   };
 }
 
+
+
+async function handleValuations() {
+  const { rows } = await pool.query(
+    `SELECT reference, project, contractor_name, client_name, application_number,
+            period_start, period_end, status, original_value, variations,
+            total_value, retention, amount_due, submitted_date, certified_date
+     FROM valuations ORDER BY created_at DESC`
+  );
+  if (!rows.length) {
+    return {
+      reply: 'No valuations found.',
+      data: { count: 0 },
+      suggestions: ['Show me all projects', 'Show invoices', 'Show change orders']
+    };
+  }
+  const draft     = rows.filter(r => r.status === 'draft');
+  const submitted = rows.filter(r => r.status === 'submitted');
+  const certified = rows.filter(r => r.status === 'certified');
+  const paid      = rows.filter(r => r.status === 'paid');
+  const totalAmt  = rows.reduce((s, r) => s + parseFloat(r.amount_due || 0), 0);
+  const totalOrig = rows.reduce((s, r) => s + parseFloat(r.original_value || 0), 0);
+
+  let reply = `You have **${rows.length} valuations** — ${draft.length} draft, ${submitted.length} submitted, ${certified.length} certified, ${paid.length} paid.\n`;
+  reply += `Total gross value: ${fmt(totalOrig)} | Total amount due: ${fmt(totalAmt)}.\n\n`;
+  if (submitted.length) {
+    reply += 'Awaiting certification:\n';
+    submitted.slice(0, 5).forEach(v => {
+      reply += `• ${v.reference || 'Valuation #' + v.application_number} — ${v.project} (${v.contractor_name}) — ${fmt(v.amount_due)}, submitted ${v.submitted_date ? new Date(v.submitted_date).toLocaleDateString('en-GB') : 'N/A'}\n`;
+    });
+  }
+  if (certified.length) {
+    reply += 'Certified (awaiting payment):\n';
+    certified.slice(0, 5).forEach(v => {
+      reply += `• ${v.reference || 'Valuation #' + v.application_number} — ${v.project} — ${fmt(v.amount_due)} certified ${v.certified_date ? new Date(v.certified_date).toLocaleDateString('en-GB') : 'N/A'}\n`;
+    });
+  }
+
+  return {
+    reply,
+    data: { count: rows.length, draft: draft.length, submitted: submitted.length, certified: certified.length, paid: paid.length, totalAmountDue: totalAmt, valuations: rows },
+    suggestions: [
+      'Which valuations are overdue for certification?',
+      'Show me defects by project',
+      'Show me all projects'
+    ]
+  };
+}
+
+
+async function handleDefects() {
+  const { rows } = await pool.query(
+    `SELECT reference, title, project, location, priority, status, trade,
+            raised_by, assigned_to, due_date, cost, category, description
+     FROM defects ORDER BY created_at DESC`
+  );
+  if (!rows.length) {
+    return {
+      reply: 'No defects or snags recorded.',
+      data: { count: 0 },
+      suggestions: ['Show me all projects', 'Show open RFIs', 'Show safety incidents']
+    };
+  }
+  const open     = rows.filter(r => r.status === 'open' || r.status === 'in_progress');
+  const resolved = rows.filter(r => r.status === 'resolved' || r.status === 'closed');
+  const highPri  = rows.filter(r => r.priority === 'high' || r.priority === 'critical');
+  const overdue   = rows.filter(r => r.due_date && new Date(r.due_date) < new Date() && r.status !== 'resolved' && r.status !== 'closed');
+  const totalCost = rows.reduce((s, r) => s + parseFloat(r.cost || 0), 0);
+
+  let reply = `You have **${rows.length} defects/snags** — ${open.length} open, ${resolved.length} resolved.\n`;
+  reply += `High/critical priority: ${highPri.length} | Overdue: ${overdue.length} | Total estimated cost: ${fmt(totalCost)}.\n\n`;
+  if (open.length) {
+    reply += 'Open defects:\n';
+    open.slice(0, 6).forEach(d => {
+      reply += `• [${(d.priority || 'medium').toUpperCase()}] ${d.title} — ${d.project} @ ${d.location || 'N/A'}, due ${d.due_date ? new Date(d.due_date).toLocaleDateString('en-GB') : 'N/A'}\n`;
+    });
+  }
+
+  return {
+    reply,
+    data: { count: rows.length, open: open.length, resolved: resolved.length, highPriority: highPri.length, overdue: overdue.length, totalCost, defects: rows },
+    suggestions: [
+      'Show me overdue defects',
+      'Show defects by project',
+      'Show me valuations'
+    ]
+  };
+}
 async function handleBudget() {
   const { rows } = await pool.query(
     `SELECT name, client, budget, spent, status FROM projects ORDER BY created_at DESC`
@@ -795,6 +883,8 @@ function classify(message) {
   if (/team|worker|staff|member|employee/.test(m))                                             return 'team';
   if (/\brfi\b|rfis/.test(m))                                                                   return 'rfis';
   if (/tender|bid|bidding|pipeline/.test(m))                                                   return 'tenders';
+  if (/valuation|valuations|payment application|interim certificate|prime cost|PC sums/.test(m)) return 'valuations';
+  if (/defect|defects|snag|snags|punch list|punchlist|items? list|closing/.test(m))             return 'defects';
   return 'unknown';
 }
 
@@ -885,6 +975,8 @@ router.post('/chat', async (req, res) => {
       case 'rfis':            result = await handleRfis();            break;
       case 'tenders':         result = await handleTenders();         break;
       case 'budget':          result = await handleBudget();          break;
+      case 'valuations':     result = await handleValuations();       break;
+      case 'defects':        result = await handleDefects();          break;
       case 'materials':       result = await handleMaterials();       break;
       case 'timesheets':      result = await handleTimesheets();      break;
       case 'subcontractors':  result = await handleSubcontractors();  break;

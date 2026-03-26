@@ -6,6 +6,7 @@ import {
   CheckSquare, Square
 } from 'lucide-react';
 import { valuationsApi, uploadFile } from '../../services/api';
+import { jsPDF } from 'jspdf';
 import { BulkActionsBar, useBulkSelection } from '../ui/BulkActions';
 
 interface Valuation {
@@ -38,6 +39,152 @@ const statusConfig: Record<string, { label: string; color: string; bg: string }>
   paid: { label: 'Paid', color: 'text-emerald-400', bg: 'bg-emerald-500/10' },
   rejected: { label: 'Rejected', color: 'text-red-400', bg: 'bg-red-500/10' },
 };
+
+
+// ─── PDF Generation ─────────────────────────────────────────────────────────
+function generateValuationPDF(val: Valuation) {
+  const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+  const GREEN = [34, 197, 94] as [number, number, number];
+  const ORANGE = [249, 115, 22] as [number, number, number];
+  const GRAY = [100, 100, 100] as [number, number, number];
+  const LIGHTGRAY = [220, 220, 220] as [number, number, number];
+  const BLACK = [30, 30, 30] as [number, number, number];
+
+  // Header bar
+  doc.setFillColor(ORANGE[0], ORANGE[1], ORANGE[2]);
+  doc.rect(0, 0, 210, 28, 'F');
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(20);
+  doc.setTextColor(255, 255, 255);
+  doc.text('INTERIM VALUATION', 14, 14);
+  doc.setFontSize(10);
+  doc.setFont('helvetica', 'normal');
+  doc.text('CortexBuild Ultimate', 14, 21);
+
+  // Ref + Status top right
+  doc.setFontSize(9);
+  doc.text('Ref: ' + (val.ref || val.id), 196, 10, { align: 'right' });
+  doc.setFillColor(GREEN[0], GREEN[1], GREEN[2]);
+  doc.roundedRect(162, 13, 34, 7, 1, 1, 'F');
+  doc.setTextColor(255, 255, 255);
+  doc.text(val.status.toUpperCase(), 179, 18, { align: 'center' });
+
+  doc.setTextColor(BLACK[0], BLACK[1], BLACK[2]);
+
+  // Project info block
+  let y = 38;
+  doc.setFillColor(248, 248, 248);
+  doc.rect(14, y, 182, 30, 'F');
+  doc.setDrawColor(LIGHTGRAY[0], LIGHTGRAY[1], LIGHTGRAY[2]);
+  doc.line(14, y + 10, 196, y + 10);
+  doc.line(105, y, 105, y + 30);
+
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(8);
+  doc.setTextColor(GRAY[0], GRAY[1], GRAY[2]);
+  doc.text('PROJECT', 16, y + 6);
+  doc.text('CONTRACTOR', 107, y + 6);
+
+  doc.setFontSize(10);
+  doc.setTextColor(BLACK[0], BLACK[1], BLACK[2]);
+  doc.text(val.project || '—', 16, y + 15);
+  doc.text(val.contractor || '—', 107, y + 15);
+
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(8);
+  doc.setTextColor(GRAY[0], GRAY[1], GRAY[2]);
+  doc.text('PERIOD', 16, y + 25);
+  doc.text('APPLICATION NO.', 107, y + 25);
+
+  doc.setFontSize(10);
+  doc.setTextColor(BLACK[0], BLACK[1], BLACK[2]);
+  doc.text((val.periodStart || '') + ' – ' + (val.periodEnd || ''), 16, y + 30);
+  doc.text('#' + String(val.applicationNo || 1), 107, y + 30);
+
+  // Values summary - 2 columns of 3 metrics
+  y = 78;
+  const fmt = (n: number) => '£' + Number(n || 0).toLocaleString('en-GB', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  const pairs = [
+    ['Gross Value', fmt(val.grossValue || 0), 'Retention', fmt(val.retention || 0) + ' (' + (val.retentionPercent || 0) + '%)'],
+    ['Previous Certified', fmt(val.previousValue || 0), 'This Application', fmt(val.thisApplication || 0)],
+    ['Certified Value', fmt(val.certifiedValue || 0), 'Amount Due', fmt((val.certifiedValue || 0) - (val.retention || 0))],
+  ];
+  pairs.forEach(([k1, v1, k2, v2], row) => {
+    const ly = y + row * 16;
+    doc.setFontSize(7.5);
+    doc.setTextColor(GRAY[0], GRAY[1], GRAY[2]);
+    doc.setFont('helvetica', 'normal');
+    doc.text(k1, 14, ly);
+    doc.text(k2, 108, ly);
+    doc.setFontSize(13);
+    doc.setTextColor(BLACK[0], BLACK[1], BLACK[2]);
+    doc.setFont('helvetica', 'bold');
+    doc.text(v1, 14, ly + 7);
+    doc.text(v2, 108, ly + 7);
+    doc.setFont('helvetica', 'normal');
+  });
+
+  // Divider
+  y = 126;
+  doc.setDrawColor(LIGHTGRAY[0], LIGHTGRAY[1], LIGHTGRAY[2]);
+  doc.line(14, y, 196, y);
+
+  // Line items table header
+  y += 6;
+  doc.setFillColor(40, 40, 40);
+  doc.rect(14, y, 182, 8, 'F');
+  doc.setFontSize(8);
+  doc.setFont('helvetica', 'bold');
+  doc.setTextColor(255, 255, 255);
+  doc.text('Description', 16, y + 5.5);
+  doc.text('Original', 105, y + 5.5);
+  doc.text('Variation', 127, y + 5.5);
+  doc.text('Work Done', 150, y + 5.5);
+  doc.text('Total', 174, y + 5.5);
+  doc.text('%', 194, y + 5.5);
+
+  // Line items rows
+  doc.setTextColor(BLACK[0], BLACK[1], BLACK[2]);
+  doc.setFont('helvetica', 'normal');
+  const items = val.lineItems || [];
+  items.slice(0, 15).forEach((item, i) => {
+    y += 9;
+    if (i % 2 === 0) { doc.setFillColor(250, 250, 250); doc.rect(14, y - 5, 182, 9, 'F'); }
+    doc.setFontSize(8.5);
+    const total = (item.originalValue || 0) + (item.variation || 0);
+    doc.text(item.description || '—', 16, y + 1);
+    doc.text(fmt(item.originalValue || 0), 105, y + 1);
+    doc.text(fmt(item.variation || 0), 127, y + 1);
+    doc.text(fmt(item.workDone || 0), 150, y + 1);
+    doc.text(fmt(total), 174, y + 1);
+    doc.text(String(item.percentage || 0) + '%', 194, y + 1);
+  });
+
+  // Notes section
+  if (val.notes) {
+    y += 10;
+    doc.setDrawColor(LIGHTGRAY[0], LIGHTGRAY[1], LIGHTGRAY[2]);
+    doc.line(14, y, 196, y);
+    y += 6;
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(8);
+    doc.setTextColor(GRAY[0], GRAY[1], GRAY[2]);
+    doc.text('NOTES', 16, y);
+    y += 5;
+    doc.setFont('helvetica', 'normal');
+    doc.setTextColor(BLACK[0], BLACK[1], BLACK[2]);
+    doc.setFontSize(9);
+    const noteLines = doc.splitTextToSize(val.notes, 168);
+    doc.text(noteLines.slice(0, 5), 16, y);
+  }
+
+  // Footer
+  doc.setFontSize(7.5);
+  doc.setTextColor(GRAY[0], GRAY[1], GRAY[2]);
+  doc.text('Generated by CortexBuild Ultimate — AI Construction Management', 105, 290, { align: 'center' });
+
+  doc.save('Valuation-' + (val.ref || val.id) + '.pdf');
+}
 
 export default function Valuations() {
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -317,7 +464,7 @@ export default function Valuations() {
                         <button type="button" className="p-1.5 hover:bg-gray-700 rounded text-gray-400 hover:text-white">
                           <Eye size={16} />
                         </button>
-                        <button type="button" className="p-1.5 hover:bg-gray-700 rounded text-gray-400 hover:text-white">
+                        <button type="button" onClick={() => generateValuationPDF(val)} className="p-1.5 hover:bg-gray-700 rounded text-gray-400 hover:text-white" title="Download PDF">
                           <Download size={16} />
                         </button>
                         <input

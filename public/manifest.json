@@ -58,7 +58,10 @@
       "purpose": "any maskable"
     }
   ],
-  "categories": ["business", "productivity"],
+  "categories": [
+    "business",
+    "productivity"
+  ],
   "screenshots": [
     {
       "src": "/screenshots/dashboard.png",
@@ -73,21 +76,36 @@
       "short_name": "Dashboard",
       "description": "Open the main dashboard",
       "url": "/?module=dashboard",
-      "icons": [{ "src": "/icons/icon-96x96.png", "sizes": "96x96" }]
+      "icons": [
+        {
+          "src": "/icons/icon-96x96.png",
+          "sizes": "96x96"
+        }
+      ]
     },
     {
       "name": "Projects",
       "short_name": "Projects",
       "description": "View all projects",
       "url": "/?module=projects",
-      "icons": [{ "src": "/icons/icon-96x96.png", "sizes": "96x96" }]
+      "icons": [
+        {
+          "src": "/icons/icon-96x96.png",
+          "sizes": "96x96"
+        }
+      ]
     },
     {
       "name": "AI Assistant",
       "short_name": "AI",
       "description": "Open AI Assistant",
       "url": "/?module=ai-assistant",
-      "icons": [{ "src": "/icons/icon-96x96.png", "sizes": "96x96" }]
+      "icons": [
+        {
+          "src": "/icons/icon-96x96.png",
+          "sizes": "96x96"
+        }
+      ]
     }
   ],
   "related_applications": [],
