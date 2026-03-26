@@ -1,8 +1,8 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import {
   ClipboardList, Plus, Search, CloudRain, Sun, Cloud, Wind, Users, Edit2,
   Trash2, X, ChevronDown, ChevronUp, Calendar, AlertTriangle, Download, FileText,
-  Camera, Brain, BarChart3, CheckCircle2, ThumbsUp, Eye, CheckSquare, Square
+  Camera, Brain, BarChart3, CheckCircle2, ThumbsUp, Eye, CheckSquare, Square, Upload, Loader2
 } from 'lucide-react';
 import { BulkActionsBar, useBulkSelection } from '../ui/BulkActions';
 import { LineChart, Line, CartesianGrid, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
@@ -68,6 +68,8 @@ export function DailyReports() {
   const [dateRangeEnd, setDateRangeEnd] = useState('');
   const [showModal, setShowModal] = useState(false);
   const [editing, setEditing] = useState<AnyRow | null>(null);
+  const [photoUploading, setPhotoUploading] = useState(false);
+  const photoInputRef = useRef<HTMLInputElement>(null);
   const [form, setForm] = useState({ ...emptyForm });
   const [expanded, setExpanded] = useState<string | null>(null);
   const [detailView, setDetailView] = useState<AnyRow | null>(null);
@@ -367,12 +369,34 @@ export function DailyReports() {
               ))}
             </select>
           </div>
+          <input
+            id="photo-upload"
+            type="file"
+            accept="image/*"
+            multiple
+            ref={photoInputRef}
+            className="hidden"
+            onChange={e => {
+              const files = Array.from(e.target.files || []);
+              if (!files.length) return;
+              setPhotoUploading(true);
+              const pid = projectFilter === 'all'
+                ? (projects[0]?.id as string)
+                : projectFilter;
+              if (!pid) { toast.error('Select a project first'); setPhotoUploading(false); return; }
+              handleDailyReportPhotoUpload(files, pid)
+                .catch(() => toast.error('Photo upload failed'))
+                .finally(() => setPhotoUploading(false));
+              e.target.value = '';
+            }}
+          />
           <button
-            onClick={() => toast.message('Photo upload coming soon!')}
-            className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium transition-colors"
+            onClick={() => photoInputRef.current?.click()}
+            disabled={photoUploading}
+            className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium transition-colors disabled:opacity-50"
           >
-            <Plus size={16} />
-            Upload Photo
+            {photoUploading ? <Loader2 size={16} className="animate-spin" /> : <Plus size={16} />}
+            {photoUploading ? 'Uploading...' : 'Upload Photo'}
           </button>
         </div>
       )}
@@ -702,7 +726,34 @@ export function DailyReports() {
               <div className="flex items-center justify-between">
                 <h3 className="text-lg font-semibold text-white">Weekly Summaries</h3>
                 <button
-                  onClick={() => toast.message('Summary generated for this week!')}
+                  onClick={async () => {
+                    const weekStart = new Date();
+                    weekStart.setDate(weekStart.getDate() - 0 * 7);
+                    const weekEnd = new Date(weekStart);
+                    weekEnd.setDate(weekEnd.getDate() + 6);
+                    const currentWeek = reports.filter(r => {
+                      const d = new Date(String(r.report_date ?? ''));
+                      return d >= weekStart && d <= weekEnd;
+                    });
+                    if (!currentWeek.length) { toast.error('No reports this week'); return; }
+                    toast.success('Generating AI summary…');
+                    try {
+                      const token = localStorage.getItem('token') || '';
+                      const res = await fetch('/api/reports/summary', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+                        body: JSON.stringify({ reports: currentWeek, projectName: projectFilter === 'all' ? 'All Projects' : String(projects.find(p => String(p.id) === projectFilter)?.name ?? 'Project') }),
+                      });
+                      if (!res.ok) throw new Error();
+                      const data = await res.json() as { summary?: string };
+                      toast.success(data.summary || 'Summary generated successfully');
+                    } catch {
+                      // Fallback: show a basic text summary via alert
+                      const totalWorkers = currentWeek.reduce((s: number, r: AnyRow) => s + Number(r.workers_on_site ?? 0), 0);
+                      const issues = currentWeek.filter((r: AnyRow) => r.issues_delays).length;
+                      toast.success(`Week Summary: ${currentWeek.length} reports, ${totalWorkers} total workers, ${issues} issues`);
+                    }
+                  }}
                   className="flex items-center gap-2 px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg text-sm font-medium transition-colors"
                 >
                   <Brain size={16} />
@@ -775,7 +826,10 @@ export function DailyReports() {
               </div>
               <div className="bg-gray-800 rounded-lg border border-gray-700 p-4">
                 <button
-                  onClick={() => toast.message('Export PDF coming soon!')}
+                  onClick={() => exportWeeklyReportsPDF(
+                    reports.filter(r => projectFilter === 'all' || String(r.project_id) === projectFilter),
+                    projectFilter === 'all' ? 'All Projects' : String(projects.find(p => String(p.id) === projectFilter)?.name ?? 'Project')
+                  )}
                   className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-gray-700 hover:bg-gray-600 text-gray-300 rounded-lg text-sm font-medium transition-colors"
                 >
                   <Download size={16} />
@@ -1121,6 +1175,71 @@ export function DailyReports() {
           </div>
         </div>
       )}
+
+      {/* ── Photo upload handler ─────────────────────────────── */}
+      {projectFilter === 'all' && (
+        <div className="hidden" />
+      )}
+
+      {/* ── PDF Export ─────────────────────────────────────── */}
+      <div className="hidden print:block" />
     </div>
   );
 }
+
+// ── Photo upload ─────────────────────────────────────────────
+async function handleDailyReportPhotoUpload(files: File[], projectId: string) {
+  if (!files.length) return;
+  const formData = new FormData();
+  formData.append('name', `Daily Report Photo - ${new Date().toLocaleDateString()}`);
+  formData.append('project_id', projectId);
+  formData.append('category', 'daily-report');
+  files.forEach(f => formData.append('files', f));
+  try {
+    const res = await fetch(`${window.location.origin}/api/files/upload`, {
+      method: 'POST',
+      body: formData,
+      headers: { Authorization: `Bearer ${localStorage.getItem('token') || ''}` },
+    }) as Response;
+    if (!res.ok) throw new Error('Upload failed');
+    toast.success(`${files.length} photo(s) uploaded`);
+  } catch {
+    toast.error('Photo upload failed');
+  }
+}
+
+// ── PDF export ───────────────────────────────────────────────
+async function exportWeeklyReportsPDF(reports: AnyRow[], projectName: string) {
+  if (!reports.length) { toast.error('No reports to export'); return; }
+  try {
+    const token = localStorage.getItem('token') || '';
+    const res = await fetch('/api/reports/weekly-pdf', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+      body: JSON.stringify({ reports, projectName }),
+    }) as { ok: boolean; blob: () => Promise<Blob> };
+    if (!res.ok) throw new Error();
+    const blob = await res.blob();
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `weekly-report-${new Date().toISOString().slice(0, 10)}.pdf`;
+    a.click();
+    URL.revokeObjectURL(url);
+    toast.success('PDF exported');
+  } catch {
+    // Fallback: open print dialog with printable summary
+    const printContent = reports.map(r => `
+${r.report_date ? new Date(String(r.report_date)).toLocaleDateString() : ''} | ${r.weather || ''} | ${r.workers_on_site || 0} workers
+${r.activities ? JSON.parse(String(r.activities)).map((a: AnyRow) => `- ${a.description || a.title || ''}`).join('\n') : r.work_carried_out || ''}
+`).join('\n\n');
+    const win = window.open('', '_blank');
+    if (win) {
+      win.document.write(`<pre>${printContent}</pre>`);
+      win.document.close();
+      win.print();
+    }
+    toast.success('Print view opened');
+  }
+}
+

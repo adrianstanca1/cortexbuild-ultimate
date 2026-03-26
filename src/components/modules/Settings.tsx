@@ -1,12 +1,13 @@
 // Module: Settings — CortexBuild Ultimate (Full Subpages)
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
   Save, Bell, Shield, CreditCard, Users, Building2, Plug, Check,
   AlertTriangle, Mail, Phone, MapPin, Globe, ChevronRight, Trash2,
   Plus, RefreshCw, Lock, Eye, EyeOff, ToggleLeft, ToggleRight, X, CheckCircle2,
-  CheckSquare, Square,
+  CheckSquare, Square, Loader2,
 } from 'lucide-react';
 import { BulkActionsBar, useBulkSelection } from '../ui/BulkActions';
+import { settingsApi, usersApi } from '../../services/api';
 import { toast } from 'sonner';
 
 type Tab = 'company'|'users'|'billing'|'notifications'|'integrations'|'security';
@@ -29,6 +30,12 @@ function Toggle({ on, onToggle }: { on: boolean; onToggle: () => void }) {
 export function Settings() {
   const [tab, setTab] = useState<Tab>('company');
 
+  // ── Loading states ────────────────────────────────────────────────────────
+  const [loadingCompany, setLoadingCompany] = useState(false);
+  const [savingCompany, setSavingCompany]   = useState(false);
+  const [loadingUsers, setLoadingUsers]       = useState(false);
+  const [savingNotifs, setSavingNotifs]       = useState(false);
+
   // ── Company state ──────────────────────────────────────────────────────────
   const [company, setCompany] = useState({
     name:'CortexBuild Ltd', reg:'12345678', vat:'GB123456789', utr:'1234567890',
@@ -39,7 +46,7 @@ export function Settings() {
   });
 
   // ── Users state ───────────────────────────────────────────────────────────
-  const [users] = useState([
+  const [users, setUsers] = useState([
     { id:'u1', name:'Adrian Stanca',      email:'adrian.stanca1@gmail.com', role:'super_admin',     status:'active',  lastLogin:'Today'    },
     { id:'u2', name:'James Harrington',   email:'j.harrington@cortex.co.uk',role:'project_manager', status:'active',  lastLogin:'Yesterday'},
     { id:'u3', name:'Sarah Mitchell',     email:'s.mitchell@cortex.co.uk',  role:'project_manager', status:'active',  lastLogin:'2 days ago'},
@@ -50,15 +57,63 @@ export function Settings() {
   const [showInviteModal, setShowInviteModal] = useState(false);
   const [inviteEmail, setInviteEmail]         = useState('');
   const [inviteRole, setInviteRole]           = useState('project_manager');
+  const [inviting, setInviting]              = useState(false);
   const { selectedIds, toggle, clearSelection } = useBulkSelection();
+
+  // ── Load company settings on mount ────────────────────────────────────────
+  useEffect(() => {
+    settingsApi.getAll().then(settings => {
+      if (settings.company) setCompany(prev => ({ ...prev, ...settings.company as Record<string, string | boolean> }));
+    }).catch(() => { /* use defaults */ });
+  }, []);
+
+  // ── Load users on mount ───────────────────────────────────────────────────
+  useEffect(() => {
+    setLoadingUsers(true);
+    usersApi.getAll().then(data => {
+      if (Array.isArray(data) && data.length > 0) setUsers(data as typeof users);
+    }).catch(() => { /* use defaults */ })
+      .finally(() => setLoadingUsers(false));
+  }, []);
 
   async function handleBulkDelete(ids: string[]) {
     if (!confirm(`Remove ${ids.length} user(s)?`)) return;
     try {
+      await Promise.all(ids.map(id => usersApi.delete(id)));
+      setUsers(prev => prev.filter(u => !ids.includes(String(u.id))));
       toast.success(`Removed ${ids.length} user(s)`);
       clearSelection();
     } catch {
       toast.error('Bulk action failed');
+    }
+  }
+
+  async function handleSaveCompany() {
+    setSavingCompany(true);
+    try {
+      await settingsApi.updateSetting('company', company);
+      toast.success('Company settings saved');
+    } catch (err) {
+      toast.error('Failed to save company settings');
+      console.error(err);
+    } finally {
+      setSavingCompany(false);
+    }
+  }
+
+  async function handleInviteUser() {
+    if (!inviteEmail) return;
+    setInviting(true);
+    try {
+      await usersApi.create({ email: inviteEmail, role: inviteRole });
+      toast.success(`Invite sent to ${inviteEmail}`);
+      setShowInviteModal(false);
+      setInviteEmail('');
+    } catch (err) {
+      toast.error('Failed to send invite');
+      console.error(err);
+    } finally {
+      setInviting(false);
     }
   }
 
@@ -209,9 +264,10 @@ export function Settings() {
             </div>
           </div>
 
-          <button type="button" onClick={()=>toast.success('Company settings saved')}
-            className="flex items-center gap-2 px-5 py-2.5 bg-blue-600 hover:bg-blue-700 rounded-lg text-white text-sm font-semibold transition-colors">
-            <Save className="w-4 h-4"/>Save Company Settings
+          <button type="button" onClick={handleSaveCompany} disabled={savingCompany}
+            className="flex items-center gap-2 px-5 py-2.5 bg-blue-600 hover:bg-blue-700 rounded-lg text-white text-sm font-semibold transition-colors disabled:opacity-50">
+            {savingCompany ? <Loader2 className="w-4 h-4 animate-spin"/> : <Save className="w-4 h-4"/>}
+            {savingCompany ? 'Saving…' : 'Save Company Settings'}
           </button>
         </div>
       )}
@@ -293,8 +349,10 @@ export function Settings() {
                   </div>
                 </div>
                 <div className="flex gap-3 px-6 py-4 border-t border-gray-800">
-                  <button type="button" onClick={()=>{toast.success(`Invite sent to ${inviteEmail}`);setShowInviteModal(false);}}
-                    className="flex-1 bg-blue-600 hover:bg-blue-700 text-white rounded-lg py-2 text-sm font-semibold transition-colors">Send Invite</button>
+                  <button type="button" onClick={handleInviteUser} disabled={inviting || !inviteEmail}
+                    className="flex-1 bg-blue-600 hover:bg-blue-700 text-white rounded-lg py-2 text-sm font-semibold transition-colors disabled:opacity-50">
+                      {inviting ? 'Sending…' : 'Send Invite'}
+                  </button>
                   <button type="button" onClick={()=>setShowInviteModal(false)} className="flex-1 bg-gray-800 hover:bg-gray-700 text-white rounded-lg py-2 text-sm font-semibold transition-colors">Cancel</button>
                 </div>
               </div>
@@ -416,9 +474,10 @@ export function Settings() {
               </div>
             </div>
           ))}
-          <button type="button" onClick={()=>toast.success('Notification preferences saved')}
-            className="flex items-center gap-2 px-5 py-2.5 bg-blue-600 hover:bg-blue-700 rounded-lg text-white text-sm font-semibold transition-colors">
-            <Save className="w-4 h-4"/>Save Preferences
+          <button type="button" onClick={async () => { setSavingNotifs(true); try { await settingsApi.updateSetting('notifications', notifs); toast.success('Notification preferences saved'); } catch { toast.error('Failed to save'); } finally { setSavingNotifs(false); } }} disabled={savingNotifs}
+            className="flex items-center gap-2 px-5 py-2.5 bg-blue-600 hover:bg-blue-700 rounded-lg text-white text-sm font-semibold transition-colors disabled:opacity-50">
+            {savingNotifs ? <Loader2 className="w-4 h-4 animate-spin"/> : <Save className="w-4 h-4"/>}
+            {savingNotifs ? 'Saving…' : 'Save Preferences'}
           </button>
         </div>
       )}

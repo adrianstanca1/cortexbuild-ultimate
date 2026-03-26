@@ -49,7 +49,7 @@ function toCamel<T>(obj: unknown): T {
 
 // ─── Core fetch helper ────────────────────────────────────────────────────────
 
-async function apiFetch<T>(path: string, options?: RequestInit): Promise<T> {
+export async function apiFetch<T>(path: string, options?: RequestInit): Promise<T> {
   const token = getToken();
   const res = await fetch(`${API_BASE}${path}`, {
     ...options,
@@ -336,6 +336,26 @@ export const usersApi = {
   getAll: () => apiFetch<Row[]>('/auth/users'),
   create: (data: Row) => apiFetch<Row>('/auth/users', { method: 'POST', body: JSON.stringify(data) }),
   delete: (id: string) => apiFetch<void>(`/auth/users/${id}`, { method: 'DELETE' }),
+};
+
+export interface AppSettings {
+  notifications?: Record<string, boolean>;
+  theme?: string;
+  company?: Record<string, string | boolean>;
+  language?: string;
+  timezone?: string;
+  dashboard?: Record<string, unknown>;
+  alerts?: Record<string, boolean>;
+  reports?: Record<string, unknown>;
+}
+
+export const settingsApi = {
+  getAll: () => apiFetch<AppSettings>('/auth/settings'),
+  updateSetting: <K extends keyof AppSettings>(key: K, value: AppSettings[K]) =>
+    apiFetch<{ key: K; value: AppSettings[K] }>('/auth/settings', {
+      method: 'PUT',
+      body: JSON.stringify({ key, value }),
+    }),
 };
 
 export const notificationsApi = {
