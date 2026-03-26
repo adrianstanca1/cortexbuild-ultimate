@@ -61,6 +61,7 @@ app.use('/api/contacts',        makeRouter('contacts'));
 app.use('/api/risk-register',   makeRouter('risk_register'));
 app.use('/api/purchase-orders', makeRouter('purchase_orders'));
 app.use('/api/daily-reports',   makeRouter('daily_reports'));
+app.use('/api/reports',         require('./routes/daily-reports-summary'));
 
 // New construction module routes
 app.use('/api/variations',         makeRouter('variations'));
