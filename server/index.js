@@ -39,6 +39,8 @@ app.use('/api/files', require('./routes/files'));
 // ─── AI routes ────────────────────────────────────────────────────────────────
 app.use('/api/ai', require('./routes/ai'));
 
+app.use('/api/ai-conversations', require('./routes/ai-conversations'));
+
 // ─── CRUD routes ─────────────────────────────────────────────────────────────
 app.use('/api/projects',        makeRouter('projects'));
 app.use('/api/invoices',        makeRouter('invoices'));

@@ -355,6 +355,23 @@ export const aiApi = {
     }),
 };
 
+export interface AiMessage {
+  id?: string;
+  role: 'user' | 'assistant';
+  content: string;
+  model?: string;
+  created_at?: string;
+}
+
+export const aiConversationsApi = {
+  getSession: (sessionId: string) =>
+    apiFetch<{ messages: AiMessage[] }>(`/ai-conversations/${sessionId}`),
+  saveMessage: (data: { sessionId: string; role: 'user' | 'assistant'; content: string; model?: string }) =>
+    apiFetch<{ message: AiMessage }>('/ai-conversations', { method: 'POST', body: JSON.stringify(data) }),
+  deleteSession: (sessionId: string) =>
+    apiFetch<void>(`/ai-conversations/${sessionId}`, { method: 'DELETE' }),
+};
+
 export const usersApi = {
   getAll: () => apiFetch<Row[]>('/auth/users'),
   create: (data: Row) => apiFetch<Row>('/auth/users', { method: 'POST', body: JSON.stringify(data) }),

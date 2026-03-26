@@ -11,6 +11,7 @@ import {
   teamMembers
 } from '../../data/mockData';
 import { sendChatMessage } from '../../services/ai';
+import { aiConversationsApi } from '../../services/api';
 import { toast } from 'sonner';
 
 interface Message {
@@ -79,6 +80,7 @@ export function AIAssistant() {
     if (!confirm(`Delete ${ids.length} chat session(s)?`)) return;
     try {
       ids.forEach(id => { try { localStorage.removeItem(`cortex_ai_session_${id}`); } catch {} });
+      ids.forEach(id => { aiConversationsApi.deleteSession(id).catch(() => {}); });
       setChatSessions(prev => prev.filter(s => !ids.includes(s.id)));
       if (ids.includes(currentSessionId || '')) { setCurrentSessionId(null); setMessages([]); }
       toast.success(`Deleted ${ids.length} session(s)`);
@@ -370,17 +372,23 @@ export function AIAssistant() {
       timestamp: new Date()
     };
 
-    setMessages(prev => [...prev, userMessage]);
-    setInput('');
-
+    // Persist user message to DB
+    const sessionIdForSave = messages.length === 0 ? Date.now().toString() : currentSessionId;
     if (messages.length === 0) {
-      const newSessionId = Date.now().toString();
+      const newSessionId = sessionIdForSave;
       setChatSessions(prev => [
-        { id: newSessionId, firstMessage: messageText, date: new Date() },
+        { id: newSessionId as string, firstMessage: messageText, date: new Date() },
         ...prev
       ]);
       setCurrentSessionId(newSessionId);
     }
+    if (sessionIdForSave) {
+      aiConversationsApi.saveMessage({ sessionId: sessionIdForSave, role: 'user', content: messageText }).catch(() => {});
+    }
+    const finalSessionId = sessionIdForSave;
+
+    setMessages(prev => [...prev, userMessage]);
+    setInput('');
 
     setIsTyping(true);
 
@@ -414,6 +422,9 @@ export function AIAssistant() {
               { ...assistantMessage, content: response.reply, isStreaming: false }
             ]);
             setIsTyping(false);
+            if (finalSessionId) {
+              aiConversationsApi.saveMessage({ sessionId: finalSessionId, role: 'assistant', content: response.reply }).catch(() => {});
+            }
           }
         }, Math.random() * 20 + 40);
       })
