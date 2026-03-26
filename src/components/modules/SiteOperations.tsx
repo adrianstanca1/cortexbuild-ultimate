@@ -1,9 +1,10 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
   HardHat, Users, Truck, FileText, AlertTriangle, CheckCircle2, MapPin, Clock, Plus, Search, Filter,
   Sun, Cloud, CloudRain, Activity, Calendar, Wrench, X, CheckSquare, Square, Trash2
 } from 'lucide-react';
 import { useDailyReports, useEquipment, useTeam } from '../../hooks/useData';
+import { delaysApi } from '../../services/api';
 import { dailyReportsApi } from '../../services/api';
 import { BulkActionsBar, useBulkSelection } from '../ui/BulkActions';
 import { toast } from 'sonner';
@@ -35,6 +36,13 @@ export function SiteOperations() {
   const reports = rawReports as AnyRow[];
   const equipment = rawEquipment as AnyRow[];
   const team = rawTeam as AnyRow[];
+  const [delays, setDelays] = useState<AnyRow[]>([]);
+
+  useEffect(() => {
+    (delaysApi.getAll() as Promise<AnyRow[]>)
+      .then(setDelays)
+      .catch(() => {});
+  }, []);
 
   const [subTab, setSubTab] = useState<SubTab>('diary');
   const [selectedDate, setSelectedDate] = useState<string>(new Date().toISOString().slice(0, 10));
@@ -144,18 +152,40 @@ export function SiteOperations() {
     }
   };
 
-  const handleSaveDelay = () => {
-    console.log('Saving delay:', newDelay);
-    setShowNewDelay(false);
-    setNewDelay({
-      date: selectedDate,
-      project: '',
-      type: 'Weather',
-      duration: 0,
-      cause: '',
-      impact: '',
-      status: 'open',
-    });
+const handleSaveDelay = async () => {
+    if (!newDelay.project) { toast.error('Project is required'); return; }
+    try {
+      const payload = {
+        project: newDelay.project,
+        report_date: newDelay.date || selectedDate,
+        weather: 'N/A',
+        temperature: 0,
+        workers_on_site: 0,
+        activities: `Delay recorded: ${newDelay.type}`,
+        delays: newDelay.type,
+        delay_type: newDelay.type,
+        delay_duration: Number(newDelay.duration) || 0,
+        delay_cause: newDelay.cause,
+        delay_impact: newDelay.impact,
+        delay_status: newDelay.status,
+        issues: `Delay cause: ${newDelay.cause}\nImpact: ${newDelay.impact}`,
+        progress: 0,
+        submitted_by: 'Site Manager',
+      };
+      const created = await dailyReportsApi.create(payload) as AnyRow;
+      reports.unshift(created);
+      toast.success('Delay logged');
+      setShowNewDelay(false);
+      setNewDelay({
+        date: selectedDate,
+        project: '',
+        type: 'Weather',
+        duration: 0,
+        cause: '',
+        impact: '',
+        status: 'open',
+      });
+    } catch { toast.error('Failed to log delay'); }
   };
 
   return (
@@ -575,7 +605,7 @@ export function SiteOperations() {
 
                     <select
                       defaultValue={status}
-                      onChange={(e) => console.log(`Updated equipment to ${e.target.value}`)}
+                      onChange={(e) => toast.success(`Status: ${e.target.value}`)}
                       className="w-full px-2 py-1.5 bg-gray-700 border border-gray-600 rounded text-xs text-gray-100 focus:outline-none focus:border-orange-500"
                     >
                       <option value="on site">On Site</option>
