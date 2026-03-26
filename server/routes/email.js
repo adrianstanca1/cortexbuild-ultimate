@@ -101,6 +101,11 @@ const EMAIL_TYPES = {
     template: 'weekly_summary',
     description: 'Sent every Monday with weekly overview',
   },
+  custom: {
+    subject: '',
+    template: 'custom',
+    description: 'Send a custom email with your own subject and body',
+  },
 };
 
 router.get('/templates', (req, res) => {
@@ -136,6 +141,28 @@ router.post('/send', async (req, res) => {
 
     if (!validateEmail(to)) {
       return res.status(400).json({ message: 'Invalid email address format' });
+    }
+
+    // Allow 'custom' type for user-composed emails
+    if (type === 'custom') {
+      if (!subject || !body) {
+        return res.status(400).json({ message: 'subject and body are required for custom emails' });
+      }
+      const { rows } = await pool.query(
+        `INSERT INTO email_logs (recipient, subject, body, email_type, status, created_by)
+         VALUES ($1, $2, $3, $4, $5, $6) RETURNING *`,
+        [to, subject, body, 'custom', 'pending', req.user?.id || 'system']
+      );
+      if (process.env.SMTP_HOST) {
+        try {
+          await sendEmailViaSMTP(to, subject, body);
+          await pool.query(`UPDATE email_logs SET status = 'delivered' WHERE id = $1`, [rows[0].id]);
+        } catch (smtpErr) {
+          console.error('[SMTP Error]', smtpErr.message);
+          await pool.query(`UPDATE email_logs SET status = 'failed', error = $1 WHERE id = $2`, [smtpErr.message, rows[0].id]);
+        }
+      }
+      return res.status(201).json({ success: true, email: rows[0] });
     }
 
     const template = EMAIL_TYPES[type];

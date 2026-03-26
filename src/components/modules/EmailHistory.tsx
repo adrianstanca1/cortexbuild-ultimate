@@ -1,6 +1,6 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Search, Filter, Mail, Trash2, CheckCircle, X, Bell, Send, FileText, Archive, Star } from 'lucide-react';
-import { useDocuments } from '../../hooks/useData';
+import { emailApi } from '../../services/api';
 import { toast } from 'sonner';
 
 type AnyRow = Record<string, unknown>;
@@ -15,10 +15,23 @@ const EMAIL_TEMPLATES = [
 ];
 
 export function EmailHistory() {
-  const { useList, useCreate } = useDocuments;
-  const { data: raw = [], isLoading } = useList();
-  const emails = raw as AnyRow[];
-  const createMutation = useCreate();
+  const [emails, setEmails] = useState<AnyRow[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [total, setTotal] = useState(0);
+  const [page, setPage] = useState(0);
+
+  useEffect(() => {
+    setIsLoading(true);
+    emailApi.getHistory(50, page * 50)
+      .then(data => {
+        setEmails(data.emails as AnyRow[]);
+        setTotal(data.total);
+        setIsLoading(false);
+      })
+      .catch(() => setIsLoading(false));
+  }, [page]);
+
+  const refetch = () => setPage(p => p);
 
   const [subTab, setSubTab] = useState<SubTab>('inbox');
   const [search, setSearch] = useState('');
@@ -51,21 +64,30 @@ export function EmailHistory() {
     return matchSearch && matchProject;
   });
 
+  const [sending, setSending] = useState(false);
+
   async function handleCompose(e: React.FormEvent) {
     e.preventDefault();
-    await createMutation.mutateAsync({
-      to: compose.to,
-      cc: compose.cc,
-      subject: compose.subject,
-      body: compose.body,
-      project: compose.project,
-      direction: 'sent',
-      type: 'outbound',
-      status: 'sent',
-    });
-    toast.success('Email sent');
-    setShowComposeModal(false);
-    setCompose({ to: '', cc: '', subject: '', body: '', project: '', attachments: '', priority: false });
+    if (!compose.to || !compose.subject || !compose.body) {
+      toast.error('Recipient, subject, and body are required');
+      return;
+    }
+    setSending(true);
+    try {
+      await emailApi.sendCustom({ to: compose.to, cc: compose.cc, subject: compose.subject, body: compose.body, project: compose.project });
+      toast.success('Email sent successfully');
+      setShowComposeModal(false);
+      setCompose({ to: '', cc: '', subject: '', body: '', project: '', attachments: '', priority: false });
+      // Refresh inbox
+      setPage(0);
+      const data = await emailApi.getHistory(50, 0);
+      setEmails(data.emails as AnyRow[]);
+      setTotal(data.total);
+    } catch (err: any) {
+      toast.error(err.message || 'Failed to send email');
+    } finally {
+      setSending(false);
+    }
   }
 
   const projects = Array.from(new Set(emails.map((e) => String(e.project ?? '')).filter((p) => p)));
@@ -420,7 +442,7 @@ export function EmailHistory() {
                 </button>
                 <button
                   type="submit"
-                  disabled={createMutation.isPending}
+                  disabled={sending}
                   className="flex-1 px-4 py-2 bg-orange-600 text-white rounded-lg text-sm font-medium hover:bg-orange-700 disabled:opacity-50"
                 >
                   Send Email

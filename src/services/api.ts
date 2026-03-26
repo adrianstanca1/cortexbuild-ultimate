@@ -486,6 +486,8 @@ export const emailApi = {
     apiFetch<{ emails: Row[]; total: number }>(`/email/history?limit=${limit}&offset=${offset}`),
   send: (data: { to: string; type: string; data?: Row; subject?: string; body?: string }) =>
     apiFetch<{ success: boolean; email: Row }>('/email/send', { method: 'POST', body: JSON.stringify(data) }),
+  sendCustom: (data: { to: string; cc?: string; subject: string; body: string; project?: string }) =>
+    apiFetch<{ success: boolean; email: Row }>('/email/send', { method: 'POST', body: JSON.stringify({ ...data, type: 'custom' }) }),
   sendBulk: (data: { recipients: string[]; type: string; data?: Row; subject?: string; body?: string }) =>
     apiFetch<{ success: boolean; results: Row[] }>('/email/bulk', { method: 'POST', body: JSON.stringify(data) }),
   schedule: (data: { to: string; type: string; data?: Row; scheduledAt: string }) =>
