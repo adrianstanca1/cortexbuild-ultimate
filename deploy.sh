@@ -1,36 +1,21 @@
 #!/bin/bash
-# CortexBuild Ultimate - Deployment Script
+# Deploy CortexBuild frontend to VPS
 set -e
 
-echo "=== CortexBuild Deployment ==="
-cd /var/www/cortexbuild-ultimate
+VPS="root@72.62.132.43"
+VPS_PATH="/var/www/cortexbuild-ultimate"
+VPS_PASS="Cumparavinde12@"
 
-# Pull latest code
-echo "Pulling latest code..."
-git pull origin main
-
-# Build frontend
-echo "Building frontend..."
+echo "=== Building ==="
 npm run build
 
-# Rebuild API image
-echo "Building API image..."
-docker build -f Dockerfile.api -t cortexbuild-ultimate-api:latest .
+echo "=== Syncing to VPS (nginx container runs as UID 101) ==="
+sshpass -p "$VPS_PASS" rsync -e "ssh -o StrictHostKeyChecking=accept-new" \
+  -avz --delete \
+  --usermap=0:101 --groupmap=0:50 \
+  ./dist/ "$VPS:$VPS_PATH/dist/"
 
-# Restart API container
-echo "Restarting API..."
-docker rm -f cortexbuild-api
-docker run -d --name cortexbuild-api --network cortexbuild-ultimate_cortexbuild \\
-  -e DATABASE_URL="postgresql://cortexbuild:C0rt3xBu1ld_S3cur3_P@ss@postgres:5432/cortexbuild" \\
-  -e DB_HOST=postgres -e DB_PORT=5432 -e DB_NAME=cortexbuild \\
-  -e DB_USER=cortexbuild -e DB_PASSWORD="C0rt3xBu1ld_S3cur3_P@ss" \\
-  -e JWT_SECRET="1ba7ee87b4cd735fc62f37606743c823163363ce56f2a86830ecb0e238fe616a" \\
-  -e PORT=3001 -e OLLAMA_HOST=http://ollama:11434 -e OLLAMA_MODEL=qwen3.5:latest \\
-  --restart always -p 3001:3001 cortexbuild-ultimate-api:latest
+echo "=== Verifying ==="
+sshpass -p "$VPS_PASS" ssh -o StrictHostKeyChecking=accept-new "$VPS" "curl -sf -o /dev/null -w 'Site: %{http_code}' https://www.cortexbuildpro.com/ && echo ' ✓'"
 
-# Verify
-sleep 3
-echo ""
-echo "=== Deployment Complete ==="
-echo "API Health: $(curl -s http://localhost:3001/api/metrics/health)"
-echo "Site: https://cortexbuildpro.com"
+echo "=== Done ==="
