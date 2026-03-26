@@ -187,7 +187,6 @@ function AppShell() {
 function ThemedApp() {
   const { isAuthenticated, loading, user } = useAuth();
   const { resolvedTheme } = useTheme();
-  console.log('[App] ThemedApp render:', { isAuthenticated, loading, hasUser: !!user, userName: user?.name });
 
   if (loading) {
     return (
