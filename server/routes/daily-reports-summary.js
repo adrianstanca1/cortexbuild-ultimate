@@ -33,7 +33,7 @@ ${reports.map(r => {
   const d = r.report_date ? new Date(String(r.report_date)).toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' }) : 'Unknown';
   const workers = r.workers_on_site ?? 0;
   const weather = r.weather || 'N/A';
-  const activities = Array.isArray(r.activities) ? r.activities.map((a: { description?: string; title?: string }) => a.description || a.title || '').filter(Boolean).slice(0, 2) : [];
+  const activities = Array.isArray(r.activities) ? r.activities.map((a) => a.description || a.title || '').filter(Boolean).slice(0, 2) : [];
   const issues = r.issues_delays || '';
   return `[${d}] ${workers} workers | ${weather}${activities.length ? ' | ' + activities.join(', ') : ''}${issues ? ' | ⚠️ ' + String(issues).substring(0, 60) : ''}`;
 }).join('\n')}`;
@@ -89,7 +89,7 @@ router.post('/weekly-pdf', async (req, res) => {
     <tbody>
       ${reports.map((r) => {
         const date = r.report_date ? new Date(String(r.report_date)).toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' }) : 'N/A';
-        const activities = Array.isArray(r.activities) ? r.activities.map((a: { description?: string }) => a.description || '').filter(Boolean).join('; ') : (r.work_carried_out || '');
+        const activities = Array.isArray(r.activities) ? r.activities.map((a) => a.description || '').filter(Boolean).join('; ') : (r.work_carried_out || '');
         const issues = r.issues_delays ? String(r.issues_delays) : '';
         return `<tr>
           <td><strong>${date}</strong></td>
