@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Bell, Search, Moon, Sun, Wifi, WifiOff, ChevronDown, Menu, X, Monitor, LogOut, User, Settings } from 'lucide-react';
 import { type Module } from '../../types';
 import { NotificationsPanel } from './NotificationsPanel';
@@ -67,7 +67,18 @@ interface HeaderProps {
 
 export function Header({ activeModule, onMenuToggle }: HeaderProps) {
   const [searchOpen, setSearchOpen] = useState(false);
-  const [online] = useState(true);
+  const [isOnline, setIsOnline] = useState(typeof navigator !== 'undefined' ? navigator.onLine : true);
+
+  useEffect(() => {
+    const handleOnline = () => setIsOnline(true);
+    const handleOffline = () => setIsOnline(false);
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+    return () => {
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+    };
+  }, []);
   const [notificationsOpen, setNotificationsOpen] = useState(false);
   const [themeMenuOpen, setThemeMenuOpen] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);

@@ -2,11 +2,12 @@ const express = require('express');
 const pool    = require('../db');
 const https = require('https');
 const http = require('http');
+const textwrap = require('textwrap');
 
 const router = express.Router();
 
 const OLLAMA_HOST = process.env.OLLAMA_HOST || 'http://localhost:11434';
-const LLM_MODEL = process.env.LLM_MODEL || 'llama3.1:8b';
+const LLM_MODEL = process.env.LLM_MODEL || 'qwen3.5:latest';
 
 function fmt(n) {
   if (n == null) return '£0';

@@ -153,19 +153,22 @@ function AppShell() {
   return (
     <>
       <div className="flex h-screen bg-gray-950 overflow-hidden">
-        <Sidebar
-          activeModule={activeModule}
-          setModule={setActiveModule}
-          collapsed={sidebarCollapsed}
-          setCollapsed={setSidebarCollapsed}
-        />
+        {/* Sidebar: hidden on mobile, shown on md+ */}
+        <div className="hidden md:block flex-shrink-0">
+          <Sidebar
+            activeModule={activeModule}
+            setModule={setActiveModule}
+            collapsed={sidebarCollapsed}
+            setCollapsed={setSidebarCollapsed}
+          />
+        </div>
         <div className="flex flex-col flex-1 overflow-hidden min-w-0">
           <Header
             activeModule={activeModule}
             onMenuToggle={() => setSidebarCollapsed(!sidebarCollapsed)}
           />
-          <main className="flex-1 overflow-auto bg-gray-950">
-            <div className="p-6">
+          <main className="flex-1 overflow-auto bg-gray-950 pb-20 md:pb-6">
+            <div className="p-4 md:p-6">
               <Suspense fallback={<ModuleLoader />}>
                 {renderModule()}
               </Suspense>

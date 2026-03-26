@@ -39,65 +39,7 @@ const SEVERITY_CONFIG: Record<'critical' | 'high' | 'medium' | 'low' | 'info', {
   info: { label: 'Info', color: '#3b82f6', bg: 'rgba(59,130,246,0.1)', border: 'rgba(59,130,246,0.3)' },
 };
 
-function generateMockInsights(): Insight[] {
-  return [
-    {
-      id: 'fin-001',
-      category: 'financial',
-      severity: 'high',
-      title: 'Invoice Payment Delays Accelerating',
-      description: 'Average payment cycle extended from 35 days to 47 days over past quarter',
-      recommendation: 'Implement stricter payment terms (2/10 net 30). Follow up with top 3 clients representing 60% of outstanding invoices.',
-      impact: 'Working capital constraint of £95k affecting material procurement',
-      confidence: 87,
-      dataPoints: 24,
-    },
-    {
-      id: 'saf-001',
-      category: 'safety',
-      severity: 'critical',
-      title: 'Safety Incidents 23% Above Benchmark',
-      description: 'Incident rate on Riverside Tower project 2.3x industry average for similar phasing',
-      recommendation: 'Review toolbox talk frequency (currently weekly, recommend daily). Conduct safety stand-down. Refresh RAMS documentation.',
-      impact: 'HSE investigation risk. Potential site suspension. Insurance implications.',
-      confidence: 94,
-      dataPoints: 12,
-    },
-    {
-      id: 'prg-001',
-      category: 'programme',
-      severity: 'medium',
-      title: 'Tech Hub Phase 2 Schedule Slippage',
-      description: 'Project currently 12 days behind baseline. Critical path activities trending 15% slow.',
-      recommendation: 'Implement accelerated M&E programme. Increase crew size on critical path. Review procurement lead times.',
-      impact: 'Completion delay of 18-21 days. Liquidated damages exposure £45k.',
-      confidence: 85,
-      dataPoints: 18,
-    },
-    {
-      id: 'res-001',
-      category: 'resource',
-      severity: 'medium',
-      title: 'RAMS Compliance Gap',
-      description: '8 team members lack current RAMS certification. Expiry dates within next 30 days.',
-      recommendation: 'Schedule RAMS refresh training for next 2 weeks. Adjust site allocation pending certification.',
-      impact: 'Site access restriction. Potential HSE compliance breach.',
-      confidence: 96,
-      dataPoints: 47,
-    },
-    {
-      id: 'fin-002',
-      category: 'financial',
-      severity: 'info',
-      title: 'Retail Centre Project On Track',
-      description: 'Budget performance excellent. Current burn rate 98% of baseline. Margin tracking 26%.',
-      recommendation: 'Maintain current cost controls. Consider contingency release for value additions.',
-      impact: 'Positive margin realization likely. £120k upside potential.',
-      confidence: 91,
-      dataPoints: 14,
-    },
-  ];
-}
+
 
 export function Insights() {
   const [severityFilter, setSeverityFilter] = useState<SeverityLevel | 'all'>('all');
