@@ -1183,4 +1183,114 @@ router.post('/chat', async (req, res) => {
   }
 });
 
+// ─── POST /execute ────────────────────────────────────────────────────────────
+// Action execution: { action, params } → { success, message, data }
+router.post('/execute', async (req, res) => {
+  const { action, params = {} } = req.body;
+  if (!action) return res.status(400).json({ success: false, message: 'action is required' });
+
+  try {
+    switch (action) {
+      case 'create_project': {
+        const { name, client, budget, status = 'active', type = 'construction', manager, location } = params;
+        if (!name || !client) return res.status(400).json({ success: false, message: 'name and client are required' });
+        const { rows } = await pool.query(
+          `INSERT INTO projects(name,client,budget,status,type,manager,location,progress,spent)
+           VALUES($1,$2,$3,$4,$5,$6,$7,0,0) RETURNING id,name,status`,
+          [name, client, Number(budget) || 0, status, type, manager || null, location || null]
+        );
+        res.json({ success: true, message: `Project "${name}" created.`, data: rows[0] });
+        break;
+      }
+
+      case 'update_project_status': {
+        const { project_id, status } = params;
+        if (!project_id || !status) return res.status(400).json({ success: false, message: 'project_id and status are required' });
+        const { rows } = await pool.query(
+          `UPDATE projects SET status=$1, updated_at=NOW() WHERE id=$2 RETURNING id,name,status`,
+          [status, project_id]
+        );
+        if (!rows.length) return res.status(404).json({ success: false, message: 'Project not found' });
+        res.json({ success: true, message: `Project status updated to "${status}".`, data: rows[0] });
+        break;
+      }
+
+      case 'update_invoice_status': {
+        const { invoice_id, status } = params;
+        if (!invoice_id || !status) return res.status(400).json({ success: false, message: 'invoice_id and status are required' });
+        const { rows } = await pool.query(
+          `UPDATE invoices SET status=$1, updated_at=NOW() WHERE id=$2 RETURNING id,number,status`,
+          [status, invoice_id]
+        );
+        if (!rows.length) return res.status(404).json({ success: false, message: 'Invoice not found' });
+        res.json({ success: true, message: `Invoice "${rows[0].number}" status updated to "${status}".`, data: rows[0] });
+        break;
+      }
+
+      case 'create_rfi': {
+        const { project, subject, priority = 'medium', status: rfiStatus = 'open' } = params;
+        if (!project || !subject) return res.status(400).json({ success: false, message: 'project and subject are required' });
+        const { rows } = await pool.query(
+          `INSERT INTO rfis(project,subject,priority,status) VALUES($1,$2,$3,$4) RETURNING id,number,status`,
+          [project, subject, priority, rfiStatus]
+        );
+        res.json({ success: true, message: `RFI created: ${rows[0].number}`, data: rows[0] });
+        break;
+      }
+
+      case 'create_safety_incident': {
+        const { project, title, type, severity = 'medium', status: incStatus = 'open' } = params;
+        if (!project || !title) return res.status(400).json({ success: false, message: 'project and title are required' });
+        const { rows } = await pool.query(
+          `INSERT INTO safety_incidents(project,title,type,severity,status,date)
+           VALUES($1,$2,$3,$4,$5,NOW()) RETURNING id,title,severity,status`,
+          [project, title, type || 'incident', severity, incStatus]
+        );
+        res.json({ success: true, message: `Safety incident recorded: "${title}"`, data: rows[0] });
+        break;
+      }
+
+      case 'add_team_member': {
+        const { name, role, trade, status: tmStatus = 'active' } = params;
+        if (!name) return res.status(400).json({ success: false, message: 'name is required' });
+        const { rows } = await pool.query(
+          `INSERT INTO team_members(name,role,trade,status) VALUES($1,$2,$3,$4) RETURNING id,name,role,status`,
+          [name, role || null, trade || null, tmStatus]
+        );
+        res.json({ success: true, message: `Team member "${name}" added.`, data: rows[0] });
+        break;
+      }
+
+      case 'update_rfi_status': {
+        const { rfi_id, status } = params;
+        if (!rfi_id || !status) return res.status(400).json({ success: false, message: 'rfi_id and status are required' });
+        const { rows } = await pool.query(
+          `UPDATE rfis SET status=$1, updated_at=NOW() WHERE id=$2 RETURNING id,number,status`,
+          [status, rfi_id]
+        );
+        if (!rows.length) return res.status(404).json({ success: false, message: 'RFI not found' });
+        res.json({ success: true, message: `RFI "${rows[0].number}" status updated.`, data: rows[0] });
+        break;
+      }
+
+      case 'create_contact': {
+        const { name, company, email, role, type = 'client' } = params;
+        if (!name) return res.status(400).json({ success: false, message: 'name is required' });
+        const { rows } = await pool.query(
+          `INSERT INTO contacts(name,company,email,role,type,status) VALUES($1,$2,$3,$4,$5,'active') RETURNING id,name,company`,
+          [name, company || null, email || null, role || null, type]
+        );
+        res.json({ success: true, message: `Contact "${name}" created.`, data: rows[0] });
+        break;
+      }
+
+      default:
+        res.status(400).json({ success: false, message: `Unknown action: "${action}". Supported: create_project, update_project_status, update_invoice_status, create_rfi, create_safety_incident, add_team_member, update_rfi_status, create_contact.` });
+    }
+  } catch (err) {
+    console.error('[AI /execute]', err.message);
+    res.status(500).json({ success: false, message: 'Action failed: ' + err.message });
+  }
+});
+
 module.exports = router;

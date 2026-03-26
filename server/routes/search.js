@@ -1,6 +1,55 @@
 const express = require('express');
 const pool = require('../db');
 const authMiddleware = require('../middleware/auth');
+const https = require('https');
+const http = require('http');
+
+const OLLAMA_HOST = process.env.OLLAMA_HOST || 'http://localhost:11434';
+const EMBEDDING_MODEL = process.env.EMBEDDING_MODEL || 'qwen3.5:latest';
+
+// Cosine similarity helper
+function cosineSimilarity(a, b) {
+  if (!a || !b || a.length !== b.length) return 0;
+  let dot = 0, normA = 0, normB = 0;
+  for (let i = 0; i < a.length; i++) {
+    dot += a[i] * b[i];
+    normA += a[i] * a[i];
+    normB += b[i] * b[i];
+  }
+  return dot / (Math.sqrt(normA) * Math.sqrt(normB) + 1e-8);
+}
+
+// Fetch embedding from Ollama
+async function getEmbedding(text) {
+  return new Promise((resolve, reject) => {
+    const body = JSON.stringify({ model: EMBEDDING_MODEL, prompt: text });
+    const url = new URL(OLLAMA_HOST + '/api/embeddings');
+    const isHttps = url.protocol === 'https:';
+    const lib = isHttps ? https : http;
+
+    const req = lib.request({
+      hostname: url.hostname,
+      port: url.port || (isHttps ? 443 : 11434),
+      path: '/api/embeddings',
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Content-Length': Buffer.byteLength(body) },
+      timeout: 30000,
+    }, (res) => {
+      let data = '';
+      res.on('data', chunk => data += chunk);
+      res.on('end', () => {
+        try {
+          const parsed = JSON.parse(data);
+          resolve(parsed.embedding || null);
+        } catch { resolve(null); }
+      });
+    });
+    req.on('error', () => resolve(null));
+    req.on('timeout', () => { req.destroy(); resolve(null); });
+    req.write(body);
+    req.end();
+  });
+}
 
 const router = express.Router();
 router.use(authMiddleware);
@@ -81,7 +130,51 @@ router.get('/', async (req, res) => {
     results.team = teamResults.rows;
 
     const totalResults = Object.values(results).flat().length;
-    res.json({ results, total: totalResults, query: q });
+
+    // ── Semantic search with Ollama ────────────────────────────────────────
+    let semanticResults = [];
+    const doSemantic = req.query.semantic !== 'false' && q && q.length >= 2;
+    if (doSemantic) {
+      try {
+        const queryEmbedding = await getEmbedding(q);
+        if (queryEmbedding) {
+          // Try to fetch stored embeddings and compute cosine similarity
+          const { rows: chunks } = await pool.query(
+            `SELECT de.chunk_text, de.embedding_id, de.file_id, f.name as file_name, f.type
+             FROM document_embeddings de
+             JOIN files f ON f.id = de.file_id
+             LIMIT 200`
+          );
+          // Embedding IDs are stored as JSON arrays from Ollama
+          const scored = chunks.map(row => {
+            let emb = null;
+            try { emb = JSON.parse(row.embedding_id); } catch { /* skip */ }
+            if (!emb || !Array.isArray(emb)) return null;
+            return { ...row, score: cosineSimilarity(queryEmbedding, emb) };
+          }).filter(Boolean);
+
+          scored.sort((a, b) => b.score - a.score);
+          semanticResults = scored.slice(0, 10).map(s => ({
+            type: 'semantic',
+            file_name: s.file_name,
+            file_id: s.file_id,
+            chunk_text: s.chunk_text,
+            score: Math.round(s.score * 100) / 100,
+            doc_type: s.type,
+          }));
+        }
+      } catch (semErr) {
+        console.warn('[Search] Semantic search skipped:', semErr.message);
+      }
+    }
+
+    res.json({
+      results,
+      total: totalResults,
+      query: q,
+      semanticResults,
+      searchMode: semanticResults.length ? 'hybrid' : 'text',
+    });
   } catch (err) {
     console.error('[Global Search]', err.message);
     res.status(500).json({ message: err.message });
