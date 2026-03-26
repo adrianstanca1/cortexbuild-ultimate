@@ -96,7 +96,7 @@ async function uploadFile(file: File, category: string, project?: string, projec
   if (project) formData.append('project', project);
   if (projectId) formData.append('project_id', projectId);
 
-  const res = await fetch(`${API_BASE}/upload`, {
+  const res = await fetch(`${API_BASE}/files/upload`, {
     method: 'POST',
     headers: {
       ...(token ? { Authorization: `Bearer ${token}` } : {}),
@@ -240,7 +240,7 @@ export const documentsApi = {
     if (options?.project)    formData.append('project', options.project);
     if (options?.projectId)  formData.append('project_id', options.projectId);
     if (options?.category)   formData.append('category', options.category);
-    const res = await fetch(`${API_BASE}/upload`, {
+    const res = await fetch(`${API_BASE}/files/upload`, {
       method: 'POST',
       headers: token ? { Authorization: `Bearer ${token}` } : {},
       body: formData,
