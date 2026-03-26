@@ -64,7 +64,7 @@ services:
       JWT_SECRET: cortexbuild_jwt_secret_change_this_in_production
       PORT: 3001
       OLLAMA_HOST: http://ollama:11434
-      OLLAMA_MODEL: llama3.1:8b
+      OLLAMA_MODEL: qwen3.5:latest
     ports:
       - "3001:3001"
     networks:
