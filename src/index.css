@@ -326,3 +326,112 @@
 @layer utilities {
   .glass { background: rgba(255,255,255,0.03); backdrop-filter: blur(8px); border: 1px solid rgba(255,255,255,0.06); }
 }
+
+/* ─── Enhanced Animations ─────────────────────────────────────── */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes slideInRight {
+  from { opacity: 0; transform: translateX(-12px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
+@keyframes pulse-glow {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(245, 158, 11, 0.4); }
+  50% { box-shadow: 0 0 20px 4px rgba(245, 158, 11, 0.2); }
+}
+
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+@keyframes float {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-4px); }
+}
+
+/* ─── Enhanced Glassmorphism ──────────────────────────────────── */
+.glass {
+  background: rgba(15, 23, 42, 0.8);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(148, 163, 184, 0.1);
+}
+
+/* ─── Enhanced Buttons ─────────────────────────────────────────── */
+.btn-primary {
+  background: linear-gradient(135deg, var(--amber-500) 0%, #d97706 100%);
+  color: var(--slate-950);
+  font-weight: 600;
+  transition: all 0.2s var(--ease-out);
+  box-shadow: 0 2px 8px rgba(245, 158, 11, 0.25);
+}
+
+.btn-primary:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 16px rgba(245, 158, 11, 0.35);
+}
+
+.btn-secondary {
+  background: var(--slate-800);
+  color: var(--slate-200);
+  border: 1px solid var(--slate-700);
+  transition: all 0.2s var(--ease-out);
+}
+
+.btn-secondary:hover {
+  background: var(--slate-700);
+  border-color: var(--slate-600);
+  color: var(--slate-100);
+}
+
+/* ─── Enhanced Cards ─────────────────────────────────────────── */
+.card {
+  background: var(--slate-900);
+  border: 1px solid var(--slate-800);
+  border-radius: 12px;
+  transition: all 0.2s var(--ease-out);
+}
+
+.card:hover {
+  border-color: var(--slate-700);
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.3);
+}
+
+/* ─── Enhanced Inputs ─────────────────────────────────────────── */
+.input {
+  background: var(--slate-900);
+  border: 1px solid var(--slate-700);
+  border-radius: 8px;
+  color: var(--slate-100);
+  transition: all 0.15s ease;
+}
+
+.input:focus {
+  outline: none;
+  border-color: var(--amber-500);
+  box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.15);
+}
+
+/* ─── RAG Status ─────────────────────────────────────────────── */
+.rag-red { color: #ef4444; background: rgba(239, 68, 68, 0.1); }
+.rag-amber { color: #f59e0b; background: rgba(245, 158, 11, 0.1); }
+.rag-green { color: #10b981; background: rgba(16, 185, 129, 0.1); }
+
+/* ─── Skeleton Loading ─────────────────────────────────────────── */
+.skeleton {
+  background: linear-gradient(90deg, var(--slate-800) 25%, var(--slate-700) 50%, var(--slate-800) 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+}
+
+/* ─── Gradient Text ───────────────────────────────────────────── */
+.gradient-text {
+  background: linear-gradient(135deg, var(--amber-400), var(--amber-600));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
