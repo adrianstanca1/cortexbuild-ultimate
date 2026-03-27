@@ -177,7 +177,7 @@ router.get('/safety-chart', async (req, res) => {
       LIMIT 12
     `, params);
 
-    const healthMap: Record<string, {total: number; closed: number}> = {};
+    const healthMap = {};
     for (const r of healthResult.rows) {
       healthMap[r.month] = { total: Number(r.total), closed: Number(r.closed) };
     }
