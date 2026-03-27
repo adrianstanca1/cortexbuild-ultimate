@@ -173,17 +173,17 @@ These modules use `*Api.getAll()`, `*.create()`, `*.update()`, `*.delete()` dire
 
 **Recommendation:** Connect company settings to a `/api/company` or `/api/settings` endpoint (doesn't exist yet). User management needs `/api/users` endpoints.
 
-### 2. 🟠 PermissionsManager.tsx — Unclear if Saves Work
-**Severity:** Low-Medium
-**Issue:** Has `handleSave` function but unclear if it calls an API or just updates local state.
+### 5. ✅ PermissionsManager.tsx — Fully Wired
+**Status:** ✅ WORKING
+**Notes:** `saveChanges` calls `permissionsApi.updateRole`. `deleteRole` calls `permissionsApi.deleteRole`. Both load fresh data after. Verified.
 
-### 3. 🟠 PredictiveAnalytics.tsx — All Mock Data
+### 6. 🟠 PredictiveAnalytics.tsx — All Mock Data
 **Severity:** Low
-**Issue:** Every chart uses hardcoded `mockData` arrays. No API integration whatsoever.
+**Status:** Known — all chart data is hardcoded mock data. No `analytics-data` API integration. Low priority.
 
-### 4. 🟠 FinancialReports.tsx — Read-Only Display
-**Severity:** Low
-**Issue:** Calls `financialReportsApi` but only displays data in charts — no create/edit/delete. This is expected for reports but worth noting.
+### 7. ✅ FinancialReports.tsx — Working (Read-Only is Expected)
+**Status:** ✅ WORKING
+**Notes:** Calls `financialReportsApi` for summary, project financials, and cash flow. Read-only display is correct behavior for reports module.
 
 ### 3. ✅ Teams.tsx — Skills/Inductions/Availability Sub-Tabs
 **Status:** ✅ FIXED
