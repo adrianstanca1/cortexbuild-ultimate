@@ -3,8 +3,16 @@ const multer  = require('multer');
 const path    = require('path');
 const fs      = require('fs');
 const pool    = require('../db');
+const authMiddleware = require('../middleware/auth');
 
 const router = express.Router();
+router.use(authMiddleware);
+
+// Multi-tenancy helper
+function orgFilter(user) {
+  if (!user?.organization_id) return { filter: '', params: [] };
+  return { filter: ' organization_id = $1', params: [user.organization_id] };
+}
 
 const UPLOADS_DIR = path.join(__dirname, '../uploads');
 if (!fs.existsSync(UPLOADS_DIR)) fs.mkdirSync(UPLOADS_DIR, { recursive: true });
@@ -38,9 +46,10 @@ function formatSize(bytes) {
 router.get('/', async (req, res) => {
   try {
     const { category, project_id, search, type, include_versions } = req.query;
-    let query = 'SELECT * FROM documents WHERE 1=1';
-    const params = [];
-    let paramCount = 0;
+    const org = orgFilter(req.user);
+    let query = `SELECT * FROM documents WHERE 1=1${org.filter}`;
+    const params = [...org.params];
+    let paramCount = org.params.length;
 
     if (category) {
       paramCount++;
@@ -88,7 +97,8 @@ router.get('/', async (req, res) => {
 router.get('/:id', async (req, res) => {
   try {
     const { id } = req.params;
-    const { rows } = await pool.query('SELECT * FROM documents WHERE id = $1', [id]);
+    const org = orgFilter(req.user);
+    const { rows } = await pool.query(`SELECT * FROM documents WHERE id = $1${org.filter}`, [id, ...org.params]);
     if (rows.length === 0) return res.status(404).json({ message: 'Document not found' });
 
     const { rows: versions } = await pool.query(
@@ -119,12 +129,13 @@ router.post('/upload', upload.single('file'), async (req, res) => {
     const discipline = req.body.discipline || null;
     const dateIssued = req.body.date_issued || null;
     const author = req.body.author || uploadedBy;
+    const organizationId = req.user?.organization_id || null;
 
     const { rows } = await pool.query(
-      `INSERT INTO documents (name, type, project_id, uploaded_by, version, size, status, category, file_path, access_level, discipline, date_issued, author)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
+      `INSERT INTO documents (name, type, project_id, uploaded_by, version, size, status, category, file_path, access_level, discipline, date_issued, author, organization_id)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
        RETURNING *`,
-      [name, ext, projectId, uploadedBy, '1.0', fileSize, 'current', category, filePath, accessLevel, discipline, dateIssued, author]
+      [name, ext, projectId, uploadedBy, '1.0', fileSize, 'current', category, filePath, accessLevel, discipline, dateIssued, author, organizationId]
     );
 
     await pool.query(
@@ -147,6 +158,7 @@ router.post('/upload', upload.single('file'), async (req, res) => {
 router.put('/:id', async (req, res) => {
   try {
     const { id } = req.params;
+    const org = orgFilter(req.user);
     const { name, category, access_level, discipline, date_issued, author } = req.body;
     const updates = [];
     const params = [];
@@ -188,8 +200,10 @@ router.put('/:id', async (req, res) => {
     }
 
     params.push(id);
+    if (org.filter) params.push(...org.params);
+    const whereClause = org.filter ? ` AND${org.filter}` : '';
     const { rows } = await pool.query(
-      `UPDATE documents SET ${updates.join(', ')} WHERE id = $${paramCount + 1} RETURNING *`,
+      `UPDATE documents SET ${updates.join(', ')} WHERE id = $${paramCount + 1}${whereClause} RETURNING *`,
       params
     );
 
@@ -246,7 +260,8 @@ router.post('/:id/upload-version', upload.single('file'), async (req, res) => {
 router.get('/:id/download', async (req, res) => {
   try {
     const { id } = req.params;
-    const { rows } = await pool.query('SELECT file_path, name, type FROM documents WHERE id = $1', [id]);
+    const org = orgFilter(req.user);
+    const { rows } = await pool.query(`SELECT file_path, name, type FROM documents WHERE id = $1${org.filter}`, [id, ...org.params]);
     if (rows.length === 0) return res.status(404).json({ message: 'Document not found' });
 
     const doc = rows[0];
@@ -325,8 +340,9 @@ router.get('/folders/list', async (req, res) => {
 router.delete('/:id', async (req, res) => {
   try {
     const { id } = req.params;
+    const org = orgFilter(req.user);
 
-    const { rows } = await pool.query('SELECT file_path FROM documents WHERE id = $1', [id]);
+    const { rows } = await pool.query(`SELECT file_path FROM documents WHERE id = $1${org.filter}`, [id, ...org.params]);
     if (rows.length === 0) {
       return res.status(404).json({ message: 'Document not found' });
     }

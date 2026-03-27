@@ -1,39 +1,49 @@
 const express = require('express');
 const pool    = require('../db');
+const authMiddleware = require('../middleware/auth');
 
 const router = express.Router();
+router.use(authMiddleware);
+
+// Multi-tenancy: filter through project join since project_tasks.project_id → projects.id → projects.organization_id
+async function orgFilterTasks(user, extraJoinConditions = '') {
+  if (!user?.organization_id) return { join: '', filter: '', params: [] };
+  return {
+    join: `JOIN projects p ON pt.project_id = p.id${extraJoinConditions}`,
+    filter: ' AND p.organization_id = $1',
+    params: [user.organization_id],
+  };
+}
 
 // ─── GET /api/project-tasks?project_id=xxx&status=todo ───────────────────────
 router.get('/', async (req, res) => {
   try {
     const { project_id, status, priority, assigned_to } = req.query;
-    let query = 'SELECT * FROM project_tasks WHERE 1=1';
-    const params = [];
-    let paramCount = 0;
+    const { join, filter, params } = await orgFilterTasks(req.user);
+    const baseParamsLen = params.length;
+
+    let query = `SELECT pt.* FROM project_tasks pt ${join} WHERE 1=1${filter}`;
+    const queryParams = [...params];
 
     if (project_id) {
-      paramCount++;
-      query += ` AND project_id = $${paramCount}`;
-      params.push(project_id);
+      queryParams.push(project_id);
+      query += ` AND pt.project_id = $${queryParams.length}`;
     }
     if (status) {
-      paramCount++;
-      query += ` AND status = $${paramCount}`;
-      params.push(status);
+      queryParams.push(status);
+      query += ` AND pt.status = $${queryParams.length}`;
     }
     if (priority) {
-      paramCount++;
-      query += ` AND priority = $${paramCount}`;
-      params.push(priority);
+      queryParams.push(priority);
+      query += ` AND pt.priority = $${queryParams.length}`;
     }
     if (assigned_to) {
-      paramCount++;
-      query += ` AND assigned_to = $${paramCount}`;
-      params.push(assigned_to);
+      queryParams.push(assigned_to);
+      query += ` AND pt.assigned_to = $${queryParams.length}`;
     }
 
-    query += ' ORDER BY created_at DESC';
-    const { rows } = await pool.query(query, params);
+    query += ' ORDER BY pt.created_at DESC';
+    const { rows } = await pool.query(query, queryParams);
     res.json({ data: rows });
   } catch (err) {
     console.error('[GET /api/project-tasks]', err.message);
@@ -50,6 +60,17 @@ router.post('/', async (req, res) => {
     } = req.body;
 
     if (!title) return res.status(400).json({ message: 'Title is required' });
+
+    // Verify project belongs to user's org
+    if (project_id && req.user?.organization_id) {
+      const { rows: proj } = await pool.query(
+        'SELECT id FROM projects WHERE id = $1 AND organization_id = $2',
+        [project_id, req.user.organization_id]
+      );
+      if (proj.length === 0) {
+        return res.status(403).json({ message: 'Project not found or access denied' });
+      }
+    }
 
     const { rows } = await pool.query(
       `INSERT INTO project_tasks
@@ -81,10 +102,13 @@ router.post('/', async (req, res) => {
 router.get('/:id', async (req, res) => {
   try {
     const { id } = req.params;
-    const { rows } = await pool.query('SELECT * FROM project_tasks WHERE id = $1', [id]);
+    const { join, filter, params } = await orgFilterTasks(req.user);
+    const { rows } = await pool.query(
+      `SELECT pt.* FROM project_tasks pt ${join} WHERE pt.id = $${params.length + 1}${filter}`,
+      [...params, id]
+    );
     if (rows.length === 0) return res.status(404).json({ message: 'Task not found' });
 
-    // Get comments
     const { rows: comments } = await pool.query(
       'SELECT * FROM project_task_comments WHERE task_id = $1 ORDER BY created_at ASC',
       [id]
@@ -118,7 +142,7 @@ router.put('/:id', async (req, res) => {
     for (const [key, value] of Object.entries(fields)) {
       if (value !== undefined) {
         paramCount++;
-        updates.push(`${key} = $${paramCount}`);
+        updates.push(`pt.${key} = $${paramCount}`);
         params.push(value);
       }
     }
@@ -127,10 +151,11 @@ router.put('/:id', async (req, res) => {
       return res.status(400).json({ message: 'No fields to update' });
     }
 
+    const { join, filter, baseParams } = await orgFilterTasks(req.user);
     params.push(id);
     const { rows } = await pool.query(
-      `UPDATE project_tasks SET ${updates.join(', ')} WHERE id = $${paramCount + 1} RETURNING *`,
-      params
+      `UPDATE project_tasks pt SET ${updates.join(', ')} FROM projects p ${join} AND p.id = pt.project_id WHERE pt.id = $${params.length}${filter} RETURNING pt.*`,
+      [...baseParams, ...params]
     );
 
     if (rows.length === 0) {
@@ -148,12 +173,13 @@ router.put('/:id', async (req, res) => {
 router.delete('/:id', async (req, res) => {
   try {
     const { id } = req.params;
+    const { join, filter, params } = await orgFilterTasks(req.user);
 
-    const { rows } = await pool.query('SELECT id FROM project_tasks WHERE id = $1', [id]);
+    const { rows } = await pool.query(
+      `DELETE FROM project_tasks pt USING projects p ${join} AND p.id = pt.project_id WHERE pt.id = $${params.length + 1}${filter} RETURNING pt.id`,
+      [...params, id]
+    );
     if (rows.length === 0) return res.status(404).json({ message: 'Task not found' });
-
-    await pool.query('DELETE FROM project_task_comments WHERE task_id = $1', [id]);
-    await pool.query('DELETE FROM project_tasks WHERE id = $1', [id]);
 
     res.json({ message: 'Task deleted' });
   } catch (err) {
@@ -171,8 +197,12 @@ router.post('/:id/comments', async (req, res) => {
 
     if (!comment) return res.status(400).json({ message: 'Comment is required' });
 
-    // Verify task exists
-    const { rows: task } = await pool.query('SELECT id FROM project_tasks WHERE id = $1', [id]);
+    // Verify task belongs to user's org
+    const { join, filter, params } = await orgFilterTasks(req.user);
+    const { rows: task } = await pool.query(
+      `SELECT pt.id FROM project_tasks pt JOIN projects p ${join} AND p.id = pt.project_id WHERE pt.id = $${params.length + 1}${filter}`,
+      [...params, id]
+    );
     if (task.length === 0) return res.status(404).json({ message: 'Task not found' });
 
     const { rows } = await pool.query(
@@ -199,10 +229,11 @@ router.put('/bulk-status', async (req, res) => {
     }
     if (!status) return res.status(400).json({ message: 'status is required' });
 
-    const placeholders = ids.map((_, i) => `$${i + 1}`).join(', ');
+    const { join, filter, params } = await orgFilterTasks(req.user);
+    const placeholders = ids.map((_, i) => `$${params.length + 1 + i}`).join(', ');
     const { rows } = await pool.query(
-      `UPDATE project_tasks SET status = $${ids.length + 1} WHERE id IN (${placeholders}) RETURNING *`,
-      [...ids, status]
+      `UPDATE project_tasks pt SET status = $${params.length + ids.length + 1} FROM projects p ${join} AND p.id = pt.project_id WHERE pt.id IN (${placeholders})${filter} RETURNING pt.*`,
+      [...params, ...ids, status]
     );
 
     res.json({ updated: rows.length, data: rows });

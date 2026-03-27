@@ -5,11 +5,21 @@ const authMiddleware = require('../middleware/auth');
 const router = express.Router();
 router.use(authMiddleware);
 
+// Multi-tenancy helper — all queries scoped to user's organisation
+function orgFilter(user) {
+  if (!user?.organization_id) return { filter: '', params: [] };
+  return { filter: ' organization_id = $1', params: [user.organization_id] };
+}
+
 router.get('/summary', async (req, res) => {
   try {
+    const org = orgFilter(req.user);
+    const orgClause = org.filter ? ' AND' + org.filter : '';
+    const params = org.params;
+
     const [projects, invoices] = await Promise.all([
-      pool.query('SELECT * FROM projects'),
-      pool.query('SELECT * FROM invoices'),
+      pool.query(`SELECT * FROM projects WHERE 1=1${orgClause}`, params),
+      pool.query(`SELECT * FROM invoices WHERE 1=1${orgClause}`, params),
     ]);
 
     const totalBudget = projects.rows.reduce((sum, p) => sum + (parseFloat(p.budget) || 0), 0);
@@ -44,16 +54,20 @@ router.get('/summary', async (req, res) => {
 router.get('/cashflow', async (req, res) => {
   try {
     const { startDate, endDate } = req.query;
-    let query = 'SELECT * FROM invoices WHERE status = $1';
-    const params = ['paid'];
+    const org = orgFilter(req.user);
+    const orgClause = org.filter ? ' AND' + org.filter : '';
+    const baseParams = org.params;
+
+    let query = `SELECT * FROM invoices WHERE status = $1${orgClause}`;
+    const params = ['paid', ...baseParams];
 
     if (startDate) {
-      query += ` AND issue_date >= $${params.length + 1}`;
       params.push(startDate);
+      query += ` AND issue_date >= $${params.length}`;
     }
     if (endDate) {
-      query += ` AND issue_date <= $${params.length + 1}`;
       params.push(endDate);
+      query += ` AND issue_date <= $${params.length}`;
     }
 
     const { rows: invoices } = await pool.query(query, params);
@@ -72,7 +86,10 @@ router.get('/cashflow', async (req, res) => {
     });
 
     // Distribute project spent evenly across 12 months of the current year
-    const { rows: projects } = await pool.query('SELECT spent FROM projects');
+    const spentParams = baseParams;
+    const { rows: projects } = await pool.query(
+      `SELECT spent FROM projects WHERE 1=1${orgClause}`, spentParams
+    );
     const year = new Date().getFullYear();
     const monthCount = 12;
     const totalSpent = projects.reduce((sum, p) => sum + (parseFloat(p.spent) || 0), 0);
@@ -96,7 +113,10 @@ router.get('/cashflow', async (req, res) => {
 
 router.get('/projects', async (req, res) => {
   try {
-    const { rows } = await pool.query('SELECT * FROM projects ORDER BY created_at DESC');
+    const org = orgFilter(req.user);
+    const orgClause = org.filter ? ' AND' + org.filter : '';
+    const params = org.params;
+    const { rows } = await pool.query(`SELECT * FROM projects WHERE 1=1${orgClause} ORDER BY created_at DESC`, params);
     const financials = rows.map(p => {
       const budget = parseFloat(p.budget) || 0;
       const spent = parseFloat(p.spent) || 0;
@@ -123,7 +143,10 @@ router.get('/projects', async (req, res) => {
 
 router.get('/invoices/analysis', async (req, res) => {
   try {
-    const { rows } = await pool.query('SELECT * FROM invoices ORDER BY created_at DESC');
+    const org = orgFilter(req.user);
+    const orgClause = org.filter ? ' AND' + org.filter : '';
+    const params = org.params;
+    const { rows } = await pool.query(`SELECT * FROM invoices WHERE 1=1${orgClause} ORDER BY created_at DESC`, params);
     const analysis = {
       total: rows.reduce((sum, i) => sum + (parseFloat(i.amount) || 0), 0),
       paid: rows.filter(i => i.status === 'paid').reduce((sum, i) => sum + (parseFloat(i.amount) || 0), 0),

@@ -2,9 +2,11 @@ const express = require('express');
 const pool    = require('../db');
 const https = require('https');
 const http = require('http');
+const auth   = require('../middleware/auth');
 const { broadcastDashboardUpdate, broadcastNotification } = require('../lib/ws-broadcast');
 
 const router = express.Router();
+router.use(auth);
 
 const OLLAMA_HOST = process.env.OLLAMA_HOST || 'http://localhost:11434';
 const LLM_MODEL = process.env.LLM_MODEL || 'qwen3.5:latest';
@@ -31,11 +33,13 @@ function pct(spent, budget) {
  * Returns { messages: [{role, content}], summary: string|null }
  */
 async function getConversationHistory(organizationId, sessionId, limit = 60) {
+  // Support null org_id: fall back to user_id
+  const orgKey = organizationId || 'anon';
   const { rows } = await pool.query(
     `SELECT id, role, content, created_at FROM ai_conversations
-     WHERE organization_id = $1 AND session_id = $2
+     WHERE (organization_id = $1 OR (organization_id IS NULL AND $1 = 'anon')) AND session_id = $2
      ORDER BY created_at DESC LIMIT $3`,
-    [organizationId, sessionId, limit]
+    [orgKey, sessionId, limit]
   );
   if (!rows.length) return { messages: [], summary: null };
 
@@ -1284,9 +1288,10 @@ router.post('/chat', async (req, res) => {
     // ── Fetch conversation history (with summarization for long chats) ──────
     let convHistory = [];
     let summary      = null;
-    if (sessionId && req.user && req.user.organizationId) {
+    if (sessionId && req.user && req.user.organization_id) {
       try {
-        const hist = await getConversationHistory(req.user.organizationId, sessionId);
+        const orgId = req.user.organization_id || 'anon';
+        const hist = await getConversationHistory(orgId, sessionId);
         convHistory = hist.messages;
         summary     = hist.summary;
       } catch (e) {
@@ -1333,6 +1338,30 @@ router.post('/chat', async (req, res) => {
         useLLM = true;
       } catch (llmErr) {
         console.warn('[AI] Ollama unavailable, using rule-based fallback:', llmErr.message);
+      }
+    }
+
+    // ── Save conversation to DB ─────────────────────────────────────────────
+    if (sessionId && req.user) {
+      const orgId = req.user.organization_id || 'anon';
+      const uid = req.user.id || null;
+      try {
+        await pool.query(
+          `INSERT INTO ai_conversations (organization_id, user_id, session_id, role, content, model)
+           VALUES ($1, $2, $3, 'user', $4, $5)`,
+          [orgId, uid, sessionId, message.trim(), LLM_MODEL]
+        );
+      } catch (e) {
+        console.warn('[AI] Could not save user message:', e.message);
+      }
+      try {
+        await pool.query(
+          `INSERT INTO ai_conversations (organization_id, user_id, session_id, role, content, model)
+           VALUES ($1, $2, $3, 'assistant', $4, $5)`,
+          [orgId, uid, sessionId, reply, LLM_MODEL]
+        );
+      } catch (e) {
+        console.warn('[AI] Could not save assistant message:', e.message);
       }
     }
 
