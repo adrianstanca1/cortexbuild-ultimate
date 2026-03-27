@@ -1,373 +1,439 @@
+/**
+ * CortexBuild Ultimate — Enhanced Header
+ * Steel & amber command bar — authoritative, professional, site-control-center feel
+ */
 import { useState, useEffect } from 'react';
-import { Bell, Search, Moon, Sun, Wifi, WifiOff, ChevronDown, Menu, X, Monitor, LogOut, User, Settings } from 'lucide-react';
+import {
+  Bell, Search, Wifi, WifiOff, Menu, X, Monitor,
+  LogOut, User, Settings, ChevronDown, Construction,
+} from 'lucide-react';
 import { type Module } from '../../types';
 import { NotificationsPanel } from './NotificationsPanel';
 import { useTheme } from '../../context/ThemeContext';
-import { useAuth } from '../../context/AuthContext';
-import { getToken } from '../../lib/supabase';
 
 const MODULE_LABELS: Record<Module, string> = {
-  'dashboard': 'Dashboard',
-  'projects': 'Projects',
-  'invoicing': 'Invoicing',
-  'accounting': 'Accounting',
-  'financial-reports': 'Financial Reports',
-  'procurement': 'Procurement',
-  'rams': 'RAMS — Risk Assessment & Method Statements',
-  'cis': 'CIS Returns',
-  'site-ops': 'Site Operations',
-  'teams': 'Teams & Labour',
-  'tenders': 'Tenders & Bids',
-  'analytics': 'Analytics & Business Intelligence',
-  'safety': 'Safety & HSE',
-  'field-view': 'Field View / Maps',
-  'crm': 'CRM & Clients',
-  'documents': 'Documents',
-  'timesheets': 'Timesheets',
-  'plant': 'Plant & Equipment',
-  'subcontractors': 'Subcontractors',
-  'ai-assistant': 'AI Assistant',
-  'rfis': 'RFIs — Requests for Information',
-  'change-orders': 'Change Orders',
-  'punch-list': 'Punch List / Snagging',
-  'inspections': 'Inspections & QA',
-  'risk-register': 'Risk Register',
-  'drawings': 'Drawings & Plans',
-  'meetings': 'Meetings',
-  'materials': 'Materials Management',
-  'daily-reports': 'Daily Reports',
-  'marketplace': 'AI Marketplace',
-  'settings': 'Settings',
-  'insights': 'AI Insights Engine',
-  'notifications': 'Notifications',
-  'executive-reports': 'Executive Reports',
-  'predictive-analytics': 'Predictive Analytics',
-  'calendar': 'Calendar',
-  'search': 'Search',
-  'audit-log': 'Audit Log',
-  'variations': 'Variations',
-  'defects': 'Defects Management',
-  'valuations': 'Valuations & Certificates',
-  'specifications': 'Specifications',
-  'temp-works': 'Temporary Works',
-  'signage': 'Site Signage',
-  'waste-management': 'Waste Management',
-  'sustainability': 'Sustainability & ESG',
-  'training': 'Training & Certifications',
-  'certifications': 'Certifications & Licenses',
-  'prequalification': 'Prequalification',
-  'lettings': 'Contract Lettings',
-  'measuring': 'Site Measuring & Surveys',
+  'dashboard':            'Dashboard',
+  'projects':            'Projects',
+  'invoicing':           'Invoicing',
+  'accounting':          'Accounting',
+  'financial-reports':    'Financial Reports',
+  'procurement':         'Procurement',
+  'rams':                'RAMS — Risk Assessment & Method Statements',
+  'cis':                 'CIS Returns',
+  'site-ops':            'Site Operations',
+  'teams':               'Teams & Labour',
+  'tenders':             'Tenders & Bids',
+  'analytics':           'Analytics & Business Intelligence',
+  'safety':             'Safety & HSE',
+  'field-view':          'Field View / Maps',
+  'crm':                'CRM & Clients',
+  'documents':           'Documents',
+  'timesheets':         'Timesheets',
+  'plant':               'Plant & Equipment',
+  'subcontractors':      'Subcontractors',
+  'ai-assistant':        'AI Assistant',
+  'rfis':               'RFIs — Requests for Information',
+  'change-orders':       'Change Orders',
+  'punch-list':         'Punch List / Snagging',
+  'inspections':         'Inspections & QA',
+  'risk-register':       'Risk Register',
+  'drawings':           'Drawings & Plans',
+  'meetings':           'Meetings',
+  'materials':           'Materials Management',
+  'daily-reports':       'Daily Reports',
+  'marketplace':        'AI Marketplace',
+  'settings':           'Settings',
+  'insights':           'AI Insights Engine',
+  'notifications':       'Notifications',
+  'executive-reports':   'Executive Reports',
+  'predictive-analytics':'Predictive Analytics',
+  'calendar':           'Calendar',
+  'search':             'Search',
+  'audit-log':          'Audit Log',
+  'variations':         'Variations',
+  'defects':            'Defects Management',
+  'valuations':         'Valuations & Certificates',
+  'specifications':     'Specifications',
+  'temp-works':         'Temporary Works',
+  'signage':            'Site Signage',
+  'waste-management':   'Waste Management',
+  'sustainability':     'Sustainability & ESG',
+  'training':           'Training & Certifications',
+  'certifications':     'Certifications & Licenses',
+  'prequalification':   'Prequalification',
+  'lettings':          'Contract Lettings',
+  'measuring':          'Site Measuring & Surveys',
 };
 
-interface HeaderProps {
-  activeModule: Module;
-  onMenuToggle?: () => void;
-}
+// Module accent colors for the breadcrumb bar
+const MODULE_ACCENTS: Partial<Record<Module, string>> = {
+  'dashboard': '#f59e0b',
+  'projects': '#f59e0b',
+  'safety': '#ef4444',
+  'ai-assistant': '#f59e0b',
+  'insights': '#f59e0b',
+  'analytics': '#3b82f6',
+  'financial-reports': '#10b981',
+  'risk-register': '#ef4444',
+  'rams': '#ef4444',
+  'field-view': '#f59e0b',
+  'settings': '#64748b',
+};
 
-export function Header({ activeModule, onMenuToggle }: HeaderProps) {
-  const [searchOpen, setSearchOpen] = useState(false);
+export function Header({ activeModule, onMenuToggle }: { activeModule: Module; onMenuToggle?: () => void }) {
   const [isOnline, setIsOnline] = useState(typeof navigator !== 'undefined' ? navigator.onLine : true);
+  const [notifOpen, setNotifOpen] = useState(false);
+  const [profileOpen, setProfileOpen] = useState(false);
+  const [searchFocused, setSearchFocused] = useState(false);
+  const [currentTime, setCurrentTime] = useState(new Date());
+  const accent = MODULE_ACCENTS[activeModule] || '#f59e0b';
+  const { theme, setTheme } = useTheme?.() ?? { theme: 'dark', setTheme: () => {} };
 
   useEffect(() => {
     const handleOnline = () => setIsOnline(true);
     const handleOffline = () => setIsOnline(false);
     window.addEventListener('online', handleOnline);
     window.addEventListener('offline', handleOffline);
+    const timer = setInterval(() => setCurrentTime(new Date()), 1000);
     return () => {
       window.removeEventListener('online', handleOnline);
       window.removeEventListener('offline', handleOffline);
+      clearInterval(timer);
     };
   }, []);
-  const [notificationsOpen, setNotificationsOpen] = useState(false);
-  const [themeMenuOpen, setThemeMenuOpen] = useState(false);
-  const [userMenuOpen, setUserMenuOpen] = useState(false);
-  const { user, signOut } = useAuth();
-  const { theme, setTheme, resolvedTheme } = useTheme();
-  const notifications = 4;
 
-  const ThemeIcon = resolvedTheme === 'dark' ? Moon : Sun;
+  const label = MODULE_LABELS[activeModule] ?? activeModule;
 
   return (
     <header
       style={{
         height: '60px',
+        background: 'linear-gradient(180deg, #111827 0%, #0d1117 100%)',
+        borderBottom: '1px solid rgba(255,255,255,0.07)',
         display: 'flex',
         alignItems: 'center',
-        justifyContent: 'space-between',
-        padding: '0 16px',
-        background: 'var(--slate-900)',
-        borderBottom: '1px solid var(--slate-800)',
+        padding: '0 20px',
+        gap: '16px',
         flexShrink: 0,
+        position: 'relative',
+        zIndex: 50,
       }}
-      className="px-4 md:px-6"
     >
-      {/* Left */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-        {onMenuToggle && (
-          <button
-            onClick={onMenuToggle}
-            style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--slate-400)', padding: '6px', borderRadius: '6px', transition: 'color 0.2s' }}
-          >
-            <Menu style={{ width: '20px', height: '20px' }} />
-          </button>
-        )}
-        <div>
-          <h1
-            style={{
-              fontFamily: 'var(--font-display)',
-              fontSize: '15px',
-              fontWeight: 700,
-              color: 'var(--slate-50)',
-              letterSpacing: '-0.01em',
-              lineHeight: 1.2,
-            }}
-          >
-            {MODULE_LABELS[activeModule]}
-          </h1>
-          <p style={{ fontFamily: 'var(--font-mono)', fontSize: '9px', color: 'var(--slate-500)', letterSpacing: '0.08em', marginTop: '1px' }}>
-            CORTEXBUILD ULTIMATE · UK
-          </p>
-        </div>
-      </div>
+      {/* Accent line under header */}
+      <div
+        style={{
+          position: 'absolute',
+          bottom: 0,
+          left: 0,
+          right: 0,
+          height: '2px',
+          background: `linear-gradient(90deg, transparent 0%, ${accent}60 20%, ${accent} 50%, ${accent}60 80%, transparent 100%)`,
+          opacity: 0.8,
+        }}
+      />
 
-      {/* Right */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-        {/* Search */}
-        {searchOpen ? (
-          <div
-            style={{
-              display: 'flex', alignItems: 'center', gap: '8px',
-              background: 'var(--slate-800)',
-              border: '1px solid var(--slate-600)',
-              borderRadius: '8px', padding: '6px 12px',
-            }}
-          >
-            <Search style={{ width: '14px', height: '14px', color: 'var(--slate-400)' }} />
-            <input
-              autoFocus
-              style={{
-                background: 'transparent', border: 'none', outline: 'none',
-                fontFamily: 'var(--font-body)', fontSize: '13px',
-                color: 'var(--slate-100)', width: '180px',
-              }}
-              placeholder="Search anything..."
-              onBlur={() => setSearchOpen(false)}
-            />
-            <button
-              onClick={() => setSearchOpen(false)}
-              style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--slate-500)', padding: '2px' }}
-            >
-              <X style={{ width: '14px', height: '14px' }} />
-            </button>
-          </div>
-        ) : (
-          <button
-            onClick={() => setSearchOpen(true)}
-            style={{
-              background: 'none', border: '1px solid transparent', cursor: 'pointer',
-              color: 'var(--slate-400)', padding: '8px', borderRadius: '8px',
-              transition: 'all 0.2s', display: 'flex', alignItems: 'center',
-            }}
-            onMouseEnter={e => { e.currentTarget.style.background = 'var(--slate-800)'; e.currentTarget.style.color = 'var(--slate-100)'; }}
-            onMouseLeave={e => { e.currentTarget.style.background = 'none'; e.currentTarget.style.color = 'var(--slate-400)'; }}
-          >
-            <Search style={{ width: '15px', height: '15px' }} />
-          </button>
-        )}
+      {/* Mobile menu button */}
+      <button
+        onClick={onMenuToggle}
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          width: '34px',
+          height: '34px',
+          borderRadius: '8px',
+          background: 'rgba(255,255,255,0.04)',
+          border: '1px solid rgba(255,255,255,0.08)',
+          cursor: 'pointer',
+          color: '#64748b',
+          transition: 'all 0.15s',
+          flexShrink: 0,
+        }}
+        onMouseEnter={e => {
+          e.currentTarget.style.background = 'rgba(245,158,11,0.1)';
+          e.currentTarget.style.color = '#f59e0b';
+        }}
+        onMouseLeave={e => {
+          e.currentTarget.style.background = 'rgba(255,255,255,0.04)';
+          e.currentTarget.style.color = '#64748b';
+        }}
+      >
+        <Menu style={{ width: '16px', height: '16px' }} />
+      </button>
 
-        {/* Online status */}
+      {/* Breadcrumb / Module label */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flex: 1, minWidth: 0 }}>
+        {/* Module colored dot */}
         <div
           style={{
-            display: 'flex', alignItems: 'center', gap: '5px',
-            padding: '4px 10px', borderRadius: '20px',
-            background: isOnline ? 'rgba(16,185,129,0.1)' : 'rgba(248,113,113,0.1)',
-            border: `1px solid ${isOnline ? 'rgba(16,185,129,0.2)' : 'rgba(248,113,113,0.2)'}`,
+            width: '8px',
+            height: '8px',
+            borderRadius: '50%',
+            background: accent,
+            flexShrink: 0,
+            boxShadow: `0 0 8px ${accent}80`,
           }}
-        >
-          {isOnline
-            ? <Wifi style={{ width: '11px', height: '11px', color: 'var(--emerald-400)' }} />
-            : <WifiOff style={{ width: '11px', height: '11px', color: 'var(--red-400)' }} />
-          }
-          <span style={{
-            fontFamily: 'var(--font-mono)', fontSize: '9px', fontWeight: 600,
-            color: isOnline ? 'var(--emerald-400)' : 'var(--red-400)',
-            letterSpacing: '0.06em', textTransform: 'uppercase',
-          }}>
-            {isOnline ? 'Live' : 'Offline'}
-          </span>
-        </div>
+        />
 
-        {/* Notifications */}
-        <button
-          onClick={() => setNotificationsOpen(true)}
-          style={{
-            background: 'none', border: '1px solid transparent', cursor: 'pointer',
-            color: 'var(--slate-400)', padding: '8px', borderRadius: '8px',
-            transition: 'all 0.2s', position: 'relative',
-          }}
-          onMouseEnter={e => { e.currentTarget.style.background = 'var(--slate-800)'; e.currentTarget.style.color = 'var(--slate-100)'; }}
-          onMouseLeave={e => { e.currentTarget.style.background = 'none'; e.currentTarget.style.color = 'var(--slate-400)'; }}
-        >
-          <Bell style={{ width: '15px', height: '15px' }} />
-          {notifications > 0 && (
-            <span
-              style={{
-                position: 'absolute', top: '4px', right: '4px',
-                width: '14px', height: '14px', borderRadius: '50%',
-                background: '#ef4444', color: 'white',
-                fontSize: '8px', fontWeight: 700,
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                fontFamily: 'var(--font-mono)',
-              }}
-            >
-              {notifications}
-            </span>
-          )}
-        </button>
-        {notificationsOpen && <NotificationsPanel authToken={getToken()} onClose={() => setNotificationsOpen(false)} />}
-
-        {/* Theme Toggle */}
-        <div style={{ position: 'relative' }}>
-          <button
-            onClick={() => setThemeMenuOpen(!themeMenuOpen)}
+        {/* Label */}
+        <div style={{ minWidth: 0 }}>
+          <div
             style={{
-              background: 'none', border: '1px solid transparent', cursor: 'pointer',
-              color: 'var(--slate-400)', padding: '8px', borderRadius: '8px',
-              transition: 'all 0.2s',
+              fontFamily: "'Syne', sans-serif",
+              fontSize: '14px',
+              fontWeight: 700,
+              color: '#f1f5f9',
+              letterSpacing: '-0.01em',
+              lineHeight: 1.2,
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+              whiteSpace: 'nowrap',
             }}
-            onMouseEnter={e => { e.currentTarget.style.background = 'var(--slate-800)'; e.currentTarget.style.color = 'var(--slate-100)'; }}
-            onMouseLeave={e => { e.currentTarget.style.background = 'none'; e.currentTarget.style.color = 'var(--slate-400)'; }}
           >
-            <ThemeIcon style={{ width: '15px', height: '15px' }} />
-          </button>
-          {themeMenuOpen && (
-            <div style={{
-              position: 'absolute', right: 0, top: '100%', marginTop: '8px',
-              background: 'var(--slate-800)', border: '1px solid var(--slate-700)',
-              borderRadius: '8px', padding: '4px', minWidth: '140px', zIndex: 100,
-              boxShadow: '0 4px 20px rgba(0,0,0,0.3)',
-            }}>
-              {[
-                { value: 'light', label: 'Light', icon: Sun },
-                { value: 'dark', label: 'Dark', icon: Moon },
-                { value: 'system', label: 'System', icon: Monitor },
-              ].map(opt => (
-                <button
-                  key={opt.value}
-                  onClick={() => { setTheme(opt.value as 'light' | 'dark' | 'system'); setThemeMenuOpen(false); }}
-                  style={{
-                    width: '100%', display: 'flex', alignItems: 'center', gap: '10px',
-                    padding: '8px 12px', background: theme === opt.value ? 'var(--slate-700)' : 'transparent',
-                    border: 'none', cursor: 'pointer', borderRadius: '6px',
-                    color: theme === opt.value ? 'var(--amber-400)' : 'var(--slate-300)',
-                    fontFamily: 'var(--font-body)', fontSize: '12px',
-                  }}
-                  onMouseEnter={e => { e.currentTarget.style.background = 'var(--slate-700)'; }}
-                  onMouseLeave={e => { e.currentTarget.style.background = theme === opt.value ? 'var(--slate-700)' : 'transparent'; }}
-                >
-                  <opt.icon style={{ width: '14px', height: '14px' }} />
-                  {opt.label}
-                  {theme === opt.value && (
-                    <span style={{ marginLeft: 'auto', color: 'var(--amber-400)' }}>✓</span>
-                  )}
-                </button>
-              ))}
-            </div>
-          )}
-        </div>
-
-        {/* Divider */}
-        <div style={{ width: '1px', height: '24px', background: 'var(--slate-700)', margin: '0 4px' }} />
-
-        {/* User menu */}
-        <div style={{ position: 'relative' }}>
-          <button
-            type="button"
-            onClick={() => setUserMenuOpen(!userMenuOpen)}
+            {label}
+          </div>
+          {/* Construction status strip */}
+          <div
             style={{
-              display: 'flex', alignItems: 'center', gap: '10px',
-              background: 'none', border: '1px solid transparent',
-              cursor: 'pointer', padding: '6px 10px', borderRadius: '8px',
-              transition: 'all 0.2s',
+              fontFamily: "'JetBrains Mono', monospace",
+              fontSize: '8px',
+              fontWeight: 600,
+              color: '#475569',
+              letterSpacing: '0.12em',
+              textTransform: 'uppercase',
+              marginTop: '1px',
             }}
-            onMouseEnter={e => { e.currentTarget.style.background = 'var(--slate-800)'; }}
-            onMouseLeave={e => { e.currentTarget.style.background = 'none'; }}
           >
-            <div
-              style={{
-                width: '28px', height: '28px', borderRadius: '50%',
-                background: 'linear-gradient(135deg, var(--amber-500), var(--amber-600))',
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                fontFamily: 'var(--font-display)', fontSize: '10px', fontWeight: 700,
-                color: 'var(--slate-950)',
-              }}
-            >
-              {user?.name?.split(' ').map(n => n[0]).join('').toUpperCase() || 'U'}
-            </div>
-            <div style={{ textAlign: 'left' }}>
-              <div style={{ fontFamily: 'var(--font-body)', fontSize: '12px', fontWeight: 600, color: 'var(--slate-100)', lineHeight: 1.2 }}>{user?.name || 'User'}</div>
-              <div style={{ fontFamily: 'var(--font-mono)', fontSize: '9px', color: 'var(--slate-500)' }}>{user?.company || 'CortexBuild Ltd'}</div>
-            </div>
-            <ChevronDown style={{ width: '12px', height: '12px', color: 'var(--slate-500)' }} />
-          </button>
-          {userMenuOpen && (
-            <div style={{
-              position: 'absolute', right: 0, top: '100%', marginTop: '8px',
-              background: 'var(--slate-800)', border: '1px solid var(--slate-700)',
-              borderRadius: '8px', padding: '4px', minWidth: '180px', zIndex: 100,
-              boxShadow: '0 4px 20px rgba(0,0,0,0.3)',
-            }}>
-              <button
-                type="button"
-                onClick={() => { setUserMenuOpen(false); }}
-                style={{
-                  width: '100%', display: 'flex', alignItems: 'center', gap: '10px',
-                  padding: '10px 12px', background: 'transparent', border: 'none',
-                  cursor: 'pointer', borderRadius: '6px', color: 'var(--slate-300)',
-                  fontFamily: 'var(--font-body)', fontSize: '13px',
-                }}
-                onMouseEnter={e => { e.currentTarget.style.background = 'var(--slate-700)'; }}
-                onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; }}
-              >
-                <Settings style={{ width: '14px', height: '14px' }} />
-                Settings
-              </button>
-              <button
-                type="button"
-                onClick={() => { setUserMenuOpen(false); }}
-                style={{
-                  width: '100%', display: 'flex', alignItems: 'center', gap: '10px',
-                  padding: '10px 12px', background: 'transparent', border: 'none',
-                  cursor: 'pointer', borderRadius: '6px', color: 'var(--slate-300)',
-                  fontFamily: 'var(--font-body)', fontSize: '13px',
-                }}
-                onMouseEnter={e => { e.currentTarget.style.background = 'var(--slate-700)'; }}
-                onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; }}
-              >
-                <User style={{ width: '14px', height: '14px' }} />
-                Profile
-              </button>
-              <div style={{ height: '1px', background: 'var(--slate-700)', margin: '4px 0' }} />
-              <button
-                type="button"
-                onClick={async () => { await signOut(); setUserMenuOpen(false); }}
-                style={{
-                  width: '100%', display: 'flex', alignItems: 'center', gap: '10px',
-                  padding: '10px 12px', background: 'transparent', border: 'none',
-                  cursor: 'pointer', borderRadius: '6px', color: '#ef4444',
-                  fontFamily: 'var(--font-body)', fontSize: '13px',
-                }}
-                onMouseEnter={e => { e.currentTarget.style.background = 'rgba(239,68,68,0.1)'; }}
-                onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; }}
-              >
-                <LogOut style={{ width: '14px', height: '14px' }} />
-                Sign Out
-              </button>
-            </div>
-          )}
+            {currentTime.toLocaleDateString('en-GB', { weekday: 'short', day: '2-digit', month: 'short', year: 'numeric' })}
+            {' · '}
+            {currentTime.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
+          </div>
         </div>
       </div>
+
+      {/* Right actions */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+
+        {/* Search */}
+        <div
+          style={{
+            position: 'relative',
+            display: 'flex',
+            alignItems: 'center',
+          }}
+        >
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px',
+              padding: '0 12px',
+              height: '34px',
+              borderRadius: '9px',
+              background: searchFocused ? 'rgba(255,255,255,0.08)' : 'rgba(255,255,255,0.04)',
+              border: `1px solid ${searchFocused ? 'rgba(245,158,11,0.4)' : 'rgba(255,255,255,0.08)'}`,
+              transition: 'all 0.2s',
+              width: searchFocused ? '220px' : '160px',
+            }}
+          >
+            <Search
+              style={{
+                width: '13px',
+                height: '13px',
+                color: searchFocused ? '#f59e0b' : '#475569',
+                flexShrink: 0,
+                transition: 'color 0.2s',
+              }}
+            />
+            <input
+              type="text"
+              placeholder="Search..."
+              onFocus={() => setSearchFocused(true)}
+              onBlur={() => setSearchFocused(false)}
+              style={{
+                background: 'none',
+                border: 'none',
+                outline: 'none',
+                fontFamily: "'DM Sans', sans-serif",
+                fontSize: '12px',
+                color: '#e2e8f0',
+                width: '100%',
+                cursor: 'text',
+              }}
+            />
+            {!searchFocused && (
+              <div
+                style={{
+                  fontFamily: "'JetBrains Mono', monospace",
+                  fontSize: '9px',
+                  color: '#334155',
+                  background: 'rgba(255,255,255,0.05)',
+                  padding: '2px 5px',
+                  borderRadius: '4px',
+                  border: '1px solid rgba(255,255,255,0.08)',
+                  flexShrink: 0,
+                }}
+              >
+                ⌘K
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Notification bell */}
+        <NotificationButton
+          isOpen={notifOpen}
+          onToggle={() => { setNotifOpen(p => !p); setProfileOpen(false); }}
+        />
+
+        {/* Profile */}
+        <ProfileButton
+          isOpen={profileOpen}
+          onToggle={() => { setProfileOpen(p => !p); setNotifOpen(false); }}
+        />
+      </div>
+
+      {/* Notifications panel */}
+      {notifOpen && (
+        <div
+          style={{
+            position: 'absolute',
+            top: '58px',
+            right: '16px',
+            width: '360px',
+            zIndex: 100,
+          }}
+        >
+          <NotificationsPanel
+            authToken={null}
+            onClose={() => setNotifOpen(false)}
+          />
+        </div>
+      )}
     </header>
+  );
+}
+
+// ── Notification Bell ──────────────────────────────────────────────────────────
+function NotificationButton({ isOpen, onToggle }: { isOpen: boolean; onToggle: () => void }) {
+  return (
+    <button
+      onClick={onToggle}
+      title="Notifications"
+      style={{
+        position: 'relative',
+        width: '34px',
+        height: '34px',
+        borderRadius: '9px',
+        background: isOpen ? 'rgba(245,158,11,0.12)' : 'rgba(255,255,255,0.04)',
+        border: `1px solid ${isOpen ? 'rgba(245,158,11,0.35)' : 'rgba(255,255,255,0.08)'}`,
+        cursor: 'pointer',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        color: isOpen ? '#f59e0b' : '#64748b',
+        transition: 'all 0.15s',
+      }}
+      onMouseEnter={e => {
+        if (!isOpen) {
+          e.currentTarget.style.background = 'rgba(255,255,255,0.07)';
+          e.currentTarget.style.color = '#94a3b8';
+        }
+      }}
+      onMouseLeave={e => {
+        if (!isOpen) {
+          e.currentTarget.style.background = 'rgba(255,255,255,0.04)';
+          e.currentTarget.style.color = '#64748b';
+        }
+      }}
+    >
+      <Bell style={{ width: '15px', height: '15px' }} />
+      {/* Red dot indicator */}
+      <div
+        style={{
+          position: 'absolute',
+          top: '6px',
+          right: '6px',
+          width: '6px',
+          height: '6px',
+          borderRadius: '50%',
+          background: '#ef4444',
+          border: '1px solid #0d1117',
+        }}
+      />
+    </button>
+  );
+}
+
+// ── Profile Button ──────────────────────────────────────────────────────────────
+function ProfileButton({ isOpen, onToggle }: { isOpen: boolean; onToggle: () => void }) {
+  return (
+    <button
+      onClick={onToggle}
+      title="Profile"
+      style={{
+        display: 'flex',
+        alignItems: 'center',
+        gap: '8px',
+        padding: '0 10px',
+        height: '34px',
+        borderRadius: '9px',
+        background: isOpen ? 'rgba(255,255,255,0.08)' : 'rgba(255,255,255,0.04)',
+        border: `1px solid ${isOpen ? 'rgba(245,158,11,0.35)' : 'rgba(255,255,255,0.08)'}`,
+        cursor: 'pointer',
+        color: isOpen ? '#f59e0b' : '#64748b',
+        transition: 'all 0.15s',
+      }}
+      onMouseEnter={e => {
+        if (!isOpen) {
+          e.currentTarget.style.background = 'rgba(255,255,255,0.07)';
+          e.currentTarget.style.color = '#e2e8f0';
+        }
+      }}
+      onMouseLeave={e => {
+        if (!isOpen) {
+          e.currentTarget.style.background = 'rgba(255,255,255,0.04)';
+          e.currentTarget.style.color = '#64748b';
+        }
+      }}
+    >
+      <div
+        style={{
+          width: '22px',
+          height: '22px',
+          borderRadius: '6px',
+          background: 'linear-gradient(135deg, #f59e0b, #d97706)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          fontFamily: "'Syne', sans-serif",
+          fontSize: '9px',
+          fontWeight: 800,
+          color: '#1e1b16',
+          flexShrink: 0,
+        }}
+      >
+        AS
+      </div>
+      <span
+        style={{
+          fontFamily: "'DM Sans', sans-serif",
+          fontSize: '12px',
+          fontWeight: 500,
+          color: '#cbd5e1',
+        }}
+      >
+        Adrian
+      </span>
+      <ChevronDown
+        style={{
+          width: '12px',
+          height: '12px',
+          color: '#475569',
+          transform: isOpen ? 'rotate(180deg)' : 'none',
+          transition: 'transform 0.2s',
+        }}
+      />
+    </button>
   );
 }

@@ -698,3 +698,199 @@ button:focus-visible,
 .nav-scroll::-webkit-scrollbar-thumb:hover {
   background: var(--slate-600);
 }
+
+/* ─── Blueprint Grid Background Pattern ──────────────────────── */
+.bg-blueprint {
+  background-color: #0c1220;
+  background-image:
+    linear-gradient(rgba(245,158,11,0.04) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(245,158,11,0.04) 1px, transparent 1px);
+  background-size: 32px 32px;
+}
+
+.bg-grid-soft {
+  background-color: #0d1117;
+  background-image:
+    linear-gradient(rgba(255,255,255,0.02) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255,255,255,0.02) 1px, transparent 1px);
+  background-size: 24px 24px;
+}
+
+/* ─── Steel Panel Cards ───────────────────────────────────────── */
+.panel-steel {
+  background: linear-gradient(145deg, rgba(30,41,59,0.8) 0%, rgba(15,23,42,0.9) 100%);
+  border: 1px solid rgba(255,255,255,0.08);
+  backdrop-filter: blur(12px);
+}
+
+.panel-steel:hover {
+  border-color: rgba(245,158,11,0.2);
+}
+
+/* ─── Amber Glow Accents ──────────────────────────────────────── */
+.amber-glow {
+  box-shadow: 0 0 20px rgba(245,158,11,0.15), 0 0 40px rgba(245,158,11,0.05);
+}
+
+.glow-amber-sm {
+  box-shadow: 0 0 8px rgba(245,158,11,0.3);
+}
+
+.glow-amber-md {
+  box-shadow: 0 0 12px rgba(245,158,11,0.25), 0 0 24px rgba(245,158,11,0.1);
+}
+
+/* ─── Live Status Indicator ────────────────────────────────────── */
+.status-live {
+  position: relative;
+}
+.status-live::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #10b981;
+  animation: livePulse 2s ease-in-out infinite;
+}
+
+@keyframes livePulse {
+  0%, 100% { opacity: 1; transform: scale(1); box-shadow: 0 0 0 0 rgba(16,185,129,0.4); }
+  50% { opacity: 0.8; transform: scale(1.1); box-shadow: 0 0 0 4px rgba(16,185,129,0); }
+}
+
+/* ─── KPI Card Gradient Borders ───────────────────────────────── */
+.kpi-card {
+  position: relative;
+  overflow: hidden;
+}
+.kpi-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, var(--accent, #f59e0b), transparent);
+  opacity: 0.6;
+}
+
+/* ─── Animated Entrance ────────────────────────────────────────── */
+@keyframes slideInUp {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.animate-slide-in {
+  animation: slideInUp 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+/* ─── Stagger Children ─────────────────────────────────────────── */
+.stagger-children > * {
+  opacity: 0;
+  animation: slideInUp 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+.stagger-children > *:nth-child(1) { animation-delay: 0ms; }
+.stagger-children > *:nth-child(2) { animation-delay: 60ms; }
+.stagger-children > *:nth-child(3) { animation-delay: 120ms; }
+.stagger-children > *:nth-child(4) { animation-delay: 180ms; }
+.stagger-children > *:nth-child(5) { animation-delay: 240ms; }
+.stagger-children > *:nth-child(6) { animation-delay: 300ms; }
+
+/* ─── Construction Warning Stripe ──────────────────────────────── */
+.warning-stripe {
+  background: repeating-linear-gradient(
+    -45deg,
+    transparent,
+    transparent 8px,
+    rgba(245,158,11,0.08) 8px,
+    rgba(245,158,11,0.08) 16px
+  );
+}
+
+/* ─── Danger/Hazard Stripe ────────────────────────────────────── */
+.danger-stripe {
+  background: repeating-linear-gradient(
+    -45deg,
+    transparent,
+    transparent 8px,
+    rgba(239,68,68,0.08) 8px,
+    rgba(239,68,68,0.08) 16px
+  );
+}
+
+/* ─── Steel shimmer on hover ───────────────────────────────────── */
+.hover-steel {
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.hover-steel:hover {
+  background: rgba(30,41,59,0.9);
+  border-color: rgba(245,158,11,0.3);
+  transform: translateY(-1px);
+  box-shadow: 0 8px 24px rgba(0,0,0,0.3), 0 0 0 1px rgba(245,158,11,0.1);
+}
+
+/* ─── Number ticker / counter ──────────────────────────────────── */
+.tab-active {
+  position: relative;
+}
+.tab-active::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 20px;
+  height: 2px;
+  background: #f59e0b;
+  border-radius: 2px 2px 0 0;
+}
+
+/* ─── Glass panel overlay ──────────────────────────────────────── */
+.glass-panel {
+  background: rgba(17,24,39,0.7);
+  backdrop-filter: blur(16px);
+  border: 1px solid rgba(255,255,255,0.08);
+}
+
+/* ─── Amber progress bar ───────────────────────────────────────── */
+.progress-amber {
+  height: 4px;
+  border-radius: 2px;
+  background: rgba(245,158,11,0.15);
+  overflow: hidden;
+}
+.progress-amber > div {
+  height: 100%;
+  border-radius: 2px;
+  background: linear-gradient(90deg, #f59e0b, #d97706);
+  transition: width 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* ─── Tooltip ──────────────────────────────────────────────────── */
+[data-tooltip] {
+  position: relative;
+}
+[data-tooltip]::after {
+  content: attr(data-tooltip);
+  position: absolute;
+  bottom: calc(100% + 6px);
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 4px 8px;
+  background: #1e293b;
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 6px;
+  font-family: 'DM Sans', sans-serif;
+  font-size: 11px;
+  color: #e2e8f0;
+  white-space: nowrap;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.15s;
+  z-index: 9999;
+}
+[data-tooltip]:hover::after {
+  opacity: 1;
+}
