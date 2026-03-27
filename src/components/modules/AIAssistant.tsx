@@ -67,12 +67,12 @@ export function AIAssistant() {
     // Server first, localStorage as fallback
     aiConversationsApi.getSession(sessionId)
       .then(({ messages: serverMessages }) => {
-        // Adapt API response { id, role, content, model, createdAt } → Message
+        // Adapt API response { id, role, content, model, created_at } → Message
         const adapted: Message[] = serverMessages.map((m) => ({
           id: m.id || String(Date.now() + Math.random()),
           role: m.role,
           content: m.content,
-          timestamp: m.createdAt ? new Date(m.createdAt) : new Date(),
+          timestamp: m.created_at ? new Date(m.created_at) : new Date(),
         }));
         setMessages(adapted);
         // Mirror to localStorage as backup
@@ -98,8 +98,11 @@ export function AIAssistant() {
   async function handleBulkDelete(ids: string[]) {
     if (!confirm(`Delete ${ids.length} chat session(s)?`)) return;
     try {
+      // Delete from server (async, non-blocking) and localStorage
+      await Promise.allSettled(
+        ids.map(id => aiConversationsApi.deleteSession(id).catch(() => {}))
+      );
       ids.forEach(id => { try { localStorage.removeItem(`cortex_ai_session_${id}`); } catch {} });
-      ids.forEach(id => { aiConversationsApi.deleteSession(id).catch(() => {}); });
       setChatSessions(prev => prev.filter(s => !ids.includes(s.id)));
       if (ids.includes(currentSessionId || '')) { setCurrentSessionId(null); setMessages([]); }
       toast.success(`Deleted ${ids.length} session(s)`);
@@ -391,19 +394,23 @@ export function AIAssistant() {
       timestamp: new Date()
     };
 
-    // Persist user message to DB
-    const sessionIdForSave = messages.length === 0 ? Date.now().toString() : currentSessionId;
-    if (messages.length === 0) {
-      const newSessionId = sessionIdForSave;
+    const isNewSession = messages.length === 0;
+    const sessionIdForSave = isNewSession ? Date.now().toString() : currentSessionId;
+
+    // Persist user message to server (async, non-blocking) and localStorage backup
+    if (sessionIdForSave) {
+      aiConversationsApi.saveMessage({ sessionId: sessionIdForSave, role: 'user', content: messageText }).catch(() => {});
+    }
+
+    if (isNewSession) {
+      const newSessionId = sessionIdForSave as string;
       setChatSessions(prev => [
-        { id: newSessionId as string, firstMessage: messageText, date: new Date() },
+        { id: newSessionId, firstMessage: messageText, date: new Date() },
         ...prev
       ]);
       setCurrentSessionId(newSessionId);
     }
-    if (sessionIdForSave) {
-      aiConversationsApi.saveMessage({ sessionId: sessionIdForSave, role: 'user', content: messageText }).catch(() => {});
-    }
+
     const finalSessionId = sessionIdForSave;
 
     setMessages(prev => [...prev, userMessage]);
@@ -436,11 +443,13 @@ export function AIAssistant() {
             currentIndex++;
           } else {
             clearInterval(streamInterval);
+            const finalMessage = { ...assistantMessage, content: response.reply, isStreaming: false };
             setMessages(prev => [
               ...prev.slice(0, -1),
-              { ...assistantMessage, content: response.reply, isStreaming: false }
+              finalMessage
             ]);
             setIsTyping(false);
+            // Persist assistant message to server (async, non-blocking)
             if (finalSessionId) {
               aiConversationsApi.saveMessage({ sessionId: finalSessionId, role: 'assistant', content: response.reply }).catch(() => {});
             }
