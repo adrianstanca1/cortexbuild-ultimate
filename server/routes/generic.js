@@ -1,6 +1,7 @@
 const express = require('express');
 const pool    = require('../db');
 const { logAudit } = require('./audit-helper');
+const { broadcastDashboardUpdate } = require('../lib/ws-broadcast');
 
 // Per-table column whitelists — prevents column-name injection
 const ALLOWED_COLUMNS = {
@@ -176,6 +177,7 @@ function makeRouter(tableName, orderCol = 'created_at') {
         [...values, ...tenantValues]
       );
       logAudit({ auth: req.user, action: 'create', entityType: tableName, entityId: rows[0]?.id, newData: rows[0] });
+      broadcastDashboardUpdate('create', tableName, rows[0]);
       res.status(201).json(rows[0]);
     } catch (err) {
       console.error(`[POST ${tableName}]`, err.message);
@@ -201,6 +203,7 @@ function makeRouter(tableName, orderCol = 'created_at') {
       );
       if (!rows[0]) return res.status(404).json({ message: 'Not found' });
       logAudit({ auth: req.user, action: 'update', entityType: tableName, entityId: rows[0]?.id, newData: rows[0] });
+      broadcastDashboardUpdate('update', tableName, rows[0]);
       res.json(rows[0]);
     } catch (err) {
       console.error(`[PUT ${tableName}]`, err.message);
@@ -216,6 +219,7 @@ function makeRouter(tableName, orderCol = 'created_at') {
       if (!oldRows.rowCount) return res.status(404).json({ message: 'Not found' });
       const { rowCount } = await pool.query(`DELETE FROM ${tableName}${filter}`, params);
       logAudit({ auth: req.user, action: 'delete', entityType: tableName, entityId: req.params.id, oldData: oldRows.rows[0] });
+      broadcastDashboardUpdate('delete', tableName, oldRows.rows[0]);
       res.json({ message: 'Deleted successfully' });
     } catch (err) {
       res.status(500).json({ message: err.message });

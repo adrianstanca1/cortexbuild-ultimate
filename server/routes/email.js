@@ -108,8 +108,78 @@ const EMAIL_TYPES = {
   },
 };
 
-router.get('/templates', (req, res) => {
-  res.json(EMAIL_TYPES);
+router.get('/templates', async (req, res) => {
+  try {
+    // Return both system email types and user-created templates from DB
+    const { rows: dbTemplates } = await pool.query(
+      `SELECT id, name, subject, body, email_type as "emailType", description, variables, is_active as "isActive", created_at as "createdAt", updated_at as "updatedAt"
+       FROM email_templates WHERE is_active = TRUE ORDER BY created_at DESC`
+    );
+    // Attach DB templates as overrides/extensions to system types
+    const systemTypes = Object.entries(EMAIL_TYPES).map(([key, val]) => ({
+      key,
+      ...val,
+      isSystem: true,
+    }));
+    res.json({ system: systemTypes, custom: dbTemplates });
+  } catch (err) {
+    console.error('[Email Templates]', err.message);
+    // Fallback to hardcoded on error
+    res.json({ system: EMAIL_TYPES, custom: [] });
+  }
+});
+
+router.post('/templates', async (req, res) => {
+  try {
+    const { name, subject, body, email_type, description, variables } = req.body;
+    if (!name || !subject || !email_type) {
+      return res.status(400).json({ message: 'name, subject, and email_type are required' });
+    }
+    const { rows } = await pool.query(
+      `INSERT INTO email_templates (name, subject, body, email_type, description, variables, created_by)
+       VALUES ($1, $2, $3, $4, $5, $6, $7)
+       RETURNING id, name, subject, body, email_type as "emailType", description, variables, is_active as "isActive", created_at as "createdAt", updated_at as "updatedAt"`,
+      [name, subject, body || '', email_type, description || '', JSON.stringify(variables || []), req.user?.id || 'system']
+    );
+    res.status(201).json({ success: true, template: rows[0] });
+  } catch (err) {
+    console.error('[Create Template]', err.message);
+    res.status(500).json({ message: err.message });
+  }
+});
+
+router.put('/templates/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { name, subject, body, description, variables, is_active } = req.body;
+    const { rows } = await pool.query(
+      `UPDATE email_templates SET name = COALESCE($1, name), subject = COALESCE($2, subject), body = COALESCE($3, body),
+       description = COALESCE($4, description), variables = COALESCE($5, variables), is_active = COALESCE($6, is_active),
+       updated_at = CURRENT_TIMESTAMP WHERE id = $7
+       RETURNING id, name, subject, body, email_type as "emailType", description, variables, is_active as "isActive", created_at as "createdAt", updated_at as "updatedAt"`,
+      [name, subject, body, description, variables ? JSON.stringify(variables) : null, is_active, id]
+    );
+    if (!rows[0]) return res.status(404).json({ message: 'Template not found' });
+    res.json({ success: true, template: rows[0] });
+  } catch (err) {
+    console.error('[Update Template]', err.message);
+    res.status(500).json({ message: err.message });
+  }
+});
+
+router.delete('/templates/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { rows } = await pool.query(
+      `UPDATE email_templates SET is_active = FALSE, updated_at = CURRENT_TIMESTAMP WHERE id = $1 RETURNING id`,
+      [id]
+    );
+    if (!rows[0]) return res.status(404).json({ message: 'Template not found' });
+    res.json({ success: true });
+  } catch (err) {
+    console.error('[Delete Template]', err.message);
+    res.status(500).json({ message: err.message });
+  }
 });
 
 router.get('/history', async (req, res) => {
@@ -133,7 +203,7 @@ router.post('/send', async (req, res) => {
       return res.status(429).json({ message: 'Rate limit exceeded. Try again later.' });
     }
 
-    const { to, type, data, subject, body } = req.body;
+    const { to, cc, type, data, subject, body } = req.body;
 
     if (!to || !type) {
       return res.status(400).json({ message: 'to and type are required' });
@@ -353,6 +423,7 @@ async function sendEmailViaSMTP(to, subject, body) {
   await transporter.sendMail({
     from: process.env.EMAIL_FROM || 'noreply@cortexbuild.co.uk',
     to,
+    cc: cc || undefined,
     subject,
     html: `
       <!DOCTYPE html>

@@ -529,7 +529,7 @@ export const calendarApi = {
 };
 
 export const emailApi = {
-  getTemplates: () => apiFetch<Record<string, { subject: string; template: string; description: string }>>('/email/templates'),
+  getTemplates: () => apiFetch<{ system: Record<string, { subject: string; template: string; description: string }>; custom: Row[] }>('/email/templates'),
   getHistory: (limit = 50, offset = 0) =>
     apiFetch<{ emails: Row[]; total: number }>(`/email/history?limit=${limit}&offset=${offset}`),
   send: (data: { to: string; type: string; data?: Row; subject?: string; body?: string }) =>

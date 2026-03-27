@@ -71,17 +71,20 @@ router.get('/cashflow', async (req, res) => {
       }
     });
 
+    // Distribute project spent evenly across 12 months of the current year
     const { rows: projects } = await pool.query('SELECT spent FROM projects');
-    projects.forEach(p => {
-      const monthIndex = Math.floor(Math.random() * 12);
-      monthlyData[months[monthIndex]].expenses += (parseFloat(p.spent) || 0) / 12;
-    });
+    const year = new Date().getFullYear();
+    const monthCount = 12;
+    const totalSpent = projects.reduce((sum, p) => sum + (parseFloat(p.spent) || 0), 0);
+    const monthlyExpenses = totalSpent / monthCount;
+
+    months.forEach(m => { monthlyData[m] = { income: monthlyData[m].income, expenses: monthlyExpenses }; });
 
     const cashFlow = months.map(month => ({
       month,
       income: Math.round(monthlyData[month].income),
-      expenses: Math.round(monthlyData[month].expenses || Math.random() * 50000 + 10000),
-      net: Math.round(monthlyData[month].income - (monthlyData[month].expenses || 0)),
+      expenses: Math.round(monthlyData[month].expenses),
+      net: Math.round(monthlyData[month].income - monthlyData[month].expenses),
     }));
 
     res.json(cashFlow);

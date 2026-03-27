@@ -74,7 +74,13 @@ router.get('/', async (req, res) => {
   try {
     const { q, limit = '20' } = req.query;
     if (!q || q.length < 2) {
-      return res.status(400).json({ message: 'Query must be at least 2 characters' });
+      return res.json({
+        results: { projects: [], invoices: [], contacts: [], rfis: [], documents: [], team: [] },
+        total: 0,
+        query: q || '',
+        semanticResults: [],
+        searchMode: 'text',
+      });
     }
 
     const searchTerm = `%${q.toLowerCase()}%`;
