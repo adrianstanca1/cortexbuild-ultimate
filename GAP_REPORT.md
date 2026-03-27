@@ -167,9 +167,9 @@ These modules use `*Api.getAll()`, `*.create()`, `*.update()`, `*.delete()` dire
 
 ## Issues Found
 
-### 1. 🟠 Settings.tsx — No Persistence
-**Severity:** Medium
-**Issue:** Settings page has full UI with 6 tabs (company, users, billing, notifications, integrations, security) but `handleSaveCompany` only shows a toast — no API call. All settings changes are lost on refresh.
+### 1. f7e0 Settings.tsx — Fixed
+**Status:** ✅ FIXED
+**Notes:** Company settings save via `settingsApi.updateSetting("company", company)`. Users tab creates/deletes via `usersApi`. Notifications save via `settingsApi.updateSetting("notifications", notifs)`. All wired to backend.
 
 **Recommendation:** Connect company settings to a `/api/company` or `/api/settings` endpoint (doesn't exist yet). User management needs `/api/users` endpoints.
 
@@ -185,19 +185,19 @@ These modules use `*Api.getAll()`, `*.create()`, `*.update()`, `*.delete()` dire
 **Severity:** Low
 **Issue:** Calls `financialReportsApi` but only displays data in charts — no create/edit/delete. This is expected for reports but worth noting.
 
-### 5. ⚠️ Teams.tsx — Skills/Inductions/Availability Sub-Tabs
-**Severity:** Low
-**Issue:** The Teams module has sub-tabs for Skills, Inductions, and Availability, but these are read-only UI tabs — no create/edit/delete buttons visible for these sub-resources. The backend `team-member-data.js` has the full CRUD for these.
+### 3. ✅ Teams.tsx — Skills/Inductions/Availability Sub-Tabs
+**Status:** ✅ FIXED
+**Notes:** Full CRUD for skills (`addSkill`, `updateSkill`, `deleteSkill`), inductions, and availability via `teamApi` methods. Modal forms present with create/edit/delete UI. The backend `team-member-data.js` has the full CRUD for these.
 
 **Recommendation:** Add UI controls in the Skills/Inductions/Availability tabs to actually call the backend routes.
 
-### 6. ⚠️ Documents.tsx vs Documents.tsx.bak
-**Severity:** Info
-**Issue:** Old implementation backed up as `.bak` file. Should be cleaned up.
+### 4. ✅ Documents.tsx.bak — Deleted
+**Status:** ✅ FIXED
+**Notes:** Backup file confirmed deleted. Single `Documents.tsx` is the only version.
 
-### 7. ⚠️ AIAssistant — No Chat History Persistence
-**Severity:** Low
-**Issue:** Chat messages are stored in React state only. On refresh, chat is lost. Backend has no conversation history storage.
+### 2. ✅ AIAssistant — Chat History Persistence
+**Status:** ✅ FIXED
+**Notes:** Messages saved via `aiConversationsApi.saveMessage({ sessionId, role, content })`. Sessions deleted via `aiConversationsApi.deleteSession`. Backend `ai-conversations.js` handles all CRUD.
 
 ---
 
