@@ -24,6 +24,127 @@ function pct(spent, budget) {
   return ((spent / budget) * 100).toFixed(1);
 }
 
+// ─── Conversation history helpers ─────────────────────────────────────────────
+
+/**
+ * Fetch conversation history for a session, newest-first, with oldest summarized.
+ * Returns { messages: [{role, content}], summary: string|null }
+ */
+async function getConversationHistory(organizationId, sessionId, limit = 60) {
+  const { rows } = await pool.query(
+    `SELECT id, role, content, created_at FROM ai_conversations
+     WHERE organization_id = $1 AND session_id = $2
+     ORDER BY created_at DESC LIMIT $3`,
+    [organizationId, sessionId, limit]
+  );
+  if (!rows.length) return { messages: [], summary: null };
+
+  const chronological = rows.reverse(); // oldest→newest
+  const totalMsgs = chronological.length;
+
+  // If below threshold, return all messages as-is
+  if (totalMsgs <= SUMMARY_THRESHOLD) {
+    return {
+      messages: chronological.map(m => ({ role: m.role, content: m.content })),
+      summary: null,
+    };
+  }
+
+  // Separate: keep last MAX_CONTEXT_MESSAGES raw, summarize older portion
+  const recentRaw    = chronological.slice(-MAX_CONTEXT_MESSAGES);
+  const olderMsgs    = chronological.slice(0, -MAX_CONTEXT_MESSAGES);
+
+  // Build a compact summary of older messages
+  const summaryParts = olderMsgs
+    .filter(m => m.content && m.content.length > 10)
+    .slice(-20) // cap at 20 old messages for summary
+    .map(m => `${m.role === 'user' ? 'User' : 'Assistant'}: ${m.content.substring(0, 150)}${m.content.length > 150 ? '…' : ''}`)
+    .join('\n');
+
+  let summary = null;
+  if (summaryParts) {
+    try {
+      summary = await summarizeText(
+        `[Prior conversation (${olderMsgs.length} messages summarized)]\n${summaryParts}`
+      );
+    } catch (e) {
+      console.warn('[AI] Summarization failed, using raw fallback:', e.message);
+      // Fallback: just truncate older messages to first line
+      summary = olderMsgs
+        .filter(m => m.content)
+        .slice(0, 5)
+        .map(m => `[${m.role}]: ${m.content.split('\n')[0].substring(0, 120)}`)
+        .join(' | ');
+    }
+  }
+
+  return {
+    messages: recentRaw.map(m => ({ role: m.role, content: m.content })),
+    summary,
+  };
+}
+
+/**
+ * Lightweight summarization via Ollama (uses same model, short completion).
+ */
+async function summarizeText(text) {
+  return new Promise((resolve, reject) => {
+    const body = JSON.stringify({
+      model: LLM_MODEL,
+      messages: [{ role: 'user', content: `Summarize this conversation concisely in 2-3 sentences:\n\n${text.substring(0, 4000)}` }],
+      stream: false,
+      options: { temperature: 0.3, num_predict: 150 },
+    });
+
+    const url = new URL(OLLAMA_HOST + '/api/chat');
+    const lib = url.protocol === 'https:' ? https : http;
+    const req = lib.request({
+      hostname: url.hostname,
+      port:     url.port || (url.protocol === 'https:' ? 443 : 11434),
+      path:     '/api/chat',
+      method:   'POST',
+      headers:  { 'Content-Type': 'application/json', 'Content-Length': Buffer.byteLength(body) },
+      timeout:  20000,
+    }, (res) => {
+      let data = '';
+      res.on('data', c => data += c);
+      res.on('end', () => {
+        try {
+          const p = JSON.parse(data);
+          resolve(p.message?.content || text.substring(0, 200));
+        } catch { resolve(text.substring(0, 200)); }
+      });
+    });
+    req.on('error', e => { console.warn('[AI] summarizeText error:', e.message); resolve(text.substring(0, 200)); });
+    req.on('timeout', () => { req.destroy(); resolve(text.substring(0, 200)); });
+    req.write(body);
+    req.end();
+  });
+}
+
+/**
+ * Truncate history by estimated token count to stay within MAX_TOKENS_BUDGET.
+ * Each character ≈ 0.25 tokens; we use 4 chars per token for safety.
+ */
+function truncateToTokenBudget(messages, userMsgContent, systemContext) {
+  const systemTokens = Math.ceil((systemContext.length + 200) / 4);
+  const userTokens   = Math.ceil(userMsgContent.length / 4);
+  const budget       = MAX_TOKENS_BUDGET - systemTokens - userTokens - 500; // reserve for response
+
+  const result = [];
+  let usedTokens = 0;
+
+  for (let i = messages.length - 1; i >= 0; i--) {
+    const m    = messages[i];
+    const cost = Math.ceil(m.content.length / 4);
+    if (usedTokens + cost > budget) break;
+    result.unshift(m);
+    usedTokens += cost;
+  }
+
+  return result;
+}
+
 // ─── Intent handlers ──────────────────────────────────────────────────────────
 
 async function handleProjects() {
@@ -1059,19 +1180,45 @@ function classify(message) {
   return 'unknown';
 }
 
-async function getOllamaResponse(userMessage, context = '') {
+async function getOllamaResponse(userMessage, context = '', conversationHistory = [], summary = null) {
   return new Promise((resolve, reject) => {
-    const prompt = `You are a helpful AI assistant for CortexBuild, a UK construction management platform. You help users manage projects, contracts, safety, finances, and team operations.
+    // Build system prompt
+    const systemPrompt = `You are a helpful AI assistant for CortexBuild, a UK construction management platform. You help users manage projects, contracts, safety, finances, and team operations.
 
-Current user message: ${userMessage}
+Provide a helpful, concise response. Format your answer clearly with bullet points and headings where appropriate.
 
-${context ? `Context from database:\n${context}` : ''}
+IMPORTANT: Be aware of the full conversation history provided. Answer follow-up questions using that context.`;
 
-Provide a helpful, concise response. Format your answer clearly with bullet points and headings where appropriate.`;
+    // Build conversation messages
+    const messages = [];
+
+    // System message
+    if (context) {
+      messages.push({ role: 'system', content: `${systemPrompt}\n\nDatabase context:\n${context}` });
+    } else {
+      messages.push({ role: 'system', content: systemPrompt });
+    }
+
+    // Inject summary as first assistant-aware message if available
+    if (summary) {
+      messages.push({
+        role: 'system',
+        content: `Previous conversation summary:\n${summary}`,
+      });
+    }
+
+    // Add truncated conversation history
+    const truncatedHistory = truncateToTokenBudget(conversationHistory, userMessage, messages[messages.length - 1].content);
+    for (const m of truncatedHistory) {
+      messages.push({ role: m.role, content: m.content });
+    }
+
+    // Add current user message
+    messages.push({ role: 'user', content: userMessage });
 
     const body = JSON.stringify({
       model: LLM_MODEL,
-      messages: [{ role: 'user', content: prompt }],
+      messages,
       stream: false,
       options: {
         temperature: 0.7,
