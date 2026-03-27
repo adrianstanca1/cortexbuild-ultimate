@@ -184,7 +184,7 @@ function AppShell() {
             activeModule={activeModule}
             onMenuToggle={() => setSidebarCollapsed(!sidebarCollapsed)}
           />
-          <main className="flex-1 overflow-auto bg-gray-950 pb-20 md:pb-6">
+          <main className="flex-1 overflow-auto bg-grid-soft pb-20 md:pb-6" style={{ backgroundAttachment: 'fixed' }}>
             <div className="p-4 md:p-6">
               <Suspense fallback={<ModuleLoader />}>
                 {renderModule()}
