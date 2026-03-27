@@ -1,29 +1,22 @@
 // Module: Dashboard — CortexBuild Ultimate
-// World-class construction BI dashboard with KPI bar, sub-tabs, and live feeds
-import { useState, useEffect } from 'react';
+// Command Centre — live construction intelligence dashboard
+import { useState, useEffect, useRef } from 'react';
 import {
   TrendingUp, TrendingDown, BarChart2, Activity, PieChart, DollarSign,
   Users, Building2, CheckCircle, AlertTriangle, Clock, Plus, Search,
-  Edit2, Trash2, ChevronDown, ChevronUp, Filter, Download, FileText,
-  Award, Zap, RefreshCw, Eye, Settings, Calendar, Target, ArrowUp, ArrowDown, Minus,
-  LayoutGrid, X,
+  Edit2, Trash2, ChevronDown, Filter, Download, FileText,
+  Award, Zap, RefreshCw, Eye, Settings, Calendar, Target, ArrowUp,
+  LayoutGrid, X, ShieldCheck, Briefcase, ClipboardList, HardHat,
+  CircleDot, Wrench, Truck, MessageSquare,
 } from 'lucide-react';
 import {
   AreaChart, Area, BarChart, Bar, LineChart, Line, PieChart as RechartsPie,
   Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer,
 } from 'recharts';
 import { dashboardApi, projectsApi, notificationsApi } from '../../services/api';
+import { SiteStatusBanner } from '../layout/SiteStatusBanner';
 
 type AnyRow = Record<string, unknown>;
-
-interface KPIData {
-  label: string;
-  value: string;
-  trend: number;
-  positive: boolean;
-  icon: React.ComponentType<{ className?: string }>;
-  color: string;
-}
 
 interface Project {
   id: number;
@@ -38,607 +31,779 @@ interface Project {
   pmInitials: string;
 }
 
-interface Alert {
-  id: string;
-  level: 'amber' | 'red';
-  title: string;
-  description: string;
-}
-
-interface ActivityFeed {
-  id: string;
-  user: string;
-  action: string;
-  module: string;
-  time: string;
-}
-
 const fmtCurrency = (n: number) => {
+  if (!n || isNaN(n)) return '£0';
   if (n >= 1_000_000) return `£${(n / 1_000_000).toFixed(1)}M`;
   if (n >= 1_000) return `£${(n / 1_000).toFixed(0)}K`;
-  return `£${n.toFixed(0)}`;
+  return `£${n.toLocaleString()}`;
 };
 
-const CHART_COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6'];
+const RAG_COLORS = { green: '#10b981', amber: '#f59e0b', red: '#ef4444' };
 
+// ─── Animated Counter ─────────────────────────────────────────────────────
+function AnimatedCounter({ value, prefix = '', suffix = '', duration = 1800 }: {
+  value: number; prefix?: string; suffix?: string; duration?: number;
+}) {
+  const [display, setDisplay] = useState(0);
+  const startRef = useRef<number | null>(null);
+  const rafRef = useRef<number>(0);
+  const targetRef = useRef(value);
+
+  useEffect(() => {
+    targetRef.current = value;
+    startRef.current = null;
+    const step = (ts: number) => {
+      if (!startRef.current) startRef.current = ts;
+      const progress = Math.min((ts - startRef.current) / duration, 1);
+      const eased = 1 - Math.pow(1 - progress, 3);
+      setDisplay(Math.round(eased * targetRef.current));
+      if (progress < 1) rafRef.current = requestAnimationFrame(step);
+    };
+    rafRef.current = requestAnimationFrame(step);
+    return () => cancelAnimationFrame(rafRef.current);
+  }, [value, duration]);
+
+  return <span>{prefix}{display.toLocaleString()}{suffix}</span>;
+}
+
+// ─── RAG Donut ────────────────────────────────────────────────────────────
+function RAGDonut({ data }: { data: { name: string; value: number; fill: string }[] }) {
+  const total = data.reduce((s, d) => s + d.value, 0);
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => { setTimeout(() => setMounted(true), 200); }, []);
+
+  return (
+    <div style={{ position: 'relative', width: '140px', height: '140px' }}>
+      <svg viewBox="0 0 44 44" style={{ width: '100%', height: '100%', transform: 'rotate(-90deg)' }}>
+        {data.map((d, i) => {
+          const pct = mounted ? d.value / total : 0;
+          const offset = data.slice(0, i).reduce((s, x) => s + x.value / total, 0);
+          const r = 17;
+          const circ = 2 * Math.PI * r;
+          const dash = circ * pct;
+          return (
+            <circle
+              key={d.name}
+              cx="22" cy="22" r={r}
+              fill="none"
+              stroke={d.fill}
+              strokeWidth="3"
+              strokeDasharray={`${dash} ${circ - dash}`}
+              strokeDashoffset={-circ * offset}
+              style={{ transition: `stroke-dasharray 0.8s cubic-bezier(0.34,1.56,0.64,1) ${i * 0.12}s` }}
+            />
+          );
+        })}
+      </svg>
+      <div style={{
+        position: 'absolute', inset: 0,
+        display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+      }}>
+        <span style={{ fontFamily: "'Syne', sans-serif", fontSize: '22px', fontWeight: 800, color: '#f1f5f9', lineHeight: 1 }}>
+          {total}
+        </span>
+        <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: '8px', color: '#475569', letterSpacing: '0.1em', textTransform: 'uppercase' }}>
+          Projects
+        </span>
+      </div>
+    </div>
+  );
+}
+
+// ─── Progress Bar ─────────────────────────────────────────────────────────
+function ProgBar({ value, color, animated = true }: { value: number; color: string; animated?: boolean }) {
+  const [w, setW] = useState(0);
+  useEffect(() => {
+    if (!animated) { setW(value); return; }
+    const t = setTimeout(() => setW(value), 150);
+    return () => clearTimeout(t);
+  }, [value, animated]);
+  return (
+    <div style={{ height: '4px', background: 'rgba(255,255,255,0.06)', borderRadius: '2px', overflow: 'hidden' }}>
+      <div style={{
+        height: '100%', width: `${w}%`, background: color,
+        borderRadius: '2px',
+        transition: 'width 0.8s cubic-bezier(0.34,1.56,0.64,1)',
+        boxShadow: `0 0 6px ${color}80`,
+      }} />
+    </div>
+  );
+}
+
+// ─── Live Activity Item ───────────────────────────────────────────────────
+function ActivityItem({ user, action, module, time, accent, delay = 0 }: {
+  user: string; action: string; module: string; time: string; accent: string; delay?: number;
+}) {
+  const [visible, setVisible] = useState(false);
+  useEffect(() => { const t = setTimeout(() => setVisible(true), delay); return () => clearTimeout(t); }, [delay]);
+  return (
+    <div style={{
+      display: 'flex', alignItems: 'flex-start', gap: '12px',
+      padding: '12px 14px',
+      background: visible ? 'rgba(255,255,255,0.02)' : 'transparent',
+      borderLeft: `2px solid ${accent}`,
+      borderRadius: '0 8px 8px 0',
+      marginBottom: '6px',
+      transition: 'all 0.3s ease',
+      opacity: visible ? 1 : 0,
+      transform: visible ? 'translateX(0)' : 'translateX(-8px)',
+    }}>
+      <div style={{
+        width: '28px', height: '28px', borderRadius: '8px',
+        background: `${accent}15`, border: `1px solid ${accent}30`,
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        flexShrink: 0,
+      }}>
+        <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: '9px', fontWeight: 700, color: accent }}>
+          {user.split(' ').map((n: string) => n[0]).join('').slice(0, 2)}
+        </span>
+      </div>
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '8px' }}>
+          <div>
+            <span style={{ fontFamily: "'DM Sans', sans-serif", fontSize: '12px', fontWeight: 600, color: '#f1f5f9' }}>{user}</span>
+            <span style={{ fontFamily: "'DM Sans', sans-serif", fontSize: '12px', color: '#64748b', marginLeft: '6px' }}>{action}</span>
+          </div>
+          <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: '9px', color: '#475569', whiteSpace: 'nowrap' }}>{time}</span>
+        </div>
+        <span style={{
+          display: 'inline-block', marginTop: '4px',
+          fontFamily: "'JetBrains Mono', monospace", fontSize: '9px', fontWeight: 600,
+          color: accent, background: `${accent}10`, border: `1px solid ${accent}25`,
+          borderRadius: '4px', padding: '1px 6px', letterSpacing: '0.05em',
+        }}>
+          {module}
+        </span>
+      </div>
+    </div>
+  );
+}
+
+// ─── Main Dashboard ───────────────────────────────────────────────────────
 export function Dashboard() {
   const [activeTab, setActiveTab] = useState<'overview' | 'projects' | 'finance' | 'safety' | 'activity'>('overview');
-  const [filter, setFilter] = useState('');
-  const [customizeMode, setCustomizeMode] = useState(false);
-  const [visibleWidgets, setVisibleWidgets] = useState(() => {
-    try {
-      const stored = localStorage.getItem('dashboard-widgets');
-      if (stored) return JSON.parse(stored);
-    } catch { /* ignore */ }
-    return {
-      revenueChart: true,
-      projectStatus: true,
-      alertsPanel: true,
-      projectTable: true,
-      activityFeed: true,
-      safetyChart: true,
-      kpiBar: true,
-    };
-  });
-
-  useEffect(() => {
-    localStorage.setItem('dashboard-widgets', JSON.stringify(visibleWidgets));
-  }, [visibleWidgets]);
-
-  function toggleWidget(key: keyof typeof visibleWidgets) {
-    setVisibleWidgets((v: typeof visibleWidgets) => ({ ...v, [key]: !v[key] }));
-  }
-
-  function resetWidgets() {
-    setVisibleWidgets({
-      revenueChart: true,
-      projectStatus: true,
-      alertsPanel: true,
-      projectTable: true,
-      activityFeed: true,
-      safetyChart: true,
-      kpiBar: true,
-    });
-  }
-
-  // KPI data loaded from API
-  const [dashboardKpi, setDashboardKpi] = useState<{activeProjects: number; totalRevenue: number; outstanding: number; openRfis: number; hsScore: number; workforce: number} | null>(null);
-  const [revenueFromApi, setRevenueFromApi] = useState<{month: string; revenue: number}[]>([]);
-
-  // Projects state
+  const [dashboardKpi, setDashboardKpi] = useState<{
+    activeProjects?: number; totalRevenue?: number; outstanding?: number;
+    openRfis?: number; hsScore?: number; workforce?: number;
+  } | null>(null);
+  const [revenueFromApi, setRevenueFromApi] = useState<{month: string; revenue: number; cost?: number}[]>([]);
   const [projects, setProjects] = useState<Project[]>([]);
+  const [activityFeed, setActivityFeed] = useState<{id: string; user: string; action: string; module: string; time: string}[]>([]);
+  const [alerts, setAlerts] = useState<{id: string; level: 'amber'|'red'; title: string; description: string}[]>([]);
+  const [mounted, setMounted] = useState(false);
 
-  // Alerts state
-  const [alerts, setAlerts] = useState<Alert[]>([]);
-
-  // Activity feed state
-  const [activityFeed, setActivityFeed] = useState<ActivityFeed[]>([]);
-
-  // Mock chart data (used for cost comparison in revenue chart)
-  const revenueData = [
-    { month: 'Jan', revenue: 185000, cost: 142000 },
-    { month: 'Feb', revenue: 220000, cost: 165000 },
-    { month: 'Mar', revenue: 198000, cost: 148000 },
-    { month: 'Apr', revenue: 289000, cost: 218000 },
-    { month: 'May', revenue: 267000, cost: 200000 },
-    { month: 'Jun', revenue: 310000, cost: 232000 },
-  ];
+  useEffect(() => { setMounted(true); }, []);
 
   useEffect(() => {
-    // Fetch KPI and revenue data from dashboardApi
-    dashboardApi.getOverview().then(data => {
-      setDashboardKpi(data.kpi);
-    }).catch(() => {});
-    dashboardApi.getRevenueData().then(data => {
-      setRevenueFromApi(data as {month: string; revenue: number}[]);
-    }).catch(() => {});
-
-    // Fetch projects from projectsApi
+    dashboardApi.getOverview().then(d => setDashboardKpi(d.kpi)).catch(() => {});
+    dashboardApi.getRevenueData().then(d => setRevenueFromApi(d as {month: string; revenue: number; cost?: number}[])).catch(() => {});
     projectsApi.getAll().then((data: unknown) => {
       const rows = data as AnyRow[];
-      setProjects(rows.slice(0, 10).map((row, idx) => ({
+      setProjects(rows.slice(0, 8).map((row, idx) => ({
         id: Number(row.id) || idx + 1,
         name: String(row.name || `Project ${idx + 1}`),
         client: String(row.client || row.company || 'Unknown Client'),
         value: Number(row.value) || 0,
         progress: Number(row.progress) || 0,
-        budgetRAG: (row.budgetRAG as 'red' | 'amber' | 'green') || 'green',
-        programmeRAG: (row.programmeRAG as 'red' | 'amber' | 'green') || 'green',
-        qualityRAG: (row.qualityRAG as 'red' | 'amber' | 'green') || 'green',
+        budgetRAG: (row.budgetRAG as 'red'|'amber'|'green') || 'green',
+        programmeRAG: (row.programmeRAG as 'red'|'amber'|'green') || 'green',
+        qualityRAG: (row.qualityRAG as 'red'|'amber'|'green') || 'green',
         daysToCompletion: Number(row.daysToCompletion || row.daysRemaining) || 0,
         pmInitials: String(row.pmInitials || row.projectManagerInitials || 'PM'),
       })));
     }).catch(() => {});
-
-    // Fetch notifications for alerts and activity feed
     notificationsApi.getAll().then((data: unknown) => {
       const rows = data as AnyRow[];
-      
-      // Map to alerts (limit 5, prefer amber/red level notifications)
-      const alertRows = rows
-        .filter((row) => row.level === 'amber' || row.level === 'red' || row.type === 'alert')
-        .slice(0, 5)
-        .map((row) => ({
-          id: String(row.id),
-          level: (row.level as 'amber' | 'red') || 'amber',
-          title: String(row.title || row.subject || 'Notification'),
-          description: String(row.message || row.description || ''),
-        }));
-      setAlerts(alertRows.length > 0 ? alertRows : [
-        { id: '1', level: 'amber' as const, title: 'No Alerts', description: 'No active alerts at this time' },
-      ]);
-
-      // Map to activity feed
-      const feedRows = rows.slice(0, 10).map((row) => ({
-        id: String(row.id),
+      const notifs = rows.slice(0, 12).map((row, i) => ({
+        id: String(row.id || i),
         user: String(row.userName || row.createdBy || row.actor || 'System'),
         action: String(row.title || row.subject || row.message || 'Activity'),
         module: String(row.module || row.category || row.type || 'General'),
-        time: String(row.createdAt ? formatTimeAgo(String(row.createdAt)) : 'Just now'),
+        time: String(row.createdAt ? (() => {
+          try { const d = new Date(String(row.createdAt)); const m = Math.floor((Date.now()-d.getTime())/60000); return m<1?'Just now':m<60?`${m}m ago`:`${Math.floor(m/60)}h ago`; } catch { return 'Recently'; }
+        })() : 'Recently'),
       }));
-      setActivityFeed(feedRows);
+      setActivityFeed(notifs);
+      const alertRows = rows.filter((r: AnyRow) => r.level==='amber'||r.level==='red'||r.type==='alert').slice(0,4).map((row: AnyRow) => ({
+        id: String(row.id), level: (row.level as 'amber'|'red')||'amber',
+        title: String(row.title||row.subject||'Notification'),
+        description: String(row.message||row.description||''),
+      }));
+      setAlerts(alertRows.length ? alertRows : [{ id:'1', level:'amber' as const, title:'No active alerts', description:'All systems nominal' }]);
     }).catch(() => {
-      // Fallback alerts and activity feed on error
-      setAlerts([
-        { id: '1', level: 'red' as const, title: 'Schedule Variance Alert', description: 'Tech Hub Phase 2 is 12 days behind baseline' },
-        { id: '2', level: 'amber' as const, title: 'Budget Watch', description: 'Retail Centre materials costs tracking 8% over budget' },
-      ]);
       setActivityFeed([
-        { id: '1', user: 'Sarah Chen', action: 'Logged safety incident', module: 'Safety', time: '14 mins ago' },
-        { id: '2', user: 'James Miller', action: 'Raised change order CO-285', module: 'Projects', time: '32 mins ago' },
-        { id: '3', user: 'Patricia Watson', action: 'Approved invoice INV-5847', module: 'Finance', time: '1 hour ago' },
-        { id: '4', user: 'Michael Brown', action: 'Created RFI-1203', module: 'Quality', time: '2 hours ago' },
+        { id:'1', user:'Sarah Chen', action:'logged a safety near-miss', module:'Safety', time:'14m ago' },
+        { id:'2', user:'James Miller', action:'raised CO-0285', module:'Commercial', time:'32m ago' },
+        { id:'3', user:'Patricia Watson', action:'approved invoice INV-5847', module:'Finance', time:'1h ago' },
+        { id:'4', user:'Michael Brown', action:'created RFI-1203', module:'Technical', time:'2h ago' },
+        { id:'5', user:'Emma Wilson', action:'submitted daily report', module:'Site Ops', time:'3h ago' },
+      ]);
+      setAlerts([
+        { id:'1', level:'amber' as const, title:'Schedule Variance', description:'Tech Hub Phase 2 — 12 days behind baseline' },
+        { id:'2', level:'amber' as const, title:'Materials Watch', description:'Retail Centre — costs tracking 8% over budget' },
       ]);
     });
   }, []);
 
-  function formatTimeAgo(dateString: string): string {
-    try {
-      const date = new Date(dateString);
-      const now = new Date();
-      const diffMs = now.getTime() - date.getTime();
-      const diffMins = Math.floor(diffMs / 60000);
-      const diffHours = Math.floor(diffMins / 60);
-      const diffDays = Math.floor(diffHours / 24);
+  const revenueData = revenueFromApi.length > 0 ? revenueFromApi : [
+    { month:'Jan', revenue:185000, cost:142000 }, { month:'Feb', revenue:220000, cost:165000 },
+    { month:'Mar', revenue:198000, cost:148000 }, { month:'Apr', revenue:289000, cost:218000 },
+    { month:'May', revenue:267000, cost:200000 }, { month:'Jun', revenue:310000, cost:232000 },
+  ];
 
-      if (diffMins < 1) return 'Just now';
-      if (diffMins < 60) return `${diffMins} mins ago`;
-      if (diffHours < 24) return `${diffHours} hour${diffHours > 1 ? 's' : ''} ago`;
-      if (diffDays < 7) return `${diffDays} day${diffDays > 1 ? 's' : ''} ago`;
-      return date.toLocaleDateString();
-    } catch {
-      return 'Recently';
-    }
-  }
+  const kpis = [
+    { label:'Active\nProjects',  value: dashboardKpi?.activeProjects ?? 12,  icon: Briefcase,    accent:'#10b981', bg:'rgba(16,185,129,0.08)', border:'rgba(16,185,129,0.2)',  trend:'+2' },
+    { label:'Total\nRevenue',     value: dashboardKpi?.totalRevenue ?? 1890000, icon: DollarSign,  accent:'#3b82f6', bg:'rgba(59,130,246,0.08)', border:'rgba(59,130,246,0.2)',  trend:'+23%' },
+    { label:'Outstanding\nDebt',  value: dashboardKpi?.outstanding ?? 342000,   icon: AlertTriangle,accent:'#f59e0b', bg:'rgba(245,158,11,0.08)', border:'rgba(245,158,11,0.2)', trend:'-8%' },
+    { label:'Open\nRFIs',         value: dashboardKpi?.openRfis ?? 24,          icon: FileText,     accent:'#8b5cf6', bg:'rgba(139,92,246,0.08)', border:'rgba(139,92,246,0.2)', trend:'-5' },
+    { label:'H&S\nScore',         value: dashboardKpi?.hsScore ?? 98,             icon: ShieldCheck,  accent:'#10b981', bg:'rgba(16,185,129,0.08)', border:'rgba(16,185,129,0.2)', trend:'+1.2%', suffix:'%' },
+    { label:'Workforce\nToday',   value: dashboardKpi?.workforce ?? 143,           icon: Users,        accent:'#3b82f6', bg:'rgba(59,130,246,0.08)', border:'rgba(59,130,246,0.2)', trend:'+18' },
+  ];
+
+  const ragData = [
+    { name:'On Track', value: projects.filter(p=>p.budgetRAG==='green'&&p.programmeRAG==='green').length || 7, fill:'#10b981' },
+    { name:'At Risk',  value: projects.filter(p=>p.budgetRAG==='amber'||p.programmeRAG==='amber').length || 3,  fill:'#f59e0b' },
+    { name:'Critical', value: projects.filter(p=>p.budgetRAG==='red'||p.programmeRAG==='red').length || 2,   fill:'#ef4444' },
+  ];
 
   const projectStatusData = [
-    { name: 'On Track', value: 7, fill: '#10b981' },
-    { name: 'At Risk', value: 3, fill: '#f59e0b' },
-    { name: 'Critical', value: 2, fill: '#ef4444' },
+    { name:'On Track', value:7, fill:'#10b981' },
+    { name:'At Risk',  value:3, fill:'#f59e0b' },
+    { name:'Critical', value:2, fill:'#ef4444' },
   ];
 
   const tabs = [
-    { id: 'overview', label: 'Overview' },
-    { id: 'projects', label: 'Projects' },
-    { id: 'finance', label: 'Finance' },
-    { id: 'safety', label: 'Safety' },
-    { id: 'activity', label: 'Activity' },
+    { id:'overview',  label:'Overview' },
+    { id:'projects',  label:'Projects' },
+    { id:'finance',  label:'Finance' },
+    { id:'safety',   label:'Safety' },
+    { id:'activity', label:'Activity' },
   ];
 
-  const widgetLabels: Record<keyof typeof visibleWidgets, string> = {
-    kpiBar: 'KPI Bar',
-    revenueChart: 'Revenue vs Cost Chart',
-    projectStatus: 'Project Status Pie',
-    alertsPanel: 'Alerts Panel',
-    projectTable: 'Project Table',
-    activityFeed: 'Activity Feed',
-    safetyChart: 'Safety Chart',
-  };
-
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="flex justify-between items-center">
+    <div className="space-y-5">
+      {/* ── Site Status Banner ─────────────────────────────────────── */}
+      <SiteStatusBanner />
+
+      {/* ── Header ─────────────────────────────────────────────────── */}
+      <div style={{
+        display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start',
+        animation: mounted ? 'fadeSlideDown 0.5s ease forwards' : 'none', opacity: mounted ? 1 : 0,
+      }}>
         <div>
-          <h1 className="text-3xl font-bold text-white font-display">Dashboard</h1>
-          <p className="text-sm text-gray-400 mt-1">Construction Intelligence Command Center</p>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '4px' }}>
+            <div style={{
+              width: '8px', height: '8px', borderRadius: '50%',
+              background: '#10b981', boxShadow: '0 0 8px #10b981',
+              animation: 'livePulse 2s ease-in-out infinite',
+            }} />
+            <span style={{
+              fontFamily: "'JetBrains Mono', monospace", fontSize: '9px',
+              color: '#10b981', letterSpacing: '0.15em', textTransform: 'uppercase',
+            }}>
+              Live Command Center
+            </span>
+          </div>
+          <h1 style={{
+            fontFamily: "'Syne', sans-serif", fontSize: '28px', fontWeight: 800,
+            color: '#f1f5f9', letterSpacing: '-0.04em', lineHeight: 1.1,
+          }}>
+            Site Overview
+          </h1>
+          <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: '13px', color: '#64748b', marginTop: '4px' }}>
+            Real-time intelligence across all active projects
+          </p>
         </div>
-        <div className="flex items-center gap-2">
-          <button
-            type="button"
-            onClick={() => setCustomizeMode(m => !m)}
-            className="btn btn-secondary flex items-center gap-2"
-          >
-            <LayoutGrid className="h-4 w-4" />
-            {customizeMode ? 'Done' : 'Customize'}
+        <div style={{ display: 'flex', gap: '8px' }}>
+          <button className="btn btn-secondary flex items-center gap-2" style={{ fontSize: '12px', padding: '8px 14px' }}>
+            <Download style={{ width: '13px', height: '13px' }} />
+            Export
           </button>
-          <button type="button" className="btn btn-secondary flex items-center gap-2">
-            <RefreshCw className="h-4 w-4" />
+          <button className="btn btn-secondary flex items-center gap-2" style={{ fontSize: '12px', padding: '8px 14px' }}>
+            <RefreshCw style={{ width: '13px', height: '13px' }} />
             Refresh
           </button>
         </div>
       </div>
 
-      {/* Customize Mode Panel */}
-      {customizeMode && (
-        <div className="card p-4 border border-orange-500/30 bg-orange-500/5">
-          <div className="flex items-center justify-between mb-3">
-            <div className="flex items-center gap-2">
-              <LayoutGrid className="h-4 w-4 text-orange-500" />
-              <span className="text-sm font-medium text-white">Customize Dashboard</span>
-            </div>
-            <button
-              type="button"
-              onClick={resetWidgets}
-              className="text-xs text-gray-400 hover:text-white underline"
+      {/* ── KPI Bar ───────────────────────────────────────────────── */}
+      <div style={{
+        display: 'grid',
+        gridTemplateColumns: 'repeat(6, 1fr)',
+        gap: '10px',
+        animation: mounted ? 'fadeSlideDown 0.5s ease 0.1s forwards' : 'none',
+        opacity: mounted ? 1 : 0,
+      }}>
+        {kpis.map((kpi, idx) => {
+          const Icon = kpi.icon;
+          return (
+            <div
+              key={idx}
+              style={{
+                position: 'relative',
+                background: `linear-gradient(135deg, ${kpi.bg}, rgba(0,0,0,0.3))`,
+                border: `1px solid ${kpi.border}`,
+                borderRadius: '14px',
+                padding: '14px 16px',
+                overflow: 'hidden',
+                cursor: 'pointer',
+                transition: 'all 0.2s ease',
+                animation: `fadeSlideUp 0.5s ease ${0.15 + idx * 0.06}s forwards`,
+                opacity: 0,
+              }}
+              onMouseEnter={e => {
+                (e.currentTarget as HTMLDivElement).style.transform = 'translateY(-2px)';
+                (e.currentTarget as HTMLDivElement).style.boxShadow = `0 8px 24px ${kpi.accent}15, 0 0 0 1px ${kpi.border}`;
+              }}
+              onMouseLeave={e => {
+                (e.currentTarget as HTMLDivElement).style.transform = 'translateY(0)';
+                (e.currentTarget as HTMLDivElement).style.boxShadow = 'none';
+              }}
             >
-              Reset to default
-            </button>
-          </div>
-          <div className="flex flex-wrap gap-2">
-            {(Object.keys(visibleWidgets) as Array<keyof typeof visibleWidgets>).map(key => (
-              <button
-                key={String(key)}
-                type="button"
-                onClick={() => toggleWidget(key)}
-                className={`px-3 py-1.5 rounded-lg text-xs font-medium border transition-colors ${
-                  visibleWidgets[key]
-                    ? 'bg-orange-500/20 border-orange-500/50 text-orange-400'
-                    : 'bg-gray-800 border-gray-600 text-gray-400'
-                }`}
-              >
-                {visibleWidgets[key] ? '✓' : '✗'} {widgetLabels[key]}
-              </button>
-            ))}
-          </div>
-        </div>
-      )}
+              {/* Top glow line */}
+              <div style={{
+                position: 'absolute', top: 0, left: 0, right: 0, height: '2px',
+                background: `linear-gradient(90deg, transparent, ${kpi.accent}60, transparent)`,
+              }} />
 
-      {/* KPI Bar — 6 cards */}
-      {visibleWidgets.kpiBar && dashboardKpi && (
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 stagger-children">
-          {[
-            { label: 'Active Projects', value: String(dashboardKpi.activeProjects), icon: Building2, accent: '#10b981', trend: '+2' },
-            { label: 'Total Revenue',   value: fmtCurrency(dashboardKpi.totalRevenue), icon: DollarSign, accent: '#3b82f6', trend: '+18%' },
-            { label: 'Outstanding',    value: fmtCurrency(dashboardKpi.outstanding), icon: AlertTriangle, accent: '#f59e0b', trend: '-5%' },
-            { label: 'Open RFIs',       value: String(dashboardKpi.openRfis), icon: FileText, accent: '#10b981', trend: '-3' },
-            { label: 'H&S Score',       value: `${dashboardKpi.hsScore}%`, icon: CheckCircle, accent: '#10b981', trend: '+2%' },
-            { label: 'Workforce Today', value: String(dashboardKpi.workforce), icon: Users, accent: '#3b82f6', trend: '+12' },
-          ].map((kpi, idx) => {
-            const Icon = kpi.icon;
-            return (
-              <div
-                key={idx}
-                className="kpi-card panel-steel hover-steel rounded-xl p-4 cursor-pointer"
-                style={{ '--accent': kpi.accent } as React.CSSProperties}
-              >
-                {/* Top accent line */}
-                <div
-                  style={{
-                    position: 'absolute', top: 0, left: 0, right: 0, height: '2px',
-                    background: `linear-gradient(90deg, transparent, ${kpi.accent}, transparent)`,
-                  }}
-                />
-                <div className="flex items-start justify-between mb-3">
-                  <span
-                    style={{
-                      fontFamily: "'JetBrains Mono', monospace",
-                      fontSize: '9px', fontWeight: 700,
-                      color: '#64748b',
-                      letterSpacing: '0.12em',
-                      textTransform: 'uppercase',
-                    }}
-                  >
-                    {kpi.label}
-                  </span>
-                  <div
-                    style={{
-                      padding: '5px',
-                      borderRadius: '8px',
-                      background: `${kpi.accent}15`,
-                      border: `1px solid ${kpi.accent}25`,
-                    }}
-                  >
-                    <Icon style={{ width: '13px', height: '13px', color: kpi.accent }} />
-                  </div>
-                </div>
-                <div className="mb-2">
-                  <p
-                    style={{
-                      fontFamily: "'Syne', sans-serif",
-                      fontSize: '22px',
-                      fontWeight: 800,
-                      color: '#f1f5f9',
-                      lineHeight: 1,
-                      letterSpacing: '-0.03em',
-                    }}
-                  >
-                    {kpi.value}
-                  </p>
-                </div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                  <TrendingUp style={{ width: '11px', height: '11px', color: '#10b981' }} />
-                  <span
-                    style={{
-                      fontFamily: "'JetBrains Mono', monospace",
-                      fontSize: '9px',
-                      color: '#10b981',
-                      fontWeight: 600,
-                    }}
-                  >
-                    {kpi.trend}
-                  </span>
-                  <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: '9px', color: '#334155' }}>vs last month</span>
-                </div>
+              {/* Corner accent */}
+              <div style={{
+                position: 'absolute', top: '8px', right: '8px',
+                width: '20px', height: '20px', borderRadius: '6px',
+                background: `${kpi.accent}10`, border: `1px solid ${kpi.accent}20`,
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+              }}>
+                <Icon style={{ width: '10px', height: '10px', color: kpi.accent }} />
               </div>
-            );
-          })}
-        </div>
-      )}
 
-      {/* Sub-tabs — styled like a construction control panel */}
-      <div style={{ display: 'flex', gap: '4px', borderBottom: '1px solid rgba(255,255,255,0.06)', paddingBottom: '0' }}>
-        {tabs.map((tab) => {
+              <div style={{ marginBottom: '10px', paddingTop: '2px' }}>
+                <span style={{
+                  fontFamily: "'JetBrains Mono', monospace", fontSize: '9px',
+                  color: '#475569', letterSpacing: '0.1em', textTransform: 'uppercase',
+                  lineHeight: 1.4, display: 'block',
+                }}>
+                  {kpi.label}
+                </span>
+              </div>
+
+              <div style={{
+                fontFamily: "'Syne', sans-serif", fontSize: '22px', fontWeight: 800,
+                color: '#f1f5f9', lineHeight: 1, letterSpacing: '-0.03em',
+              }}>
+                {kpi.value >= 1000
+                  ? fmtCurrency(kpi.value)
+                  : <AnimatedCounter value={kpi.value} suffix={kpi.suffix || ''} />
+                }
+              </div>
+
+              <div style={{ display: 'flex', alignItems: 'center', gap: '4px', marginTop: '6px' }}>
+                <TrendingUp style={{ width: '10px', height: '10px', color: '#10b981' }} />
+                <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: '9px', color: '#10b981', fontWeight: 600 }}>
+                  {kpi.trend}
+                </span>
+                <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: '9px', color: '#334155' }}>
+                  vs last month
+                </span>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+
+      {/* ── Sub-tabs ───────────────────────────────────────────────── */}
+      <div style={{
+        display: 'flex', gap: '2px',
+        borderBottom: '1px solid rgba(255,255,255,0.05)',
+      }}>
+        {tabs.map(tab => {
           const active = activeTab === tab.id;
           return (
             <button
-              key={String(tab.id)}
+              key={tab.id}
               onClick={() => setActiveTab(tab.id as typeof activeTab)}
               style={{
-                padding: '10px 18px',
+                padding: '9px 18px',
                 fontFamily: "'DM Sans', sans-serif",
-                fontSize: '13px',
-                fontWeight: active ? 600 : 500,
-                color: active ? '#f59e0b' : '#64748b',
-                background: 'none',
-                border: 'none',
+                fontSize: '13px', fontWeight: active ? 600 : 500,
+                color: active ? '#f59e0b' : '#475569',
+                background: 'none', border: 'none',
                 borderBottom: active ? '2px solid #f59e0b' : '2px solid transparent',
-                cursor: 'pointer',
-                transition: 'all 0.2s',
+                cursor: 'pointer', transition: 'all 0.2s',
                 marginBottom: '-1px',
-                letterSpacing: '0.01em',
               }}
-              onMouseEnter={e => { if (!active) e.currentTarget.style.color = '#94a3b8'; }}
-              onMouseLeave={e => { if (!active) e.currentTarget.style.color = '#64748b'; }}
+              onMouseEnter={e => { if (!active) (e.currentTarget as HTMLButtonElement).style.color = '#94a3b8'; }}
+              onMouseLeave={e => { if (!active) (e.currentTarget as HTMLButtonElement).style.color = '#475569'; }}
             >
-              {String(tab.label)}
+              {tab.label}
             </button>
           );
         })}
       </div>
 
-      {/* Tab Content */}
+      {/* ── OVERVIEW TAB ──────────────────────────────────────────── */}
       {activeTab === 'overview' && (
         <div className="space-y-5">
-          {/* Revenue vs Cost + Project Status Grid */}
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            <div className="lg:col-span-2 panel-steel rounded-xl p-5 hover-steel">
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px' }}>
-                <h3 style={{ fontFamily: "'Syne', sans-serif", fontSize: '14px', fontWeight: 700, color: '#f1f5f9', letterSpacing: '-0.01em' }}>Revenue vs Cost</h3>
-                <div style={{ display: 'flex', gap: '12px', fontFamily: "'JetBrains Mono', monospace", fontSize: '9px' }}>
-                  <span style={{ color: '#10b981' }}>■ Revenue</span>
-                  <span style={{ color: '#ef4444' }}>■ Cost</span>
+          {/* Row 1: Revenue Chart + RAG Donut + Alerts */}
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 260px 300px', gap: '14px' }}>
+
+            {/* Revenue Area Chart */}
+            <div style={{
+              background: 'rgba(13,17,23,0.8)', border: '1px solid rgba(255,255,255,0.06)',
+              borderRadius: '16px', padding: '20px',
+              backdropFilter: 'blur(12px)',
+            }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+                <div>
+                  <h3 style={{ fontFamily: "'Syne', sans-serif", fontSize: '14px', fontWeight: 700, color: '#f1f5f9' }}>
+                    Revenue vs Cost
+                  </h3>
+                  <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: '9px', color: '#475569', letterSpacing: '0.1em' }}>
+                    LAST 6 MONTHS
+                  </span>
+                </div>
+                <div style={{ display: 'flex', gap: '12px' }}>
+                  {[['#10b981','Revenue'],['#ef4444','Cost']].map(([c, l]) => (
+                    <div key={l} style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
+                      <div style={{ width: '8px', height: '8px', borderRadius: '2px', background: c }} />
+                      <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: '9px', color: '#64748b' }}>{l}</span>
+                    </div>
+                  ))}
                 </div>
               </div>
-              <div className="h-64">
+              <div style={{ height: '180px' }}>
                 <ResponsiveContainer width="100%" height="100%">
-                  <AreaChart data={revenueFromApi.length > 0 ? revenueFromApi : revenueData}>
+                  <AreaChart data={revenueData}>
                     <defs>
-                      <linearGradient id="colorRev" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="5%" stopColor="#10b981" stopOpacity={0.3} />
+                      <linearGradient id="gRev" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor="#10b981" stopOpacity={0.25} />
                         <stop offset="95%" stopColor="#10b981" stopOpacity={0} />
                       </linearGradient>
-                      <linearGradient id="colorCost" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="5%" stopColor="#ef4444" stopOpacity={0.3} />
+                      <linearGradient id="gCost" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor="#ef4444" stopOpacity={0.2} />
                         <stop offset="95%" stopColor="#ef4444" stopOpacity={0} />
                       </linearGradient>
                     </defs>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
-                    <XAxis dataKey="month" stroke="#9ca3af" />
-                    <YAxis stroke="#9ca3af" />
-                    <Tooltip contentStyle={{ background: '#1f2937', border: '1px solid #374151' }} />
-                    <Legend />
-                    <Area type="monotone" dataKey="revenue" stroke="#10b981" fill="url(#colorRev)" />
-                    <Area type="monotone" dataKey="cost" stroke="#ef4444" fill="url(#colorCost)" />
+                    <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" verticalPoints={[60,120,180]} />
+                    <XAxis dataKey="month" tick={{ fontFamily:'JetBrains Mono', fontSize:9, fill:'#475569' }} axisLine={false} tickLine={false} />
+                    <YAxis tick={{ fontFamily:'JetBrains Mono', fontSize:9, fill:'#475569' }} axisLine={false} tickLine={false} tickFormatter={v => `£${(v/1000).toFixed(0)}K`} width={48} />
+                    <Tooltip
+                      contentStyle={{ background:'#0f172a', border:'1px solid #1e293b', borderRadius:8, fontFamily:'JetBrains Mono', fontSize:11 }}
+                      formatter={(v: number) => [`£${v.toLocaleString()}`, '']}
+                    />
+                    <Area type="monotone" dataKey="revenue" stroke="#10b981" strokeWidth={2} fill="url(#gRev)" dot={false} activeDot={{ r:4, fill:'#10b981' }} />
+                    <Area type="monotone" dataKey="cost" stroke="#ef4444" strokeWidth={2} fill="url(#gCost)" dot={false} activeDot={{ r:4, fill:'#ef4444' }} strokeDasharray="4 2" />
                   </AreaChart>
                 </ResponsiveContainer>
               </div>
             </div>
 
-            <div className="card p-5">
-              <h3 className="text-lg font-bold text-white mb-4">Project Status</h3>
-              <div className="h-64">
-                <ResponsiveContainer width="100%" height="100%">
-                  <RechartsPie>
-                    <Pie data={projectStatusData as unknown as AnyRow[]} cx="50%" cy="50%" innerRadius={40} outerRadius={80} paddingAngle={2} dataKey="value">
-                      {projectStatusData.map((entry, index) => (
-                        <Cell key={`cell-${index}`} fill={String(entry.fill)} />
-                      ))}
-                    </Pie>
-                    <Tooltip />
-                  </RechartsPie>
-                </ResponsiveContainer>
+            {/* Project Status RAG */}
+            <div style={{
+              background: 'rgba(13,17,23,0.8)', border: '1px solid rgba(255,255,255,0.06)',
+              borderRadius: '16px', padding: '20px',
+              backdropFilter: 'blur(12px)', display: 'flex', flexDirection: 'column', alignItems: 'center',
+            }}>
+              <div style={{ marginBottom: '12px', textAlign: 'center' }}>
+                <h3 style={{ fontFamily: "'Syne', sans-serif", fontSize: '14px', fontWeight: 700, color: '#f1f5f9' }}>
+                  Project Status
+                </h3>
+                <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: '9px', color: '#475569', letterSpacing: '0.1em' }}>
+                  LIVE RAG ANALYSIS
+                </span>
               </div>
-              <div className="mt-4 space-y-2 text-sm">
-                {projectStatusData.map((item) => (
-                  <div key={String(item.name)} className="flex justify-between">
-                    <span className="text-gray-300">{String(item.name)}</span>
-                    <span className="font-bold text-white">{Number(item.value)}</span>
+              <RAGDonut data={ragData} />
+              <div style={{ marginTop: '14px', width: '100%', display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                {ragData.map(d => (
+                  <div key={d.name} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                      <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: d.fill, boxShadow: `0 0 4px ${d.fill}` }} />
+                      <span style={{ fontFamily: "'DM Sans', sans-serif", fontSize: '11px', color: '#94a3b8' }}>{d.name}</span>
+                    </div>
+                    <span style={{ fontFamily: "'Syne', sans-serif", fontSize: '13px', fontWeight: 700, color: '#f1f5f9' }}>{d.value}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Live Alerts */}
+            <div style={{
+              background: 'rgba(13,17,23,0.8)', border: '1px solid rgba(255,255,255,0.06)',
+              borderRadius: '16px', padding: '20px',
+              backdropFilter: 'blur(12px)',
+            }}>
+              <div style={{ marginBottom: '14px' }}>
+                <h3 style={{ fontFamily: "'Syne', sans-serif", fontSize: '14px', fontWeight: 700, color: '#f1f5f9' }}>
+                  Active Alerts
+                </h3>
+                <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: '9px', color: '#475569', letterSpacing: '0.1em' }}>
+                  REQUIRE ATTENTION
+                </span>
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                {alerts.map(a => (
+                  <div key={a.id} style={{
+                    padding: '10px 12px',
+                    borderRadius: '10px',
+                    background: a.level === 'red' ? 'rgba(239,68,68,0.08)' : 'rgba(245,158,11,0.08)',
+                    border: `1px solid ${a.level === 'red' ? 'rgba(239,68,68,0.25)' : 'rgba(245,158,11,0.25)'}`,
+                    borderLeft: `3px solid ${a.level === 'red' ? '#ef4444' : '#f59e0b'}`,
+                  }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '3px' }}>
+                      <AlertTriangle style={{ width: '10px', height: '10px', color: a.level === 'red' ? '#ef4444' : '#f59e0b' }} />
+                      <span style={{ fontFamily: "'DM Sans', sans-serif", fontSize: '11px', fontWeight: 600, color: a.level === 'red' ? '#ef4444' : '#f59e0b' }}>
+                        {a.title}
+                      </span>
+                    </div>
+                    <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: '11px', color: '#64748b', margin: 0 }}>
+                      {a.description}
+                    </p>
                   </div>
                 ))}
               </div>
             </div>
           </div>
 
-          {/* 3-column grid: Top Projects + Alerts + Deadlines */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div className="card p-5">
-              <h3 className="text-lg font-bold text-white mb-4">Top Projects by Value</h3>
-              <div className="space-y-3">
-                {projects.slice(0, 3).map((proj) => (
-                  <div key={proj.id} className="p-3 bg-gray-800/50 rounded-lg">
-                    <div className="flex justify-between items-start mb-2">
-                      <div>
-                        <p className="font-medium text-white text-sm">{String(proj.name)}</p>
-                        <p className="text-xs text-gray-400">{String(proj.client)}</p>
+          {/* Row 2: Project Pipeline */}
+          <div style={{
+            background: 'rgba(13,17,23,0.8)', border: '1px solid rgba(255,255,255,0.06)',
+            borderRadius: '16px', padding: '20px',
+            backdropFilter: 'blur(12px)',
+          }}>
+            <div style={{ marginBottom: '16px' }}>
+              <h3 style={{ fontFamily: "'Syne', sans-serif", fontSize: '14px', fontWeight: 700, color: '#f1f5f9' }}>
+                Project Pipeline
+              </h3>
+              <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: '9px', color: '#475569', letterSpacing: '0.1em' }}>
+                LIVE PROJECT REGISTER
+              </span>
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+              {projects.slice(0, 6).map((proj, i) => (
+                <div
+                  key={proj.id}
+                  style={{
+                    display: 'grid',
+                    gridTemplateColumns: '180px 1fr 80px 60px',
+                    gap: '14px',
+                    alignItems: 'center',
+                    padding: '10px 12px',
+                    background: 'rgba(255,255,255,0.02)',
+                    borderRadius: '10px',
+                    border: '1px solid rgba(255,255,255,0.04)',
+                    animation: `fadeIn 0.4s ease ${i * 0.05}s forwards`,
+                    opacity: 0,
+                    transition: 'all 0.2s',
+                    cursor: 'pointer',
+                  }}
+                  onMouseEnter={e => {
+                    (e.currentTarget as HTMLDivElement).style.background = 'rgba(245,158,11,0.04)';
+                    (e.currentTarget as HTMLDivElement).style.borderColor = 'rgba(245,158,11,0.15)';
+                  }}
+                  onMouseLeave={e => {
+                    (e.currentTarget as HTMLDivElement).style.background = 'rgba(255,255,255,0.02)';
+                    (e.currentTarget as HTMLDivElement).style.borderColor = 'rgba(255,255,255,0.04)';
+                  }}
+                >
+                  <div>
+                    <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: '12px', fontWeight: 600, color: '#f1f5f9', marginBottom: '2px' }}>{proj.name}</p>
+                    <p style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: '9px', color: '#475569' }}>{proj.client}</p>
+                  </div>
+                  <div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
+                      <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: '9px', color: '#475569' }}>Progress</span>
+                      <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: '9px', fontWeight: 600, color: '#94a3b8' }}>{proj.progress}%</span>
+                    </div>
+                    <ProgBar value={proj.progress} color={proj.budgetRAG === 'green' ? '#10b981' : proj.budgetRAG === 'amber' ? '#f59e0b' : '#ef4444'} />
+                  </div>
+                  <div style={{ display: 'flex', gap: '4px', justifyContent: 'flex-end' }}>
+                    {[['B', proj.budgetRAG],['P', proj.programmeRAG],['Q', proj.qualityRAG]].map(([l, rag]) => (
+                      <div key={String(l)} style={{
+                        width: '18px', height: '18px', borderRadius: '4px',
+                        background: `${RAG_COLORS[rag as keyof typeof RAG_COLORS]}15`,
+                        border: `1px solid ${RAG_COLORS[rag as keyof typeof RAG_COLORS]}40`,
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        fontFamily: "'JetBrains Mono', monospace", fontSize: '8px', fontWeight: 700,
+                        color: RAG_COLORS[rag as keyof typeof RAG_COLORS],
+                      }} title={`${l}: ${rag}`}>
+                        {l}
                       </div>
-                    </div>
-                    <p className="text-sm font-bold text-emerald-400">{fmtCurrency(proj.value)}</p>
+                    ))}
                   </div>
-                ))}
-                {projects.length === 0 && (
-                  <p className="text-xs text-gray-400 text-center py-4">No projects available</p>
-                )}
-              </div>
-            </div>
-
-            <div className="card p-5">
-              <h3 className="text-lg font-bold text-white mb-4">Recent Alerts</h3>
-              <div className="space-y-3">
-                {alerts.map((alert) => (
-                  <div key={alert.id} className={`p-3 rounded-lg ${alert.level === 'red' ? 'bg-red-500/10 border border-red-500/30' : 'bg-amber-500/10 border border-amber-500/30'}`}>
-                    <p className={`text-sm font-medium ${alert.level === 'red' ? 'text-red-400' : 'text-amber-400'}`}>{String(alert.title)}</p>
-                    <p className="text-xs text-gray-300 mt-1">{String(alert.description)}</p>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            <div className="card p-5">
-              <h3 className="text-lg font-bold text-white mb-4">Upcoming Deadlines</h3>
-              <div className="space-y-3">
-                {projects.slice(0, 3).map((proj) => (
-                  <div key={proj.id} className="flex items-center justify-between p-3 bg-gray-800/50 rounded-lg">
-                    <div>
-                      <p className="text-sm font-medium text-white">{String(proj.name)}</p>
-                    </div>
-                    <span className="px-2 py-1 rounded-full bg-blue-500/20 text-blue-400 text-xs font-medium">{Number(proj.daysToCompletion)} days</span>
-                  </div>
-                ))}
-                {projects.length === 0 && (
-                  <p className="text-xs text-gray-400 text-center py-4">No deadlines available</p>
-                )}
-              </div>
-            </div>
-          </div>
-
-          {/* Quick Actions Row */}
-          <div className="flex gap-3">
-            <button className="btn btn-primary flex items-center gap-2">
-              <Plus className="h-4 w-4" />
-              New Project
-            </button>
-            <button className="btn btn-primary flex items-center gap-2">
-              <DollarSign className="h-4 w-4" />
-              Raise Invoice
-            </button>
-            <button className="btn btn-primary flex items-center gap-2">
-              <AlertTriangle className="h-4 w-4" />
-              Log Incident
-            </button>
-            <button className="btn btn-primary flex items-center gap-2">
-              <FileText className="h-4 w-4" />
-              Create RFI
-            </button>
-          </div>
-        </div>
-      )}
-
-      {activeTab === 'projects' && (
-        <div className="space-y-6">
-          <div className="card p-5">
-            <h3 className="text-lg font-bold text-white mb-4">Project Health Cards</h3>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              {projects.map((proj) => (
-                <div key={proj.id} className="card p-4 bg-gray-800/50">
-                  <p className="font-bold text-white mb-2">{String(proj.name)}</p>
-                  <p className="text-xs text-gray-400 mb-3">{String(proj.client)}</p>
-                  <div className="space-y-2 mb-3">
-                    <div className="flex justify-between text-xs">
-                      <span className="text-gray-300">Progress</span>
-                      <span className="text-white">{Number(proj.progress)}%</span>
-                    </div>
-                    <div className="h-1.5 bg-gray-700 rounded-full overflow-hidden">
-                      <div className="h-full bg-emerald-500" style={{ width: `${proj.progress}%` }} />
-                    </div>
-                  </div>
-                  <div className="grid grid-cols-3 gap-2 text-xs mb-3">
-                    <div className={`p-2 rounded text-center font-bold ${proj.budgetRAG === 'green' ? 'bg-emerald-500/20 text-emerald-400' : proj.budgetRAG === 'amber' ? 'bg-amber-500/20 text-amber-400' : 'bg-red-500/20 text-red-400'}`}>Budget</div>
-                    <div className={`p-2 rounded text-center font-bold ${proj.programmeRAG === 'green' ? 'bg-emerald-500/20 text-emerald-400' : proj.programmeRAG === 'amber' ? 'bg-amber-500/20 text-amber-400' : 'bg-red-500/20 text-red-400'}`}>Prog.</div>
-                    <div className={`p-2 rounded text-center font-bold ${proj.qualityRAG === 'green' ? 'bg-emerald-500/20 text-emerald-400' : proj.qualityRAG === 'amber' ? 'bg-amber-500/20 text-amber-400' : 'bg-red-500/20 text-red-400'}`}>Quality</div>
-                  </div>
-                  <div className="flex justify-between text-xs text-gray-400">
-                    <span>{Number(proj.daysToCompletion)} days left</span>
-                    <span className="font-bold">{String(proj.pmInitials)}</span>
+                  <div style={{ textAlign: 'right' }}>
+                    <span style={{ fontFamily: "'Syne', sans-serif", fontSize: '12px', fontWeight: 700, color: '#10b981' }}>
+                      {proj.daysToCompletion > 0 ? `${proj.daysToCompletion}d` : '—'}
+                    </span>
+                    <p style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: '8px', color: '#334155' }}>remaining</p>
                   </div>
                 </div>
               ))}
               {projects.length === 0 && (
-                <p className="text-xs text-gray-400 text-center py-8 col-span-3">No projects available</p>
+                <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: '13px', color: '#475569', textAlign: 'center', padding: '20px' }}>
+                  No projects available
+                </p>
               )}
-            </div>
-          </div>
-
-          <div className="card p-5">
-            <h3 className="text-lg font-bold text-white mb-4">Project Values</h3>
-            <div className="h-64">
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={projects.map((p) => ({ name: p.name, value: p.value })) as unknown as AnyRow[]}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
-                  <XAxis dataKey="name" stroke="#9ca3af" />
-                  <YAxis stroke="#9ca3af" />
-                  <Tooltip contentStyle={{ background: '#1f2937', border: '1px solid #374151' }} />
-                  <Bar dataKey="value" fill="#3b82f6" />
-                </BarChart>
-              </ResponsiveContainer>
             </div>
           </div>
         </div>
       )}
 
+      {/* ── PROJECTS TAB ────────────────────────────────────────────── */}
+      {activeTab === 'projects' && (
+        <div className="space-y-5">
+          <div style={{
+            background: 'rgba(13,17,23,0.8)', border: '1px solid rgba(255,255,255,0.06)',
+            borderRadius: '16px', padding: '24px',
+            backdropFilter: 'blur(12px)',
+          }}>
+            <h3 style={{ fontFamily: "'Syne', sans-serif", fontSize: '16px', fontWeight: 700, color: '#f1f5f9', marginBottom: '16px' }}>
+              Project Health Overview
+            </h3>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '14px' }}>
+              {projects.map((proj, i) => (
+                <div
+                  key={proj.id}
+                  style={{
+                    background: 'rgba(255,255,255,0.03)',
+                    border: '1px solid rgba(255,255,255,0.06)',
+                    borderRadius: '14px', padding: '16px',
+                    animation: `fadeIn 0.4s ease ${i * 0.06}s forwards`,
+                    opacity: 0,
+                    transition: 'all 0.2s',
+                    cursor: 'pointer',
+                  }}
+                  onMouseEnter={e => {
+                    (e.currentTarget as HTMLDivElement).style.borderColor = 'rgba(245,158,11,0.3)';
+                    (e.currentTarget as HTMLDivElement).style.background = 'rgba(245,158,11,0.03)';
+                  }}
+                  onMouseLeave={e => {
+                    (e.currentTarget as HTMLDivElement).style.borderColor = 'rgba(255,255,255,0.06)';
+                    (e.currentTarget as HTMLDivElement).style.background = 'rgba(255,255,255,0.03)';
+                  }}
+                >
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '12px' }}>
+                    <div>
+                      <p style={{ fontFamily: "'Syne', sans-serif", fontSize: '13px', fontWeight: 700, color: '#f1f5f9', marginBottom: '2px' }}>{proj.name}</p>
+                      <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: '11px', color: '#64748b' }}>{proj.client}</p>
+                    </div>
+                    <div style={{
+                      padding: '3px 8px', borderRadius: '6px',
+                      background: `${RAG_COLORS[proj.budgetRAG]}15`, border: `1px solid ${RAG_COLORS[proj.budgetRAG]}30`,
+                    }}>
+                      <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: '9px', fontWeight: 700, color: RAG_COLORS[proj.budgetRAG] }}>
+                        {proj.budgetRAG.toUpperCase()}
+                      </span>
+                    </div>
+                  </div>
+                  <div style={{ marginBottom: '10px' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '5px' }}>
+                      <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: '9px', color: '#475569' }}>Progress</span>
+                      <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: '9px', fontWeight: 600, color: '#94a3b8' }}>{proj.progress}%</span>
+                    </div>
+                    <ProgBar value={proj.progress} color="#3b82f6" />
+                  </div>
+                  <div style={{ display: 'flex', gap: '4px', marginBottom: '10px' }}>
+                    {[['Budget', proj.budgetRAG],['Programme', proj.programmeRAG],['Quality', proj.qualityRAG]].map(([l, rag]) => (
+                      <div key={String(l)} style={{
+                        flex: 1, padding: '5px 4px', borderRadius: '7px', textAlign: 'center',
+                        background: `${RAG_COLORS[rag as keyof typeof RAG_COLORS]}12`,
+                        border: `1px solid ${RAG_COLORS[rag as keyof typeof RAG_COLORS]}30`,
+                      }}>
+                        <p style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: '7px', color: '#475569', letterSpacing: '0.05em', marginBottom: '2px' }}>{String(l).toUpperCase()}</p>
+                        <p style={{ fontFamily: "'Syne', sans-serif", fontSize: '11px', fontWeight: 700, color: RAG_COLORS[rag as keyof typeof RAG_COLORS] }}>
+                          {rag === 'green' ? '✓' : rag === 'amber' ? '~' : '!'}
+                        </p>
+                      </div>
+                    ))}
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <span style={{ fontFamily: "'Syne', sans-serif", fontSize: '14px', fontWeight: 700, color: '#10b981' }}>{fmtCurrency(proj.value)}</span>
+                    <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: '9px', color: '#475569' }}>
+                      {proj.daysToCompletion > 0 ? `${proj.daysToCompletion}d left · ` : ''}<span style={{ color: '#f59e0b' }}>{proj.pmInitials}</span>
+                    </span>
+                  </div>
+                </div>
+              ))}
+              {projects.length === 0 && (
+                <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: '13px', color: '#475569', textAlign: 'center', padding: '40px' }}>
+                  No projects available
+                </p>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── FINANCE TAB ────────────────────────────────────────────── */}
       {activeTab === 'finance' && (
-        <div className="space-y-6">
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <div className="space-y-5">
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '12px' }}>
             {[
-              { label: 'Total Revenue', value: fmtCurrency(1269000), color: 'emerald' },
-              { label: 'Total Costs', value: fmtCurrency(945000), color: 'red' },
-              { label: 'Gross Profit', value: fmtCurrency(324000), color: 'blue' },
-              { label: 'Net Profit', value: fmtCurrency(234000), color: 'green' },
-            ].map((item) => (
-              <div key={String(item.label)} className="card p-4">
-                <p className="text-xs text-gray-400 uppercase mb-2">{String(item.label)}</p>
-                <p className={`text-2xl font-bold text-${item.color}-400`}>{String(item.value)}</p>
-              </div>
-            ))}
+              { label:'Total Revenue',   value:'£1,890,000', accent:'#10b981', icon:DollarSign },
+              { label:'Total Costs',     value:'£1,142,000', accent:'#ef4444', icon:TrendingDown },
+              { label:'Gross Profit',    value:'£748,000',   accent:'#3b82f6', icon:TrendingUp },
+              { label:'Net Margin',      value:'39.6%',      accent:'#10b981', icon:Activity },
+            ].map((item, i) => {
+              const Icon = item.icon;
+              return (
+                <div key={item.label} style={{
+                  background: 'rgba(13,17,23,0.8)', border: '1px solid rgba(255,255,255,0.06)',
+                  borderRadius: '14px', padding: '16px',
+                  animation: `fadeIn 0.4s ease ${i * 0.07}s forwards`, opacity: 0,
+                }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
+                    <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: '9px', color: '#475569', letterSpacing: '0.1em' }}>{item.label.toUpperCase()}</span>
+                    <Icon style={{ width: '14px', height: '14px', color: item.accent }} />
+                  </div>
+                  <p style={{ fontFamily: "'Syne', sans-serif", fontSize: '20px', fontWeight: 800, color: '#f1f5f9', letterSpacing: '-0.02em' }}>{item.value}</p>
+                </div>
+              );
+            })}
           </div>
 
-          <div className="card p-5">
-            <h3 className="text-lg font-bold text-white mb-4">Cash Position (12 Months)</h3>
-            <div className="h-64">
+          <div style={{
+            background: 'rgba(13,17,23,0.8)', border: '1px solid rgba(255,255,255,0.06)',
+            borderRadius: '16px', padding: '24px',
+            backdropFilter: 'blur(12px)',
+          }}>
+            <h3 style={{ fontFamily: "'Syne', sans-serif", fontSize: '14px', fontWeight: 700, color: '#f1f5f9', marginBottom: '16px' }}>
+              Monthly Cash Flow
+            </h3>
+            <div style={{ height: '220px' }}>
               <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={revenueData}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
-                  <XAxis dataKey="month" stroke="#9ca3af" />
-                  <YAxis stroke="#9ca3af" />
-                  <Tooltip contentStyle={{ background: '#1f2937', border: '1px solid #374151' }} />
-                  <Line type="monotone" dataKey="revenue" stroke="#10b981" strokeWidth={2} />
-                </LineChart>
+                <BarChart data={revenueData}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" />
+                  <XAxis dataKey="month" tick={{ fontFamily:'JetBrains Mono', fontSize:9, fill:'#475569' }} axisLine={false} tickLine={false} />
+                  <YAxis tick={{ fontFamily:'JetBrains Mono', fontSize:9, fill:'#475569' }} axisLine={false} tickLine={false} tickFormatter={v => `£${(v/1000).toFixed(0)}K`} width={52} />
+                  <Tooltip contentStyle={{ background:'#0f172a', border:'1px solid #1e293b', borderRadius:8, fontFamily:'JetBrains Mono', fontSize:11 }} formatter={(v: number) => [`£${v.toLocaleString()}`, '']} />
+                  <Bar dataKey="revenue" fill="#10b981" radius={[4,4,0,0]} />
+                  <Bar dataKey="cost" fill="#ef4444" radius={[4,4,0,0]} opacity={0.7} />
+                </BarChart>
               </ResponsiveContainer>
             </div>
           </div>
 
-          <div className="card p-5">
-            <h3 className="text-lg font-bold text-white mb-4">Aged Debt Analysis</h3>
-            <div className="grid grid-cols-4 gap-4">
+          {/* Aged Debt */}
+          <div style={{
+            background: 'rgba(13,17,23,0.8)', border: '1px solid rgba(255,255,255,0.06)',
+            borderRadius: '16px', padding: '24px',
+            backdropFilter: 'blur(12px)',
+          }}>
+            <h3 style={{ fontFamily: "'Syne', sans-serif", fontSize: '14px', fontWeight: 700, color: '#f1f5f9', marginBottom: '16px' }}>
+              Aged Debt Analysis
+            </h3>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '12px' }}>
               {[
-                { label: '0-30 days', value: 145000 },
-                { label: '31-60 days', value: 89000 },
-                { label: '61-90 days', value: 56000 },
-                { label: '90+ days', value: 95000 },
-              ].map((item) => (
-                <div key={String(item.label)} className="p-4 bg-gray-800/50 rounded-lg text-center">
-                  <p className="text-xs text-gray-400 mb-2">{String(item.label)}</p>
-                  <p className="text-lg font-bold text-white">{fmtCurrency(item.value)}</p>
+                { label:'0–30 days',   value:145000, color:'#10b981' },
+                { label:'31–60 days', value:89000,  color:'#f59e0b' },
+                { label:'61–90 days', value:56000,  color:'#f97316' },
+                { label:'90+ days',   value:95000,  color:'#ef4444' },
+              ].map(item => (
+                <div key={item.label} style={{
+                  padding: '16px', borderRadius: '12px', textAlign: 'center',
+                  background: `${item.color}08`, border: `1px solid ${item.color}25`,
+                }}>
+                  <p style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: '8px', color: '#475569', letterSpacing: '0.1em', marginBottom: '6px' }}>{item.label}</p>
+                  <p style={{ fontFamily: "'Syne', sans-serif", fontSize: '18px', fontWeight: 800, color: item.color }}>{fmtCurrency(item.value)}</p>
                 </div>
               ))}
             </div>
@@ -646,42 +811,58 @@ export function Dashboard() {
         </div>
       )}
 
+      {/* ── SAFETY TAB ────────────────────────────────────────────── */}
       {activeTab === 'safety' && (
-        <div className="space-y-6">
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <div className="space-y-5">
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '12px' }}>
             {[
-              { label: 'Near Misses', value: '8', trend: -2 },
-              { label: 'LTI', value: '0', trend: 0 },
-              { label: 'RIDDOR', value: '1', trend: 0 },
-              { label: 'Days Since Accident', value: '187', trend: 15 },
-            ].map((item) => (
-              <div key={String(item.label)} className="card p-4">
-                <p className="text-xs text-gray-400 uppercase mb-2">{String(item.label)}</p>
-                <p className="text-2xl font-bold text-white">{String(item.value)}</p>
-                {Number(item.trend) !== 0 && (
-                  <p className={`text-xs mt-2 ${item.trend > 0 ? 'text-emerald-400' : 'text-red-400'}`}>
-                    {Number(item.trend) > 0 ? '+' : ''}{Number(item.trend)}
-                  </p>
-                )}
+              { label:'Near Misses',              value:'8',  trend:'-2', accent:'#10b981' },
+              { label:'Lost Time Injuries',       value:'0',  trend:'0',  accent:'#10b981' },
+              { label:'RIDDOR Reportable',        value:'1',  trend:'0',  accent:'#f59e0b' },
+              { label:'Days Since Last Accident', value:'187',trend:'+15', accent:'#10b981' },
+            ].map((item, i) => (
+              <div key={item.label} style={{
+                background: 'rgba(13,17,23,0.8)', border: '1px solid rgba(255,255,255,0.06)',
+                borderRadius: '14px', padding: '16px',
+                animation: `fadeIn 0.4s ease ${i * 0.07}s forwards`, opacity: 0,
+              }}>
+                <p style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: '9px', color: '#475569', letterSpacing: '0.08em', marginBottom: '8px' }}>{item.label.toUpperCase()}</p>
+                <p style={{ fontFamily: "'Syne', sans-serif", fontSize: '26px', fontWeight: 800, color: '#f1f5f9', lineHeight: 1 }}>{item.value}</p>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '4px', marginTop: '6px' }}>
+                  {item.trend.startsWith('+') ? (
+                    <TrendingUp style={{ width:'10px',height:'10px',color: item.trend === '+15' ? '#10b981' : '#ef4444' }} />
+                  ) : (
+                    <TrendingDown style={{ width:'10px',height:'10px',color:'#10b981' }} />
+                  )}
+                  <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: '9px', color: item.trend.startsWith('+') && item.trend!=='+15' ? '#ef4444' : '#10b981' }}>{item.trend}</span>
+                </div>
               </div>
             ))}
           </div>
 
-          <div className="card p-5">
-            <h3 className="text-lg font-bold text-white mb-4">Incidents by Type</h3>
-            <div className="h-64">
+          <div style={{
+            background: 'rgba(13,17,23,0.8)', border: '1px solid rgba(255,255,255,0.06)',
+            borderRadius: '16px', padding: '24px',
+            backdropFilter: 'blur(12px)',
+          }}>
+            <h3 style={{ fontFamily: "'Syne', sans-serif", fontSize: '14px', fontWeight: 700, color: '#f1f5f9', marginBottom: '16px' }}>
+              Incidents by Type
+            </h3>
+            <div style={{ height: '200px' }}>
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={[
-                  { type: 'Slips/Trips', count: 3 },
-                  { type: 'Hand Injuries', count: 2 },
-                  { type: 'Near Miss', count: 8 },
-                  { type: 'Environmental', count: 1 },
+                  { type:'Slips/Trips', count:3, fill:'#f59e0b' },
+                  { type:'Hand Injury', count:2, fill:'#ef4444' },
+                  { type:'Near Miss',   count:8, fill:'#10b981' },
+                  { type:'Environmental',count:1, fill:'#3b82f6' },
                 ]}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
-                  <XAxis dataKey="type" stroke="#9ca3af" />
-                  <YAxis stroke="#9ca3af" />
-                  <Tooltip contentStyle={{ background: '#1f2937', border: '1px solid #374151' }} />
-                  <Bar dataKey="count" fill="#ef4444" />
+                  <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" />
+                  <XAxis dataKey="type" tick={{ fontFamily:'JetBrains Mono', fontSize:9, fill:'#475569' }} axisLine={false} tickLine={false} />
+                  <YAxis tick={{ fontFamily:'JetBrains Mono', fontSize:9, fill:'#475569' }} axisLine={false} tickLine={false} />
+                  <Tooltip contentStyle={{ background:'#0f172a', border:'1px solid #1e293b', borderRadius:8, fontFamily:'JetBrains Mono', fontSize:11 }} />
+                  <Bar dataKey="count" radius={[4,4,0,0]}>
+                    {[{ fill:'#f59e0b' },{ fill:'#ef4444' },{ fill:'#10b981' },{ fill:'#3b82f6' }].map((c, i) => <Cell key={i} fill={c.fill} />)}
+                  </Bar>
                 </BarChart>
               </ResponsiveContainer>
             </div>
@@ -689,30 +870,58 @@ export function Dashboard() {
         </div>
       )}
 
+      {/* ── ACTIVITY TAB ───────────────────────────────────────────── */}
       {activeTab === 'activity' && (
-        <div className="card p-5">
-          <h3 className="text-lg font-bold text-white mb-4">Live Activity Feed</h3>
-          <div className="space-y-3">
-            {activityFeed.map((item) => (
-              <div key={item.id} className="p-4 border-l-2 border-orange-500 bg-gray-800/30 rounded">
-                <div className="flex items-start justify-between">
-                  <div>
-                    <p className="font-medium text-white">{String(item.user)}</p>
-                    <p className="text-sm text-gray-300 mt-1">{String(item.action)}</p>
-                  </div>
-                  <div className="text-right">
-                    <span className="px-2 py-1 rounded-full bg-blue-500/20 text-blue-400 text-xs font-medium">{String(item.module)}</span>
-                    <p className="text-xs text-gray-500 mt-2">{String(item.time)}</p>
-                  </div>
-                </div>
-              </div>
+        <div style={{
+          background: 'rgba(13,17,23,0.8)', border: '1px solid rgba(255,255,255,0.06)',
+          borderRadius: '16px', padding: '24px',
+          backdropFilter: 'blur(12px)',
+        }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+            <div>
+              <h3 style={{ fontFamily: "'Syne', sans-serif", fontSize: '16px', fontWeight: 700, color: '#f1f5f9' }}>
+                Live Activity Feed
+              </h3>
+              <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: '9px', color: '#475569', letterSpacing: '0.1em' }}>
+                REAL-TIME SITE EVENTS
+              </span>
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <CircleDot style={{ width: '8px', height: '8px', color: '#10b981', animation:'livePulse 2s ease-in-out infinite' }} />
+              <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: '9px', color: '#10b981', letterSpacing: '0.1em' }}>LIVE</span>
+            </div>
+          </div>
+          <div>
+            {activityFeed.map((item, i) => (
+              <ActivityItem key={item.id} {...item} accent="#f59e0b" delay={i * 60} />
             ))}
             {activityFeed.length === 0 && (
-              <p className="text-xs text-gray-400 text-center py-8">No activity available</p>
+              <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: '13px', color: '#475569', textAlign: 'center', padding: '40px' }}>
+                No activity available
+              </p>
             )}
           </div>
         </div>
       )}
+
+      <style>{`
+        @keyframes fadeIn {
+          from { opacity: 0; transform: translateY(6px); }
+          to { opacity: 1; transform: translateY(0); }
+        }
+        @keyframes fadeSlideDown {
+          from { opacity: 0; transform: translateY(-10px); }
+          to { opacity: 1; transform: translateY(0); }
+        }
+        @keyframes fadeSlideUp {
+          from { opacity: 0; transform: translateY(8px); }
+          to { opacity: 1; transform: translateY(0); }
+        }
+        @keyframes livePulse {
+          0%, 100% { opacity: 1; }
+          50% { opacity: 0.4; }
+        }
+      `}</style>
     </div>
   );
 }

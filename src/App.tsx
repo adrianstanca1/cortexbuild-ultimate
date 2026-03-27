@@ -1,6 +1,7 @@
 import { useState, lazy, Suspense, useEffect } from 'react';
 import { Toaster } from 'sonner';
 import { Sidebar } from './components/layout/Sidebar';
+import { BlueprintBackground } from './components/layout/BlueprintBackground';
 import { Header } from './components/layout/Header';
 import { ThemeProvider } from './context/ThemeContext';
 import { type Module } from './types';
@@ -165,7 +166,8 @@ function AppShell() {
 
   return (
     <>
-      <div className="flex h-screen bg-gray-950 overflow-hidden">
+      <div className="flex h-screen overflow-hidden" style={{ position:'relative' }}>
+        <BlueprintBackground />
         {/* Sidebar: hidden on mobile, shown on md+ */}
         <div className="hidden md:block flex-shrink-0">
           <Sidebar
@@ -185,7 +187,7 @@ function AppShell() {
             activeModule={activeModule}
             onMenuToggle={() => setSidebarCollapsed(!sidebarCollapsed)}
           />
-          <main className="flex-1 overflow-auto bg-grid-soft pb-20 md:pb-6" style={{ backgroundAttachment: 'fixed' }}>
+          <main className="flex-1 overflow-auto pb-20 md:pb-6" style={{ backgroundAttachment: 'fixed' }}>
             <div className="p-4 md:p-6">
               <Suspense fallback={<ModuleLoader />}>
                 {renderModule()}
