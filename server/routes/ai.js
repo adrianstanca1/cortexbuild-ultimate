@@ -1274,13 +1274,26 @@ IMPORTANT: Be aware of the full conversation history provided. Answer follow-up 
 // ─── POST /chat ───────────────────────────────────────────────────────────────
 
 router.post('/chat', async (req, res) => {
-  const { message, context } = req.body;
+  const { message, context, sessionId } = req.body;
 
   if (!message || typeof message !== 'string' || !message.trim()) {
     return res.status(400).json({ message: 'message is required' });
   }
 
   try {
+    // ── Fetch conversation history (with summarization for long chats) ──────
+    let convHistory = [];
+    let summary      = null;
+    if (sessionId && req.user && req.user.organizationId) {
+      try {
+        const hist = await getConversationHistory(req.user.organizationId, sessionId);
+        convHistory = hist.messages;
+        summary     = hist.summary;
+      } catch (e) {
+        console.warn('[AI] Could not load conversation history:', e.message);
+      }
+    }
+
     const intent = classify(message.trim());
     let result;
 
@@ -1316,7 +1329,7 @@ router.post('/chat', async (req, res) => {
 
     if (intent === 'unknown' || message.trim().length > 30) {
       try {
-        reply = await getOllamaResponse(message.trim(), result.reply);
+        reply = await getOllamaResponse(message.trim(), result.reply, convHistory, summary);
         useLLM = true;
       } catch (llmErr) {
         console.warn('[AI] Ollama unavailable, using rule-based fallback:', llmErr.message);
@@ -1328,6 +1341,8 @@ router.post('/chat', async (req, res) => {
       data: result.data ?? null,
       suggestions: result.suggestions,
       source: useLLM ? 'ollama' : 'rule-based',
+      hasHistory: convHistory.length > 0,
+      hasSummary: !!summary,
     });
   } catch (err) {
     console.error('[AI /chat]', err.message);
