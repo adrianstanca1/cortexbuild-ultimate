@@ -69,7 +69,12 @@ export async function apiFetch<T>(path: string, options?: RequestInit): Promise<
 
 async function fetchAll<T>(endpoint: string): Promise<T[]> {
   try {
-    return await apiFetch<T[]>(`/${endpoint}`);
+    const res = await apiFetch<{ data: T[] } | T[]>(`/${endpoint}`);
+    // Generic router returns { data, pagination }; unwrap if needed
+    if (res && typeof res === 'object' && 'data' in res && Array.isArray((res as any).data)) {
+      return (res as { data: T[] }).data;
+    }
+    return res as T[];
   } catch {
     const key = endpoint.replace(/^\//, '');
     return (MOCK_MAP[key] ?? []) as T[];
