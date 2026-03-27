@@ -22,7 +22,8 @@ export interface AIChatResponse {
 
 export async function sendChatMessage(
   message: string,
-  context?: Record<string, unknown>
+  context?: Record<string, unknown>,
+  sessionId?: string
 ): Promise<AIChatResponse> {
   const token = getToken()
   const res = await fetch(`${API_BASE}/ai/chat`, {
@@ -31,7 +32,7 @@ export async function sendChatMessage(
       'Content-Type': 'application/json',
       ...(token ? { Authorization: `Bearer ${token}` } : {}),
     },
-    body: JSON.stringify({ message, context }),
+    body: JSON.stringify({ message, context, sessionId }),
   })
 
   if (!res.ok) {

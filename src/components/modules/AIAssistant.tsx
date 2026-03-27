@@ -418,7 +418,7 @@ export function AIAssistant() {
 
     setIsTyping(true);
 
-    sendChatMessage(messageText, { agent: selectedAgent, context: {} })
+    sendChatMessage(messageText, { agent: selectedAgent, context: {} }, finalSessionId || undefined)
       .then((response) => {
         const assistantMessage: Message = {
           id: (Date.now() + 1).toString(),
