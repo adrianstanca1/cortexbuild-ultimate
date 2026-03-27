@@ -10,6 +10,7 @@ import {
   ramsApi, cisApi, equipmentApi, subcontractorsApi, timesheetsApi,
   documentsApi, tendersApi, dailyReportsApi, meetingsApi, materialsApi,
   punchListApi, inspectionsApi, contactsApi, riskRegisterApi, purchaseOrdersApi,
+  projectImagesApi, projectTasksApi,
 } from '../services/api';
 import { eventBus } from '../lib/eventBus';
 
@@ -127,3 +128,5 @@ export const useInspections    = makeHooks('inspections',      'inspections',   
 export const useContacts       = makeHooks('contacts',          'contacts',        contactsApi);
 export const useRiskRegister   = makeHooks('risk-register',    'risk_register',   riskRegisterApi);
 export const useProcurement    = makeHooks('purchase-orders',  'purchase_orders', purchaseOrdersApi);
+export const useProjectImages  = makeHooks('project-images',   'project_images',  projectImagesApi);
+export const useProjectTasks    = makeHooks('project-tasks',    'project_tasks',   projectTasksApi);

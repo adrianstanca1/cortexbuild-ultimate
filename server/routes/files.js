@@ -65,19 +65,18 @@ router.get('/', async (req, res) => {
 
     query += ' ORDER BY created_at DESC';
     const { rows } = await pool.query(query, params);
-    
-    // If include_versions, get all versions for each document
+
     if (include_versions === 'true') {
       const docsWithVersions = await Promise.all(rows.map(async (doc) => {
         const { rows: versions } = await pool.query(
-          'SELECT * FROM document_versions WHERE document_id =  ORDER BY version DESC',
+          'SELECT * FROM document_versions WHERE document_id = $1 ORDER BY version DESC',
           [doc.id]
         );
         return { ...doc, versions };
       }));
       return res.json({ data: docsWithVersions });
     }
-    
+
     res.json({ data: rows });
   } catch (err) {
     console.error('[GET /api/files]', err.message);
@@ -89,15 +88,14 @@ router.get('/', async (req, res) => {
 router.get('/:id', async (req, res) => {
   try {
     const { id } = req.params;
-    const { rows } = await pool.query('SELECT * FROM documents WHERE id = ', [id]);
+    const { rows } = await pool.query('SELECT * FROM documents WHERE id = $1', [id]);
     if (rows.length === 0) return res.status(404).json({ message: 'Document not found' });
-    
-    // Get versions
+
     const { rows: versions } = await pool.query(
-      'SELECT * FROM document_versions WHERE document_id =  ORDER BY version DESC',
+      'SELECT * FROM document_versions WHERE document_id = $1 ORDER BY version DESC',
       [id]
     );
-    
+
     res.json({ ...rows[0], versions });
   } catch (err) {
     console.error('[GET /api/files/:id]', err.message);
@@ -117,20 +115,21 @@ router.post('/upload', upload.single('file'), async (req, res) => {
     const category = req.body.category || 'REPORTS';
     const projectId = req.body.project_id || null;
     const filePath = `/uploads/${req.file.filename}`;
-    const accessLevel = req.body.access_level || 'public';
-    const parentFolder = req.body.parent_folder || null;
+    const accessLevel = req.body.access_level || 'project';
+    const discipline = req.body.discipline || null;
+    const dateIssued = req.body.date_issued || null;
+    const author = req.body.author || uploadedBy;
 
     const { rows } = await pool.query(
-      `INSERT INTO documents (name, type, project_id, uploaded_by, version, size, status, category, file_path, access_level, parent_folder)
-       VALUES (, , , , , , , , , , )
+      `INSERT INTO documents (name, type, project_id, uploaded_by, version, size, status, category, file_path, access_level, discipline, date_issued, author)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
        RETURNING *`,
-      [name, ext, projectId, uploadedBy, '1.0', fileSize, 'current', category, filePath, accessLevel, parentFolder]
+      [name, ext, projectId, uploadedBy, '1.0', fileSize, 'current', category, filePath, accessLevel, discipline, dateIssued, author]
     );
 
-    // Create initial version record
     await pool.query(
       `INSERT INTO document_versions (document_id, version, file_path, uploaded_by, changes)
-       VALUES (, , , , )`,
+       VALUES ($1, $2, $3, $4, $5)`,
       [rows[0].id, '1.0', filePath, uploadedBy, 'Initial version']
     );
 
@@ -148,7 +147,7 @@ router.post('/upload', upload.single('file'), async (req, res) => {
 router.put('/:id', async (req, res) => {
   try {
     const { id } = req.params;
-    const { name, category, access_level, parent_folder } = req.body;
+    const { name, category, access_level, discipline, date_issued, author } = req.body;
     const updates = [];
     const params = [];
     let paramCount = 0;
@@ -168,10 +167,20 @@ router.put('/:id', async (req, res) => {
       updates.push(`access_level = $${paramCount}`);
       params.push(access_level);
     }
-    if (parent_folder !== undefined) {
+    if (discipline !== undefined) {
       paramCount++;
-      updates.push(`parent_folder = $${paramCount}`);
-      params.push(parent_folder);
+      updates.push(`discipline = $${paramCount}`);
+      params.push(discipline);
+    }
+    if (date_issued !== undefined) {
+      paramCount++;
+      updates.push(`date_issued = $${paramCount}`);
+      params.push(date_issued);
+    }
+    if (author !== undefined) {
+      paramCount++;
+      updates.push(`author = $${paramCount}`);
+      params.push(author);
     }
 
     if (updates.length === 0) {
@@ -200,34 +209,32 @@ router.post('/:id/upload-version', upload.single('file'), async (req, res) => {
   try {
     if (!req.file) return res.status(400).json({ message: 'No file provided' });
     const { id } = req.params;
-    const { rows: existing } = await pool.query('SELECT * FROM documents WHERE id = ', [id]);
+    const { rows: existing } = await pool.query('SELECT * FROM documents WHERE id = $1', [id]);
     if (existing.length === 0) return res.status(404).json({ message: 'Document not found' });
 
     const currentVersion = existing[0].version;
     const versionParts = currentVersion.split('.');
     const newVersion = `${versionParts[0]}.${parseInt(versionParts[1] || 0) + 1}`;
-    
+
     const filePath = `/uploads/${req.file.filename}`;
     const uploadedBy = req.user?.name || req.user?.email || 'Unknown';
     const changes = req.body.changes || 'Updated file';
 
-    // Update document with new version
     const ext = path.extname(req.file.originalname).replace('.', '').toUpperCase();
     const fileSize = formatSize(req.file.size);
-    
+
     await pool.query(
-      `UPDATE documents SET version = , size = , type = , file_path =  WHERE id = `,
+      `UPDATE documents SET version = $1, size = $2, type = $3, file_path = $4 WHERE id = $5`,
       [newVersion, fileSize, ext, filePath, id]
     );
 
-    // Create version record
     await pool.query(
       `INSERT INTO document_versions (document_id, version, file_path, uploaded_by, changes)
-       VALUES (, , , , )`,
+       VALUES ($1, $2, $3, $4, $5)`,
       [id, newVersion, filePath, uploadedBy, changes]
     );
 
-    const { rows } = await pool.query('SELECT * FROM documents WHERE id = ', [id]);
+    const { rows } = await pool.query('SELECT * FROM documents WHERE id = $1', [id]);
     res.json(rows[0]);
   } catch (err) {
     console.error('[POST /api/files/:id/upload-version]', err.message);
@@ -239,7 +246,7 @@ router.post('/:id/upload-version', upload.single('file'), async (req, res) => {
 router.get('/:id/download', async (req, res) => {
   try {
     const { id } = req.params;
-    const { rows } = await pool.query('SELECT file_path, name, type FROM documents WHERE id = ', [id]);
+    const { rows } = await pool.query('SELECT file_path, name, type FROM documents WHERE id = $1', [id]);
     if (rows.length === 0) return res.status(404).json({ message: 'Document not found' });
 
     const doc = rows[0];
@@ -261,7 +268,7 @@ router.get('/:id/download', async (req, res) => {
 router.get('/:id/preview', async (req, res) => {
   try {
     const { id } = req.params;
-    const { rows } = await pool.query('SELECT file_path, name, type FROM documents WHERE id = ', [id]);
+    const { rows } = await pool.query('SELECT file_path, name, type FROM documents WHERE id = $1', [id]);
     if (rows.length === 0) return res.status(404).json({ message: 'Document not found' });
 
     const doc = rows[0];
@@ -285,7 +292,7 @@ router.get('/:id/preview', async (req, res) => {
     const contentType = contentTypes[ext] || 'application/octet-stream';
     res.setHeader('Content-Type', contentType);
     res.setHeader('Content-Disposition', `inline; filename="${doc.name}"`);
-    
+
     const fileStream = fs.createReadStream(fullPath);
     fileStream.pipe(res);
   } catch (err) {
@@ -300,12 +307,12 @@ router.get('/folders/list', async (req, res) => {
     const { parent } = req.query;
     let query = 'SELECT DISTINCT parent_folder FROM documents WHERE parent_folder IS NOT NULL';
     const params = [];
-    
+
     if (parent) {
-      query += ' AND parent_folder = ';
+      query += ' AND parent_folder = $1';
       params.push(parent);
     }
-    
+
     const { rows } = await pool.query(query, params);
     res.json({ data: rows.map(r => r.parent_folder) });
   } catch (err) {
@@ -319,15 +326,15 @@ router.delete('/:id', async (req, res) => {
   try {
     const { id } = req.params;
 
-    const { rows } = await pool.query('SELECT file_path FROM documents WHERE id = ', [id]);
+    const { rows } = await pool.query('SELECT file_path FROM documents WHERE id = $1', [id]);
     if (rows.length === 0) {
       return res.status(404).json({ message: 'Document not found' });
     }
 
     const filePath = rows[0].file_path;
-    
-    await pool.query('DELETE FROM document_versions WHERE document_id = ', [id]);
-    await pool.query('DELETE FROM documents WHERE id = ', [id]);
+
+    await pool.query('DELETE FROM document_versions WHERE document_id = $1', [id]);
+    await pool.query('DELETE FROM documents WHERE id = $1', [id]);
 
     if (filePath) {
       const fullPath = path.join(__dirname, '..', filePath);

@@ -1,10 +1,14 @@
-// Module: Projects — CortexBuild Ultimate  (Full Workspace with Subpages)
-import { useState } from 'react';
+// Module: Projects — CortexBuild Ultimate  (Enhanced with Gallery, Tasks, Documents)
+// ═══════════════════════════════════════════════════════════════════════════
+import { useState, useRef, useCallback } from 'react';
 import {
   Plus, X, Trash2, Edit2, Search, ChevronRight, MapPin, Users, Calendar,
   PoundSterling, TrendingUp, AlertTriangle, CheckCircle2, Clock, Building2,
   BarChart3, FileText, Shield, ClipboardList, HardHat, ArrowLeft,
   Loader2, RefreshCw, MessageSquare, AlertCircle, CheckSquare, Square, Circle,
+  Upload, Image, Eye, Download, MoreHorizontal, Tag, Filter, Grid3X3,
+  LayoutGrid, List, ChevronDown, XCircle, CheckCircle, ArrowRight,
+  FolderOpen, File, FileSpreadsheet, FileCheck, Clock3, User,
 } from 'lucide-react';
 import { BulkActionsBar, useBulkSelection } from '../ui/BulkActions';
 import {
@@ -14,7 +18,9 @@ import {
 import {
   useProjects, useInvoices, useTeam, useDocuments,
   useRFIs, useChangeOrders, useSafety, useDailyReports,
+  useProjectImages, useProjectTasks,
 } from '../../hooks/useData';
+import { projectImagesApi, projectTasksApi } from '../../services/api';
 import type { ProjectStatus, Priority } from '../../types';
 import clsx from 'clsx';
 import { toast } from 'sonner';
@@ -37,6 +43,21 @@ const PRIORITY_CFG: Record<string, { label:string; color:string; dot:string }> =
   low:      { label:'Low',      color:'text-gray-400',    dot:'bg-gray-500'   },
 };
 
+const TASK_STATUSES = ['todo', 'in_progress', 'review', 'blocked', 'done'];
+const TASK_STATUS_LABELS: Record<string, string> = {
+  todo: 'To Do', in_progress: 'In Progress', review: 'Review', blocked: 'Blocked', done: 'Done',
+};
+const TASK_STATUS_COLORS: Record<string, string> = {
+  todo: 'bg-gray-600',
+  in_progress: 'bg-blue-600',
+  review: 'bg-purple-600',
+  blocked: 'bg-red-600',
+  done: 'bg-green-600',
+};
+
+const DOC_CATEGORIES = ['RAMS','Drawings','Reports','Contracts','Specifications','Health & Safety','Method Statements','Pictures','General'];
+const IMAGE_CATEGORIES = ['site_progress','aerial','interior','exterior','materials','team','general'];
+
 const PROJECT_TYPES  = ['Commercial','Residential','Civil','Industrial','Healthcare','Fit-Out','Infrastructure','Refurbishment'];
 const PROJECT_PHASES = ['Pre-construction','Tender','Design','Foundation','Structural','Envelope','Internal Fit-Out','MEP','Finishing','Snagging','Handover'];
 const defaultForm    = { name:'', client:'', location:'', type:'Commercial', manager:'', budget:'', contract_value:'', workers:'0', start_date:'', end_date:'', status:'planning', phase:'Pre-construction', description:'' };
@@ -51,11 +72,888 @@ function getBudgetHealth(spent:number, budget:number): 'green'|'amber'|'red' {
   if(pct<=85) return 'amber';
   return 'red';
 }
+function formatDate(d: string | null | undefined) {
+  if (!d) return '—';
+  try { return new Date(d).toLocaleDateString('en-GB', { day:'numeric', month:'short', year:'numeric' }); }
+  catch { return d; }
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// GALLERY TAB
+// ═══════════════════════════════════════════════════════════════════════════
+interface GalleryTabProps {
+  projectId: string;
+  projectName: string;
+}
+
+function GalleryTab({ projectId, projectName }: GalleryTabProps) {
+  const { data: images = [], isLoading, refetch } = useProjectImages.useList();
+  const filteredImages = (images as AnyRow[]).filter((img: AnyRow) => String(img.project_id) === projectId);
+  const [selectedImage, setSelectedImage] = useState<AnyRow | null>(null);
+  const [showUpload, setShowUpload] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const [caption, setCaption] = useState('');
+  const [imgCategory, setImgCategory] = useState('general');
+  const [filterCat, setFilterCat] = useState<string>('all');
+  const fileRef = useRef<HTMLInputElement>(null);
+
+  const displayed = filterCat === 'all' ? filteredImages : filteredImages.filter((img: AnyRow) => img.category === filterCat);
+
+  const handleUpload = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const ext = file.name.split('.').pop()?.toLowerCase() ?? '';
+    if (!['png','jpg','jpeg','gif','webp'].includes(ext)) {
+      toast.error('Only image files (PNG, JPG, GIF, WebP) are allowed');
+      return;
+    }
+    setUploading(true);
+    try {
+      await projectImagesApi.uploadImage(file, projectId, caption, imgCategory);
+      toast.success('Image uploaded successfully');
+      setCaption('');
+      setImgCategory('general');
+      setShowUpload(false);
+      refetch();
+    } catch (err: any) {
+      toast.error(err.message || 'Upload failed');
+    } finally {
+      setUploading(false);
+    }
+  }, [projectId, caption, imgCategory, refetch]);
+
+  const handleDelete = useCallback(async (id: string) => {
+    if (!confirm('Delete this image?')) return;
+    try {
+      await projectImagesApi.delete(id);
+      toast.success('Image deleted');
+      setSelectedImage(null);
+      refetch();
+    } catch (err: any) {
+      toast.error(err.message || 'Delete failed');
+    }
+  }, [refetch]);
+
+  const handleUpdateCaption = useCallback(async (id: string, newCaption: string) => {
+    try {
+      await projectImagesApi.update(id, { caption: newCaption });
+      toast.success('Caption updated');
+      refetch();
+    } catch (err: any) {
+      toast.error(err.message || 'Update failed');
+    }
+  }, [refetch]);
+
+  return (
+    <div className="space-y-4">
+      {/* Toolbar */}
+      <div className="flex items-center justify-between gap-3 flex-wrap">
+        <div className="flex items-center gap-2">
+          <select
+            value={filterCat}
+            onChange={e => setFilterCat(e.target.value)}
+            className="bg-gray-800 border border-gray-700 rounded-lg px-3 py-1.5 text-sm text-white focus:outline-none focus:border-blue-500"
+          >
+            <option value="all">All Categories</option>
+            {IMAGE_CATEGORIES.map(c => <option key={c} value={c}>{c.replace(/_/g,' ')}</option>)}
+          </select>
+          <span className="text-xs text-gray-400">{displayed.length} image{displayed.length !== 1 ? 's' : ''}</span>
+        </div>
+        <div className="flex items-center gap-2">
+          <button onClick={() => refetch()} className="p-1.5 text-gray-400 hover:text-white rounded-lg hover:bg-gray-800">
+            <RefreshCw className="w-4 h-4" />
+          </button>
+          <button
+            onClick={() => setShowUpload(true)}
+            className="flex items-center gap-2 px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-sm rounded-lg transition-colors"
+          >
+            <Upload className="w-3.5 h-3.5" /> Add Photos
+          </button>
+        </div>
+      </div>
+
+      {/* Upload dropzone */}
+      {showUpload && (
+        <div className="bg-gray-900 border-2 border-dashed border-blue-600/50 rounded-xl p-6 space-y-3">
+          <div className="flex items-center justify-between">
+            <h3 className="text-sm font-semibold text-white">Upload Photos to {projectName}</h3>
+            <button onClick={() => setShowUpload(false)} className="text-gray-400 hover:text-white"><X className="w-4 h-4" /></button>
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="block text-xs text-gray-400 mb-1">Category</label>
+              <select value={imgCategory} onChange={e => setImgCategory(e.target.value)}
+                className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-blue-500">
+                {IMAGE_CATEGORIES.map(c => <option key={c} value={c}>{c.replace(/_/g,' ')}</option>)}
+              </select>
+            </div>
+            <div>
+              <label className="block text-xs text-gray-400 mb-1">Caption (optional)</label>
+              <input value={caption} onChange={e => setCaption(e.target.value)} placeholder="e.g. Steel frame completion"
+                className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-blue-500" />
+            </div>
+          </div>
+          <div
+            onClick={() => fileRef.current?.click()}
+            className="border-2 border-dashed border-gray-600 rounded-lg p-8 text-center cursor-pointer hover:border-blue-500 transition-colors"
+          >
+            <Image className="w-8 h-8 text-gray-500 mx-auto mb-2" />
+            <p className="text-sm text-gray-400">Click to select image</p>
+            <p className="text-xs text-gray-500 mt-1">PNG, JPG, GIF, WebP — max 50MB</p>
+            <input ref={fileRef} type="file" accept="image/*" onChange={handleUpload} className="hidden" />
+          </div>
+          {uploading && (
+            <div className="flex items-center gap-2 text-blue-400 text-sm">
+              <Loader2 className="w-4 h-4 animate-spin" /> Uploading...
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Gallery grid */}
+      {isLoading ? (
+        <div className="flex items-center justify-center py-16"><Loader2 className="w-8 h-8 text-blue-400 animate-spin" /></div>
+      ) : displayed.length === 0 ? (
+        <div className="bg-gray-900 border border-gray-800 rounded-xl py-16 text-center">
+          <Image className="w-12 h-12 text-gray-600 mx-auto mb-3" />
+          <p className="text-gray-400 font-medium">No photos yet</p>
+          <p className="text-gray-500 text-sm mt-1">Upload site photos to track progress visually</p>
+        </div>
+      ) : (
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+          {displayed.map((img: AnyRow) => (
+            <div key={String(img.id)} className="group relative bg-gray-900 border border-gray-800 rounded-xl overflow-hidden cursor-pointer hover:border-blue-600/50 transition-all"
+              onClick={() => setSelectedImage(img)}>
+              <div className="aspect-[4/3] bg-gray-800">
+                <img
+                  src={`https://www.cortexbuildpro.com${String(img.file_path ?? '')}`}
+                  alt={String(img.caption ?? '')}
+                  className="w-full h-full object-cover"
+                  onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
+                />
+              </div>
+              <div className="p-2">
+                <p className="text-xs text-white truncate">{String(img.caption || 'No caption')}</p>
+                <p className="text-xs text-gray-500 mt-0.5">{String(img.category ?? 'general').replace(/_/g,' ')} · {formatDate(img.created_at)}</p>
+              </div>
+              <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
+                <button className="p-2 bg-white/20 hover:bg-white/30 rounded-lg text-white"><Eye className="w-4 h-4" /></button>
+                <button onClick={(e) => { e.stopPropagation(); window.open(`https://www.cortexbuildpro.com${img.file_path}`, '_blank'); }}
+                  className="p-2 bg-white/20 hover:bg-white/30 rounded-lg text-white"><Download className="w-4 h-4" /></button>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Lightbox */}
+      {selectedImage && (
+        <div className="fixed inset-0 z-50 bg-black/90 backdrop-blur-sm flex items-center justify-center p-4"
+          onClick={() => setSelectedImage(null)}>
+          <div className="relative max-w-5xl w-full" onClick={e => e.stopPropagation()}>
+            <button onClick={() => setSelectedImage(null)}
+              className="absolute -top-10 right-0 text-white/70 hover:text-white flex items-center gap-1 text-sm">
+              <X className="w-4 h-4" /> Close
+            </button>
+            <div className="bg-gray-900 border border-gray-700 rounded-2xl overflow-hidden">
+              <div className="max-h-[70vh] overflow-hidden">
+                <img
+                  src={`https://www.cortexbuildpro.com${String(selectedImage.file_path ?? '')}`}
+                  alt={String(selectedImage.caption ?? '')}
+                  className="w-full h-full object-contain"
+                  onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
+                />
+              </div>
+              <div className="p-4 space-y-3">
+                <div className="flex items-center justify-between gap-3">
+                  <div>
+                    <p className="text-white font-medium">{String(selectedImage.caption || 'No caption')}</p>
+                    <p className="text-gray-400 text-sm mt-0.5">
+                      {String(selectedImage.category ?? 'general').replace(/_/g,' ')} · Uploaded by {String(selectedImage.uploaded_by ?? 'Unknown')} · {formatDate(selectedImage.created_at)}
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <button onClick={() => window.open(`https://www.cortexbuildpro.com${selectedImage.file_path}`, '_blank')}
+                      className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-sm rounded-lg transition-colors">
+                      <Download className="w-3.5 h-3.5" /> Download
+                    </button>
+                    <button onClick={() => handleDelete(String(selectedImage.id))}
+                      className="flex items-center gap-1.5 px-3 py-1.5 bg-red-600/20 hover:bg-red-600/30 text-red-400 text-sm rounded-lg transition-colors">
+                      <Trash2 className="w-3.5 h-3.5" /> Delete
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// DOCUMENTS TAB (Enhanced)
+// ═══════════════════════════════════════════════════════════════════════════
+interface DocumentsTabProps {
+  projectId: string;
+  projectName: string;
+}
+
+function DocumentsTab({ projectId, projectName }: DocumentsTabProps) {
+  const { data: allDocs = [], isLoading, refetch } = useDocuments.useList();
+  const [filterCat, setFilterCat] = useState('all');
+  const [search, setSearch] = useState('');
+  const [showUpload, setShowUpload] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const [uploadForm, setUploadForm] = useState({ name: '', category: 'REPORTS', discipline: '', date_issued: '', author: '' });
+  const [selectedDoc, setSelectedDoc] = useState<AnyRow | null>(null);
+  const [editDoc, setEditDoc] = useState<AnyRow | null>(null);
+  const [editForm, setEditForm] = useState({ name: '', category: '', discipline: '', author: '' });
+  const fileRef = useRef<HTMLInputElement>(null);
+
+  const docs = (allDocs as AnyRow[]).filter((d: AnyRow) => {
+    const matchProject = !projectId || String(d.project_id ?? '') === projectId || String(d.project ?? '').toLowerCase().includes(projectName.toLowerCase().split(' ')[0]);
+    const matchCat = filterCat === 'all' || String(d.category ?? '') === filterCat;
+    const matchSearch = !search || String(d.name ?? '').toLowerCase().includes(search.toLowerCase());
+    return matchProject && matchCat && matchSearch;
+  });
+
+  const handleUpload = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setUploading(true);
+    try {
+      const { getToken } = await import('../../lib/supabase');
+      const token = getToken();
+      const formData = new FormData();
+      formData.append('file', file);
+      formData.append('name', uploadForm.name || file.name);
+      formData.append('category', uploadForm.category);
+      formData.append('project_id', projectId);
+      formData.append('discipline', uploadForm.discipline);
+      formData.append('date_issued', uploadForm.date_issued);
+      formData.append('author', uploadForm.author);
+      const res = await fetch('/api/files/upload', {
+        method: 'POST',
+        headers: { ...(token ? { Authorization: `Bearer ${token}` } : {}) },
+        body: formData,
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({ message: 'Upload failed' }));
+        throw new Error(err.message);
+      }
+      toast.success('Document uploaded');
+      setUploadForm({ name: '', category: 'REPORTS', discipline: '', date_issued: '', author: '' });
+      setShowUpload(false);
+      refetch();
+    } catch (err: any) {
+      toast.error(err.message || 'Upload failed');
+    } finally {
+      setUploading(false);
+    }
+  }, [uploadForm, projectId, refetch]);
+
+  const handleDelete = useCallback(async (id: string) => {
+    if (!confirm('Delete this document?')) return;
+    try {
+      const { getToken } = await import('../../lib/supabase');
+      const token = getToken();
+      const res = await fetch(`/api/files/${id}`, {
+        method: 'DELETE',
+        headers: { ...(token ? { Authorization: `Bearer ${token}` } : {}) },
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({ message: 'Delete failed' }));
+        throw new Error(err.message);
+      }
+      toast.success('Document deleted');
+      setSelectedDoc(null);
+      refetch();
+    } catch (err: any) {
+      toast.error(err.message || 'Delete failed');
+    }
+  }, [refetch]);
+
+  const handleEdit = useCallback(async (id: string) => {
+    try {
+      const { getToken } = await import('../../lib/supabase');
+      const token = getToken();
+      const res = await fetch(`/api/files/${id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+        body: JSON.stringify(editForm),
+      });
+      if (!res.ok) throw new Error('Update failed');
+      toast.success('Document updated');
+      setEditDoc(null);
+      refetch();
+    } catch (err: any) {
+      toast.error(err.message || 'Update failed');
+    }
+  }, [editForm, refetch]);
+
+  function getDocIcon(type: string) {
+    switch (type?.toUpperCase()) {
+      case 'PDF': return <FileText className="w-4 h-4 text-red-400" />;
+      case 'DOC': case 'DOCX': return <FileText className="w-4 h-4 text-blue-400" />;
+      case 'XLS': case 'XLSX': return <FileSpreadsheet className="w-4 h-4 text-green-400" />;
+      case 'DWG': case 'DXF': return <File className="w-4 h-4 text-orange-400" />;
+      case 'PNG': case 'JPG': case 'JPEG': case 'GIF': case 'WEBP': return <Image className="w-4 h-4 text-purple-400" />;
+      default: return <File className="w-4 h-4 text-gray-400" />;
+    }
+  }
+
+  return (
+    <div className="space-y-4">
+      {/* Toolbar */}
+      <div className="flex items-center justify-between gap-3 flex-wrap">
+        <div className="flex items-center gap-2 flex-wrap">
+          <select value={filterCat} onChange={e => setFilterCat(e.target.value)}
+            className="bg-gray-800 border border-gray-700 rounded-lg px-3 py-1.5 text-sm text-white focus:outline-none focus:border-blue-500">
+            <option value="all">All Categories</option>
+            {DOC_CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
+          </select>
+          <div className="relative">
+            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400" />
+            <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search documents..."
+              className="pl-8 pr-3 py-1.5 bg-gray-800 border border-gray-700 rounded-lg text-sm text-white focus:outline-none focus:border-blue-500 w-48" />
+          </div>
+          <span className="text-xs text-gray-400">{docs.length} document{docs.length !== 1 ? 's' : ''}</span>
+        </div>
+        <button onClick={() => setShowUpload(true)}
+          className="flex items-center gap-2 px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-sm rounded-lg transition-colors">
+          <Upload className="w-3.5 h-3.5" /> Upload Document
+        </button>
+      </div>
+
+      {/* Upload modal */}
+      {showUpload && (
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-gray-900 border border-gray-700 rounded-2xl w-full max-w-md shadow-2xl">
+            <div className="flex items-center justify-between px-5 py-4 border-b border-gray-800">
+              <h3 className="text-sm font-bold text-white">Upload Document</h3>
+              <button onClick={() => setShowUpload(false)} className="text-gray-400 hover:text-white"><X className="w-4 h-4" /></button>
+            </div>
+            <div className="p-5 space-y-3">
+              <div>
+                <label className="block text-xs text-gray-400 mb-1">Category</label>
+                <select value={uploadForm.category} onChange={e => setUploadForm(f => ({ ...f, category: e.target.value }))}
+                  className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-blue-500">
+                  {DOC_CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
+                </select>
+              </div>
+              <div>
+                <label className="block text-xs text-gray-400 mb-1">Document Name</label>
+                <input value={uploadForm.name} onChange={e => setUploadForm(f => ({ ...f, name: e.target.value }))} placeholder="Leave blank to use filename"
+                  className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-blue-500" />
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs text-gray-400 mb-1">Discipline</label>
+                  <input value={uploadForm.discipline} onChange={e => setUploadForm(f => ({ ...f, discipline: e.target.value }))} placeholder="e.g. Structural"
+                    className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-blue-500" />
+                </div>
+                <div>
+                  <label className="block text-xs text-gray-400 mb-1">Date Issued</label>
+                  <input type="date" value={uploadForm.date_issued} onChange={e => setUploadForm(f => ({ ...f, date_issued: e.target.value }))}
+                    className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-blue-500" />
+                </div>
+              </div>
+              <div>
+                <label className="block text-xs text-gray-400 mb-1">Author</label>
+                <input value={uploadForm.author} onChange={e => setUploadForm(f => ({ ...f, author: e.target.value }))} placeholder="Author name"
+                  className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-blue-500" />
+              </div>
+              <div onClick={() => fileRef.current?.click()}
+                className="border-2 border-dashed border-gray-600 rounded-lg p-6 text-center cursor-pointer hover:border-blue-500 transition-colors">
+                <Upload className="w-6 h-6 text-gray-500 mx-auto mb-2" />
+                <p className="text-sm text-gray-400">Click to select file</p>
+                <p className="text-xs text-gray-500 mt-1">PDF, DOC, XLS, DWG, PNG, JPG — max 100MB</p>
+                <input ref={fileRef} type="file" onChange={handleUpload} className="hidden" />
+              </div>
+              {uploading && (
+                <div className="flex items-center gap-2 text-blue-400 text-sm">
+                  <Loader2 className="w-4 h-4 animate-spin" /> Uploading...
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Documents table */}
+      {isLoading ? (
+        <div className="flex items-center justify-center py-16"><Loader2 className="w-8 h-8 text-blue-400 animate-spin" /></div>
+      ) : docs.length === 0 ? (
+        <div className="bg-gray-900 border border-gray-800 rounded-xl py-16 text-center">
+          <FolderOpen className="w-12 h-12 text-gray-600 mx-auto mb-3" />
+          <p className="text-gray-400 font-medium">No documents found</p>
+          <p className="text-gray-500 text-sm mt-1">Upload documents to keep project records organized</p>
+        </div>
+      ) : (
+        <div className="bg-gray-900 border border-gray-800 rounded-xl overflow-hidden">
+          <table className="w-full text-sm">
+            <thead className="bg-gray-800/60 border-b border-gray-700">
+              <tr>
+                {['Name', 'Type', 'Category', 'Version', 'Size', 'Author', 'Date', 'Actions'].map(h => (
+                  <th key={h} className="px-4 py-3 text-left text-xs font-semibold text-gray-400 uppercase">{h}</th>
+                ))}
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-gray-800">
+              {docs.map((doc: AnyRow) => (
+                <tr key={String(doc.id)} className="hover:bg-gray-800/40 group">
+                  <td className="px-4 py-3">
+                    <div className="flex items-center gap-2">
+                      {getDocIcon(String(doc.type ?? ''))}
+                      <span className="text-white font-medium text-xs max-w-[200px] truncate">{String(doc.name ?? '—')}</span>
+                    </div>
+                  </td>
+                  <td className="px-4 py-3 text-gray-400 text-xs">{String(doc.type ?? '—')}</td>
+                  <td className="px-4 py-3"><span className="text-xs px-2 py-0.5 rounded-full bg-gray-800 text-gray-300">{String(doc.category ?? '—')}</span></td>
+                  <td className="px-4 py-3 text-orange-400 text-xs font-mono">v{doc.version ?? '1.0'}</td>
+                  <td className="px-4 py-3 text-gray-400 text-xs">{String(doc.size ?? '—')}</td>
+                  <td className="px-4 py-3 text-gray-400 text-xs">{String(doc.author ?? doc.uploaded_by ?? '—')}</td>
+                  <td className="px-4 py-3 text-gray-400 text-xs">{formatDate(doc.date_issued ?? doc.created_at)}</td>
+                  <td className="px-4 py-3">
+                    <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                      {['PNG','JPG','JPEG','GIF','WEBP'].includes(String(doc.type ?? '').toUpperCase()) ? (
+                        <button onClick={() => window.open(`/api/files/${doc.id}/preview`, '_blank')}
+                          className="p-1 text-gray-400 hover:text-white rounded"><Eye className="w-3.5 h-3.5" /></button>
+                      ) : (
+                        <button onClick={() => window.open(`/api/files/${doc.id}/download`, '_blank')}
+                          className="p-1 text-gray-400 hover:text-white rounded"><Download className="w-3.5 h-3.5" /></button>
+                      )}
+                      <button onClick={() => { setEditDoc(doc); setEditForm({ name: String(doc.name ?? ''), category: String(doc.category ?? ''), discipline: String(doc.discipline ?? ''), author: String(doc.author ?? '') }); }}
+                        className="p-1 text-gray-400 hover:text-white rounded"><Edit2 className="w-3.5 h-3.5" /></button>
+                      <button onClick={() => handleDelete(String(doc.id))}
+                        className="p-1 text-gray-400 hover:text-red-400 rounded"><Trash2 className="w-3.5 h-3.5" /></button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+
+      {/* Edit modal */}
+      {editDoc && (
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-gray-900 border border-gray-700 rounded-2xl w-full max-w-md shadow-2xl">
+            <div className="flex items-center justify-between px-5 py-4 border-b border-gray-800">
+              <h3 className="text-sm font-bold text-white">Edit Document</h3>
+              <button onClick={() => setEditDoc(null)} className="text-gray-400 hover:text-white"><X className="w-4 h-4" /></button>
+            </div>
+            <div className="p-5 space-y-3">
+              <div>
+                <label className="block text-xs text-gray-400 mb-1">Name</label>
+                <input value={editForm.name} onChange={e => setEditForm(f => ({ ...f, name: e.target.value }))}
+                  className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-blue-500" />
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs text-gray-400 mb-1">Category</label>
+                  <select value={editForm.category} onChange={e => setEditForm(f => ({ ...f, category: e.target.value }))}
+                    className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-blue-500">
+                    {DOC_CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-xs text-gray-400 mb-1">Author</label>
+                  <input value={editForm.author} onChange={e => setEditForm(f => ({ ...f, author: e.target.value }))}
+                    className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-blue-500" />
+                </div>
+              </div>
+              <div>
+                <label className="block text-xs text-gray-400 mb-1">Discipline</label>
+                <input value={editForm.discipline} onChange={e => setEditForm(f => ({ ...f, discipline: e.target.value }))}
+                  className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-blue-500" />
+              </div>
+              <div className="flex gap-3 pt-2">
+                <button onClick={() => handleEdit(String(editDoc.id))}
+                  className="flex-1 bg-blue-600 hover:bg-blue-700 text-white rounded-lg py-2 text-sm font-semibold transition-colors">
+                  Save Changes
+                </button>
+                <button onClick={() => setEditDoc(null)}
+                  className="flex-1 bg-gray-800 hover:bg-gray-700 text-white rounded-lg py-2 text-sm font-semibold transition-colors">
+                  Cancel
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// TASKS TAB (Kanban + Full CRUD)
+// ═══════════════════════════════════════════════════════════════════════════
+interface TasksTabProps {
+  projectId: string;
+}
+
+const TASK_FORM_DEFAULTS = { title: '', description: '', priority: 'medium', assigned_to: '', due_date: '', category: 'general', estimated_hours: '' };
+
+function TasksTab({ projectId }: TasksTabProps) {
+  const { data: rawTasks = [], isLoading, refetch } = useProjectTasks.useList();
+  const allTasks = rawTasks as AnyRow[];
+  const tasks = allTasks.filter((t: AnyRow) => String(t.project_id ?? '') === projectId);
+
+  const [showCreate, setShowCreate] = useState(false);
+  const [createForm, setCreateForm] = useState(TASK_FORM_DEFAULTS);
+  const [editingTask, setEditingTask] = useState<AnyRow | null>(null);
+  const [editForm, setEditForm] = useState(TASK_FORM_DEFAULTS);
+  const [filterPriority, setFilterPriority] = useState('all');
+  const [filterAssignee, setFilterAssignee] = useState('all');
+  const [draggingTask, setDraggingTask] = useState<string | null>(null);
+
+  const filteredTasks = tasks.filter((t: AnyRow) => {
+    if (filterPriority !== 'all' && String(t.priority ?? '') !== filterPriority) return false;
+    if (filterAssignee !== 'all' && String(t.assigned_to ?? '') !== filterAssignee !== filterAssignee) return false;
+    return true;
+  });
+
+  const byStatus = TASK_STATUSES.reduce((acc, status) => {
+    acc[status] = filteredTasks.filter((t: AnyRow) => t.status === status);
+    return acc;
+  }, {} as Record<string, AnyRow[]>);
+
+  const handleCreate = useCallback(async () => {
+    if (!createForm.title.trim()) { toast.error('Title is required'); return; }
+    try {
+      await projectTasksApi.create({
+        project_id: projectId,
+        title: createForm.title,
+        description: createForm.description,
+        priority: createForm.priority,
+        assigned_to: createForm.assigned_to || null,
+        due_date: createForm.due_date || null,
+        category: createForm.category,
+        estimated_hours: createForm.estimated_hours ? parseFloat(createForm.estimated_hours) : null,
+        status: 'todo',
+      });
+      toast.success('Task created');
+      setCreateForm(TASK_FORM_DEFAULTS);
+      setShowCreate(false);
+      refetch();
+    } catch (err: any) {
+      toast.error(err.message || 'Failed to create task');
+    }
+  }, [createForm, projectId, refetch]);
+
+  const handleUpdate = useCallback(async () => {
+    if (!editingTask) return;
+    try {
+      await projectTasksApi.update(String(editingTask.id), {
+        title: editForm.title,
+        description: editForm.description,
+        priority: editForm.priority,
+        assigned_to: editForm.assigned_to || null,
+        due_date: editForm.due_date || null,
+        category: editForm.category,
+        estimated_hours: editForm.estimated_hours ? parseFloat(editForm.estimated_hours) : null,
+      });
+      toast.success('Task updated');
+      setEditingTask(null);
+      refetch();
+    } catch (err: any) {
+      toast.error(err.message || 'Failed to update task');
+    }
+  }, [editingTask, editForm, refetch]);
+
+  const handleDelete = useCallback(async (id: string) => {
+    if (!confirm('Delete this task?')) return;
+    try {
+      await projectTasksApi.delete(id);
+      toast.success('Task deleted');
+      refetch();
+    } catch (err: any) {
+      toast.error(err.message || 'Failed to delete task');
+    }
+  }, [refetch]);
+
+  const handleStatusChange = useCallback(async (id: string, newStatus: string) => {
+    try {
+      await projectTasksApi.update(id, { status: newStatus });
+      refetch();
+    } catch (err: any) {
+      toast.error(err.message || 'Failed to update status');
+    }
+  }, [refetch]);
+
+  function openEdit(task: AnyRow) {
+    setEditingTask(task);
+    setEditForm({
+      title: String(task.title ?? ''),
+      description: String(task.description ?? ''),
+      priority: String(task.priority ?? 'medium'),
+      assigned_to: String(task.assigned_to ?? ''),
+      due_date: String(task.due_date ?? ''),
+      category: String(task.category ?? 'general'),
+      estimated_hours: String(task.estimated_hours ?? ''),
+    });
+  }
+
+  function TaskCard({ task }: { task: AnyRow }) {
+    const daysUntilDue = task.due_date ? daysDiff(String(task.due_date)) : null;
+    const isOverdue = daysUntilDue !== null && daysUntilDue < 0 && task.status !== 'done';
+    const priorityCfg = PRIORITY_CFG[String(task.priority ?? 'medium')] ?? PRIORITY_CFG.low;
+
+    return (
+      <div
+        className="bg-gray-800/80 border border-gray-700 rounded-lg p-3 cursor-grab active:cursor-grabbing hover:border-blue-600/50 transition-all group"
+        draggable
+        onDragStart={() => setDraggingTask(String(task.id))}
+      >
+        <div className="flex items-start justify-between gap-2 mb-2">
+          <span className={`text-xs px-1.5 py-0.5 rounded font-medium ${priorityCfg.color} bg-opacity-20`}
+            style={{ backgroundColor: `${priorityCfg.dot}33` }}>
+            {priorityCfg.label}
+          </span>
+          <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
+            <button onClick={() => openEdit(task)} className="p-1 text-gray-400 hover:text-white rounded"><Edit2 className="w-3 h-3" /></button>
+            <button onClick={() => handleDelete(String(task.id))} className="p-1 text-gray-400 hover:text-red-400 rounded"><Trash2 className="w-3 h-3" /></button>
+          </div>
+        </div>
+        <p className="text-white text-sm font-medium mb-2 leading-snug">{String(task.title ?? '')}</p>
+        {task.description && <p className="text-gray-400 text-xs mb-2 line-clamp-2">{String(task.description)}</p>}
+        <div className="flex items-center justify-between text-xs">
+          <div className="flex items-center gap-1.5">
+            {task.assigned_to ? (
+              <span className="flex items-center gap-1 text-gray-400">
+                <User className="w-3 h-3" />{String(task.assigned_to).split(' ')[0]}
+              </span>
+            ) : (
+              <span className="text-gray-600">Unassigned</span>
+            )}
+          </div>
+          {task.due_date && (
+            <span className={isOverdue ? 'text-red-400 font-semibold' : daysUntilDue !== null && daysUntilDue < 3 ? 'text-yellow-400' : 'text-gray-400'}>
+              <Clock className="inline w-3 h-3 mr-0.5" />
+              {isOverdue ? `${Math.abs(daysUntilDue!)}d overdue` : `${daysUntilDue}d left`}
+            </span>
+          )}
+        </div>
+        {task.estimated_hours && (
+          <p className="text-gray-600 text-xs mt-1">⏱ {task.estimated_hours}h estimated</p>
+        )}
+        {/* Status selector */}
+        <div className="mt-2 pt-2 border-t border-gray-700">
+          <select
+            value={String(task.status ?? 'todo')}
+            onChange={(e) => handleStatusChange(String(task.id), e.target.value)}
+            onClick={(e) => e.stopPropagation()}
+            className="w-full bg-gray-700/50 border border-gray-600 rounded px-2 py-1 text-xs text-white focus:outline-none focus:border-blue-500 cursor-pointer"
+          >
+            {TASK_STATUSES.map(s => (
+              <option key={s} value={s}>{TASK_STATUS_LABELS[s]}</option>
+            ))}
+          </select>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-4">
+      {/* Toolbar */}
+      <div className="flex items-center justify-between gap-3 flex-wrap">
+        <div className="flex items-center gap-2 flex-wrap">
+          <select value={filterPriority} onChange={e => setFilterPriority(e.target.value)}
+            className="bg-gray-800 border border-gray-700 rounded-lg px-3 py-1.5 text-sm text-white focus:outline-none focus:border-blue-500">
+            <option value="all">All Priorities</option>
+            {Object.entries(PRIORITY_CFG).map(([k, v]) => <option key={k} value={k}>{v.label}</option>)}
+          </select>
+          <span className="text-xs text-gray-400">{filteredTasks.length} task{filteredTasks.length !== 1 ? 's' : ''}</span>
+        </div>
+        <button onClick={() => setShowCreate(true)}
+          className="flex items-center gap-2 px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-sm rounded-lg transition-colors">
+          <Plus className="w-3.5 h-3.5" /> Create Task
+        </button>
+      </div>
+
+      {/* Create task modal */}
+      {showCreate && (
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-gray-900 border border-gray-700 rounded-2xl w-full max-w-md shadow-2xl">
+            <div className="flex items-center justify-between px-5 py-4 border-b border-gray-800">
+              <h3 className="text-sm font-bold text-white">Create Task</h3>
+              <button onClick={() => setShowCreate(false)} className="text-gray-400 hover:text-white"><X className="w-4 h-4" /></button>
+            </div>
+            <div className="p-5 space-y-3">
+              <div>
+                <label className="block text-xs text-gray-400 mb-1">Title *</label>
+                <input value={createForm.title} onChange={e => setCreateForm(f => ({ ...f, title: e.target.value }))} placeholder="Task title"
+                  className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-blue-500" />
+              </div>
+              <div>
+                <label className="block text-xs text-gray-400 mb-1">Description</label>
+                <textarea value={createForm.description} onChange={e => setCreateForm(f => ({ ...f, description: e.target.value }))} rows={2}
+                  placeholder="Task details..."
+                  className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white resize-none focus:outline-none focus:border-blue-500" />
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs text-gray-400 mb-1">Priority</label>
+                  <select value={createForm.priority} onChange={e => setCreateForm(f => ({ ...f, priority: e.target.value }))}
+                    className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-blue-500">
+                    {Object.entries(PRIORITY_CFG).map(([k, v]) => <option key={k} value={k}>{v.label}</option>)}
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-xs text-gray-400 mb-1">Due Date</label>
+                  <input type="date" value={createForm.due_date} onChange={e => setCreateForm(f => ({ ...f, due_date: e.target.value }))}
+                    className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-blue-500" />
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs text-gray-400 mb-1">Assigned To</label>
+                  <input value={createForm.assigned_to} onChange={e => setCreateForm(f => ({ ...f, assigned_to: e.target.value }))} placeholder="Name"
+                    className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-blue-500" />
+                </div>
+                <div>
+                  <label className="block text-xs text-gray-400 mb-1">Estimated Hours</label>
+                  <input type="number" value={createForm.estimated_hours} onChange={e => setCreateForm(f => ({ ...f, estimated_hours: e.target.value }))} placeholder="0"
+                    className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-blue-500" />
+                </div>
+              </div>
+              <div>
+                <label className="block text-xs text-gray-400 mb-1">Category</label>
+                <input value={createForm.category} onChange={e => setCreateForm(f => ({ ...f, category: e.target.value }))} placeholder="general"
+                  className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-blue-500" />
+              </div>
+              <div className="flex gap-3 pt-2">
+                <button onClick={handleCreate}
+                  className="flex-1 bg-blue-600 hover:bg-blue-700 text-white rounded-lg py-2 text-sm font-semibold transition-colors">
+                  Create Task
+                </button>
+                <button onClick={() => setShowCreate(false)}
+                  className="flex-1 bg-gray-800 hover:bg-gray-700 text-white rounded-lg py-2 text-sm font-semibold transition-colors">
+                  Cancel
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Edit task modal */}
+      {editingTask && (
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-gray-900 border border-gray-700 rounded-2xl w-full max-w-md shadow-2xl">
+            <div className="flex items-center justify-between px-5 py-4 border-b border-gray-800">
+              <h3 className="text-sm font-bold text-white">Edit Task</h3>
+              <button onClick={() => setEditingTask(null)} className="text-gray-400 hover:text-white"><X className="w-4 h-4" /></button>
+            </div>
+            <div className="p-5 space-y-3">
+              <div>
+                <label className="block text-xs text-gray-400 mb-1">Title *</label>
+                <input value={editForm.title} onChange={e => setEditForm(f => ({ ...f, title: e.target.value }))}
+                  className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-blue-500" />
+              </div>
+              <div>
+                <label className="block text-xs text-gray-400 mb-1">Description</label>
+                <textarea value={editForm.description} onChange={e => setEditForm(f => ({ ...f, description: e.target.value }))} rows={2}
+                  className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white resize-none focus:outline-none focus:border-blue-500" />
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs text-gray-400 mb-1">Priority</label>
+                  <select value={editForm.priority} onChange={e => setEditForm(f => ({ ...f, priority: e.target.value }))}
+                    className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-blue-500">
+                    {Object.entries(PRIORITY_CFG).map(([k, v]) => <option key={k} value={k}>{v.label}</option>)}
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-xs text-gray-400 mb-1">Due Date</label>
+                  <input type="date" value={editForm.due_date} onChange={e => setEditForm(f => ({ ...f, due_date: e.target.value }))}
+                    className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-blue-500" />
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs text-gray-400 mb-1">Assigned To</label>
+                  <input value={editForm.assigned_to} onChange={e => setEditForm(f => ({ ...f, assigned_to: e.target.value }))}
+                    className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-blue-500" />
+                </div>
+                <div>
+                  <label className="block text-xs text-gray-400 mb-1">Estimated Hours</label>
+                  <input type="number" value={editForm.estimated_hours} onChange={e => setEditForm(f => ({ ...f, estimated_hours: e.target.value }))}
+                    className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-blue-500" />
+                </div>
+              </div>
+              <div className="flex gap-3 pt-2">
+                <button onClick={handleUpdate}
+                  className="flex-1 bg-blue-600 hover:bg-blue-700 text-white rounded-lg py-2 text-sm font-semibold transition-colors">
+                  Save Changes
+                </button>
+                <button onClick={() => setEditingTask(null)}
+                  className="flex-1 bg-gray-800 hover:bg-gray-700 text-white rounded-lg py-2 text-sm font-semibold transition-colors">
+                  Cancel
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Kanban board */}
+      {isLoading ? (
+        <div className="flex items-center justify-center py-16"><Loader2 className="w-8 h-8 text-blue-400 animate-spin" /></div>
+      ) : (
+        <div className="grid grid-cols-5 gap-3 overflow-x-auto pb-4">
+          {TASK_STATUSES.map(status => (
+            <div key={status} className="min-w-[220px]">
+              <div className="flex items-center justify-between mb-2 px-1">
+                <div className="flex items-center gap-2">
+                  <div className={`w-2 h-2 rounded-full ${TASK_STATUS_COLORS[status]}`} />
+                  <span className="text-xs font-semibold text-gray-300">{TASK_STATUS_LABELS[status]}</span>
+                </div>
+                <span className="text-xs text-gray-600">{byStatus[status]?.length ?? 0}</span>
+              </div>
+              <div className="space-y-2">
+                {(byStatus[status] ?? []).map((task: AnyRow) => (
+                  <TaskCard key={String(task.id)} task={task} />
+                ))}
+                {byStatus[status]?.length === 0 && (
+                  <div className="border-2 border-dashed border-gray-700 rounded-lg p-4 text-center">
+                    <p className="text-xs text-gray-600">No tasks</p>
+                  </div>
+                )}
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Summary bar */}
+      {!isLoading && filteredTasks.length > 0 && (
+        <div className="flex items-center gap-4 text-xs text-gray-400 bg-gray-900 border border-gray-800 rounded-xl px-4 py-3">
+          <span><strong className="text-white">{filteredTasks.length}</strong> total tasks</span>
+          <span>·</span>
+          <span><strong className="text-green-400">{(filteredTasks as AnyRow[]).filter((t: AnyRow) => t.status === 'done').length}</strong> done</span>
+          <span>·</span>
+          <span><strong className="text-blue-400">{(filteredTasks as AnyRow[]).filter((t: AnyRow) => t.status === 'in_progress').length}</strong> in progress</span>
+          <span>·</span>
+          <span><strong className="text-red-400">{(filteredTasks as AnyRow[]).filter((t: AnyRow) => t.status === 'blocked').length}</strong> blocked</span>
+        </div>
+      )}
+    </div>
+  );
+}
 
 // ═══════════════════════════════════════════════════════════════════════════
 // PROJECT WORKSPACE — full page when a project is selected
 // ═══════════════════════════════════════════════════════════════════════════
-type WorkspaceTab = 'overview'|'timeline'|'milestones'|'tasks'|'financials'|'team'|'documents'|'rfis'|'safety'|'reports';
+type WorkspaceTab = 'overview'|'timeline'|'milestones'|'tasks'|'financials'|'team'|'documents'|'rfis'|'safety'|'reports'|'gallery';
 
 interface WorkspaceProps {
   project: AnyRow;
@@ -77,16 +975,6 @@ interface ProjectMilestone {
   status: 'completed' | 'in_progress' | 'upcoming';
 }
 
-interface ProjectTask {
-  id: string;
-  title: string;
-  status: string;
-  priority: Priority;
-  assignedTo?: string;
-  dueDate?: string;
-}
-
-// Sample helper to generate mock phases for timeline
 function generateProjectPhases(project: AnyRow): ProjectPhase[] {
   const progress = Number(project.progress ?? 0);
   const currentPhaseIdx = PROJECT_PHASES.indexOf(String(project.phase ?? 'Pre-construction'));
@@ -95,7 +983,6 @@ function generateProjectPhases(project: AnyRow): ProjectPhase[] {
     let phProgress = 0;
     if (idx < currentPhaseIdx) phProgress = 100;
     else if (idx === currentPhaseIdx) phProgress = progress;
-
     return {
       name: phase,
       progress: phProgress,
@@ -105,83 +992,16 @@ function generateProjectPhases(project: AnyRow): ProjectPhase[] {
   });
 }
 
-// Sample helper to generate mock milestones
 function generateProjectMilestones(project: AnyRow): ProjectMilestone[] {
   const currentPhaseIdx = PROJECT_PHASES.indexOf(String(project.phase ?? 'Pre-construction'));
   const endDate = new Date(String(project.endDate ?? project.end_date ?? Date.now()));
 
   return [
-    {
-      id: '1',
-      title: 'Site Mobilization',
-      dueDate: new Date(new Date().getTime() + 7*24*60*60*1000).toISOString().split('T')[0],
-      status: currentPhaseIdx > 0 ? 'completed' : 'upcoming',
-    },
-    {
-      id: '2',
-      title: 'Structural Frame Complete',
-      dueDate: new Date(new Date().getTime() + 30*24*60*60*1000).toISOString().split('T')[0],
-      status: currentPhaseIdx > 2 ? 'completed' : currentPhaseIdx > 1 ? 'in_progress' : 'upcoming',
-    },
-    {
-      id: '3',
-      title: 'MEP First Fix',
-      dueDate: new Date(new Date().getTime() + 60*24*60*60*1000).toISOString().split('T')[0],
-      status: currentPhaseIdx > 4 ? 'completed' : currentPhaseIdx > 3 ? 'in_progress' : 'upcoming',
-    },
-    {
-      id: '4',
-      title: 'Interior Finishing',
-      dueDate: new Date(new Date().getTime() + 90*24*60*60*1000).toISOString().split('T')[0],
-      status: currentPhaseIdx > 6 ? 'completed' : currentPhaseIdx > 5 ? 'in_progress' : 'upcoming',
-    },
-    {
-      id: '5',
-      title: 'Snagging & Final Sign-Off',
-      dueDate: endDate.toISOString().split('T')[0],
-      status: currentPhaseIdx >= PROJECT_PHASES.length - 1 ? 'completed' : currentPhaseIdx >= PROJECT_PHASES.length - 2 ? 'in_progress' : 'upcoming',
-    },
-  ];
-}
-
-// Sample helper to generate mock tasks
-function generateProjectTasks(project: AnyRow): ProjectTask[] {
-  const priorities: Priority[] = ['critical', 'high', 'medium', 'low'];
-  const statuses = ['todo', 'in_progress', 'review', 'done', 'blocked'];
-
-  return [
-    {
-      id: '1',
-      title: 'Complete safety induction for new workers',
-      status: 'in_progress',
-      priority: 'critical',
-      assignedTo: String(project.manager ?? project.project_manager ?? 'Unassigned'),
-      dueDate: new Date(new Date().getTime() + 2*24*60*60*1000).toISOString().split('T')[0],
-    },
-    {
-      id: '2',
-      title: 'Review structural engineering drawings',
-      status: 'todo',
-      priority: 'high',
-      assignedTo: 'Unassigned',
-      dueDate: new Date(new Date().getTime() + 5*24*60*60*1000).toISOString().split('T')[0],
-    },
-    {
-      id: '3',
-      title: 'Approve material delivery schedule',
-      status: 'done',
-      priority: 'medium',
-      assignedTo: String(project.manager ?? project.project_manager ?? 'Unassigned'),
-      dueDate: new Date(new Date().getTime() - 3*24*60*60*1000).toISOString().split('T')[0],
-    },
-    {
-      id: '4',
-      title: 'Coordinate MEP subcontractor access',
-      status: 'todo',
-      priority: 'high',
-      assignedTo: 'Unassigned',
-      dueDate: new Date(new Date().getTime() + 7*24*60*60*1000).toISOString().split('T')[0],
-    },
+    { id: '1', title: 'Site Mobilization', dueDate: new Date(new Date().getTime() + 7*24*60*60*1000).toISOString().split('T')[0], status: currentPhaseIdx > 0 ? 'completed' : 'upcoming' },
+    { id: '2', title: 'Structural Frame Complete', dueDate: new Date(new Date().getTime() + 30*24*60*60*1000).toISOString().split('T')[0], status: currentPhaseIdx > 2 ? 'completed' : currentPhaseIdx > 1 ? 'in_progress' : 'upcoming' },
+    { id: '3', title: 'MEP First Fix', dueDate: new Date(new Date().getTime() + 60*24*60*60*1000).toISOString().split('T')[0], status: currentPhaseIdx > 4 ? 'completed' : currentPhaseIdx > 3 ? 'in_progress' : 'upcoming' },
+    { id: '4', title: 'Interior Finishing', dueDate: new Date(new Date().getTime() + 90*24*60*60*1000).toISOString().split('T')[0], status: currentPhaseIdx > 6 ? 'completed' : currentPhaseIdx > 5 ? 'in_progress' : 'upcoming' },
+    { id: '5', title: 'Snagging & Final Sign-Off', dueDate: endDate.toISOString().split('T')[0], status: currentPhaseIdx >= PROJECT_PHASES.length - 1 ? 'completed' : currentPhaseIdx >= PROJECT_PHASES.length - 2 ? 'in_progress' : 'upcoming' },
   ];
 }
 
@@ -189,8 +1009,8 @@ function ProjectWorkspace({ project, onBack, onEdit }: WorkspaceProps) {
   const [tab, setTab] = useState<WorkspaceTab>('overview');
   const [taskAssignee, setTaskAssignee] = useState<Record<string, string>>({});
   const pName = String(project.name ?? '');
+  const pId = String(project.id ?? '');
 
-  // All hooks called unconditionally (React rules)
   const { data: rawInv=[]  } = useInvoices.useList();
   const { data: rawTeam=[]  } = useTeam.useList();
   const { data: rawDocs=[]  } = useDocuments.useList();
@@ -199,7 +1019,6 @@ function ProjectWorkspace({ project, onBack, onEdit }: WorkspaceProps) {
   const { data: rawSafe=[]  } = useSafety.useList();
   const { data: rawReps=[]  } = useDailyReports.useList();
 
-  // Filter by project
   const invoices = (rawInv  as AnyRow[]).filter(i => String(i.project??'').toLowerCase().includes(pName.toLowerCase().split(' ')[0]));
   const teamAll  = (rawTeam as AnyRow[]);
   const docs     = (rawDocs as AnyRow[]).filter(d => String(d.project??'').toLowerCase().includes(pName.toLowerCase().split(' ')[0]));
@@ -231,13 +1050,13 @@ function ProjectWorkspace({ project, onBack, onEdit }: WorkspaceProps) {
 
   const phases = generateProjectPhases(project);
   const milestones = generateProjectMilestones(project);
-  const tasks = generateProjectTasks(project);
 
   const TABS = [
     { id:'overview',   label:'Overview',       icon:BarChart3       },
     { id:'timeline',   label:'Timeline',       icon:Calendar        },
     { id:'milestones', label:'Milestones',     icon:CheckCircle2    },
     { id:'tasks',      label:'Tasks',          icon:ClipboardList   },
+    { id:'gallery',    label:'Gallery',        icon:Image           },
     { id:'financials', label:'Financials',     icon:PoundSterling   },
     { id:'team',       label:'Team',           icon:Users           },
     { id:'documents',  label:'Documents',      icon:FileText        },
@@ -323,7 +1142,7 @@ function ProjectWorkspace({ project, onBack, onEdit }: WorkspaceProps) {
         {TABS.map(t => {
           const Icon = t.icon;
           return (
-            <button type="button"  key={t.id} onClick={()=>setTab(t.id)}
+            <button type="button"  key={t.id} onClick={()=>setTab(t.id as WorkspaceTab)}
               className={clsx('flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-all',
                 tab===t.id ? 'bg-blue-600 text-white shadow' : 'text-gray-400 hover:text-white hover:bg-gray-800')}>
               <Icon className="w-3.5 h-3.5"/>{t.label}
@@ -335,7 +1154,6 @@ function ProjectWorkspace({ project, onBack, onEdit }: WorkspaceProps) {
       {/* Tab content */}
       {tab==='overview' && (
         <div className="space-y-4">
-          {/* Alert row */}
           {(openSafety>0 || openRFIs>0 || pct>85) && (
             <div className="flex gap-3 flex-wrap">
               {openSafety>0 && <div className="flex items-center gap-2 bg-red-900/30 border border-red-700/50 rounded-xl px-4 py-2 text-sm text-red-300"><Shield className="w-4 h-4"/>{openSafety} open safety issue{openSafety>1?'s':''}</div>}
@@ -347,7 +1165,7 @@ function ProjectWorkspace({ project, onBack, onEdit }: WorkspaceProps) {
           <div className="grid grid-cols-3 gap-4">
             {[
               {label:'Total Invoiced',   value:fmtM(totalInvoiced),   sub:`${fmtM(totalPaid)} collected`, icon:PoundSterling, col:'text-blue-400'},
-              {label:'Open RFIs',        value:String(rfis.length),   sub:`${openRFIs} awaiting response`, icon:MessageSquare, col:'text-orange-400'},
+              {label:'Open RFIs',       value:String(rfis.length),   sub:`${openRFIs} awaiting response`, icon:MessageSquare, col:'text-orange-400'},
               {label:'CO Value Approved',value:fmtM(approvedCOVal),   sub:`${cos.length} total change orders`, icon:ClipboardList, col:'text-purple-400'},
             ].map(({label,value,sub,icon:Icon,col})=>(
               <div key={label} className="bg-gray-900 border border-gray-800 rounded-xl p-4">
@@ -409,38 +1227,22 @@ function ProjectWorkspace({ project, onBack, onEdit }: WorkspaceProps) {
             <h3 className="text-sm font-semibold text-white mb-6">Project Timeline — Gantt Chart</h3>
             <div className="overflow-x-auto pb-4">
               <div className="min-w-[800px]">
-                {/* Legend */}
                 <div className="flex gap-6 mb-6 text-xs text-gray-400">
-                  <div className="flex items-center gap-2">
-                    <div className="w-3 h-3 bg-green-500 rounded"/>
-                    <span>Completed</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <div className="w-3 h-3 bg-blue-500 rounded"/>
-                    <span>In Progress</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <div className="w-3 h-3 bg-gray-600 rounded"/>
-                    <span>Upcoming</span>
-                  </div>
+                  <div className="flex items-center gap-2"><div className="w-3 h-3 bg-green-500 rounded"/><span>Completed</span></div>
+                  <div className="flex items-center gap-2"><div className="w-3 h-3 bg-blue-500 rounded"/><span>In Progress</span></div>
+                  <div className="flex items-center gap-2"><div className="w-3 h-3 bg-gray-600 rounded"/><span>Upcoming</span></div>
                 </div>
-
-                {/* Timeline bars */}
                 <div className="space-y-4">
                   {phases.map((phase, idx) => {
                     let barColor = 'bg-gray-600';
                     if (phase.progress === 100) barColor = 'bg-green-500';
                     else if (phase.progress > 0) barColor = 'bg-blue-500';
-
                     return (
                       <div key={idx} className="flex items-center gap-3">
                         <div className="w-32 text-xs font-medium text-gray-400 truncate">{phase.name}</div>
                         <div className="flex-1">
                           <div className="h-6 bg-gray-800 rounded-full overflow-hidden relative">
-                            <div
-                              className={`h-full rounded-full transition-all ${barColor}`}
-                              style={{ width: `${Math.max(phase.progress, 5)}%` }}
-                            />
+                            <div className={`h-full rounded-full transition-all ${barColor}`} style={{ width: `${Math.max(phase.progress, 5)}%` }}/>
                             <div className="absolute inset-0 flex items-center px-2">
                               <span className="text-xs font-medium text-gray-800">{phase.progress}%</span>
                             </div>
@@ -466,7 +1268,6 @@ function ProjectWorkspace({ project, onBack, onEdit }: WorkspaceProps) {
                 const isLast = idx === milestones.length - 1;
                 let statusIcon = null;
                 let statusColor = 'text-gray-400';
-
                 if (milestone.status === 'completed') {
                   statusIcon = <CheckSquare className="w-5 h-5 text-green-400" />;
                   statusColor = 'text-green-400';
@@ -477,7 +1278,6 @@ function ProjectWorkspace({ project, onBack, onEdit }: WorkspaceProps) {
                   statusIcon = <Circle className="w-5 h-5 text-gray-500" />;
                   statusColor = 'text-gray-500';
                 }
-
                 return (
                   <div key={milestone.id} className="relative">
                     <div className="flex gap-4 pb-6">
@@ -507,71 +1307,9 @@ function ProjectWorkspace({ project, onBack, onEdit }: WorkspaceProps) {
         </div>
       )}
 
-      {tab==='tasks' && (
-        <div className="space-y-4">
-          <div className="bg-gray-900 border border-gray-800 rounded-xl overflow-hidden">
-            {tasks.length===0 ? (
-              <p className="py-10 text-center text-gray-500">No tasks for this project</p>
-            ) : (
-              <table className="w-full text-sm">
-                <thead className="bg-gray-800/60 border-b border-gray-700">
-                  <tr>
-                    {['Task', 'Priority', 'Status', 'Assigned To', 'Due Date'].map(h => (
-                      <th key={h} className="px-4 py-3 text-left text-xs font-semibold text-gray-400 uppercase">{h}</th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-800">
-                  {tasks.map(task => {
-                    const priorityCfg = PRIORITY_CFG[task.priority] || PRIORITY_CFG.low;
-                    const daysUntilDue = task.dueDate ? daysDiff(task.dueDate) : null;
+      {tab==='tasks' && <TasksTab projectId={pId} />}
 
-                    return (
-                      <tr key={task.id} className="hover:bg-gray-800/40">
-                        <td className="px-4 py-3 text-white font-medium">{task.title}</td>
-                        <td className="px-4 py-3">
-                          <div className="flex items-center gap-2">
-                            <div className={`w-2 h-2 rounded-full ${priorityCfg.dot}`} />
-                            <span className={`text-xs font-medium ${priorityCfg.color}`}>{priorityCfg.label}</span>
-                          </div>
-                        </td>
-                        <td className="px-4 py-3">
-                          <span className={`text-xs px-2 py-1 rounded-full font-medium ${
-                            task.status === 'done' ? 'bg-green-900/40 text-green-400' :
-                            task.status === 'in_progress' ? 'bg-blue-900/40 text-blue-400' :
-                            task.status === 'blocked' ? 'bg-red-900/40 text-red-400' :
-                            'bg-gray-700/50 text-gray-400'
-                          }`}>
-                            {task.status}
-                          </span>
-                        </td>
-                        <td className="px-4 py-3">
-                          <select
-                            value={taskAssignee[task.id] ?? task.assignedTo ?? ''}
-                            onChange={(e) => setTaskAssignee(prev => ({ ...prev, [task.id]: e.target.value }))}
-                            className="bg-gray-800 border border-gray-700 rounded px-2 py-1 text-xs text-white focus:outline-none focus:border-blue-500"
-                          >
-                            <option value="">Unassigned</option>
-                            {teamAll.map(member => (
-                              <option key={String(member.id)} value={String(member.name ?? '')}>
-                                {String(member.name ?? '')}
-                              </option>
-                            ))}
-                          </select>
-                        </td>
-                        <td className={`px-4 py-3 text-xs ${daysUntilDue !== null && daysUntilDue < 3 ? 'text-red-400 font-semibold' : 'text-gray-400'}`}>
-                          {task.dueDate}
-                          {daysUntilDue !== null && daysUntilDue >= 0 && <span className="ml-1">({daysUntilDue}d)</span>}
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            )}
-          </div>
-        </div>
-      )}
+      {tab==='gallery' && <GalleryTab projectId={pId} projectName={pName} />}
 
       {tab==='financials' && (
         <div className="space-y-4">
@@ -588,7 +1326,6 @@ function ProjectWorkspace({ project, onBack, onEdit }: WorkspaceProps) {
               </div>
             ))}
           </div>
-
           <div className="bg-gray-900 border border-gray-800 rounded-xl p-5">
             <h3 className="text-sm font-semibold text-white mb-4">Budget vs Spent</h3>
             <div className="mb-3">
@@ -610,7 +1347,6 @@ function ProjectWorkspace({ project, onBack, onEdit }: WorkspaceProps) {
               </BarChart>
             </ResponsiveContainer>
           </div>
-
           <div className="bg-gray-900 border border-gray-800 rounded-xl overflow-hidden">
             <div className="px-5 py-4 border-b border-gray-800">
               <h3 className="text-sm font-semibold text-white">Invoices for this Project</h3>
@@ -668,29 +1404,7 @@ function ProjectWorkspace({ project, onBack, onEdit }: WorkspaceProps) {
         </div>
       )}
 
-      {tab==='documents' && (
-        <div className="bg-gray-900 border border-gray-800 rounded-xl overflow-hidden">
-          {docs.length===0 ? (
-            <p className="py-10 text-center text-gray-500">No documents found for this project</p>
-          ) : (
-            <table className="w-full text-sm">
-              <thead className="bg-gray-800/60 border-b border-gray-700"><tr>{['Name','Type','Version','Uploaded By','Date','Status'].map(h=><th key={h} className="px-4 py-3 text-left text-xs font-semibold text-gray-400 uppercase">{h}</th>)}</tr></thead>
-              <tbody className="divide-y divide-gray-800">
-                {docs.map(d=>(
-                  <tr key={String(d.id)} className="hover:bg-gray-800/40">
-                    <td className="px-4 py-3 text-white font-medium">{String(d.title??d.name??'—')}</td>
-                    <td className="px-4 py-3 text-gray-400 text-xs">{String(d.document_type??d.type??'—')}</td>
-                    <td className="px-4 py-3 font-mono text-xs text-orange-400">{String(d.revision??d.version??'—')}</td>
-                    <td className="px-4 py-3 text-gray-400 text-xs">{String(d.author??d.uploadedBy??'—')}</td>
-                    <td className="px-4 py-3 text-gray-400 text-xs">{String(d.date_issued??d.uploadedDate??'—')}</td>
-                    <td className="px-4 py-3"><span className={`text-xs px-2 py-0.5 rounded-full font-medium ${d.status==='approved'?'bg-green-900/30 text-green-300':d.status==='draft'?'bg-gray-700/50 text-gray-600':'bg-blue-900/30 text-blue-300'}`}>{String(d.status??'—')}</span></td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          )}
-        </div>
-      )}
+      {tab==='documents' && <DocumentsTab projectId={pId} projectName={pName} />}
 
       {tab==='rfis' && (
         <div className="space-y-4">
@@ -746,7 +1460,7 @@ function ProjectWorkspace({ project, onBack, onEdit }: WorkspaceProps) {
             {[
               {label:'Open Incidents',  value:String(openSafety),                     col:openSafety>0?'text-red-400':'text-green-400'},
               {label:'Total Records',   value:String(safety.length),                  col:'text-white'},
-              {label:'Near Misses',     value:String(safety.filter(s=>s.type==='near-miss'||s.type==='near_miss').length), col:'text-orange-400'},
+              {label:'Near Misses',     value:String(safety.filter((s: AnyRow)=>s.type==='near-miss'||s.type==='near_miss').length), col:'text-orange-400'},
             ].map(({label,value,col})=>(
               <div key={label} className="bg-gray-900 border border-gray-800 rounded-xl p-4">
                 <p className="text-gray-400 text-xs mb-1">{label}</p>
@@ -759,7 +1473,7 @@ function ProjectWorkspace({ project, onBack, onEdit }: WorkspaceProps) {
               <table className="w-full text-sm">
                 <thead className="bg-gray-800/60"><tr>{['Title','Type','Severity','Status','Date'].map(h=><th key={h} className="px-4 py-3 text-left text-xs font-semibold text-gray-400 uppercase">{h}</th>)}</tr></thead>
                 <tbody className="divide-y divide-gray-800">
-                  {safety.map(s=>(
+                  {safety.map((s: AnyRow)=>(
                     <tr key={String(s.id)} className="hover:bg-gray-800/40">
                       <td className="px-4 py-3 text-white font-medium max-w-[220px] truncate">{String(s.title??'—')}</td>
                       <td className="px-4 py-3 text-gray-400 text-xs capitalize">{String(s.type??'').replace(/_/g,' ')}</td>
@@ -778,7 +1492,7 @@ function ProjectWorkspace({ project, onBack, onEdit }: WorkspaceProps) {
       {tab==='reports' && (
         <div className="space-y-3">
           {reports.length===0 ? <p className="py-10 text-center text-gray-500">No daily reports for this project</p> :
-            reports.slice().sort((a,b)=>String(b.date??'').localeCompare(String(a.date??''))).map(rep=>(
+            reports.slice().sort((a,b)=>String(b.date??'').localeCompare(String(a.date??''))).map((rep: AnyRow)=>(
               <div key={String(rep.id)} className="bg-gray-900 border border-gray-800 rounded-xl p-5">
                 <div className="flex items-center justify-between mb-3">
                   <div>
@@ -880,7 +1594,6 @@ export function Projects() {
     setShowModal(false);
   }
 
-  // Show workspace if a project is selected (and not editing)
   if (selectedProject && !showModal) {
     return (
       <ProjectWorkspace
@@ -971,7 +1684,6 @@ export function Projects() {
                   </div>
                 </div>
 
-                {/* Mini progress bar for budget health */}
                 <div className="mb-3">
                   <div className="flex justify-between text-xs mb-1">
                     <span className="text-gray-400">Budget Health</span>

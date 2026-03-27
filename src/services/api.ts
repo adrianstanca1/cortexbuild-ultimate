@@ -795,3 +795,51 @@ export interface WeatherForecastDay {
 export const weatherApi = {
   getForecast: () => apiFetch<WeatherForecastDay[]>('/weather-forecast'),
 };
+
+// ─── Project Images (Gallery) ──────────────────────────────────────────────────
+export const projectImagesApi = {
+  getAll: (projectId?: string) =>
+    projectId ? fetchAll(`project-images?project_id=${projectId}`) : fetchAll('project-images'),
+  create: (data: Row) => insertRow('project-images', data),
+  update: (id: string, data: Row) => updateRow('project-images', id, data),
+  delete: (id: string) => deleteRow('project-images', id),
+  uploadImage: async (file: File, projectId: string, caption?: string, category?: string) => {
+    const token = getToken();
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('project_id', projectId);
+    if (caption) formData.append('caption', caption);
+    if (category) formData.append('category', category);
+    const res = await fetch(`${API_BASE}/project-images/upload`, {
+      method: 'POST',
+      headers: { ...(token ? { Authorization: `Bearer ${token}` } : {}) },
+      body: formData,
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({ message: res.statusText }));
+      throw new Error(err.message || 'Upload failed');
+    }
+    return res.json();
+  },
+};
+
+// ─── Project Tasks ───────────────────────────────────────────────────────────
+export const projectTasksApi = {
+  getAll: (filters?: { project_id?: string; status?: string; priority?: string; assigned_to?: string }) => {
+    const params = new URLSearchParams();
+    if (filters?.project_id) params.append('project_id', filters.project_id);
+    if (filters?.status) params.append('status', filters.status);
+    if (filters?.priority) params.append('priority', filters.priority);
+    if (filters?.assigned_to) params.append('assigned_to', filters.assigned_to);
+    const qs = params.toString();
+    return fetchAll(`project-tasks${qs ? `?${qs}` : ''}`);
+  },
+  getById: (id: string) => apiFetch(`/project-tasks/${id}`),
+  create: (data: Row) => insertRow('project-tasks', data),
+  update: (id: string, data: Row) => updateRow('project-tasks', id, data),
+  delete: (id: string) => deleteRow('project-tasks', id),
+  addComment: (taskId: string, comment: string) =>
+    apiFetch(`/project-tasks/${taskId}/comments`, { method: 'POST', body: JSON.stringify({ comment }) }),
+  bulkUpdateStatus: (ids: string[], status: string) =>
+    apiFetch(`/project-tasks/bulk-status`, { method: 'PUT', body: JSON.stringify({ ids, status }) }),
+};

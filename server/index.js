@@ -34,7 +34,9 @@ app.get('/api/health', (_req, res) => res.json({ status: 'ok', version: '1.0.0' 
 app.use('/api', authMiddleware);
 
 // ─── Upload route ─────────────────────────────────────────────────────────────
-app.use('/api/files', require('./routes/files'));
+app.use('/api/files',           require('./routes/files'));
+app.use('/api/project-images',  require('./routes/project-images'));
+app.use('/api/project-tasks',   require('./routes/project-tasks'));
 
 // ─── AI routes ────────────────────────────────────────────────────────────────
 app.use('/api/ai', require('./routes/ai'));
