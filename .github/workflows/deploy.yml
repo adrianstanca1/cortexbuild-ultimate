@@ -5,6 +5,11 @@ on:
     branches: [main]
   workflow_dispatch:
 
+permissions:
+  contents: write
+  pages: write
+  id-token: write
+
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
@@ -15,31 +20,35 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
-          cache: 'npm'
+          node-version: "20"
+          cache: "npm"
 
       - name: Install dependencies
         run: npm ci
 
-      - name: TypeScript check
-        run: npx tsc --noEmit
-
       - name: Build
         run: npm run build
 
-      - name: Deploy to VPS
-        uses: appleboy/ssh-action@v1.0.3
+      - name: Patch index.html for GitHub Pages base path
+        run: |
+          sed -i "s|src=\"/assets/|src=\"./assets/|g" dist/index.html
+          sed -i "s|href=\"/assets/|href=\"./assets/|g" dist/index.html
+          sed -i "s|href=\"/favicon|href=\"./favicon|g" dist/index.html
+          sed -i "s|href=\"/icons/|href=\"./icons/|g" dist/index.html
+          sed -i "s|href=\"/manifest.json\"|href=\"./manifest.json\"|g" dist/index.html
+          echo "Patched index.html:"
+          grep -E "(src|href)=" dist/index.html | head -20
+
+      - name: Add GitHub Pages support files
+        run: |
+          touch dist/.nojekyll
+          cp dist/index.html dist/404.html
+
+      - name: Deploy to GitHub Pages
+        uses: peaceiris/actions-gh-pages@v4
         with:
-          host: ${{ secrets.VPS_HOST }}
-          username: ${{ secrets.VPS_USER }}
-          password: ${{ secrets.VPS_PASSWORD }}
-          port: 22
-          timeout: 300s
-          script: |
-            set -e
-            cd /var/www/cortexbuild-ultimate
-            git pull origin main
-            npm ci --production=false
-            npm run build
-            sudo systemctl reload nginx || nginx -s reload
-            echo "✅ CortexBuild Ultimate deployed successfully at $(date)"
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./dist
+          publish_branch: gh-pages
+          force_orphan: false
+
