@@ -234,7 +234,7 @@ function GalleryTab({ projectId, projectName }: GalleryTabProps) {
               </div>
               <div className="p-2">
                 <p className="text-xs text-white truncate">{String(img.caption || 'No caption')}</p>
-                <p className="text-xs text-gray-500 mt-0.5">{String(img.category ?? 'general').replace(/_/g,' ')} · {formatDate(img.created_at)}</p>
+                <p className="text-xs text-gray-500 mt-0.5">{String(img.category ?? 'general').replace(/_/g,' ')} · {formatDate(String(img.created_at ?? ''))}</p>
               </div>
               <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
                 <button className="p-2 bg-white/20 hover:bg-white/30 rounded-lg text-white"><Eye className="w-4 h-4" /></button>
@@ -269,7 +269,7 @@ function GalleryTab({ projectId, projectName }: GalleryTabProps) {
                   <div>
                     <p className="text-white font-medium">{String(selectedImage.caption || 'No caption')}</p>
                     <p className="text-gray-400 text-sm mt-0.5">
-                      {String(selectedImage.category ?? 'general').replace(/_/g,' ')} · Uploaded by {String(selectedImage.uploaded_by ?? 'Unknown')} · {formatDate(selectedImage.created_at)}
+                      {String(selectedImage.category ?? 'general').replace(/_/g,' ')} · Uploaded by {String(selectedImage.uploaded_by ?? 'Unknown')} · {formatDate(String(selectedImage.created_at ?? ''))}
                     </p>
                   </div>
                   <div className="flex items-center gap-2">
@@ -515,10 +515,10 @@ function DocumentsTab({ projectId, projectName }: DocumentsTabProps) {
                   </td>
                   <td className="px-4 py-3 text-gray-400 text-xs">{String(doc.type ?? '—')}</td>
                   <td className="px-4 py-3"><span className="text-xs px-2 py-0.5 rounded-full bg-gray-800 text-gray-300">{String(doc.category ?? '—')}</span></td>
-                  <td className="px-4 py-3 text-orange-400 text-xs font-mono">v{doc.version ?? '1.0'}</td>
+                  <td className="px-4 py-3 text-orange-400 text-xs font-mono">v{String(doc.version ?? '1.0')}</td>
                   <td className="px-4 py-3 text-gray-400 text-xs">{String(doc.size ?? '—')}</td>
                   <td className="px-4 py-3 text-gray-400 text-xs">{String(doc.author ?? doc.uploaded_by ?? '—')}</td>
-                  <td className="px-4 py-3 text-gray-400 text-xs">{formatDate(doc.date_issued ?? doc.created_at)}</td>
+                  <td className="px-4 py-3 text-gray-400 text-xs">{formatDate(String(doc.date_issued ?? doc.created_at ?? ''))}</td>
                   <td className="px-4 py-3">
                     <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                       {['PNG','JPG','JPEG','GIF','WEBP'].includes(String(doc.type ?? '').toUpperCase()) ? (
@@ -616,7 +616,7 @@ function TasksTab({ projectId }: TasksTabProps) {
 
   const filteredTasks = tasks.filter((t: AnyRow) => {
     if (filterPriority !== 'all' && String(t.priority ?? '') !== filterPriority) return false;
-    if (filterAssignee !== 'all' && String(t.assigned_to ?? '') !== filterAssignee !== filterAssignee) return false;
+    if (filterAssignee !== 'all' && String(t.assigned_to ?? '') !== filterAssignee) return false;
     return true;
   });
 
@@ -723,7 +723,7 @@ function TasksTab({ projectId }: TasksTabProps) {
           </div>
         </div>
         <p className="text-white text-sm font-medium mb-2 leading-snug">{String(task.title ?? '')}</p>
-        {task.description && <p className="text-gray-400 text-xs mb-2 line-clamp-2">{String(task.description)}</p>}
+        {!!task.description && <p className="text-gray-400 text-xs mb-2 line-clamp-2">{String(task.description)}</p>}
         <div className="flex items-center justify-between text-xs">
           <div className="flex items-center gap-1.5">
             {task.assigned_to ? (
@@ -734,15 +734,15 @@ function TasksTab({ projectId }: TasksTabProps) {
               <span className="text-gray-600">Unassigned</span>
             )}
           </div>
-          {task.due_date && (
+          {!!task.due_date && (
             <span className={isOverdue ? 'text-red-400 font-semibold' : daysUntilDue !== null && daysUntilDue < 3 ? 'text-yellow-400' : 'text-gray-400'}>
               <Clock className="inline w-3 h-3 mr-0.5" />
               {isOverdue ? `${Math.abs(daysUntilDue!)}d overdue` : `${daysUntilDue}d left`}
             </span>
           )}
         </div>
-        {task.estimated_hours && (
-          <p className="text-gray-600 text-xs mt-1">⏱ {task.estimated_hours}h estimated</p>
+        {!!task.estimated_hours && (
+          <p className="text-gray-600 text-xs mt-1">⏱ {String(task.estimated_hours)}h estimated</p>
         )}
         {/* Status selector */}
         <div className="mt-2 pt-2 border-t border-gray-700">
