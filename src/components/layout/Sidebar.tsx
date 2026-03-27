@@ -4,6 +4,7 @@
  */
 import { useState } from 'react';
 import { type Module } from '../../types';
+import { AnimatedLogo } from './AnimatedLogo';
 import {
   LayoutDashboard, FolderOpen, FileText, Calculator, ShoppingCart,
   ShieldCheck, Receipt, Hammer, Users, FileSearch, BarChart3,
@@ -369,20 +370,38 @@ export function Sidebar({ activeModule, setModule, collapsed, setCollapsed }: Si
         overflow: 'hidden',
       }}
     >
-      {/* Blueprint grid overlay (subtle) */}
+      {/* Blueprint micro-grid */}
       <div
         style={{
           position: 'absolute',
           inset: 0,
           backgroundImage: `
-            linear-gradient(rgba(245,158,11,0.025) 1px, transparent 1px),
-            linear-gradient(90deg, rgba(245,158,11,0.025) 1px, transparent 1px)
+            linear-gradient(rgba(245,158,11,0.03) 1px, transparent 1px),
+            linear-gradient(90deg, rgba(245,158,11,0.03) 1px, transparent 1px)
           `,
           backgroundSize: '24px 24px',
           pointerEvents: 'none',
           zIndex: 0,
         }}
       />
+
+      {/* Animated corner bracket decorations */}
+      <svg width="40" height="40" viewBox="0 0 40 40" fill="none" style={{ position: 'absolute', top: 0, left: 0, zIndex: 2, pointerEvents: 'none' }}>
+        <path d="M 0 16 L 0 0 L 16 0" stroke="rgba(245,158,11,0.35)" strokeWidth="1.5" strokeLinecap="round" fill="none"/>
+        <path d="M 0 8 L 0 0 L 8 0" stroke="rgba(245,158,11,0.5)" strokeWidth="1" strokeLinecap="round" fill="none"/>
+      </svg>
+      <svg width="40" height="40" viewBox="0 0 40 40" fill="none" style={{ position: 'absolute', top: 0, right: 0, zIndex: 2, pointerEvents: 'none' }}>
+        <path d="M 40 16 L 40 0 L 24 0" stroke="rgba(245,158,11,0.35)" strokeWidth="1.5" strokeLinecap="round" fill="none"/>
+        <path d="M 40 8 L 40 0 L 32 0" stroke="rgba(245,158,11,0.5)" strokeWidth="1" strokeLinecap="round" fill="none"/>
+      </svg>
+      <svg width="40" height="40" viewBox="0 0 40 40" fill="none" style={{ position: 'absolute', bottom: 0, left: 0, zIndex: 2, pointerEvents: 'none' }}>
+        <path d="M 0 24 L 0 40 L 16 40" stroke="rgba(245,158,11,0.35)" strokeWidth="1.5" strokeLinecap="round" fill="none"/>
+        <path d="M 0 32 L 0 40 L 8 40" stroke="rgba(245,158,11,0.5)" strokeWidth="1" strokeLinecap="round" fill="none"/>
+      </svg>
+      <svg width="40" height="40" viewBox="0 0 40 40" fill="none" style={{ position: 'absolute', bottom: 0, right: 0, zIndex: 2, pointerEvents: 'none' }}>
+        <path d="M 40 24 L 40 40 L 24 40" stroke="rgba(245,158,11,0.35)" strokeWidth="1.5" strokeLinecap="round" fill="none"/>
+        <path d="M 40 32 L 40 40 L 32 40" stroke="rgba(245,158,11,0.5)" strokeWidth="1" strokeLinecap="round" fill="none"/>
+      </svg>
 
       {/* Content above footer */}
       <div style={{ display: 'flex', flexDirection: 'column', flex: 1, overflow: 'hidden', position: 'relative', zIndex: 1 }}>
@@ -407,36 +426,7 @@ export function Sidebar({ activeModule, setModule, collapsed, setCollapsed }: Si
               gap: '10px',
             }}
           >
-            <div
-              style={{
-                width: '34px',
-                height: '34px',
-                borderRadius: '9px',
-                background: 'linear-gradient(135deg, #f59e0b 0%, #d97706 50%, #b45309 100%)',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                boxShadow: '0 2px 12px rgba(245,158,11,0.4), 0 0 0 1px rgba(245,158,11,0.2)',
-                flexShrink: 0,
-                position: 'relative',
-              }}
-            >
-              {/* Hard hat icon baked in */}
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" style={{ position: 'relative', zIndex: 1 }}>
-                <path d="M3 20h18M5 20v-2a7 7 0 0 1 14 0v2" stroke="#1e1b16" strokeWidth="2.5" strokeLinecap="round"/>
-                <path d="M3 13.5a7 7 0 0 1 7-7h4a7 7 0 0 1 7 7v1H3v-1Z" stroke="#1e1b16" strokeWidth="2.5" strokeLinejoin="round"/>
-                <path d="M12 6.5V4M9 6.5h6" stroke="#1e1b16" strokeWidth="2" strokeLinecap="round"/>
-              </svg>
-              {/* Glow pulse */}
-              <div style={{
-                position: 'absolute',
-                inset: '-2px',
-                borderRadius: '11px',
-                background: 'linear-gradient(135deg, rgba(245,158,11,0.4), transparent)',
-                filter: 'blur(6px)',
-                zIndex: 0,
-              }} />
-            </div>
+<AnimatedLogo size={34} showText={false} />
 
             {!collapsed && (
               <div>
