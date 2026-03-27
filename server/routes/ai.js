@@ -2,6 +2,7 @@ const express = require('express');
 const pool    = require('../db');
 const https = require('https');
 const http = require('http');
+const { broadcastDashboardUpdate, broadcastNotification } = require('../lib/ws-broadcast');
 
 const router = express.Router();
 
