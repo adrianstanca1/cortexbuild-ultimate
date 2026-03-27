@@ -45,7 +45,7 @@ services:
       - cortexbuild
 
   api:
-    image: cortexbuild-ultimate-api:v4
+    image: cortexbuild-ultimate-api:latest
     container_name: cortexbuild-api
     restart: always
     environment:
