@@ -1199,6 +1199,8 @@ router.post('/execute', async (req, res) => {
            VALUES($1,$2,$3,$4,$5,$6,$7,0,0) RETURNING id,name,status`,
           [name, client, Number(budget) || 0, status, type, manager || null, location || null]
         );
+        broadcastDashboardUpdate('create', 'projects', rows[0]);
+        broadcastNotification('New Project Created', `"${name}" has been added to the project register.`, 'info', { projectId: rows[0].id, projectName: name });
         res.json({ success: true, message: `Project "${name}" created.`, data: rows[0] });
         break;
       }
@@ -1211,6 +1213,8 @@ router.post('/execute', async (req, res) => {
           [status, project_id]
         );
         if (!rows.length) return res.status(404).json({ success: false, message: 'Project not found' });
+        broadcastDashboardUpdate('update', 'projects', rows[0]);
+        broadcastNotification('Project Status Updated', `Project "${rows[0].name}" status changed to ${status}.`, 'info', { projectId: project_id });
         res.json({ success: true, message: `Project status updated to "${status}".`, data: rows[0] });
         break;
       }

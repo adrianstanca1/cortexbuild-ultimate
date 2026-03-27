@@ -59,16 +59,35 @@ export function AIAssistant() {
     try { localStorage.setItem('cortex_ai_sessions', JSON.stringify(chatSessions)); } catch {}
   }, [chatSessions]);
 
-  // Load session messages from localStorage
+  // Load session messages from server (primary) with localStorage fallback
   const loadSession = (sessionId: string) => {
     setCurrentSessionId(sessionId);
-    try {
-      const saved = localStorage.getItem(`cortex_ai_session_${sessionId}`);
-      setMessages(saved ? JSON.parse(saved) : []);
-    } catch { setMessages([]); }
+    setMessages([]); // clear immediately so old messages don't flash
+
+    // Server first, localStorage as fallback
+    aiConversationsApi.getSession(sessionId)
+      .then(({ messages: serverMessages }) => {
+        // Adapt API response { id, role, content, model, createdAt } → Message
+        const adapted: Message[] = serverMessages.map((m) => ({
+          id: m.id || String(Date.now() + Math.random()),
+          role: m.role,
+          content: m.content,
+          timestamp: m.createdAt ? new Date(m.createdAt) : new Date(),
+        }));
+        setMessages(adapted);
+        // Mirror to localStorage as backup
+        try { localStorage.setItem(`cortex_ai_session_${sessionId}`, JSON.stringify(adapted)); } catch {}
+      })
+      .catch(() => {
+        // Fallback to localStorage if server fails
+        try {
+          const saved = localStorage.getItem(`cortex_ai_session_${sessionId}`);
+          setMessages(saved ? JSON.parse(saved) : []);
+        } catch { setMessages([]); }
+      });
   };
 
-  // Persist current session messages to localStorage
+  // Persist current session messages to localStorage as backup
   useEffect(() => {
     if (!currentSessionId) return;
     try { localStorage.setItem(`cortex_ai_session_${currentSessionId}`, JSON.stringify(messages)); } catch {}
