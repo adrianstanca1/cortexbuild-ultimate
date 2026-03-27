@@ -14,7 +14,9 @@ import {
   Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer,
 } from 'recharts';
 import { dashboardApi, projectsApi, notificationsApi } from '../../services/api';
+import { eventBus } from '../../lib/eventBus';
 import { SiteStatusBanner } from '../layout/SiteStatusBanner';
+import { SafetyStatsPanel, type SafetyStatsData } from '../ui/SafetyStatsPanel';
 
 type AnyRow = Record<string, unknown>;
 
@@ -186,17 +188,69 @@ export function Dashboard() {
     activeProjects?: number; totalRevenue?: number; outstanding?: number;
     openRfis?: number; hsScore?: number; workforce?: number;
   } | null>(null);
-  const [revenueFromApi, setRevenueFromApi] = useState<{month: string; revenue: number; cost?: number}[]>([]);
+  const [revenueFromApi, setRevenueFromApi] = useState<{month: string; revenue: number}[]>([]);
+  const [projectStatusData, setProjectStatusData] = useState<{name: string; value: number; fill: string}[]>([]);
+  const [safetyChartData, setSafetyChartData] = useState<{month: string; incidents: number; score: number}[]>([]);
   const [projects, setProjects] = useState<Project[]>([]);
   const [activityFeed, setActivityFeed] = useState<{id: string; user: string; action: string; module: string; time: string}[]>([]);
   const [alerts, setAlerts] = useState<{id: string; level: 'amber'|'red'; title: string; description: string}[]>([]);
   const [mounted, setMounted] = useState(false);
 
+  // Refetch dashboard data when WS sends a dashboard_update event
+  useEffect(() => {
+    const unsub = eventBus.on('ws:message', ({ type }) => {
+      if (type === 'dashboard_update') {
+        // Refresh KPI overview
+        dashboardApi.getOverview().then(d => setDashboardKpi(d.kpi)).catch(() => {});
+        // Refresh revenue data
+        dashboardApi.getRevenueData().then(d => setRevenueFromApi(d as {month: string; revenue: number; cost?: number}[])).catch(() => {});
+        // Refresh projects
+        projectsApi.getAll().then((data: unknown) => {
+          const rows = data as AnyRow[];
+          setProjects(rows.slice(0, 8).map((row, idx) => ({
+            id: Number(row.id) || idx + 1,
+            name: String(row.name || `Project ${idx + 1}`),
+            client: String(row.client || row.company || 'Unknown Client'),
+            value: Number(row.value) || 0,
+            progress: Number(row.progress) || 0,
+            budgetRAG: (row.budgetRAG as 'red'|'amber'|'green') || 'green',
+            programmeRAG: (row.programmeRAG as 'red'|'amber'|'green') || 'green',
+            qualityRAG: (row.qualityRAG as 'red'|'amber'|'green') || 'green',
+            daysToCompletion: Number(row.daysToCompletion || row.daysRemaining) || 0,
+            pmInitials: String(row.pmInitials || row.projectManagerInitials || 'PM'),
+          })));
+        }).catch(() => {});
+        // Refresh notifications / activity feed
+        notificationsApi.getAll().then((data: unknown) => {
+          const rows = data as AnyRow[];
+          setActivityFeed(rows.slice(0, 12).map((row, i) => ({
+            id: String(row.id || i),
+            user: String(row.userName || row.createdBy || row.actor || 'System'),
+            action: String(row.title || row.subject || row.message || 'Activity'),
+            module: String(row.module || row.category || row.type || 'General'),
+            time: String(row.createdAt ? (() => {
+              try { const d = new Date(String(row.createdAt)); const m = Math.floor((Date.now()-d.getTime())/60000); return m<1?'Just now':m<60?`${m}m ago`:`${Math.floor(m/60)}h ago`; } catch { return 'Recently'; }
+            })() : 'Recently'),
+          })));
+          const alertRows = rows.filter((r: AnyRow) => r.level==='amber'||r.level==='red'||r.type==='alert').slice(0,4).map((row: AnyRow) => ({
+            id: String(row.id), level: (row.level as 'amber'|'red')||'amber',
+            title: String(row.title||row.subject||'Notification'),
+            description: String(row.message||row.description||''),
+          }));
+          setAlerts(alertRows.length ? alertRows : [{ id:'1', level:'amber' as const, title:'No active alerts', description:'All systems nominal' }]);
+        }).catch(() => {});
+      }
+    });
+    return unsub;
+  }, []);
+
   useEffect(() => { setMounted(true); }, []);
 
   useEffect(() => {
     dashboardApi.getOverview().then(d => setDashboardKpi(d.kpi)).catch(() => {});
-    dashboardApi.getRevenueData().then(d => setRevenueFromApi(d as {month: string; revenue: number; cost?: number}[])).catch(() => {});
+    dashboardApi.getRevenueData().then(d => setRevenueFromApi(d as {month: string; revenue: number}[])).catch(() => {});
+    dashboardApi.getProjectStatus().then(d => setProjectStatusData(d.statuses)).catch(() => {});
+    dashboardApi.getSafetyChart().then(d => setSafetyChartData(d)).catch(() => {});
     projectsApi.getAll().then((data: unknown) => {
       const rows = data as AnyRow[];
       setProjects(rows.slice(0, 8).map((row, idx) => ({
@@ -246,9 +300,9 @@ export function Dashboard() {
   }, []);
 
   const revenueData = revenueFromApi.length > 0 ? revenueFromApi : [
-    { month:'Jan', revenue:185000, cost:142000 }, { month:'Feb', revenue:220000, cost:165000 },
-    { month:'Mar', revenue:198000, cost:148000 }, { month:'Apr', revenue:289000, cost:218000 },
-    { month:'May', revenue:267000, cost:200000 }, { month:'Jun', revenue:310000, cost:232000 },
+    { month:'Jan', revenue:0 }, { month:'Feb', revenue:0 },
+    { month:'Mar', revenue:0 }, { month:'Apr', revenue:0 },
+    { month:'May', revenue:0 }, { month:'Jun', revenue:0 },
   ];
 
   const kpis = [
@@ -260,16 +314,8 @@ export function Dashboard() {
     { label:'Workforce\nToday',   value: dashboardKpi?.workforce ?? 143,           icon: Users,        accent:'#3b82f6', bg:'rgba(59,130,246,0.08)', border:'rgba(59,130,246,0.2)', trend:'+18' },
   ];
 
-  const ragData = [
-    { name:'On Track', value: projects.filter(p=>p.budgetRAG==='green'&&p.programmeRAG==='green').length || 7, fill:'#10b981' },
-    { name:'At Risk',  value: projects.filter(p=>p.budgetRAG==='amber'||p.programmeRAG==='amber').length || 3,  fill:'#f59e0b' },
-    { name:'Critical', value: projects.filter(p=>p.budgetRAG==='red'||p.programmeRAG==='red').length || 2,   fill:'#ef4444' },
-  ];
-
-  const projectStatusData = [
-    { name:'On Track', value:7, fill:'#10b981' },
-    { name:'At Risk',  value:3, fill:'#f59e0b' },
-    { name:'Critical', value:2, fill:'#ef4444' },
+  const ragData = projectStatusData.length > 0 ? projectStatusData : [
+    { name:'No Data', value:0, fill:'#334155' },
   ];
 
   const tabs = [
@@ -813,61 +859,33 @@ export function Dashboard() {
 
       {/* ── SAFETY TAB ────────────────────────────────────────────── */}
       {activeTab === 'safety' && (
-        <div className="space-y-5">
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '12px' }}>
-            {[
-              { label:'Near Misses',              value:'8',  trend:'-2', accent:'#10b981' },
-              { label:'Lost Time Injuries',       value:'0',  trend:'0',  accent:'#10b981' },
-              { label:'RIDDOR Reportable',        value:'1',  trend:'0',  accent:'#f59e0b' },
-              { label:'Days Since Last Accident', value:'187',trend:'+15', accent:'#10b981' },
-            ].map((item, i) => (
-              <div key={item.label} style={{
-                background: 'rgba(13,17,23,0.8)', border: '1px solid rgba(255,255,255,0.06)',
-                borderRadius: '14px', padding: '16px',
-                animation: `fadeIn 0.4s ease ${i * 0.07}s forwards`, opacity: 0,
-              }}>
-                <p style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: '9px', color: '#475569', letterSpacing: '0.08em', marginBottom: '8px' }}>{item.label.toUpperCase()}</p>
-                <p style={{ fontFamily: "'Syne', sans-serif", fontSize: '26px', fontWeight: 800, color: '#f1f5f9', lineHeight: 1 }}>{item.value}</p>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '4px', marginTop: '6px' }}>
-                  {item.trend.startsWith('+') ? (
-                    <TrendingUp style={{ width:'10px',height:'10px',color: item.trend === '+15' ? '#10b981' : '#ef4444' }} />
-                  ) : (
-                    <TrendingDown style={{ width:'10px',height:'10px',color:'#10b981' }} />
-                  )}
-                  <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: '9px', color: item.trend.startsWith('+') && item.trend!=='+15' ? '#ef4444' : '#10b981' }}>{item.trend}</span>
-                </div>
-              </div>
-            ))}
-          </div>
-
-          <div style={{
-            background: 'rgba(13,17,23,0.8)', border: '1px solid rgba(255,255,255,0.06)',
-            borderRadius: '16px', padding: '24px',
-            backdropFilter: 'blur(12px)',
-          }}>
-            <h3 style={{ fontFamily: "'Syne', sans-serif", fontSize: '14px', fontWeight: 700, color: '#f1f5f9', marginBottom: '16px' }}>
-              Incidents by Type
-            </h3>
-            <div style={{ height: '200px' }}>
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={[
-                  { type:'Slips/Trips', count:3, fill:'#f59e0b' },
-                  { type:'Hand Injury', count:2, fill:'#ef4444' },
-                  { type:'Near Miss',   count:8, fill:'#10b981' },
-                  { type:'Environmental',count:1, fill:'#3b82f6' },
-                ]}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" />
-                  <XAxis dataKey="type" tick={{ fontFamily:'JetBrains Mono', fontSize:9, fill:'#475569' }} axisLine={false} tickLine={false} />
-                  <YAxis tick={{ fontFamily:'JetBrains Mono', fontSize:9, fill:'#475569' }} axisLine={false} tickLine={false} />
-                  <Tooltip contentStyle={{ background:'#0f172a', border:'1px solid #1e293b', borderRadius:8, fontFamily:'JetBrains Mono', fontSize:11 }} />
-                  <Bar dataKey="count" radius={[4,4,0,0]}>
-                    {[{ fill:'#f59e0b' },{ fill:'#ef4444' },{ fill:'#10b981' },{ fill:'#3b82f6' }].map((c, i) => <Cell key={i} fill={c.fill} />)}
-                  </Bar>
-                </BarChart>
-              </ResponsiveContainer>
-            </div>
-          </div>
-        </div>
+        <SafetyStatsPanel
+          data={{
+            daysSinceIncident: 187,
+            activeRAMS: 34,
+            openObservations: 12,
+            nearMissReports: 8,
+            ppeCompliance: 97,
+            inspectionsPassed: 94,
+            siteStatus: 'GREEN',
+            lastCheck: new Date().toLocaleTimeString('en-GB', { timeZone: 'Europe/London', hour: '2-digit', minute: '2-digit' }) + ' GMT',
+            incidentTrend: [
+              { day: 'Mon', incidents: 1, observations: 3 },
+              { day: 'Tue', incidents: 0, observations: 2 },
+              { day: 'Wed', incidents: 2, observations: 5 },
+              { day: 'Thu', incidents: 0, observations: 1 },
+              { day: 'Fri', incidents: 1, observations: 4 },
+              { day: 'Sat', incidents: 0, observations: 2 },
+              { day: 'Sun', incidents: 0, observations: 1 },
+            ],
+            daysSinceSpark: [165, 170, 175, 178, 182, 185, 187],
+            ramsSpark: [28, 30, 29, 31, 32, 33, 34],
+            observationsSpark: [18, 16, 15, 14, 13, 13, 12],
+            nearMissSpark: [12, 11, 10, 10, 9, 9, 8],
+            ppeSpark: [94, 95, 95, 96, 96, 96, 97],
+            inspectionsSpark: [90, 91, 91, 92, 93, 93, 94],
+          } as SafetyStatsData}
+        />
       )}
 
       {/* ── ACTIVITY TAB ───────────────────────────────────────────── */}

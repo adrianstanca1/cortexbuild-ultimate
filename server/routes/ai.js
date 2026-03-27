@@ -9,6 +9,11 @@ const router = express.Router();
 const OLLAMA_HOST = process.env.OLLAMA_HOST || 'http://localhost:11434';
 const LLM_MODEL = process.env.LLM_MODEL || 'qwen3.5:latest';
 
+// ─── Conversation history & context window settings ───────────────────────────
+const MAX_CONTEXT_MESSAGES = parseInt(process.env.MAX_CONTEXT_MESSAGES || '20', 10);
+const SUMMARY_THRESHOLD    = parseInt(process.env.SUMMARY_THRESHOLD    || '30', 10);
+const MAX_TOKENS_BUDGET    = 28000;
+
 function fmt(n) {
   if (n == null) return '£0';
   return '£' + Number(n).toLocaleString('en-GB', { minimumFractionDigits: 0, maximumFractionDigits: 0 });
@@ -1227,6 +1232,7 @@ router.post('/execute', async (req, res) => {
           [status, invoice_id]
         );
         if (!rows.length) return res.status(404).json({ success: false, message: 'Invoice not found' });
+        broadcastDashboardUpdate('update', 'invoices', rows[0]);
         res.json({ success: true, message: `Invoice "${rows[0].number}" status updated to "${status}".`, data: rows[0] });
         break;
       }
@@ -1238,6 +1244,8 @@ router.post('/execute', async (req, res) => {
           `INSERT INTO rfis(project,subject,priority,status) VALUES($1,$2,$3,$4) RETURNING id,number,status`,
           [project, subject, priority, rfiStatus]
         );
+        broadcastDashboardUpdate('create', 'rfis', rows[0]);
+        broadcastNotification('New RFI Raised', `${rows[0].number}: ${subject}`, 'info', { projectId: project });
         res.json({ success: true, message: `RFI created: ${rows[0].number}`, data: rows[0] });
         break;
       }
@@ -1250,6 +1258,8 @@ router.post('/execute', async (req, res) => {
            VALUES($1,$2,$3,$4,$5,NOW()) RETURNING id,title,severity,status`,
           [project, title, type || 'incident', severity, incStatus]
         );
+        broadcastDashboardUpdate('create', 'safety_incidents', rows[0]);
+        broadcastNotification('Safety Incident Recorded', `"${title}" — severity: ${severity}`, severity === 'critical' || severity === 'high' ? 'critical' : 'warning', { projectId: project });
         res.json({ success: true, message: `Safety incident recorded: "${title}"`, data: rows[0] });
         break;
       }
@@ -1261,6 +1271,8 @@ router.post('/execute', async (req, res) => {
           `INSERT INTO team_members(name,role,trade,status) VALUES($1,$2,$3,$4) RETURNING id,name,role,status`,
           [name, role || null, trade || null, tmStatus]
         );
+        broadcastDashboardUpdate('create', 'team_members', rows[0]);
+        broadcastNotification('New Team Member Added', `${name} has joined the team as ${role || 'member'}.`, 'info', { memberId: rows[0].id });
         res.json({ success: true, message: `Team member "${name}" added.`, data: rows[0] });
         break;
       }

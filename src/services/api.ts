@@ -746,6 +746,8 @@ export const dashboardApi = {
     };
   }>('/dashboard-data/overview'),
   getRevenueData: () => apiFetch<{ month: string; revenue: number }[]>('/dashboard-data/revenue'),
+  getProjectStatus: () => apiFetch<{ statuses: { name: string; value: number; fill: string }[] }>('/dashboard-data/project-status'),
+  getSafetyChart: () => apiFetch<{ month: string; incidents: number; score: number }[]>('/dashboard-data/safety-chart'),
 };
 
 export const executiveReportsApi = {

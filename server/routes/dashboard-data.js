@@ -91,4 +91,112 @@ router.get('/revenue', async (req, res) => {
   }
 });
 
+router.get('/project-status', async (req, res) => {
+  try {
+    const auth = req.auth || {};
+    const orgId = auth.organization_id;
+    const isSuper = ['super_admin', 'company_owner'].includes(auth.role);
+
+    let params = [];
+    let where = '';
+    if (orgId && !isSuper) {
+      where = 'WHERE company_id = $1';
+      params.push(orgId);
+    }
+
+    const result = await pool.query(`
+      SELECT status, COUNT(*) as count
+      FROM projects
+      ${where}
+      GROUP BY status
+    `, params);
+
+    const statusMap = {
+      ACTIVE:    { name: 'Active',    fill: '#10b981' },
+      PLANNING:  { name: 'Planning',  fill: '#3b82f6' },
+      ON_HOLD:   { name: 'On Hold',   fill: '#f59e0b' },
+      COMPLETED: { name: 'Completed', fill: '#8b5cf6' },
+      CANCELLED: { name: 'Cancelled', fill: '#ef4444' },
+      ARCHIVED:  { name: 'Archived',  fill: '#64748b' },
+    };
+
+    const statuses = result.rows.map(r => ({
+      name:  statusMap[r.status]?.name  || r.status,
+      value: Number(r.count),
+      fill:  statusMap[r.status]?.fill  || '#64748b',
+    }));
+
+    res.json({ statuses });
+  } catch (err) {
+    console.error('dashboard project-status error:', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+router.get('/safety-chart', async (req, res) => {
+  try {
+    const auth = req.auth || {};
+    const orgId = auth.organization_id;
+    const isSuper = ['super_admin', 'company_owner'].includes(auth.role);
+
+    // Build org join/filter for multi-tenancy
+    let join = '';
+    let params = [];
+    let where = '';
+    if (orgId && !isSuper) {
+      join = 'JOIN projects p ON si.project_id = p.id';
+      where = 'WHERE p.company_id = $1';
+      params.push(orgId);
+    }
+
+    const result = await pool.query(`
+      SELECT
+        TO_CHAR(DATE_TRUNC('month', occurrence_date), 'Mon') as month,
+        DATE_TRUNC('month', occurrence_date) as sort_key,
+        COUNT(*) as incidents
+      FROM safety_incidents si
+      ${join}
+      ${where}
+      GROUP BY DATE_TRUNC('month', occurrence_date)
+      ORDER BY sort_key
+      LIMIT 12
+    `, params);
+
+    // Also get total/closed per month for a health score
+    const healthResult = await pool.query(`
+      SELECT
+        TO_CHAR(DATE_TRUNC('month', occurrence_date), 'Mon') as month,
+        DATE_TRUNC('month', occurrence_date) as sort_key,
+        COUNT(*) as total,
+        COALESCE(SUM(CASE WHEN status = 'closed' THEN 1 ELSE 0 END), 0) as closed
+      FROM safety_incidents si
+      ${join}
+      ${where}
+      GROUP BY DATE_TRUNC('month', occurrence_date)
+      ORDER BY sort_key
+      LIMIT 12
+    `, params);
+
+    const healthMap: Record<string, {total: number; closed: number}> = {};
+    for (const r of healthResult.rows) {
+      healthMap[r.month] = { total: Number(r.total), closed: Number(r.closed) };
+    }
+
+    const data = result.rows.map(r => {
+      const h = healthMap[r.month];
+      const score = h && h.total > 0 ? Math.round((h.closed / h.total) * 100) : 100;
+      return {
+        month:     r.month,
+        incidents: Number(r.incidents),
+        score,
+      };
+    });
+
+    res.json(data);
+  } catch (err) {
+    console.error('dashboard safety-chart error:', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
 module.exports = router;
