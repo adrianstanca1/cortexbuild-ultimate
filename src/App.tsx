@@ -13,6 +13,7 @@ import LoginPage from './components/auth/LoginPage';
 import { NotificationsPanel } from './components/layout/NotificationsPanel';
 import { ShortcutsHelp } from './components/layout/ShortcutsHelp';
 import { MobileNav } from './components/layout/MobileNav';
+import { QuickActionsHUD } from './components/layout/QuickActionsHUD';
 
 // ── Named-export modules ────────────────────────────────────────────────────
 const Dashboard           = lazy(() => import('./components/modules/Dashboard').then(m => ({ default: m.Dashboard })));
@@ -193,6 +194,7 @@ function AppShell() {
           </main>
         </div>
       </div>
+      <QuickActionsHUD currentModule={activeModule} onAction={(m) => setActiveModule(m as Module)} />
       <ShortcutsHelp isOpen={showShortcuts} onClose={() => setShowShortcuts(false)} />
       <MobileNav activeModule={activeModule} setModule={setActiveModule} />
       {showGlobalSearch && (
