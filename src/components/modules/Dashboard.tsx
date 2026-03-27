@@ -296,26 +296,79 @@ export function Dashboard() {
 
       {/* KPI Bar — 6 cards */}
       {visibleWidgets.kpiBar && dashboardKpi && (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-4">
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 stagger-children">
           {[
-            { label: 'Active Projects', value: String(dashboardKpi.activeProjects), icon: Building2, color: 'emerald' },
-            { label: 'Total Revenue', value: fmtCurrency(dashboardKpi.totalRevenue), icon: DollarSign, color: 'emerald' },
-            { label: 'Outstanding', value: fmtCurrency(dashboardKpi.outstanding), icon: AlertTriangle, color: 'amber' },
-            { label: 'Open RFIs', value: String(dashboardKpi.openRfis), icon: FileText, color: 'emerald' },
-            { label: 'H&S Score', value: `${dashboardKpi.hsScore}%`, icon: CheckCircle, color: 'emerald' },
-            { label: 'Workforce Today', value: String(dashboardKpi.workforce), icon: Users, color: 'emerald' },
+            { label: 'Active Projects', value: String(dashboardKpi.activeProjects), icon: Building2, accent: '#10b981', trend: '+2' },
+            { label: 'Total Revenue',   value: fmtCurrency(dashboardKpi.totalRevenue), icon: DollarSign, accent: '#3b82f6', trend: '+18%' },
+            { label: 'Outstanding',    value: fmtCurrency(dashboardKpi.outstanding), icon: AlertTriangle, accent: '#f59e0b', trend: '-5%' },
+            { label: 'Open RFIs',       value: String(dashboardKpi.openRfis), icon: FileText, accent: '#10b981', trend: '-3' },
+            { label: 'H&S Score',       value: `${dashboardKpi.hsScore}%`, icon: CheckCircle, accent: '#10b981', trend: '+2%' },
+            { label: 'Workforce Today', value: String(dashboardKpi.workforce), icon: Users, accent: '#3b82f6', trend: '+12' },
           ].map((kpi, idx) => {
             const Icon = kpi.icon;
             return (
-              <div key={idx} className="card p-4 hover:border-gray-600 transition-colors">
+              <div
+                key={idx}
+                className="kpi-card panel-steel hover-steel rounded-xl p-4 cursor-pointer"
+                style={{ '--accent': kpi.accent } as React.CSSProperties}
+              >
+                {/* Top accent line */}
+                <div
+                  style={{
+                    position: 'absolute', top: 0, left: 0, right: 0, height: '2px',
+                    background: `linear-gradient(90deg, transparent, ${kpi.accent}, transparent)`,
+                  }}
+                />
                 <div className="flex items-start justify-between mb-3">
-                  <span className="text-xs text-gray-400 uppercase tracking-wider">{kpi.label}</span>
-                  <div className={`p-2 rounded-lg bg-${kpi.color}-500/10`}>
-                    <Icon className={`h-4 w-4 text-${kpi.color}-400`} />
+                  <span
+                    style={{
+                      fontFamily: "'JetBrains Mono', monospace",
+                      fontSize: '9px', fontWeight: 700,
+                      color: '#64748b',
+                      letterSpacing: '0.12em',
+                      textTransform: 'uppercase',
+                    }}
+                  >
+                    {kpi.label}
+                  </span>
+                  <div
+                    style={{
+                      padding: '5px',
+                      borderRadius: '8px',
+                      background: `${kpi.accent}15`,
+                      border: `1px solid ${kpi.accent}25`,
+                    }}
+                  >
+                    <Icon style={{ width: '13px', height: '13px', color: kpi.accent }} />
                   </div>
                 </div>
-                <div className="mb-3">
-                  <p className="text-xl font-bold text-white font-display">{kpi.value}</p>
+                <div className="mb-2">
+                  <p
+                    style={{
+                      fontFamily: "'Syne', sans-serif",
+                      fontSize: '22px',
+                      fontWeight: 800,
+                      color: '#f1f5f9',
+                      lineHeight: 1,
+                      letterSpacing: '-0.03em',
+                    }}
+                  >
+                    {kpi.value}
+                  </p>
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                  <TrendingUp style={{ width: '11px', height: '11px', color: '#10b981' }} />
+                  <span
+                    style={{
+                      fontFamily: "'JetBrains Mono', monospace",
+                      fontSize: '9px',
+                      color: '#10b981',
+                      fontWeight: 600,
+                    }}
+                  >
+                    {kpi.trend}
+                  </span>
+                  <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: '9px', color: '#334155' }}>vs last month</span>
                 </div>
               </div>
             );
@@ -323,30 +376,50 @@ export function Dashboard() {
         </div>
       )}
 
-      {/* Sub-tabs */}
-      <div className="flex gap-2 border-b border-gray-800">
-        {tabs.map((tab) => (
-          <button
-            key={String(tab.id)}
-            onClick={() => setActiveTab(tab.id as typeof activeTab)}
-            className={`px-4 py-3 font-medium text-sm transition-colors ${
-              activeTab === tab.id
-                ? 'text-orange-500 border-b-2 border-orange-500'
-                : 'text-gray-400 hover:text-gray-300'
-            }`}
-          >
-            {String(tab.label)}
-          </button>
-        ))}
+      {/* Sub-tabs — styled like a construction control panel */}
+      <div style={{ display: 'flex', gap: '4px', borderBottom: '1px solid rgba(255,255,255,0.06)', paddingBottom: '0' }}>
+        {tabs.map((tab) => {
+          const active = activeTab === tab.id;
+          return (
+            <button
+              key={String(tab.id)}
+              onClick={() => setActiveTab(tab.id as typeof activeTab)}
+              style={{
+                padding: '10px 18px',
+                fontFamily: "'DM Sans', sans-serif",
+                fontSize: '13px',
+                fontWeight: active ? 600 : 500,
+                color: active ? '#f59e0b' : '#64748b',
+                background: 'none',
+                border: 'none',
+                borderBottom: active ? '2px solid #f59e0b' : '2px solid transparent',
+                cursor: 'pointer',
+                transition: 'all 0.2s',
+                marginBottom: '-1px',
+                letterSpacing: '0.01em',
+              }}
+              onMouseEnter={e => { if (!active) e.currentTarget.style.color = '#94a3b8'; }}
+              onMouseLeave={e => { if (!active) e.currentTarget.style.color = '#64748b'; }}
+            >
+              {String(tab.label)}
+            </button>
+          );
+        })}
       </div>
 
       {/* Tab Content */}
       {activeTab === 'overview' && (
-        <div className="space-y-6">
+        <div className="space-y-5">
           {/* Revenue vs Cost + Project Status Grid */}
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            <div className="lg:col-span-2 card p-5">
-              <h3 className="text-lg font-bold text-white mb-4">Revenue vs Cost (12 Months)</h3>
+            <div className="lg:col-span-2 panel-steel rounded-xl p-5 hover-steel">
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px' }}>
+                <h3 style={{ fontFamily: "'Syne', sans-serif", fontSize: '14px', fontWeight: 700, color: '#f1f5f9', letterSpacing: '-0.01em' }}>Revenue vs Cost</h3>
+                <div style={{ display: 'flex', gap: '12px', fontFamily: "'JetBrains Mono', monospace", fontSize: '9px' }}>
+                  <span style={{ color: '#10b981' }}>■ Revenue</span>
+                  <span style={{ color: '#ef4444' }}>■ Cost</span>
+                </div>
+              </div>
               <div className="h-64">
                 <ResponsiveContainer width="100%" height="100%">
                   <AreaChart data={revenueFromApi.length > 0 ? revenueFromApi : revenueData}>
