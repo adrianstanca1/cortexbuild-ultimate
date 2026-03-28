@@ -231,9 +231,10 @@ export function Header({ activeModule, onMenuToggle }: { activeModule: Module; o
               height: '34px',
               borderRadius: '9px',
               background: searchFocused ? 'rgba(255,255,255,0.08)' : 'rgba(255,255,255,0.04)',
-              border: `1px solid ${searchFocused ? 'rgba(245,158,11,0.4)' : 'rgba(255,255,255,0.08)'}`,
-              transition: 'all 0.2s',
+              border: `1px solid ${searchFocused ? 'rgba(245,158,11,0.5)' : 'rgba(255,255,255,0.08)'}`,
+              transition: 'all 0.2s cubic-bezier(0.16, 1, 0.3, 1)',
               width: searchFocused ? '220px' : '160px',
+              boxShadow: searchFocused ? '0 0 0 2px rgba(245,158,11,0.1), 0 0 16px rgba(245,158,11,0.05)' : 'none',
             }}
           >
             <Search

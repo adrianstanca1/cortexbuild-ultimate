@@ -68,7 +68,41 @@ function AnimatedCounter({ value, prefix = '', suffix = '', duration = 1800 }: {
   return <span>{prefix}{display.toLocaleString()}{suffix}</span>;
 }
 
-// ─── RAG Donut ────────────────────────────────────────────────────────────
+// ─── Animated Progress Ring ──────────────────────────────────────────────────
+function ProgressRing({ progress, color, size = 80, strokeWidth = 6, label }: {
+  progress: number; color: string; size?: number; strokeWidth?: number; label?: string;
+}) {
+  const [mounted, setMounted] = useState(false);
+  const radius = (size - strokeWidth) / 2;
+  const circumference = 2 * Math.PI * radius;
+  useEffect(() => { const t = setTimeout(() => setMounted(true), 100); return () => clearTimeout(t); }, []);
+
+  return (
+    <div style={{ position: 'relative', width: size, height: size }}>
+      <svg viewBox={`0 0 ${size} ${size}`} style={{ transform: 'rotate(-90deg)' }}>
+        {/* Track */}
+        <circle cx={size/2} cy={size/2} r={radius} fill="none" stroke="rgba(255,255,255,0.06)" strokeWidth={strokeWidth} />
+        {/* Progress arc */}
+        <circle
+          cx={size/2} cy={size/2} r={radius} fill="none" stroke={color} strokeWidth={strokeWidth}
+          strokeDasharray={circumference}
+          strokeDashoffset={mounted ? circumference * (1 - progress / 100) : circumference}
+          strokeLinecap="round"
+          style={{
+            transition: `stroke-dashoffset 1.2s cubic-bezier(0.34,1.56,0.64,1)`,
+            filter: `drop-shadow(0 0 4px ${color}60)`,
+          }}
+        />
+      </svg>
+      <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
+        {label && <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: size * 0.14, color: color, fontWeight: 700 }}>{label}</span>}
+        <span style={{ fontFamily: "'Syne', sans-serif", fontSize: size * 0.22, fontWeight: 800, color: '#f1f5f9', lineHeight: 1 }}>{Math.round(progress)}%</span>
+      </div>
+    </div>
+  );
+}
+
+// ─── Animated RAG Donut ─────────────────────────────────────────────────────
 function RAGDonut({ data }: { data: { name: string; value: number; fill: string }[] }) {
   const total = data.reduce((s, d) => s + d.value, 0);
   const [mounted, setMounted] = useState(false);
@@ -85,28 +119,20 @@ function RAGDonut({ data }: { data: { name: string; value: number; fill: string 
           const dash = circ * pct;
           return (
             <circle
-              key={d.name}
-              cx="22" cy="22" r={r}
-              fill="none"
-              stroke={d.fill}
-              strokeWidth="3"
+              key={d.name} cx="22" cy="22" r={r} fill="none" stroke={d.fill} strokeWidth="3"
               strokeDasharray={`${dash} ${circ - dash}`}
               strokeDashoffset={-circ * offset}
-              style={{ transition: `stroke-dasharray 0.8s cubic-bezier(0.34,1.56,0.64,1) ${i * 0.12}s` }}
+              style={{
+                transition: `stroke-dasharray 0.8s cubic-bezier(0.34,1.56,0.64,1) ${i * 0.12}s`,
+                filter: `drop-shadow(0 0 3px ${d.fill}60)`,
+              }}
             />
           );
         })}
       </svg>
-      <div style={{
-        position: 'absolute', inset: 0,
-        display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
-      }}>
-        <span style={{ fontFamily: "'Syne', sans-serif", fontSize: '22px', fontWeight: 800, color: '#f1f5f9', lineHeight: 1 }}>
-          {total}
-        </span>
-        <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: '8px', color: '#475569', letterSpacing: '0.1em', textTransform: 'uppercase' }}>
-          Projects
-        </span>
+      <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
+        <span style={{ fontFamily: "'Syne', sans-serif", fontSize: '22px', fontWeight: 800, color: '#f1f5f9', lineHeight: 1 }}>{total}</span>
+        <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: '8px', color: '#475569', letterSpacing: '0.1em', textTransform: 'uppercase' }}>Projects</span>
       </div>
     </div>
   );

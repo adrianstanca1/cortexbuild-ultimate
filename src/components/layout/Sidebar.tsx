@@ -162,6 +162,7 @@ function NavItem({
       title={collapsed ? item.label : undefined}
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
+      className={`nav-item ${active ? 'nav-item-active' : ''}`}
       style={{
         width: '100%',
         display: 'flex',
@@ -182,6 +183,7 @@ function NavItem({
         position: 'relative',
         marginBottom: '2px',
         transform: hovered && !active ? 'translateX(2px)' : 'none',
+        boxShadow: hovered && !active ? `0 0 12px ${accent}12` : 'none',
       }}
     >
       {/* Active indicator bar */}
@@ -211,8 +213,9 @@ function NavItem({
           justifyContent: 'center',
           flexShrink: 0,
           opacity: active ? 1 : hovered ? 0.9 : 0.6,
-          transition: 'opacity 0.15s',
-          filter: active ? `drop-shadow(0 0 4px ${accent}80)` : 'none',
+          transition: 'all 0.15s',
+          filter: active ? `drop-shadow(0 0 4px ${accent}80)` : hovered ? `drop-shadow(0 0 3px ${accent}40)` : 'none',
+          transform: hovered && !active ? 'scale(1.1)' : 'none',
         }}
       >
         <Icon style={{ width: '16px', height: '16px' }} />

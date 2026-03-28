@@ -14,6 +14,125 @@ import { sendChatMessage } from '../../services/ai';
 import { aiConversationsApi } from '../../services/api';
 import { toast } from 'sonner';
 
+// ── Render markdown-like content for AI responses ──────────────────────────────
+function renderMessageContent(content: string): React.ReactNode {
+  const lines = content.split('\n');
+  const elements: React.ReactNode[] = [];
+  let i = 0;
+
+  while (i < lines.length) {
+    const line = lines[i];
+    if (!line.trim()) { i++; continue; }
+
+    if (line.startsWith('## ')) {
+      elements.push(
+        <h3 key={i} style={{
+          fontFamily: "'Syne', sans-serif", fontSize: '14px', fontWeight: 700,
+          color: '#f1f5f9', marginTop: '16px', marginBottom: '8px', letterSpacing: '-0.01em',
+          borderBottom: '1px solid rgba(245,158,11,0.15)', paddingBottom: '6px',
+        }}>
+          {line.replace(/^##\s*/, '')}
+        </h3>
+      );
+    } else if (line.startsWith('**') && line.endsWith('**')) {
+      elements.push(
+        <p key={i} style={{ fontFamily: "'DM Sans', sans-serif", fontSize: '13px', color: '#e2e8f0', fontWeight: 600, marginBottom: '6px' }}>
+          {line.replace(/\*\*(.*?)\*\*/g, '$1')}
+        </p>
+      );
+    } else if (line.startsWith('• ') || line.startsWith('- ')) {
+      // Collect consecutive bullet points
+      const bullets: string[] = [];
+      while (i < lines.length && (lines[i].startsWith('• ') || lines[i].startsWith('- '))) {
+        bullets.push(lines[i].replace(/^[•-]\s*/, ''));
+        i++;
+      }
+      elements.push(
+        <ul key={`bullet-${i}`} style={{ marginLeft: '16px', marginBottom: '8px' }}>
+          {bullets.map((b, bi) => (
+            <li key={bi} style={{
+              fontFamily: "'DM Sans', sans-serif", fontSize: '13px', color: '#94a3b8',
+              marginBottom: '3px', lineHeight: 1.5,
+              listStyleType: 'none',
+              paddingLeft: '12px',
+              position: 'relative',
+            }}>
+              <span style={{ position: 'absolute', left: 0, color: '#f59e0b' }}>›</span>
+              {b.split(/\*\*(.*?)\*\*/g).map((part, pi) =>
+                pi % 2 === 1
+                  ? <strong key={pi} style={{ color: '#f1f5f9' }}>{part}</strong>
+                  : <span key={pi}>{part}</span>
+              )}
+            </li>
+          ))}
+        </ul>
+      );
+      continue;
+    } else if (line.match(/^\d+\.\s/)) {
+      // Numbered list
+      const items: string[] = [];
+      while (i < lines.length && lines[i].match(/^\d+\.\s/)) {
+        items.push(lines[i].replace(/^\d+\.\s*/, ''));
+        i++;
+      }
+      elements.push(
+        <ol key={`num-${i}`} style={{ marginLeft: '16px', marginBottom: '8px' }}>
+          {items.map((item, ni) => (
+            <li key={ni} style={{ fontFamily: "'DM Sans', sans-serif", fontSize: '13px', color: '#94a3b8', marginBottom: '4px', lineHeight: 1.5 }}>
+              {item.split(/\*\*(.*?)\*\*/g).map((part, pi) =>
+                pi % 2 === 1
+                  ? <strong key={pi} style={{ color: '#f1f5f9' }}>{part}</strong>
+                  : part
+              )}
+            </li>
+          ))}
+        </ol>
+      );
+      continue;
+    } else if (line.startsWith('`') && line.endsWith('`')) {
+      elements.push(
+        <code key={i} style={{
+          fontFamily: "'JetBrains Mono', monospace", fontSize: '11px', color: '#f59e0b',
+          background: 'rgba(245,158,11,0.08)', padding: '2px 6px', borderRadius: '4px',
+          border: '1px solid rgba(245,158,11,0.2)',
+        }}>
+          {line.replace(/`/g, '')}
+        </code>
+      );
+    } else if (line.startsWith('⚠️') || line.startsWith('✓') || line.startsWith('•') || line.match(/^[✔✓✗!]/)) {
+      const isPositive = line.startsWith('✓') || line.startsWith('✔');
+      const isWarning = line.startsWith('⚠️');
+      elements.push(
+        <div key={i} style={{
+          padding: '8px 12px', borderRadius: '8px', marginBottom: '6px',
+          background: isPositive ? 'rgba(16,185,129,0.08)' : isWarning ? 'rgba(245,158,11,0.08)' : 'rgba(239,68,68,0.08)',
+          border: `1px solid ${isPositive ? 'rgba(16,185,129,0.25)' : isWarning ? 'rgba(245,158,11,0.25)' : 'rgba(239,68,68,0.25)'}`,
+          fontFamily: "'DM Sans', sans-serif", fontSize: '12px',
+          color: isPositive ? '#34d399' : isWarning ? '#fbbf24' : '#f87171',
+        }}>
+          {line}
+        </div>
+      );
+    } else {
+      // Regular paragraph with inline bold
+      const parts = line.split(/(\*\*[^*]+\*\*)/g);
+      elements.push(
+        <p key={i} style={{ fontFamily: "'DM Sans', sans-serif", fontSize: '13px', color: '#94a3b8', lineHeight: 1.6, marginBottom: '6px' }}>
+          {parts.map((part, pi) => {
+            if (part.startsWith('**') && part.endsWith('**')) {
+              return <strong key={pi} style={{ color: '#f1f5f9', fontWeight: 600 }}>{part.replace(/\*\*/g, '')}</strong>;
+            }
+            return part;
+          })}
+        </p>
+      );
+    }
+    i++;
+  }
+
+  return <>{elements}</>;
+}
+
 interface Message {
   id: string;
   role: 'user' | 'assistant';
@@ -596,9 +715,10 @@ export function AIAssistant() {
                   <button
                     key={idx}
                     onClick={() => handleSendMessage(prompt)}
-                    className="rounded-lg border border-gray-700 bg-gray-800/50 px-4 py-2 text-sm text-gray-300 text-left transition hover:border-blue-600 hover:bg-gray-800 hover:text-white"
+                    className="quick-chip rounded-lg border border-gray-700 bg-gray-800/50 px-4 py-2.5 text-sm text-gray-300 text-left hover:border-blue-600 hover:bg-gray-800 hover:text-white"
+                    style={{ animationDelay: `${idx * 50}ms` }}
                   >
-                    {prompt}
+                    <span style={{ fontFamily: "'DM Sans', sans-serif" }}>{prompt}</span>
                   </button>
                 ))}
               </div>
@@ -606,7 +726,7 @@ export function AIAssistant() {
           ) : (
             <>
               {messages.map(msg => (
-                <div key={msg.id} className={clsx('flex gap-3', msg.role === 'user' ? 'justify-end' : 'justify-start')}>
+                <div key={msg.id} className={clsx('flex gap-3 message-enter', msg.role === 'user' ? 'justify-end' : 'justify-start')}>
                   {msg.role === 'assistant' && (
                     <div className="flex-shrink-0 h-8 w-8 rounded-full bg-blue-600/20 flex items-center justify-center mt-1">
                       <selectedAgentData.icon className="h-4 w-4 text-blue-400" />
@@ -622,52 +742,7 @@ export function AIAssistant() {
                   >
                     {msg.role === 'assistant' ? (
                       <div className="prose prose-invert prose-sm">
-                        {msg.content.split('\n').map((line, idx) => {
-                          if (line.startsWith('##')) {
-                            return (
-                              <h3 key={idx} className="text-base font-bold text-white mt-3 mb-2">
-                                {line.replace(/^##\s*/, '')}
-                              </h3>
-                            );
-                          }
-                          if (line.startsWith('•')) {
-                            return (
-                              <li key={idx} className="ml-4 text-gray-200">
-                                {line.replace(/^•\s*/, '')}
-                              </li>
-                            );
-                          }
-                          if (line.includes('**') && line.includes('**')) {
-                            return (
-                              <p key={idx} className="text-gray-300">
-                                {line.split(/\*\*(.*?)\*\*/g).map((part, i) =>
-                                  i % 2 === 1 ? (
-                                    <strong key={i} className="text-white font-semibold">
-                                      {part}
-                                    </strong>
-                                  ) : (
-                                    part
-                                  )
-                                )}
-                              </p>
-                            );
-                          }
-                          if (line.startsWith('⚠️') || line.startsWith('✓')) {
-                            return (
-                              <p key={idx} className={clsx(
-                                'rounded px-3 py-2 mt-2',
-                                line.startsWith('⚠️') ? 'bg-amber-900/30 text-amber-200' : 'bg-emerald-900/30 text-emerald-200'
-                              )}>
-                                {line}
-                              </p>
-                            );
-                          }
-                          return line.trim() ? (
-                            <p key={idx} className="text-gray-300 mb-2">
-                              {line}
-                            </p>
-                          ) : null;
-                        })}
+                        {renderMessageContent(msg.content)}
                       </div>
                     ) : (
                       msg.content
@@ -681,10 +756,10 @@ export function AIAssistant() {
                     <selectedAgentData.icon className="h-4 w-4 text-blue-400" />
                   </div>
                   <div className="bg-gray-800 text-gray-400 rounded-xl px-4 py-3 border border-gray-700">
-                    <div className="flex gap-1">
-                      <div className="h-2 w-2 rounded-full bg-gray-500 animate-bounce" />
-                      <div className="h-2 w-2 rounded-full bg-gray-500 animate-bounce" style={{ animationDelay: '0.1s' }} />
-                      <div className="h-2 w-2 rounded-full bg-gray-500 animate-bounce" style={{ animationDelay: '0.2s' }} />
+                    <div className="flex gap-1.5">
+                      <div className="h-2 w-2 rounded-full bg-gray-500 typing-dot" />
+                      <div className="h-2 w-2 rounded-full bg-gray-500 typing-dot" />
+                      <div className="h-2 w-2 rounded-full bg-gray-500 typing-dot" />
                     </div>
                   </div>
                 </div>
