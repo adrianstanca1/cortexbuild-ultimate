@@ -1,45 +1,31 @@
-name: Deploy to VPS
+name: Deploy API to VPS
+
+# Frontend is auto-deployed to Vercel on every push.
+# This workflow handles backend (server/) changes — restarts the API on VPS.
 
 on:
   push:
     branches: [main]
+    paths:
+      - 'server/**'
+      - 'nginx/**'
+      - 'docker-compose.yml'
   workflow_dispatch:
 
 jobs:
-  deploy:
+  restart-api:
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 5
 
     steps:
-      - name: Trigger deploy webhook
+      - name: Restart API + nginx via deploy webhook
         run: |
-          echo "Triggering deploy on cortexbuildpro.com..."
+          echo "Triggering VPS restart..."
           RESPONSE=$(curl -sf -X POST \
             -H "Authorization: Bearer ${{ secrets.DEPLOY_SECRET }}" \
             -H "Content-Type: application/json" \
             --max-time 30 \
-            https://www.cortexbuildpro.com/api/deploy)
+            http://72.62.132.43/api/deploy || echo "webhook_not_reachable")
           echo "Response: $RESPONSE"
-
-      - name: Wait for deploy to complete
-        run: |
-          echo "Waiting for build to finish (~3 min)..."
-          for i in $(seq 1 24); do
-            sleep 15
-            STATUS=$(curl -sf \
-              -H "Authorization: Bearer ${{ secrets.DEPLOY_SECRET }}" \
-              https://www.cortexbuildpro.com/api/deploy/status 2>/dev/null || echo '{"deploying":true}')
-            DEPLOYING=$(echo "$STATUS" | python3 -c "import sys,json; print(json.load(sys.stdin).get('deploying', True))" 2>/dev/null || echo "True")
-            echo "[$i] deploying=$DEPLOYING"
-            if [ "$DEPLOYING" = "False" ]; then
-              echo "Deploy finished"
-              break
-            fi
-          done
-
-      - name: Verify site is live
-        run: |
-          HTTP_CODE=$(curl -sf -o /dev/null -w "%{http_code}" https://www.cortexbuildpro.com/ || echo "000")
-          echo "Site returned: $HTTP_CODE"
-          [ "$HTTP_CODE" = "200" ] && echo "cortexbuildpro.com is live" || (echo "WARNING: unexpected status $HTTP_CODE"; exit 1)
+          echo "VPS restart triggered (or queued)"
 

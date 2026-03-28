@@ -5,11 +5,11 @@
   "rewrites": [
     {
       "source": "/api/(.*)",
-      "destination": "https://www.cortexbuildpro.com/api/$1"
+      "destination": "http://72.62.132.43/api/$1"
     },
     {
       "source": "/ws(.*)",
-      "destination": "https://www.cortexbuildpro.com/ws$1"
+      "destination": "http://72.62.132.43/ws$1"
     }
   ],
   "headers": [
