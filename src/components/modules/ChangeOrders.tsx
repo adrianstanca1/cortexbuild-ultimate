@@ -662,7 +662,7 @@ export function ChangeOrders() {
                   </BarChart>
                 </ResponsiveContainer>
               ) : (
-                <div className="h-80 flex items-center justify-center text-gray-400">No approved COs by project</div>
+                <EmptyState icon={FileEdit} title="No approved COs by project" description="Change orders will appear here once created." variant="documents" />
               )}
             </div>
 
@@ -683,7 +683,7 @@ export function ChangeOrders() {
                   </LineChart>
                 </ResponsiveContainer>
               ) : (
-                <div className="h-80 flex items-center justify-center text-gray-400">No cumulative data available</div>
+                <EmptyState icon={TrendingUp} title="No cumulative data available" description="Cumulative chart data will appear here." variant="default" />
               )}
             </div>
           </div>
@@ -716,11 +716,7 @@ export function ChangeOrders() {
                     );
                   })
                 ) : (
-                  <tr>
-                    <td colSpan={4} className="px-4 py-8 text-center text-gray-400">
-                      No data available
-                    </td>
-                  </tr>
+                  <tr><td colSpan={4}><EmptyState icon={BarChart3} title="No data available" description="Chart data will appear here." variant="default" /></td></tr>
                 )}
               </tbody>
             </table>

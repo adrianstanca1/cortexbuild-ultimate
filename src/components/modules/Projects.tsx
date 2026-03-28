@@ -1412,7 +1412,7 @@ function ProjectWorkspace({ project, onBack, onEdit }: WorkspaceProps) {
               <h3 className="text-sm font-semibold text-white">RFIs ({rfis.length})</h3>
               <span className="text-xs text-orange-400">{openRFIs} open</span>
             </div>
-            {rfis.length===0 ? <p className="py-8 text-center text-gray-500">No RFIs for this project</p> : (
+            {rfis.length===0 ? <EmptyState icon={FileText} title="No RFIs for this project" description="Create an RFI to track information requests." variant="documents" /> : (
               <table className="w-full text-sm">
                 <thead className="bg-gray-800/60"><tr>{['RFI #','Subject','Priority','Status','Due'].map(h=><th key={h} className="px-4 py-3 text-left text-xs font-semibold text-gray-400 uppercase">{h}</th>)}</tr></thead>
                 <tbody className="divide-y divide-gray-800">
@@ -1434,7 +1434,7 @@ function ProjectWorkspace({ project, onBack, onEdit }: WorkspaceProps) {
               <h3 className="text-sm font-semibold text-white">Change Orders ({cos.length})</h3>
               <span className="text-xs text-blue-400">+{fmtM(approvedCOVal)} approved</span>
             </div>
-            {cos.length===0 ? <p className="py-8 text-center text-gray-500">No change orders for this project</p> : (
+            {cos.length===0 ? <EmptyState icon={FileText} title="No change orders for this project" description="Create a change order to track scope changes." variant="documents" /> : (
               <table className="w-full text-sm">
                 <thead className="bg-gray-800/60"><tr>{['CO #','Title','Value','Status'].map(h=><th key={h} className="px-4 py-3 text-left text-xs font-semibold text-gray-400 uppercase">{h}</th>)}</tr></thead>
                 <tbody className="divide-y divide-gray-800">

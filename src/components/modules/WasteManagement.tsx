@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { Plus, Search, Leaf, Recycle, AlertCircle, Trash2, X, Upload, Edit } from 'lucide-react';
 import { wasteManagementApi, uploadFile } from '../../services/api';
 import { toast } from 'sonner';
+import { EmptyState } from '../ui/EmptyState';
 
 export default function WasteManagement() {
   const [searchTerm, setSearchTerm] = useState('');
@@ -168,7 +169,7 @@ export default function WasteManagement() {
         ) : (
           <div className="space-y-3">
             {filtered.length === 0 ? (
-              <div className="text-center py-8 text-gray-500">No waste records found</div>
+              <EmptyState icon={Leaf} title="No waste records found" description="Start tracking waste by creating a waste record." variant="default" />
             ) : filtered.map((w) => (
               <div key={w.id} className="border border-gray-700 rounded-lg p-4 flex items-center justify-between">
                 <div>
