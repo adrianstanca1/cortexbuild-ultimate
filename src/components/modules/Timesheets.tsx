@@ -1,6 +1,6 @@
 import { useState } from 'react';
-import { Clock, Plus, Search, DollarSign, Users, CheckCircle2, AlertTriangle, Edit2, Trash2, X, Calendar, BarChart3, TrendingUp, Download, Briefcase, ChevronLeft, ChevronRight, Filter, CheckSquare, Square } from 'lucide-react';
-import { BarChart, Bar, LineChart, Line, CartesianGrid, Tooltip, Legend, ResponsiveContainer, XAxis, YAxis } from 'recharts';
+import { Clock, Plus, Search, DollarSign, Users, CheckCircle2, AlertTriangle, Edit2, Trash2, X, TrendingUp, Download, Briefcase, ChevronLeft, ChevronRight, Filter, CheckSquare, Square } from 'lucide-react';
+import { BarChart, Bar, LineChart, Line, CartesianGrid, Tooltip, ResponsiveContainer, XAxis, YAxis } from 'recharts';
 import { useTimesheets } from '../../hooks/useData';
 import { BulkActionsBar, useBulkSelection } from '../ui/BulkActions';
 import { EmptyState } from '../ui/EmptyState';

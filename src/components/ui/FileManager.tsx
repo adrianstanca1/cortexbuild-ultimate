@@ -1,9 +1,7 @@
 import React from "react";
 import { useState, useRef, useCallback } from 'react';
 import {
-  Upload, X, File, Image, FileText, Trash2, Edit2, Eye, Grid, List,
-  Download, Search, Filter, FolderOpen, ChevronDown, CheckSquare, Square,
-  Maximize2, ZoomIn, ZoomOut, RotateCw, ChevronLeft, ChevronRight
+  Upload, X, File, Image, FileText, Trash2, Edit2, Grid, List, Search, FolderOpen, CheckSquare, Square
 } from 'lucide-react';
 import { toast } from 'sonner';
 import clsx from 'clsx';

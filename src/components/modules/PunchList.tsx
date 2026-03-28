@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { ClipboardList, Plus, Search, Filter, Camera, CheckCircle2, AlertCircle, Clock, X, ChevronRight, Edit2, Trash2, Image, Tag, MapPin, User, ChevronDown, ChevronUp, CheckSquare, Square } from 'lucide-react';
+import { ClipboardList, Plus, Search, Camera, CheckCircle2, AlertCircle, Clock, X, ChevronRight, Edit2, Trash2, Image, Tag, MapPin, ChevronDown, CheckSquare, Square } from 'lucide-react';
 import { EmptyState } from '../ui/EmptyState';
 import { BulkActionsBar, useBulkSelection } from '../ui/BulkActions';
 import { usePunchList } from '../../hooks/useData';

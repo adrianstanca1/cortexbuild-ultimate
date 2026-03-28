@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Plus, Search, Users, FileCheck, Clock, AlertTriangle, Trash2, X, Upload, Edit } from 'lucide-react';
+import { Plus, Users, FileCheck, Clock, Trash2, X, Upload, Edit } from 'lucide-react';
 import { EmptyState } from '../ui/EmptyState';
 import { prequalificationApi, uploadFile } from '../../services/api';
 import { toast } from 'sonner';

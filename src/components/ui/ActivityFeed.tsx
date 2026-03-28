@@ -1,17 +1,13 @@
 import { useState, useEffect } from 'react';
 import {
   Activity,
-  Clock,
-  User,
   Briefcase,
   FileText,
   CheckCircle,
   AlertTriangle,
   MessageSquare,
   Settings,
-  TrendingUp,
   RefreshCw,
-  Filter,
   ChevronRight,
 } from 'lucide-react';
 import clsx from 'clsx';
@@ -63,6 +59,7 @@ export function ActivityFeed({ items: propItems, limit = 20, showFilters = true,
 
   useEffect(() => {
     loadActivities();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const loadActivities = async () => {

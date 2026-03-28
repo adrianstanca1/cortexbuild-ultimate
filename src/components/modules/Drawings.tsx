@@ -1,10 +1,10 @@
 import { useState, useEffect } from 'react';
-import { Layers, Plus, Search, Eye, Download, Edit2, Trash2, X, ChevronDown, ChevronUp, FileText, Cloud, GitBranch, Send, Filter, CheckCircle2, AlertTriangle, BarChart3, CheckSquare, Square } from 'lucide-react';
+import { Layers, Plus, Search, Eye, Download, Edit2, Trash2, X, ChevronDown, ChevronUp, FileText, GitBranch, Send, CheckCircle2, CheckSquare, Square } from 'lucide-react';
 import { useDocuments } from '../../hooks/useData';
 import { documentsApi } from '../../services/api';
 import { toast } from 'sonner';
 import { EmptyState } from '../ui/EmptyState';
-import { PieChart, Pie, BarChart, Bar, CartesianGrid, Tooltip, Legend, ResponsiveContainer, Cell } from 'recharts';
+import { PieChart, Pie, BarChart, Bar, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from 'recharts';
 import { BulkActionsBar, useBulkSelection } from '../ui/BulkActions';
 
 type AnyRow = Record<string, unknown>;

@@ -1,8 +1,8 @@
 import { useState } from 'react';
-import { Package, Plus, Search, Truck, BarChart3, AlertTriangle, CheckCircle2, Clock, Edit2, Trash2, X, ChevronRight, DollarSign, TrendingUp, Filter, CheckSquare, Square } from 'lucide-react';
+import { Package, Plus, Search, Truck, BarChart3, AlertTriangle, CheckCircle2, Clock, Edit2, Trash2, X, DollarSign, TrendingUp, Filter, CheckSquare, Square } from 'lucide-react';
 import { EmptyState } from '../ui/EmptyState';
 import { BulkActionsBar, useBulkSelection } from '../ui/BulkActions';
-import { BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
+import { BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { useMaterials } from '../../hooks/useData';
 import { toast } from 'sonner';
 

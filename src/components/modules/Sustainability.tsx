@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Plus, Search, Leaf, Cloud, Factory, Gauge, Trash2, X, Upload, Pencil, CheckSquare, Square } from 'lucide-react';
+import { Plus, Leaf, Cloud, Factory, Gauge, Trash2, X, Upload, Pencil, CheckSquare, Square } from 'lucide-react';
 import { EmptyState } from '../ui/EmptyState';
 import { BulkActionsBar, useBulkSelection } from '../ui/BulkActions';
 import { sustainabilityApi, uploadFile } from '../../services/api';

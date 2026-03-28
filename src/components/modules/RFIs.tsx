@@ -1,8 +1,8 @@
 import { useState } from 'react';
 import {
   MessageSquare, Plus, Search, Clock, CheckCircle, AlertTriangle, Edit2, Trash2, X,
-  ChevronDown, ChevronUp, Send, Zap, Calendar, User, Flame, TrendingUp, ChevronRight,
-  Loader2, Filter, CheckSquare, Square,
+  ChevronDown, ChevronUp, Send, Zap, User, Flame, TrendingUp,
+  Loader2, CheckSquare, Square,
 } from 'lucide-react';
 import { EmptyState } from '../ui/EmptyState';
 import { useRFIs } from '../../hooks/useData';

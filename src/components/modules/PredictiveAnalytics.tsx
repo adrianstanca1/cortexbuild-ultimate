@@ -1,17 +1,12 @@
 // Module: PredictiveAnalytics — CortexBuild Ultimate Enhanced
 import { useState, useEffect } from 'react';
 import { toast } from 'sonner';
-import {
-  TrendingUp, TrendingDown, Activity, AlertTriangle,
-  BarChart3, LineChart as LineChartIcon, PieChart,
-  Target, ArrowUpRight, ArrowDownRight, Eye,
-  Shield, PoundSterling, Clock, Calendar, RefreshCw,
-  Zap, Award, Brain, Wind, Cloud, Gauge,
+import { AlertTriangle, PoundSterling, Calendar, RefreshCw, Brain, Cloud,
   CheckSquare, Square, Trash2,
 } from 'lucide-react';
 import { BulkActionsBar, useBulkSelection } from '../ui/BulkActions';
 import {
-  LineChart, Line, AreaChart, Area, BarChart, Bar, RadarChart, Radar,
+  LineChart, Line, Area, BarChart, Bar, RadarChart, Radar,
   XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer,
   PolarGrid, PolarAngleAxis, PolarRadiusAxis, ComposedChart,
 } from 'recharts';

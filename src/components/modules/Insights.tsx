@@ -1,18 +1,14 @@
 // Module: Insights — CortexBuild Ultimate Enhanced
-import { useState, useMemo, useEffect } from 'react';
-import {
-  Brain, TrendingUp, AlertTriangle, CheckCircle, Lightbulb,
-  BarChart3, PieChart, Activity, Shield, PoundSterling,
-  Users, FileText, ClipboardList, Target, Zap, RefreshCw,
-  ChevronRight, Sparkles, MessageSquare, Bell, Award, Eye,
+import { useState, useEffect } from 'react';
+import { TrendingUp, AlertTriangle, Lightbulb, Activity, Shield, PoundSterling,
+  Users, FileText, ClipboardList, Target, RefreshCw,
   CheckSquare, Square, Trash2,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { insightsApi, type Insight as ApiInsight } from '../../services/api';
 import { BulkActionsBar, useBulkSelection } from '../ui/BulkActions';
 import { EmptyState } from '../ui/EmptyState';
-import {
-  AreaChart, Area, BarChart, Bar, LineChart, Line, PieChart as RechartsPie,
+import { BarChart, Bar, PieChart as RechartsPie,
   Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer,
 } from 'recharts';
 

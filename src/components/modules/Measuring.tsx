@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Plus, Search, Ruler, MapPin, Camera, FileText, Trash2, X, Upload, Pencil } from 'lucide-react';
+import { Plus, Ruler, MapPin, FileText, Trash2, X, Upload, Pencil } from 'lucide-react';
 import { EmptyState } from '../ui/EmptyState';
 import { measuringApi, uploadFile } from '../../services/api';
 import { toast } from 'sonner';

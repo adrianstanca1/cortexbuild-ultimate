@@ -3,8 +3,7 @@
  * Thin top-of-dashboard strip showing live site intelligence
  */
 import { useState, useEffect } from 'react';
-import { 
-  Circle, Thermometer, Wind, Eye, AlertTriangle, Users,
+import { Thermometer, Eye, AlertTriangle, Users,
   Clock, ShieldCheck, Zap,
 } from 'lucide-react';
 
@@ -122,7 +121,7 @@ export function SiteStatusBanner({ compact = false }: { compact?: boolean }) {
       </div>
 
       {/* Status items */}
-      <div style={{
+      <div className="status-items" style={{
         display: 'flex',
         alignItems: 'center',
         gap: '20px',
@@ -165,8 +164,8 @@ export function SiteStatusBanner({ compact = false }: { compact?: boolean }) {
         })}
       </div>
 
-      {/* Project ticker */}
-      <div style={{
+      {/* Project ticker — hidden on mobile */}
+      <div className="status-ticker" style={{
         marginLeft: 'auto',
         display: 'flex',
         alignItems: 'center',

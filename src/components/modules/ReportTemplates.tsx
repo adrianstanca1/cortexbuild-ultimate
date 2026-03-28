@@ -56,6 +56,7 @@ export function ReportTemplates() {
 
   useEffect(() => {
     loadTemplates();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedType]);
 
   const loadTemplates = async () => {

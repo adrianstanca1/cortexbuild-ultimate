@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import {
-  GitBranch, Plus, Search, PoundSterling, CheckCircle2, Clock, XCircle, Edit2, Trash2, X, TrendingUp, AlertTriangle,
-  BarChart3, Activity, CheckSquare, Square, FileEdit, DollarSign, Calendar, ArrowUpRight, ArrowDownRight, ChevronRight
+  GitBranch, Plus, Search, CheckCircle2, Clock, Edit2, Trash2, X, TrendingUp, AlertTriangle,
+  BarChart3, Activity, CheckSquare, Square, FileEdit, DollarSign, Calendar
 } from 'lucide-react';
 import { BulkActionsBar, useBulkSelection } from '../ui/BulkActions';
 import { EmptyState } from '../ui/EmptyState';
@@ -9,7 +9,7 @@ import { useChangeOrders } from '../../hooks/useData';
 import { toast } from 'sonner';
 import { z } from 'zod';
 import {
-  BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend, PieChart, Pie, Cell
+  BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer
 } from 'recharts';
 
 type AnyRow = Record<string, unknown>;

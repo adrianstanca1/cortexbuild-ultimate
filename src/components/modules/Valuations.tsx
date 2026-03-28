@@ -1,8 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import {
-  FileText, Plus, Search, Filter, Download, Clock, AlertCircle,
-  CheckCircle, XCircle, DollarSign, Building2, User, Calendar,
-  FileCheck, Eye, Edit, X, Percent, CreditCard, Receipt, Trash2,
+  FileText, Plus, Search, Download,
+  FileCheck, Eye, Edit, X, CreditCard, Receipt, Trash2,
   CheckSquare, Square
 } from 'lucide-react';
 import { valuationsApi, uploadFile } from '../../services/api';

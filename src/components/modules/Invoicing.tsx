@@ -2,7 +2,7 @@
 import { useState } from 'react';
 import { Plus, X, Loader2, FileText, Download, Send, Edit2, Trash2, RefreshCw, Search, CheckSquare, Square } from 'lucide-react';
 import { useInvoices, useProjects } from '../../hooks/useData';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import clsx from 'clsx';
 import { toast } from 'sonner';
 import { BulkActionsBar, useBulkSelection } from '../ui/BulkActions';

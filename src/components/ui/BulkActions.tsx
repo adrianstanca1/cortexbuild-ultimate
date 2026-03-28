@@ -1,5 +1,5 @@
 import { useState, useCallback } from 'react';
-import { CheckSquare, Square, Trash2, Edit, Mail, Download, MoreHorizontal, X } from 'lucide-react';
+import { CheckSquare, Square, X } from 'lucide-react';
 import clsx from 'clsx';
 import { toast } from 'sonner';
 

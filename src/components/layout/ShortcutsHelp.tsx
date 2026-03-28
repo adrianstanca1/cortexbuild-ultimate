@@ -4,7 +4,7 @@
  */
 import { useEffect, useRef } from 'react';
 import { X, Keyboard, Compass, Wrench, FolderOpen, Calculator, Zap } from 'lucide-react';
-import { DEFAULT_SHORTCUTS, formatShortcut } from '../../hooks/useKeyboardShortcuts';
+import { DEFAULT_SHORTCUTS } from '../../hooks/useKeyboardShortcuts';
 
 interface ShortcutsHelpProps {
   isOpen: boolean;

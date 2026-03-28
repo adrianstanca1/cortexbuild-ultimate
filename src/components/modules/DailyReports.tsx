@@ -2,7 +2,7 @@ import { useState, useRef } from 'react';
 import {
   ClipboardList, Plus, Search, CloudRain, Sun, Cloud, Wind, Users, Edit2,
   Trash2, X, ChevronDown, ChevronUp, Calendar, AlertTriangle, Download, FileText,
-  Camera, Brain, BarChart3, CheckCircle2, ThumbsUp, Eye, CheckSquare, Square, Upload, Loader2, RefreshCw
+  Camera, Brain, CheckCircle2, CheckSquare, Square, Loader2
 } from 'lucide-react';
 import { BulkActionsBar, useBulkSelection } from '../ui/BulkActions';
 import { EmptyState } from '../ui/EmptyState';

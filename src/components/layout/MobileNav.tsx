@@ -2,10 +2,8 @@
  * CortexBuild Ultimate — Mobile Navigation Bar
  * Amber-accented bottom nav with construction feel
  */
-import { useState } from 'react';
 import {
-  LayoutDashboard, FolderOpen, FileText, AlertTriangle,
-  MessageSquare, Search, HardHat,
+  LayoutDashboard, FolderOpen, FileText, AlertTriangle, HardHat,
 } from 'lucide-react';
 import { type Module } from '../../types';
 

@@ -3,18 +3,17 @@
 import { useState, useRef, useCallback } from 'react';
 import {
   Plus, X, Trash2, Edit2, Search, ChevronRight, MapPin, Users, Calendar,
-  PoundSterling, TrendingUp, AlertTriangle, CheckCircle2, Clock, Building2,
-  BarChart3, FileText, Shield, ClipboardList, HardHat, ArrowLeft,
-  Loader2, RefreshCw, MessageSquare, AlertCircle, CheckSquare, Square, Circle,
-  Upload, Image, Eye, Download, MoreHorizontal, Tag, Filter, Grid3X3,
-  LayoutGrid, List, ChevronDown, XCircle, CheckCircle, ArrowRight,
-  FolderOpen, File, FileSpreadsheet, FileCheck, Clock3, User,
+  PoundSterling, AlertTriangle, CheckCircle2, Clock,
+  BarChart3, FileText, Shield, ClipboardList, ArrowLeft,
+  Loader2, RefreshCw, MessageSquare, CheckSquare, Square, Circle,
+  Upload, Image, Eye, Download,
+  FolderOpen, File, FileSpreadsheet, User,
 } from 'lucide-react';
 import { BulkActionsBar, useBulkSelection } from '../ui/BulkActions';
 import { EmptyState } from '../ui/EmptyState';
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend,
-  ResponsiveContainer, LineChart, Line,
+  ResponsiveContainer,
 } from 'recharts';
 import {
   useProjects, useInvoices, useTeam, useDocuments,
@@ -22,7 +21,7 @@ import {
   useProjectImages, useProjectTasks,
 } from '../../hooks/useData';
 import { projectImagesApi, projectTasksApi } from '../../services/api';
-import type { ProjectStatus, Priority } from '../../types';
+import type { ProjectStatus } from '../../types';
 import clsx from 'clsx';
 import { toast } from 'sonner';
 

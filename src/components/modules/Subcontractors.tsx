@@ -1,10 +1,10 @@
 import { useState } from 'react';
-import { HardHat, CheckCircle2, AlertTriangle, XCircle, Star, DollarSign, Plus, Search, Filter, Shield, FileText, BarChart3, X, Edit2, Trash2, Phone, Mail, Building2, CheckSquare, Square, Download } from 'lucide-react';
+import { HardHat, CheckCircle2, AlertTriangle, XCircle, Star, DollarSign, Plus, Search, Shield, FileText, BarChart3, X, Edit2, Trash2, Phone, Mail, Building2, CheckSquare, Square, Download } from 'lucide-react';
 import { DataImporter, ExportButton } from '../ui/DataImportExport';
 import { BulkActionsBar, useBulkSelection } from '../ui/BulkActions';
 import { useSubcontractors } from '../../hooks/useData';
 import { EmptyState } from '../ui/EmptyState';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { toast } from 'sonner';
 import { z } from 'zod';
 

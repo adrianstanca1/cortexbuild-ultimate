@@ -4,12 +4,12 @@
  */
 import { useState, useEffect } from 'react';
 import {
-  Bell, Search, Wifi, WifiOff, Menu, X, Monitor,
-  LogOut, User, Settings, ChevronDown, Construction,
+  Bell, Search, Menu, ChevronDown,
 } from 'lucide-react';
 import { type Module } from '../../types';
 import { NotificationsPanel } from './NotificationsPanel';
 import { useTheme } from '../../context/ThemeContext';
+import { useIsMobile } from '../../hooks/useIsMobile';
 
 const MODULE_LABELS: Record<Module, string> = {
   'dashboard':            'Dashboard',
@@ -88,6 +88,7 @@ export function Header({ activeModule, onMenuToggle }: { activeModule: Module; o
   const [currentTime, setCurrentTime] = useState(new Date());
   const accent = MODULE_ACCENTS[activeModule] || '#f59e0b';
   const { theme, setTheme } = useTheme?.() ?? { theme: 'dark', setTheme: () => {} };
+  const isMobile = useIsMobile();
 
   useEffect(() => {
     const handleOnline = () => setIsOnline(true);
@@ -216,72 +217,74 @@ export function Header({ activeModule, onMenuToggle }: { activeModule: Module; o
       {/* Right actions */}
       <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
 
-        {/* Search */}
-        <div
-          style={{
-            position: 'relative',
-            display: 'flex',
-            alignItems: 'center',
-          }}
-        >
+        {/* Search — hidden on mobile */}
+        {!isMobile && (
           <div
             style={{
+              position: 'relative',
               display: 'flex',
               alignItems: 'center',
-              gap: '8px',
-              padding: '0 12px',
-              height: '34px',
-              borderRadius: '9px',
-              background: searchFocused ? 'rgba(255,255,255,0.08)' : 'rgba(255,255,255,0.04)',
-              border: `1px solid ${searchFocused ? 'rgba(245,158,11,0.5)' : 'rgba(255,255,255,0.08)'}`,
-              transition: 'all 0.2s cubic-bezier(0.16, 1, 0.3, 1)',
-              width: searchFocused ? '220px' : '160px',
-              boxShadow: searchFocused ? '0 0 0 2px rgba(245,158,11,0.1), 0 0 16px rgba(245,158,11,0.05)' : 'none',
             }}
           >
-            <Search
+            <div
               style={{
-                width: '13px',
-                height: '13px',
-                color: searchFocused ? '#f59e0b' : '#475569',
-                flexShrink: 0,
-                transition: 'color 0.2s',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px',
+                padding: '0 12px',
+                height: '34px',
+                borderRadius: '9px',
+                background: searchFocused ? 'rgba(255,255,255,0.08)' : 'rgba(255,255,255,0.04)',
+                border: `1px solid ${searchFocused ? 'rgba(245,158,11,0.5)' : 'rgba(255,255,255,0.08)'}`,
+                transition: 'all 0.2s cubic-bezier(0.16, 1, 0.3, 1)',
+                width: searchFocused ? '220px' : '160px',
+                boxShadow: searchFocused ? '0 0 0 2px rgba(245,158,11,0.1), 0 0 16px rgba(245,158,11,0.05)' : 'none',
               }}
-            />
-            <input
-              type="text"
-              placeholder="Search..."
-              onFocus={() => setSearchFocused(true)}
-              onBlur={() => setSearchFocused(false)}
-              style={{
-                background: 'none',
-                border: 'none',
-                outline: 'none',
-                fontFamily: "'DM Sans', sans-serif",
-                fontSize: '12px',
-                color: '#e2e8f0',
-                width: '100%',
-                cursor: 'text',
-              }}
-            />
-            {!searchFocused && (
-              <div
+            >
+              <Search
                 style={{
-                  fontFamily: "'JetBrains Mono', monospace",
-                  fontSize: '9px',
-                  color: '#334155',
-                  background: 'rgba(255,255,255,0.05)',
-                  padding: '2px 5px',
-                  borderRadius: '4px',
-                  border: '1px solid rgba(255,255,255,0.08)',
+                  width: '13px',
+                  height: '13px',
+                  color: searchFocused ? '#f59e0b' : '#475569',
                   flexShrink: 0,
+                  transition: 'color 0.2s',
                 }}
-              >
-                ⌘K
-              </div>
-            )}
+              />
+              <input
+                type="text"
+                placeholder="Search..."
+                onFocus={() => setSearchFocused(true)}
+                onBlur={() => setSearchFocused(false)}
+                style={{
+                  background: 'none',
+                  border: 'none',
+                  outline: 'none',
+                  fontFamily: "'DM Sans', sans-serif",
+                  fontSize: '12px',
+                  color: '#e2e8f0',
+                  width: '100%',
+                  cursor: 'text',
+                }}
+              />
+              {!searchFocused && (
+                <div
+                  style={{
+                    fontFamily: "'JetBrains Mono', monospace",
+                    fontSize: '9px',
+                    color: '#334155',
+                    background: 'rgba(255,255,255,0.05)',
+                    padding: '2px 5px',
+                    borderRadius: '4px',
+                    border: '1px solid rgba(255,255,255,0.08)',
+                    flexShrink: 0,
+                  }}
+                >
+                  ⌘K
+                </div>
+              )}
+            </div>
           </div>
-        </div>
+        )}
 
         {/* Notification bell */}
         <NotificationButton
@@ -292,6 +295,7 @@ export function Header({ activeModule, onMenuToggle }: { activeModule: Module; o
         {/* Profile */}
         <ProfileButton
           isOpen={profileOpen}
+          isMobile={isMobile}
           onToggle={() => { setProfileOpen(p => !p); setNotifOpen(false); }}
         />
       </div>
@@ -369,7 +373,7 @@ function NotificationButton({ isOpen, onToggle }: { isOpen: boolean; onToggle: (
 }
 
 // ── Profile Button ──────────────────────────────────────────────────────────────
-function ProfileButton({ isOpen, onToggle }: { isOpen: boolean; onToggle: () => void }) {
+function ProfileButton({ isOpen, isMobile, onToggle }: { isOpen: boolean; isMobile?: boolean; onToggle: () => void }) {
   return (
     <button
       onClick={onToggle}
@@ -377,8 +381,8 @@ function ProfileButton({ isOpen, onToggle }: { isOpen: boolean; onToggle: () => 
       style={{
         display: 'flex',
         alignItems: 'center',
-        gap: '8px',
-        padding: '0 10px',
+        gap: isMobile ? '0' : '8px',
+        padding: isMobile ? '0 6px' : '0 10px',
         height: '34px',
         borderRadius: '9px',
         background: isOpen ? 'rgba(255,255,255,0.08)' : 'rgba(255,255,255,0.04)',
@@ -402,9 +406,9 @@ function ProfileButton({ isOpen, onToggle }: { isOpen: boolean; onToggle: () => 
     >
       <div
         style={{
-          width: '22px',
-          height: '22px',
-          borderRadius: '6px',
+          width: '26px',
+          height: '26px',
+          borderRadius: '7px',
           background: 'linear-gradient(135deg, #f59e0b, #d97706)',
           display: 'flex',
           alignItems: 'center',
@@ -414,29 +418,34 @@ function ProfileButton({ isOpen, onToggle }: { isOpen: boolean; onToggle: () => 
           fontWeight: 800,
           color: '#1e1b16',
           flexShrink: 0,
+          boxShadow: '0 0 8px rgba(245,158,11,0.3)',
         }}
       >
         AS
       </div>
-      <span
-        style={{
-          fontFamily: "'DM Sans', sans-serif",
-          fontSize: '12px',
-          fontWeight: 500,
-          color: '#cbd5e1',
-        }}
-      >
-        Adrian
-      </span>
-      <ChevronDown
-        style={{
-          width: '12px',
-          height: '12px',
-          color: '#475569',
-          transform: isOpen ? 'rotate(180deg)' : 'none',
-          transition: 'transform 0.2s',
-        }}
-      />
+      {!isMobile && (
+        <>
+          <span
+            style={{
+              fontFamily: "'DM Sans', sans-serif",
+              fontSize: '12px',
+              fontWeight: 500,
+              color: '#cbd5e1',
+            }}
+          >
+            Adrian
+          </span>
+          <ChevronDown
+            style={{
+              width: '12px',
+              height: '12px',
+              color: '#475569',
+              transform: isOpen ? 'rotate(180deg)' : 'none',
+              transition: 'transform 0.2s',
+            }}
+          />
+        </>
+      )}
     </button>
   );
 }

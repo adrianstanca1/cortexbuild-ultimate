@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react';
 import {
-  FileText, Plus, Search, Filter, Download, Clock, BookOpen,
-  CheckCircle, AlertTriangle, FileCheck, Eye, Edit, X, Building2, Upload, Trash2,
+  FileText, Plus, Search, Download, Clock, Eye, Edit, X, Upload, Trash2,
   CheckSquare, Square
 } from 'lucide-react';
 import { specificationsApi, uploadFile } from '../../services/api';

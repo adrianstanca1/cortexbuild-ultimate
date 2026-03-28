@@ -79,6 +79,7 @@ const ModuleLoader = () => (
 function AppShell() {
   const [activeModule, setActiveModule] = useState<Module>('dashboard');
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [showShortcuts, setShowShortcuts] = useState(false);
   const [showGlobalSearch, setShowGlobalSearch] = useState(false);
   const [isOnline, setIsOnline] = useState(typeof navigator !== 'undefined' ? navigator.onLine : true);
@@ -185,7 +186,13 @@ function AppShell() {
           )}
           <Header
             activeModule={activeModule}
-            onMenuToggle={() => setSidebarCollapsed(!sidebarCollapsed)}
+            onMenuToggle={() => {
+              if (window.innerWidth < 768) {
+                setMobileMenuOpen(p => !p);
+              } else {
+                setSidebarCollapsed(p => !p);
+              }
+            }}
           />
           <main className="flex-1 overflow-auto pb-20 md:pb-6" style={{ backgroundAttachment: 'fixed' }}>
             <div className="p-4 md:p-6">
@@ -196,6 +203,37 @@ function AppShell() {
           </main>
         </div>
       </div>
+      {/* Mobile sidebar drawer */}
+      {mobileMenuOpen && (
+        <>
+          {/* Backdrop */}
+          <div
+            className="mobile-nav-overlay md:hidden"
+            onClick={() => setMobileMenuOpen(false)}
+          />
+          {/* Drawer */}
+          <div
+            className="md:hidden"
+            style={{
+              position: 'fixed',
+              top: 0,
+              left: 0,
+              bottom: 0,
+              zIndex: 60,
+              width: '280px',
+              overflowY: 'auto',
+              animation: 'slideInLeft 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards',
+            }}
+          >
+            <Sidebar
+              activeModule={activeModule}
+              setModule={(m) => { setActiveModule(m); setMobileMenuOpen(false); }}
+              collapsed={false}
+              setCollapsed={() => {}}
+            />
+          </div>
+        </>
+      )}
       <QuickActionsHUD currentModule={activeModule} onAction={(m) => setActiveModule(m as Module)} />
       <ShortcutsHelp isOpen={showShortcuts} onClose={() => setShowShortcuts(false)} />
       <MobileNav activeModule={activeModule} setModule={setActiveModule} />

@@ -1,19 +1,15 @@
 // Module: FinancialReports — CortexBuild Ultimate Enhanced
 import { useState, useEffect } from 'react';
-import {
-  BarChart3, PieChart, TrendingUp, TrendingDown, DollarSign,
-  FileText, Download, Calendar, Filter, RefreshCw, ArrowUpRight,
-  ArrowDownRight, Briefcase, Users, CreditCard, Building2, AlertCircle,
-  FileSpreadsheet, Printer, Plus, Search, Edit2, Trash2, X,
+import { TrendingUp, DollarSign, Download, RefreshCw, ArrowUpRight,
+  ArrowDownRight, CreditCard, AlertCircle, Trash2,
   CheckSquare, Square,
 } from 'lucide-react';
 import { BulkActionsBar, useBulkSelection } from '../../components/ui/BulkActions';
-import { projectsApi, invoicesApi, financialReportsApi } from '../../services/api';
+import { financialReportsApi } from '../../services/api';
 import { toast } from 'sonner';
 import clsx from 'clsx';
 import {
-  AreaChart, Area, BarChart, Bar, LineChart, Line, PieChart as RechartsPie,
-  Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer,
+  AreaChart, Area, BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer,
 } from 'recharts';
 
 type AnyRow = Record<string, unknown>;

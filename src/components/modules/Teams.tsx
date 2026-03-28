@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Users, Plus, Search, Phone, Mail, Briefcase, Edit2, Trash2, X, ChevronDown, ChevronUp, Shield, Clock, Award, AlertTriangle, PoundSterling, MapPin, CheckCircle2, AlertCircle, Calendar, Upload, CheckSquare, Square, Download, FileSpreadsheet, Pencil } from 'lucide-react';
+import { Users, Plus, Search, Phone, Mail, Edit2, Trash2, X, ChevronDown, ChevronUp, Shield, Clock, Award, AlertTriangle, PoundSterling, MapPin, CheckCircle2, Calendar, Upload, CheckSquare, Square, Download, Pencil } from 'lucide-react';
 import { EmptyState } from '../ui/EmptyState';
 import { useTeam } from '../../hooks/useData';
 import { uploadFile, teamApi } from '../../services/api';

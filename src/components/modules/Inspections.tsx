@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { ClipboardCheck, Plus, Search, CheckCircle, XCircle, Clock, AlertTriangle, Edit2, Trash2, X, ChevronDown, ChevronUp, CheckSquare, Square } from 'lucide-react';
+import { ClipboardCheck, Plus, Search, CheckCircle, XCircle, Clock, Edit2, Trash2, X, ChevronDown, ChevronUp, CheckSquare, Square } from 'lucide-react';
 import { useInspections } from '../../hooks/useData';
 import { toast } from 'sonner';
 import { BulkActionsBar, useBulkSelection } from '../ui/BulkActions';

@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import {
-  HardHat, Users, Truck, FileText, AlertTriangle, CheckCircle2, MapPin, Clock, Plus, Search, Filter,
+  HardHat, Users, Truck, FileText, AlertTriangle, CheckCircle2, MapPin, Plus, Search,
   Sun, Cloud, CloudRain, Activity, Calendar, Wrench, X, CheckSquare, Square, Trash2
 } from 'lucide-react';
 import { useDailyReports, useEquipment, useTeam } from '../../hooks/useData';

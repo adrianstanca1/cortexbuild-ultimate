@@ -67,7 +67,6 @@ export function useNotifications(authToken: string | null): UseNotificationsRetu
       ws.current = new WebSocket(`${WS_URL}?token=${authToken}`);
 
       ws.current.onopen = () => {
-        console.log('[WS] Connected');
         setIsConnected(true);
         eventBus.emit('ws:connect', undefined);
       };
@@ -101,7 +100,6 @@ export function useNotifications(authToken: string | null): UseNotificationsRetu
       };
 
       ws.current.onclose = () => {
-        console.log('[WS] Disconnected');
         setIsConnected(false);
         eventBus.emit('ws:disconnect', undefined);
         reconnectTimeout.current = setTimeout(connect, 3000);

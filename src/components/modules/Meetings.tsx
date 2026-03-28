@@ -1,7 +1,7 @@
 import { useState, useMemo } from 'react';
 import {
-  Calendar, Plus, Search, Clock, CheckCircle2, Users, MapPin, Edit2, Trash2, X,
-  ChevronDown, ChevronUp, Video, Filter, AlertCircle, FileText, MoreVertical, Building2, ChevronRight, CheckSquare, Square
+  Calendar, Plus, Search, Clock, CheckCircle2, Users, Edit2, Trash2, X,
+  ChevronDown, ChevronUp, Video, AlertCircle, FileText, MoreVertical, Building2, CheckSquare, Square
 } from 'lucide-react';
 import { BulkActionsBar, useBulkSelection } from '../ui/BulkActions';
 import { EmptyState } from '../ui/EmptyState';

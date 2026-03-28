@@ -1,15 +1,13 @@
 import { useState, useMemo, useEffect } from 'react';
 import {
-  Truck, Plus, Search, Wrench, AlertTriangle, CheckCircle2, Clock, Edit2, Trash2, X,
-  ChevronDown, ChevronUp, Calendar, DollarSign, Filter, MapPin, Tag, Activity, Settings,
-  RefreshCw, BarChart3, ChevronRight, CheckSquare, Square
+  Truck, Plus, Search, Wrench, CheckCircle2, Trash2, X, Calendar, DollarSign, MapPin, Tag, BarChart3, CheckSquare, Square
 } from 'lucide-react';
 import { useEquipment } from '../../hooks/useData';
 import { equipmentApi } from '../../services/api';
 import { toast } from 'sonner';
 import { BulkActionsBar, useBulkSelection } from '../ui/BulkActions';
 import { EmptyState } from '../ui/EmptyState';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 
 type AnyRow = Record<string, unknown>;
 

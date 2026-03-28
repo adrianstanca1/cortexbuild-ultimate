@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import {
   MapPin, Users, AlertTriangle, CheckCircle, Clock, Building2, Layers,
   Navigation2, CloudRain, Sun, Cloud, FileText, ShieldAlert, Wind,
-  Map, Calendar, BarChart3, FileCheck, Zap, CheckSquare, Square, Trash2
+  Map, FileCheck, CheckSquare, Square, Trash2
 } from 'lucide-react';
 import { useProjects, useDailyReports, useSafety } from '../../hooks/useData';
 import { sitePermitsApi } from '../../services/api';

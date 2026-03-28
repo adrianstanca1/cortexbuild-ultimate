@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Plus, Search, Leaf, Recycle, AlertCircle, Trash2, X, Upload, Edit } from 'lucide-react';
+import { Plus, Leaf, Recycle, Trash2, X, Upload, Edit } from 'lucide-react';
 import { wasteManagementApi, uploadFile } from '../../services/api';
 import { toast } from 'sonner';
 import { EmptyState } from '../ui/EmptyState';

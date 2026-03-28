@@ -3,17 +3,13 @@ import { auditApi } from '@/services/api';
 import { backupApi } from '@/services/api';
 import { toast } from 'sonner';
 import {
-  Filter,
   TrendingUp,
-  CheckCircle,
   X,
-  Clock,
   AlertTriangle,
   Download,
   Activity,
   Users,
   Shield,
-  BarChart2,
   CheckSquare,
   Square,
   Trash2,

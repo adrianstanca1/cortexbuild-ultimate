@@ -2,12 +2,9 @@
  * CortexBuild Ultimate — Advanced Chart Components
  * Reusable chart components with consistent styling
  */
-import { useMemo } from 'react';
 import {
-  AreaChart, Area, BarChart, Bar, LineChart, Line, PieChart, Pie, Cell,
-  XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer,
-  RadarChart, Radar, PolarGrid, PolarAngleAxis, PolarRadiusAxis,
-  FunnelChart, Funnel, LabelList,
+  AreaChart, Area, PieChart, Pie, Cell,
+  XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
 } from 'recharts';
 
 // Chart color palette

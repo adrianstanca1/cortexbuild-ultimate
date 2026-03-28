@@ -2,8 +2,7 @@ import { useState } from 'react';
 import { useMeetings } from '../../hooks/useData';
 import { toast } from 'sonner';
 import {
-  Plus, X, ChevronLeft, ChevronRight, Clock, MapPin, Users, AlertTriangle,
-  CheckCircle, Calendar as CalendarIcon, Flag, Zap, CheckSquare, Square, Trash2
+  Plus, X, ChevronLeft, ChevronRight, MapPin, Users, AlertTriangle, Calendar as CalendarIcon, Flag, Zap, CheckSquare, Square, Trash2
 } from 'lucide-react';
 import { BulkActionsBar, useBulkSelection } from '../ui/BulkActions';
 

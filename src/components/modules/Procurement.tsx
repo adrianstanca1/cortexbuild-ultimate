@@ -2,7 +2,7 @@
 import { useState, useMemo } from 'react';
 import {
   Plus, Edit2, Trash2, X, Truck, CheckCircle2, AlertTriangle,
-  Clock, Package, Search, Filter, DollarSign, BarChart3, Building2,
+  Clock, Package, Search, BarChart3, Building2,
   Calendar, TrendingUp, Users, ChevronRight, CheckSquare, Square,
 } from 'lucide-react';
 import { EmptyState } from '../ui/EmptyState';
@@ -11,7 +11,7 @@ import { toast } from 'sonner';
 import { BulkActionsBar, useBulkSelection } from '../ui/BulkActions';
 import {
   BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid,
-  Tooltip, Legend, ResponsiveContainer, PieChart, Cell,
+  Tooltip, ResponsiveContainer,
 } from 'recharts';
 
 type AnyRow = Record<string, unknown>;

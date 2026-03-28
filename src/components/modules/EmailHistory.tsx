@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Search, Filter, Mail, Trash2, CheckCircle, X, Bell, Send, FileText, Archive, Star } from 'lucide-react';
+import { Search, Mail, CheckCircle, X, Bell, Send, FileText } from 'lucide-react';
 import { emailApi } from '../../services/api';
 import { toast } from 'sonner';
 

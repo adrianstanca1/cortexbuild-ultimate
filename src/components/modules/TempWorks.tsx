@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import {
-  Plus, Search, Clock, CheckCircle, AlertTriangle, Construction,
+  Plus, Search, AlertTriangle, Construction,
   Shield, Eye, Edit, X, Trash2, Upload
 } from 'lucide-react';
 import { tempWorksApi, uploadFile } from '../../services/api';

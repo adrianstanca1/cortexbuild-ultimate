@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Plus, Search, AlertTriangle, CheckCircle, Eye, Edit, Trash2, X, Upload, CheckSquare, Square } from 'lucide-react';
+import { Plus, Edit, Trash2, X, Upload, CheckSquare, Square } from 'lucide-react';
 import { EmptyState } from '../ui/EmptyState';
 import { BulkActionsBar, useBulkSelection } from '../ui/BulkActions';
 import { signageApi, uploadFile } from '../../services/api';

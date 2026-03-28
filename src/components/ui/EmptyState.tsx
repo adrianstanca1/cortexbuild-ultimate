@@ -1,4 +1,4 @@
-import { LucideIcon, Construction, Search, FileX, Inbox, AlertTriangle, FolderOpen, Users, Shield } from 'lucide-react';
+import { LucideIcon, Construction, Search, FileX, AlertTriangle, FolderOpen, Users, Shield } from 'lucide-react';
 
 interface EmptyStateProps {
   icon?: LucideIcon;

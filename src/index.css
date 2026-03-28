@@ -1173,3 +1173,53 @@ button:focus-visible,
 .blueprint-grid-micro-animated {
   animation: gridPanMicro 15s ease-in-out infinite;
 }
+
+/* ─── Mobile Sidebar Drawer ─────────────────────────────────── */
+@keyframes slideInLeft {
+  from { transform: translateX(-100%); }
+  to   { transform: translateX(0); }
+}
+
+/* ─── Mobile-only responsive overrides ─────────────────────── */
+@media (max-width: 767px) {
+  /* Dashboard KPI grid: 2 cols on mobile */
+  .kpi-grid {
+    grid-template-columns: repeat(2, 1fr) !important;
+  }
+  /* Dashboard overview 3-panel: stack to 1 col */
+  .dashboard-overview-row {
+    grid-template-columns: 1fr !important;
+  }
+  /* Sub-tabs: horizontal scroll */
+  .dashboard-tabs {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+  }
+  .dashboard-tabs::-webkit-scrollbar { display: none; }
+  /* Dashboard title row: stack */
+  .dashboard-title-row {
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    gap: 12px !important;
+  }
+  /* Site status banner: hide project ticker */
+  .status-ticker {
+    display: none !important;
+  }
+  /* Status items: allow wrap on small screens */
+  .status-items {
+    gap: 12px !important;
+  }
+}
+
+@media (min-width: 768px) and (max-width: 1023px) {
+  /* Dashboard KPI grid: 3 cols on tablet */
+  .kpi-grid {
+    grid-template-columns: repeat(3, 1fr) !important;
+  }
+  /* Dashboard overview 3-panel: 2 cols on tablet */
+  .dashboard-overview-row {
+    grid-template-columns: 1fr 1fr !important;
+  }
+}

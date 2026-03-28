@@ -16,30 +16,6 @@ import { eventBus } from '../lib/eventBus';
 
 type Row = Record<string, unknown>;
 
-// Map WS table names to React Query query keys
-const TABLE_TO_KEY: Record<string, string> = {
-  projects: 'projects',
-  invoices: 'invoices',
-  'team_members': 'team',
-  safety_incidents: 'safety',
-  rfis: 'rfis',
-  change_orders: 'change-orders',
-  rams: 'rams',
-  cis_returns: 'cis',
-  equipment: 'equipment',
-  subcontractors: 'subcontractors',
-  timesheets: 'timesheets',
-  documents: 'documents',
-  tenders: 'tenders',
-  daily_reports: 'daily-reports',
-  meetings: 'meetings',
-  materials: 'materials',
-  punch_list: 'punch-list',
-  inspections: 'inspections',
-  contacts: 'contacts',
-  risk_register: 'risk-register',
-  purchase_orders: 'purchase-orders',
-};
 
 // ─── Generic hook factory ─────────────────────────────────────────────────────
 
@@ -58,7 +34,7 @@ function makeHooks<T>(key: string, tableName: string, api: {
         }
       });
       return unsub;
-    }, [qc, key]);
+    }, [qc]);
     return useQuery<T[]>({
       queryKey: [key],
       queryFn: api.getAll,

@@ -3,7 +3,6 @@
  * Global keyboard shortcuts for power users
  */
 import { useEffect, useCallback } from 'react';
-import { toast } from 'sonner';
 
 type ShortcutHandler = () => void;
 

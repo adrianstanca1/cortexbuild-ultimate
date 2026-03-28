@@ -5,7 +5,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import {
   Plus, FolderPlus, FileText, AlertTriangle, ClipboardList,
-  HardHat, Users, DollarSign, X,
+  HardHat, Users, X,
 } from 'lucide-react';
 interface QuickAction {
   id: string;

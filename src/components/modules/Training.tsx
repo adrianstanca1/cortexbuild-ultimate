@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { Plus, Search, GraduationCap, Award, Clock, AlertCircle, FileCheck, Upload, Trash2, X, Edit, CheckSquare, Square, Download } from 'lucide-react';
+import { Plus, GraduationCap, Award, Clock, AlertCircle, FileCheck, Trash2, X, Edit, CheckSquare, Square, Download } from 'lucide-react';
 import { EmptyState } from '../ui/EmptyState';
 import { DataImporter, ExportButton } from '../ui/DataImportExport';
 import { trainingApi, uploadFile } from '../../services/api';

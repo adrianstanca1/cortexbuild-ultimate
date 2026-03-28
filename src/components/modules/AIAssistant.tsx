@@ -1,13 +1,13 @@
 // Module: AIAssistant — CortexBuild Ultimate
 import { useState, useEffect, useRef } from 'react';
 import {
-  Send, Bot, Zap, Shield, TrendingUp, FileText, Calendar,
+  Send, Zap, Shield, TrendingUp, FileText, Calendar,
   MessageSquare, Award, Brain, Clock, Archive, Plus, CheckSquare, Square, Trash2,
 } from 'lucide-react';
 import { BulkActionsBar, useBulkSelection } from '../ui/BulkActions';
 import clsx from 'clsx';
 import {
-  projects, invoices, safetyIncidents, rfis, changeOrders,
+  projects, invoices, safetyIncidents, rfis,
   teamMembers
 } from '../../data/mockData';
 import { sendChatMessage } from '../../services/ai';

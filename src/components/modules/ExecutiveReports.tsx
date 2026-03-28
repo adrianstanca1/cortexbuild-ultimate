@@ -1,16 +1,13 @@
 // Module: ExecutiveReports — CortexBuild Ultimate Enhanced
 import { useState, useEffect } from 'react';
-import {
-  FileText, Download, Calendar, Clock, Send, BarChart3, PieChart,
-  TrendingUp, Users, Shield, PoundSterling, Activity, CheckCircle,
-  AlertTriangle, Mail, Printer, Share2, Award, Eye, Settings,
+import { Download, BarChart3, PieChart,
+  TrendingUp, Shield, PoundSterling,
   CheckSquare, Square, Trash2,
 } from 'lucide-react';
 import { BulkActionsBar, useBulkSelection } from '../ui/BulkActions';
 import {
   AreaChart, Area, BarChart, Bar, PieChart as RechartsPie, Pie, Cell,
-  XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, RadarChart, Radar,
-  PolarGrid, PolarAngleAxis, PolarRadiusAxis,
+  XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer,
 } from 'recharts';
 import { toast } from 'sonner';
 import { executiveReportsApi } from '../../services/api';

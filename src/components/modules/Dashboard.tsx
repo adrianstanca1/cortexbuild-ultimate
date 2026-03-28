@@ -2,16 +2,12 @@
 // Command Centre — live construction intelligence dashboard
 import { useState, useEffect, useRef } from 'react';
 import {
-  TrendingUp, TrendingDown, BarChart2, Activity, PieChart, DollarSign,
-  Users, Building2, CheckCircle, AlertTriangle, Clock, Plus, Search,
-  Edit2, Trash2, ChevronDown, Filter, Download, FileText,
-  Award, Zap, RefreshCw, Eye, Settings, Calendar, Target, ArrowUp,
-  LayoutGrid, X, ShieldCheck, Briefcase, ClipboardList, HardHat,
-  CircleDot, Wrench, Truck, MessageSquare,
+  TrendingUp, TrendingDown, Activity, DollarSign,
+  Users, AlertTriangle, Download, FileText, RefreshCw, ShieldCheck, Briefcase,
+  CircleDot,
 } from 'lucide-react';
 import {
-  AreaChart, Area, BarChart, Bar, LineChart, Line, PieChart as RechartsPie,
-  Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer,
+  AreaChart, Area, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
 } from 'recharts';
 import { dashboardApi, projectsApi, notificationsApi } from '../../services/api';
 import { eventBus } from '../../lib/eventBus';
@@ -360,7 +356,7 @@ export function Dashboard() {
       <SiteStatusBanner />
 
       {/* ── Header ─────────────────────────────────────────────────── */}
-      <div style={{
+      <div className="dashboard-title-row" style={{
         display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start',
         animation: mounted ? 'fadeSlideDown 0.5s ease forwards' : 'none', opacity: mounted ? 1 : 0,
       }}>
@@ -401,7 +397,7 @@ export function Dashboard() {
       </div>
 
       {/* ── KPI Bar ───────────────────────────────────────────────── */}
-      <div style={{
+      <div className="kpi-grid" style={{
         display: 'grid',
         gridTemplateColumns: 'repeat(6, 1fr)',
         gap: '10px',
@@ -485,7 +481,7 @@ export function Dashboard() {
       </div>
 
       {/* ── Sub-tabs ───────────────────────────────────────────────── */}
-      <div style={{
+      <div className="dashboard-tabs" style={{
         display: 'flex', gap: '2px',
         borderBottom: '1px solid rgba(255,255,255,0.05)',
       }}>
@@ -518,7 +514,7 @@ export function Dashboard() {
       {activeTab === 'overview' && (
         <div className="space-y-5">
           {/* Row 1: Revenue Chart + RAG Donut + Alerts */}
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 260px 300px', gap: '14px' }}>
+          <div className="dashboard-overview-row" style={{ display: 'grid', gridTemplateColumns: '1fr 260px 300px', gap: '14px' }}>
 
             {/* Revenue Area Chart */}
             <div style={{

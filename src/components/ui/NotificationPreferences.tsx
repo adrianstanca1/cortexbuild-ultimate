@@ -2,10 +2,7 @@ import { useState, useEffect } from 'react';
 import {
   Bell,
   Mail,
-  MessageSquare,
   Smartphone,
-  Check,
-  X,
   Settings,
   RefreshCw,
 } from 'lucide-react';
@@ -129,6 +126,7 @@ export function NotificationPreferences({ onSave, onClose }: NotificationPrefere
 
   useEffect(() => {
     loadPreferences();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const loadPreferences = async () => {

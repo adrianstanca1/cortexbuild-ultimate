@@ -9,13 +9,13 @@ import {
   LayoutDashboard, FolderOpen, FileText, Calculator, ShoppingCart,
   ShieldCheck, Receipt, Hammer, Users, FileSearch, BarChart3,
   AlertTriangle, MapPin, UserCheck, BookOpen, Clock, Wrench,
-  Building2, Bot, Settings, ChevronLeft, ChevronRight, Zap,
+  Building2, Bot, Settings, ChevronLeft, ChevronRight,
   MessageSquare, GitPullRequest, CheckSquare, ClipboardCheck,
   Triangle, Layers, Package, ClipboardList, Store,
   HardHat, TrendingUp, Brain, Bell, FileBarChart, TrendingUp as TrendingUpIcon,
-  PieChart, FileEdit, Clipboard, Coins, FileStack, Construction,
+  PieChart, FileEdit, Coins, FileStack, Construction,
   Signpost, Trash2, Leaf, GraduationCap, Award, BadgeCheck,
-  Building, Ruler, X as XIcon, Eye, ChevronDown, Search,
+  Building, Ruler, Eye, ChevronDown,
 } from 'lucide-react';
 
 interface SidebarProps {

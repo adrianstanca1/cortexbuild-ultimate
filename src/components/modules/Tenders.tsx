@@ -1,15 +1,14 @@
 import { useState } from 'react';
 import {
-  Plus, Search, Filter, TrendingUp, Clock, CheckCircle2, XCircle, Edit2, Trash2, X,
-  ChevronRight, Calendar, DollarSign, Target, Award, BarChart3, Brain, Zap, AlertCircle, CheckSquare, Square
+  Plus, Search, TrendingUp, Clock, XCircle, Edit2, Trash2, X, Calendar, DollarSign, Target, Award, BarChart3, Brain, Zap, CheckSquare, Square
 } from 'lucide-react';
 import { EmptyState } from '../ui/EmptyState';
 import { useTenders } from '../../hooks/useData';
 import { toast } from 'sonner';
 import { BulkActionsBar, useBulkSelection } from '../ui/BulkActions';
 import {
-  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer,
-  LineChart, Line, Cell, PieChart, Pie
+  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
+  LineChart, Line
 } from 'recharts';
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001';

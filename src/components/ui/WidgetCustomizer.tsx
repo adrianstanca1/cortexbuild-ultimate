@@ -1,11 +1,8 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import {
-  Layout,
   GripVertical,
   Eye,
   EyeOff,
-  Settings,
-  RefreshCw,
   X,
   Check,
   Plus,

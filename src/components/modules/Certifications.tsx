@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Plus, Search, Shield, FileCheck, Clock, AlertTriangle, FileText, Upload, Trash2, X, Edit, CheckSquare, Square } from 'lucide-react';
+import { Plus, Shield, FileCheck, Clock, AlertTriangle, FileText, Upload, Trash2, X, Edit, CheckSquare, Square } from 'lucide-react';
 import { BulkActionsBar, useBulkSelection } from '../ui/BulkActions';
 import { EmptyState } from '../ui/EmptyState';
 import { certificationsApi, uploadFile } from '../../services/api';

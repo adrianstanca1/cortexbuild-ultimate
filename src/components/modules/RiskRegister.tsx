@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect } from 'react';
-import { AlertTriangle, Plus, Search, Shield, AlertOctagon, Edit2, Trash2, X, ChevronDown, ChevronUp, TrendingUp, BarChart3, Filter, Eye, CheckCircle2, Clock, Users, Target, Calendar, CheckSquare, Square } from 'lucide-react';
+import { AlertTriangle, Plus, Search, AlertOctagon, Edit2, Trash2, X, ChevronDown, ChevronUp, TrendingUp, BarChart3, CheckCircle2, Clock, Users, Target, Calendar, CheckSquare, Square } from 'lucide-react';
 import { EmptyState } from '../ui/EmptyState';
 import { useRiskRegister } from '../../hooks/useData';
 import { riskRegisterApi } from '../../services/api';

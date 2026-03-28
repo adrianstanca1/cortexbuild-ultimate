@@ -5,7 +5,7 @@ import {
   AreaChart, Area, BarChart, Bar, LineChart, Line, PieChart, Pie, Cell, ScatterChart, Scatter,
   XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer,
 } from 'recharts';
-import { useProjects, useSafety, useInvoices, useTeam } from '../../hooks/useData';
+import { useProjects, useSafety, useInvoices } from '../../hooks/useData';
 import { analyticsApi } from '../../services/api';
 import clsx from 'clsx';
 import { CheckSquare, Square, Trash2 } from 'lucide-react';
