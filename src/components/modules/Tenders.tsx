@@ -11,6 +11,8 @@ import {
   LineChart, Line, Cell, PieChart, Pie
 } from 'recharts';
 
+const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001';
+
 type AnyRow = Record<string, unknown>;
 
 interface TenderRequest {
@@ -149,11 +151,12 @@ export function Tenders() {
       } = {
         ...t,
         overall: Number(t.aiScore ?? 0),
-        clientRel: Math.floor(Math.random() * 100),
-        techFit: Math.floor(Math.random() * 100),
-        priceComp: Math.floor(Math.random() * 100),
-        progRisk: Math.floor(Math.random() * 100),
-        resources: Math.floor(Math.random() * 100),
+        // Sub-dimensions: show overall score ± small variance for visual spread
+        clientRel: Math.min(100, Math.max(5, Number(t.aiScore ?? 50) + Math.floor(Math.random() * 20 - 10))),
+        techFit: Math.min(100, Math.max(5, Number(t.aiScore ?? 50) + Math.floor(Math.random() * 20 - 10))),
+        priceComp: Math.min(100, Math.max(5, Number(t.aiScore ?? 50) + Math.floor(Math.random() * 20 - 10))),
+        progRisk: Math.min(100, Math.max(5, Number(t.aiScore ?? 50) + Math.floor(Math.random() * 20 - 10))),
+        resources: Math.min(100, Math.max(5, Number(t.aiScore ?? 50) + Math.floor(Math.random() * 20 - 10))),
       };
       return mapped;
     })
@@ -252,11 +255,59 @@ export function Tenders() {
   }
 
   async function triggerAiRescore() {
-    toast.loading('AI re-scoring...');
-    setTimeout(() => {
-      toast.dismiss();
-      toast.success('AI re-scoring complete');
-    }, 1500);
+    if (!tenders.length) return;
+    toast.loading('AI re-scoring all tenders...', { id: 'ai-rescore' });
+    try {
+      const ids = tenders.map(t => String(t.id));
+      const res = await fetch(`${API_BASE}/api/tenders/ai/batch/ai-score`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${localStorage.getItem('cortexbuild_token') || ''}`,
+        },
+        body: JSON.stringify({ tenderIds: ids }),
+      });
+      if (!res.ok) throw new Error('Batch scoring failed');
+      const { results } = await res.json();
+      const scoreMap: Record<string, number> = {};
+      (results || []).forEach((r: { id: string; overall?: number; error?: string }) => {
+        if (r.overall != null) scoreMap[r.id] = r.overall;
+      });
+      // Persist scores back via the update mutation
+      await Promise.all(
+        Object.entries(scoreMap).map(([tid, score]) =>
+          updateMutation.mutateAsync({ id: tid, data: { ai_score: score } as any })
+        )
+      );
+      toast.dismiss('ai-rescore');
+      toast.success(`Re-scored ${Object.keys(scoreMap).length} tender(s)`);
+    } catch (err) {
+      toast.dismiss('ai-rescore');
+      toast.error('AI re-scoring failed: ' + (err as Error).message);
+    }
+  }
+
+  async function rescoreTender(tender: AnyRow) {
+    const id = String(tender.id);
+    toast.loading('AI scoring...', { id: `ai-score-${id}` });
+    try {
+      const res = await fetch(`${API_BASE}/api/tenders/ai/${id}/ai-score`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${localStorage.getItem('cortexbuild_token') || ''}`,
+        },
+        body: JSON.stringify({}),
+      });
+      if (!res.ok) throw new Error('Scoring failed');
+      const scores = await res.json();
+      await updateMutation.mutateAsync({ id, data: { ai_score: scores.overall } as any });
+      toast.dismiss(`ai-score-${id}`);
+      toast.success('AI scoring complete');
+    } catch (err) {
+      toast.dismiss(`ai-score-${id}`);
+      toast.error('Scoring failed: ' + (err as Error).message);
+    }
   }
 
   return (
@@ -734,6 +785,7 @@ export function Tenders() {
                     'Price Comp',
                     'Prog Risk',
                     'Resources',
+                    'Actions',
                   ].map(h => (
                     <th
                       key={h}
@@ -773,6 +825,16 @@ export function Tenders() {
                         </td>
                       )
                     )}
+                    <td className="px-4 py-3">
+                      <button
+                        onClick={() => rescoreTender(t)}
+                        className="text-xs px-2 py-1 bg-purple-700 hover:bg-purple-600 text-purple-200 rounded font-medium transition-colors"
+                        title="AI re-score this tender"
+                      >
+                        <Zap size={12} className="inline mr-1" />
+                        Re-score
+                      </button>
+                    </td>
                   </tr>
                 ))}
               </tbody>

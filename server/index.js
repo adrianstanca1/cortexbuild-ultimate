@@ -89,6 +89,7 @@ app.use('/api/inspections',     makeRouter('inspections'));
 app.use('/api/rams',            makeRouter('rams'));
 app.use('/api/cis',             makeRouter('cis_returns'));
 app.use('/api/tenders',         makeRouter('tenders'));
+app.use('/api/tenders/ai',     require('./routes/tender-ai'));
 app.use('/api/contacts',        makeRouter('contacts'));
 app.use('/api/risk-register',   makeRouter('risk_register'));
 app.use('/api/purchase-orders', makeRouter('purchase_orders'));

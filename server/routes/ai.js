@@ -1379,6 +1379,93 @@ router.post('/chat', async (req, res) => {
   }
 });
 
+// ─── POST /summarize-project ─────────────────────────────────────────────────
+// Returns a concise AI summary of a specific project
+router.post('/summarize-project', async (req, res) => {
+  const { projectId } = req.body;
+  if (!projectId) return res.status(400).json({ error: 'projectId is required' });
+
+  const orgId  = req.user?.organization_id;
+  const isSuper = ['super_admin', 'company_owner'].includes(req.user?.role);
+
+  try {
+    const { rows: projects } = await pool.query(
+      `SELECT name, client, status, progress, budget, spent, manager, location, type, description, start_date, end_date
+       FROM projects WHERE id = $1 ${orgId && !isSuper ? 'AND organization_id = $2' : ''} LIMIT 1`,
+      orgId && !isSuper ? [projectId, orgId] : [projectId]
+    );
+    if (!projects.length) return res.status(404).json({ error: 'Project not found' });
+
+    const proj = projects[0];
+
+    // Gather related data in parallel
+    const [{ rows: invoices }, { rows: changeOrders }, { rows: defects }, { rows: rfis }, { rows: dailyReports }] =
+      await Promise.all([
+        pool.query(`SELECT number, amount, status, due_date FROM invoices WHERE project_id = $1`, [projectId]),
+        pool.query(`SELECT number, title, amount, status FROM change_orders WHERE project_id = $1`, [projectId]),
+        pool.query(`SELECT reference, title, priority, status, due_date FROM defects WHERE project_id = $1`, [projectId]),
+        pool.query(`SELECT number, subject, priority, status FROM rfis WHERE project_id = $1`, [projectId]),
+        pool.query(`SELECT date, weather, workers_on_site, progress FROM daily_reports WHERE project_id = $1 ORDER BY date DESC LIMIT 7`, [projectId]),
+      ]);
+
+    const totalInvoiced = invoices.reduce((s, i) => s + parseFloat(i.amount || 0), 0);
+    const paidInvoices  = invoices.filter(i => i.status === 'paid').length;
+    const overdueInvoices = invoices.filter(i => i.status === 'overdue').length;
+    const openDefects  = defects.filter(d => d.status === 'open' || d.status === 'in_progress').length;
+    const openRfis     = rfis.filter(r => r.status !== 'closed').length;
+    const avgWorkers   = dailyReports.length
+      ? (dailyReports.reduce((s, d) => s + parseFloat(d.workers_on_site || 0), 0) / dailyReports.length).toFixed(1)
+      : 'N/A';
+
+    const context = `
+Project: ${proj.name}
+Client: ${proj.client || 'N/A'}
+Status: ${proj.status} | Progress: ${proj.progress ?? 0}%
+Budget: £${parseFloat(proj.budget || 0).toLocaleString('en-GB')} | Spent: £${parseFloat(proj.spent || 0).toLocaleString('en-GB')} (${proj.budget > 0 ? Math.round((proj.spent / proj.budget) * 100) : 0}%)
+Manager: ${proj.manager || 'N/A'} | Location: ${proj.location || 'N/A'}
+Type: ${proj.type || 'N/A'} | Start: ${proj.start_date || 'N/A'} | End: ${proj.end_date || 'N/A'}
+Description: ${proj.description || 'None'}
+Financial: ${invoices.length} invoices totalling £${totalInvoiced.toLocaleString('en-GB')}, ${paidInvoices} paid, ${overdueInvoices} overdue
+Change Orders: ${changeOrders.length} total
+Defects: ${defects.length} total, ${openDefects} open
+RFIs: ${rfis.length} total, ${openRfis} open
+Daily Reports: ${dailyReports.length} recent | Avg workers on site: ${avgWorkers}
+`.trim();
+
+    try {
+      const summary = await summarizeText(
+        `Summarise this construction project in 3-4 sentences for a non-technical stakeholder:\n\n${context}`
+      );
+      res.json({
+        summary,
+        projectId,
+        projectName: proj.name,
+        stats: {
+          progress: proj.progress ?? 0,
+          budgetUtilization: proj.budget > 0 ? Math.round((proj.spent / proj.budget) * 100) : null,
+          totalInvoiced,
+          paidInvoices,
+          overdueInvoices,
+          totalChangeOrders: changeOrders.length,
+          openDefects,
+          openRfis,
+          avgWorkersOnSite: avgWorkers === 'N/A' ? null : parseFloat(avgWorkers),
+        }
+      });
+    } catch (ollamaErr) {
+      // Fallback to rule-based summary
+      const budgetPct = proj.budget > 0 ? Math.round((proj.spent / proj.budget) * 100) : 0;
+      const summary = `"${proj.name}" is a ${proj.type || 'construction'} project for ${proj.client || 'an undisclosed client'}, currently ${proj.status} at ${proj.progress ?? 0}% completion. ` +
+        `Budget utilisation is ${budgetPct}% (£${parseFloat(proj.spent || 0).toLocaleString('en-GB')} of £${parseFloat(proj.budget || 0).toLocaleString('en-GB')}). ` +
+        `There are ${openRfis} open RFIs, ${openDefects} open defects, and ${overdueInvoices} overdue invoice(s).`;
+      res.json({ summary, projectId, projectName: proj.name, source: 'rule-based' });
+    }
+  } catch (err) {
+    console.error('[AI /summarize-project]', err.message);
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // ─── POST /execute ────────────────────────────────────────────────────────────
 // Action execution: { action, params } → { success, message, data }
 router.post('/execute', async (req, res) => {
@@ -1488,6 +1575,26 @@ router.post('/execute', async (req, res) => {
           [name, company || null, email || null, role || null, type]
         );
         res.json({ success: true, message: `Contact "${name}" created.`, data: rows[0] });
+        break;
+      }
+
+      case 'summarize_project': {
+        const { projectId } = params;
+        if (!projectId) return res.status(400).json({ success: false, message: 'projectId is required' });
+        const orgId  = req.user?.organization_id;
+        const isSuper = ['super_admin', 'company_owner'].includes(req.user?.role);
+        const { rows } = await pool.query(
+          `SELECT name, client, status, progress, budget, spent, manager, description
+           FROM projects WHERE id = $1 ${orgId && !isSuper ? 'AND organization_id = $2' : ''} LIMIT 1`,
+          orgId && !isSuper ? [projectId, orgId] : [projectId]
+        );
+        if (!rows.length) return res.status(404).json({ success: false, message: 'Project not found' });
+        const p = rows[0];
+        const budgetPct = p.budget > 0 ? Math.round((p.spent / p.budget) * 100) : 0;
+        const summary = `"${p.name}" is currently ${p.status} at ${p.progress ?? 0}% completion. ` +
+          `Budget utilisation is ${budgetPct}% (£${parseFloat(p.spent || 0).toLocaleString('en-GB')} of £${parseFloat(p.budget || 0).toLocaleString('en-GB')}). ` +
+          `Managed by ${p.manager || 'no assigned manager'}.`;
+        res.json({ success: true, message: summary, data: rows[0] });
         break;
       }
 
