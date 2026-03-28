@@ -509,13 +509,16 @@ Be honest. Do not inflate scores.`;
     // ── 5. Validate and clamp scores ────────────────────────────────────────
     const clamp = (v, min = 0, max = 100) => Math.min(max, Math.max(min, Math.round(Number(v) || 50)));
 
-    const overall    = clamp(scores.overall, 5, 95);
-    const clientRel  = clamp(scores.clientRel);
-    const techFit    = clamp(scores.techFit);
-    const priceComp  = clamp(scores.priceComp);
-    const progRisk   = clamp(scores.progRisk, 5, 95);
-    const resources  = clamp(scores.resources);
-    const reasoning  = String(scores.reasoning || '').substring(0, 500);
+    const overall      = clamp(scores.overall, 5, 95);
+    const clientRel    = clamp(scores.clientRel);
+    const techFit      = clamp(scores.techFit);
+    const priceComp    = clamp(scores.priceComp);
+    const progRisk     = clamp(scores.progRisk, 5, 95);
+    const resources    = clamp(scores.resources);
+    const contractRisk = clamp(scores.contractRisk ?? contractAnalysis.contractRisk, 5, 95);
+    const pas91Score   = clamp(scores.pas91Score ?? pas91.overall);
+    const confidence   = clamp(scores.confidence ?? 75, 20, 99);
+    const reasoning    = String(scores.reasoning || '').substring(0, 500);
 
     // ── 6. Optionally persist the overall score to DB ─────────────────────────
     try {
@@ -537,7 +540,12 @@ Be honest. Do not inflate scores.`;
       priceComp,
       progRisk,
       resources,
+      contractRisk,
+      pas91Score,
+      confidence,
       reasoning,
+      contractAnalysis,
+      pas91,
       source: 'ollama',
     });
   } catch (err) {

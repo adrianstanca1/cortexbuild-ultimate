@@ -3,6 +3,7 @@ import { Clock, Plus, Search, DollarSign, Users, CheckCircle2, AlertTriangle, Ed
 import { BarChart, Bar, LineChart, Line, CartesianGrid, Tooltip, Legend, ResponsiveContainer, XAxis, YAxis } from 'recharts';
 import { useTimesheets } from '../../hooks/useData';
 import { BulkActionsBar, useBulkSelection } from '../ui/BulkActions';
+import { EmptyState } from '../ui/EmptyState';
 import { toast } from 'sonner';
 
 type AnyRow = Record<string, unknown>;
@@ -405,7 +406,13 @@ export function Timesheets() {
                   })}
                 </tbody>
               </table>
-              {filtered.length === 0 && <div className="text-center py-16 text-gray-500"><Clock size={40} className="mx-auto mb-3 opacity-30"/><p>No timesheets found</p></div>}
+              {filtered.length === 0 && (
+                <EmptyState
+                  icon={Clock}
+                  title="No timesheets found"
+                  description="Log timesheets to track workforce hours and labour costs."
+                />
+              )}
               {selectedIds.size > 0 && (
                 <BulkActionsBar
                   selectedIds={Array.from(selectedIds)}

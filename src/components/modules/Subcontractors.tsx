@@ -3,6 +3,7 @@ import { HardHat, CheckCircle2, AlertTriangle, XCircle, Star, DollarSign, Plus, 
 import { DataImporter, ExportButton } from '../ui/DataImportExport';
 import { BulkActionsBar, useBulkSelection } from '../ui/BulkActions';
 import { useSubcontractors } from '../../hooks/useData';
+import { EmptyState } from '../ui/EmptyState';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { toast } from 'sonner';
 import { z } from 'zod';
@@ -300,10 +301,11 @@ export function Subcontractors() {
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-600" />
             </div>
           ) : filtered.length === 0 ? (
-            <div className="text-center py-16 text-gray-400 bg-gray-800 rounded-xl border border-gray-700">
-              <Building2 size={40} className="mx-auto mb-3 opacity-30" />
-              <p>No subcontractors found</p>
-            </div>
+            <EmptyState
+              icon={Building2}
+              title="No subcontractors found"
+              description="Add subcontractors to manage your supply chain and labour."
+            />
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {filtered.map((s) => {

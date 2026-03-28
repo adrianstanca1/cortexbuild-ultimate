@@ -135,6 +135,8 @@ export function Header({ activeModule, onMenuToggle }: { activeModule: Module; o
       {/* Mobile menu button */}
       <button
         onClick={onMenuToggle}
+        title="Toggle menu"
+        aria-label="Toggle navigation menu"
         style={{
           display: 'flex',
           alignItems: 'center',
