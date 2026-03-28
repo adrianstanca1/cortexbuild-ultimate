@@ -272,7 +272,7 @@ export function Tenders() {
       const { results } = await res.json();
       const scoreMap: Record<string, number> = {};
       (results || []).forEach((r: { id: string; overall?: number; error?: string }) => {
-        if (r.overall != null) scoreMap[r.id] = r.overall;
+        if (r.overall !== null && r.overall !== undefined) scoreMap[r.id] = r.overall;
       });
       // Persist scores back via the update mutation
       await Promise.all(
