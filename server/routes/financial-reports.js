@@ -5,9 +5,10 @@ const authMiddleware = require('../middleware/auth');
 const router = express.Router();
 router.use(authMiddleware);
 
-// Multi-tenancy helper — all queries scoped to user's organisation
+// Multi-tenancy: use org filter when org_id exists, otherwise return all (super_admin)
 function orgFilter(user) {
-  if (!user?.organization_id) return { filter: '', params: [] };
+  if (!user) return { filter: '', params: [] };
+  if (!user.organization_id) return { filter: '', params: [] };
   return { filter: ' organization_id = $1', params: [user.organization_id] };
 }
 
@@ -86,9 +87,8 @@ router.get('/cashflow', async (req, res) => {
     });
 
     // Distribute project spent evenly across 12 months of the current year
-    const spentParams = baseParams;
     const { rows: projects } = await pool.query(
-      `SELECT spent FROM projects WHERE 1=1${orgClause}`, spentParams
+      `SELECT spent FROM projects WHERE 1=1${orgClause}`, baseParams
     );
     const year = new Date().getFullYear();
     const monthCount = 12;
