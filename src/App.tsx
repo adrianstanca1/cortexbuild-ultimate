@@ -170,7 +170,7 @@ function AppShell() {
       <div className="flex h-screen overflow-hidden" style={{ position:'relative' }}>
         <BlueprintBackground />
         {/* Sidebar: hidden on mobile, shown on md+ */}
-        <div className="hidden md:block flex-shrink-0">
+        <div className="hidden md:block flex-shrink-0" style={{ position: 'relative', zIndex: 1 }}>
           <Sidebar
             activeModule={activeModule}
             setModule={setActiveModule}
@@ -178,7 +178,7 @@ function AppShell() {
             setCollapsed={setSidebarCollapsed}
           />
         </div>
-        <div className="flex flex-col flex-1 overflow-hidden min-w-0">
+        <div className="flex flex-col flex-1 overflow-hidden min-w-0" style={{ position: 'relative', zIndex: 1 }}>
           {!isOnline && (
             <div className="bg-yellow-500 text-black px-4 py-1.5 text-sm text-center font-medium">
               You're offline. Some features may not work.
