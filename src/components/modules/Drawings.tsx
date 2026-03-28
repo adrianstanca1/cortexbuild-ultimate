@@ -3,6 +3,7 @@ import { Layers, Plus, Search, Eye, Download, Edit2, Trash2, X, ChevronDown, Che
 import { useDocuments } from '../../hooks/useData';
 import { documentsApi } from '../../services/api';
 import { toast } from 'sonner';
+import { EmptyState } from '../ui/EmptyState';
 import { PieChart, Pie, BarChart, Bar, CartesianGrid, Tooltip, Legend, ResponsiveContainer, Cell } from 'recharts';
 import { BulkActionsBar, useBulkSelection } from '../ui/BulkActions';
 
@@ -361,7 +362,13 @@ export function Drawings() {
                   ))}
                 </tbody>
               </table>
-              {filtered.length === 0 && <div className="text-center py-16 text-gray-500"><FileText size={40} className="mx-auto mb-3 opacity-30"/><p>No drawings found</p></div>}
+              {filtered.length === 0 && (
+                <EmptyState
+                  icon={FileText}
+                  title="No drawings found"
+                  description="Upload drawings and plans to keep your team aligned on project specifications."
+                />
+              )}
               <BulkActionsBar
                 selectedIds={Array.from(selectedIds)}
                 actions={[

@@ -3,6 +3,7 @@ import { Shield, Plus, Search, FileCheck, AlertTriangle, Clock, CheckCircle, Edi
 import { DataImporter, ExportButton } from '../ui/DataImportExport';
 import { useRAMS } from '../../hooks/useData';
 import { uploadFile } from '../../services/api';
+import { EmptyState } from '../ui/EmptyState';
 import { toast } from 'sonner';
 import { z } from 'zod';
 import { BulkActionsBar, useBulkSelection } from '../ui/BulkActions';
@@ -281,7 +282,13 @@ export function RAMS() {
             <div className="flex justify-center py-20"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-500" /></div>
           ) : (
             <div className="bg-gray-900 rounded-xl border border-gray-800 divide-y divide-gray-800">
-              {filtered.length === 0 && <div className="text-center py-16 text-gray-500"><Shield size={40} className="mx-auto mb-3 opacity-30" /><p>No RAMS documents found</p></div>}
+              {filtered.length === 0 && (
+                <EmptyState
+                  icon={Shield}
+                  title="No RAMS documents found"
+                  description="Create a RAMS document to assess and communicate workplace risks."
+                />
+              )}
               {filtered.map(r => {
                 const id = String(r.id ?? '');
                 const isExp = expanded === id;

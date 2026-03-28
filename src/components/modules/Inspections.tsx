@@ -3,6 +3,7 @@ import { ClipboardCheck, Plus, Search, CheckCircle, XCircle, Clock, AlertTriangl
 import { useInspections } from '../../hooks/useData';
 import { toast } from 'sonner';
 import { BulkActionsBar, useBulkSelection } from '../ui/BulkActions';
+import { EmptyState } from '../ui/EmptyState';
 
 type AnyRow = Record<string, unknown>;
 
@@ -273,7 +274,13 @@ export function Inspections() {
             <div className="flex justify-center py-20"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-600"/></div>
           ) : (
             <div className="space-y-3">
-              {filtered.length === 0 && <div className="text-center py-16 text-gray-500 bg-gray-800 rounded-xl border border-gray-700"><ClipboardCheck size={40} className="mx-auto mb-3 opacity-30"/><p>No inspections found</p></div>}
+              {filtered.length === 0 && (
+                <EmptyState
+                  icon={ClipboardCheck}
+                  title="No inspections found"
+                  description="Schedule your first inspection to maintain quality assurance on site."
+                />
+              )}
               {filtered.map(i => {
                 const id = String(i.id??'');
                 const isSelected = selectedIds.has(id);
