@@ -123,7 +123,11 @@ export function Accounting() {
   function handleSave() {
     if (!fClient||!fAmount) { toast.error('Client and amount required'); return; }
     const payload = { number:fNum, client:fClient, project:fProject, amount:parseFloat(fAmount)||0, status:fStatus, due_date:fDue, description:fDesc };
-    editId ? updateMut.mutate({id:editId,data:payload}) : createMut.mutate(payload);
+    if (editId) {
+      updateMut.mutate({id:editId,data:payload});
+    } else {
+      createMut.mutate(payload);
+    }
     setShowModal(false);
   }
 

@@ -61,6 +61,7 @@ export function PredictiveAnalytics() {
 
   useEffect(() => {
     if (activeTab !== 'weather') return;
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setWeatherLoading(true);
     weatherApi.getForecast()
       .then((data) => {
@@ -179,7 +180,15 @@ export function PredictiveAnalytics() {
         <div className="space-y-6">
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             <div className="lg:col-span-2 space-y-4">
-              {projectRisks.map((proj) => (
+              {projectRisks.map((proj) => {
+                const riskLevel: RiskLevel = proj.riskScore >= 60 ? 'critical' : proj.riskScore >= 40 ? 'high' : proj.riskScore >= 20 ? 'medium' : 'low';
+                const riskColor = getRiskColor(riskLevel);
+                const isCritical = proj.riskScore >= 60;
+                const isHigh = proj.riskScore >= 40 && proj.riskScore < 60;
+                const isMedium = proj.riskScore >= 20 && proj.riskScore < 40;
+                const riskLabel = isCritical ? 'Critical' : isHigh ? 'High' : isMedium ? 'Medium' : 'Low';
+
+                return (
                 <div key={String(proj.name)} className="card p-4">
                   <div className="flex items-start justify-between mb-3">
                     <div>
@@ -190,9 +199,7 @@ export function PredictiveAnalytics() {
                             className="h-full rounded-full"
                             style={{
                               width: `${proj.riskScore}%`,
-                              backgroundColor: getRiskColor(
-                                proj.riskScore >= 60 ? 'critical' : proj.riskScore >= 40 ? 'high' : proj.riskScore >= 20 ? 'medium' : 'low'
-                              ),
+                              backgroundColor: riskColor,
                             }}
                           />
                         </div>
@@ -203,11 +210,11 @@ export function PredictiveAnalytics() {
                       <span
                         className="text-xs font-bold px-2 py-1 rounded"
                         style={{
-                          backgroundColor: `${getRiskColor(proj.riskScore >= 60 ? 'critical' : proj.riskScore >= 40 ? 'high' : proj.riskScore >= 20 ? 'medium' : 'low')}20`,
-                          color: getRiskColor(proj.riskScore >= 60 ? 'critical' : proj.riskScore >= 40 ? 'high' : proj.riskScore >= 20 ? 'medium' : 'low'),
+                          backgroundColor: `${riskColor}20`,
+                          color: riskColor,
                         }}
                       >
-                        {proj.riskScore >= 60 ? 'Critical' : proj.riskScore >= 40 ? 'High' : proj.riskScore >= 20 ? 'Medium' : 'Low'}
+                        {riskLabel}
                       </span>
                       <p className="text-xs text-gray-500 mt-1">{proj.trend > 0 ? '+' : ''}{proj.trend}% vs last week</p>
                     </div>
@@ -220,7 +227,8 @@ export function PredictiveAnalytics() {
                     ))}
                   </div>
                 </div>
-              ))}
+              );
+              })}
             </div>
 
             <div className="card p-5">

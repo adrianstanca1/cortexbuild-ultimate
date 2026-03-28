@@ -170,7 +170,7 @@ export function Materials() {
   ).map(([name,value])=>({ name, value:Math.round(Number(value)) }));
 
   const analyticsSummary = uniqueCategories.filter(c=>c!=='All').map(cat=>{
-    const catMaterials = materials.filter(m=>String(m.category??'')==cat);
+    const catMaterials = materials.filter(m=>String(m.category??'')===cat);
     const totalOrdered = catMaterials.reduce((s,m)=>s+Number(m.quantity??0)*Number(m.unit_cost??0),0);
     const totalDelivered = catMaterials.filter(m=>['Delivered','On Site'].includes(String(m.status??'')))
       .reduce((s,m)=>s+Number(m.quantity??0)*Number(m.unit_cost??0),0);

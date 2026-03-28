@@ -253,7 +253,11 @@ export function Procurement() {
       project:fProject, category:fCategory, status:fStatus, order_date:fOrder,
       delivery_date:fDelivery, notes:fNotes,
     };
-    editId ? updateMut.mutate({id:editId,data:payload}) : createMut.mutate(payload);
+    if (editId) {
+      updateMut.mutate({id:editId,data:payload});
+    } else {
+      createMut.mutate(payload);
+    }
     setShowModal(false);
   }
   function advanceStatus(po: AnyRow) {

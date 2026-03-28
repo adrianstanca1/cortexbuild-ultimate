@@ -170,7 +170,7 @@ export function RAMS() {
     toast.success('RAMS approved');
   }
 
-  function useTemplate(template: typeof TEMPLATES[0]) {
+  function applyTemplate(template: typeof TEMPLATES[0]) {
     setEditing(null);
     setForm({
       ...emptyForm,
@@ -427,7 +427,7 @@ export function RAMS() {
                 <h3 className="font-semibold text-white">{template.name}</h3>
               </div>
               <p className="text-xs text-gray-400 mb-3">{template.hazards}</p>
-              <button type="button" onClick={() => useTemplate(template)} className="w-full px-3 py-2 bg-orange-600 text-white rounded-lg text-xs font-medium hover:bg-orange-700">
+              <button type="button" onClick={() => applyTemplate(template)} className="w-full px-3 py-2 bg-orange-600 text-white rounded-lg text-xs font-medium hover:bg-orange-700">
                 Use Template
               </button>
             </div>

@@ -102,7 +102,7 @@ export function Timesheets() {
   function getTimelineData() {
     const workers = Array.from(new Set(timesheets.map(t=>String(t.worker_name??''))));
     return workers.slice(0, 5).map(w => {
-      const data = timesheets.filter(t=>String(t.worker_name??'')==w).slice(-4);
+      const data = timesheets.filter(t=>String(t.worker_name??'')===w).slice(-4);
       return { name: w, weeks: data.length > 0 ? data.map((d,i)=>Number(d.overtimeHours??0)) : [0,0,0,0] };
     });
   }
@@ -172,7 +172,7 @@ export function Timesheets() {
 
   const payrollWorkers = Array.from(new Set(timesheets.filter(t=>t.status==='approved').map(t=>String(t.worker_name??''))));
   const payrollData = payrollWorkers.map(w => {
-    const sheets = timesheets.filter(t=>String(t.worker_name??'')==w && t.status==='approved');
+    const sheets = timesheets.filter(t=>String(t.worker_name??'')===w && t.status==='approved');
     const totalGross = sheets.reduce((s,t)=>s+calculateTotalPay(t),0);
     const totalCIS = calculateCIS(totalGross);
     return { name: w, sheets: sheets.length, gross: totalGross, cis: totalCIS, net: totalGross - totalCIS };

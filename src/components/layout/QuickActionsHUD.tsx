@@ -44,6 +44,21 @@ export function QuickActionsHUD({ currentModule, onAction }: { currentModule: st
   const [animating, setAnimating] = useState(false);
   const overlayRef = useRef<HTMLDivElement>(null);
 
+  const handleOpen = () => {
+    setOpen(true);
+    setAnimating(true);
+  };
+
+  const handleClose = useCallback(() => {
+    setAnimating(false);
+    setTimeout(() => setOpen(false), 200);
+  }, []);
+
+  const handleAction = useCallback((action: QuickAction) => {
+    handleClose();
+    onAction(action.module);
+  }, [handleClose, onAction]);
+
   // Close on Escape
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
@@ -64,22 +79,7 @@ export function QuickActionsHUD({ currentModule, onAction }: { currentModule: st
     };
     window.addEventListener('keydown', handler);
     return () => window.removeEventListener('keydown', handler);
-  }, []);
-
-  const handleOpen = () => {
-    setOpen(true);
-    setAnimating(true);
-  };
-
-  const handleClose = () => {
-    setAnimating(false);
-    setTimeout(() => setOpen(false), 200);
-  };
-
-  const handleAction = (action: QuickAction) => {
-    handleClose();
-    onAction(action.module);
-  };
+  }, [handleAction]);
 
   if (!open) {
     return (

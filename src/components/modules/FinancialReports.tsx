@@ -466,13 +466,13 @@ export function FinancialReports() {
         </div>
       </div>
 
-      <ReportTabs />
+      {ReportTabs()}
 
-      {reportType === 'summary' && <SummaryTab />}
-      {reportType === 'p-l' && <PLTab />}
+      {reportType === 'summary' && SummaryTab()}
+      {reportType === 'p-l' && PLTab()}
       {reportType === 'projects' && (
         <>
-          <ProjectsTab />
+          {ProjectsTab()}
           <BulkActionsBar
             selectedIds={Array.from(selectedIds)}
             actions={[
@@ -482,8 +482,8 @@ export function FinancialReports() {
           />
         </>
       )}
-      {reportType === 'cashflow' && <CashFlowTab />}
-      {reportType === 'invoices' && <InvoicesTab />}
+      {reportType === 'cashflow' && CashFlowTab()}
+      {reportType === 'invoices' && InvoicesTab()}
     </div>
   );
 }

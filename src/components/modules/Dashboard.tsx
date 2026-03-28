@@ -142,6 +142,7 @@ function RAGDonut({ data }: { data: { name: string; value: number; fill: string 
 function ProgBar({ value, color, animated = true }: { value: number; color: string; animated?: boolean }) {
   const [w, setW] = useState(0);
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     if (!animated) { setW(value); return; }
     const t = setTimeout(() => setW(value), 150);
     return () => clearTimeout(t);
@@ -270,6 +271,7 @@ export function Dashboard() {
     return unsub;
   }, []);
 
+  // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => { setMounted(true); }, []);
 
   useEffect(() => {

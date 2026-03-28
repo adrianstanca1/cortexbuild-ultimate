@@ -1,0 +1,890 @@
+
+> cortexbuild-ultimate@3.0.0 lint
+> eslint src --ext .ts,.tsx
+
+
+/Users/adrianstanca/cortexbuild-ultimate/src/App.tsx
+  212:37  warning  'user' is assigned a value but never used  @typescript-eslint/no-unused-vars
+
+/Users/adrianstanca/cortexbuild-ultimate/src/components/auth/LoginPage.tsx
+  123:10  warning  'StatBlock' is defined but never used  @typescript-eslint/no-unused-vars
+
+/Users/adrianstanca/cortexbuild-ultimate/src/components/layout/AnimatedLogo.tsx
+  28:9  warning  'center' is assigned a value but never used  @typescript-eslint/no-unused-vars
+
+/Users/adrianstanca/cortexbuild-ultimate/src/components/layout/BlueprintBackground.tsx
+  192:3  warning  'driftRange' is assigned a value but never used. Allowed unused args must match /^_/u  @typescript-eslint/no-unused-vars
+
+/Users/adrianstanca/cortexbuild-ultimate/src/components/layout/Header.tsx
+   7:17  warning  'Wifi' is defined but never used               @typescript-eslint/no-unused-vars
+   7:23  warning  'WifiOff' is defined but never used            @typescript-eslint/no-unused-vars
+   7:38  warning  'X' is defined but never used                  @typescript-eslint/no-unused-vars
+   7:41  warning  'Monitor' is defined but never used            @typescript-eslint/no-unused-vars
+   8:3   warning  'LogOut' is defined but never used             @typescript-eslint/no-unused-vars
+   8:11  warning  'User' is defined but never used               @typescript-eslint/no-unused-vars
+   8:17  warning  'Settings' is defined but never used           @typescript-eslint/no-unused-vars
+   8:40  warning  'Construction' is defined but never used       @typescript-eslint/no-unused-vars
+  84:10  warning  'isOnline' is assigned a value but never used  @typescript-eslint/no-unused-vars
+  90:11  warning  'theme' is assigned a value but never used     @typescript-eslint/no-unused-vars
+  90:18  warning  'setTheme' is assigned a value but never used  @typescript-eslint/no-unused-vars
+
+/Users/adrianstanca/cortexbuild-ultimate/src/components/layout/MobileNav.tsx
+  5:10  warning  'useState' is defined but never used       @typescript-eslint/no-unused-vars
+  8:3   warning  'MessageSquare' is defined but never used  @typescript-eslint/no-unused-vars
+  8:18  warning  'Search' is defined but never used         @typescript-eslint/no-unused-vars
+
+/Users/adrianstanca/cortexbuild-ultimate/src/components/layout/QuickActionsHUD.tsx
+   8:19  warning  'DollarSign' is defined but never used                                           @typescript-eslint/no-unused-vars
+  42:35  warning  'currentModule' is defined but never used. Allowed unused args must match /^_/u  @typescript-eslint/no-unused-vars
+
+/Users/adrianstanca/cortexbuild-ultimate/src/components/layout/ShortcutsHelp.tsx
+  7:29  warning  'formatShortcut' is defined but never used  @typescript-eslint/no-unused-vars
+
+/Users/adrianstanca/cortexbuild-ultimate/src/components/layout/Sidebar.tsx
+  12:56  warning  'Zap' is defined but never used        @typescript-eslint/no-unused-vars
+  16:23  warning  'Clipboard' is defined but never used  @typescript-eslint/no-unused-vars
+  18:25  warning  'XIcon' is defined but never used      @typescript-eslint/no-unused-vars
+  18:50  warning  'Search' is defined but never used     @typescript-eslint/no-unused-vars
+
+/Users/adrianstanca/cortexbuild-ultimate/src/components/layout/SiteStatusBanner.tsx
+   7:3   warning  'Circle' is defined but never used                 @typescript-eslint/no-unused-vars
+   7:24  warning  'Wind' is defined but never used                   @typescript-eslint/no-unused-vars
+  11:11  warning  'SiteStatus' is defined but never used             @typescript-eslint/no-unused-vars
+  19:7   warning  'STATUS_ITEMS' is assigned a value but never used  @typescript-eslint/no-unused-vars
+
+/Users/adrianstanca/cortexbuild-ultimate/src/components/modules/AIAssistant.tsx
+    4:9   warning  'Bot' is defined but never used                                    @typescript-eslint/no-unused-vars
+   10:46  warning  'changeOrders' is defined but never used                           @typescript-eslint/no-unused-vars
+  254:9   warning  'generateContextAwareResponse' is assigned a value but never used  @typescript-eslint/no-unused-vars
+  317:15  warning  'totalOutstanding' is assigned a value but never used              @typescript-eslint/no-unused-vars
+
+/Users/adrianstanca/cortexbuild-ultimate/src/components/modules/Accounting.tsx
+  23:7  warning  'REV_DATA' is assigned a value but never used  @typescript-eslint/no-unused-vars
+
+/Users/adrianstanca/cortexbuild-ultimate/src/components/modules/Analytics.tsx
+  8:47  warning  'useTeam' is defined but never used  @typescript-eslint/no-unused-vars
+
+/Users/adrianstanca/cortexbuild-ultimate/src/components/modules/AuditLog.tsx
+    6:3   warning  'Filter' is defined but never used                   @typescript-eslint/no-unused-vars
+    8:3   warning  'CheckCircle' is defined but never used              @typescript-eslint/no-unused-vars
+   10:3   warning  'Clock' is defined but never used                    @typescript-eslint/no-unused-vars
+   16:3   warning  'BarChart2' is defined but never used                @typescript-eslint/no-unused-vars
+   89:9   warning  'deleteMutation' is assigned a value but never used  @typescript-eslint/no-unused-vars
+  116:14  warning  'err' is defined but never used                      @typescript-eslint/no-unused-vars
+
+/Users/adrianstanca/cortexbuild-ultimate/src/components/modules/CIS.tsx
+  188:77  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/Users/adrianstanca/cortexbuild-ultimate/src/components/modules/CRM.tsx
+  2:80   warning  'ChevronDown' is defined but never used  @typescript-eslint/no-unused-vars
+  2:93   warning  'ChevronUp' is defined but never used    @typescript-eslint/no-unused-vars
+  2:170  warning  'LogOut' is defined but never used       @typescript-eslint/no-unused-vars
+
+/Users/adrianstanca/cortexbuild-ultimate/src/components/modules/Calendar.tsx
+  5:39  warning  'Clock' is defined but never used        @typescript-eslint/no-unused-vars
+  6:3   warning  'CheckCircle' is defined but never used  @typescript-eslint/no-unused-vars
+
+/Users/adrianstanca/cortexbuild-ultimate/src/components/modules/Certifications.tsx
+   2:16  warning  'Search' is defined but never used        @typescript-eslint/no-unused-vars
+   9:38  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  15:59  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  24:40  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  33:44  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  39:37  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  44:39  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  45:42  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  79:40  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  98:37  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/Users/adrianstanca/cortexbuild-ultimate/src/components/modules/ChangeOrders.tsx
+    3:28   warning  'PoundSterling' is defined but never used              @typescript-eslint/no-unused-vars
+    3:64   warning  'XCircle' is defined but never used                    @typescript-eslint/no-unused-vars
+    4:77   warning  'ArrowUpRight' is defined but never used               @typescript-eslint/no-unused-vars
+    4:91   warning  'ArrowDownRight' is defined but never used             @typescript-eslint/no-unused-vars
+    4:107  warning  'ChevronRight' is defined but never used               @typescript-eslint/no-unused-vars
+   11:94   warning  'Legend' is defined but never used                     @typescript-eslint/no-unused-vars
+   11:102  warning  'PieChart' is defined but never used                   @typescript-eslint/no-unused-vars
+   11:112  warning  'Pie' is defined but never used                        @typescript-eslint/no-unused-vars
+   11:117  warning  'Cell' is defined but never used                       @typescript-eslint/no-unused-vars
+   44:7    warning  'chartColours' is assigned a value but never used      @typescript-eslint/no-unused-vars
+  238:9    warning  'underReviewCount' is assigned a value but never used  @typescript-eslint/no-unused-vars
+  328:9    warning  'chartData' is assigned a value but never used         @typescript-eslint/no-unused-vars
+
+/Users/adrianstanca/cortexbuild-ultimate/src/components/modules/DailyReports.tsx
+   5:18  warning  'BarChart3' is defined but never used                   @typescript-eslint/no-unused-vars
+   5:43  warning  'ThumbsUp' is defined but never used                    @typescript-eslint/no-unused-vars
+   5:53  warning  'Eye' is defined but never used                         @typescript-eslint/no-unused-vars
+   5:79  warning  'Upload' is defined but never used                      @typescript-eslint/no-unused-vars
+   5:96  warning  'RefreshCw' is defined but never used                   @typescript-eslint/no-unused-vars
+  67:10  warning  'dateRangeStart' is assigned a value but never used     @typescript-eslint/no-unused-vars
+  67:26  warning  'setDateRangeStart' is assigned a value but never used  @typescript-eslint/no-unused-vars
+  68:10  warning  'dateRangeEnd' is assigned a value but never used       @typescript-eslint/no-unused-vars
+  68:24  warning  'setDateRangeEnd' is assigned a value but never used    @typescript-eslint/no-unused-vars
+
+/Users/adrianstanca/cortexbuild-ultimate/src/components/modules/Dashboard.tsx
+    5:29  warning  'BarChart2' is defined but never used                 @typescript-eslint/no-unused-vars
+    5:50  warning  'PieChart' is defined but never used                  @typescript-eslint/no-unused-vars
+    6:10  warning  'Building2' is defined but never used                 @typescript-eslint/no-unused-vars
+    6:21  warning  'CheckCircle' is defined but never used               @typescript-eslint/no-unused-vars
+    6:49  warning  'Clock' is defined but never used                     @typescript-eslint/no-unused-vars
+    6:56  warning  'Plus' is defined but never used                      @typescript-eslint/no-unused-vars
+    6:62  warning  'Search' is defined but never used                    @typescript-eslint/no-unused-vars
+    7:3   warning  'Edit2' is defined but never used                     @typescript-eslint/no-unused-vars
+    7:10  warning  'Trash2' is defined but never used                    @typescript-eslint/no-unused-vars
+    7:18  warning  'ChevronDown' is defined but never used               @typescript-eslint/no-unused-vars
+    7:31  warning  'Filter' is defined but never used                    @typescript-eslint/no-unused-vars
+    8:3   warning  'Award' is defined but never used                     @typescript-eslint/no-unused-vars
+    8:10  warning  'Zap' is defined but never used                       @typescript-eslint/no-unused-vars
+    8:26  warning  'Eye' is defined but never used                       @typescript-eslint/no-unused-vars
+    8:31  warning  'Settings' is defined but never used                  @typescript-eslint/no-unused-vars
+    8:41  warning  'Calendar' is defined but never used                  @typescript-eslint/no-unused-vars
+    8:51  warning  'Target' is defined but never used                    @typescript-eslint/no-unused-vars
+    8:59  warning  'ArrowUp' is defined but never used                   @typescript-eslint/no-unused-vars
+    9:3   warning  'LayoutGrid' is defined but never used                @typescript-eslint/no-unused-vars
+    9:15  warning  'X' is defined but never used                         @typescript-eslint/no-unused-vars
+    9:42  warning  'ClipboardList' is defined but never used             @typescript-eslint/no-unused-vars
+    9:57  warning  'HardHat' is defined but never used                   @typescript-eslint/no-unused-vars
+   10:14  warning  'Wrench' is defined but never used                    @typescript-eslint/no-unused-vars
+   10:22  warning  'Truck' is defined but never used                     @typescript-eslint/no-unused-vars
+   10:29  warning  'MessageSquare' is defined but never used             @typescript-eslint/no-unused-vars
+   13:35  warning  'LineChart' is defined but never used                 @typescript-eslint/no-unused-vars
+   13:46  warning  'Line' is defined but never used                      @typescript-eslint/no-unused-vars
+   13:64  warning  'RechartsPie' is defined but never used               @typescript-eslint/no-unused-vars
+   14:3   warning  'Pie' is defined but never used                       @typescript-eslint/no-unused-vars
+   14:8   warning  'Cell' is defined but never used                      @typescript-eslint/no-unused-vars
+   14:52  warning  'Legend' is defined but never used                    @typescript-eslint/no-unused-vars
+  194:10  warning  'safetyChartData' is assigned a value but never used  @typescript-eslint/no-unused-vars
+
+/Users/adrianstanca/cortexbuild-ultimate/src/components/modules/Defects.tsx
+    3:32   warning  'Filter' is defined but never used                   @typescript-eslint/no-unused-vars
+    3:40   warning  'Download' is defined but never used                 @typescript-eslint/no-unused-vars
+    4:25   warning  'ArrowRight' is defined but never used               @typescript-eslint/no-unused-vars
+    4:37   warning  'Calendar' is defined but never used                 @typescript-eslint/no-unused-vars
+    4:47   warning  'Building2' is defined but never used                @typescript-eslint/no-unused-vars
+    5:13   warning  'Eye' is defined but never used                      @typescript-eslint/no-unused-vars
+   69:10   warning  'selectedDefect' is assigned a value but never used  @typescript-eslint/no-unused-vars
+   71:42   warning  Unexpected any. Specify a different type             @typescript-eslint/no-explicit-any
+   72:10   warning  'loading' is assigned a value but never used         @typescript-eslint/no-unused-vars
+   74:59   warning  Unexpected any. Specify a different type             @typescript-eslint/no-explicit-any
+  191:46   warning  Unexpected any. Specify a different type             @typescript-eslint/no-explicit-any
+  205:40   warning  Unexpected any. Specify a different type             @typescript-eslint/no-explicit-any
+  206:44   warning  Unexpected any. Specify a different type             @typescript-eslint/no-explicit-any
+  207:45   warning  Unexpected any. Specify a different type             @typescript-eslint/no-explicit-any
+  454:40   warning  Unexpected any. Specify a different type             @typescript-eslint/no-explicit-any
+  458:46   warning  Unexpected any. Specify a different type             @typescript-eslint/no-explicit-any
+  458:65   warning  Unexpected any. Specify a different type             @typescript-eslint/no-explicit-any
+  489:42   warning  Unexpected any. Specify a different type             @typescript-eslint/no-explicit-any
+  493:48   warning  Unexpected any. Specify a different type             @typescript-eslint/no-explicit-any
+  493:69   warning  Unexpected any. Specify a different type             @typescript-eslint/no-explicit-any
+  608:103  warning  Unexpected any. Specify a different type             @typescript-eslint/no-explicit-any
+  612:99   warning  Unexpected any. Specify a different type             @typescript-eslint/no-explicit-any
+  622:99   warning  Unexpected any. Specify a different type             @typescript-eslint/no-explicit-any
+  627:104  warning  Unexpected any. Specify a different type             @typescript-eslint/no-explicit-any
+  631:101  warning  Unexpected any. Specify a different type             @typescript-eslint/no-explicit-any
+  636:105  warning  Unexpected any. Specify a different type             @typescript-eslint/no-explicit-any
+  641:101  warning  Unexpected any. Specify a different type             @typescript-eslint/no-explicit-any
+  652:108  warning  Unexpected any. Specify a different type             @typescript-eslint/no-explicit-any
+  658:106  warning  Unexpected any. Specify a different type             @typescript-eslint/no-explicit-any
+  662:106  warning  Unexpected any. Specify a different type             @typescript-eslint/no-explicit-any
+
+/Users/adrianstanca/cortexbuild-ultimate/src/components/modules/Documents.tsx
+    4:62   warning  'Shield' is defined but never used        @typescript-eslint/no-unused-vars
+    5:26   warning  'Lock' is defined but never used          @typescript-eslint/no-unused-vars
+    5:32   warning  'Users' is defined but never used         @typescript-eslint/no-unused-vars
+    5:39   warning  'EyeOff' is defined but never used        @typescript-eslint/no-unused-vars
+   45:10   warning  'formatDate' is defined but never used    @typescript-eslint/no-unused-vars
+  101:14   warning  'err' is defined but never used           @typescript-eslint/no-unused-vars
+  127:19   warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  145:14   warning  'err' is defined but never used           @typescript-eslint/no-unused-vars
+  162:14   warning  'err' is defined but never used           @typescript-eslint/no-unused-vars
+  183:14   warning  'err' is defined but never used           @typescript-eslint/no-unused-vars
+  197:14   warning  'err' is defined but never used           @typescript-eslint/no-unused-vars
+  334:121  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/Users/adrianstanca/cortexbuild-ultimate/src/components/modules/Drawings.tsx
+    2:99   warning  'Cloud' is defined but never used                   @typescript-eslint/no-unused-vars
+    2:123  warning  'Filter' is defined but never used                  @typescript-eslint/no-unused-vars
+    2:145  warning  'AlertTriangle' is defined but never used           @typescript-eslint/no-unused-vars
+    2:160  warning  'BarChart3' is defined but never used               @typescript-eslint/no-unused-vars
+    6:64   warning  'Legend' is defined but never used                  @typescript-eslint/no-unused-vars
+  133:9    warning  'rejectedCount' is assigned a value but never used  @typescript-eslint/no-unused-vars
+  267:50   warning  Unexpected any. Specify a different type            @typescript-eslint/no-explicit-any
+
+/Users/adrianstanca/cortexbuild-ultimate/src/components/modules/EmailHistory.tsx
+   2:18  warning  'Filter' is defined but never used                         @typescript-eslint/no-unused-vars
+   2:32  warning  'Trash2' is defined but never used                         @typescript-eslint/no-unused-vars
+   2:78  warning  'Archive' is defined but never used                        @typescript-eslint/no-unused-vars
+   2:87  warning  'Star' is defined but never used                           @typescript-eslint/no-unused-vars
+  20:10  warning  'total' is assigned a value but never used                 @typescript-eslint/no-unused-vars
+  34:9   warning  'refetch' is assigned a value but never used               @typescript-eslint/no-unused-vars
+  39:10  warning  'showModal' is assigned a value but never used             @typescript-eslint/no-unused-vars
+  39:21  warning  'setShowModal' is assigned a value but never used          @typescript-eslint/no-unused-vars
+  40:10  warning  'selectedEmail' is assigned a value but never used         @typescript-eslint/no-unused-vars
+  43:10  warning  'showTemplateModal' is assigned a value but never used     @typescript-eslint/no-unused-vars
+  43:29  warning  'setShowTemplateModal' is assigned a value but never used  @typescript-eslint/no-unused-vars
+  86:19  warning  Unexpected any. Specify a different type                   @typescript-eslint/no-explicit-any
+
+/Users/adrianstanca/cortexbuild-ultimate/src/components/modules/ExecutiveReports.tsx
+    4:3   warning  'FileText' is defined but never used         @typescript-eslint/no-unused-vars
+    4:23  warning  'Calendar' is defined but never used         @typescript-eslint/no-unused-vars
+    4:33  warning  'Clock' is defined but never used            @typescript-eslint/no-unused-vars
+    4:40  warning  'Send' is defined but never used             @typescript-eslint/no-unused-vars
+    5:15  warning  'Users' is defined but never used            @typescript-eslint/no-unused-vars
+    5:45  warning  'Activity' is defined but never used         @typescript-eslint/no-unused-vars
+    5:55  warning  'CheckCircle' is defined but never used      @typescript-eslint/no-unused-vars
+    6:3   warning  'AlertTriangle' is defined but never used    @typescript-eslint/no-unused-vars
+    6:18  warning  'Mail' is defined but never used             @typescript-eslint/no-unused-vars
+    6:24  warning  'Printer' is defined but never used          @typescript-eslint/no-unused-vars
+    6:33  warning  'Share2' is defined but never used           @typescript-eslint/no-unused-vars
+    6:41  warning  'Award' is defined but never used            @typescript-eslint/no-unused-vars
+    6:48  warning  'Eye' is defined but never used              @typescript-eslint/no-unused-vars
+    6:53  warning  'Settings' is defined but never used         @typescript-eslint/no-unused-vars
+   12:70  warning  'RadarChart' is defined but never used       @typescript-eslint/no-unused-vars
+   12:82  warning  'Radar' is defined but never used            @typescript-eslint/no-unused-vars
+   13:3   warning  'PolarGrid' is defined but never used        @typescript-eslint/no-unused-vars
+   13:14  warning  'PolarAngleAxis' is defined but never used   @typescript-eslint/no-unused-vars
+   13:30  warning  'PolarRadiusAxis' is defined but never used  @typescript-eslint/no-unused-vars
+   18:6   warning  'AnyRow' is defined but never used           @typescript-eslint/no-unused-vars
+  230:62  warning  Unexpected any. Specify a different type     @typescript-eslint/no-explicit-any
+
+/Users/adrianstanca/cortexbuild-ultimate/src/components/modules/FieldView.tsx
+    5:8    warning  'Calendar' is defined but never used      @typescript-eslint/no-unused-vars
+    5:18   warning  'BarChart3' is defined but never used     @typescript-eslint/no-unused-vars
+    5:40   warning  'Zap' is defined but never used           @typescript-eslint/no-unused-vars
+  109:32   warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  114:85   warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  114:113  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  114:139  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/Users/adrianstanca/cortexbuild-ultimate/src/components/modules/FinancialReports.tsx
+    4:3   warning  'BarChart3' is defined but never used                @typescript-eslint/no-unused-vars
+    4:14  warning  'PieChart' is defined but never used                 @typescript-eslint/no-unused-vars
+    4:36  warning  'TrendingDown' is defined but never used             @typescript-eslint/no-unused-vars
+    5:3   warning  'FileText' is defined but never used                 @typescript-eslint/no-unused-vars
+    5:23  warning  'Calendar' is defined but never used                 @typescript-eslint/no-unused-vars
+    5:33  warning  'Filter' is defined but never used                   @typescript-eslint/no-unused-vars
+    6:19  warning  'Briefcase' is defined but never used                @typescript-eslint/no-unused-vars
+    6:30  warning  'Users' is defined but never used                    @typescript-eslint/no-unused-vars
+    6:49  warning  'Building2' is defined but never used                @typescript-eslint/no-unused-vars
+    7:3   warning  'FileSpreadsheet' is defined but never used          @typescript-eslint/no-unused-vars
+    7:20  warning  'Printer' is defined but never used                  @typescript-eslint/no-unused-vars
+    7:29  warning  'Plus' is defined but never used                     @typescript-eslint/no-unused-vars
+    7:35  warning  'Search' is defined but never used                   @typescript-eslint/no-unused-vars
+    7:43  warning  'Edit2' is defined but never used                    @typescript-eslint/no-unused-vars
+    7:58  warning  'X' is defined but never used                        @typescript-eslint/no-unused-vars
+   11:10  warning  'projectsApi' is defined but never used              @typescript-eslint/no-unused-vars
+   11:23  warning  'invoicesApi' is defined but never used              @typescript-eslint/no-unused-vars
+   15:64  warning  'RechartsPie' is defined but never used              @typescript-eslint/no-unused-vars
+   16:3   warning  'Pie' is defined but never used                      @typescript-eslint/no-unused-vars
+   16:8   warning  'Cell' is defined but never used                     @typescript-eslint/no-unused-vars
+   51:10  warning  'exportToCSV' is defined but never used              @typescript-eslint/no-unused-vars
+   82:76  warning  Unexpected any. Specify a different type             @typescript-eslint/no-explicit-any
+  116:10  warning  'projects' is assigned a value but never used        @typescript-eslint/no-unused-vars
+  116:20  warning  'setProjects' is assigned a value but never used     @typescript-eslint/no-unused-vars
+  117:10  warning  'invoices' is assigned a value but never used        @typescript-eslint/no-unused-vars
+  117:20  warning  'setInvoices' is assigned a value but never used     @typescript-eslint/no-unused-vars
+  131:9   warning  'deleteMutation' is assigned a value but never used  @typescript-eslint/no-unused-vars
+
+/Users/adrianstanca/cortexbuild-ultimate/src/components/modules/GlobalSearch.tsx
+  127:39  warning  'i' is defined but never used. Allowed unused args must match /^_/u  @typescript-eslint/no-unused-vars
+  152:9   warning  'pinSearch' is assigned a value but never used                       @typescript-eslint/no-unused-vars
+
+/Users/adrianstanca/cortexbuild-ultimate/src/components/modules/Insights.tsx
+    2:20  warning  'useMemo' is defined but never used                  @typescript-eslint/no-unused-vars
+    4:3   warning  'Brain' is defined but never used                    @typescript-eslint/no-unused-vars
+    5:3   warning  'BarChart3' is defined but never used                @typescript-eslint/no-unused-vars
+    5:14  warning  'PieChart' is defined but never used                 @typescript-eslint/no-unused-vars
+    6:43  warning  'Zap' is defined but never used                      @typescript-eslint/no-unused-vars
+    7:3   warning  'ChevronRight' is defined but never used             @typescript-eslint/no-unused-vars
+    7:17  warning  'Sparkles' is defined but never used                 @typescript-eslint/no-unused-vars
+    7:27  warning  'MessageSquare' is defined but never used            @typescript-eslint/no-unused-vars
+    7:42  warning  'Bell' is defined but never used                     @typescript-eslint/no-unused-vars
+    7:48  warning  'Award' is defined but never used                    @typescript-eslint/no-unused-vars
+    7:55  warning  'Eye' is defined but never used                      @typescript-eslint/no-unused-vars
+   14:3   warning  'AreaChart' is defined but never used                @typescript-eslint/no-unused-vars
+   14:14  warning  'Area' is defined but never used                     @typescript-eslint/no-unused-vars
+   14:35  warning  'LineChart' is defined but never used                @typescript-eslint/no-unused-vars
+   14:46  warning  'Line' is defined but never used                     @typescript-eslint/no-unused-vars
+   18:6   warning  'AnyRow' is defined but never used                   @typescript-eslint/no-unused-vars
+   49:10  warning  'loading' is assigned a value but never used         @typescript-eslint/no-unused-vars
+   61:9   warning  'dismissInsight' is assigned a value but never used  @typescript-eslint/no-unused-vars
+  231:46  warning  Unexpected any. Specify a different type             @typescript-eslint/no-explicit-any
+  238:40  warning  Unexpected any. Specify a different type             @typescript-eslint/no-explicit-any
+
+/Users/adrianstanca/cortexbuild-ultimate/src/components/modules/Inspections.tsx
+    2:69  warning  'AlertTriangle' is defined but never used          @typescript-eslint/no-unused-vars
+   93:7   warning  'statusColour' is assigned a value but never used  @typescript-eslint/no-unused-vars
+  320:54  warning  Unexpected any. Specify a different type           @typescript-eslint/no-explicit-any
+
+/Users/adrianstanca/cortexbuild-ultimate/src/components/modules/Invoicing.tsx
+    5:92   warning  'PieChart' is defined but never used      @typescript-eslint/no-unused-vars
+    5:102  warning  'Pie' is defined but never used           @typescript-eslint/no-unused-vars
+    5:107  warning  'Cell' is defined but never used          @typescript-eslint/no-unused-vars
+  337:43   warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  337:76   warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  368:47   warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  368:80   warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/Users/adrianstanca/cortexbuild-ultimate/src/components/modules/Lettings.tsx
+    2:16   warning  'Search' is defined but never used        @typescript-eslint/no-unused-vars
+    2:54   warning  'XCircle' is defined but never used       @typescript-eslint/no-unused-vars
+    9:44   warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   14:59   warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   24:43   warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   33:38   warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   39:40   warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   44:44   warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   45:47   warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   80:40   warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   93:43   warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  261:116  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  265:111  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  270:123  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  274:124  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  279:111  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/Users/adrianstanca/cortexbuild-ultimate/src/components/modules/Marketplace.tsx
+   8:3  warning  'TrendingUp' is defined but never used   @typescript-eslint/no-unused-vars
+   9:3  warning  'Shield' is defined but never used       @typescript-eslint/no-unused-vars
+  10:3  warning  'FileText' is defined but never used     @typescript-eslint/no-unused-vars
+  11:3  warning  'Calendar' is defined but never used     @typescript-eslint/no-unused-vars
+  12:3  warning  'BarChart3' is defined but never used    @typescript-eslint/no-unused-vars
+  13:3  warning  'Repeat' is defined but never used       @typescript-eslint/no-unused-vars
+  17:3  warning  'AlertCircle' is defined but never used  @typescript-eslint/no-unused-vars
+  26:6  warning  'AnyRow' is defined but never used       @typescript-eslint/no-unused-vars
+
+/Users/adrianstanca/cortexbuild-ultimate/src/components/modules/Materials.tsx
+    2:105  warning  'ChevronRight' is defined but never used                             @typescript-eslint/no-unused-vars
+    4:84   warning  'Legend' is defined but never used                                   @typescript-eslint/no-unused-vars
+  358:42   warning  'i' is defined but never used. Allowed unused args must match /^_/u  @typescript-eslint/no-unused-vars
+
+/Users/adrianstanca/cortexbuild-ultimate/src/components/modules/Measuring.tsx
+   2:16  warning  'Search' is defined but never used        @typescript-eslint/no-unused-vars
+   2:39  warning  'Camera' is defined but never used        @typescript-eslint/no-unused-vars
+   8:52  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  13:59  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  18:39  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  24:44  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  29:50  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  30:48  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  60:47  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  79:44  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/Users/adrianstanca/cortexbuild-ultimate/src/components/modules/Meetings.tsx
+    3:55  warning  'MapPin' is defined but never used                    @typescript-eslint/no-unused-vars
+    4:34  warning  'Filter' is defined but never used                    @typescript-eslint/no-unused-vars
+    4:90  warning  'ChevronRight' is defined but never used              @typescript-eslint/no-unused-vars
+   25:7   warning  'ACTION_STATUSES' is assigned a value but never used  @typescript-eslint/no-unused-vars
+   26:7   warning  'PRIORITIES' is assigned a value but never used       @typescript-eslint/no-unused-vars
+  168:14  warning  'err' is defined but never used                       @typescript-eslint/no-unused-vars
+  178:14  warning  'err' is defined but never used                       @typescript-eslint/no-unused-vars
+  187:14  warning  'err' is defined but never used                       @typescript-eslint/no-unused-vars
+
+/Users/adrianstanca/cortexbuild-ultimate/src/components/modules/PermissionsManager.tsx
+    9:3   warning  'Check' is defined but never used                          @typescript-eslint/no-unused-vars
+   10:3   warning  'X' is defined but never used                              @typescript-eslint/no-unused-vars
+   11:3   warning  'ChevronDown' is defined but never used                    @typescript-eslint/no-unused-vars
+   12:3   warning  'ChevronRight' is defined but never used                   @typescript-eslint/no-unused-vars
+   14:3   warning  'Save' is defined but never used                           @typescript-eslint/no-unused-vars
+   15:3   warning  'AlertTriangle' is defined but never used                  @typescript-eslint/no-unused-vars
+   28:7   warning  'ACTION_COLORS' is assigned a value but never used         @typescript-eslint/no-unused-vars
+   51:10  warning  'expandedModules' is assigned a value but never used       @typescript-eslint/no-unused-vars
+   53:10  warning  'saving' is assigned a value but never used                @typescript-eslint/no-unused-vars
+   83:14  warning  'err' is defined but never used                            @typescript-eslint/no-unused-vars
+   95:9   warning  'togglePermission' is assigned a value but never used      @typescript-eslint/no-unused-vars
+  105:9   warning  'toggleModuleWildcard' is assigned a value but never used  @typescript-eslint/no-unused-vars
+  114:9   warning  'hasPermission' is assigned a value but never used         @typescript-eslint/no-unused-vars
+  121:9   warning  'saveChanges' is assigned a value but never used           @typescript-eslint/no-unused-vars
+  132:14  warning  'err' is defined but never used                            @typescript-eslint/no-unused-vars
+  139:9   warning  'deleteRole' is assigned a value but never used            @typescript-eslint/no-unused-vars
+  146:14  warning  'err' is defined but never used                            @typescript-eslint/no-unused-vars
+  151:9   warning  'toggleModule' is assigned a value but never used          @typescript-eslint/no-unused-vars
+  160:9   warning  'actions' is assigned a value but never used               @typescript-eslint/no-unused-vars
+  465:14  warning  'err' is defined but never used                            @typescript-eslint/no-unused-vars
+
+/Users/adrianstanca/cortexbuild-ultimate/src/components/modules/PlantEquipment.tsx
+    3:32  warning  'AlertTriangle' is defined but never used          @typescript-eslint/no-unused-vars
+    3:61  warning  'Clock' is defined but never used                  @typescript-eslint/no-unused-vars
+    3:68  warning  'Edit2' is defined but never used                  @typescript-eslint/no-unused-vars
+    4:3   warning  'ChevronDown' is defined but never used            @typescript-eslint/no-unused-vars
+    4:16  warning  'ChevronUp' is defined but never used              @typescript-eslint/no-unused-vars
+    4:49  warning  'Filter' is defined but never used                 @typescript-eslint/no-unused-vars
+    4:70  warning  'Activity' is defined but never used               @typescript-eslint/no-unused-vars
+    4:80  warning  'Settings' is defined but never used               @typescript-eslint/no-unused-vars
+    5:3   warning  'RefreshCw' is defined but never used              @typescript-eslint/no-unused-vars
+    5:25  warning  'ChevronRight' is defined but never used           @typescript-eslint/no-unused-vars
+   11:63  warning  'Legend' is defined but never used                 @typescript-eslint/no-unused-vars
+  173:14  warning  'err' is defined but never used                    @typescript-eslint/no-unused-vars
+  183:14  warning  'err' is defined but never used                    @typescript-eslint/no-unused-vars
+  188:18  warning  'changeEquipmentStatus' is defined but never used  @typescript-eslint/no-unused-vars
+  192:14  warning  'err' is defined but never used                    @typescript-eslint/no-unused-vars
+  297:65  warning  Unexpected any. Specify a different type           @typescript-eslint/no-explicit-any
+
+/Users/adrianstanca/cortexbuild-ultimate/src/components/modules/PredictiveAnalytics.tsx
+    5:3   warning  'TrendingUp' is defined but never used               @typescript-eslint/no-unused-vars
+    5:15  warning  'TrendingDown' is defined but never used             @typescript-eslint/no-unused-vars
+    5:29  warning  'Activity' is defined but never used                 @typescript-eslint/no-unused-vars
+    6:3   warning  'BarChart3' is defined but never used                @typescript-eslint/no-unused-vars
+    6:27  warning  'LineChartIcon' is defined but never used            @typescript-eslint/no-unused-vars
+    6:42  warning  'PieChart' is defined but never used                 @typescript-eslint/no-unused-vars
+    7:3   warning  'Target' is defined but never used                   @typescript-eslint/no-unused-vars
+    7:11  warning  'ArrowUpRight' is defined but never used             @typescript-eslint/no-unused-vars
+    7:25  warning  'ArrowDownRight' is defined but never used           @typescript-eslint/no-unused-vars
+    7:41  warning  'Eye' is defined but never used                      @typescript-eslint/no-unused-vars
+    8:3   warning  'Shield' is defined but never used                   @typescript-eslint/no-unused-vars
+    8:26  warning  'Clock' is defined but never used                    @typescript-eslint/no-unused-vars
+    9:3   warning  'Zap' is defined but never used                      @typescript-eslint/no-unused-vars
+    9:8   warning  'Award' is defined but never used                    @typescript-eslint/no-unused-vars
+    9:22  warning  'Wind' is defined but never used                     @typescript-eslint/no-unused-vars
+    9:35  warning  'Gauge' is defined but never used                    @typescript-eslint/no-unused-vars
+   14:20  warning  'AreaChart' is defined but never used                @typescript-eslint/no-unused-vars
+   20:6   warning  'AnyRow' is defined but never used                   @typescript-eslint/no-unused-vars
+   89:9   warning  'deleteMutation' is assigned a value but never used  @typescript-eslint/no-unused-vars
+  164:53  warning  Unexpected any. Specify a different type             @typescript-eslint/no-explicit-any
+
+/Users/adrianstanca/cortexbuild-ultimate/src/components/modules/Prequalification.tsx
+    2:16   warning  'Search' is defined but never used         @typescript-eslint/no-unused-vars
+    2:49   warning  'AlertTriangle' is defined but never used  @typescript-eslint/no-unused-vars
+    8:42   warning  Unexpected any. Specify a different type   @typescript-eslint/no-explicit-any
+   12:59   warning  Unexpected any. Specify a different type   @typescript-eslint/no-explicit-any
+   18:46   warning  Unexpected any. Specify a different type   @typescript-eslint/no-explicit-any
+   24:39   warning  Unexpected any. Specify a different type   @typescript-eslint/no-explicit-any
+   29:44   warning  Unexpected any. Specify a different type   @typescript-eslint/no-explicit-any
+   30:43   warning  Unexpected any. Specify a different type   @typescript-eslint/no-explicit-any
+   58:42   warning  Unexpected any. Specify a different type   @typescript-eslint/no-explicit-any
+   76:39   warning  Unexpected any. Specify a different type   @typescript-eslint/no-explicit-any
+  237:124  warning  Unexpected any. Specify a different type   @typescript-eslint/no-explicit-any
+  241:118  warning  Unexpected any. Specify a different type   @typescript-eslint/no-explicit-any
+  246:123  warning  Unexpected any. Specify a different type   @typescript-eslint/no-explicit-any
+  256:114  warning  Unexpected any. Specify a different type   @typescript-eslint/no-explicit-any
+  265:116  warning  Unexpected any. Specify a different type   @typescript-eslint/no-explicit-any
+
+/Users/adrianstanca/cortexbuild-ultimate/src/components/modules/Procurement.tsx
+   5:27  warning  'Filter' is defined but never used      @typescript-eslint/no-unused-vars
+   5:35  warning  'DollarSign' is defined but never used  @typescript-eslint/no-unused-vars
+  13:12  warning  'Legend' is defined but never used      @typescript-eslint/no-unused-vars
+  13:41  warning  'PieChart' is defined but never used    @typescript-eslint/no-unused-vars
+  13:51  warning  'Cell' is defined but never used        @typescript-eslint/no-unused-vars
+
+/Users/adrianstanca/cortexbuild-ultimate/src/components/modules/Projects.tsx
+     6:18  warning  'TrendingUp' is defined but never used                    @typescript-eslint/no-unused-vars
+     6:66  warning  'Building2' is defined but never used                     @typescript-eslint/no-unused-vars
+     7:47  warning  'HardHat' is defined but never used                       @typescript-eslint/no-unused-vars
+     8:38  warning  'AlertCircle' is defined but never used                   @typescript-eslint/no-unused-vars
+     9:33  warning  'MoreHorizontal' is defined but never used                @typescript-eslint/no-unused-vars
+     9:49  warning  'Tag' is defined but never used                           @typescript-eslint/no-unused-vars
+     9:54  warning  'Filter' is defined but never used                        @typescript-eslint/no-unused-vars
+     9:62  warning  'Grid3X3' is defined but never used                       @typescript-eslint/no-unused-vars
+    10:3   warning  'LayoutGrid' is defined but never used                    @typescript-eslint/no-unused-vars
+    10:15  warning  'List' is defined but never used                          @typescript-eslint/no-unused-vars
+    10:21  warning  'ChevronDown' is defined but never used                   @typescript-eslint/no-unused-vars
+    10:34  warning  'XCircle' is defined but never used                       @typescript-eslint/no-unused-vars
+    10:43  warning  'CheckCircle' is defined but never used                   @typescript-eslint/no-unused-vars
+    10:56  warning  'ArrowRight' is defined but never used                    @typescript-eslint/no-unused-vars
+    11:38  warning  'FileCheck' is defined but never used                     @typescript-eslint/no-unused-vars
+    11:49  warning  'Clock3' is defined but never used                        @typescript-eslint/no-unused-vars
+    16:24  warning  'LineChart' is defined but never used                     @typescript-eslint/no-unused-vars
+    16:35  warning  'Line' is defined but never used                          @typescript-eslint/no-unused-vars
+    24:30  warning  'Priority' is defined but never used                      @typescript-eslint/no-unused-vars
+   118:19  warning  Unexpected any. Specify a different type                  @typescript-eslint/no-explicit-any
+   132:19  warning  Unexpected any. Specify a different type                  @typescript-eslint/no-explicit-any
+   137:9   warning  'handleUpdateCaption' is assigned a value but never used  @typescript-eslint/no-unused-vars
+   142:19  warning  Unexpected any. Specify a different type                  @typescript-eslint/no-explicit-any
+   310:10  warning  'selectedDoc' is assigned a value but never used          @typescript-eslint/no-unused-vars
+   350:19  warning  Unexpected any. Specify a different type                  @typescript-eslint/no-explicit-any
+   373:19  warning  Unexpected any. Specify a different type                  @typescript-eslint/no-explicit-any
+   394:19  warning  Unexpected any. Specify a different type                  @typescript-eslint/no-explicit-any
+   614:26  warning  'setFilterAssignee' is assigned a value but never used    @typescript-eslint/no-unused-vars
+   615:10  warning  'draggingTask' is assigned a value but never used         @typescript-eslint/no-unused-vars
+   646:19  warning  Unexpected any. Specify a different type                  @typescript-eslint/no-explicit-any
+   666:19  warning  Unexpected any. Specify a different type                  @typescript-eslint/no-explicit-any
+   677:19  warning  Unexpected any. Specify a different type                  @typescript-eslint/no-explicit-any
+   686:19  warning  Unexpected any. Specify a different type                  @typescript-eslint/no-explicit-any
+  1010:10  warning  'taskAssignee' is assigned a value but never used         @typescript-eslint/no-unused-vars
+  1010:24  warning  'setTaskAssignee' is assigned a value but never used      @typescript-eslint/no-unused-vars
+  1024:9   warning  'docs' is assigned a value but never used                 @typescript-eslint/no-unused-vars
+  1528:10  warning  'view' is assigned a value but never used                 @typescript-eslint/no-unused-vars
+  1528:24  warning  'setView' is assigned a value but never used              @typescript-eslint/no-unused-vars
+
+/Users/adrianstanca/cortexbuild-ultimate/src/components/modules/PunchList.tsx
+   2:39   warning  'Filter' is defined but never used                        @typescript-eslint/no-unused-vars
+   2:141  warning  'User' is defined but never used                          @typescript-eslint/no-unused-vars
+   2:160  warning  'ChevronUp' is defined but never used                     @typescript-eslint/no-unused-vars
+  12:7    warning  'LOCATION_OPTIONS' is assigned a value but never used     @typescript-eslint/no-unused-vars
+  29:7    warning  'priorityStripColour' is assigned a value but never used  @typescript-eslint/no-unused-vars
+  73:9    warning  'signedOffCount' is assigned a value but never used       @typescript-eslint/no-unused-vars
+  74:9    warning  'closedCount' is assigned a value but never used          @typescript-eslint/no-unused-vars
+
+/Users/adrianstanca/cortexbuild-ultimate/src/components/modules/RAMS.tsx
+   71:9   warning  'fileInputRef' is assigned a value but never used         @typescript-eslint/no-unused-vars
+   72:10  warning  'selectedUploadId' is assigned a value but never used     @typescript-eslint/no-unused-vars
+   72:28  warning  'setSelectedUploadId' is assigned a value but never used  @typescript-eslint/no-unused-vars
+  108:9   warning  'draftCount' is assigned a value but never used           @typescript-eslint/no-unused-vars
+  185:13  warning  'result' is assigned a value but never used               @typescript-eslint/no-unused-vars
+  195:77  warning  Unexpected any. Specify a different type                  @typescript-eslint/no-explicit-any
+  200:56  warning  Unexpected any. Specify a different type                  @typescript-eslint/no-explicit-any
+
+/Users/adrianstanca/cortexbuild-ultimate/src/components/modules/RFIs.tsx
+  4:38  warning  'Calendar' is defined but never used      @typescript-eslint/no-unused-vars
+  4:73  warning  'ChevronRight' is defined but never used  @typescript-eslint/no-unused-vars
+  5:12  warning  'Filter' is defined but never used        @typescript-eslint/no-unused-vars
+
+/Users/adrianstanca/cortexbuild-ultimate/src/components/modules/ReportTemplates.tsx
+   58:6   warning  React Hook useEffect has a missing dependency: 'loadTemplates'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+   69:14  warning  'err' is defined but never used                                                                                   @typescript-eslint/no-unused-vars
+   82:14  warning  'err' is defined but never used                                                                                   @typescript-eslint/no-unused-vars
+   92:14  warning  'err' is defined but never used                                                                                   @typescript-eslint/no-unused-vars
+  518:14  warning  'err' is defined but never used                                                                                   @typescript-eslint/no-unused-vars
+
+/Users/adrianstanca/cortexbuild-ultimate/src/components/modules/RiskRegister.tsx
+    2:39   warning  'Shield' is defined but never used    @typescript-eslint/no-unused-vars
+    2:126  warning  'Filter' is defined but never used    @typescript-eslint/no-unused-vars
+    2:134  warning  'Eye' is defined but never used       @typescript-eslint/no-unused-vars
+  134:18   warning  'mitigate' is defined but never used  @typescript-eslint/no-unused-vars
+
+/Users/adrianstanca/cortexbuild-ultimate/src/components/modules/Safety.tsx
+    3:122  warning  'Clock' is defined but never used              @typescript-eslint/no-unused-vars
+   24:6    warning  'IncidentForm' is defined but never used       @typescript-eslint/no-unused-vars
+  197:9    warning  'selected' is assigned a value but never used  @typescript-eslint/no-unused-vars
+  316:77   warning  Unexpected any. Specify a different type       @typescript-eslint/no-explicit-any
+  321:49   warning  Unexpected any. Specify a different type       @typescript-eslint/no-explicit-any
+
+/Users/adrianstanca/cortexbuild-ultimate/src/components/modules/Settings.tsx
+   5:18  warning  'Mail' is defined but never used                        @typescript-eslint/no-unused-vars
+   5:24  warning  'Phone' is defined but never used                       @typescript-eslint/no-unused-vars
+   5:31  warning  'MapPin' is defined but never used                      @typescript-eslint/no-unused-vars
+   5:39  warning  'Globe' is defined but never used                       @typescript-eslint/no-unused-vars
+   5:46  warning  'ChevronRight' is defined but never used                @typescript-eslint/no-unused-vars
+   6:39  warning  'ToggleLeft' is defined but never used                  @typescript-eslint/no-unused-vars
+   6:51  warning  'ToggleRight' is defined but never used                 @typescript-eslint/no-unused-vars
+  34:10  warning  'loadingCompany' is assigned a value but never used     @typescript-eslint/no-unused-vars
+  34:26  warning  'setLoadingCompany' is assigned a value but never used  @typescript-eslint/no-unused-vars
+  36:10  warning  'loadingUsers' is assigned a value but never used       @typescript-eslint/no-unused-vars
+
+/Users/adrianstanca/cortexbuild-ultimate/src/components/modules/Signage.tsx
+   2:16  warning  'Search' is defined but never used         @typescript-eslint/no-unused-vars
+   2:24  warning  'AlertTriangle' is defined but never used  @typescript-eslint/no-unused-vars
+   2:39  warning  'CheckCircle' is defined but never used    @typescript-eslint/no-unused-vars
+   2:52  warning  'Eye' is defined but never used            @typescript-eslint/no-unused-vars
+   9:42  warning  Unexpected any. Specify a different type   @typescript-eslint/no-explicit-any
+  15:59  warning  Unexpected any. Specify a different type   @typescript-eslint/no-explicit-any
+  24:42  warning  Unexpected any. Specify a different type   @typescript-eslint/no-explicit-any
+  33:37  warning  Unexpected any. Specify a different type   @typescript-eslint/no-explicit-any
+  39:39  warning  Unexpected any. Specify a different type   @typescript-eslint/no-explicit-any
+  69:42  warning  Unexpected any. Specify a different type   @typescript-eslint/no-explicit-any
+  85:39  warning  Unexpected any. Specify a different type   @typescript-eslint/no-explicit-any
+
+/Users/adrianstanca/cortexbuild-ultimate/src/components/modules/SiteOperations.tsx
+    3:73  warning  'Clock' is defined but never used                   @typescript-eslint/no-unused-vars
+    3:94  warning  'Filter' is defined but never used                  @typescript-eslint/no-unused-vars
+   16:7   warning  'WEATHER_ICONS' is assigned a value but never used  @typescript-eslint/no-unused-vars
+   39:10  warning  'delays' is assigned a value but never used         @typescript-eslint/no-unused-vars
+   90:9   warning  'today' is assigned a value but never used          @typescript-eslint/no-unused-vars
+  148:14  warning  'err' is defined but never used                     @typescript-eslint/no-unused-vars
+
+/Users/adrianstanca/cortexbuild-ultimate/src/components/modules/Specifications.tsx
+    3:27   warning  'Filter' is defined but never used            @typescript-eslint/no-unused-vars
+    3:52   warning  'BookOpen' is defined but never used          @typescript-eslint/no-unused-vars
+    4:3    warning  'CheckCircle' is defined but never used       @typescript-eslint/no-unused-vars
+    4:16   warning  'AlertTriangle' is defined but never used     @typescript-eslint/no-unused-vars
+    4:31   warning  'FileCheck' is defined but never used         @typescript-eslint/no-unused-vars
+    4:56   warning  'Building2' is defined but never used         @typescript-eslint/no-unused-vars
+   27:10   warning  'loading' is assigned a value but never used  @typescript-eslint/no-unused-vars
+   34:59   warning  Unexpected any. Specify a different type      @typescript-eslint/no-explicit-any
+  346:106  warning  Unexpected any. Specify a different type      @typescript-eslint/no-explicit-any
+  350:99   warning  Unexpected any. Specify a different type      @typescript-eslint/no-explicit-any
+  360:112  warning  Unexpected any. Specify a different type      @typescript-eslint/no-explicit-any
+  364:118  warning  Unexpected any. Specify a different type      @typescript-eslint/no-explicit-any
+  369:118  warning  Unexpected any. Specify a different type      @typescript-eslint/no-explicit-any
+
+/Users/adrianstanca/cortexbuild-ultimate/src/components/modules/Subcontractors.tsx
+    2:89  warning  'Filter' is defined but never used                          @typescript-eslint/no-unused-vars
+    6:63  warning  'Legend' is defined but never used                          @typescript-eslint/no-unused-vars
+   82:9   warning  'avgRating' is assigned a value but never used              @typescript-eslint/no-unused-vars
+   85:9   warning  'insuranceExpiringSoon' is assigned a value but never used  @typescript-eslint/no-unused-vars
+  166:14  warning  'err' is defined but never used                             @typescript-eslint/no-unused-vars
+  176:14  warning  'err' is defined but never used                             @typescript-eslint/no-unused-vars
+  181:77  warning  Unexpected any. Specify a different type                    @typescript-eslint/no-explicit-any
+  186:56  warning  Unexpected any. Specify a different type                    @typescript-eslint/no-explicit-any
+
+/Users/adrianstanca/cortexbuild-ultimate/src/components/modules/Sustainability.tsx
+    2:16   warning  'Search' is defined but never used        @typescript-eslint/no-unused-vars
+    2:24   warning  'Leaf' is defined but never used          @typescript-eslint/no-unused-vars
+    9:42   warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   13:59   warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   24:42   warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   33:44   warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   39:39   warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   44:42   warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   44:123  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   45:42   warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   45:123  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   82:39   warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   95:42   warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  291:112  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  302:122  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  307:122  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  311:112  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  323:124  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  327:124  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/Users/adrianstanca/cortexbuild-ultimate/src/components/modules/Teams.tsx
+     2:44   warning  'Briefcase' is defined but never used               @typescript-eslint/no-unused-vars
+     2:171  warning  'AlertCircle' is defined but never used             @typescript-eslint/no-unused-vars
+     2:233  warning  'FileSpreadsheet' is defined but never used         @typescript-eslint/no-unused-vars
+    33:6    warning  'TeamMemberForm' is defined but never used          @typescript-eslint/no-unused-vars
+   234:32   warning  'toggleAll' is assigned a value but never used      @typescript-eslint/no-unused-vars
+   234:59   warning  'isAllSelected' is assigned a value but never used  @typescript-eslint/no-unused-vars
+   268:77   warning  Unexpected any. Specify a different type            @typescript-eslint/no-explicit-any
+   273:56   warning  Unexpected any. Specify a different type            @typescript-eslint/no-explicit-any
+   288:9    warning  'onLeaveCount' is assigned a value but never used   @typescript-eslint/no-unused-vars
+  1132:28   warning  Unexpected any. Specify a different type            @typescript-eslint/no-explicit-any
+
+/Users/adrianstanca/cortexbuild-ultimate/src/components/modules/TempWorks.tsx
+    3:17  warning  'Clock' is defined but never used             @typescript-eslint/no-unused-vars
+    3:24  warning  'CheckCircle' is defined but never used       @typescript-eslint/no-unused-vars
+    9:11  warning  'TempWork' is defined but never used          @typescript-eslint/no-unused-vars
+   34:46  warning  Unexpected any. Specify a different type      @typescript-eslint/no-explicit-any
+   35:10  warning  'loading' is assigned a value but never used  @typescript-eslint/no-unused-vars
+   39:59  warning  Unexpected any. Specify a different type      @typescript-eslint/no-explicit-any
+   44:39  warning  Unexpected any. Specify a different type      @typescript-eslint/no-explicit-any
+   50:41  warning  Unexpected any. Specify a different type      @typescript-eslint/no-explicit-any
+   96:41  warning  Unexpected any. Specify a different type      @typescript-eslint/no-explicit-any
+  106:32  warning  Unexpected any. Specify a different type      @typescript-eslint/no-explicit-any
+  123:44  warning  Unexpected any. Specify a different type      @typescript-eslint/no-explicit-any
+
+/Users/adrianstanca/cortexbuild-ultimate/src/components/modules/Tenders.tsx
+     3:17   warning  'Filter' is defined but never used         @typescript-eslint/no-unused-vars
+     3:44   warning  'CheckCircle2' is defined but never used   @typescript-eslint/no-unused-vars
+     3:58   warning  'XCircle' is defined but never used        @typescript-eslint/no-unused-vars
+     4:3    warning  'ChevronRight' is defined but never used   @typescript-eslint/no-unused-vars
+    10:56   warning  'Legend' is defined but never used         @typescript-eslint/no-unused-vars
+    11:20   warning  'Cell' is defined but never used           @typescript-eslint/no-unused-vars
+    11:26   warning  'PieChart' is defined but never used       @typescript-eslint/no-unused-vars
+    11:36   warning  'Pie' is defined but never used            @typescript-eslint/no-unused-vars
+    16:11   warning  'TenderRequest' is defined but never used  @typescript-eslint/no-unused-vars
+   230:14   warning  'err' is defined but never used            @typescript-eslint/no-unused-vars
+   240:14   warning  'err' is defined but never used            @typescript-eslint/no-unused-vars
+   249:14   warning  'err' is defined but never used            @typescript-eslint/no-unused-vars
+   344:51   warning  Unexpected any. Specify a different type   @typescript-eslint/no-explicit-any
+   468:84   warning  Unexpected any. Specify a different type   @typescript-eslint/no-explicit-any
+   510:23   warning  'days' is assigned a value but never used  @typescript-eslint/no-unused-vars
+   711:54   warning  Unexpected any. Specify a different type   @typescript-eslint/no-explicit-any
+   855:81   warning  Unexpected any. Specify a different type   @typescript-eslint/no-explicit-any
+  1073:107  warning  Unexpected any. Specify a different type   @typescript-eslint/no-explicit-any
+
+/Users/adrianstanca/cortexbuild-ultimate/src/components/modules/Timesheets.tsx
+    2:97   warning  'Calendar' is defined but never used                                 @typescript-eslint/no-unused-vars
+    2:107  warning  'BarChart3' is defined but never used                                @typescript-eslint/no-unused-vars
+    3:66   warning  'Legend' is defined but never used                                   @typescript-eslint/no-unused-vars
+   12:7    warning  'OT_RATE_15X' is assigned a value but never used                     @typescript-eslint/no-unused-vars
+   13:7    warning  'OT_RATE_2X' is assigned a value but never used                      @typescript-eslint/no-unused-vars
+   25:7    warning  'DAYS' is assigned a value but never used                            @typescript-eslint/no-unused-vars
+   26:7    warning  'DAY_LABELS' is assigned a value but never used                      @typescript-eslint/no-unused-vars
+   28:11   warning  'TimesheetRow' is defined but never used                             @typescript-eslint/no-unused-vars
+  101:12   warning  'getTimelineData' is defined but never used                          @typescript-eslint/no-unused-vars
+  105:62   warning  'i' is defined but never used. Allowed unused args must match /^_/u  @typescript-eslint/no-unused-vars
+
+/Users/adrianstanca/cortexbuild-ultimate/src/components/modules/Training.tsx
+    2:16  warning  'Search' is defined but never used                 @typescript-eslint/no-unused-vars
+    2:77  warning  'Upload' is defined but never used                 @typescript-eslint/no-unused-vars
+   10:44  warning  Unexpected any. Specify a different type           @typescript-eslint/no-explicit-any
+   14:9   warning  'fileInputRef' is assigned a value but never used  @typescript-eslint/no-unused-vars
+   18:59  warning  Unexpected any. Specify a different type           @typescript-eslint/no-explicit-any
+   28:43  warning  Unexpected any. Specify a different type           @typescript-eslint/no-explicit-any
+   37:38  warning  Unexpected any. Specify a different type           @typescript-eslint/no-explicit-any
+   43:40  warning  Unexpected any. Specify a different type           @typescript-eslint/no-explicit-any
+   48:42  warning  Unexpected any. Specify a different type           @typescript-eslint/no-explicit-any
+   49:45  warning  Unexpected any. Specify a different type           @typescript-eslint/no-explicit-any
+   80:43  warning  Unexpected any. Specify a different type           @typescript-eslint/no-explicit-any
+   99:40  warning  Unexpected any. Specify a different type           @typescript-eslint/no-explicit-any
+  114:40  warning  Unexpected any. Specify a different type           @typescript-eslint/no-explicit-any
+  128:77  warning  Unexpected any. Specify a different type           @typescript-eslint/no-explicit-any
+
+/Users/adrianstanca/cortexbuild-ultimate/src/components/modules/Valuations.tsx
+    3:27   warning  'Filter' is defined but never used                 @typescript-eslint/no-unused-vars
+    3:45   warning  'Clock' is defined but never used                  @typescript-eslint/no-unused-vars
+    3:52   warning  'AlertCircle' is defined but never used            @typescript-eslint/no-unused-vars
+    4:3    warning  'CheckCircle' is defined but never used            @typescript-eslint/no-unused-vars
+    4:16   warning  'XCircle' is defined but never used                @typescript-eslint/no-unused-vars
+    4:25   warning  'DollarSign' is defined but never used             @typescript-eslint/no-unused-vars
+    4:37   warning  'Building2' is defined but never used              @typescript-eslint/no-unused-vars
+    4:48   warning  'User' is defined but never used                   @typescript-eslint/no-unused-vars
+    4:54   warning  'Calendar' is defined but never used               @typescript-eslint/no-unused-vars
+    5:28   warning  'Percent' is defined but never used                @typescript-eslint/no-unused-vars
+  190:9    warning  'fileInputRef' is assigned a value but never used  @typescript-eslint/no-unused-vars
+  192:48   warning  Unexpected any. Specify a different type           @typescript-eslint/no-explicit-any
+  193:10   warning  'loading' is assigned a value but never used       @typescript-eslint/no-unused-vars
+  199:59   warning  Unexpected any. Specify a different type           @typescript-eslint/no-explicit-any
+  293:42   warning  Unexpected any. Specify a different type           @typescript-eslint/no-explicit-any
+  310:52   warning  Unexpected any. Specify a different type           @typescript-eslint/no-explicit-any
+  318:48   warning  Unexpected any. Specify a different type           @typescript-eslint/no-explicit-any
+  318:123  warning  Unexpected any. Specify a different type           @typescript-eslint/no-explicit-any
+  319:48   warning  Unexpected any. Specify a different type           @typescript-eslint/no-explicit-any
+  319:121  warning  Unexpected any. Specify a different type           @typescript-eslint/no-explicit-any
+  320:43   warning  Unexpected any. Specify a different type           @typescript-eslint/no-explicit-any
+  320:88   warning  Unexpected any. Specify a different type           @typescript-eslint/no-explicit-any
+
+/Users/adrianstanca/cortexbuild-ultimate/src/components/modules/Variations.tsx
+    3:27   warning  'Filter' is defined but never used                @typescript-eslint/no-unused-vars
+    3:35   warning  'Download' is defined but never used              @typescript-eslint/no-unused-vars
+    4:25   warning  'ArrowUpRight' is defined but never used          @typescript-eslint/no-unused-vars
+    4:39   warning  'ArrowDownRight' is defined but never used        @typescript-eslint/no-unused-vars
+    4:55   warning  'AlertTriangle' is defined but never used         @typescript-eslint/no-unused-vars
+    5:30   warning  'Calendar' is defined but never used              @typescript-eslint/no-unused-vars
+    5:40   warning  'Building2' is defined but never used             @typescript-eslint/no-unused-vars
+    5:51   warning  'User' is defined but never used                  @typescript-eslint/no-unused-vars
+    5:57   warning  'PoundSterling' is defined but never used         @typescript-eslint/no-unused-vars
+    6:14   warning  'RefreshCw' is defined but never used             @typescript-eslint/no-unused-vars
+   54:10   warning  'selectedVar' is assigned a value but never used  @typescript-eslint/no-unused-vars
+   57:48   warning  Unexpected any. Specify a different type          @typescript-eslint/no-explicit-any
+   60:59   warning  Unexpected any. Specify a different type          @typescript-eslint/no-explicit-any
+  115:52   warning  Unexpected any. Specify a different type          @typescript-eslint/no-explicit-any
+  166:46   warning  Unexpected any. Specify a different type          @typescript-eslint/no-explicit-any
+  166:130  warning  Unexpected any. Specify a different type          @typescript-eslint/no-explicit-any
+  167:47   warning  Unexpected any. Specify a different type          @typescript-eslint/no-explicit-any
+  167:131  warning  Unexpected any. Specify a different type          @typescript-eslint/no-explicit-any
+  168:47   warning  Unexpected any. Specify a different type          @typescript-eslint/no-explicit-any
+  168:104  warning  Unexpected any. Specify a different type          @typescript-eslint/no-explicit-any
+  396:54   warning  Unexpected any. Specify a different type          @typescript-eslint/no-explicit-any
+  396:78   warning  Unexpected any. Specify a different type          @typescript-eslint/no-explicit-any
+  408:56   warning  Unexpected any. Specify a different type          @typescript-eslint/no-explicit-any
+  408:84   warning  Unexpected any. Specify a different type          @typescript-eslint/no-explicit-any
+  572:52   warning  Unexpected any. Specify a different type          @typescript-eslint/no-explicit-any
+  580:52   warning  Unexpected any. Specify a different type          @typescript-eslint/no-explicit-any
+  598:52   warning  Unexpected any. Specify a different type          @typescript-eslint/no-explicit-any
+  606:52   warning  Unexpected any. Specify a different type          @typescript-eslint/no-explicit-any
+  622:50   warning  Unexpected any. Specify a different type          @typescript-eslint/no-explicit-any
+  631:50   warning  Unexpected any. Specify a different type          @typescript-eslint/no-explicit-any
+  641:52   warning  Unexpected any. Specify a different type          @typescript-eslint/no-explicit-any
+  650:52   warning  Unexpected any. Specify a different type          @typescript-eslint/no-explicit-any
+  660:52   warning  Unexpected any. Specify a different type          @typescript-eslint/no-explicit-any
+  675:52   warning  Unexpected any. Specify a different type          @typescript-eslint/no-explicit-any
+  690:52   warning  Unexpected any. Specify a different type          @typescript-eslint/no-explicit-any
+  699:52   warning  Unexpected any. Specify a different type          @typescript-eslint/no-explicit-any
+
+/Users/adrianstanca/cortexbuild-ultimate/src/components/modules/WasteManagement.tsx
+    2:16   warning  'Search' is defined but never used        @typescript-eslint/no-unused-vars
+    2:39   warning  'AlertCircle' is defined but never used   @typescript-eslint/no-unused-vars
+    8:38   warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   14:59   warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   18:45   warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   24:37   warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   29:56   warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   34:52   warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   76:37   warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   91:40   warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  306:105  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  321:118  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  325:108  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  334:117  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  339:123  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  343:126  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  348:111  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/Users/adrianstanca/cortexbuild-ultimate/src/components/ui/ActivityFeed.tsx
+   4:3  warning  'Clock' is defined but never used                                                                                  @typescript-eslint/no-unused-vars
+   5:3  warning  'User' is defined but never used                                                                                   @typescript-eslint/no-unused-vars
+  12:3  warning  'TrendingUp' is defined but never used                                                                             @typescript-eslint/no-unused-vars
+  14:3  warning  'Filter' is defined but never used                                                                                 @typescript-eslint/no-unused-vars
+  66:6  warning  React Hook useEffect has a missing dependency: 'loadActivities'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+/Users/adrianstanca/cortexbuild-ultimate/src/components/ui/BulkActions.tsx
+   2:31  warning  'Trash2' is defined but never used          @typescript-eslint/no-unused-vars
+   2:39  warning  'Edit' is defined but never used            @typescript-eslint/no-unused-vars
+   2:45  warning  'Mail' is defined but never used            @typescript-eslint/no-unused-vars
+   2:51  warning  'Download' is defined but never used        @typescript-eslint/no-unused-vars
+   2:61  warning  'MoreHorizontal' is defined but never used  @typescript-eslint/no-unused-vars
+  66:14  warning  'err' is defined but never used             @typescript-eslint/no-unused-vars
+
+/Users/adrianstanca/cortexbuild-ultimate/src/components/ui/Charts.tsx
+    5:10  warning  'useMemo' is defined but never used          @typescript-eslint/no-unused-vars
+    7:20  warning  'BarChart' is defined but never used         @typescript-eslint/no-unused-vars
+    7:30  warning  'Bar' is defined but never used              @typescript-eslint/no-unused-vars
+    7:35  warning  'LineChart' is defined but never used        @typescript-eslint/no-unused-vars
+    7:46  warning  'Line' is defined but never used             @typescript-eslint/no-unused-vars
+    8:41  warning  'Legend' is defined but never used           @typescript-eslint/no-unused-vars
+    9:3   warning  'RadarChart' is defined but never used       @typescript-eslint/no-unused-vars
+    9:15  warning  'Radar' is defined but never used            @typescript-eslint/no-unused-vars
+    9:22  warning  'PolarGrid' is defined but never used        @typescript-eslint/no-unused-vars
+    9:33  warning  'PolarAngleAxis' is defined but never used   @typescript-eslint/no-unused-vars
+    9:49  warning  'PolarRadiusAxis' is defined but never used  @typescript-eslint/no-unused-vars
+   10:3   warning  'FunnelChart' is defined but never used      @typescript-eslint/no-unused-vars
+   10:16  warning  'Funnel' is defined but never used           @typescript-eslint/no-unused-vars
+   10:24  warning  'LabelList' is defined but never used        @typescript-eslint/no-unused-vars
+  254:9   warning  'range' is assigned a value but never used   @typescript-eslint/no-unused-vars
+
+/Users/adrianstanca/cortexbuild-ultimate/src/components/ui/DataImportExport.tsx
+    8:3   warning  'AlertCircle' is defined but never used    @typescript-eslint/no-unused-vars
+    9:3   warning  'CheckCircle' is defined but never used    @typescript-eslint/no-unused-vars
+   11:3   warning  'RefreshCw' is defined but never used      @typescript-eslint/no-unused-vars
+   34:11  warning  'ImportOptions' is defined but never used  @typescript-eslint/no-unused-vars
+   39:11  warning  'ImportResult' is defined but never used   @typescript-eslint/no-unused-vars
+  138:12  warning  'err' is defined but never used            @typescript-eslint/no-unused-vars
+
+/Users/adrianstanca/cortexbuild-ultimate/src/components/ui/FileManager.tsx
+    4:52  warning  'Eye' is defined but never used           @typescript-eslint/no-unused-vars
+    5:3   warning  'Download' is defined but never used      @typescript-eslint/no-unused-vars
+    5:21  warning  'Filter' is defined but never used        @typescript-eslint/no-unused-vars
+    5:41  warning  'ChevronDown' is defined but never used   @typescript-eslint/no-unused-vars
+    6:3   warning  'Maximize2' is defined but never used     @typescript-eslint/no-unused-vars
+    6:14  warning  'ZoomIn' is defined but never used        @typescript-eslint/no-unused-vars
+    6:22  warning  'ZoomOut' is defined but never used       @typescript-eslint/no-unused-vars
+    6:31  warning  'RotateCw' is defined but never used      @typescript-eslint/no-unused-vars
+    6:41  warning  'ChevronLeft' is defined but never used   @typescript-eslint/no-unused-vars
+    6:54  warning  'ChevronRight' is defined but never used  @typescript-eslint/no-unused-vars
+   98:16  warning  'err' is defined but never used           @typescript-eslint/no-unused-vars
+  113:16  warning  'err' is defined but never used           @typescript-eslint/no-unused-vars
+
+/Users/adrianstanca/cortexbuild-ultimate/src/components/ui/NotificationPreferences.tsx
+    5:3  warning  'MessageSquare' is defined but never used                                                                           @typescript-eslint/no-unused-vars
+    7:3  warning  'Check' is defined but never used                                                                                   @typescript-eslint/no-unused-vars
+    8:3  warning  'X' is defined but never used                                                                                       @typescript-eslint/no-unused-vars
+  132:6  warning  React Hook useEffect has a missing dependency: 'loadPreferences'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+/Users/adrianstanca/cortexbuild-ultimate/src/components/ui/QuickActions.tsx
+  167:9  warning  'allActions' is assigned a value but never used  @typescript-eslint/no-unused-vars
+
+/Users/adrianstanca/cortexbuild-ultimate/src/components/ui/SafetyStatsPanel.tsx
+  153:96  warning  'isPercentage' is defined but never used. Allowed unused args must match /^_/u  @typescript-eslint/no-unused-vars
+  367:25  warning  'rect' is assigned a value but never used                                       @typescript-eslint/no-unused-vars
+
+/Users/adrianstanca/cortexbuild-ultimate/src/components/ui/VirtualList.tsx
+   1:20  warning  'useEffect' is defined but never used  @typescript-eslint/no-unused-vars
+  53:31  warning  'T' is defined but never used          @typescript-eslint/no-unused-vars
+
+/Users/adrianstanca/cortexbuild-ultimate/src/components/ui/WidgetCustomizer.tsx
+  1:20  warning  'useEffect' is defined but never used  @typescript-eslint/no-unused-vars
+  3:3   warning  'Layout' is defined but never used     @typescript-eslint/no-unused-vars
+  7:3   warning  'Settings' is defined but never used   @typescript-eslint/no-unused-vars
+  8:3   warning  'RefreshCw' is defined but never used  @typescript-eslint/no-unused-vars
+
+/Users/adrianstanca/cortexbuild-ultimate/src/hooks/useData.ts
+  20:7  warning  'TABLE_TO_KEY' is assigned a value but never used                                                                                                                                                                           @typescript-eslint/no-unused-vars
+  61:8  warning  React Hook useEffect has an unnecessary dependency: 'key'. Either exclude it or remove the dependency array. Outer scope values like 'key' aren't valid dependencies because mutating them doesn't re-render the component  react-hooks/exhaustive-deps
+
+/Users/adrianstanca/cortexbuild-ultimate/src/hooks/useKeyboardShortcuts.ts
+  6:10  warning  'toast' is defined but never used  @typescript-eslint/no-unused-vars
+
+/Users/adrianstanca/cortexbuild-ultimate/src/hooks/useNotifications.ts
+   70:9  warning  Unexpected console statement  no-console
+  104:9  warning  Unexpected console statement  no-console
+
+/Users/adrianstanca/cortexbuild-ultimate/src/lib/eventBus.ts
+  15:64  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/Users/adrianstanca/cortexbuild-ultimate/src/services/api.ts
+   74:82   warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   96:104  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  478:49   warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  481:49   warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  484:49   warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  487:41   warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  490:51   warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  493:41   warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/Users/adrianstanca/cortexbuild-ultimate/src/test/BulkActions.test.tsx
+  1:32  warning  'vi' is defined but never used  @typescript-eslint/no-unused-vars
+
+✖ 725 problems (0 errors, 725 warnings)
+

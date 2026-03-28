@@ -367,7 +367,7 @@ export function Meetings() {
                       <tr key={action.id} className={`hover:bg-gray-700/50 transition-colors ${isOverdue?'bg-red-900/20':''}`}>
                         <td className="px-4 py-3 text-gray-200">{action.task}</td>
                         <td className="px-4 py-3 text-gray-300">{action.owner}</td>
-                        <td className="px-4 py-3"><span className="text-blue-400 hover:underline cursor-pointer" onClick={()=>{setSelectedMeeting(meetings.find(m=>String(m.id)==action.meetingId)??null); setShowDetailModal(true);}}>{action.meetingTitle}</span></td>
+                        <td className="px-4 py-3"><span className="text-blue-400 hover:underline cursor-pointer" onClick={()=>{setSelectedMeeting(meetings.find(m=>String(m.id)===action.meetingId)??null); setShowDetailModal(true);}}>{action.meetingTitle}</span></td>
                         <td className="px-4 py-3 text-gray-400">{action.dueDate}</td>
                         <td className="px-4 py-3"><span className={`text-xs px-2 py-1 rounded-full ${priorityColour[action.priority]??''}`}>{action.priority}</span></td>
                         <td className="px-4 py-3">

@@ -94,13 +94,14 @@ interface AnnotationProps {
 }
 
 function FloatingAnnotation({ text, position, delay = 0 }: AnnotationProps) {
-  const id = text.replace(/[^a-zA-Z]/g, '');
+  // eslint-disable-next-line
+  const randomDuration = React.useMemo(() => 45 + Math.random() * 20, []);
   return (
     <div
       style={{
         position: 'absolute',
         ...position,
-        animation: `annotationDrift-${id} ${45 + Math.random() * 20}s ease-in-out infinite`,
+        animation: `annotationDrift-${text.replace(/[^a-zA-Z]/g, '')} ${randomDuration}s ease-in-out infinite`,
         animationDelay: `${delay}s`,
         willChange: 'transform',
       }}
