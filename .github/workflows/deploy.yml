@@ -1,54 +1,48 @@
-name: Build & Deploy CortexBuild Ultimate
+name: Deploy to VPS
 
 on:
   push:
     branches: [main]
   workflow_dispatch:
 
-permissions:
-  contents: write
-  pages: write
-  id-token: write
-
 jobs:
-  build-and-deploy:
+  deploy:
     runs-on: ubuntu-latest
+    timeout-minutes: 15
+
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
+      - name: Deploy via SSH
+        uses: appleboy/ssh-action@v1.0.3
         with:
-          node-version: "20"
-          cache: "npm"
+          host: 72.62.132.43
+          username: root
+          password: ${{ secrets.VPS_PASSWORD }}
+          port: 22
+          command_timeout: 12m
+          script: |
+            set -e
+            cd /var/www/cortexbuild-ultimate
 
-      - name: Install dependencies
-        run: npm ci
+            echo "Pulling latest code..."
+            git pull origin main
 
-      - name: Build
-        run: npm run build
+            echo "Installing any new dependencies..."
+            npm ci --prefer-offline 2>/dev/null || npm install
 
-      - name: Patch index.html for GitHub Pages base path
-        run: |
-          sed -i "s|src=\"/assets/|src=\"./assets/|g" dist/index.html
-          sed -i "s|href=\"/assets/|href=\"./assets/|g" dist/index.html
-          sed -i "s|href=\"/favicon|href=\"./favicon|g" dist/index.html
-          sed -i "s|href=\"/icons/|href=\"./icons/|g" dist/index.html
-          sed -i "s|href=\"/manifest.json\"|href=\"./manifest.json\"|g" dist/index.html
-          echo "Patched index.html:"
-          grep -E "(src|href)=" dist/index.html | head -20
+            echo "Building frontend..."
+            npm run build
 
-      - name: Add GitHub Pages support files
-        run: |
-          touch dist/.nojekyll
-          cp dist/index.html dist/404.html
+            echo "Restarting nginx container..."
+            docker restart cortexbuild-nginx
 
-      - name: Deploy to GitHub Pages
-        uses: peaceiris/actions-gh-pages@v4
-        with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: ./dist
-          publish_branch: gh-pages
-          force_orphan: false
+            echo "Verifying site is up..."
+            sleep 3
+            STATUS=$(curl -sf -o /dev/null -w "%{http_code}" https://www.cortexbuildpro.com/ || echo "000")
+            echo "Site status: $STATUS"
+            if [ "$STATUS" != "200" ]; then
+              echo "WARNING: site returned $STATUS"
+              docker logs cortexbuild-nginx --tail=20
+            else
+              echo "cortexbuildpro.com is live and healthy"
+            fi
 
