@@ -769,6 +769,28 @@ export function AIAssistant() {
           )}
         </div>
 
+        {/* Quick Prompts */}
+        <div className="border-t border-gray-800 bg-gray-900/50 px-4 pt-3 pb-1">
+          <div className="flex flex-wrap gap-2">
+            {[
+              'Summarise this project',
+              "What's my project status?",
+              'Show me overdue items',
+              'Safety incidents this week',
+              'Cash position update',
+              'Next milestones',
+            ].map((prompt) => (
+              <button
+                key={prompt}
+                onClick={() => handleSendMessage(prompt)}
+                className="quick-prompt-chip text-xs px-3 py-1.5 rounded-full border border-blue-800/60 bg-blue-900/30 text-blue-300 hover:bg-blue-800/50 hover:text-white hover:border-blue-600 transition-all cursor-pointer font-medium"
+              >
+                {prompt}
+              </button>
+            ))}
+          </div>
+        </div>
+
         {/* Input Area */}
         <div className="border-t border-gray-800 bg-gray-900/50 p-4">
           <div className="flex gap-3">

@@ -1135,3 +1135,41 @@ button:focus-visible,
   pointer-events: none;
   z-index: 1;
 }
+
+/* ─── Quick Prompt Chips ────────────────────────────────────── */
+.quick-prompt-chip {
+  font-family: 'DM Sans', sans-serif;
+  letter-spacing: 0.01em;
+  transition: all 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.quick-prompt-chip:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.2);
+}
+
+/* ─── AI Typing Dots ────────────────────────────────────────── */
+@keyframes typingBounce {
+  0%, 60%, 100% { transform: translateY(0); opacity: 0.4; }
+  30% { transform: translateY(-5px); opacity: 1; }
+}
+.typing-dot:nth-child(1) { animation: typingBounce 1.2s ease-in-out infinite; }
+.typing-dot:nth-child(2) { animation: typingBounce 1.2s ease-in-out 0.2s infinite; }
+.typing-dot:nth-child(3) { animation: typingBounce 1.2s ease-in-out 0.4s infinite; }
+
+/* ─── Animated Grid Pan ─────────────────────────────────────── */
+@keyframes gridPan {
+  0% { background-position: 0 0; }
+  50% { background-position: 40px 30px; }
+  100% { background-position: 0 0; }
+}
+.blueprint-grid-animated {
+  animation: gridPan 30s ease-in-out infinite;
+}
+@keyframes gridPanMicro {
+  0% { background-position: 0 0; }
+  50% { background-position: 16px 12px; }
+  100% { background-position: 0 0; }
+}
+.blueprint-grid-micro-animated {
+  animation: gridPanMicro 15s ease-in-out infinite;
+}
