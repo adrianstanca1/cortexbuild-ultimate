@@ -56,6 +56,7 @@ app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 // ─── Public routes ────────────────────────────────────────────────────────────
 app.use('/api/auth', authRoutes);
 app.get('/api/health', (_req, res) => res.json({ status: 'ok', version: '1.0.0' }));
+app.use('/api/deploy', require('./routes/deploy'));
 
 // ─── JWT auth on all other /api routes ───────────────────────────────────────
   app.use('/api/metrics',       require('./routes/metrics'));

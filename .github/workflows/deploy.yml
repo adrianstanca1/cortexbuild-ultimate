@@ -11,27 +11,35 @@ jobs:
     timeout-minutes: 15
 
     steps:
-      - name: Deploy via SSH
-        uses: appleboy/ssh-action@v1.0.3
-        with:
-          host: 72.62.132.43
-          username: root
-          key: ${{ secrets.VPS_SSH_KEY }}
-          port: 22
-          command_timeout: 12m
-          script: |
-            set -e
-            cd /var/www/cortexbuild-ultimate
-            echo "Pulling latest code..."
-            git pull origin main
-            echo "Installing any new dependencies..."
-            npm ci --prefer-offline 2>/dev/null || npm install
-            echo "Building frontend..."
-            npm run build
-            echo "Restarting nginx..."
-            docker restart cortexbuild-nginx
-            sleep 3
-            STATUS=$(curl -sf -o /dev/null -w "%{http_code}" https://www.cortexbuildpro.com/ || echo "000")
-            echo "Site status: $STATUS"
-            [ "$STATUS" = "200" ] && echo "cortexbuildpro.com is live" || (echo "WARNING: status $STATUS"; docker logs cortexbuild-nginx --tail=10)
+      - name: Trigger deploy webhook
+        run: |
+          echo "Triggering deploy on cortexbuildpro.com..."
+          RESPONSE=$(curl -sf -X POST \
+            -H "Authorization: Bearer ${{ secrets.DEPLOY_SECRET }}" \
+            -H "Content-Type: application/json" \
+            --max-time 30 \
+            https://www.cortexbuildpro.com/api/deploy)
+          echo "Response: $RESPONSE"
+
+      - name: Wait for deploy to complete
+        run: |
+          echo "Waiting for build to finish (~3 min)..."
+          for i in $(seq 1 24); do
+            sleep 15
+            STATUS=$(curl -sf \
+              -H "Authorization: Bearer ${{ secrets.DEPLOY_SECRET }}" \
+              https://www.cortexbuildpro.com/api/deploy/status 2>/dev/null || echo '{"deploying":true}')
+            DEPLOYING=$(echo "$STATUS" | python3 -c "import sys,json; print(json.load(sys.stdin).get('deploying', True))" 2>/dev/null || echo "True")
+            echo "[$i] deploying=$DEPLOYING"
+            if [ "$DEPLOYING" = "False" ]; then
+              echo "Deploy finished"
+              break
+            fi
+          done
+
+      - name: Verify site is live
+        run: |
+          HTTP_CODE=$(curl -sf -o /dev/null -w "%{http_code}" https://www.cortexbuildpro.com/ || echo "000")
+          echo "Site returned: $HTTP_CODE"
+          [ "$HTTP_CODE" = "200" ] && echo "cortexbuildpro.com is live" || (echo "WARNING: unexpected status $HTTP_CODE"; exit 1)
 
