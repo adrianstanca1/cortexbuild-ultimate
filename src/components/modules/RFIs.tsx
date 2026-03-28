@@ -4,6 +4,7 @@ import {
   ChevronDown, ChevronUp, Send, Zap, Calendar, User, Flame, TrendingUp, ChevronRight,
   Loader2, Filter, CheckSquare, Square,
 } from 'lucide-react';
+import { EmptyState } from '../ui/EmptyState';
 import { useRFIs } from '../../hooks/useData';
 import { toast } from 'sonner';
 import { z } from 'zod';
@@ -348,10 +349,7 @@ export function RFIs() {
       ) : (
         <div className="bg-gray-800 rounded-xl border border-gray-700 divide-y divide-gray-700 overflow-hidden">
           {filtered.length === 0 && (
-            <div className="text-center py-16 text-gray-500">
-              <MessageSquare size={40} className="mx-auto mb-3 opacity-30"/>
-              <p>No RFIs found</p>
-            </div>
+            <EmptyState title="No RFIs found" icon={MessageSquare} />
           )}
           {filtered.map(r => {
             const id = String(r.id??'');

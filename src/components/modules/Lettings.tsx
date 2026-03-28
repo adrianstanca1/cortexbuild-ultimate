@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
-import { Plus, Search, FileText, Clock, CheckCircle, XCircle, Trash2, X, Upload, Pencil, CheckSquare, Square } from 'lucide-react';
+import { Plus, Search, FileText, Clock, CheckCircle, XCircle, Trash2, X, Upload, Pencil, CheckSquare, Square, Home } from 'lucide-react';
+import { EmptyState } from '../ui/EmptyState';
 import { BulkActionsBar, useBulkSelection } from '../ui/BulkActions';
 import { lettingsApi, uploadFile } from '../../services/api';
 import { toast } from 'sonner';
@@ -132,7 +133,12 @@ export default function Lettings() {
         ) : (
           <div className="space-y-3">
             {filtered.length === 0 ? (
-              <div className="text-center py-8 text-gray-500">No packages found</div>
+              <EmptyState
+                icon={Home}
+                title="No packages found"
+                description="Add letting packages to track available properties and tenancies."
+                variant="default"
+              />
             ) : filtered.map((l) => {
               const isSelected = selectedIds.has(String(l.id));
               return (

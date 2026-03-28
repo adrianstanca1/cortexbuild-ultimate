@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Plus, Search, Ruler, MapPin, Camera, FileText, Trash2, X, Upload, Pencil } from 'lucide-react';
+import { EmptyState } from '../ui/EmptyState';
 import { measuringApi, uploadFile } from '../../services/api';
 import { toast } from 'sonner';
 
@@ -121,7 +122,12 @@ export default function Measuring() {
         ) : (
           <div className="space-y-3">
             {filtered.length === 0 ? (
-              <div className="text-center py-8 text-gray-500">No measurements found</div>
+              <EmptyState
+                icon={Ruler}
+                title="No measurements found"
+                description="Add measurements to track quantities and survey data."
+                variant="default"
+              />
             ) : filtered.map((m) => (
               <div key={m.id} className="border border-gray-700 rounded-lg p-4 flex items-center justify-between">
                 <div>

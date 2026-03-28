@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { ClipboardList, Plus, Search, Filter, Camera, CheckCircle2, AlertCircle, Clock, X, ChevronRight, Edit2, Trash2, Image, Tag, MapPin, User, ChevronDown, ChevronUp, CheckSquare, Square } from 'lucide-react';
+import { EmptyState } from '../ui/EmptyState';
 import { BulkActionsBar, useBulkSelection } from '../ui/BulkActions';
 import { usePunchList } from '../../hooks/useData';
 import { toast } from 'sonner';
@@ -297,10 +298,7 @@ export function PunchList() {
 
           {/* Table */}
           {filtered.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-20 text-gray-500">
-              <ClipboardList size={48} className="mb-3 opacity-30" />
-              <p>No items match your filters</p>
-            </div>
+            <EmptyState title="No items match your filters" icon={ClipboardList} />
           ) : (
             <>
             <div className="overflow-x-auto bg-gray-900 border border-gray-700 rounded-lg">

@@ -17,7 +17,9 @@ import {
   CheckSquare,
   Square,
   Trash2,
+  FileText,
 } from 'lucide-react';
+import { EmptyState } from '../ui/EmptyState';
 import { BulkActionsBar, useBulkSelection } from '../ui/BulkActions';
 
 type AnyRow = Record<string, unknown>;
@@ -273,9 +275,11 @@ export function AuditLog() {
               <p className="text-gray-400">Loading audit log...</p>
             </div>
           ) : entries.length === 0 ? (
-            <div className="text-center py-12">
-              <p className="text-gray-400">No audit entries found</p>
-            </div>
+            <EmptyState
+              icon={FileText}
+              title="No audit entries found"
+              description="Activity will appear here once users start interacting with the system."
+            />
           ) : (
             <div className="bg-gray-900 border border-gray-700 rounded-lg overflow-hidden">
               <div className="overflow-x-auto">

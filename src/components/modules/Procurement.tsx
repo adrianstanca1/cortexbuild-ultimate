@@ -5,6 +5,7 @@ import {
   Clock, Package, Search, Filter, DollarSign, BarChart3, Building2,
   Calendar, TrendingUp, Users, ChevronRight, CheckSquare, Square,
 } from 'lucide-react';
+import { EmptyState } from '../ui/EmptyState';
 import { useProcurement, useProjects } from '../../hooks/useData';
 import { toast } from 'sonner';
 import { BulkActionsBar, useBulkSelection } from '../ui/BulkActions';
@@ -441,7 +442,7 @@ export function Procurement() {
                       );
                     })}
                     {filtered.length === 0 && (
-                      <tr><td colSpan={10} className="px-4 py-10 text-center text-gray-500">No purchase orders match the current filters.</td></tr>
+                      <tr><td colSpan={10}><EmptyState title="No purchase orders match the current filters." /></td></tr>
                     )}
                   </tbody>
                 </table>
@@ -488,7 +489,7 @@ export function Procurement() {
               </div>
             ))}
             {suppliers.filter(s => !search || s.name.toLowerCase().includes(search.toLowerCase())).length === 0 && (
-              <div className="col-span-full text-center py-12 text-gray-500">No suppliers found.</div>
+              <div className="col-span-full"><EmptyState title="No suppliers found." /></div>
             )}
           </div>
         </div>

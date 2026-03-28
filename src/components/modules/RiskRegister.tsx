@@ -1,5 +1,6 @@
 import { useState, useMemo, useEffect } from 'react';
 import { AlertTriangle, Plus, Search, Shield, AlertOctagon, Edit2, Trash2, X, ChevronDown, ChevronUp, TrendingUp, BarChart3, Filter, Eye, CheckCircle2, Clock, Users, Target, Calendar, CheckSquare, Square } from 'lucide-react';
+import { EmptyState } from '../ui/EmptyState';
 import { useRiskRegister } from '../../hooks/useData';
 import { riskRegisterApi } from '../../services/api';
 import { toast } from 'sonner';
@@ -469,10 +470,7 @@ export function RiskRegister() {
             ) : (
               <div className="space-y-3">
                 {filtered.length === 0 ? (
-                  <div className="text-center py-16 text-gray-500 bg-gray-800 rounded-xl border border-gray-700">
-                    <AlertTriangle size={40} className="mx-auto mb-3 opacity-30"/>
-                    <p className="font-medium">No risks found</p>
-                  </div>
+                  <EmptyState title="No risks found" variant="error" />
                 ) : (
                   filtered.map(r => {
                     const id = String(r.id??'');

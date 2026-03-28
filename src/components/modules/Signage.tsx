@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Plus, Search, AlertTriangle, CheckCircle, Eye, Edit, Trash2, X, Upload, CheckSquare, Square } from 'lucide-react';
+import { EmptyState } from '../ui/EmptyState';
 import { BulkActionsBar, useBulkSelection } from '../ui/BulkActions';
 import { signageApi, uploadFile } from '../../services/api';
 import { toast } from 'sonner';
@@ -129,7 +130,7 @@ export default function Signage() {
         ) : (
           <div className="space-y-3">
             {filtered.length === 0 ? (
-              <div className="text-center py-8 text-gray-500">No signage items found</div>
+              <EmptyState title="No signage items found" />
             ) : filtered.map((s) => {
               const isSelected = selectedIds.has(String(s.id));
               return (

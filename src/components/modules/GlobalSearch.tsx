@@ -15,6 +15,7 @@ import {
   Filter,
 } from 'lucide-react';
 import { searchApi } from '../../services/api';
+import { EmptyState } from '../ui/EmptyState';
 import clsx from 'clsx';
 
 type AnyRow = Record<string, unknown>;
@@ -255,10 +256,12 @@ export function GlobalSearch({ onClose }: { onClose?: () => void }) {
               )}
 
               {results && allResults.length === 0 && (
-                <div className="p-8 text-center">
-                  <X className="h-12 w-12 text-gray-700 mx-auto mb-3" />
-                  <p className="text-gray-400">No results found for "{String(query)}"</p>
-                </div>
+                <EmptyState
+                  icon={Search}
+                  title={`No results found for "${String(query)}"`}
+                  description="Try a different search term or check your filters."
+                  className="py-12"
+                />
               )}
 
               {results &&

@@ -15,6 +15,7 @@ import {
   BarChart2,
   TrendingUp,
 } from 'lucide-react';
+import { EmptyState } from '../ui/EmptyState';
 import { reportTemplatesApi, type ReportTemplate } from '../../services/api';
 import { toast } from 'sonner';
 import clsx from 'clsx';
@@ -215,10 +216,7 @@ export function ReportTemplates() {
               <RefreshCw className="h-6 w-6 text-blue-500 animate-spin" />
             </div>
           ) : searchedTemplates.length === 0 ? (
-            <div className="p-8 text-center">
-              <FileText className="h-12 w-12 text-gray-700 mx-auto mb-3" />
-              <p className="text-gray-400">No templates found</p>
-            </div>
+            <EmptyState title="No templates found" variant="documents" />
           ) : (
             <div className="bg-gray-900 border border-gray-700 rounded-lg divide-y divide-gray-800">
               {searchedTemplates.map(template => (

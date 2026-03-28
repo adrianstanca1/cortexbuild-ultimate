@@ -10,6 +10,7 @@ import {
 import { toast } from 'sonner';
 import { insightsApi, type Insight as ApiInsight } from '../../services/api';
 import { BulkActionsBar, useBulkSelection } from '../ui/BulkActions';
+import { EmptyState } from '../ui/EmptyState';
 import {
   AreaChart, Area, BarChart, Bar, LineChart, Line, PieChart as RechartsPie,
   Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer,
@@ -280,11 +281,12 @@ export function Insights() {
       {/* Insights List */}
       <div className="space-y-4">
         {filteredInsights.length === 0 ? (
-          <div className="card p-12 text-center">
-            <CheckCircle className="h-12 w-12 text-emerald-400 mx-auto mb-4" />
-            <h3 className="text-lg font-bold text-white mb-2">All Clear</h3>
-            <p className="text-gray-400">No insights match your filters. Keep up the great work!</p>
-          </div>
+          <EmptyState
+            icon={TrendingUp}
+            title="All Clear"
+            description="No insights match your filters. Keep up the great work!"
+            variant="default"
+          />
         ) : (
           filteredInsights.map((insight) => <InsightCard key={insight.id} insight={insight} />)
         )}

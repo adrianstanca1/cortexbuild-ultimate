@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Plus, Search, Leaf, Cloud, Factory, Gauge, Trash2, X, Upload, Pencil, CheckSquare, Square } from 'lucide-react';
+import { EmptyState } from '../ui/EmptyState';
 import { BulkActionsBar, useBulkSelection } from '../ui/BulkActions';
 import { sustainabilityApi, uploadFile } from '../../services/api';
 import { toast } from 'sonner';
@@ -149,7 +150,12 @@ export default function Sustainability() {
         ) : (
           <div className="space-y-3">
             {filtered.length === 0 ? (
-              <div className="text-center py-8 text-gray-500">No metrics found</div>
+              <EmptyState
+                icon={Leaf}
+                title="No metrics found"
+                description="Add sustainability metrics to track your environmental impact."
+                variant="default"
+              />
             ) : filtered.map((d) => {
               const isSelected = selectedIds.has(String(d.id));
               return (

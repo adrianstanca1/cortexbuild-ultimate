@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Users, Plus, Search, Phone, Mail, Briefcase, Edit2, Trash2, X, ChevronDown, ChevronUp, Shield, Clock, Award, AlertTriangle, PoundSterling, MapPin, CheckCircle2, AlertCircle, Calendar, Upload, CheckSquare, Square, Download, FileSpreadsheet, Pencil } from 'lucide-react';
+import { EmptyState } from '../ui/EmptyState';
 import { useTeam } from '../../hooks/useData';
 import { uploadFile, teamApi } from '../../services/api';
 import { toast } from 'sonner';
@@ -509,7 +510,12 @@ export function Teams() {
           ) : (
             <div className="bg-gray-900 rounded-xl border border-gray-700 overflow-hidden">
               {filtered.length === 0 ? (
-                <div className="text-center py-16 text-gray-500"><Users size={40} className="mx-auto mb-3 opacity-30"/><p>No team members found</p></div>
+                <EmptyState
+                icon={Users}
+                title="No team members found"
+                description="Add team members to start managing your workforce."
+                variant="team"
+              />
               ) : (
                 filtered.map(m => <MemberRow key={String(m.id)} m={m} />)
               )}

@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Package, Plus, Search, Truck, BarChart3, AlertTriangle, CheckCircle2, Clock, Edit2, Trash2, X, ChevronRight, DollarSign, TrendingUp, Filter, CheckSquare, Square } from 'lucide-react';
+import { EmptyState } from '../ui/EmptyState';
 import { BulkActionsBar, useBulkSelection } from '../ui/BulkActions';
 import { BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { useMaterials } from '../../hooks/useData';
@@ -339,10 +340,12 @@ export function Materials() {
               onClearSelection={clearSelection}
             />
             {registerFiltered.length === 0 && (
-                <div className="text-center py-16 text-gray-400">
-                  <Package size={40} className="mx-auto mb-3 opacity-30"/>
-                  <p>No materials found</p>
-                </div>
+              <EmptyState
+                icon={Package}
+                title="No materials found"
+                description="Add materials to your register to track quantities and deliveries."
+                variant="default"
+              />
               )}
             </div>
           )}

@@ -8,6 +8,7 @@ import { useEquipment } from '../../hooks/useData';
 import { equipmentApi } from '../../services/api';
 import { toast } from 'sonner';
 import { BulkActionsBar, useBulkSelection } from '../ui/BulkActions';
+import { EmptyState } from '../ui/EmptyState';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 
 type AnyRow = Record<string, unknown>;
@@ -310,11 +311,11 @@ export function PlantEquipment() {
               <div className="animate-spin rounded-full h-8 w-8 border-2 border-blue-600 border-t-transparent" />
             </div>
           ) : filteredFleet.length === 0 ? (
-            <div className="text-center py-16 bg-gray-800 rounded-lg border border-gray-700">
-              <Truck size={40} className="mx-auto mb-3 text-gray-600" />
-              <p className="text-gray-400 font-medium">No equipment found</p>
-              <p className="text-sm text-gray-500 mt-1">Try adjusting filters or add new equipment</p>
-            </div>
+            <EmptyState
+              icon={Truck}
+              title="No equipment found"
+              description="Try adjusting filters or add new equipment."
+            />
           ) : (
             <>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">

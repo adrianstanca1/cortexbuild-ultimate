@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Plus, Search, Users, FileCheck, Clock, AlertTriangle, Trash2, X, Upload, Edit } from 'lucide-react';
+import { EmptyState } from '../ui/EmptyState';
 import { prequalificationApi, uploadFile } from '../../services/api';
 import { toast } from 'sonner';
 
@@ -118,7 +119,12 @@ export default function Prequalification() {
         ) : (
           <div className="space-y-3">
             {filtered.length === 0 ? (
-              <div className="text-center py-8 text-gray-500">No prequalification records found</div>
+              <EmptyState
+                icon={FileCheck}
+                title="No prequalification records found"
+                description="Add prequalification records to manage contractor questionnaires and assessments."
+                variant="documents"
+              />
             ) : filtered.map((p) => (
               <div key={p.id} className="border border-gray-700 rounded-lg p-4 flex items-center justify-between">
                 <div>

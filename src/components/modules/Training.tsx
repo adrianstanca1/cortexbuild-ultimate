@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { Plus, Search, GraduationCap, Award, Clock, AlertCircle, FileCheck, Upload, Trash2, X, Edit, CheckSquare, Square, Download } from 'lucide-react';
+import { EmptyState } from '../ui/EmptyState';
 import { DataImporter, ExportButton } from '../ui/DataImportExport';
 import { trainingApi, uploadFile } from '../../services/api';
 import { BulkActionsBar, useBulkSelection } from '../ui/BulkActions';
@@ -175,7 +176,12 @@ export default function Training() {
         ) : (
           <div className="space-y-3">
             {filtered.length === 0 ? (
-              <div className="text-center py-8 text-gray-500">No training records found</div>
+              <EmptyState
+                icon={GraduationCap}
+                title="No training records found"
+                description="Add training records to track workforce qualifications and certifications."
+                variant="safety"
+              />
             ) : filtered.map((t) => {
               const isSelected = selectedIds.has(String(t.id));
               return (

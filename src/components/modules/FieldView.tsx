@@ -7,6 +7,7 @@ import {
 import { useProjects, useDailyReports, useSafety } from '../../hooks/useData';
 import { sitePermitsApi } from '../../services/api';
 import { BulkActionsBar, useBulkSelection } from '../ui/BulkActions';
+import { EmptyState } from '../ui/EmptyState';
 import { toast } from 'sonner';
 
 type AnyRow = Record<string, unknown>;
@@ -551,10 +552,11 @@ export function FieldView() {
         loadingReports ? (
           <div className="text-center py-16 text-gray-400">Loading reports…</div>
         ) : reports.length === 0 ? (
-          <div className="bg-gray-800 rounded-xl border border-gray-700 text-center py-16 text-gray-500">
-            <FileText size={40} className="mx-auto mb-3 opacity-30" />
-            <p>No reports found</p>
-          </div>
+          <EmptyState
+            icon={FileText}
+            title="No reports found"
+            description="No daily reports have been submitted yet."
+          />
         ) : (
           <div className="bg-gray-800 rounded-xl border border-gray-700 overflow-hidden">
             <div className="overflow-x-auto">

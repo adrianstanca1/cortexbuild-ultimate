@@ -11,6 +11,7 @@ import {
   FolderOpen, File, FileSpreadsheet, FileCheck, Clock3, User,
 } from 'lucide-react';
 import { BulkActionsBar, useBulkSelection } from '../ui/BulkActions';
+import { EmptyState } from '../ui/EmptyState';
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend,
   ResponsiveContainer, LineChart, Line,
@@ -490,9 +491,7 @@ function DocumentsTab({ projectId, projectName }: DocumentsTabProps) {
         <div className="flex items-center justify-center py-16"><Loader2 className="w-8 h-8 text-blue-400 animate-spin" /></div>
       ) : docs.length === 0 ? (
         <div className="bg-gray-900 border border-gray-800 rounded-xl py-16 text-center">
-          <FolderOpen className="w-12 h-12 text-gray-600 mx-auto mb-3" />
-          <p className="text-gray-400 font-medium">No documents found</p>
-          <p className="text-gray-500 text-sm mt-1">Upload documents to keep project records organized</p>
+          <EmptyState title="No documents found" description="Upload documents to keep project records organized" variant="documents" />
         </div>
       ) : (
         <div className="bg-gray-900 border border-gray-800 rounded-xl overflow-hidden">
@@ -1352,7 +1351,7 @@ function ProjectWorkspace({ project, onBack, onEdit }: WorkspaceProps) {
               <h3 className="text-sm font-semibold text-white">Invoices for this Project</h3>
             </div>
             {invoices.length===0 ? (
-              <p className="px-5 py-8 text-center text-gray-500">No invoices found for this project</p>
+              <EmptyState title="No invoices found for this project" variant="documents" />
             ) : (
               <table className="w-full text-sm">
                 <thead className="bg-gray-800/60"><tr>{['Invoice #','Amount','Status','Due'].map(h=><th key={h} className="px-4 py-3 text-left text-xs font-semibold text-gray-400 uppercase">{h}</th>)}</tr></thead>
@@ -1399,7 +1398,7 @@ function ProjectWorkspace({ project, onBack, onEdit }: WorkspaceProps) {
                 </div>
               </div>
             ))}
-            {teamAll.length===0 && <p className="col-span-3 py-8 text-center text-gray-500">No team members found</p>}
+            {teamAll.length===0 && <div className="col-span-3"><EmptyState title="No team members found" variant="team" /></div>}
           </div>
         </div>
       )}

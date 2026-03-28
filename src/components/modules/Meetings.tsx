@@ -4,6 +4,7 @@ import {
   ChevronDown, ChevronUp, Video, Filter, AlertCircle, FileText, MoreVertical, Building2, ChevronRight, CheckSquare, Square
 } from 'lucide-react';
 import { BulkActionsBar, useBulkSelection } from '../ui/BulkActions';
+import { EmptyState } from '../ui/EmptyState';
 import { useMeetings } from '../../hooks/useData';
 import { toast } from 'sonner';
 
@@ -263,7 +264,11 @@ export function Meetings() {
           {isLoading ? (
             <div className="flex justify-center py-20"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-600"/></div>
           ) : filteredMeetings.length === 0 ? (
-            <div className="text-center py-16 bg-gray-800 rounded-xl border border-gray-700"><Calendar size={40} className="mx-auto mb-3 opacity-30 text-gray-600"/><p className="text-gray-400">No meetings found</p></div>
+            <EmptyState
+              icon={Calendar}
+              title="No meetings found"
+              description="Schedule a meeting to get started."
+            />
           ) : (
             <div className="grid gap-4">
               {filteredMeetings.map(m => {

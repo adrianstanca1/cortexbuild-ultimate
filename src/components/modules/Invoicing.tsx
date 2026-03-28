@@ -6,6 +6,7 @@ import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, Responsive
 import clsx from 'clsx';
 import { toast } from 'sonner';
 import { BulkActionsBar, useBulkSelection } from '../ui/BulkActions';
+import { EmptyState } from '../ui/EmptyState';
 
 const statusConfig: Record<string, { label: string; color: string; bg: string }> = {
   draft:    { label: 'Draft',    color: 'text-gray-400',   bg: 'bg-gray-700' },
@@ -668,12 +669,12 @@ export function Invoicing() {
                   </table>
                 </div>
                 {!isLoading && filtered.length === 0 && (
-                  <div className="text-center py-12 text-gray-500">
-                    No invoices found.{' '}
-                    <button type="button" onClick={openCreate} className="text-emerald-400 hover:text-emerald-300">
-                      Create one →
-                    </button>
-                  </div>
+                  <EmptyState
+                    icon={FileText}
+                    title="No invoices found"
+                    description="Create your first invoice to get started."
+                    action={{ label: 'Create Invoice', onClick: openCreate }}
+                  />
                 )}
                 <BulkActionsBar
                   selectedIds={Array.from(selectedIds)}
