@@ -2,6 +2,16 @@
   "buildCommand": "npm run build",
   "outputDirectory": "dist",
   "framework": null,
+  "rewrites": [
+    {
+      "source": "/api/(.*)",
+      "destination": "https://www.cortexbuildpro.com/api/$1"
+    },
+    {
+      "source": "/ws(.*)",
+      "destination": "https://www.cortexbuildpro.com/ws$1"
+    }
+  ],
   "headers": [
     {
       "source": "/assets/(.*)",
