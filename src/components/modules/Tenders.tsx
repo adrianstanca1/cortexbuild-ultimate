@@ -3,6 +3,7 @@ import {
   Plus, Search, Filter, TrendingUp, Clock, CheckCircle2, XCircle, Edit2, Trash2, X,
   ChevronRight, Calendar, DollarSign, Target, Award, BarChart3, Brain, Zap, AlertCircle, CheckSquare, Square
 } from 'lucide-react';
+import { EmptyState } from '../ui/EmptyState';
 import { useTenders } from '../../hooks/useData';
 import { toast } from 'sonner';
 import { BulkActionsBar, useBulkSelection } from '../ui/BulkActions';
@@ -632,10 +633,7 @@ export function Tenders() {
             </tbody>
           </table>
           {filtered.length === 0 && (
-            <div className="text-center py-12 text-gray-500">
-              <AlertCircle size={32} className="mx-auto mb-2 opacity-30" />
-              <p>No tenders match your filters</p>
-            </div>
+            <EmptyState icon={XCircle} title="No tenders match your filters" description="Try adjusting your filter criteria or create a new tender." variant="default" />
           )}
           <BulkActionsBar
             selectedIds={Array.from(selectedIds)}

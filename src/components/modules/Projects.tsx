@@ -1712,7 +1712,7 @@ export function Projects() {
               </div>
             );
           })}
-          {filtered.length===0&&<p className="col-span-3 py-16 text-center text-gray-500">No projects match the current filter</p>}
+          {filtered.length===0&&<EmptyState icon={FolderOpen} title="No projects match your filter" description="Try adjusting your search or filter criteria." variant="projects" />}
         </div>
 
         <BulkActionsBar
