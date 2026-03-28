@@ -137,6 +137,30 @@ export default function Sidebar() {
           <span className="mr-3">⚠️</span>
           Safety
         </Link>
+        <Link
+          href="/dashboard/reports"
+          className={cn(
+            'flex items-center px-3 py-2 rounded-lg transition-colors',
+            isActive('/dashboard/reports')
+              ? 'bg-slate-800 text-white'
+              : 'text-slate-300 hover:bg-slate-800'
+          )}
+        >
+          <span className="mr-3">📈</span>
+          Reports
+        </Link>
+        <Link
+          href="/dashboard/maps"
+          className={cn(
+            'flex items-center px-3 py-2 rounded-lg transition-colors',
+            isActive('/dashboard/maps')
+              ? 'bg-slate-800 text-white'
+              : 'text-slate-300 hover:bg-slate-800'
+          )}
+        >
+          <span className="mr-3">🗺️</span>
+          Maps
+        </Link>
 
         <div className="pt-4 pb-2">
           <span className="text-xs font-semibold text-slate-500 uppercase px-3">System</span>
