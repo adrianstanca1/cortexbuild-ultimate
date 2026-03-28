@@ -3,6 +3,7 @@ import { Receipt, Plus, Search, PoundSterling, Calculator, CheckCircle, Clock, E
 import { useCIS } from '../../hooks/useData';
 import { toast } from 'sonner';
 import { BulkActionsBar, useBulkSelection } from '../ui/BulkActions';
+import { EmptyState } from '../ui/EmptyState';
 
 type AnyRow = Record<string, unknown>;
 
@@ -262,7 +263,13 @@ export function CIS() {
                   })}
                 </tbody>
               </table>
-              {filtered.length === 0 && <div className="text-center py-16 text-gray-500"><Receipt size={40} className="mx-auto mb-3 opacity-30"/><p>No CIS returns found</p></div>}
+              {filtered.length === 0 && (
+                <EmptyState
+                  icon={Receipt}
+                  title="No CIS returns found"
+                  description="Submit your first Construction Industry Scheme return to get started."
+                />
+              )}
               <BulkActionsBar
                 selectedIds={Array.from(selectedIds)}
                 actions={[

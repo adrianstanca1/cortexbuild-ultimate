@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Plus, Search, Shield, FileCheck, Clock, AlertTriangle, FileText, Upload, Trash2, X, Edit, CheckSquare, Square } from 'lucide-react';
 import { BulkActionsBar, useBulkSelection } from '../ui/BulkActions';
+import { EmptyState } from '../ui/EmptyState';
 import { certificationsApi, uploadFile } from '../../services/api';
 import { toast } from 'sonner';
 
@@ -145,7 +146,11 @@ export default function Certifications() {
         ) : (
           <div className="space-y-3">
             {filtered.length === 0 ? (
-              <div className="text-center py-8 text-gray-500">No certifications found</div>
+              <EmptyState
+                icon={Shield}
+                title="No certifications found"
+                description="Add certifications and licences to keep your workforce compliant."
+              />
             ) : filtered.map((c) => {
               const isSelected = selectedIds.has(String(c.id));
               return (

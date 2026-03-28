@@ -11,6 +11,104 @@ router.use(auth);
 const OLLAMA_HOST = process.env.OLLAMA_HOST || 'http://localhost:11434';
 const LLM_MODEL = process.env.LLM_MODEL || 'qwen3.5:latest';
 
+// ─── Ollama health check ──────────────────────────────────────────────────────
+
+/**
+ * GET /api/ai/status
+ * Returns Ollama connectivity status and available models.
+ */
+router.get('/status', async (req, res) => {
+  const start = Date.now();
+  const result = {
+    ollama: {
+      reachable: false,
+      latencyMs: null,
+      host: OLLAMA_HOST,
+      model: LLM_MODEL,
+      error: null,
+    },
+    capabilities: {
+      chat: false,
+      summarise: false,
+      embeddings: false,
+    }
+  };
+
+  // Check basic connectivity (HTTP request to Ollama root)
+  try {
+    await new Promise((resolve, reject) => {
+      const url = new URL(OLLAMA_HOST);
+      const lib = url.protocol === 'https:' ? https : http;
+      const req = lib.request({
+        hostname: url.hostname,
+        port: url.port || (url.protocol === 'https:' ? 443 : 11434),
+        path: '/',
+        method: 'GET',
+        timeout: 5000,
+      }, (res) => {
+        result.ollama.reachable = res.statusCode < 500;
+        resolve();
+      });
+      req.on('error', (e) => { result.ollama.error = e.message; reject(e); });
+      req.on('timeout', () => { result.ollama.error = 'Connection timed out'; req.destroy(); reject(new Error('timeout')); });
+      req.end();
+    });
+  } catch (_) {
+    // already set error/reachable=false above
+  }
+
+  result.ollama.latencyMs = Date.now() - start;
+
+  // If reachable, check /api/tags for available models
+  if (result.ollama.reachable) {
+    try {
+      await new Promise((resolve, reject) => {
+        const url = new URL(OLLAMA_HOST + '/api/tags');
+        const lib = url.protocol === 'https:' ? https : http;
+        const req = lib.request({
+          hostname: url.hostname,
+          port: url.port || (url.protocol === 'https:' ? 443 : 11434),
+          path: '/api/tags',
+          method: 'GET',
+          timeout: 8000,
+        }, (res) => {
+          let data = '';
+          res.on('data', c => data += c);
+          res.on('end', () => {
+            try {
+              const parsed = JSON.parse(data);
+              result.capabilities.chat = (parsed.models || []).some(m => m.name === LLM_MODEL || m.name.includes('qwen') || m.name.includes('llama'));
+              result.capabilities.summarise = result.capabilities.chat;
+            } catch (_) {}
+            resolve();
+          });
+        });
+        req.on('error', reject);
+        req.on('timeout', () => { req.destroy(); reject(new Error('timeout')); });
+        req.end();
+      });
+    } catch (_) {
+      result.ollama.error = result.ollama.error || 'Model check failed';
+    }
+  }
+
+  // Determine overall health
+  const healthy = result.ollama.reachable && (result.capabilities.chat || result.capabilities.summarise);
+  const status = healthy ? 'healthy' : result.ollama.reachable ? 'degraded' : 'offline';
+
+  res.status(healthy ? 200 : result.ollama.reachable ? 200 : 503).json({
+    status,
+    ...result,
+    recommendation: !result.ollama.reachable
+      ? 'Ollama is offline. Rule-based responses will be used. Start Ollama: `ollama serve`'
+      : !result.capabilities.chat
+      ? `Model "${LLM_MODEL}" not found on Ollama. Install: \`ollama pull ${LLM_MODEL}\``
+      : 'All systems operational.',
+  });
+});
+
+// ─── Conversation history & context window settings ────────────────────────────
+
 // ─── Conversation history & context window settings ───────────────────────────
 const MAX_CONTEXT_MESSAGES = parseInt(process.env.MAX_CONTEXT_MESSAGES || '20', 10);
 const SUMMARY_THRESHOLD    = parseInt(process.env.SUMMARY_THRESHOLD    || '30', 10);
@@ -1338,6 +1436,10 @@ router.post('/chat', async (req, res) => {
         useLLM = true;
       } catch (llmErr) {
         console.warn('[AI] Ollama unavailable, using rule-based fallback:', llmErr.message);
+        // Append a note so the user knows AI reasoning wasn't used
+        if (reply && !reply.includes('(AI unavailable')) {
+          reply = reply + '\n\n_Note: AI reasoning is currently unavailable (Ollama is offline). Showing rule-based summary._';
+        }
       }
     }
 

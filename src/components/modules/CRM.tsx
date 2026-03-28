@@ -4,6 +4,7 @@ import { useContacts } from '../../hooks/useData';
 import { contactsApi } from '../../services/api';
 import { toast } from 'sonner';
 import { BulkActionsBar, useBulkSelection } from '../ui/BulkActions';
+import { EmptyState } from '../ui/EmptyState';
 
 type AnyRow = Record<string, unknown>;
 
@@ -294,8 +295,12 @@ export function CRM() {
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
               {filtered.length === 0 && (
-                <div className="col-span-3 text-center py-16 text-gray-500 bg-gray-800 border-gray-700 rounded-xl border">
-                  <UserCheck size={40} className="mx-auto mb-3 opacity-30"/><p>No contacts found</p>
+                <div className="col-span-3">
+                  <EmptyState
+                    icon={UserCheck}
+                    title="No contacts found"
+                    description="Add your first contact to start building your CRM."
+                  />
                 </div>
               )}
               {filtered.map(c=>{
@@ -432,8 +437,12 @@ export function CRM() {
           {/* Deal Cards */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {opportunities.length === 0 ? (
-              <div className="col-span-2 text-center py-16 text-gray-500 bg-gray-800 border-gray-700 rounded-xl border">
-                <TrendingUp size={40} className="mx-auto mb-3 opacity-30"/><p>No prospects found</p>
+              <div className="col-span-2">
+                <EmptyState
+                  icon={TrendingUp}
+                  title="No prospects found"
+                  description="Track your sales pipeline by adding prospects and opportunities."
+                />
               </div>
             ) : (
               opportunities.map(opp => (
@@ -512,7 +521,13 @@ export function CRM() {
               </div>
             </div>
           ))}
-          {pipeline.length===0 && <div className="text-center py-16 text-gray-500 bg-gray-800 border-gray-700 rounded-xl border"><TrendingUp size={40} className="mx-auto mb-3 opacity-30"/><p>No contacts yet</p></div>}
+          {pipeline.length===0 && (
+            <EmptyState
+              icon={TrendingUp}
+              title="No contacts yet"
+              description="Start by adding contacts to your CRM pipeline."
+            />
+          )}
         </div>
       )}
 
@@ -520,7 +535,13 @@ export function CRM() {
       {subTab==='companies' && (
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
           {companies.length===0 && (
-            <div className="col-span-3 text-center py-16 text-gray-500 bg-gray-800 border-gray-700 rounded-xl border"><Building2 size={40} className="mx-auto mb-3 opacity-30"/><p>No companies found</p></div>
+            <div className="col-span-3">
+              <EmptyState
+                icon={Building2}
+                title="No companies found"
+                description="Add companies to manage your business relationships."
+              />
+            </div>
           )}
           {companies.map(co=>(
             <div key={co.name} className="bg-gray-800 border-gray-700 rounded-xl border overflow-hidden">

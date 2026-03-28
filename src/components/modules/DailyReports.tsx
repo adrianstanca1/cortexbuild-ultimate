@@ -5,6 +5,7 @@ import {
   Camera, Brain, BarChart3, CheckCircle2, ThumbsUp, Eye, CheckSquare, Square, Upload, Loader2, RefreshCw
 } from 'lucide-react';
 import { BulkActionsBar, useBulkSelection } from '../ui/BulkActions';
+import { EmptyState } from '../ui/EmptyState';
 import { LineChart, Line, CartesianGrid, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
 import { useProjects, useDailyReports } from '../../hooks/useData';
 import { toast } from 'sonner';
@@ -412,10 +413,11 @@ export function DailyReports() {
             <>
             <div className="bg-gray-800 rounded-xl border border-gray-700 divide-y divide-gray-700">
               {filtered.length === 0 && (
-                <div className="text-center py-16 text-gray-500">
-                  <ClipboardList size={40} className="mx-auto mb-3 opacity-30" />
-                  <p>No daily reports found</p>
-                </div>
+                <EmptyState
+                  icon={ClipboardList}
+                  title="No daily reports found"
+                  description="Create a daily report to log site activity, workforce, and progress."
+                />
               )}
               {filtered.map(r => {
                 const id = String(r.id ?? '');
@@ -704,10 +706,11 @@ export function DailyReports() {
                   })}
               </div>
               {reports.filter(r => projectFilter === 'all' || String(r.project_id) === projectFilter).length === 0 && (
-                <div className="text-center py-16 text-gray-500">
-                  <Camera size={40} className="mx-auto mb-3 opacity-30" />
-                  <p>No photos found</p>
-                </div>
+                <EmptyState
+                  icon={Camera}
+                  title="No photos found"
+                  description="Attach photos to your daily reports to document site progress."
+                />
               )}
             </div>
           )}

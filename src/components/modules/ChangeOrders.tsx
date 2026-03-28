@@ -4,6 +4,7 @@ import {
   BarChart3, Activity, CheckSquare, Square, FileEdit, DollarSign, Calendar, ArrowUpRight, ArrowDownRight, ChevronRight
 } from 'lucide-react';
 import { BulkActionsBar, useBulkSelection } from '../ui/BulkActions';
+import { EmptyState } from '../ui/EmptyState';
 import { useChangeOrders } from '../../hooks/useData';
 import { toast } from 'sonner';
 import { z } from 'zod';
@@ -605,10 +606,11 @@ export function ChangeOrders() {
                 </tbody>
               </table>
               {filtered.length === 0 && (
-                <div className="text-center py-16 text-gray-500">
-                  <GitBranch size={40} className="mx-auto mb-3 opacity-30" />
-                  <p>No change orders found</p>
-                </div>
+                <EmptyState
+                  icon={GitBranch}
+                  title="No change orders found"
+                  description="Create a change order to track scope adjustments and cost variations."
+                />
               )}
               <BulkActionsBar
                 selectedIds={Array.from(selectedIds)}

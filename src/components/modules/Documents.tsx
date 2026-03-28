@@ -6,6 +6,7 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import clsx from 'clsx';
+import { EmptyState } from '../ui/EmptyState';
 
 interface DocumentVersion {
   id: string;
@@ -274,7 +275,11 @@ export function Documents() {
       )}
 
       {filteredDocs.length === 0 && !loading && (
-        <div className="empty-state"><FolderOpen className="w-16 h-16" /><h3>No documents found</h3><p>Upload your first document</p></div>
+        <EmptyState
+          icon={FolderOpen}
+          title="No documents found"
+          description="Upload your first document to get started."
+        />
       )}
 
       {selectedDoc && (

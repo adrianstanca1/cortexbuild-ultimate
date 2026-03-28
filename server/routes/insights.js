@@ -1,5 +1,6 @@
 const express = require('express');
 const pool = require('../db');
+const { broadcastNotification } = require('../lib/ws-broadcast');
 
 const router = express.Router();
 
@@ -31,6 +32,22 @@ router.get('/', async (req, res) => {
     await generateProgrammeInsights(orgFilter, params, insights);
     await generateResourceInsights(orgFilter, params, insights);
     await generateTrendInsights(orgFilter, params, insights);
+
+    // ── Broadcast real-time notifications for high/critical insights ─────────
+    const notifiable = insights.filter(i => i.severity === 'critical' || i.severity === 'high');
+    for (const insight of notifiable) {
+      broadcastNotification(
+        `[${insight.severity.toUpperCase()}] ${insight.title}`,
+        insight.description,
+        insight.severity === 'critical' ? 'critical' : 'warning',
+        {
+          insightId: insight.id,
+          category: insight.category,
+          link: `/insights?category=${insight.category}`,
+          recommendation: insight.recommendation,
+        }
+      );
+    }
 
     res.json(insights);
   } catch (err) {
