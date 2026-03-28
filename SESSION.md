@@ -6,13 +6,13 @@
 **Branch**: `main`
 
 ## Current Phase
-Full system audit complete — all CRUD + upload working, code-splitting improved.
+Critical layout fix applied — module content was hidden behind BlueprintBackground due to CSS z-index stacking. Fix deployed. All pages now render correctly.
 
 ## Last Updated
-2026-03-25
+2026-03-28
 
 ## Last Commit
-`4c0ab96` — "Merge feature/enhance-all-modules-round-1-to-3 into main (resolved conflicts keeping main fixes)"
+`a025fbe` — "fix(layout): fix module content hidden behind BlueprintBackground"
 
 ## Site Status
 ✅ www.cortexbuildpro.com — returning 200 OK (HTTPS)
@@ -34,6 +34,8 @@ The `dist/` folder is gitignored. When frontend changes are made:
 5. `692c8eb` — Fix calendar route - change_orders uses submitted_date not due_date
 6. `b3a96d7` — Fix executive-reports trends SQL AND placement, notifications use org_id/company_id
 7. `943d86f` — Fix weather-data - remove weather_logs query, use daily_reports fallback to mock
+8. `6962e10` — feat(mobile): responsive layout overhaul — mobile sidebar drawer, responsive dashboard grids, header polish
+9. `a025fbe` — fix(layout): fix module content hidden behind BlueprintBackground (z-index stacking)
 
 ## All 62 API Endpoints Verified Working
 projects, rfis, safety, documents, team, invoices, contacts, tenders, change-orders, subcontractors, timesheets, meetings, materials, punch-list, inspections, rams, cis, purchase-orders, daily-reports, variations, defects, valuations, specifications, temp-works, signage, waste-management, sustainability, training, certifications, prequalification, lettings, measuring, risk-register, site-permits, equipment, equipment-service-logs, equipment-hire-logs, risk-mitigation-actions, contact-interactions, safety-permits, toolbox-talks, drawing-transmittals, calendar, dashboard-data/overview, dashboard-data/revenue, insights, analytics-data/overtime, analytics-data/vat, financial-reports/summary, financial-reports/cashflow, financial-reports/projects, executive-reports/summary, executive-reports/trends, weather-forecast, notifications, notifications/unread-count, audit, report-templates, permissions/roles, email/templates, backup/export-all, ai/chat
