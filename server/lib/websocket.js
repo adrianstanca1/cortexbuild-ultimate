@@ -75,6 +75,10 @@ function initWebSocket(server) {
       userRooms.forEach(room => leaveRoom(userId, room));
     });
 
+    // Heartbeat / keepalive — ping every 30s, expect pong within 5s
+    ws.isAlive = true;
+    ws.on('pong', () => { ws.isAlive = true; });
+
     // Send welcome message
     sendToClient(ws, {
       type: MESSAGE_TYPES.SYSTEM,
@@ -85,6 +89,22 @@ function initWebSocket(server) {
       },
     });
   });
+
+  // Heartbeat: ping all clients every 30s, drop dead connections after 3 missed pings
+  const heartbeat = setInterval(() => {
+    let dead = 0;
+    wss.clients.forEach((ws) => {
+      if (!ws.isAlive) {
+        dead++;
+        return ws.terminate();
+      }
+      ws.isAlive = false;
+      ws.ping();
+    });
+    if (dead > 0) console.log(`[WS] Removed ${dead} dead connection(s)`);
+  }, 30_000);
+
+  wss.on('close', () => clearInterval(heartbeat));
 
   console.log('[WS] WebSocket server initialized on /ws');
   return wss;
