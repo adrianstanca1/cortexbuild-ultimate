@@ -1,6 +1,7 @@
 require('dotenv').config({ path: require('path').join(__dirname, '.env') });
 const express    = require('express');
 const cors       = require('cors');
+const helmet     = require('helmet');
 const path       = require('path');
 const http       = require('http');
 const authMiddleware = require('./middleware/auth');
@@ -16,9 +17,36 @@ const PORT = process.env.PORT || 3001;
 // Initialize WebSocket server
 initWebSocket(server);
 
+// ─── Security middleware ─────────────────────────────────────────────────────────
+app.use(helmet({
+  contentSecurityPolicy: {
+    directives: {
+      defaultSrc: ["'self'"],
+      scriptSrc:  ["'self'"],
+      styleSrc:   ["'self'", "'unsafe-inline'"],
+      imgSrc:     ["'self'", 'data:', 'https:'],
+      connectSrc: ["'self'"],
+      fontSrc:    ["'self'"],
+      objectSrc:  ["'none'"],
+      frameSrc:   ["'none'"],
+      upgradeInsecureRequests: [],
+    },
+  },
+  crossOriginEmbedderPolicy: false,
+}));
+
 // ─── Middleware ───────────────────────────────────────────────────────────────
-const corsOrigin = process.env.CORS_ORIGIN || '*';
-app.use(cors({ origin: corsOrigin, credentials: corsOrigin !== '*' }));
+// CORS: only allow configured origins — never default to '*' in production
+const corsOrigin = process.env.CORS_ORIGIN;
+if (!corsOrigin) {
+  console.warn('[CORS] CORS_ORIGIN not set — restrict to specific origins for production');
+}
+app.use(cors({
+  origin: corsOrigin || false,   // deny all if not configured
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
+}));
 app.use(express.json({ limit: '10mb' }));
 app.use(rateLimiter);
 

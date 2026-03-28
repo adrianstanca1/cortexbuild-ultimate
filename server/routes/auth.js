@@ -1,17 +1,41 @@
 const express = require('express');
 const bcrypt  = require('bcrypt');
 const jwt     = require('jsonwebtoken');
+const rateLimit = require('express-rate-limit');
 const pool    = require('../db');
 const authMiddleware = require('../middleware/auth');
 const { logAudit } = require('./audit-helper');
 
 const router = express.Router();
-const SECRET = process.env.JWT_SECRET || 'cortexbuild_secret';
+// SECURITY: JWT_SECRET MUST be set in environment — no hardcoded fallback
+const SECRET = process.env.JWT_SECRET;
+if (!SECRET) {
+  console.error('[SECURITY] JWT_SECRET environment variable is not set!');
+}
+
+// ─── Auth-specific rate limiters ───────────────────────────────────────────────
+const loginLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 5,                    // 5 failed attempts per window
+  message: { message: 'Too many login attempts. Please try again in 15 minutes.' },
+  standardHeaders: true,
+  legacyHeaders: false,
+  skipSuccessfulRequests: true,
+});
+
+const registerLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000, // 1 hour
+  max: 5,                  // 5 registrations per hour per IP
+  message: { message: 'Too many registration attempts. Please try again later.' },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
 
 const VALID_ROLES = ['super_admin','company_owner','admin','project_manager','field_worker','client'];
 
 // POST /api/auth/register — public self-registration (creates company_owner account)
-router.post('/register', async (req, res) => {
+// Rate limited to prevent abuse
+router.post('/register', registerLimiter, async (req, res) => {
   const { name, email, password, company, phone } = req.body;
 
   if (!name || !email || !password || !company) {
@@ -55,8 +79,8 @@ router.post('/register', async (req, res) => {
   }
 });
 
-// POST /api/auth/login
-router.post('/login', async (req, res) => {
+// POST /api/auth/login — rate limited to prevent brute force attacks
+router.post('/login', loginLimiter, async (req, res) => {
   const { email, password } = req.body;
   if (!email || !password) return res.status(400).json({ message: 'Email and password required' });
 
