@@ -66,6 +66,8 @@ export function MobileNav({ activeModule, setModule }: MobileNavProps) {
             <button
               key={item.module}
               onClick={() => setModule(item.module)}
+              aria-label={item.label}
+              aria-current={isActive ? 'page' : undefined}
               style={{
                 display: 'flex',
                 flexDirection: 'column',

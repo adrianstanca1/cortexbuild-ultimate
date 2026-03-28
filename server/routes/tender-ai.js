@@ -85,12 +85,12 @@ function analyseContractType(tender) {
   const value = Number(tender.value) || 0;
 
   // Detect contract family
-  const isNEC  = /\bnec[23]?\b|\bnew engineering contract\b|\bnec3 ecsc\b|\bnec4\b/i.test(type + notes);
-  const isJCT  = /\bjct\b|\bjoint contracts tribunal\b/i.test(type + notes);
-  const isFIDIC = /\bfidic\b|\bred book\b|\byellow book\b|\bsilver book\b/i.test(type + notes);
-  const isMW  = /\bminor works\b/i.test(type);
-  const isD&B  = /\bdesign.*build\b|\bdesign and build\b|\bd&b\b/i.test(type);
-  const isTwoStage = /\btwo[\s-]?stage\b/i.test(type);
+  const isNEC   = /\bnec[23]?\b/i.test(type + notes);
+  const isJCT   = /\bjct\b/i.test(type + notes);
+  const isFIDIC = /\bfidic\b/i.test(type + notes);
+  const isMW    = /\bminor works\b/i.test(type);
+  const isDandB = /\bdesign.b?u?i?l?d\b/i.test(type) || /\bdesign and build\b/i.test(type);
+  const isTwoStage = /\btwo.stage\b/i.test(type);
 
   const contract = isNEC ? 'NEC3/NEC4' : isJCT ? 'JCT' : isFIDIC ? 'FIDIC' : isMW ? 'JCT Minor Works' : null;
 
@@ -145,7 +145,7 @@ function analyseContractType(tender) {
     });
   }
 
-  if (isD&B) {
+  if (isDandB) {
     risks.push({
       type: 'Design liability',
       description: 'Under Design & Build the contractor bears design responsibility. Ensure professional indemnity insurance is adequate and design team appointments are secured.',
@@ -173,7 +173,7 @@ function analyseContractType(tender) {
   let contractRisk = 40; // baseline
   if (isNEC)  contractRisk += 5;
   if (isFIDIC) contractRisk += 10;
-  if (isD&B)   contractRisk += 15;
+  if (isDandB) contractRisk += 15;
   if (isTwoStage) contractRisk += 10;
   if (value > 5_000_000) contractRisk += 5;
   if (contract) contractRisk -= 10; // known contract form reduces risk
@@ -210,7 +210,7 @@ function scorePAS91(tender) {
   if (/chs|construction.*health.*safety|constructionphase.*plan/i.test(notes)) { hsScore += 30; extras.push('Construction Phase Plan referenced'); }
   else { flags.push({ area: 'H&S', issue: 'No Construction Phase Plan or CHS evidence mentioned', severity: 'high' }); }
 
-  if (/safe.*contractor|achill|she/a.test(notes) || /iso.*45001|ohsas.*18001/i.test(notes)) { hsScore += 15; extras.push('Safety certification (ISO 45001/CHAS/SSIP)'); }
+  if (/safe.*contractor|achilles|she\.qc/i.test(notes) || /iso.*45001|ohsas.*18001/i.test(notes)) { hsScore += 15; extras.push('Safety certification (ISO 45001/CHAS/SSIP)'); }
   if (/toolbox.*talk|rutb/i.test(notes)) { hsScore += 5; extras.push('Toolbox talk procedure'); }
 
   // ─ Environmental ─
