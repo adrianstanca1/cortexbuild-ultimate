@@ -3,7 +3,7 @@
  * Provides toast notification functionality throughout the app
  */
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useRef } from 'react';
 
 export interface Toast {
   id: string;
@@ -28,6 +28,18 @@ interface UseToastReturn {
 
 export const useToast = (): UseToastReturn => {
   const [toasts, setToasts] = useState<Toast[]>([]);
+  const toastTimeouts = useRef<Map<string, ReturnType<typeof setTimeout>>>(new Map());
+
+  // Declare removeToast first so showToast can reference it
+  const removeToast = useCallback((id: string) => {
+    // Clear any pending timeout for this toast
+    const timeout = toastTimeouts.current.get(id);
+    if (timeout) {
+      clearTimeout(timeout);
+      toastTimeouts.current.delete(id);
+    }
+    setToasts(prev => prev.filter(toast => toast.id !== id));
+  }, []);
 
   // Declare removeToast first so showToast can reference it
   const removeToast = useCallback((id: string) => {
@@ -46,9 +58,10 @@ export const useToast = (): UseToastReturn => {
 
     // Auto-remove toast after duration
     if (newToast.duration && newToast.duration > 0) {
-      setTimeout(() => {
+      const timeout = setTimeout(() => {
         removeToast(id);
       }, newToast.duration);
+      toastTimeouts.current.set(id, timeout);
     }
   }, [removeToast]);
 

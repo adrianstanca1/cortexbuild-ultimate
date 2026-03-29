@@ -47,6 +47,7 @@ app.use(cors({
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization'],
 }));
+app.set('trust proxy', 1);
 app.use(express.json({ limit: '10mb' }));
 app.use(rateLimiter);
 

@@ -151,13 +151,13 @@ router.get('/safety-chart', async (req, res) => {
 
     const result = await pool.query(`
       SELECT
-        TO_CHAR(DATE_TRUNC('month', occurrence_date), 'Mon') as month,
-        DATE_TRUNC('month', occurrence_date) as sort_key,
+        TO_CHAR(DATE_TRUNC('month', date), 'Mon') as month,
+        DATE_TRUNC('month', date) as sort_key,
         COUNT(*) as incidents
       FROM safety_incidents si
       ${join}
       ${where}
-      GROUP BY DATE_TRUNC('month', occurrence_date)
+      GROUP BY DATE_TRUNC('month', date)
       ORDER BY sort_key
       LIMIT 12
     `, params);
@@ -165,14 +165,14 @@ router.get('/safety-chart', async (req, res) => {
     // Also get total/closed per month for a health score
     const healthResult = await pool.query(`
       SELECT
-        TO_CHAR(DATE_TRUNC('month', occurrence_date), 'Mon') as month,
-        DATE_TRUNC('month', occurrence_date) as sort_key,
+        TO_CHAR(DATE_TRUNC('month', date), 'Mon') as month,
+        DATE_TRUNC('month', date) as sort_key,
         COUNT(*) as total,
         COALESCE(SUM(CASE WHEN status = 'closed' THEN 1 ELSE 0 END), 0) as closed
       FROM safety_incidents si
       ${join}
       ${where}
-      GROUP BY DATE_TRUNC('month', occurrence_date)
+      GROUP BY DATE_TRUNC('month', date)
       ORDER BY sort_key
       LIMIT 12
     `, params);
