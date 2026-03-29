@@ -69,6 +69,9 @@ const Certifications      = lazy(() => import('./components/modules/Certificatio
 const Prequalification    = lazy(() => import('./components/modules/Prequalification'));
 const Lettings            = lazy(() => import('./components/modules/Lettings'));
 const Measuring           = lazy(() => import('./components/modules/Measuring'));
+const EmailHistory        = lazy(() => import('./components/modules/EmailHistory').then(m => ({ default: m.EmailHistory })));
+const PermissionsManager  = lazy(() => import('./components/modules/PermissionsManager').then(m => ({ default: m.PermissionsManager })));
+const ReportTemplates     = lazy(() => import('./components/modules/ReportTemplates').then(m => ({ default: m.ReportTemplates })));
 
 const ModuleLoader = () => (
   <div className="flex items-center justify-center h-64">
@@ -161,6 +164,9 @@ function AppShell() {
       case 'prequalification':      return <Prequalification />;
       case 'lettings':              return <Lettings />;
       case 'measuring':             return <Measuring />;
+      case 'email-history':         return <EmailHistory />;
+      case 'permissions':           return <PermissionsManager />;
+      case 'report-templates':      return <ReportTemplates />;
       default:                      return <Dashboard />;
     }
   };

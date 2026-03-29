@@ -293,13 +293,6 @@ export const dailyReportsApi = {
   delete: (id: string) => deleteRow('daily-reports', id),
 };
 
-export const delaysApi = {
-  getAll: () => fetchAll('site-delays'),
-  create: (data: Row) => insertRow('site-delays', data),
-  update: (id: string, data: Row) => updateRow('site-delays', id, data),
-  delete: (id: string) => deleteRow('site-delays', id),
-};
-
 export const meetingsApi = {
   getAll: () => fetchAll('meetings'),
   getById: (id: string) => apiFetch(`/meetings/${id}`),

@@ -15,7 +15,7 @@ import {
   HardHat, TrendingUp, Brain, Bell, FileBarChart, TrendingUp as TrendingUpIcon,
   PieChart, FileEdit, Coins, FileStack, Construction,
   Signpost, Trash2, Leaf, GraduationCap, Award, BadgeCheck,
-  Building, Ruler, Eye, ChevronDown,
+  Building, Ruler, Eye, ChevronDown, Mail, Lock, FileEdit as FileTemplate,
 } from 'lucide-react';
 
 interface SidebarProps {
@@ -117,6 +117,9 @@ const NAV_GROUPS: { id: string; label: string; accent: string; items: NavItem[] 
       { id: 'marketplace',        label: 'AI Marketplace',         icon: Store,          badge: 'NEW' },
       { id: 'calendar',           label: 'Calendar',               icon: Bell,           badge: null },
       { id: 'audit-log',          label: 'Audit Log',              icon: Eye,            badge: null },
+      { id: 'email-history',      label: 'Email History',          icon: Mail,           badge: null },
+      { id: 'permissions',        label: 'Permissions',            icon: Lock,           badge: null },
+      { id: 'report-templates',   label: 'Report Templates',       icon: FileTemplate,   badge: null },
       { id: 'settings',           label: 'Settings',               icon: Settings,       badge: null },
       { id: 'signage',            label: 'Signage',                icon: Signpost,       badge: null },
       { id: 'waste-management',    label: 'Waste Management',       icon: Trash2,         badge: null },

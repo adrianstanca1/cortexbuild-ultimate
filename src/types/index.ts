@@ -61,7 +61,10 @@ export type Module =
   | 'certifications'
   | 'prequalification'
   | 'lettings'
-  | 'measuring';
+  | 'measuring'
+  | 'email-history'
+  | 'permissions'
+  | 'report-templates';
 
 export type ProjectStatus = 'planning' | 'active' | 'on_hold' | 'completed' | 'archived';
 export type TaskStatus = 'todo' | 'in_progress' | 'review' | 'done' | 'blocked';

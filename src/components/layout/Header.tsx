@@ -63,6 +63,9 @@ const MODULE_LABELS: Record<Module, string> = {
   'prequalification':   'Prequalification',
   'lettings':          'Contract Lettings',
   'measuring':          'Site Measuring & Surveys',
+  'email-history':      'Email History',
+  'permissions':        'Permissions & Roles',
+  'report-templates':   'Report Templates',
 };
 
 // Module accent colors for the breadcrumb bar
