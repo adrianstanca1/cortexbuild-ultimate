@@ -78,7 +78,16 @@ export default function Variations() {
 
   useEffect(() => {
     variationsApi.getAll().then(data => {
-      setVariations(data as Variation[]);
+      // Map snake_case API fields to the camelCase Variation interface
+      const mapped = (data as Record<string, unknown>[]).map(v => ({
+        ...v,
+        originalValue: v.originalValue ?? v.original_value ?? 0,
+        submittedDate: v.submittedDate ?? v.submitted_date ?? '',
+        respondedDate: v.respondedDate ?? v.responded_date ?? '',
+        affectedItems: v.affectedItems ?? v.affected_items ?? [],
+        approvalChain: v.approvalChain ?? v.approval_chain ?? [],
+      }));
+      setVariations(mapped as unknown as Variation[]);
       setLoading(false);
     }).catch(() => setLoading(false));
   }, []);
@@ -349,7 +358,7 @@ export default function Variations() {
                     {isExpanded && (
                       <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
                         <button type="button" className="p-2 hover:bg-gray-700 rounded"><Eye size={16} className="text-gray-400" /></button>
-                        <button type="button" onClick={() => setEditItem({ ...variation, ref: variation.ref || '', title: variation.title || '', project: variation.project || '', subcontractor: variation.subcontractor || '', status: variation.status, type: variation.type || '', value: String(variation.value || ''), originalValue: String(variation.originalValue ?? (variation as any).original_value ?? ''), impact: variation.impact || '', submittedDate: variation.submittedDate || (variation as any).submitted_date || '', description: variation.description || '', reason: variation.reason || '' })} className="p-2 hover:bg-gray-700 rounded"><Edit size={16} className="text-gray-400" /></button>
+                        <button type="button" onClick={() => setEditItem({ ...variation, ref: variation.ref || '', title: variation.title || '', project: variation.project || '', subcontractor: variation.subcontractor || '', status: variation.status, type: variation.type || '', value: String(variation.value || ''), originalValue: String(variation.originalValue ?? ''), impact: variation.impact || '', submittedDate: variation.submittedDate || '', description: variation.description || '', reason: variation.reason || '' })} className="p-2 hover:bg-gray-700 rounded"><Edit size={16} className="text-gray-400" /></button>
                         <button
                           type="button"
                           onClick={() => handleDelete(String(variation.id))}

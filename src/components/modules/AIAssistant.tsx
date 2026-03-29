@@ -6,11 +6,8 @@ import {
 } from 'lucide-react';
 import { BulkActionsBar, useBulkSelection } from '../ui/BulkActions';
 import clsx from 'clsx';
-import {
-  projects, invoices, safetyIncidents
-} from '../../data/mockData';
 import { sendChatMessage } from '../../services/ai';
-import { aiConversationsApi } from '../../services/api';
+import { aiConversationsApi, dashboardApi } from '../../services/api';
 import { toast } from 'sonner';
 
 // ── Render markdown-like content for AI responses ──────────────────────────────
@@ -163,6 +160,18 @@ export function AIAssistant() {
   const [isTyping, setIsTyping] = useState(false);
   const [chatSessions, setChatSessions] = useState<ChatSession[]>([]);
   const [currentSessionId, setCurrentSessionId] = useState<string | null>(null);
+  const [liveCounts, setLiveCounts] = useState({ projects: 0, invoices: 0, incidents: 0 });
+
+  // Fetch live KPI counts from dashboard API on mount
+  useEffect(() => {
+    dashboardApi.getOverview().then(d => {
+      setLiveCounts({
+        projects: d.kpi?.activeProjects ?? 0,
+        invoices: d.kpi?.invoiceCount ?? 0,
+        incidents: d.kpi?.safetyIncidents ?? 0,
+      });
+    }).catch(() => {});
+  }, []);
 
   // Load sessions from localStorage on mount
   useEffect(() => {
@@ -560,9 +569,9 @@ export function AIAssistant() {
             <div className="flex items-center gap-2 rounded-lg bg-gray-800/50 px-3 py-2">
               <Archive className="h-4 w-4 text-gray-400" />
               <span className="text-xs text-gray-300">
-                <span className="font-semibold text-white">{projects.length}</span> Projects ·
-                <span className="ml-1 font-semibold text-white">{invoices.length}</span> Invoices ·
-                <span className="ml-1 font-semibold text-white">{safetyIncidents.length}</span> Incidents
+                <span className="font-semibold text-white">{liveCounts.projects}</span> Projects ·
+                <span className="ml-1 font-semibold text-white">{liveCounts.invoices}</span> Invoices ·
+                <span className="ml-1 font-semibold text-white">{liveCounts.incidents}</span> Incidents
               </span>
             </div>
           </div>

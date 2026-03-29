@@ -118,13 +118,35 @@ export function PlantEquipment() {
   const activeHires = hireLogs.filter(h => h.status === 'Active');
   const totalHireCost = activeHires.reduce((sum, h) => sum + (Number(h.daily_rate) * 30), 0); // Monthly projection
 
-  // Utilisation data
-  const utilisationData = equipment.map(e => ({
-    name: String(e.name ?? '').substring(0, 12),
-    onSiteDays: Math.floor(Math.random() * 20) + 5,
-    idleDays: Math.floor(Math.random() * 5),
-    maintenanceDays: Math.floor(Math.random() * 8)
-  })).slice(0, 8);
+  // Utilisation data derived from actual hire and service logs (last 30 days)
+  const utilisationData = equipment.map(e => {
+    const now = Date.now();
+    const thirtyDaysAgo = now - 30 * 86400000;
+    const eqHires = hireLogs.filter(h =>
+      String(h.equipment_id ?? '') === String(e.id ?? '') ||
+      String(h.name ?? '') === String(e.name ?? '')
+    );
+    const eqServices = serviceLogs.filter(s =>
+      String(s.equipment_id ?? '') === String(e.id ?? '')
+    );
+    const onSiteDays = Math.min(30, eqHires.reduce((sum, h) => {
+      if (!h.start_date) return sum;
+      const start = Math.max(new Date(String(h.start_date)).getTime(), thirtyDaysAgo);
+      const end = h.end_date ? Math.min(new Date(String(h.end_date)).getTime(), now) : now;
+      return end > start ? sum + Math.ceil((end - start) / 86400000) : sum;
+    }, 0));
+    const maintenanceDays = Math.min(30 - onSiteDays, eqServices.reduce((sum, s) => {
+      const d = s.date ? new Date(String(s.date)).getTime() : 0;
+      return d > thirtyDaysAgo && d < now ? sum + 1 : sum;
+    }, 0));
+    const idleDays = Math.max(0, 30 - onSiteDays - maintenanceDays);
+    return {
+      name: String(e.name ?? '').substring(0, 12),
+      onSiteDays,
+      idleDays,
+      maintenanceDays,
+    };
+  }).slice(0, 8);
 
   const statusDistribution = [
     { name: 'On Site', value: onSiteCount, fill: '#3b82f6' },

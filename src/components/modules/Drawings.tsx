@@ -40,15 +40,16 @@ interface Transmittal {
   drawings: string[];
 }
 
-const MOCK_REVISIONS: Record<string,RevisionRecord[]> = {
-  'CW-ARC-001': [
-    { letter:'A', date:'2024-01-15', issuedBy:'John Smith', description:'Initial issue', status:'Superseded' },
-    { letter:'B', date:'2024-02-20', issuedBy:'Jane Doe', description:'Layout revisions', status:'Current' },
-  ],
-  'CW-STR-002': [
-    { letter:'A', date:'2024-01-20', issuedBy:'Bob Jones', description:'Structural schemes', status:'Current' },
-  ],
-};
+// Build revision history from actual document fields — each drawing record IS a revision
+function buildRevisions(d: AnyRow): RevisionRecord[] {
+  return [{
+    letter: String(d.revision ?? 'A'),
+    date: String(d.date_issued ?? d.created_at ?? ''),
+    issuedBy: String(d.author ?? 'Unknown'),
+    description: String(d.description ?? 'Initial issue'),
+    status: String(d.status ?? 'Current'),
+  }];
+}
 
 export function Drawings() {
   const { useList, useCreate, useUpdate, useDelete } = useDocuments;
@@ -143,11 +144,7 @@ export function Drawings() {
 
   const revisionStats = DISCIPLINES.filter(d=>d!=='All').map(disc => {
     const discDrawings = drawings.filter(d=>d.discipline===disc);
-    const totalRevisions = discDrawings.reduce((sum, d)=>{
-      const revs = MOCK_REVISIONS[String(d.drawing_number??'')] ?? [];
-      return sum + revs.length;
-    }, 0);
-    return { name: disc, revisions: totalRevisions || discDrawings.length };
+    return { name: disc, revisions: discDrawings.length };
   }).filter(d=>d.revisions>0);
 
   const pieData = disciplineStats.filter(d=>d.count>0).map(d=>({ name: d.name, value: d.count }));
@@ -406,8 +403,8 @@ export function Drawings() {
                   <p className="text-sm text-gray-400 mt-1">{String(d.title??'—')}</p>
                 </div>
                 <div className="space-y-3">
-                  {(MOCK_REVISIONS[String(d.drawing_number??'')] ?? [{letter: String(d.revision??'A'), date: String(d.date_issued??'2024-01-01'), issuedBy: String(d.author??'Unknown'), description: 'Initial issue', status: String(d.status??'Current')}]).map((rev, idx)=>(
-                    <div key={idx} className={`relative pl-8 pb-4 ${idx < (MOCK_REVISIONS[String(d.drawing_number??'')] ?? []).length - 1 ? 'border-l border-dashed border-gray-600' : ''}`}>
+                  {buildRevisions(d).map((rev, idx)=>(
+                    <div key={idx} className={`relative pl-8 pb-4 ${idx < buildRevisions(d).length - 1 ? 'border-l border-dashed border-gray-600' : ''}`}>
                       <div className={`absolute -left-3 top-0 w-5 h-5 rounded-full border-2 flex items-center justify-center ${rev.status==='Current'?'bg-blue-500 border-blue-400':'bg-gray-600 border-gray-500'}`}>
                         {rev.status==='Current' && <CheckCircle2 size={12} className="text-white"/>}
                       </div>
@@ -604,7 +601,7 @@ export function Drawings() {
               <div className="space-y-2">
                 <p className="text-xs font-semibold text-gray-400 uppercase">Revision Timeline</p>
                 <div className="space-y-2 bg-gray-700/30 rounded border border-gray-600 p-3">
-                  {(MOCK_REVISIONS[String(selectedDrawing.drawing_number??'')] ?? [{letter: String(selectedDrawing.revision??'A'), date: String(selectedDrawing.date_issued??'2024-01-01'), issuedBy: String(selectedDrawing.author??'Unknown'), description: '', status: String(selectedDrawing.status??'Current')}]).slice(0,3).map((rev, idx)=>(
+                  {buildRevisions(selectedDrawing).slice(0,3).map((rev, idx)=>(
                     <div key={idx} className="flex items-center justify-between text-xs py-1">
                       <span className="font-mono font-bold text-gray-300">Rev {rev.letter}</span>
                       <span className={`px-1.5 py-0.5 rounded text-xs ${rev.status==='Current'?'bg-blue-900/40 text-blue-300':'bg-gray-600 text-gray-400'}`}>

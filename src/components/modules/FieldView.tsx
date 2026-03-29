@@ -107,12 +107,12 @@ export function FieldView() {
     if (!permitForm.type || !permitForm.site) { toast.error('Type and site are required'); return; }
     setSavingPermit(true);
     try {
-      await (sitePermitsApi as any).create({ ...permitForm, from_date: permitForm.from_date || null, to_date: permitForm.to_date || null });
+      await sitePermitsApi.create({ ...permitForm, from_date: permitForm.from_date || null, to_date: permitForm.to_date || null });
       toast.success('Permit issued');
       setShowPermitModal(false);
       setPermitForm({ type: '', site: '', issuedBy: '', from_date: '', to_date: '', status: 'Active' });
       const data = await sitePermitsApi.getAll();
-      const mapped = (data as AnyRow[]).map((p: AnyRow) => ({ ...p, issuedBy: (p as any).issued_by, from: (p as any).from_date, to: (p as any).to_date }));
+      const mapped = (data as AnyRow[]).map((p: AnyRow) => ({ ...p, issuedBy: p.issued_by, from: p.from_date, to: p.to_date }));
       setPermits(mapped);
     } catch { toast.error('Failed to issue permit'); }
     finally { setSavingPermit(false); }
@@ -364,33 +364,30 @@ export function FieldView() {
       {subTab === 'map' && (
         <div className="bg-gray-800 rounded-xl border border-gray-700 p-6">
           <h2 className="text-lg font-semibold text-white mb-6">Project Locations</h2>
+          {activeProjects.length === 0 ? (
+            <EmptyState title="No active projects" />
+          ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {[
-              { name: 'Canary Wharf', location: 'London E14', status: 'Active', workers: 24 },
-              { name: 'Manchester Hub', location: 'Manchester M1', status: 'Active', workers: 18 },
-              { name: 'Birmingham Build', location: 'Birmingham B1', status: 'On Hold', workers: 16 },
-              { name: 'Coventry Works', location: 'Coventry CV1', status: 'Active', workers: 12 },
-              { name: 'Bristol Platform', location: 'Bristol BS1', status: 'Active', workers: 20 },
-              { name: 'Leeds Complex', location: 'Leeds LS1', status: 'Active', workers: 14 },
-            ].map((site, idx) => {
-              const statusColor = site.status === 'Active' ? 'bg-green-500' : 'bg-yellow-500';
-              const progressPercent = Math.floor(Math.random() * 100);
+            {activeProjects.map((p) => {
+              const status = String(p.status ?? 'Active');
+              const statusColor = status === 'Active' || status === 'In Progress' ? 'bg-green-500' : 'bg-yellow-500';
+              const progressPercent = Math.min(100, Math.max(0, Number(p.progress ?? 0)));
               return (
-                <div key={idx} className="bg-gray-700 rounded-lg border border-gray-600 p-4">
+                <div key={String(p.id ?? '')} className="bg-gray-700 rounded-lg border border-gray-600 p-4">
                   <div className="flex items-start justify-between mb-3">
                     <div>
-                      <h3 className="font-medium text-white">{site.name}</h3>
+                      <h3 className="font-medium text-white truncate">{String(p.name ?? '')}</h3>
                       <p className="text-xs text-gray-400 mt-0.5 flex items-center gap-1">
                         <MapPin size={10} />
-                        {site.location}
+                        {String(p.location ?? 'Unknown location')}
                       </p>
                     </div>
-                    <div className={`w-3 h-3 rounded-full ${statusColor}`} />
+                    <div className={`w-3 h-3 rounded-full flex-shrink-0 ${statusColor}`} />
                   </div>
 
                   <div className="flex items-center gap-2 mb-3 text-sm">
                     <Users size={14} className="text-blue-400" />
-                    <span className="text-gray-300">{site.workers} workers</span>
+                    <span className="text-gray-300">{Number(p.workers ?? 0)} workers</span>
                   </div>
 
                   <div className="space-y-1">
@@ -406,6 +403,7 @@ export function FieldView() {
               );
             })}
           </div>
+          )}
         </div>
       )}
 

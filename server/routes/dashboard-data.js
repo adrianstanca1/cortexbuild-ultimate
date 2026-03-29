@@ -5,7 +5,7 @@ const router = express.Router();
 
 router.get('/overview', async (req, res) => {
   try {
-    const auth = req.auth || {};
+    const auth = req.user || {};
     const orgId = auth.organization_id;
     const isSuper = ['super_admin', 'company_owner'].includes(auth.role);
 
@@ -19,6 +19,7 @@ router.get('/overview', async (req, res) => {
     const [projectsResult, invoicesResult, rfisResult, safetyResult, teamResult] = await Promise.all([
       pool.query(`SELECT COUNT(*) as count FROM projects ${where}`, params),
       pool.query(`SELECT
+        COUNT(*) as total_count,
         COALESCE(SUM(CASE WHEN status = 'paid' THEN amount ELSE 0 END), 0) as total_revenue,
         COALESCE(SUM(CASE WHEN status IN ('pending','unpaid','sent','draft') THEN amount ELSE 0 END), 0) as outstanding
         FROM invoices ${where}`, params),
@@ -30,6 +31,7 @@ router.get('/overview', async (req, res) => {
     ]);
 
     const activeProjects = Number(projectsResult.rows[0]?.count ?? 0);
+    const invoiceCount = Number(invoicesResult.rows[0]?.total_count ?? 0);
     const totalRevenue = Number(invoicesResult.rows[0]?.total_revenue ?? 0);
     const outstanding = Number(invoicesResult.rows[0]?.outstanding ?? 0);
     const openRfis = Number(rfisResult.rows[0]?.count ?? 0);
@@ -41,11 +43,13 @@ router.get('/overview', async (req, res) => {
     res.json({
       kpi: {
         activeProjects,
+        invoiceCount,
         totalRevenue,
         outstanding,
         openRfis,
         hsScore,
         workforce,
+        safetyIncidents: safetyTotal,
       },
     });
   } catch (err) {
@@ -56,7 +60,7 @@ router.get('/overview', async (req, res) => {
 
 router.get('/revenue', async (req, res) => {
   try {
-    const auth = req.auth || {};
+    const auth = req.user || {};
     const orgId = auth.organization_id;
     const isSuper = ['super_admin', 'company_owner'].includes(auth.role);
 
@@ -93,7 +97,7 @@ router.get('/revenue', async (req, res) => {
 
 router.get('/project-status', async (req, res) => {
   try {
-    const auth = req.auth || {};
+    const auth = req.user || {};
     const orgId = auth.organization_id;
     const isSuper = ['super_admin', 'company_owner'].includes(auth.role);
 
@@ -121,9 +125,9 @@ router.get('/project-status', async (req, res) => {
     };
 
     const statuses = result.rows.map(r => ({
-      name:  statusMap[r.status]?.name  || r.status,
+      name:  statusMap[r.status.toUpperCase()]?.name  || r.status,
       value: Number(r.count),
-      fill:  statusMap[r.status]?.fill  || '#64748b',
+      fill:  statusMap[r.status.toUpperCase()]?.fill  || '#64748b',
     }));
 
     res.json({ statuses });
@@ -135,7 +139,7 @@ router.get('/project-status', async (req, res) => {
 
 router.get('/safety-chart', async (req, res) => {
   try {
-    const auth = req.auth || {};
+    const auth = req.user || {};
     const orgId = auth.organization_id;
     const isSuper = ['super_admin', 'company_owner'].includes(auth.role);
 

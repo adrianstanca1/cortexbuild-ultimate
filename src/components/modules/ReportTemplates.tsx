@@ -65,8 +65,10 @@ export function ReportTemplates() {
       const data = await reportTemplatesApi.getAll(selectedType === 'all' ? undefined : selectedType);
       setTemplates((data as unknown as AnyRow[]).map(t => ({
         ...t,
-        usage: Math.floor(Math.random() * 100),
-        lastUsed: new Date(Date.now() - Math.random() * 30 * 24 * 60 * 60 * 1000).toLocaleDateString(),
+        usage: 0,
+        lastUsed: t.updated_at
+          ? new Date(String(t.updated_at)).toLocaleDateString()
+          : t.created_at ? new Date(String(t.created_at)).toLocaleDateString() : '—',
       })) as ReportTemplateExt[]);
     } catch {
       toast.error('Failed to load templates');

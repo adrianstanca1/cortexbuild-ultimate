@@ -741,8 +741,9 @@ export const analyticsApi = {
 export const dashboardApi = {
   getOverview: () => apiFetch<{
     kpi: {
-      activeProjects: number; totalRevenue: number; outstanding: number;
-      openRfis: number; hsScore: number; workforce: number;
+      activeProjects: number; invoiceCount: number; totalRevenue: number;
+      outstanding: number; openRfis: number; hsScore: number;
+      workforce: number; safetyIncidents: number;
     };
   }>('/dashboard-data/overview'),
   getRevenueData: () => apiFetch<{ month: string; revenue: number }[]>('/dashboard-data/revenue'),

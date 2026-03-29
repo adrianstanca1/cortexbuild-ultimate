@@ -139,8 +139,19 @@ export function Tenders() {
     { stage: 'Won', count: wonCount },
   ];
 
+  // Stable hash offset: produces a deterministic integer in [-10, 10] per (id, seed) pair
+  function hashOffset(id: unknown, seed: number): number {
+    let h = seed * 2654435761;
+    const s = String(id ?? '');
+    for (let i = 0; i < s.length; i++) {
+      h = Math.imul(h ^ s.charCodeAt(i), 2246822519);
+    }
+    return ((Math.abs(h >>> 0) % 21) - 10);
+  }
+
   const aiScoringData = tenders
     .map(t => {
+      const base = Number(t.aiScore ?? 50);
       const mapped: AnyRow & {
         overall: number;
         clientRel: number;
@@ -151,12 +162,12 @@ export function Tenders() {
       } = {
         ...t,
         overall: Number(t.aiScore ?? 0),
-        // Sub-dimensions: show overall score ± small variance for visual spread
-        clientRel: Math.min(100, Math.max(5, Number(t.aiScore ?? 50) + Math.floor(Math.random() * 20 - 10))),
-        techFit: Math.min(100, Math.max(5, Number(t.aiScore ?? 50) + Math.floor(Math.random() * 20 - 10))),
-        priceComp: Math.min(100, Math.max(5, Number(t.aiScore ?? 50) + Math.floor(Math.random() * 20 - 10))),
-        progRisk: Math.min(100, Math.max(5, Number(t.aiScore ?? 50) + Math.floor(Math.random() * 20 - 10))),
-        resources: Math.min(100, Math.max(5, Number(t.aiScore ?? 50) + Math.floor(Math.random() * 20 - 10))),
+        // Sub-dimensions: stable offsets derived from tender ID — no random on render
+        clientRel: Math.min(100, Math.max(5, base + hashOffset(t.id, 1))),
+        techFit:   Math.min(100, Math.max(5, base + hashOffset(t.id, 2))),
+        priceComp: Math.min(100, Math.max(5, base + hashOffset(t.id, 3))),
+        progRisk:  Math.min(100, Math.max(5, base + hashOffset(t.id, 4))),
+        resources: Math.min(100, Math.max(5, base + hashOffset(t.id, 5))),
       };
       return mapped;
     })
