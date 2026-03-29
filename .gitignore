@@ -10,3 +10,9 @@ tsconfig.tsbuildinfo
 dist_backup_*/
 .next/
 sendgrid.env
+*.plist
+clean_lint*.json
+lint_*.json
+lint_*.txt
+lint_report.json
+fix_any.js
