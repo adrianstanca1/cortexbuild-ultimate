@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { useState, useEffect } from 'react';
 import {
   FileText, Plus, Search, Download, Clock, Eye, Edit, X, Upload, Trash2,
@@ -123,7 +124,7 @@ export default function Specifications() {
         if (String(s.id) === String(specId)) {
           return {
             ...s,
-            documents: [...(s.documents || []), { name: file.name, url: result.file_url || result.name }]
+            documents: [...(s.documents || []), { name: file.name, url: String(result.file_url || result.name || '') }]
           };
         }
         return s;

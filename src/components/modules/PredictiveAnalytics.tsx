@@ -297,7 +297,7 @@ export function PredictiveAnalytics() {
           return (
             <button
               key={String(tab.id)}
-              onClick={() => setActiveTab(tab.id as any)}
+              onClick={() => setActiveTab(tab.id as 'risk' | 'cost' | 'schedule' | 'weather' | 'models')}
               className={`px-4 py-3 font-medium text-sm transition-colors flex items-center gap-2 whitespace-nowrap border-b-2 ${
                 activeTab === tab.id
                   ? 'text-orange-500 border-orange-500'

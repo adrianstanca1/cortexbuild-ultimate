@@ -287,7 +287,7 @@ export function Tenders() {
       // Persist scores back via the update mutation
       await Promise.all(
         Object.entries(scoreMap).map(([tid, score]) =>
-          updateMutation.mutateAsync({ id: tid, data: { ai_score: score } as any })
+          updateMutation.mutateAsync({ id: tid, data: { ai_score: score } })
         )
       );
       toast.dismiss('ai-rescore');
@@ -312,7 +312,7 @@ export function Tenders() {
       });
       if (!res.ok) throw new Error('Scoring failed');
       const scores = await res.json();
-      await updateMutation.mutateAsync({ id, data: { ai_score: scores.overall } as any });
+      await updateMutation.mutateAsync({ id, data: { ai_score: scores.overall } });
       toast.dismiss(`ai-score-${id}`);
       toast.success('AI scoring complete');
     } catch {
@@ -403,7 +403,7 @@ export function Tenders() {
         ].map(tab => (
           <button
             key={tab.id}
-            onClick={() => setActiveTab(tab.id as any)}
+            onClick={() => setActiveTab(tab.id as 'pipeline' | 'register' | 'analytics' | 'ai-scoring')}
             className={`flex items-center gap-2 px-4 py-2.5 text-sm font-medium border-b-2 -mb-px transition-colors ${
               activeTab === tab.id
                 ? 'border-blue-500 text-blue-400'
@@ -527,7 +527,7 @@ export function Tenders() {
                                 {stageKey !== 'won' && stageKey !== 'lost' && (
                                   <select
                                     value={stageKey}
-                                    onChange={e => moveStatus(t, e.target.value as any)}
+                                    onChange={e => moveStatus(t, e.target.value as typeof form.status)}
                                     className="flex-1 text-xs bg-gray-700 hover:bg-green-600 text-white px-1 rounded transition-colors cursor-pointer"
                                   >
                                     {PIPELINE_STAGES.map(s => (
@@ -767,7 +767,7 @@ export function Tenders() {
               ].map(f => (
                 <button
                   key={f.id}
-                  onClick={() => setAiFilter(f.id as any)}
+                  onClick={() => setAiFilter(f.id as 'all' | 'high' | 'medium' | 'low')}
                   className={`text-xs px-3 py-1.5 rounded-lg font-medium transition-colors ${
                     aiFilter === f.id
                       ? 'bg-blue-600 text-white'
@@ -922,7 +922,7 @@ export function Tenders() {
                   </label>
                   <select
                     value={form.status}
-                    onChange={e => setForm({ ...form, status: e.target.value as any })}
+                    onChange={e => setForm({ ...form, status: e.target.value as typeof form.status })}
                     className="w-full px-3 py-2 border border-gray-700 rounded-lg bg-gray-900 text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                   >
                     {PIPELINE_STAGES.map(s => (
@@ -1140,7 +1140,7 @@ export function Tenders() {
                 </button>
                 <button
                   onClick={() => {
-                    moveStatus(selectedDetail, (selectedDetail.status === 'won' ? 'submitted' : 'won') as any);
+                    moveStatus(selectedDetail, (selectedDetail.status === 'won' ? 'submitted' : 'won') as typeof form.status);
                     setSelectedDetail(null);
                   }}
                   className="flex-1 px-4 py-2 text-sm font-medium text-white bg-green-600 hover:bg-green-700 rounded-lg transition-colors"

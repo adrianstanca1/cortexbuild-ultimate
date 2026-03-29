@@ -335,7 +335,7 @@ export function Invoicing() {
             }`}
           >
             {t.label}
-            {'badge' in t && typeof (t as any).badge === 'number' && (t as any).badge > 0 && (
+            {'badge' in t && typeof (t as { badge?: number }).badge === 'number' && (t as { badge?: number }).badge! > 0 && (
               <span className="text-xs px-1.5 py-0.5 rounded-full bg-emerald-900/60 text-emerald-400">
                 {t.badge}
               </span>
@@ -366,7 +366,7 @@ export function Invoicing() {
                 }`}
               >
                 {t.label}
-                {'badge' in t && typeof (t as any).badge === 'number' && (t as any).badge > 0 && (
+                {'badge' in t && typeof (t as { badge?: number }).badge === 'number' && (t as { badge?: number }).badge! > 0 && (
                   <span className="text-xs px-1.5 py-0.5 rounded-full bg-red-900/60 text-red-400">
                     {t.badge}
                   </span>

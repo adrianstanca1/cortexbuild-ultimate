@@ -176,7 +176,7 @@ export default function Defects() {
       const result = await uploadFile(file, 'PHOTOS');
       setDefects(prev => prev.map(d => {
         if (String(d.id) === String(defectId)) {
-          return { ...d, photos: [...(d.photos || []), { url: result.file_url || result.name, caption: file.name }] };
+          return { ...d, photos: [...(d.photos || []), { url: String(result.file_url || result.name || ''), caption: file.name }] };
         }
         return d;
       }));
@@ -203,7 +203,7 @@ export default function Defects() {
 
   const totalOpen = defects.filter((v: Defect) => !['completed', 'closed'].includes(v.status)).length;
   const totalCritical = defects.filter((v: Defect) => v.priority === 'critical' && v.status !== 'closed').length;
-  const totalCost = defects.reduce((sum, v: any) => sum + v.cost, 0);
+  const totalCost = defects.reduce((sum, v: Defect & { cost?: number }) => sum + (v.cost ?? 0), 0);
 
   return (
     <div className="p-6 space-y-6">

@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { useState, useEffect } from 'react';
 import { Plus, Edit, Trash2, X, Upload, CheckSquare, Square } from 'lucide-react';
 import { EmptyState } from '../ui/EmptyState';

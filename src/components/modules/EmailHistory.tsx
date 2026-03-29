@@ -83,8 +83,8 @@ export function EmailHistory() {
       const data = await emailApi.getHistory(50, 0);
       setEmails(data.emails as AnyRow[]);
       setTotal(data.total);
-    } catch (err: any) {
-      toast.error(err.message || 'Failed to send email');
+    } catch (err) {
+      toast.error((err as Error).message || 'Failed to send email');
     } finally {
       setSending(false);
     }

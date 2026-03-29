@@ -115,8 +115,8 @@ function GalleryTab({ projectId, projectName }: GalleryTabProps) {
       setImgCategory('general');
       setShowUpload(false);
       refetch();
-    } catch (err: any) {
-      toast.error(err.message || 'Upload failed');
+    } catch (err) {
+      toast.error((err as Error).message || 'Upload failed');
     } finally {
       setUploading(false);
     }
@@ -129,8 +129,8 @@ function GalleryTab({ projectId, projectName }: GalleryTabProps) {
       toast.success('Image deleted');
       setSelectedImage(null);
       refetch();
-    } catch (err: any) {
-      toast.error(err.message || 'Delete failed');
+    } catch (err) {
+      toast.error((err as Error).message || 'Delete failed');
     }
   }, [refetch]);
 
@@ -139,8 +139,8 @@ function GalleryTab({ projectId, projectName }: GalleryTabProps) {
       await projectImagesApi.update(id, { caption: newCaption });
       toast.success('Caption updated');
       refetch();
-    } catch (err: any) {
-      toast.error(err.message || 'Update failed');
+    } catch (err) {
+      toast.error((err as Error).message || 'Update failed');
     }
   }, [refetch]);
 
@@ -347,8 +347,8 @@ function DocumentsTab({ projectId, projectName }: DocumentsTabProps) {
       setUploadForm({ name: '', category: 'REPORTS', discipline: '', date_issued: '', author: '' });
       setShowUpload(false);
       refetch();
-    } catch (err: any) {
-      toast.error(err.message || 'Upload failed');
+    } catch (err) {
+      toast.error((err as Error).message || 'Upload failed');
     } finally {
       setUploading(false);
     }
@@ -370,8 +370,8 @@ function DocumentsTab({ projectId, projectName }: DocumentsTabProps) {
       toast.success('Document deleted');
       _setSelectedDoc(null);
       refetch();
-    } catch (err: any) {
-      toast.error(err.message || 'Delete failed');
+    } catch (err) {
+      toast.error((err as Error).message || 'Delete failed');
     }
   }, [refetch]);
 
@@ -391,8 +391,8 @@ function DocumentsTab({ projectId, projectName }: DocumentsTabProps) {
       toast.success('Document updated');
       setEditDoc(null);
       refetch();
-    } catch (err: any) {
-      toast.error(err.message || 'Update failed');
+    } catch (err) {
+      toast.error((err as Error).message || 'Update failed');
     }
   }, [editForm, refetch]);
 
@@ -641,8 +641,8 @@ function TasksTab({ projectId }: TasksTabProps) {
       setCreateForm(TASK_FORM_DEFAULTS);
       setShowCreate(false);
       refetch();
-    } catch (err: any) {
-      toast.error(err.message || 'Failed to create task');
+    } catch (err) {
+      toast.error((err as Error).message || 'Failed to create task');
     }
   }, [createForm, projectId, refetch]);
 
@@ -661,8 +661,8 @@ function TasksTab({ projectId }: TasksTabProps) {
       toast.success('Task updated');
       setEditingTask(null);
       refetch();
-    } catch (err: any) {
-      toast.error(err.message || 'Failed to update task');
+    } catch (err) {
+      toast.error((err as Error).message || 'Failed to update task');
     }
   }, [editingTask, editForm, refetch]);
 
@@ -672,8 +672,8 @@ function TasksTab({ projectId }: TasksTabProps) {
       await projectTasksApi.delete(id);
       toast.success('Task deleted');
       refetch();
-    } catch (err: any) {
-      toast.error(err.message || 'Failed to delete task');
+    } catch (err) {
+      toast.error((err as Error).message || 'Failed to delete task');
     }
   }, [refetch]);
 
@@ -681,8 +681,8 @@ function TasksTab({ projectId }: TasksTabProps) {
     try {
       await projectTasksApi.update(id, { status: newStatus });
       refetch();
-    } catch (err: any) {
-      toast.error(err.message || 'Failed to update status');
+    } catch (err) {
+      toast.error((err as Error).message || 'Failed to update status');
     }
   }, [refetch]);
 

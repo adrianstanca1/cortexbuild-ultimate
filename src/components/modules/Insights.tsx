@@ -223,16 +223,16 @@ export function Insights() {
         <div className="card p-5">
           <h3 className="text-lg font-bold text-white mb-4">Confidence Distribution</h3>
           <div className="h-64">
-            {(<ResponsiveContainer width="100%" height="100%">
+            <ResponsiveContainer width="100%" height="100%">
               <RechartsPie>
-                <Pie data={confidenceData as any} cx="50%" cy="50%" innerRadius={40} outerRadius={80} paddingAngle={2} dataKey="value">
+                <Pie data={confidenceData} cx="50%" cy="50%" innerRadius={40} outerRadius={80} paddingAngle={2} dataKey="value">
                   {confidenceData.map((entry, index) => (
                     <Cell key={`cell-${index}`} fill={String(entry.color)} />
                   ))}
                 </Pie>
                 <Tooltip />
               </RechartsPie>
-            </ResponsiveContainer>) as any}
+            </ResponsiveContainer>
           </div>
         </div>
       </div>

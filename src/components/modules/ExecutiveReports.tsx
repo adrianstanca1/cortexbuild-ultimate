@@ -224,7 +224,7 @@ export function ExecutiveReports() {
         <div className="flex gap-2">
           <select
             value={reportType}
-            onChange={(e) => setReportType(e.target.value as any)}
+            onChange={(e) => setReportType(e.target.value as 'weekly' | 'monthly' | 'quarterly')}
             className="bg-gray-800 border border-gray-700 text-white text-sm rounded-lg px-3 py-2"
           >
             <option value="weekly">Weekly</option>

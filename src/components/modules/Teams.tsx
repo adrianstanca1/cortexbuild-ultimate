@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Users, Plus, Search, Phone, Mail, Edit2, Trash2, X, ChevronDown, ChevronUp, Shield, Clock, Award, AlertTriangle, PoundSterling, MapPin, CheckCircle2, Calendar, Upload, CheckSquare, Square, Download, Pencil } from 'lucide-react';
 import { EmptyState } from '../ui/EmptyState';
 import { useTeam } from '../../hooks/useData';
@@ -266,12 +266,12 @@ export function Teams() {
     }
   }
 
-  async function handleBulkImport(data: Record<string, unknown>[], mapping: any[]) {
+  async function handleBulkImport(data: Record<string, unknown>[], mapping: { source: string; target: string }[]) {
     let failed = 0;
     for (const row of data) {
       const mapped: Record<string, unknown> = {};
       mapping.forEach(m => { if (m.target) mapped[m.target] = row[m.source]; });
-      try { await createMutation.mutateAsync(mapped as any); } catch { failed++; }
+      try { await createMutation.mutateAsync(mapped); } catch { failed++; }
     }
     if (failed > 0) toast.error(`${failed} row(s) failed to import`);
     toast.success(`${data.length - failed} members imported`);
@@ -1135,7 +1135,7 @@ export function Teams() {
   );
 }
 
-function TrendingUp(props: any) {
+function TrendingUp(props: React.SVGProps<SVGSVGElement>) {
   return (
     <svg {...props} xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
       <polyline points="23 6 13.5 15.5 8.5 10.5 1 18" />

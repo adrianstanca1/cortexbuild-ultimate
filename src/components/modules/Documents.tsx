@@ -125,7 +125,7 @@ export function Documents() {
       toast.success(`Uploaded ${file.name}`);
       setShowUploadModal(false);
       fetchDocuments();
-    } catch (err: any) { toast.error(err.message); }
+    } catch (err) { toast.error((err as Error).message || 'Upload failed'); }
   };
 
   const handleUploadVersion = async (docId: string, file: File, changes: string) => {
@@ -336,7 +336,7 @@ export function Documents() {
             <div className={clsx('border-2 border-dashed rounded-xl p-8 text-center cursor-pointer transition-all mb-4', dragOver ? 'border-amber-500 bg-amber-500/10' : 'border-slate-700 hover:border-slate-600')}
               onDragOver={(e) => { e.preventDefault(); setDragOver(true); }} onDragLeave={() => setDragOver(false)}
               onDrop={(e) => { e.preventDefault(); setDragOver(false); const file = e.dataTransfer.files[0]; if (file) handleUpload(file, selectedCategory, selectedAccess); }}
-              onClick={() => { const input = document.createElement('input'); input.type = 'file'; input.onchange = (e: any) => handleUpload(e.target.files[0], selectedCategory, selectedAccess); input.click(); }}>
+              onClick={() => { const input = document.createElement('input'); input.type = 'file'; input.onchange = (e) => { const files = (e.target as HTMLInputElement).files; if (files?.[0]) handleUpload(files[0], selectedCategory, selectedAccess); }; input.click(); }}>
               <UploadCloud className={clsx('w-10 h-10 mx-auto mb-3', dragOver ? 'text-amber-500' : 'text-slate-500')} />
               <p className="text-slate-300">Drag and drop or click to upload</p>
               <p className="text-sm text-slate-500 mt-1">PDF, DOC, XLS, PNG, JPG up to 100MB</p>

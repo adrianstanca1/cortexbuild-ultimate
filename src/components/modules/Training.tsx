@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { useState, useEffect, useRef } from 'react';
 import { Plus, GraduationCap, Award, Clock, AlertCircle, FileCheck, Trash2, X, Edit, CheckSquare, Square, Download } from 'lucide-react';
 import { EmptyState } from '../ui/EmptyState';

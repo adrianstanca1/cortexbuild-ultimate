@@ -324,7 +324,7 @@ export function Inspections() {
                         {Array.isArray(i.checklist_items) && i.checklist_items.length > 0 && (
                           <div><p className="text-xs font-semibold text-gray-400 mb-2">CHECKLIST</p>
                             <div className="space-y-1">
-                              {(i.checklist_items as any[]).map((c, idx) => (
+                              {(i.checklist_items as { result: string; item: string }[]).map((c, idx) => (
                                 <div key={idx} className="flex items-center gap-2 text-xs">
                                   {c.result === 'pass' && <CheckCircle size={12} className="text-green-500 flex-shrink-0"/>}
                                   {c.result === 'fail' && <XCircle size={12} className="text-red-500 flex-shrink-0"/>}

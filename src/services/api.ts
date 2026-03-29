@@ -71,7 +71,7 @@ async function fetchAll<T>(endpoint: string): Promise<T[]> {
   try {
     const res = await apiFetch<{ data: T[] } | T[]>(`/${endpoint}`);
     // Generic router returns { data, pagination }; unwrap if needed
-    if (res && typeof res === 'object' && 'data' in res && Array.isArray((res as any).data)) {
+    if (res && typeof res === 'object' && 'data' in res && Array.isArray((res as { data: T[] }).data)) {
       return (res as { data: T[] }).data;
     }
     return res as T[];
@@ -93,7 +93,7 @@ async function deleteRow(endpoint: string, id: string): Promise<void> {
   await apiFetch(`/${endpoint}/${id}`, { method: 'DELETE' });
 }
 
-async function uploadFile(file: File, category: string, project?: string, projectId?: string): Promise<any> {
+async function uploadFile(file: File, category: string, project?: string, projectId?: string): Promise<Record<string, unknown>> {
   const token = getToken();
   const formData = new FormData();
   formData.append('file', file);
@@ -476,23 +476,23 @@ export const searchApi = {
     } catch {
       const q = query.toLowerCase();
       const results = {
-        projects: MOCK_DATA.projects.filter((p: any) =>
-          p.name?.toLowerCase().includes(q) || p.client?.toLowerCase().includes(q)
+        projects: MOCK_DATA.projects.filter((p: Row) =>
+          String(p.name || '').toLowerCase().includes(q) || String(p.client || '').toLowerCase().includes(q)
         ),
-        invoices: MOCK_DATA.invoices.filter((i: any) =>
-          i.number?.toLowerCase().includes(q) || i.client?.toLowerCase().includes(q)
+        invoices: MOCK_DATA.invoices.filter((i: Row) =>
+          String(i.number || '').toLowerCase().includes(q) || String(i.client || '').toLowerCase().includes(q)
         ),
-        contacts: MOCK_DATA.contacts.filter((c: any) =>
-          c.name?.toLowerCase().includes(q) || c.company?.toLowerCase().includes(q)
+        contacts: MOCK_DATA.contacts.filter((c: Row) =>
+          String(c.name || '').toLowerCase().includes(q) || String(c.company || '').toLowerCase().includes(q)
         ),
-        rfis: MOCK_DATA.rfis.filter((r: any) =>
-          r.number?.toLowerCase().includes(q) || r.subject?.toLowerCase().includes(q)
+        rfis: MOCK_DATA.rfis.filter((r: Row) =>
+          String(r.number || '').toLowerCase().includes(q) || String(r.subject || '').toLowerCase().includes(q)
         ),
-        documents: MOCK_DATA.documents.filter((d: any) =>
-          d.name?.toLowerCase().includes(q)
+        documents: MOCK_DATA.documents.filter((d: Row) =>
+          String(d.name || '').toLowerCase().includes(q)
         ),
-        team: MOCK_DATA.team.filter((t: any) =>
-          t.name?.toLowerCase().includes(q) || t.role?.toLowerCase().includes(q)
+        team: MOCK_DATA.team.filter((t: Row) =>
+          String(t.name || '').toLowerCase().includes(q) || String(t.role || '').toLowerCase().includes(q)
         ),
       };
       return { results };

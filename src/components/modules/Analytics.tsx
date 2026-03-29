@@ -10,7 +10,6 @@ import { analyticsApi } from '../../services/api';
 import clsx from 'clsx';
 import { CheckSquare, Square } from 'lucide-react';
 import { BulkActionsBar, useBulkSelection } from '../ui/BulkActions';
-import { toast } from 'sonner';
 
 type AnyRow = Record<string, unknown>;
 

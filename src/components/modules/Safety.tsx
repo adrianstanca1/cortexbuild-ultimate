@@ -317,12 +317,12 @@ export function Safety() {
     }
   };
 
-  async function handleBulkImport(data: Record<string, unknown>[], mapping: any[]) {
+  async function handleBulkImport(data: Record<string, unknown>[], mapping: { source: string; target: string }[]) {
     let failed = 0;
     for (const row of data) {
       const mapped: Record<string, unknown> = {};
       mapping.forEach(m => { if (m.target) mapped[m.target] = row[m.source]; });
-      try { await createM.mutateAsync(mapped as any); } catch { failed++; }
+      try { await createM.mutateAsync(mapped); } catch { failed++; }
     }
     if (failed > 0) toast.error(`${failed} row(s) failed to import`);
     toast.success(`${data.length - failed} item(s) imported`);

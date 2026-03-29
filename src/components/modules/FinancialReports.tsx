@@ -1,5 +1,5 @@
 // Module: FinancialReports — CortexBuild Ultimate Enhanced
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { TrendingUp, DollarSign, Download, RefreshCw, ArrowUpRight,
   ArrowDownRight, CreditCard, AlertCircle, Trash2,
   CheckSquare, Square,
@@ -75,7 +75,10 @@ const fmtCurrency = (n: number) => {
   return `£${n.toFixed(0)}`;
 };
 
-const StatCard = ({ title, value, change, changeType, icon: Icon, color }: any) => (
+const StatCard = ({ title, value, change, changeType, icon: Icon, color }: {
+  title: string; value: number; change?: number; changeType?: string;
+  icon: React.ComponentType<{ className?: string }>; color: string;
+}) => (
   <div className="card p-5">
     <div className="flex items-start justify-between">
       <div>

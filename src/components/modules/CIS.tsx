@@ -186,7 +186,7 @@ export function CIS() {
           {id:'calculator', label:'Deduction Calculator'},
           {id:'submissions', label:'Submission History'},
         ].map(t=>(
-          <button type="button"  key={t.id} onClick={()=>setMainTab(t.id as any)}
+          <button type="button"  key={t.id} onClick={()=>setMainTab(t.id as 'returns'|'register'|'calculator'|'submissions')}
             className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${mainTab===t.id?'bg-orange-600 text-white':'bg-gray-800 text-gray-400 hover:bg-gray-700 hover:text-white'}`}>
             {t.label}
           </button>

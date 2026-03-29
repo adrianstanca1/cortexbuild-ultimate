@@ -310,7 +310,7 @@ export function Drawings() {
           return (
             <button
               key={t.key}
-              onClick={()=>setActiveTab(t.key as any)}
+              onClick={()=>setActiveTab(t.key as 'register'|'revisions'|'transmittals'|'discipline')}
               className={`flex items-center gap-2 px-4 py-3 text-sm font-medium border-b-2 -mb-px transition-colors ${activeTab===t.key?'border-orange-500 text-orange-400':'border-transparent text-gray-400 hover:text-gray-300'}`}>
               <Icon size={16}/>{t.label}
             </button>

@@ -12,6 +12,7 @@ type EventMap = {
 type EventCallback<K extends keyof EventMap> = (data: EventMap[K]) => void;
 
 class EventBus {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   private handlers = new Map<keyof EventMap, Set<EventCallback<any>>>();
 
   on<K extends keyof EventMap>(event: K, cb: EventCallback<K>): () => void {

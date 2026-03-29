@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import {
   HardHat, Users, Truck, FileText, AlertTriangle, CheckCircle2, MapPin, Plus, Search,
   Sun, Cloud, CloudRain, Activity, Calendar, Wrench, X, CheckSquare, Square, Trash2

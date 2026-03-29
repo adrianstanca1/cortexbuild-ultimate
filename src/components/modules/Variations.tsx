@@ -172,9 +172,9 @@ export default function Variations() {
     setExpandedCards(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]);
   };
 
-  const totalPending = variations.filter((v: Variation) => v.status === 'pending' || v.status === 'submitted').reduce((sum: number, v: any) => sum + Number(v.value), 0);
-  const totalApproved = variations.filter((v: Variation) => v.status === 'approved' || v.status === 'executed').reduce((sum: number, v: any) => sum + Number(v.value), 0);
-  const totalRejected = variations.filter((v: Variation) => v.status === 'rejected').reduce((sum: number, v: any) => sum + Math.abs(Number(v.value)), 0);
+  const totalPending = variations.filter((v: Variation) => v.status === 'pending' || v.status === 'submitted').reduce((sum: number, v: Variation) => sum + Number(v.value), 0);
+  const totalApproved = variations.filter((v: Variation) => v.status === 'approved' || v.status === 'executed').reduce((sum: number, v: Variation) => sum + Number(v.value), 0);
+  const totalRejected = variations.filter((v: Variation) => v.status === 'rejected').reduce((sum: number, v: Variation) => sum + Math.abs(Number(v.value)), 0);
 
   return (
     <div className="p-6 space-y-6">
