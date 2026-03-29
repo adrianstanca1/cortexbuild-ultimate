@@ -6,7 +6,7 @@ import {
 import { tempWorksApi, uploadFile } from '../../services/api';
 import { toast } from 'sonner';
 
-interface TempWork {
+interface _TempWork {
   id: string;
   ref: string;
   title: string;
@@ -32,7 +32,7 @@ export default function TempWorks() {
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState<string>('all');
   const [tempWorks, setTempWorks] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [_loading, setLoading] = useState(true);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [creating, setCreating] = useState(false);
   const [uploading, setUploading] = useState<string | null>(null);

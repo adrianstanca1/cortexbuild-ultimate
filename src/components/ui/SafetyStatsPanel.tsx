@@ -150,7 +150,7 @@ const colorMap = {
   },
 };
 
-function StatCard({ label, value, unit, icon, color, trend, sparkData, invertTrend, delay = 0, isPercentage }: StatCardProps) {
+function StatCard({ label, value, unit, icon, color, trend, sparkData, invertTrend, delay = 0, isPercentage: _isPercentage }: StatCardProps) {
   const c = colorMap[color];
   const animatedValue = useCountUp(value, 1400, delay);
 
@@ -364,7 +364,7 @@ function IncidentTrendChart({ data }: { data: DayData[] }) {
                 opacity={isHovered ? 1 : 0.75}
                 className="cursor-pointer transition-all duration-200"
                 onMouseEnter={(e) => {
-                  const rect = e.currentTarget.getBoundingClientRect();
+                  const _rect = e.currentTarget.getBoundingClientRect();
                   setTooltip({ day: d.day, value: d.incidents, x: x + barWidth / 2, y: y - 5 });
                 }}
                 onMouseLeave={() => setTooltip(null)}

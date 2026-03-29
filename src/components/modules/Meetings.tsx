@@ -23,8 +23,8 @@ interface ActionItem {
 
 const MEETING_TYPES = ['Progress','Design','Safety','Client','Internal'];
 const STATUS_OPTIONS = ['Upcoming','In Progress','Completed','Cancelled'];
-const ACTION_STATUSES = ['Open','In Progress','Completed'];
-const PRIORITIES = ['High','Medium','Low'];
+const _ACTION_STATUSES = ['Open','In Progress','Completed'];
+const _PRIORITIES = ['High','Medium','Low'];
 
 const statusColour: Record<string,string> = {
   'Upcoming':'bg-blue-900/30 text-blue-300','In Progress':'bg-green-900/30 text-green-300',

@@ -134,7 +134,7 @@ function GalleryTab({ projectId, projectName }: GalleryTabProps) {
     }
   }, [refetch]);
 
-  const handleUpdateCaption = useCallback(async (id: string, newCaption: string) => {
+  const _handleUpdateCaption = useCallback(async (id: string, newCaption: string) => {
     try {
       await projectImagesApi.update(id, { caption: newCaption });
       toast.success('Caption updated');
@@ -307,7 +307,7 @@ function DocumentsTab({ projectId, projectName }: DocumentsTabProps) {
   const [showUpload, setShowUpload] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [uploadForm, setUploadForm] = useState({ name: '', category: 'REPORTS', discipline: '', date_issued: '', author: '' });
-  const [selectedDoc, setSelectedDoc] = useState<AnyRow | null>(null);
+  const [_selectedDoc, _setSelectedDoc] = useState<AnyRow | null>(null);
   const [editDoc, setEditDoc] = useState<AnyRow | null>(null);
   const [editForm, setEditForm] = useState({ name: '', category: '', discipline: '', author: '' });
   const fileRef = useRef<HTMLInputElement>(null);
@@ -368,7 +368,7 @@ function DocumentsTab({ projectId, projectName }: DocumentsTabProps) {
         throw new Error(err.message);
       }
       toast.success('Document deleted');
-      setSelectedDoc(null);
+      _setSelectedDoc(null);
       refetch();
     } catch (err: any) {
       toast.error(err.message || 'Delete failed');
@@ -609,8 +609,8 @@ function TasksTab({ projectId }: TasksTabProps) {
   const [editingTask, setEditingTask] = useState<AnyRow | null>(null);
   const [editForm, setEditForm] = useState(TASK_FORM_DEFAULTS);
   const [filterPriority, setFilterPriority] = useState('all');
-  const [filterAssignee, setFilterAssignee] = useState('all');
-  const [draggingTask, setDraggingTask] = useState<string | null>(null);
+  const [filterAssignee, _setFilterAssignee] = useState('all');
+  const [_draggingTask, setDraggingTask] = useState<string | null>(null);
 
   const filteredTasks = tasks.filter((t: AnyRow) => {
     if (filterPriority !== 'all' && String(t.priority ?? '') !== filterPriority) return false;
@@ -1005,7 +1005,7 @@ function generateProjectMilestones(project: AnyRow): ProjectMilestone[] {
 
 function ProjectWorkspace({ project, onBack, onEdit }: WorkspaceProps) {
   const [tab, setTab] = useState<WorkspaceTab>('overview');
-  const [taskAssignee, setTaskAssignee] = useState<Record<string, string>>({});
+  const [_taskAssignee, _setTaskAssignee] = useState<Record<string, string>>({});
   const pName = String(project.name ?? '');
   const pId = String(project.id ?? '');
 
@@ -1019,7 +1019,7 @@ function ProjectWorkspace({ project, onBack, onEdit }: WorkspaceProps) {
 
   const invoices = (rawInv  as AnyRow[]).filter(i => String(i.project??'').toLowerCase().includes(pName.toLowerCase().split(' ')[0]));
   const teamAll  = (rawTeam as AnyRow[]);
-  const docs     = (rawDocs as AnyRow[]).filter(d => String(d.project??'').toLowerCase().includes(pName.toLowerCase().split(' ')[0]));
+  const _docs     = (rawDocs as AnyRow[]).filter(d => String(d.project??'').toLowerCase().includes(pName.toLowerCase().split(' ')[0]));
   const rfis     = (rawRFIs as AnyRow[]).filter(r => String(r.project??'').toLowerCase().includes(pName.toLowerCase().split(' ')[0]));
   const cos      = (rawCOs  as AnyRow[]).filter(c => String(c.project??'').toLowerCase().includes(pName.toLowerCase().split(' ')[0]));
   const safety   = (rawSafe as AnyRow[]).filter(s => String(s.project??'').toLowerCase().includes(pName.toLowerCase().split(' ')[0]));
@@ -1523,7 +1523,7 @@ export function Projects() {
 
   const [filter,       setFilter]       = useState<ProjectStatus | 'all'>('all');
   const [search,       setSearch]       = useState('');
-  const [view,         setView]         = useState<'grid'|'table'>('grid');
+  const [_view,         _setView]         = useState<'grid'|'table'>('grid');
   const [selectedId,   setSelectedId]   = useState<string | null>(null);
   const [showModal,    setShowModal]    = useState(false);
   const [editMode,     setEditMode]     = useState(false);

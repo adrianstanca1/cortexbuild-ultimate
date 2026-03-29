@@ -15,7 +15,7 @@ const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001';
 
 type AnyRow = Record<string, unknown>;
 
-interface TenderRequest {
+interface _TenderRequest {
   id: string;
   title: string;
   client: string;
@@ -569,7 +569,7 @@ export function Tenders() {
             </thead>
             <tbody className="divide-y divide-gray-700">
               {filtered.map((t, idx) => {
-                const days = getDaysToDeadline(t.deadline);
+                const _days = getDaysToDeadline(t.deadline);
                 const tId = String(t.id);
                 const isSelected = selectedIds.has(tId);
                 return (

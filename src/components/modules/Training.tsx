@@ -12,7 +12,7 @@ export default function Training() {
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
   const [selectedId, setSelectedId] = useState<string | null>(null);
-  const fileInputRef = useRef<HTMLInputElement>(null);
+  const _fileInputRef = useRef<HTMLInputElement>(null);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [creating, setCreating] = useState(false);
   const [form, setForm] = useState({ title: '', provider: '', type: '', status: 'scheduled', scheduledDate: '', completedDate: '', certification: '' });

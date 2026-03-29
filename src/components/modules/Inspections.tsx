@@ -91,7 +91,7 @@ const INSPECTION_CHECKLISTS: Record<string, string[]> = {
   ]
 };
 
-const statusColour: Record<string,string> = {
+const _statusColour: Record<string,string> = {
   'Scheduled':'bg-blue-900/30 text-blue-300','In Progress':'bg-yellow-900/30 text-yellow-300',
   'Passed':'bg-green-900/30 text-green-300','Failed':'bg-red-900/30 text-red-300',
   'Conditional Pass':'bg-orange-900/30 text-orange-300','Cancelled':'bg-gray-700/50 text-gray-400',

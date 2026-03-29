@@ -248,7 +248,7 @@ export function Sparkline({
   const chartData = data.map((value, index) => ({ value, index }));
   const min = Math.min(...data);
   const max = Math.max(...data);
-  const range = max - min || 1;
+  const _range = max - min || 1;
 
   return (
     <ResponsiveContainer width={width} height={height}>

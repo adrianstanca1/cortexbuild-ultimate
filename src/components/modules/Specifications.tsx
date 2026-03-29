@@ -23,7 +23,7 @@ interface Specification {
 
 export default function Specifications() {
   const [specifications, setSpecifications] = useState<Specification[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [_loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState<string>('all');
   const [uploading, setUploading] = useState<string | null>(null);

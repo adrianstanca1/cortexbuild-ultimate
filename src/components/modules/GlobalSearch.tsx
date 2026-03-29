@@ -125,7 +125,7 @@ export function GlobalSearch({ onClose }: { onClose?: () => void }) {
   const allResults = results
     ? Object.entries(results).flatMap(([type, items]) =>
         Array.isArray(items)
-          ? items.map((item: unknown, i: number) => ({
+          ? items.map((item: unknown, _i: number) => ({
               type,
               item: item as AnyRow,
             }))
@@ -150,7 +150,7 @@ export function GlobalSearch({ onClose }: { onClose?: () => void }) {
     localStorage.removeItem('cortexbuild_search_history');
   };
 
-  const pinSearch = (search: SavedSearch) => {
+  const _pinSearch = (search: SavedSearch) => {
     setSavedSearches(prev =>
       prev.map(s => (s.id === search.id ? { ...s, id: String(Date.now()) } : s))
     );

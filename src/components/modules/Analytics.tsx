@@ -8,7 +8,7 @@ import {
 import { useProjects, useSafety, useInvoices } from '../../hooks/useData';
 import { analyticsApi } from '../../services/api';
 import clsx from 'clsx';
-import { CheckSquare, Square, Trash2 } from 'lucide-react';
+import { CheckSquare, Square } from 'lucide-react';
 import { BulkActionsBar, useBulkSelection } from '../ui/BulkActions';
 import { toast } from 'sonner';
 
@@ -119,16 +119,6 @@ export function Analytics() {
   }, []);
 
   const { selectedIds, toggle, clearSelection } = useBulkSelection();
-
-  async function handleBulkDelete(ids: string[]) {
-    if (!confirm(`Delete ${ids.length} item(s)?`)) return;
-    try {
-      toast.success(`Deleted ${ids.length} item(s)`);
-      clearSelection();
-    } catch {
-      toast.error('Bulk delete failed');
-    }
-  }
 
   const activeProjects = projects.filter(p => p.status === 'active');
   const totalRevenue   = invoices.filter(i => i.status === 'paid').reduce((s,i) => s + Number(i.amount??0), 0);

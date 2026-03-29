@@ -28,12 +28,12 @@ interface ExportOptions {
   headers?: Record<string, string>;
 }
 
-interface ImportOptions {
+interface _ImportOptions {
   format: ImportFormat;
   onMapping?: (headers: string[], data: string[][]) => ColumnMapping[];
 }
 
-interface ImportResult {
+interface _ImportResult {
   success: boolean;
   rows: number;
   errors: string[];

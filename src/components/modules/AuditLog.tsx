@@ -12,7 +12,6 @@ import {
   Shield,
   CheckSquare,
   Square,
-  Trash2,
   FileText,
 } from 'lucide-react';
 import { EmptyState } from '../ui/EmptyState';
@@ -73,16 +72,6 @@ export function AuditLog() {
   const [exporting, setExporting] = useState(false);
 
   const { selectedIds, toggle, clearSelection } = useBulkSelection();
-
-  async function handleBulkDelete(ids: string[]) {
-    if (!confirm(`Delete ${ids.length} item(s)?`)) return;
-    try {
-      toast.success(`Deleted ${ids.length} item(s)`);
-      clearSelection();
-    } catch {
-      toast.error('Bulk delete failed');
-    }
-  }
 
   const loadData = useCallback(async () => {
     setLoading(true);

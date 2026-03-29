@@ -12,7 +12,7 @@ import {
 import { toast } from 'sonner';
 import { executiveReportsApi } from '../../services/api';
 
-type AnyRow = Record<string, unknown>;
+type _AnyRow = Record<string, unknown>;
 type RAG = 'red' | 'amber' | 'green';
 
 interface ReportTab {

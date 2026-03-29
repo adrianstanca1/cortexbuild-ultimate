@@ -6,13 +6,13 @@
 **Branch**: `main`
 
 ## Current Phase
-Critical layout fix applied — module content was hidden behind BlueprintBackground due to CSS z-index stacking. Fix deployed. All pages now render correctly.
+Mock data wiring + stub action fixes complete. All remaining hardcoded data replaced with real API calls.
 
 ## Last Updated
-2026-03-28
+2026-03-29
 
 ## Last Commit
-`a025fbe` — "fix(layout): fix module content hidden behind BlueprintBackground"
+`10b766d` — "feat: wire PredictiveAnalytics to real data + fix stub actions"
 
 ## Site Status
 ✅ www.cortexbuildpro.com — returning 200 OK (HTTPS)
@@ -95,11 +95,9 @@ RAMS, Subcontractors, Documents, Safety, Projects, Tenders, Invoicing, Accountin
 Analytics, FieldView, SiteOperations, AuditLog, FinancialReports, PredictiveAnalytics, Insights, AIAssistant, Marketplace, Settings, ExecutiveReports, PermissionsManager, Valuations, Variations, Defects, Specifications, Certifications, Signage, Sustainability, Training, WasteManagement, EmailHistory, Prequalification, Measuring, Dashboard, GlobalSearch
 
 ## Remaining Mock Data (Lower Priority)
-These modules have minimal hardcoded data or need ML infrastructure:
-- **PredictiveAnalytics** — Cost Prediction and Schedule tabs (need statistical/ML algorithms), ML Models tab (display-only)
-- **Drawings** — MOCK_REVISIONS (keyed by drawing number, complex relational model)
-- **Subcontractors** — paymentData/ratingHistory derived client-side with Math.random()
-- **Dashboard** — projectStatusData (RAG derived from hardcoded projects), safety metrics
+- **PredictiveAnalytics ML Models tab** — ML model cards are display-only (no backend training pipeline)
+- **PredictiveAnalytics Schedule critical path** — "Critical Path Items at Risk" section is hardcoded (no milestones table)
+- **Settings billing tab** — "Invoice downloaded" button is a stub (billing is SaaS placeholder)
 
 ## Current Position
 All mock data wired to real backend APIs. Grafana port conflict fixed (3001→3002). nginx and grafana containers need starting. Prometheus is running. API running as Docker container. Build passes, 18 tests passing, deployed to VPS.

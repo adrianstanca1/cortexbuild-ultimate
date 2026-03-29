@@ -164,7 +164,7 @@ export function QuickActionsToolbar({ onNavigate, className }: QuickActionsToolb
     },
   ];
 
-  const allActions = [...createActions, ...navigateActions, ...utilityActions];
+  const _allActions = [...createActions, ...navigateActions, ...utilityActions];
 
   const QuickActionButton = ({ action }: { action: QuickAction }) => {
     const Icon = action.icon;

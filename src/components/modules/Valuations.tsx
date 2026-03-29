@@ -186,10 +186,10 @@ function generateValuationPDF(val: Valuation) {
 }
 
 export default function Valuations() {
-  const fileInputRef = useRef<HTMLInputElement>(null);
+  const _fileInputRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
   const [valuations, setValuations] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [_loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState<string>('all');
   const [showCreateModal, setShowCreateModal] = useState(false);

@@ -80,10 +80,10 @@ export function Subcontractors() {
     return new Date(String(s.insuranceExpiry)).getTime() > Date.now();
   }).length;
   const totalContractValue = subs.reduce((sum, s) => sum + (Number(s.contractValue) || 0), 0);
-  const avgRating = subs.length > 0 ? (subs.reduce((sum, s) => sum + (Number(s.rating) || 0), 0) / subs.length).toFixed(1) : '—';
+  const _avgRating = subs.length > 0 ? (subs.reduce((sum, s) => sum + (Number(s.rating) || 0), 0) / subs.length).toFixed(1) : '—';
 
   // Insurance expiring soon (30 days)
-  const insuranceExpiringSoon = subs.filter(s => {
+  const _insuranceExpiringSoon = subs.filter(s => {
     if (!s.insuranceExpiry) return false;
     const diff = (new Date(String(s.insuranceExpiry)).getTime() - Date.now()) / 86400000;
     return diff >= 0 && diff <= 30;

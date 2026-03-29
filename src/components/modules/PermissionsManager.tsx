@@ -19,7 +19,7 @@ import clsx from 'clsx';
 type AnyRow = Record<string, unknown>;
 type SubTab = 'roles' | 'permissions' | 'users' | 'teams' | 'activity';
 
-const ACTION_COLORS: Record<string, string> = {
+const _ACTION_COLORS: Record<string, string> = {
   create: 'bg-emerald-500/20 text-emerald-400',
   read: 'bg-blue-500/20 text-blue-400',
   update: 'bg-amber-500/20 text-amber-400',
@@ -42,9 +42,9 @@ export function PermissionsManager() {
   const [loading, setLoading] = useState(true);
   const [subTab, setSubTab] = useState<SubTab>('roles');
   const [selectedRole, setSelectedRole] = useState<(Role & AnyRow) | null>(null);
-  const [expandedModules, setExpandedModules] = useState<Set<string>>(new Set());
+  const [_expandedModules, setExpandedModules] = useState<Set<string>>(new Set());
   const [editedPermissions, setEditedPermissions] = useState<Record<string, string[]>>({});
-  const [saving, setSaving] = useState(false);
+  const [_saving, _setSaving] = useState(false);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const { selectedIds, toggle, clearSelection } = useBulkSelection();
@@ -86,7 +86,7 @@ export function PermissionsManager() {
     setEditedPermissions((role.permissions as Record<string, string[]>) || {});
   };
 
-  const togglePermission = (module: string, action: string) => {
+  const _togglePermission = (module: string, action: string) => {
     setEditedPermissions(prev => {
       const modulePerms = prev[module] || [];
       if (modulePerms.includes(action)) {
@@ -96,7 +96,7 @@ export function PermissionsManager() {
     });
   };
 
-  const toggleModuleWildcard = (module: string) => {
+  const _toggleModuleWildcard = (module: string) => {
     setEditedPermissions(prev => {
       if (prev[module]?.includes('*')) {
         return { ...prev, [module]: [] };
@@ -105,20 +105,20 @@ export function PermissionsManager() {
     });
   };
 
-  const hasPermission = (module: string, action: string): boolean => {
+  const _hasPermission = (module: string, action: string): boolean => {
     const modulePerms = editedPermissions[module] || [];
     if (modulePerms.includes('*')) return true;
     if (editedPermissions['*']?.includes('*')) return true;
     return modulePerms.includes(action);
   };
 
-  const saveChanges = async () => {
+  const _saveChanges = async () => {
     if (!selectedRole) return;
     if (selectedRole.isSystem) {
       toast.error('Cannot modify system roles');
       return;
     }
-    setSaving(true);
+    _setSaving(true);
     try {
       await permissionsApi.updateRole(String(selectedRole.id), { permissions: editedPermissions });
       toast.success('Permissions updated');
@@ -126,11 +126,11 @@ export function PermissionsManager() {
     } catch {
       toast.error('Failed to update permissions');
     } finally {
-      setSaving(false);
+      _setSaving(false);
     }
   };
 
-  const deleteRole = async (roleId: string | number) => {
+  const _deleteRole = async (roleId: string | number) => {
     if (!window.confirm('Delete this role? This action cannot be undone.')) return;
     try {
       await permissionsApi.deleteRole(String(roleId));
@@ -142,7 +142,7 @@ export function PermissionsManager() {
     }
   };
 
-  const toggleModule = (module: string) => {
+  const _toggleModule = (module: string) => {
     setExpandedModules(prev => {
       const next = new Set(prev);
       if (next.has(module)) next.delete(module);
@@ -151,7 +151,7 @@ export function PermissionsManager() {
     });
   };
 
-  const actions = (permissions?.actions as Record<string, AnyRow>) || {};
+  const _actions = (permissions?.actions as Record<string, AnyRow>) || {};
   const modules = (permissions?.modules as Record<string, AnyRow>) || {};
 
   const filteredRoles = roles.filter(r =>

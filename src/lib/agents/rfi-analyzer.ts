@@ -342,7 +342,7 @@ function extractSection(text: string, section: string): string | undefined {
   return match?.[1]?.trim();
 }
 
-function extractListItems(text: string, keywords: string[]): string[] {
+function extractListItems(text: string, _keywords: string[]): string[] {
   const items: string[] = [];
   const lines = text.split('\n');
 

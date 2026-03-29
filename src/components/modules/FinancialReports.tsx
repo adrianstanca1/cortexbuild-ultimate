@@ -44,7 +44,7 @@ interface CashFlow {
   net: number;
 }
 
-function exportToCSV(data: AnyRow[], filename: string) {
+function _exportToCSV(data: AnyRow[], filename: string) {
   if (data.length === 0) {
     toast.error('No data to export');
     return;
@@ -109,8 +109,8 @@ export function FinancialReports() {
   const [summary, setSummary] = useState<FinancialSummary | null>(null);
   const [projectFinancials, setProjectFinancials] = useState<ProjectFinancial[]>([]);
   const [cashFlow, setCashFlow] = useState<CashFlow[]>([]);
-  const [projects, setProjects] = useState<AnyRow[]>([]);
-  const [invoices, setInvoices] = useState<AnyRow[]>([]);
+  const [_projects, _setProjects] = useState<AnyRow[]>([]);
+  const [_invoices, _setInvoices] = useState<AnyRow[]>([]);
 
   const { selectedIds, toggle, clearSelection } = useBulkSelection();
 
@@ -124,7 +124,7 @@ export function FinancialReports() {
     }
   }
 
-  const deleteMutation = { mutateAsync: async () => {} };
+  const _deleteMutation = { mutateAsync: async () => {} };
 
   useEffect(() => {
     Promise.all([

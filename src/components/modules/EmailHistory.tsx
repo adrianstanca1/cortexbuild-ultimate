@@ -36,11 +36,11 @@ export function EmailHistory() {
   const [subTab, setSubTab] = useState<SubTab>('inbox');
   const [search, setSearch] = useState('');
   const [projectFilter, setProjectFilter] = useState('All');
-  const [, setShowModal] = useState(false);
+  const [, _setShowModal] = useState(false);
   const [, setSelectedEmail] = useState<AnyRow | null>(null);
   const [showComposeModal, setShowComposeModal] = useState(false);
   const [compose, setCompose] = useState({ to: '', cc: '', subject: '', body: '', project: '', attachments: '', priority: false });
-  const [, setShowTemplateModal] = useState(false);
+  const [, _setShowTemplateModal] = useState(false);
 
   const today = new Date().toISOString().split('T')[0];
 

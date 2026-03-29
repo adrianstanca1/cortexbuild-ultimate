@@ -31,7 +31,7 @@ const teamMemberSchema = z.object({
   notes: z.string().optional(),
 });
 
-type TeamMemberForm = z.infer<typeof teamMemberSchema>;
+type _TeamMemberForm = z.infer<typeof teamMemberSchema>;
 
 const statusColour: Record<string,string> = {
   'Active':'bg-green-900 text-green-100','On Leave':'bg-amber-900 text-amber-100',
@@ -232,7 +232,7 @@ export function Teams() {
       toast.error('Failed to delete availability');
     }
   };
-  const { selectedIds, toggle, toggleAll, clearSelection, isAllSelected } = useBulkSelection();
+  const { selectedIds, toggle, toggleAll: _toggleAll, clearSelection, isAllSelected: _isAllSelected } = useBulkSelection();
 
   const selectedCount = selectedIds.size;
 
@@ -286,7 +286,7 @@ export function Teams() {
   });
 
   const activeCount = members.filter(m => m.status === 'Active').length;
-  const onLeaveCount = members.filter(m => m.status === 'On Leave').length;
+  const _onLeaveCount = members.filter(m => m.status === 'On Leave').length;
   const totalDailyCost = members.filter(m => m.status === 'Active').reduce((s, m) => s + Number(m.daily_rate ?? 0), 0);
   const weeklyForecast = totalDailyCost * 5;
   const monthlyForecast = totalDailyCost * 21;

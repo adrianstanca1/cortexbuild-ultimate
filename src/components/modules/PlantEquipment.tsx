@@ -210,7 +210,7 @@ export function PlantEquipment() {
     }
   }
 
-  async function changeEquipmentStatus(e: AnyRow, newStatus: string) {
+  async function _changeEquipmentStatus(e: AnyRow, newStatus: string) {
     try {
       await updateMutation.mutateAsync({ id: String(e.id), data: { status: newStatus } });
       toast.success(`Status changed to ${newStatus}`);

@@ -68,7 +68,7 @@ export default function Defects() {
   const [showCreateModal, setShowCreateModal] = useState(false);
     const [expandedCards, setExpandedCards] = useState<string[]>([]);
   const [defects, setDefects] = useState<Defect[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [_loading, setLoading] = useState(true);
   const [creating, setCreating] = useState(false);
   const [editItem, setEditItem] = useState<any | null> /* eslint-disable-line @typescript-eslint/no-explicit-any */(null);
   const [saving, setSaving] = useState(false);

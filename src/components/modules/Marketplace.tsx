@@ -16,7 +16,7 @@ import {
 import { BulkActionsBar, useBulkSelection } from '../ui/BulkActions';
 
 type SubTab = 'apps' | 'integrations' | 'templates' | 'training' | 'support';
-type AnyRow = Record<string, unknown>;
+type _AnyRow = Record<string, unknown>;
 
 const TABS: { key: SubTab; label: string; icon: React.ElementType }[] = [
   { key: 'apps', label: 'Apps', icon: Zap },

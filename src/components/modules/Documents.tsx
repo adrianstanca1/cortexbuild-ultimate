@@ -43,7 +43,7 @@ const ACCESS_LEVELS = [
   { value: 'confidential', label: 'Confidential', color: 'text-red-400' },
 ];
 
-function formatDate(dateStr: string) {
+function _formatDate(dateStr: string) {
   return new Date(dateStr).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
 }
 

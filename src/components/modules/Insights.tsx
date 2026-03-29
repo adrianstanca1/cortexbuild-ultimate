@@ -12,7 +12,7 @@ import { BarChart, Bar, PieChart as RechartsPie,
   Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer,
 } from 'recharts';
 
-type AnyRow = Record<string, unknown>;
+type _AnyRow = Record<string, unknown>;
 type SeverityLevel = 'critical' | 'high' | 'medium' | 'low' | 'info';
 type CategoryType = 'all' | 'financial' | 'safety' | 'programme' | 'resource' | 'quality' | 'risk';
 
@@ -43,7 +43,7 @@ export function Insights() {
   const [categoryFilter, setCategoryFilter] = useState<CategoryType>('all');
   const [dismissed, setDismissed] = useState<Set<string>>(new Set());
   const [allInsights, setAllInsights] = useState<ApiInsight[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [_loading, setLoading] = useState(true);
 
   const { selectedIds, toggle, clearSelection } = useBulkSelection();
 
@@ -55,7 +55,7 @@ export function Insights() {
   }, []);
 
   // Dismiss an insight (local state only — backend generates fresh)
-  const dismissInsight = (id: string) => {
+  const _dismissInsight = (id: string) => {
     setDismissed(prev => new Set([...prev, id]));
   };
 

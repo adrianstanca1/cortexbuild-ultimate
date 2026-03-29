@@ -10,7 +10,7 @@ type AnyRow = Record<string, unknown>;
 const TRADES = ['Joinery','Plastering','Painting','Plumbing','Electrical','Tiling','Glazing','Roofing','General'];
 const STATUS_OPTIONS = ['Open','In Progress','Resolved','Signed Off','Closed'];
 const PRIORITY_OPTIONS = ['Low','Medium','High','Critical'];
-const LOCATION_OPTIONS = ['Floor 1','Floor 2','External','Roof','Basement','Atrium','Common Area','Other'];
+const _LOCATION_OPTIONS = ['Floor 1','Floor 2','External','Roof','Basement','Atrium','Common Area','Other'];
 
 const statusColour: Record<string,string> = {
   'Open':'bg-red-900/30 text-red-300',
@@ -27,7 +27,7 @@ const priorityColour: Record<string,string> = {
   'Critical':'bg-red-900/30 text-red-300',
 };
 
-const priorityStripColour: Record<string,string> = {
+const _priorityStripColour: Record<string,string> = {
   'Critical':'bg-red-600','High':'bg-orange-500','Medium':'bg-yellow-500','Low':'bg-gray-400',
 };
 
@@ -71,8 +71,8 @@ export function PunchList() {
   const openCount = items.filter(i => i.status === 'Open').length;
   const inProgressCount = items.filter(i => i.status === 'In Progress').length;
   const resolvedCount = items.filter(i => i.status === 'Resolved').length;
-  const signedOffCount = items.filter(i => i.status === 'Signed Off').length;
-  const closedCount = items.filter(i => i.status === 'Closed').length;
+  const _signedOffCount = items.filter(i => i.status === 'Signed Off').length;
+  const _closedCount = items.filter(i => i.status === 'Closed').length;
   const overdueCount = items.filter(i => {
     if (['Closed','Signed Off'].includes(String(i.status??''))) return false;
     if (!i.due_date) return false;

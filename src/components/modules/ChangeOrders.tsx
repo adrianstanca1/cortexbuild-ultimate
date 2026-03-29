@@ -236,7 +236,7 @@ export function ChangeOrders() {
   const totalValue = approvedValue + pendingValue + draftValue;
   const totalDays = approvedOrders.reduce((s, o) => s + Number(o.days_extension ?? 0), 0);
   const avgProcessingTime = approvedCount > 0 ? Math.round(totalDays / approvedCount) : 0;
-  const underReviewCount = orders.filter(o => o.status === 'Under Review').length;
+  const _underReviewCount = orders.filter(o => o.status === 'Under Review').length;
   const projects = Array.from(new Set(orders.map(o => String(o.project ?? o.project_id ?? '')).filter(Boolean)));
 
   function nextCONumber() {
@@ -326,7 +326,7 @@ export function ChangeOrders() {
     setSelectedForApproval(newSet);
   }
 
-  const chartData = generateChartData(orders);
+  const _chartData = generateChartData(orders);
   const cumulativeData = generateCumulativeData(orders);
   const reasonBreakdown = generateReasonBreakdown(orders);
   const byProjectData = Array.from(new Set(orders.map(o => String(o.project ?? o.project_id ?? ''))))

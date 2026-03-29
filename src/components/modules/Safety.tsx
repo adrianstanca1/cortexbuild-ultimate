@@ -21,7 +21,7 @@ const incidentSchema = z.object({
   date: z.string().optional(),
 });
 
-type IncidentForm = z.infer<typeof incidentSchema>;
+type _IncidentForm = z.infer<typeof incidentSchema>;
 
 const SAFETY_TREND_DATA = [
   { month:'Sep', incidents:3, nearMisses:8,  toolboxTalks:12 },
@@ -198,7 +198,7 @@ export function Safety() {
     closed: incidents.filter(i => i.status === 'closed' || i.status === 'resolved').length,
   };
 
-  const selected = incidents.find(i => String(i.id) === selectedId);
+  const _selected = incidents.find(i => String(i.id) === selectedId);
 
   const openCreate = () => { setForm(defaultForm); setEditId(null); setShowModal(true); };
   const openEdit = (i: AnyRow) => {

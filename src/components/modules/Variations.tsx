@@ -51,7 +51,7 @@ export default function Variations() {
   const [filterStatus, setFilterStatus] = useState<string>('all');
   const [filterType, setFilterType] = useState<string>('all');
   const [filterImpact, setFilterImpact] = useState<string>('all');
-  const [selectedVar, setSelectedVar] = useState<Variation | null>(null);
+  const [_selectedVar, setSelectedVar] = useState<Variation | null>(null);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [expandedCards, setExpandedCards] = useState<string[]>([]);
   const [variations, setVariations] = useState<Variation[]>([]);

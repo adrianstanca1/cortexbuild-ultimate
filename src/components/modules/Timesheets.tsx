@@ -10,8 +10,8 @@ type AnyRow = Record<string, unknown>;
 
 const STATUS_OPTIONS = ['draft','submitted','approved','rejected','paid'];
 const CITB_RATE = 13.50;
-const OT_RATE_15X = 1.5;
-const OT_RATE_2X = 2.0;
+const _OT_RATE_15X = 1.5;
+const _OT_RATE_2X = 2.0;
 
 const statusColour: Record<string,string> = {
   'draft':'bg-gray-800 text-gray-200',
@@ -23,10 +23,10 @@ const statusColour: Record<string,string> = {
 
 const emptyForm = { worker_name:'',project_id:'',week_ending:'',regularHours:'0',overtimeHours:'0',overtimeRate:'1.5',dayworkHours:'0',dayworkRate:'0',status:'draft',notes:'' };
 
-const DAYS = ['monday','tuesday','wednesday','thursday','friday','saturday','sunday'] as const;
-const DAY_LABELS = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
+const _DAYS = ['monday','tuesday','wednesday','thursday','friday','saturday','sunday'] as const;
+const _DAY_LABELS = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
 
-interface TimesheetRow {
+interface _TimesheetRow {
   id: string;
   worker_name: string;
   project_id: string;
@@ -99,11 +99,11 @@ export function Timesheets() {
     return matchSearch && matchStatus && matchWorker && matchProject;
   });
 
-  function getTimelineData() {
+  function _getTimelineData() {
     const workers = Array.from(new Set(timesheets.map(t=>String(t.worker_name??''))));
     return workers.slice(0, 5).map(w => {
       const data = timesheets.filter(t=>String(t.worker_name??'')===w).slice(-4);
-      return { name: w, weeks: data.length > 0 ? data.map((d,i)=>Number(d.overtimeHours??0)) : [0,0,0,0] };
+      return { name: w, weeks: data.length > 0 ? data.map((d,_i)=>Number(d.overtimeHours??0)) : [0,0,0,0] };
     });
   }
 

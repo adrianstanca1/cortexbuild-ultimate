@@ -31,9 +31,9 @@ export function Settings() {
   const [tab, setTab] = useState<Tab>('company');
 
   // ── Loading states ────────────────────────────────────────────────────────
-  const [loadingCompany, setLoadingCompany] = useState(false);
+  const [_loadingCompany, _setLoadingCompany] = useState(false);
   const [savingCompany, setSavingCompany]   = useState(false);
-  const [loadingUsers, setLoadingUsers]       = useState(false);
+  const [_loadingUsers, setLoadingUsers]       = useState(false);
   const [savingNotifs, setSavingNotifs]       = useState(false);
 
   // ── Company state ──────────────────────────────────────────────────────────

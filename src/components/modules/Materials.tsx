@@ -358,7 +358,7 @@ export function Materials() {
                   <p>No pending deliveries</p>
                 </div>
               ) : (
-                pendingDeliveries.map((m,i)=>{
+                pendingDeliveries.map((m,_i)=>{
                   const isOverdue = new Date(String(m.delivery_date??0)) < new Date();
                   return (
                     <div

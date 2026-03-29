@@ -50,7 +50,7 @@ export function VirtualList<T>({
   );
 }
 
-interface InfiniteScrollProps<T> {
+interface InfiniteScrollProps<_T> {
   fetchMore: () => Promise<void>;
   hasMore: boolean;
   loader: ReactNode;
@@ -59,14 +59,14 @@ interface InfiniteScrollProps<T> {
   height?: string;
 }
 
-export function InfiniteScroll<T>({
+export function InfiniteScroll<_T>({
   fetchMore,
   hasMore,
   loader,
   children,
   endMessage,
   height = 'h-96',
-}: InfiniteScrollProps<T>) {
+}: InfiniteScrollProps<_T>) {
   const observerRef = useRef<IntersectionObserver | null>(null);
   const lastElementRef = useCallback((node: HTMLElement | null) => {
     if (loader === null) return;

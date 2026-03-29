@@ -69,8 +69,8 @@ export function RAMS() {
   const [form, setForm] = useState({ ...emptyForm });
   const [expanded, setExpanded] = useState<string | null>(null);
   const [uploading, setUploading] = useState<string | null>(null);
-  const fileInputRef = useRef<HTMLInputElement>(null);
-  const [selectedUploadId, setSelectedUploadId] = useState<string | null>(null);
+  const _fileInputRef = useRef<HTMLInputElement>(null);
+  const [_selectedUploadId, _setSelectedUploadId] = useState<string | null>(null);
   const [showBulkImport, setShowBulkImport] = useState(false);
 
   const { selectedIds, toggle, clearSelection } = useBulkSelection();
@@ -106,7 +106,7 @@ export function RAMS() {
 
   const approvedCount = rams.filter(r => r.status === 'Approved').length;
   const reviewCount = rams.filter(r => r.status === 'Under Review').length;
-  const draftCount = rams.filter(r => r.status === 'Draft').length;
+  const _draftCount = rams.filter(r => r.status === 'Draft').length;
   const expiringSoon = rams.filter(r => {
     const until = r.valid_until ?? r.validUntil;
     if (!until || r.status !== 'Approved') return false;
@@ -183,7 +183,7 @@ export function RAMS() {
   async function handleUploadDoc(ramId: string, file: File) {
     setUploading(ramId);
     try {
-      const result = await uploadFile(file, 'RAMS');
+      const _result = await uploadFile(file, 'RAMS');
       toast.success(`Document uploaded: ${file.name}`);
     } catch {
       console.error('Upload failed');

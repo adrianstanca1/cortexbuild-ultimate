@@ -16,7 +16,7 @@ module.exports = {
     react: { version: 'detect' },
   },
   rules: {
-    '@typescript-eslint/no-unused-vars': ['warn', { argsIgnorePattern: '^_' }],
+    '@typescript-eslint/no-unused-vars': ['warn', { argsIgnorePattern: '^_', varsIgnorePattern: '^_', destructuredArrayIgnorePattern: '^_' }],
     '@typescript-eslint/no-explicit-any': 'warn',
     'no-console': ['warn', { allow: ['error', 'warn'] }],
     'prefer-const': 'warn',

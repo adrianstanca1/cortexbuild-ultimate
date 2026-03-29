@@ -134,7 +134,7 @@ export function RiskRegister() {
     await deleteMutation.mutateAsync(id); toast.success('Risk deleted');
   }
 
-  async function mitigate(r: AnyRow) {
+  async function _mitigate(r: AnyRow) {
     await updateMutation.mutateAsync({ id:String(r.id), data:{ status:'Mitigated' } });
     toast.success('Risk marked as mitigated');
   }
