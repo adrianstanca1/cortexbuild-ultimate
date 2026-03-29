@@ -66,8 +66,12 @@ export function PlantEquipment() {
   const [hireLogs, setHireLogs] = useState<AnyRow[]>([]);
 
   useEffect(() => {
-    equipmentApi.getServiceLogs().then(data => setServiceLogs(data as AnyRow[])).catch(() => {});
-    equipmentApi.getHireLogs().then(data => setHireLogs(data as AnyRow[])).catch(() => {});
+    equipmentApi.getServiceLogs().then(data => setServiceLogs(data as AnyRow[])).catch((err) => {
+      console.error('Failed to load service logs:', err);
+    });
+    equipmentApi.getHireLogs().then(data => setHireLogs(data as AnyRow[])).catch((err) => {
+      console.error('Failed to load hire logs:', err);
+    });
   }, []);
 
   const { selectedIds, toggle, clearSelection } = useBulkSelection();

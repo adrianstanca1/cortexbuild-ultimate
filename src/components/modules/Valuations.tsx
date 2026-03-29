@@ -215,7 +215,9 @@ export default function Valuations() {
   useEffect(() => {
     valuationsApi.getAll()
       .then(setValuations)
-      .catch(console.error)
+      .catch((err) => {
+        console.error('Failed to load valuations:', err);
+      })
       .finally(() => setLoading(false));
   }, []);
 

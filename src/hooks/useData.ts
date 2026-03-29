@@ -11,6 +11,9 @@ import {
   documentsApi, tendersApi, dailyReportsApi, meetingsApi, materialsApi,
   punchListApi, inspectionsApi, contactsApi, riskRegisterApi, purchaseOrdersApi,
   projectImagesApi, projectTasksApi,
+  variationsApi, defectsApi, specificationsApi, tempWorksApi, signageApi,
+  wasteManagementApi, sustainabilityApi, trainingApi, certificationsApi,
+  prequalificationApi, lettingsApi, measuringApi,
 } from '../services/api';
 import { eventBus } from '../lib/eventBus';
 
@@ -106,3 +109,15 @@ export const useRiskRegister   = makeHooks('risk-register',    'risk_register', 
 export const useProcurement    = makeHooks('purchase-orders',  'purchase_orders', purchaseOrdersApi);
 export const useProjectImages  = makeHooks('project-images',   'project_images',  projectImagesApi);
 export const useProjectTasks    = makeHooks('project-tasks',    'project_tasks',   projectTasksApi);
+export const useVariations      = makeHooks('variations',       'variations',      variationsApi);
+export const useDefects         = makeHooks('defects',          'defects',         defectsApi);
+export const useSpecifications  = makeHooks('specifications',   'specifications',  specificationsApi);
+export const useTempWorks       = makeHooks('temp-works',       'temp_works',      tempWorksApi);
+export const useSignage         = makeHooks('signage',          'signage',         signageApi);
+export const useWasteManagement = makeHooks('waste-management', 'waste_management', wasteManagementApi);
+export const useSustainability  = makeHooks('sustainability',   'sustainability',  sustainabilityApi);
+export const useTraining        = makeHooks('training',         'training',        trainingApi);
+export const useCertifications  = makeHooks('certifications',   'certifications',  certificationsApi);
+export const usePrequalification = makeHooks('prequalification', 'prequalification', prequalificationApi);
+export const useLettings        = makeHooks('lettings',         'lettings',        lettingsApi);
+export const useMeasuring       = makeHooks('measuring',        'measuring',       measuringApi);

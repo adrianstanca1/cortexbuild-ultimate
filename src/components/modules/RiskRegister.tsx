@@ -65,7 +65,9 @@ export function RiskRegister() {
   const [mitigationActions, setMitigationActions] = useState<AnyRow[]>([]);
 
   useEffect(() => {
-    riskRegisterApi.getMitigationActions().then(data => setMitigationActions(data as AnyRow[])).catch(() => {});
+    riskRegisterApi.getMitigationActions().then(data => setMitigationActions(data as AnyRow[])).catch((err) => {
+      console.error('Failed to load mitigation actions:', err);
+    });
   }, []);
 
   async function handleBulkDelete(ids: string[]) {

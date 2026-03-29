@@ -93,7 +93,9 @@ export function CRM() {
   const [allInteractions, setAllInteractions] = useState<AnyRow[]>([]);
 
   useEffect(() => {
-    contactsApi.getInteractions('').then(data => setAllInteractions(data as AnyRow[])).catch(() => {});
+    contactsApi.getInteractions('').then(data => setAllInteractions(data as AnyRow[])).catch((err) => {
+      console.error('Failed to load contact interactions:', err);
+    });
   }, []);
 
   function getInteractionsForContact(contactId: string): AnyRow[] {

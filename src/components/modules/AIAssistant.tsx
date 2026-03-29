@@ -178,12 +178,16 @@ export function AIAssistant() {
     try {
       const saved = localStorage.getItem('cortex_ai_sessions');
       if (saved) setChatSessions(JSON.parse(saved));
-    } catch {}
+    } catch (err) {
+      console.warn('Failed to load AI sessions from localStorage:', err);
+    }
   }, []);
 
   // Save sessions to localStorage on change
   useEffect(() => {
-    try { localStorage.setItem('cortex_ai_sessions', JSON.stringify(chatSessions)); } catch {}
+    try { localStorage.setItem('cortex_ai_sessions', JSON.stringify(chatSessions)); } catch (err) {
+      console.warn('Failed to save AI sessions to localStorage:', err);
+    }
   }, [chatSessions]);
 
   // Load session messages from server (primary) with localStorage fallback

@@ -140,14 +140,18 @@ export function Safety() {
         issuedBy: p.issued_by,
       }));
       setPermits(mapped);
-    }).catch(() => {});
+    }).catch((err) => {
+      console.error('Failed to load safety permits:', err);
+    });
     safetyApi.getTalks().then(data => {
       const mapped = (data as AnyRow[]).map(t => ({
         ...t,
         signedOff: t.signed_off,
       }));
       setTalks(mapped);
-    }).catch(() => {});
+    }).catch((err) => {
+      console.error('Failed to load toolbox talks:', err);
+    });
   }, []);
 
   async function handleBulkDelete(ids: string[]) {

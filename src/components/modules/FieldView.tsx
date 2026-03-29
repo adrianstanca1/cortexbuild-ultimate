@@ -88,7 +88,9 @@ export function FieldView() {
         to: p.to_date,
       }));
       setPermits(mapped);
-    }).catch(() => {});
+    }).catch((err) => {
+      console.error('Failed to load permits:', err);
+    });
   }, []);
 
   const { selectedIds, toggle, clearSelection } = useBulkSelection();

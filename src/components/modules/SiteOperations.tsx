@@ -41,7 +41,9 @@ export function SiteOperations() {
   useEffect(() => {
     (delaysApi.getAll() as Promise<AnyRow[]>)
       .then(setDelays)
-      .catch(() => {});
+      .catch((err) => {
+        console.error('Failed to load delays:', err);
+      });
   }, []);
 
   const [subTab, setSubTab] = useState<SubTab>('diary');
