@@ -2,13 +2,13 @@ version: '3.8'
 
 services:
   postgres:
-    image: postgres:16-alpine
+    image: pgvector/pgvector:pg16
     container_name: cortexbuild-db
     restart: always
     environment:
-      POSTGRES_USER: cortexbuild
-      POSTGRES_PASSWORD: C0rt3xBu1ld_S3cur3_P@ss
-      POSTGRES_DB: cortexbuild
+      POSTGRES_USER: ${POSTGRES_USER:-cortexbuild}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-cortexbuild_dev_password}
+      POSTGRES_DB: ${POSTGRES_DB:-cortexbuild}
     volumes:
       - postgres_data:/var/lib/postgresql/data
     ports:
@@ -49,16 +49,16 @@ services:
     container_name: cortexbuild-api
     restart: always
     environment:
-      DATABASE_URL: postgresql://cortexbuild:C0rt3xBu1ld_S3cur3_P@ss@postgres:5432/cortexbuild?schema=public
+      DATABASE_URL: postgresql://cortexbuild:${POSTGRES_PASSWORD:-cortexbuild_dev_password}@postgres:5432/cortexbuild?schema=public
       DB_HOST: postgres
       DB_PORT: 5432
-      DB_NAME: cortexbuild
-      DB_USER: cortexbuild
-      DB_PASSWORD: C0rt3xBu1ld_S3cur3_P@ss
-      JWT_SECRET: 1ba7ee87b4cd735fc62f37606743c823163363ce56f2a86830ecb0e238fe616a
-      PORT: 3001
-      OLLAMA_HOST: http://ollama:11434
-      OLLAMA_MODEL: qwen3.5:latest
+      DB_NAME: ${POSTGRES_DB:-cortexbuild}
+      DB_USER: ${POSTGRES_USER:-cortexbuild}
+      DB_PASSWORD: ${POSTGRES_PASSWORD:-cortexbuild_dev_password}
+      JWT_SECRET: ${JWT_SECRET:-cortexbuild_dev_jwt_secret_change_in_production}
+      PORT: ${PORT:-3001}
+      OLLAMA_HOST: ${OLLAMA_HOST:-http://ollama:11434}
+      OLLAMA_MODEL: ${OLLAMA_MODEL:-qwen3.5:latest}
     ports:
       - "127.0.0.1:3001:3001"
     networks:
@@ -109,7 +109,7 @@ services:
     container_name: cortexbuild-grafana
     restart: always
     environment:
-      GF_SECURITY_ADMIN_PASSWORD: C0rt3xBu1ld_Grafana
+      GF_SECURITY_ADMIN_PASSWORD: ${GF_SECURITY_ADMIN_PASSWORD:-cortexbuild_dev_grafana}
     volumes:
       - grafana_data:/var/lib/grafana
     ports:
