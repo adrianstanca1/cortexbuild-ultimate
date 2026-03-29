@@ -17,3 +17,4 @@ lint_*.txt
 lint_report.json
 fix_any.js
 .claude/
+backups/
