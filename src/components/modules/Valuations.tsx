@@ -242,8 +242,8 @@ export default function Valuations() {
       setValuations(prev => [created, ...prev]);
       setShowCreateModal(false);
       setForm({ project: '', contractor: '', grossValue: '', retention: '', periodStart: '', periodEnd: '' });
-    } catch (err) {
-      console.error('Failed to create:', err);
+    } catch {
+      console.error('Failed to create');
     } finally {
       setCreating(false);
     }
@@ -267,8 +267,8 @@ export default function Valuations() {
       });
       setValuations(prev => prev.map(v => String(v.id) === String(editItem.id) ? updated : v));
       setEditItem(null);
-    } catch (err) {
-      console.error('Failed to update:', err);
+    } catch {
+      console.error('Failed to create');
     } finally {
       setSaving(false);
     }
@@ -279,8 +279,8 @@ export default function Valuations() {
     try {
       await valuationsApi.delete(id);
       setValuations(prev => prev.filter(v => String(v.id) !== String(id)));
-    } catch (err) {
-      console.error('Failed to delete:', err);
+    } catch {
+      console.error('Failed to create');
     }
   };
 
@@ -298,8 +298,8 @@ export default function Valuations() {
         }
         return v;
       }));
-    } catch (err) {
-      console.error('Upload failed:', err);
+    } catch {
+      console.error('Upload failed');
     } finally {
       setUploading(false);
       setSelectedValId(null);

@@ -73,8 +73,8 @@ export default function TempWorks() {
       setTempWorks(prev => [created, ...prev]);
       setShowCreateModal(false);
       setForm({ title: '', project: '', type: 'Structural Support', designer: '', installer: '', description: '', status: 'design' });
-    } catch (err) {
-      console.error('Failed to create:', err);
+    } catch {
+      console.error('Failed to create');
     } finally {
       setCreating(false);
     }
@@ -96,8 +96,8 @@ export default function TempWorks() {
       setTempWorks(prev => prev.map((t: any) => String(t.id) === String(editItem.id) ? updated : t));
       setEditItem(null);
       setForm({ title: '', project: '', type: 'Structural Support', designer: '', installer: '', description: '', status: 'design' });
-    } catch (err) {
-      console.error('Failed to update:', err);
+    } catch {
+      console.error('Failed to create');
     } finally {
       setSaving(false);
     }
@@ -121,8 +121,8 @@ export default function TempWorks() {
     try {
       await tempWorksApi.delete(id);
       setTempWorks(prev => prev.filter((t: any) => String(t.id) !== String(id)));
-    } catch (err) {
-      console.error('Failed to delete:', err);
+    } catch {
+      console.error('Failed to create');
     }
   };
 
@@ -131,8 +131,8 @@ export default function TempWorks() {
     try {
       await uploadFile(file, 'REPORTS');
       toast.success(`Uploaded: ${file.name}`);
-    } catch (err) {
-      console.error('Upload failed:', err);
+    } catch {
+      console.error('Upload failed');
       toast.error('Upload failed');
     } finally {
       setUploading(null);

@@ -60,8 +60,8 @@ export default function Lettings() {
       setLettings(prev => [created, ...prev]);
       setShowCreateModal(false);
       setForm({ packageName: '', trade: '', contractor: '', contractValue: '', status: 'tendering' });
-    } catch (err) {
-      console.error('Failed to create:', err);
+    } catch {
+      console.error('Failed to create');
     } finally {
       setCreating(false);
     }
@@ -80,8 +80,8 @@ export default function Lettings() {
       });
       setLettings(prev => prev.map((l: any) => String(l.id) === String(editItem.id) ? updated : l));
       setEditItem(null);
-    } catch (err) {
-      console.error('Failed to update:', err);
+    } catch {
+      console.error('Failed to create');
     } finally {
       setSaving(false);
     }
@@ -92,8 +92,8 @@ export default function Lettings() {
     try {
       await lettingsApi.delete(id);
       setLettings(prev => prev.filter((l: any) => String(l.id) !== String(id)));
-    } catch (err) {
-      console.error('Failed to delete:', err);
+    } catch {
+      console.error('Failed to create');
     }
   };
 
@@ -102,8 +102,8 @@ export default function Lettings() {
     try {
       await uploadFile(file, 'REPORTS');
       toast.success(`Uploaded: ${file.name}`);
-    } catch (err) {
-      console.error('Upload failed:', err);
+    } catch {
+      console.error('Upload failed');
       toast.error('Upload failed');
     } finally {
       setUploading(null);

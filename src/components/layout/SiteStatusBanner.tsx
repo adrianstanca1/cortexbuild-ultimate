@@ -3,24 +3,9 @@
  * Thin top-of-dashboard strip showing live site intelligence
  */
 import { useState, useEffect } from 'react';
-import { Thermometer, Eye, AlertTriangle, Users,
-  Clock, ShieldCheck, Zap,
+import { Eye, AlertTriangle, Users,
+  ShieldCheck, Zap,
 } from 'lucide-react';
-
-interface SiteStatus {
-  workersOnSite: number;
-  activeIncidents: number;
-  weather: string;
-  temperature: string;
-  lastUpdated: string;
-}
-
-const STATUS_ITEMS = [
-  { icon: Users,        label: 'On Site',      key: 'workersOnSite',    accent: '#10b981' },
-  { icon: AlertTriangle, label: 'Incidents',    key: 'activeIncidents',  accent: '#ef4444' },
-  { icon: Thermometer,   label: 'Weather',       key: 'temperature',      accent: '#3b82f6' },
-  { icon: Clock,         label: 'Updated',       key: 'lastUpdated',      accent: '#64748b' },
-];
 
 function LiveDot({ color }: { color: string }) {
   return (

@@ -7,8 +7,7 @@ import {
 import { BulkActionsBar, useBulkSelection } from '../ui/BulkActions';
 import clsx from 'clsx';
 import {
-  projects, invoices, safetyIncidents, rfis,
-  teamMembers
+  projects, invoices, safetyIncidents
 } from '../../data/mockData';
 import { sendChatMessage } from '../../services/ai';
 import { aiConversationsApi } from '../../services/api';
@@ -369,138 +368,6 @@ export function AIAssistant() {
   useEffect(() => {
     scrollToBottom();
   }, [messages]);
-
-  const generateContextAwareResponse = (query: string, agentId: string): string => {
-    const lowercaseQuery = query.toLowerCase();
-
-    // Project Analyzer responses
-    if (agentId === 'project-analyzer') {
-      if (lowercaseQuery.includes('active') && lowercaseQuery.includes('project')) {
-        const activeProjects = projects.filter(p => p.status === 'active');
-        return `## Active Projects Summary\n\nWe currently have **${activeProjects.length} active projects**:\n\n${activeProjects.map(p =>
-          `**${p.name}**\n` +
-          `• Location: ${p.location}\n` +
-          `• Progress: ${p.progress}%\n` +
-          `• Budget: £${(p.budget / 1000000).toFixed(1)}M | Spent: £${(p.spent / 1000000).toFixed(1)}M\n` +
-          `• Manager: ${p.manager}\n` +
-          `• Phase: ${p.phase}`
-        ).join('\n\n')}`;
-      }
-
-      if (lowercaseQuery.includes('canary wharf') || lowercaseQuery.includes('cw')) {
-        const cw = projects.find(p => p.name.includes('Canary Wharf'));
-        if (cw) {
-          return `## Canary Wharf Office Complex Status\n\n**Project Details**\n• Manager: ${cw.manager}\n• Progress: ${cw.progress}%\n• Budget: £${(cw.budget / 1000000).toFixed(1)}M\n• Spent: £${(cw.spent / 1000000).toFixed(1)}M\n• Current Phase: ${cw.phase}\n• Workers On Site: ${cw.workers}\n\n**Financial Summary**\n• Contract Value: £${(cw.contractValue / 1000000).toFixed(1)}M\n• Spend Rate: ${((cw.spent / cw.budget) * 100).toFixed(1)}%\n• Remaining Budget: £${((cw.budget - cw.spent) / 1000000).toFixed(1)}M`;
-        }
-      }
-
-      if (lowercaseQuery.includes('over budget') || lowercaseQuery.includes('budget overrun')) {
-        const overBudget = projects.filter(p => p.spent > p.budget);
-        if (overBudget.length === 0) {
-          return 'Good news! All active projects are currently within budget. Spend rates are healthy across the portfolio.';
-        }
-        return `${overBudget.length} projects are currently over budget:\n\n${overBudget.map(p =>
-          `• **${p.name}**: Over by £${((p.spent - p.budget) / 1000).toFixed(0)}K (${((p.spent / p.budget - 1) * 100).toFixed(1)}% overrun)`
-        ).join('\n')}`;
-      }
-    }
-
-    // Safety Compliance responses
-    if (agentId === 'safety-compliance') {
-      if (lowercaseQuery.includes('incident') || lowercaseQuery.includes('safety')) {
-        const thisWeekIncidents = safetyIncidents.filter(s => {
-          const incidentDate = new Date(s.date);
-          const weekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
-          return incidentDate > weekAgo;
-        });
-
-        const seriousIncidents = thisWeekIncidents.filter(s => s.severity === 'serious');
-        return `## Safety Incident Summary\n\n**This Week's Incidents:** ${thisWeekIncidents.length}\n\n${thisWeekIncidents.map(s =>
-          `**${s.title}** (${s.type.toUpperCase()})\n` +
-          `• Project: ${s.project}\n` +
-          `• Severity: ${s.severity}\n` +
-          `• Status: ${s.status}\n` +
-          `• Reported: ${s.reportedBy}`
-        ).join('\n\n')}\n\n${seriousIncidents.length > 0 ? `⚠️ **Action Required:** ${seriousIncidents.length} serious incidents need immediate attention.` : '✓ No serious incidents this week.'}`;
-      }
-
-      if (lowercaseQuery.includes('rams')) {
-        return `## RAMS Status\n\nRAMS documents in system: **${projects.length}** primary documents\n\n**Approval Status:**\n• James Harrington: ${teamMembers.filter(t => t.ramsCompleted).length}/8 team members RAMS completed\n• Next review: 2026-04-01\n\nKey RAMS Activities:\n• Structural Steelwork Installation (Canary Wharf) — Approved, signature 8/10\n• Scaffold Erection — Ready for generation\n• Concrete Pour Operations — Draft pending review`;
-      }
-    }
-
-    // Financial Advisor responses
-    if (agentId === 'financial-advisor') {
-      if (lowercaseQuery.includes('overdue') || lowercaseQuery.includes('cash')) {
-        const overdueInvoices = invoices.filter(i => i.status === 'overdue' || i.status === 'disputed');
-        const totalOutstanding = invoices.filter(i => i.status !== 'paid').reduce((sum, i) => sum + i.amount + i.vat, 0);
-        const totalOverdue = overdueInvoices.reduce((sum, i) => sum + i.amount + i.vat, 0);
-
-        return `## Financial Status\n\n**Overdue Invoices:** ${overdueInvoices.length}\n**Total Overdue: £${(totalOverdue / 1000).toFixed(0)}K**\n\n${overdueInvoices.map(i =>
-          `**${i.number}** — ${i.client}\n` +
-          `• Project: ${i.project}\n` +
-          `• Amount: £${i.amount.toLocaleString()}\n` +
-          `• Due: ${i.dueDate}\n` +
-          `• Status: ${i.status}`
-        ).join('\n\n')}\n\n**Action Items:**\nPriority: Chase West Midlands Council (£67.2K) and Nordic Logistics (£234.96K) this week.`;
-      }
-
-      if (lowercaseQuery.includes('cash position') || lowercaseQuery.includes('position')) {
-        const totalInvoiced = invoices.reduce((sum, i) => sum + i.amount + i.vat, 0);
-        const totalPaid = invoices.filter(i => i.status === 'paid').reduce((sum, i) => sum + i.amount + i.vat, 0);
-        const totalOutstanding = totalInvoiced - totalPaid;
-
-        return `## Current Cash Position (as of 23 March 2026)\n\n**Invoicing & Payments**\n• Total Invoiced: £${(totalInvoiced / 1000).toFixed(0)}K\n• Paid In: £${(totalPaid / 1000).toFixed(0)}K\n• Outstanding: £${(totalOutstanding / 1000).toFixed(0)}K\n\n**Invoice Status Breakdown**\n• Paid: ${invoices.filter(i => i.status === 'paid').length}\n• Sent: ${invoices.filter(i => i.status === 'sent').length}\n• Overdue: ${invoices.filter(i => i.status === 'overdue').length}\n• Disputed: ${invoices.filter(i => i.status === 'disputed').length}\n\n**Recommendation:** Prioritize collection of overdue amounts from West Midlands Council and Nordic Logistics.`;
-      }
-
-      if (lowercaseQuery.includes('cis')) {
-        return `## CIS Deduction Summary\n\nTotal CIS-registered contractors: 3\n\n**Pending CIS Returns (March 2026)**\n• Apex Electrical Ltd: £7,300 deduction on £48,500 gross\n• Northen Groundworks Ltd: £3,900 deduction on £28,000 gross\n\n**Submission Deadline:** 14th of following month (14 April 2026)\n\nAll contractors verified and current. No compliance issues.`;
-      }
-    }
-
-    // Document Processor responses
-    if (agentId === 'document-processor') {
-      if (lowercaseQuery.includes('rfi-cw-042')) {
-        const rfi = rfis.find(r => r.number === 'RFI-CW-042');
-        if (rfi) {
-          return `## RFI-CW-042 Response Draft\n\n**Subject:** ${rfi.subject}\n\n**Question:** ${rfi.question}\n\n**Recommended Response:**\n\nThe UC 305×305×198 specification per the structural drawings should take precedence over the earlier notation. The higher capacity design provides necessary safety margins for the anticipated loading patterns and is recommended by the structural engineer. Approval granted to proceed with UC 305 sections.\n\n**Action:** Provide formal written confirmation to Meridian Properties within 48 hours to avoid programme impact.`;
-        }
-      }
-
-      if (lowercaseQuery.includes('rfi')) {
-        return `## RFI Status Summary\n\n**Open RFIs:** ${rfis.filter(r => r.status === 'open').length}\n**Pending Responses:** ${rfis.filter(r => r.status === 'pending').length}\n**Answered:** ${rfis.filter(r => r.status === 'answered').length}\n\n**Critical Priority RFIs:**\n${rfis.filter(r => r.priority === 'critical').map(r =>
-          `• **${r.number}** — ${r.subject}\n  Project: ${r.project}\n  Due: ${r.dueDate}`
-        ).join('\n')}\n\n**Recommendation:** Address RFI-MC-018 (Waterproofing system) urgently — due 2026-03-21.`;
-      }
-    }
-
-    // RFI Responder responses
-    if (agentId === 'rfi-responder') {
-      if (lowercaseQuery.includes('outstanding') || lowercaseQuery.includes('rfi') && lowercaseQuery.includes('list')) {
-        const openRfis = rfis.filter(r => r.status !== 'answered');
-        return `## Outstanding RFIs\n\n**Total: ${openRfis.length}**\n\n${openRfis.map(r =>
-          `**${r.number}** — ${r.project}\n` +
-          `• Status: ${r.status}\n` +
-          `• Priority: ${r.priority}\n` +
-          `• Due: ${r.dueDate}\n` +
-          `• Subject: ${r.subject}`
-        ).join('\n\n')}\n\nAverage response time: 4-6 days. Critical path RFIs flagged for expedited handling.`;
-      }
-    }
-
-    // Tender Scorer responses
-    if (agentId === 'tender-scorer') {
-      if (lowercaseQuery.includes('pipeline') || lowercaseQuery.includes('tender')) {
-        return `## Tender Pipeline Status\n\n**Draft:** 1 opportunity\n**Shortlisted:** 1 opportunity\n**Submitted:** 1 opportunity\n**Won:** 1 opportunity\n\n**High-Probability Opportunities (Win % > 60%):**\n\n1. **Nottingham City Centre Hotel — New Build**\n   • Client: Premier Hospitality\n   • Value: £4.2M\n   • Win Probability: 65%\n   • AI Score: 81/100\n   • Deadline: 2026-04-30\n   • Notes: Excellent client relationship, competitive pricing\n\n**Strategic Recommendation:** Prioritize Nottingham (65% win) and Royal Liverpool (45% win with NHS track record). Consider sub-contracting partnership for Manchester Airport (25% win — too risky as lead contractor).`;
-      }
-    }
-
-    // Default intelligent response
-    return `I'll analyze your request regarding "${query}". Based on current project data and CortexBuild systems, here are my insights:\n\n**Key Data Points:**\n• Active Projects: ${projects.filter(p => p.status === 'active').length}\n• Team Members: ${teamMembers.length}\n• Outstanding RFIs: ${rfis.filter(r => r.status !== 'answered').length}\n• Safety Incidents (this week): ${safetyIncidents.filter(s => {
-      const d = new Date(s.date);
-      return d > new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
-    }).length}\n\nPlease ask a more specific question to get targeted insights from this agent.`;
-  };
 
   const handleSendMessage = (text?: string) => {
     const messageText = text || input;

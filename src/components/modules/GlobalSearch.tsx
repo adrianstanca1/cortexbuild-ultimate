@@ -96,8 +96,8 @@ export function GlobalSearch({ onClose }: { onClose?: () => void }) {
       try {
         const data = await searchApi.search(query);
         setResults(data.results as SearchResult);
-      } catch (err) {
-        console.error('Search error:', err);
+      } catch {
+        console.error('Search error');
       } finally {
         setLoading(false);
       }

@@ -67,8 +67,8 @@ export default function Training() {
       setTraining(prev => [created, ...prev]);
       setShowCreateModal(false);
       setForm({ title: '', provider: '', type: '', status: 'scheduled', scheduledDate: '', completedDate: '', certification: '' });
-    } catch (err) {
-      console.error('Failed to create:', err);
+    } catch {
+      console.error('Failed to create');
     } finally {
       setCreating(false);
     }
@@ -79,8 +79,8 @@ export default function Training() {
     try {
       await trainingApi.delete(id);
       setTraining(prev => prev.filter((t: any) => String(t.id) !== String(id)));
-    } catch (err) {
-      console.error('Failed to delete:', err);
+    } catch {
+      console.error('Failed to create');
     }
   };
 
@@ -100,8 +100,8 @@ export default function Training() {
       setTraining(prev => prev.map((t: any) => String(t.id) === String(editItem.id) ? updated : t));
       setEditItem(null);
       toast.success('Training record updated');
-    } catch (err) {
-      console.error('Failed to update:', err);
+    } catch {
+      console.error('Failed to create');
     } finally {
       setSaving(false);
     }
@@ -118,8 +118,8 @@ export default function Training() {
         }
         return t;
       }));
-    } catch (err) {
-      console.error('Upload failed:', err);
+    } catch {
+      console.error('Upload failed');
     } finally {
       setUploading(false);
       setSelectedId(null);

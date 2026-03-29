@@ -20,16 +20,6 @@ const CASH_DATA = [
   { month:'Feb', cashIn:856000, cashOut:601000, balance:1159000 },
   { month:'Mar', cashIn:943000, cashOut:648000, balance:1454000 },
 ];
-const REV_DATA = [
-  { month:'Sep', revenue:485000, costs:342000, profit:143000 },
-  { month:'Oct', revenue:612000, costs:445000, profit:167000 },
-  { month:'Nov', revenue:534000, costs:378000, profit:156000 },
-  { month:'Dec', revenue:298000, costs:225000, profit:73000  },
-  { month:'Jan', revenue:721000, costs:512000, profit:209000 },
-  { month:'Feb', revenue:856000, costs:601000, profit:255000 },
-  { month:'Mar', revenue:943000, costs:648000, profit:295000 },
-];
-
 const BUDGET_CHART_DATA = [
   { project:'Acme Tower', budget:450000, spent:320000, remaining:130000 },
   { project:'Smith Complex', budget:680000, spent:510000, remaining:170000 },

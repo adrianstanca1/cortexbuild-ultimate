@@ -47,8 +47,8 @@ export default function Measuring() {
       setMeasurements(prev => [created, ...prev]);
       setShowCreateModal(false);
       setForm({ location: '', surveyType: '', surveyor: '', surveyDate: '', totalArea: '', unit: 'm²', status: 'pending' });
-    } catch (err) {
-      console.error('Failed to create:', err);
+    } catch {
+      console.error('Failed to create');
     } finally {
       setCreating(false);
     }
@@ -59,8 +59,8 @@ export default function Measuring() {
     try {
       await measuringApi.delete(id);
       setMeasurements(prev => prev.filter((m: any) => String(m.id) !== String(id)));
-    } catch (err) {
-      console.error('Failed to delete:', err);
+    } catch {
+      console.error('Failed to create');
     }
   };
 
@@ -79,8 +79,8 @@ export default function Measuring() {
       });
       setMeasurements(prev => prev.map((m: any) => String(m.id) === String(editItem.id) ? updated : m));
       setEditItem(null);
-    } catch (err) {
-      console.error('Failed to update:', err);
+    } catch {
+      console.error('Failed to create');
     } finally {
       setSaving(false);
     }
@@ -91,8 +91,8 @@ export default function Measuring() {
     try {
       await uploadFile(file, 'REPORTS');
       toast.success(`Uploaded: ${file.name}`);
-    } catch (err) {
-      console.error('Upload failed:', err);
+    } catch {
+      console.error('Upload failed');
       toast.error('Upload failed');
     } finally {
       setUploading(null);

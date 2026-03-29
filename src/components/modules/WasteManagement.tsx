@@ -53,8 +53,8 @@ export default function WasteManagement() {
       setWaste(prev => [created, ...prev]);
       setShowCreateModal(false);
       setForm({ wasteType: '', quantity: '', unit: 'tonnes', carrier: '', collectionDate: '', recyclingRate: '75', status: 'pending' });
-    } catch (err) {
-      console.error('Failed to create:', err);
+    } catch {
+      console.error('Failed to create');
       toast.error('Failed to create waste record');
     } finally {
       setCreating(false);
@@ -77,8 +77,8 @@ export default function WasteManagement() {
       setWaste(prev => prev.map((w: any) => String(w.id) === String(editItem.id) ? updated : w));
       setEditItem(null);
       toast.success('Waste record updated');
-    } catch (err) {
-      console.error('Failed to update:', err);
+    } catch {
+      console.error('Failed to create');
       toast.error('Failed to update waste record');
     } finally {
       setSaving(false);
@@ -90,8 +90,8 @@ export default function WasteManagement() {
     try {
       await wasteManagementApi.delete(id);
       setWaste(prev => prev.filter((w: any) => String(w.id) !== String(id)));
-    } catch (err) {
-      console.error('Failed to delete:', err);
+    } catch {
+      console.error('Failed to create');
     }
   };
 
@@ -100,8 +100,8 @@ export default function WasteManagement() {
     try {
       await uploadFile(file, 'REPORTS');
       toast.success(`Uploaded: ${file.name}`);
-    } catch (err) {
-      console.error('Upload failed:', err);
+    } catch {
+      console.error('Upload failed');
       toast.error('Upload failed');
     } finally {
       setUploading(null);

@@ -56,8 +56,8 @@ export default function Signage() {
       setSignage(prev => [created, ...prev]);
       setShowCreateModal(false);
       setForm({ description: '', location: '', type: 'safety', status: 'required' });
-    } catch (err) {
-      console.error('Failed to create:', err);
+    } catch {
+      console.error('Failed to create');
     } finally {
       setCreating(false);
     }
@@ -68,8 +68,8 @@ export default function Signage() {
     try {
       await signageApi.delete(id);
       setSignage(prev => prev.filter((s: any) => String(s.id) !== String(id)));
-    } catch (err) {
-      console.error('Failed to delete:', err);
+    } catch {
+      console.error('Failed to create');
     }
   };
 
@@ -86,8 +86,8 @@ export default function Signage() {
       setSignage(prev => prev.map((s: any) => String(s.id) === String(editItem.id) ? updated : s));
       setEditItem(null);
       toast.success('Signage updated');
-    } catch (err) {
-      console.error('Failed to update:', err);
+    } catch {
+      console.error('Failed to create');
     } finally {
       setSaving(false);
     }
@@ -98,8 +98,8 @@ export default function Signage() {
     try {
       await uploadFile(file, 'REPORTS');
       toast.success(`Uploaded: ${file.name}`);
-    } catch (err) {
-      console.error('Upload failed:', err);
+    } catch {
+      console.error('Upload failed');
       toast.error('Upload failed');
     } finally {
       setUploading(null);

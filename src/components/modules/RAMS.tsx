@@ -185,8 +185,8 @@ export function RAMS() {
     try {
       const result = await uploadFile(file, 'RAMS');
       toast.success(`Document uploaded: ${file.name}`);
-    } catch (err) {
-      console.error('Upload failed:', err);
+    } catch {
+      console.error('Upload failed');
       toast.error('Upload failed');
     } finally {
       setUploading(null);

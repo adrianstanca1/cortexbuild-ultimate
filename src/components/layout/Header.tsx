@@ -81,13 +81,13 @@ const MODULE_ACCENTS: Partial<Record<Module, string>> = {
 };
 
 export function Header({ activeModule, onMenuToggle }: { activeModule: Module; onMenuToggle?: () => void }) {
-  const [isOnline, setIsOnline] = useState(typeof navigator !== 'undefined' ? navigator.onLine : true);
+  const [, setIsOnline] = useState(typeof navigator !== 'undefined' ? navigator.onLine : true);
   const [notifOpen, setNotifOpen] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
   const [searchFocused, setSearchFocused] = useState(false);
   const [currentTime, setCurrentTime] = useState(new Date());
   const accent = MODULE_ACCENTS[activeModule] || '#f59e0b';
-  const { theme, setTheme } = useTheme?.() ?? { theme: 'dark', setTheme: () => {} };
+  useTheme?.();
   const isMobile = useIsMobile();
 
   useEffect(() => {

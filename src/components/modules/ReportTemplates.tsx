@@ -68,7 +68,7 @@ export function ReportTemplates() {
         usage: Math.floor(Math.random() * 100),
         lastUsed: new Date(Date.now() - Math.random() * 30 * 24 * 60 * 60 * 1000).toLocaleDateString(),
       })) as ReportTemplateExt[]);
-    } catch (err) {
+    } catch {
       toast.error('Failed to load templates');
     } finally {
       setLoading(false);
@@ -81,7 +81,7 @@ export function ReportTemplates() {
       await reportTemplatesApi.delete(String(id));
       toast.success('Template deleted');
       loadTemplates();
-    } catch (err) {
+    } catch {
       toast.error('Failed to delete template');
     }
   };
@@ -91,7 +91,7 @@ export function ReportTemplates() {
       await reportTemplatesApi.duplicate(String(id));
       toast.success('Template duplicated');
       loadTemplates();
-    } catch (err) {
+    } catch {
       toast.error('Failed to duplicate template');
     }
   };
@@ -514,7 +514,7 @@ function TemplateModal({
       }
       toast.success(template ? 'Template updated' : 'Template created');
       onSave();
-    } catch (err) {
+    } catch {
       toast.error('Failed to save template');
     } finally {
       setSaving(false);

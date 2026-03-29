@@ -128,8 +128,8 @@ export default function Defects() {
       setDefects(prev => [created as Defect, ...prev]);
       setShowCreateModal(false);
       setForm({ title: '', project: '', location: '', trade: '', priority: 'medium', status: 'identified', description: '', identifiedBy: '', assignedTo: '', targetDate: '' });
-    } catch (err) {
-      console.error('Failed to create defect:', err);
+    } catch {
+      console.error('Failed to');
     } finally {
       setCreating(false);
     }
@@ -140,8 +140,8 @@ export default function Defects() {
     try {
       await defectsApi.delete(id);
       setDefects(prev => prev.filter(d => String(d.id) !== String(id)));
-    } catch (err) {
-      console.error('Failed to delete:', err);
+    } catch {
+      console.error('Failed to create');
     }
   };
 
@@ -163,8 +163,8 @@ export default function Defects() {
       });
       setDefects(prev => prev.map(d => String(d.id) === String(editItem.id) ? updated as Defect : d));
       setEditItem(null);
-    } catch (err) {
-      console.error('Failed to update defect:', err);
+    } catch {
+      console.error('Failed to');
     } finally {
       setSaving(false);
     }
@@ -180,8 +180,8 @@ export default function Defects() {
         }
         return d;
       }));
-    } catch (err) {
-      console.error('Upload failed:', err);
+    } catch {
+      console.error('Upload failed');
     } finally {
       setUploading(false);
     }

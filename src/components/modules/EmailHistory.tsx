@@ -17,7 +17,7 @@ const EMAIL_TEMPLATES = [
 export function EmailHistory() {
   const [emails, setEmails] = useState<AnyRow[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [total, setTotal] = useState(0);
+  const [, setTotal] = useState(0);
   const [page, setPage] = useState(0);
 
   useEffect(() => {
@@ -31,16 +31,16 @@ export function EmailHistory() {
       .catch(() => setIsLoading(false));
   }, [page]);
 
-  const refetch = () => setPage(p => p);
+  const _refetch = () => setPage(p => p);
 
   const [subTab, setSubTab] = useState<SubTab>('inbox');
   const [search, setSearch] = useState('');
   const [projectFilter, setProjectFilter] = useState('All');
-  const [showModal, setShowModal] = useState(false);
-  const [selectedEmail, setSelectedEmail] = useState<AnyRow | null>(null);
+  const [, setShowModal] = useState(false);
+  const [, setSelectedEmail] = useState<AnyRow | null>(null);
   const [showComposeModal, setShowComposeModal] = useState(false);
   const [compose, setCompose] = useState({ to: '', cc: '', subject: '', body: '', project: '', attachments: '', priority: false });
-  const [showTemplateModal, setShowTemplateModal] = useState(false);
+  const [, setShowTemplateModal] = useState(false);
 
   const today = new Date().toISOString().split('T')[0];
 

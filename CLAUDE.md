@@ -4,86 +4,134 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-CortexBuild Ultimate is an AI-Powered Unified Construction Management Platform for UK Contractors. The codebase is split into two parts:
-- **Frontend**: React + TypeScript + Vite (port 5173)
-- **Backend**: Express.js + PostgreSQL (port 3001)
+CortexBuild Ultimate is an AI-Powered Unified Construction Management Platform for UK contractors. It combines 50+ construction modules with AI agents into a single enterprise SaaS platform.
 
-## Key Commands
+**Stack**: React + TypeScript + Vite (frontend) / Express.js + PostgreSQL + Prisma (backend) / Zustand (state) / WebSocket (real-time)
 
-### Frontend (in `/root/cortexbuild-work`)
+## Commands
+
+### Frontend
 ```bash
-npm install              # Install frontend dependencies
-npm run dev              # Start Vite dev server on http://localhost:5173
-npm run build            # Production build to dist/
+cd /root/cortexbuild-work
+npm install
+npm run dev              # Dev server on http://localhost:5173
+npm run build            # Production build → dist/
 npm run lint             # ESLint check
-npm run lint:fix         # Auto-fix ESLint issues
+npm run lint:fix         # Auto-fix ESLint
 npm run test             # Run Vitest tests
-npm run test:watch       # Watch mode for tests
+npm run test:coverage    # Coverage report
 ```
 
-### Backend (in `/root/cortexbuild-work/server`)
+### Backend
 ```bash
-cd server && npm install  # Install backend dependencies
-npm run dev               # Start with nodemon (auto-reload)
-npm start                 # Start production server
+cd /root/cortexbuild-work/server
+npm install
+npm run dev              # nodemon auto-reload on port 3001
+npm start                # Production
+```
+
+### Docker (full stack with PostgreSQL, Redis, Ollama)
+```bash
+cd /root/cortexbuild-work
+docker-compose up -d     # Starts all services
+docker-compose down      # Stop services
 ```
 
 ### Database Migrations
 ```bash
 psql -d cortexbuild -f server/migrations/001_add_audit_log.sql
 psql -d cortexbuild -f server/migrations/002_add_email_tables.sql
-psql -d cortexbuild -f server/migrations/003_add_report_templates.sql
-psql -d cortexbuild -f server/migrations/004_add_permissions.sql
+# ... see server/migrations/ for all migrations
 ```
 
 ## Architecture
 
-### Frontend Structure (`src/`)
-- `App.tsx` - Main application component with routing
-- `components/` - Reusable UI components
-- `context/` - React context providers (auth, etc.)
-- `hooks/` - Custom React hooks
-- `lib/` - Utility functions
-- `services/` - API service layer
-- `types/` - TypeScript type definitions
-- `index.css` - Global styles with CSS variables
+### Frontend Module System
+The app uses **lazy loading** for 50+ modules defined in `src/App.tsx`. Each module is a React component loaded via `React.lazy()`:
 
-### Backend Structure (`server/`)
-- `index.js` - Express server entry point with WebSocket
-- `db.js` - PostgreSQL connection pool
-- `middleware/` - Auth, error handling middleware
-- `routes/` - Express route handlers
-- `migrations/` - SQL schema migrations
-- `uploads/` - File upload storage
+- **Core**: Dashboard, Projects, Invoicing, Accounting, FinancialReports, Procurement
+- **Operations**: Safety, Teams, Tenders, SiteOperations, PlantEquipment, Materials, Timesheets, Subcontractors, DailyReports
+- **Quality**: RAMS, CIS, Inspections, RiskRegister, PunchList, RFIs, ChangeOrders
+- **Intelligence**: AIAssistant, Analytics, Insights, ExecutiveReports, PredictiveAnalytics
+- **Collaboration**: Documents, Meetings, Drawings, Calendar, CRM
+
+### Backend Route Architecture
+The backend uses a **generic CRUD router** factory (`makeRouter`) for standard entities plus specialized routers:
+- `routes/auth.js` — JWT login/register
+- `routes/files.js` — Multer file uploads
+- `routes/ai.js` — Ollama AI integration
+- `routes/email.js` — Nodemailer + SendGrid
+- `routes/search.js` — Global search
+- `routes/audit.js` — Audit log
+- `routes/permissions.js` — RBAC
+
+All `/api/*` routes require JWT authentication.
+
+### AI Agents System
+Located in `/root/cortexbuild-work/agents/` and `/root/cortexbuild-work/.agents/`:
+- **Main agents**: project-analyzer, financial-agent, quality-agent, safety-compliance, schedule-agent, document-processor
+- **TypeScript agents**: safety-agent.ts, rfi-analyzer.ts, daily-report-agent.ts, change-order-agent.ts
+- **Orchestrator**: `.agents/orchestrator.js` coordinates agent execution
+- **Agent config**: `.agents/agents/*.agent.js` — each defines instructions, tools, and subagents
+
+### Database Schema
+Prisma schemas in `prisma/` define 85+ models covering the full construction domain. The app uses raw SQL migrations in `server/migrations/` for production.
 
 ### State Management
-Frontend uses Zustand for global state (no Redux).
+Zustand stores in `src/lib/store/` manage UI state. Key stores: `useAuthStore`, `useAppStore`. No Redux.
+
+### Real-time Architecture
+WebSocket server runs alongside Express in `server/index.js`. Clients connect at `/ws` for:
+- Notification push
+- Live collaboration events
+- AI agent progress streaming
 
 ### API Communication
-Frontend communicates via `services/api.ts` → backend at `VITE_API_BASE_URL` (default: `http://localhost:3001`). All routes require JWT token.
+Frontend proxies `/api` and `/ws` to backend via Vite config. API base: `VITE_API_BASE_URL` (default `http://localhost:3001`).
 
-## Environment Configuration
+## Environment Setup
 
-Copy `.env.example` to `.env.local` for frontend:
+**Frontend** (`.env.local`):
 ```
 VITE_API_BASE_URL=http://localhost:3001
 ```
 
-Copy `.env.example` to `.env` for backend:
+**Backend** (`.env`):
 ```
-DATABASE_URL=postgresql://...
-JWT_SECRET=your-secret-key
+DATABASE_URL=postgresql://user:pass@localhost:5432/cortexbuild
+JWT_SECRET=your-secret
 PORT=3001
+REDIS_URL=redis://localhost:6379
 ```
-
-## Testing
-
-Vitest is configured at project root. Tests live in `src/test/` or alongside components with `.test.ts`/`.test.tsx` suffix.
 
 ## Design System
 
-Uses custom CSS variables for dark industrial theme:
-- `--slate-*` - Backgrounds and text
-- `--amber-*` - Accents and highlights
-- `--emerald-*` - Success states
-- `--red-*` - Error/danger states
+Dark industrial theme using CSS variables:
+- `--slate-*` — backgrounds, surfaces
+- `--amber-*` — accents, highlights
+- `--emerald-*` — success states
+- `--red-*` — errors, danger
+- `--cyan-*` — info states
+
+## Key Files
+
+| Path | Purpose |
+|------|---------|
+| `src/App.tsx` | Main router with lazy-loaded modules |
+| `src/services/api.ts` | API client with JWT handling |
+| `src/lib/store/` | Zustand state stores |
+| `server/index.js` | Express + WebSocket entry point |
+| `server/routes/` | API route handlers |
+| `server/db.js` | PostgreSQL connection pool |
+| `prisma/schema.prisma` | Core data models |
+| `agents/` | AI agent implementations |
+
+## Testing
+
+Tests use Vitest. Place test files in `src/test/` or alongside components with `.test.ts`/`.test.tsx` suffix.
+
+```bash
+npm run test              # Run all tests
+npm run test:watch        # Watch mode
+npm run test:coverage     # Coverage report
+```

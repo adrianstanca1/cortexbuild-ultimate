@@ -63,7 +63,7 @@ function BulkActionButton({ action, selectedIds }: { action: BulkAction; selecte
     setLoading(true);
     try {
       await action.onClick(selectedIds);
-    } catch (err) {
+    } catch {
       toast.error('Action failed');
     } finally {
       setLoading(false);

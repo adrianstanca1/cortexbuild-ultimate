@@ -66,8 +66,8 @@ export default function Certifications() {
       setCerts(prev => [created, ...prev]);
       setShowCreateModal(false);
       setForm({ certificationType: '', company: '', body: '', accreditationNumber: '', grade: '', expiryDate: '', status: 'active' });
-    } catch (err) {
-      console.error('Failed to create:', err);
+    } catch {
+      console.error('Failed to create');
     } finally {
       setCreating(false);
     }
@@ -78,8 +78,8 @@ export default function Certifications() {
     try {
       await certificationsApi.delete(id);
       setCerts(prev => prev.filter((c: any) => String(c.id) !== String(id)));
-    } catch (err) {
-      console.error('Failed to delete:', err);
+    } catch {
+      console.error('Failed to delete');
     }
   };
 
@@ -99,8 +99,8 @@ export default function Certifications() {
       setCerts(prev => prev.map((c: any) => String(c.id) === String(editItem.id) ? updated : c));
       setEditItem(null);
       toast.success('Certification updated');
-    } catch (err) {
-      console.error('Failed to update:', err);
+    } catch {
+      console.error('Failed to update');
     } finally {
       setSaving(false);
     }
@@ -116,8 +116,8 @@ export default function Certifications() {
         }
         return c;
       }));
-    } catch (err) {
-      console.error('Upload failed:', err);
+    } catch {
+      console.error('Upload failed');
     } finally {
       setUploading(null);
     }

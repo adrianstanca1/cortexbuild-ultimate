@@ -42,7 +42,7 @@ const statusColour: Record<string, string> = {
   'Withdrawn': 'bg-gray-700/30 text-gray-400',
 };
 
-const chartColours = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899'];
+const _chartColours = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899'];
 
 const emptyForm = {
   co_number: '',

@@ -164,7 +164,7 @@ export function Subcontractors() {
         toast.success('Subcontractor added');
       }
       setShowAddModal(false);
-    } catch (err) {
+    } catch {
       toast.error('Error saving subcontractor');
     }
   }
@@ -174,7 +174,7 @@ export function Subcontractors() {
     try {
       await deleteMutation.mutateAsync(id);
       toast.success('Subcontractor removed');
-    } catch (err) {
+    } catch {
       toast.error('Error removing subcontractor');
     }
   }

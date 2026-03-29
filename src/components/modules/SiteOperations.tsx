@@ -145,7 +145,7 @@ export function SiteOperations() {
         issues: '',
         progress: 50,
       });
-    } catch (err) {
+    } catch {
       toast.error('Failed to save report');
     } finally {
       setSavingEntry(false);

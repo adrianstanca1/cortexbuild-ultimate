@@ -91,8 +91,8 @@ export function Drawings() {
           drawings: ['Drawing'], // placeholder since no junction table
         }));
         setTransmittals(mapped);
-      } catch (err) {
-        console.error('Failed to fetch transmittals:', err);
+      } catch {
+        console.error('Failed to');
         toast.error('Failed to load transmittals');
       } finally {
         setTransmittalsLoading(false);

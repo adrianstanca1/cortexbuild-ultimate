@@ -78,8 +78,8 @@ export default function Specifications() {
       setSpecifications(prev => [...prev, created]);
       setShowCreateModal(false);
       setForm({ title: '', project: '', section: '', discipline: '', description: '' });
-    } catch (err) {
-      console.error('Failed to create:', err);
+    } catch {
+      console.error('Failed to create');
     } finally {
       setCreating(false);
     }
@@ -98,8 +98,8 @@ export default function Specifications() {
       }) as Specification;
       setSpecifications(prev => prev.map(s => String(s.id) === String(editItem.id) ? updated : s));
       setEditItem(null);
-    } catch (err) {
-      console.error('Failed to update:', err);
+    } catch {
+      console.error('Failed to create');
     } finally {
       setSaving(false);
     }
@@ -110,8 +110,8 @@ export default function Specifications() {
     try {
       await specificationsApi.delete(id);
       setSpecifications(prev => prev.filter(s => String(s.id) !== String(id)));
-    } catch (err) {
-      console.error('Failed to delete:', err);
+    } catch {
+      console.error('Failed to create');
     }
   };
 
@@ -128,8 +128,8 @@ export default function Specifications() {
         }
         return s;
       }));
-    } catch (err) {
-      console.error('Upload failed:', err);
+    } catch {
+      console.error('Upload failed');
     } finally {
       setUploading(null);
     }

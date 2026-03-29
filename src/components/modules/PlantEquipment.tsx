@@ -169,7 +169,7 @@ export function PlantEquipment() {
         toast.success('Equipment added');
       }
       setShowEquipmentModal(false);
-    } catch (err) {
+    } catch {
       toast.error('Error saving equipment');
     }
   }
@@ -179,7 +179,7 @@ export function PlantEquipment() {
     try {
       await deleteMutation.mutateAsync(id);
       toast.success('Equipment removed');
-    } catch (err) {
+    } catch {
       toast.error('Error deleting equipment');
     }
   }
@@ -188,7 +188,7 @@ export function PlantEquipment() {
     try {
       await updateMutation.mutateAsync({ id: String(e.id), data: { status: newStatus } });
       toast.success(`Status changed to ${newStatus}`);
-    } catch (err) {
+    } catch {
       toast.error('Error updating status');
     }
   }

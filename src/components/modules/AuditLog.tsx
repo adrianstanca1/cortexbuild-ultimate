@@ -84,8 +84,6 @@ export function AuditLog() {
     }
   }
 
-  const deleteMutation = { mutateAsync: async () => {} };
-
   const loadData = useCallback(async () => {
     setLoading(true);
     try {
@@ -111,7 +109,7 @@ export function AuditLog() {
       }
       setEntries(filtered);
       setStats(statsData as unknown as AuditStats);
-    } catch (err) {
+    } catch {
       toast.error('Failed to load audit log');
     } finally {
       setLoading(false);

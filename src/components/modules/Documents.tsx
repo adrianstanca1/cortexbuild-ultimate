@@ -99,7 +99,7 @@ export function Documents() {
       if (!res.ok) throw new Error('Failed to fetch');
       const data = await res.json();
       setDocuments(data.data || []);
-    } catch (err) {
+    } catch {
       toast.error('Failed to load documents');
     } finally {
       setLoading(false);
@@ -143,7 +143,7 @@ export function Documents() {
       toast.success('New version uploaded');
       setShowVersionHistory(false);
       fetchDocuments();
-    } catch (err) { toast.error('Upload failed'); }
+    } catch { toast.error('Upload failed'); }
   };
 
   const handleDownload = async (doc: Document) => {
@@ -160,7 +160,7 @@ export function Documents() {
       document.body.appendChild(a); a.click();
       document.body.removeChild(a);
       window.URL.revokeObjectURL(url);
-    } catch (err) { toast.error('Download failed'); }
+    } catch { toast.error('Download failed'); }
   };
 
   const handlePreview = (doc: Document) => {
@@ -181,7 +181,7 @@ export function Documents() {
       toast.success('Document updated');
       setEditingDoc(null);
       fetchDocuments();
-    } catch (err) { toast.error('Update failed'); }
+    } catch { toast.error('Update failed'); }
   };
 
   const handleDelete = async (docId: string) => {
@@ -195,7 +195,7 @@ export function Documents() {
       toast.success('Document deleted');
       setSelectedDoc(null);
       fetchDocuments();
-    } catch (err) { toast.error('Delete failed'); }
+    } catch { toast.error('Delete failed'); }
   };
 
   const filteredDocs = documents.filter(doc => doc.name.toLowerCase().includes(searchQuery.toLowerCase()));

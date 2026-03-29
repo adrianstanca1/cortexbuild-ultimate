@@ -74,7 +74,7 @@ export function PermissionsManager() {
       ]);
       setRoles(rolesData as (Role & AnyRow)[]);
       setPermissions(permsData);
-    } catch (err) {
+    } catch {
       toast.error('Failed to load permissions');
     } finally {
       setLoading(false);
@@ -123,7 +123,7 @@ export function PermissionsManager() {
       await permissionsApi.updateRole(String(selectedRole.id), { permissions: editedPermissions });
       toast.success('Permissions updated');
       loadData();
-    } catch (err) {
+    } catch {
       toast.error('Failed to update permissions');
     } finally {
       setSaving(false);
@@ -137,7 +137,7 @@ export function PermissionsManager() {
       toast.success('Role deleted');
       if (String(selectedRole?.id) === String(roleId)) setSelectedRole(null);
       loadData();
-    } catch (err) {
+    } catch {
       toast.error('Failed to delete role');
     }
   };
@@ -456,7 +456,7 @@ function CreateRoleModal({ onClose, onSave }: { onClose: () => void; onSave: () 
       });
       toast.success('Role created');
       onSave();
-    } catch (err) {
+    } catch {
       toast.error('Failed to create role');
     } finally {
       setSaving(false);

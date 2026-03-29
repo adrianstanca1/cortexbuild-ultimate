@@ -25,7 +25,6 @@ export function AnimatedLogo({ size = 34, showText = true }: AnimatedLogoProps) 
   }, []);
 
   const s = size;
-  const center = s / 2;
 
   return (
     <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>

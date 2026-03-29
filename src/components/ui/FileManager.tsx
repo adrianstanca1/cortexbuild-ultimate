@@ -93,7 +93,7 @@ export function FileManager({
       try {
         await onUpload(droppedFile, selectedCategory);
         toast.success(`Uploaded ${droppedFile.name}`);
-      } catch (err) {
+      } catch {
         toast.error('Upload failed');
       } finally {
         setUploading(false);
@@ -108,7 +108,7 @@ export function FileManager({
       try {
         await onUpload(selectedFile, selectedCategory);
         toast.success(`Uploaded ${selectedFile.name}`);
-      } catch (err) {
+      } catch {
         toast.error('Upload failed');
       } finally {
         setUploading(false);

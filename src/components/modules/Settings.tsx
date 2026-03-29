@@ -93,9 +93,8 @@ export function Settings() {
     try {
       await settingsApi.updateSetting('company', company);
       toast.success('Company settings saved');
-    } catch (err) {
+    } catch {
       toast.error('Failed to save company settings');
-      console.error(err);
     } finally {
       setSavingCompany(false);
     }
@@ -109,9 +108,8 @@ export function Settings() {
       toast.success(`Invite sent to ${inviteEmail}`);
       setShowInviteModal(false);
       setInviteEmail('');
-    } catch (err) {
+    } catch {
       toast.error('Failed to send invite');
-      console.error(err);
     } finally {
       setInviting(false);
     }

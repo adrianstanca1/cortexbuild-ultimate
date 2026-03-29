@@ -45,8 +45,8 @@ export default function Prequalification() {
       setPrequal(prev => [created, ...prev]);
       setShowCreateModal(false);
       setForm({ contractor: '', project: '', questionnaireType: 'PAS 91', status: 'pending', score: '' });
-    } catch (err) {
-      console.error('Failed to create:', err);
+    } catch {
+      console.error('Failed to create');
     } finally {
       setCreating(false);
     }
@@ -57,8 +57,8 @@ export default function Prequalification() {
     try {
       await prequalificationApi.delete(id);
       setPrequal(prev => prev.filter((p: any) => String(p.id) !== String(id)));
-    } catch (err) {
-      console.error('Failed to delete:', err);
+    } catch {
+      console.error('Failed to create');
     }
   };
 
@@ -76,8 +76,8 @@ export default function Prequalification() {
       const result = await prequalificationApi.update(editItem.id, updated);
       setPrequal(prev => prev.map((p: any) => String(p.id) === String(editItem.id) ? result : p));
       setEditItem(null);
-    } catch (err) {
-      console.error('Failed to update:', err);
+    } catch {
+      console.error('Failed to create');
     } finally {
       setSaving(false);
     }
@@ -88,8 +88,8 @@ export default function Prequalification() {
     try {
       await uploadFile(file, 'REPORTS');
       toast.success(`Uploaded: ${file.name}`);
-    } catch (err) {
-      console.error('Upload failed:', err);
+    } catch {
+      console.error('Upload failed');
       toast.error('Upload failed');
     } finally {
       setUploading(null);

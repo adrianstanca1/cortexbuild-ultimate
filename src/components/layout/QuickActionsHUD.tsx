@@ -39,7 +39,7 @@ function getPosition(index: number, total: number) {
   };
 }
 
-export function QuickActionsHUD({ currentModule, onAction }: { currentModule: string; onAction: (module: string) => void }) {
+export function QuickActionsHUD({ currentModule: _currentModule, onAction }: { currentModule: string; onAction: (module: string) => void }) {
   const [open, setOpen] = useState(false);
   const [animating, setAnimating] = useState(false);
   const overlayRef = useRef<HTMLDivElement>(null);

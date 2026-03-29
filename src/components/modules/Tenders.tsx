@@ -230,7 +230,7 @@ export function Tenders() {
         toast.success('Tender created');
       }
       setShowModal(false);
-    } catch (err) {
+    } catch {
       toast.error('Failed to save tender');
     }
   }
@@ -240,7 +240,7 @@ export function Tenders() {
     try {
       await deleteMutation.mutateAsync(id);
       toast.success('Tender deleted');
-    } catch (err) {
+    } catch {
       toast.error('Failed to delete tender');
     }
   }
@@ -249,7 +249,7 @@ export function Tenders() {
     try {
       await updateMutation.mutateAsync({ id: String(t.id), data: { status: newStatus } });
       toast.success(`Moved to ${newStatus}`);
-    } catch (err) {
+    } catch {
       toast.error('Failed to move tender');
     }
   }
@@ -281,9 +281,9 @@ export function Tenders() {
       );
       toast.dismiss('ai-rescore');
       toast.success(`Re-scored ${Object.keys(scoreMap).length} tender(s)`);
-    } catch (err) {
+    } catch {
       toast.dismiss('ai-rescore');
-      toast.error('AI re-scoring failed: ' + (err as Error).message);
+      toast.error('AI re-scoring failed');
     }
   }
 
@@ -304,9 +304,9 @@ export function Tenders() {
       await updateMutation.mutateAsync({ id, data: { ai_score: scores.overall } as any });
       toast.dismiss(`ai-score-${id}`);
       toast.success('AI scoring complete');
-    } catch (err) {
+    } catch {
       toast.dismiss(`ai-score-${id}`);
-      toast.error('Scoring failed: ' + (err as Error).message);
+      toast.error('Scoring failed');
     }
   }
 

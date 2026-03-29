@@ -166,7 +166,7 @@ export function Meetings() {
         toast.success('Meeting scheduled');
       }
       setShowModal(false);
-    } catch (err) {
+    } catch {
       toast.error('Error saving meeting');
     }
   }
@@ -176,7 +176,7 @@ export function Meetings() {
     try {
       await deleteMutation.mutateAsync(id);
       toast.success('Meeting deleted');
-    } catch (err) {
+    } catch {
       toast.error('Error deleting meeting');
     }
   }
@@ -185,7 +185,7 @@ export function Meetings() {
     try {
       await updateMutation.mutateAsync({ id:String(m.id), data:{ status:'Completed' } });
       toast.success('Meeting marked complete');
-    } catch (err) {
+    } catch {
       toast.error('Error updating meeting');
     }
   }

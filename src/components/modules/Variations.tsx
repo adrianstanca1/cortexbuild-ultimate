@@ -105,8 +105,8 @@ export default function Variations() {
       setVariations(prev => [created as Variation, ...prev]);
       setShowCreateModal(false);
       setForm({ title: '', project: '', subcontractor: '', type: 'addition', value: '', reason: '', description: '' });
-    } catch (err) {
-      console.error('Failed to create variation:', err);
+    } catch {
+      console.error('Failed to');
     } finally {
       setCreating(false);
     }
@@ -127,8 +127,8 @@ export default function Variations() {
     try {
       await variationsApi.delete(id);
       setVariations(prev => prev.filter(v => String(v.id) !== String(id)));
-    } catch (err) {
-      console.error('Failed to delete:', err);
+    } catch {
+      console.error('Failed to create');
     }
   };
 
@@ -152,8 +152,8 @@ export default function Variations() {
       });
       setVariations(prev => prev.map(v => String(v.id) === String(editItem.id) ? updated as Variation : v));
       setEditItem(null);
-    } catch (err) {
-      console.error('Failed to update variation:', err);
+    } catch {
+      console.error('Failed to');
     } finally {
       setSaving(false);
     }

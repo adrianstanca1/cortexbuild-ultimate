@@ -141,8 +141,8 @@ export function ExecutiveReports() {
         ]);
         setSummaryData(summary);
         setTrendsData(trends);
-      } catch (err) {
-        console.error('Failed to fetch executive reports data:', err);
+      } catch {
+        console.error('Failed to');
         setError('Failed to load report data');
         toast.error('Failed to load report data, using fallback');
       } finally {

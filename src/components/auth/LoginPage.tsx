@@ -120,6 +120,7 @@ function BlueprintStructure() {
 }
 
 // ─── Stat block ──────────────────────────────────────────────────────────
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 function StatBlock({ value, suffix, label, delay }: { value: number; suffix: string; label: string; delay: number }) {
   const count = useCounter(value, 2000, delay);
   return (

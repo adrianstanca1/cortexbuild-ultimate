@@ -132,7 +132,7 @@ function parseJSON(content: string): Record<string, unknown>[] {
     if (Array.isArray(parsed)) return parsed;
     if (typeof parsed === 'object' && parsed !== null) return [parsed];
     throw new Error('JSON must be an array or object');
-  } catch (err) {
+  } catch {
     throw new Error('Invalid JSON format');
   }
 }
@@ -192,8 +192,8 @@ export function DataImporter({ onImport, format = 'csv', exampleData }: DataImpo
       } else {
         setMapping(parsed.headers.map((source, i) => ({ source, target: `column_${i}` })));
       }
-    } catch (err) {
-      toast.error(`Failed to parse file: ${err}`);
+    } catch {
+      toast.error('Failed to parse file');
       setFile(null);
       setPreview(null);
     }
@@ -232,8 +232,8 @@ export function DataImporter({ onImport, format = 'csv', exampleData }: DataImpo
       setFile(null);
       setPreview(null);
       setMapping([]);
-    } catch (err) {
-      toast.error(`Import failed: ${err}`);
+    } catch {
+      toast.error('Import failed');
     } finally {
       setImporting(false);
     }
