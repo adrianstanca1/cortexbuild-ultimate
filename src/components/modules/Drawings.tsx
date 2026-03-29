@@ -132,7 +132,7 @@ export function Drawings() {
   const currentRevCount = drawings.filter(d=>d.status==='Current').length;
   const forReviewCount = drawings.filter(d=>d.status==='For Review').length;
   const supersededCount = drawings.filter(d=>d.status==='Superseded').length;
-  const rejectedCount = drawings.filter(d=>d.status==='Rejected').length;
+  const _rejectedCount = drawings.filter(d=>d.status==='Rejected').length;
   const disciplinesCount = Array.from(new Set(drawings.map(d=>String(d.discipline??'')).filter(Boolean))).length;
 
   const disciplineStats = DISCIPLINES.filter(d=>d!=='All').map(disc => ({
@@ -207,8 +207,37 @@ export function Drawings() {
         toast.success('Drawing registered');
       }
     } else if (modalMode === 'revision') {
-      toast.success('New revision issued');
+      // Find the original drawing to copy its metadata
+      const original = drawings.find(d => String(d.drawing_number ?? '') === revisionForm.drawingNumber);
+      if (!original) { toast.error('Drawing not found'); return; }
+      await createMutation.mutateAsync({
+        ...original,
+        id: undefined,
+        revision: revisionForm.newRevision,
+        description: revisionForm.description || String(original.description ?? ''),
+        status: 'For Review',
+        date_issued: new Date().toISOString().slice(0, 10),
+      });
+      toast.success(`Revision ${revisionForm.newRevision} issued for ${revisionForm.drawingNumber}`);
     } else if (modalMode === 'transmittal') {
+      await documentsApi.createTransmittal({
+        project:   transmittalForm.project,
+        issued_to: transmittalForm.issuedTo,
+        date:      new Date().toISOString().slice(0, 10),
+        purpose:   transmittalForm.purpose,
+        status:    'Sent',
+      });
+      // Refresh transmittals list
+      const updated = await documentsApi.getTransmittals();
+      setTransmittals((updated as AnyRow[]).map((t: AnyRow): Transmittal => ({
+        id: String(t.id ?? ''),
+        project: String(t.project ?? ''),
+        issuedTo: String(t.issued_to ?? ''),
+        date: String(t.date ?? ''),
+        purpose: String(t.purpose ?? ''),
+        status: String(t.status ?? ''),
+        drawings: ['Drawing'],
+      })));
       toast.success('Transmittal created');
     }
     setShowModal(false);
@@ -221,7 +250,26 @@ export function Drawings() {
   }
 
   function downloadRegister() {
-    toast.success('Register downloaded as PDF');
+    const headers = ['Drawing No', 'Title', 'Discipline', 'Revision', 'Status', 'Author', 'Date Issued', 'Scale'];
+    const rows = drawings.map(d => [
+      String(d.drawing_number ?? ''),
+      String(d.title ?? ''),
+      String(d.discipline ?? ''),
+      String(d.revision ?? ''),
+      String(d.status ?? ''),
+      String(d.author ?? ''),
+      String(d.date_issued ?? ''),
+      String(d.scale ?? ''),
+    ]);
+    const csv = [headers, ...rows].map(r => r.map(v => `"${v.replace(/"/g, '""')}"`).join(',')).join('\n');
+    const blob = new Blob([csv], { type: 'text/csv' });
+    const url  = URL.createObjectURL(blob);
+    const a    = document.createElement('a');
+    a.href = url;
+    a.download = `drawing-register-${new Date().toISOString().slice(0, 10)}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+    toast.success(`Register exported (${drawings.length} drawings)`);
   }
 
   return (

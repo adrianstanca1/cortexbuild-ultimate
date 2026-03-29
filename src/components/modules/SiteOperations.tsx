@@ -4,7 +4,6 @@ import {
   Sun, Cloud, CloudRain, Activity, Calendar, Wrench, X, CheckSquare, Square, Trash2
 } from 'lucide-react';
 import { useDailyReports, useEquipment, useTeam } from '../../hooks/useData';
-import { delaysApi } from '../../services/api';
 import { dailyReportsApi } from '../../services/api';
 import { BulkActionsBar, useBulkSelection } from '../ui/BulkActions';
 import { toast } from 'sonner';
@@ -13,7 +12,7 @@ type AnyRow = Record<string, unknown>;
 
 type SubTab = 'diary' | 'equipment' | 'labour' | 'delays';
 
-const WEATHER_ICONS: Record<string, React.ElementType> = {
+const _WEATHER_ICONS: Record<string, React.ElementType> = {
   sunny: Sun,
   cloudy: Cloud,
   rain: CloudRain,
@@ -36,15 +35,7 @@ export function SiteOperations() {
   const reports = rawReports as AnyRow[];
   const equipment = rawEquipment as AnyRow[];
   const team = rawTeam as AnyRow[];
-  const [delays, setDelays] = useState<AnyRow[]>([]);
-
-  useEffect(() => {
-    (delaysApi.getAll() as Promise<AnyRow[]>)
-      .then(setDelays)
-      .catch((err) => {
-        console.error('Failed to load delays:', err);
-      });
-  }, []);
+  // Delays are derived from daily_reports rows that have delay fields set
 
   const [subTab, setSubTab] = useState<SubTab>('diary');
   const [selectedDate, setSelectedDate] = useState<string>(new Date().toISOString().slice(0, 10));
@@ -89,7 +80,7 @@ export function SiteOperations() {
     }
   }
 
-  const today = new Date().toISOString().slice(0, 10);
+  const _today = new Date().toISOString().slice(0, 10);
   const selectedDayReports = reports.filter(r => String(r.report_date ?? '') === selectedDate);
   const filteredReports = projectFilter ? selectedDayReports.filter(r => String(r.project ?? '').toLowerCase().includes(projectFilter.toLowerCase())) : selectedDayReports;
 

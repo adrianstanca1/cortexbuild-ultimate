@@ -259,6 +259,7 @@ export const documentsApi = {
   update: (id: string, data: Row) => updateRow('documents', id, data),
   delete: (id: string) => deleteRow('documents', id),
   getTransmittals: () => fetchAll('drawing-transmittals'),
+  createTransmittal: (data: Row) => insertRow('drawing-transmittals', data),
   uploadFile: async (file: File, options?: { project?: string; projectId?: string; category?: string }): Promise<Row> => {
     const token = getToken();
     const formData = new FormData();

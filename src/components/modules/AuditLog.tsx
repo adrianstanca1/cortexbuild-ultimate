@@ -334,9 +334,7 @@ export function AuditLog() {
           )}
           <BulkActionsBar
             selectedIds={Array.from(selectedIds)}
-            actions={[
-              { id: 'delete', label: 'Delete Selected', icon: Trash2, variant: 'danger', onClick: handleBulkDelete, confirm: 'This action cannot be undone.' },
-            ]}
+            actions={[]}
             onClearSelection={clearSelection}
           />
         </div>
