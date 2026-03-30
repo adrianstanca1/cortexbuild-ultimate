@@ -1286,7 +1286,7 @@ function shouldUseOllama(message, intent) {
   const trimmed = message.trim();
   const lower = trimmed.toLowerCase();
 
-  if (intent === 'unknown') return true;
+  if (intent === 'unknown') return false;
   if (trimmed.length >= 20) return true;
   if (/[?]/.test(trimmed)) return true;
 
@@ -1298,6 +1298,7 @@ function shouldUseOllama(message, intent) {
     return false;
   }
 
+  // Short commands like "hi", "thanks", single-word inputs → rule-based
   return false;
 }
 
@@ -1365,12 +1366,12 @@ Provide a helpful, concise response. Prefer direct answers over repeating menu-l
       res.on('data', chunk => data += chunk);
       res.on('end', () => {
         try {
-          const chunks = data
-            .split('\n')
-            .map(line => line.trim())
-            .filter(Boolean)
-            .map(line => JSON.parse(line));
-          const parsed = chunks[chunks.length - 1] || {};
+          const trimmed = data.trim();
+          if (!trimmed) {
+            reject(new Error('Ollama returned empty response'));
+            return;
+          }
+          const parsed = JSON.parse(trimmed);
           if (parsed.response) {
             resolve(parsed.response.trim());
           } else if (parsed.error) {

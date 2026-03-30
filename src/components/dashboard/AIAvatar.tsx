@@ -100,7 +100,8 @@ export function AIAvatar({ projectId, onSuggestionClick }: AIAvatarProps) {
       };
 
       setMessages((prev) => [...prev, assistantMessage]);
-    } catch {
+    } catch (err) {
+      console.error('[AIAvatar] sendChatMessage failed:', err);
       const errorMessage: Message = {
         id: (Date.now() + 1).toString(),
         role: 'assistant',
