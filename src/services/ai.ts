@@ -18,6 +18,7 @@ export interface AIChatResponse {
   reply: string
   data: unknown
   suggestions: string[]
+  source?: 'ollama' | 'rule-based'
 }
 
 export async function sendChatMessage(

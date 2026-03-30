@@ -34,14 +34,15 @@ Required variables:
 - `DATABASE_URL=postgresql://...`
 - `JWT_SECRET=your-secret-key`
 
-### 3. Run database migrations
+### 3. Reset and bootstrap the local database
 
 ```bash
-psql -d cortexbuild -f server/migrations/001_add_audit_log.sql
-psql -d cortexbuild -f server/migrations/002_add_email_tables.sql
-psql -d cortexbuild -f server/migrations/003_add_report_templates.sql
-psql -d cortexbuild -f server/migrations/004_add_permissions.sql
+cd server
+npm run db:reset:local
 ```
+
+This rebuilds the local Docker Postgres schema from the repo SQL in a deterministic order,
+including tenant tables, AI conversation storage, notifications, and seed data.
 
 ### 4. Start the backend
 

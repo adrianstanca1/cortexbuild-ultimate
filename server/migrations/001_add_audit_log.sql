@@ -10,6 +10,8 @@ CREATE TABLE IF NOT EXISTS audit_log (
     user_id VARCHAR(100),
     ip_address VARCHAR(45),
     user_agent TEXT,
+    organization_id UUID,
+    company_id UUID,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 

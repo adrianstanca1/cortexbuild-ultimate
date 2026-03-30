@@ -9,7 +9,7 @@ const router = express.Router();
 router.use(auth);
 
 const OLLAMA_HOST = process.env.OLLAMA_HOST || 'http://localhost:11434';
-const LLM_MODEL = process.env.LLM_MODEL || 'qwen3.5:latest';
+const LLM_MODEL = process.env.LLM_MODEL || process.env.OLLAMA_MODEL || 'qwen3.5:latest';
 
 // ─── Ollama health check ──────────────────────────────────────────────────────
 
@@ -1282,61 +1282,78 @@ function classify(message) {
   return 'unknown';
 }
 
+function shouldUseOllama(message, intent) {
+  const trimmed = message.trim();
+  const lower = trimmed.toLowerCase();
+
+  if (intent === 'unknown') return true;
+  if (trimmed.length >= 20) return true;
+  if (/[?]/.test(trimmed)) return true;
+
+  if (/(summari[sz]e|explain|analyse|analyze|compare|why|how|what|which|should|recommend|advice|insight|status of|tell me)/.test(lower)) {
+    return true;
+  }
+
+  if (/^(show|list|give|get|open)\b/.test(lower) && trimmed.length < 20) {
+    return false;
+  }
+
+  return false;
+}
+
 async function getOllamaResponse(userMessage, context = '', conversationHistory = [], summary = null) {
   return new Promise((resolve, reject) => {
-    // Build system prompt
     const systemPrompt = `You are a helpful AI assistant for CortexBuild, a UK construction management platform. You help users manage projects, contracts, safety, finances, and team operations.
 
-Provide a helpful, concise response. Format your answer clearly with bullet points and headings where appropriate.
+Provide a helpful, concise response. Prefer direct answers over repeating menu-like capability lists. When relevant, use the supplied database context. If the user asks a general question, answer it naturally.`;
 
-IMPORTANT: Be aware of the full conversation history provided. Answer follow-up questions using that context.`;
+    const promptParts = [systemPrompt];
 
-    // Build conversation messages
-    const messages = [];
-
-    // System message
     if (context) {
-      messages.push({ role: 'system', content: `${systemPrompt}\n\nDatabase context:\n${context}` });
-    } else {
-      messages.push({ role: 'system', content: systemPrompt });
+      promptParts.push(`Database context:\n${context}`);
     }
 
-    // Inject summary as first assistant-aware message if available
     if (summary) {
-      messages.push({
-        role: 'system',
-        content: `Previous conversation summary:\n${summary}`,
-      });
+      promptParts.push(`Previous conversation summary:\n${summary}`);
     }
 
-    // Add truncated conversation history
-    const truncatedHistory = truncateToTokenBudget(conversationHistory, userMessage, messages[messages.length - 1].content);
-    for (const m of truncatedHistory) {
-      messages.push({ role: m.role, content: m.content });
+    const truncatedHistory = truncateToTokenBudget(
+      conversationHistory,
+      userMessage,
+      `${systemPrompt}\n\n${context || ''}`,
+    );
+
+    if (truncatedHistory.length) {
+      promptParts.push(
+        'Recent conversation:',
+        truncatedHistory
+          .map((message) => `${message.role === 'user' ? 'User' : 'Assistant'}: ${message.content}`)
+          .join('\n'),
+      );
     }
 
-    // Add current user message
-    messages.push({ role: 'user', content: userMessage });
+    promptParts.push(`User: ${userMessage}`, 'Assistant:');
 
     const body = JSON.stringify({
       model: LLM_MODEL,
-      messages,
+      prompt: promptParts.join('\n\n'),
       stream: false,
+      think: false,
       options: {
-        temperature: 0.7,
+        temperature: 0.4,
         top_p: 0.9,
-        num_predict: 1024,
-      }
+        num_predict: 512,
+      },
     });
 
-    const url = new URL(OLLAMA_HOST + '/api/chat');
+    const url = new URL(OLLAMA_HOST + '/api/generate');
     const isHttps = url.protocol === 'https:';
     const lib = isHttps ? https : http;
 
     const req = lib.request({
       hostname: url.hostname,
       port: url.port || (isHttps ? 443 : 11434),
-      path: '/api/chat',
+      path: '/api/generate',
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -1348,13 +1365,18 @@ IMPORTANT: Be aware of the full conversation history provided. Answer follow-up 
       res.on('data', chunk => data += chunk);
       res.on('end', () => {
         try {
-          const parsed = JSON.parse(data);
-          if (parsed.message && parsed.message.content) {
-            resolve(parsed.message.content);
+          const chunks = data
+            .split('\n')
+            .map(line => line.trim())
+            .filter(Boolean)
+            .map(line => JSON.parse(line));
+          const parsed = chunks[chunks.length - 1] || {};
+          if (parsed.response) {
+            resolve(parsed.response.trim());
           } else if (parsed.error) {
             reject(new Error(parsed.error));
           } else {
-            resolve(data.substring(0, 500));
+            reject(new Error('Ollama returned no response content'));
           }
         } catch (e) {
           reject(e);
@@ -1430,7 +1452,7 @@ router.post('/chat', async (req, res) => {
     let reply = result.reply;
     let useLLM = false;
 
-    if (intent === 'unknown' || message.trim().length > 30) {
+    if (shouldUseOllama(message.trim(), intent)) {
       try {
         reply = await getOllamaResponse(message.trim(), result.reply, convHistory, summary);
         useLLM = true;

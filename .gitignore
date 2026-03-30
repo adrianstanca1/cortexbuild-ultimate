@@ -18,3 +18,4 @@ lint_report.json
 fix_any.js
 .claude/
 backups/
+server/doc/

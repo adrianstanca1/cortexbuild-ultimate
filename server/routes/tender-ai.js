@@ -17,7 +17,7 @@ const router = express.Router();
 router.use(auth);
 
 const OLLAMA_HOST = process.env.OLLAMA_HOST || 'http://localhost:11434';
-const LLM_MODEL   = process.env.LLM_MODEL   || 'qwen3.5:latest';
+const LLM_MODEL   = process.env.LLM_MODEL || process.env.OLLAMA_MODEL || 'qwen3.5:latest';
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 

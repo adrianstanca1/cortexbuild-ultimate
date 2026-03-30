@@ -7,8 +7,8 @@ const router = express.Router();
 function getTenantFilter(req) {
   const auth = req.user || {};
   if (!auth.organization_id) return { filter: '', params: [] };
-  // All authenticated users scope to their org (super_admin sees via their org filter too)
-  return { filter: ' organization_id = $1', params: [auth.organization_id] };
+  // Append to existing WHERE clauses in this file.
+  return { filter: ' AND organization_id = $1', params: [auth.organization_id] };
 }
 
 // RAG status: hardcoded green for now (would need baseline/budget tracking)
@@ -29,23 +29,21 @@ router.get('/summary', async (req, res) => {
   try {
     const { filter: tenantFilter, params: tenantParams } = getTenantFilter(req);
 
-    // Parallel queries for KPIs and projects
-    const [invoicesResult, projectsResult, teamResult] = await Promise.all([
-      // Invoice stats for portfolio value and YTD revenue
-      pool.query(`
-        SELECT 
+    const [invoicesResult, projectsCountResult, projectsListResult, teamResult] = await Promise.all([
+      pool.query(
+        `SELECT 
           COALESCE(SUM(CASE WHEN status = 'paid' THEN amount ELSE 0 END), 0) as portfolio_value,
           COALESCE(SUM(CASE WHEN status = 'paid' AND EXTRACT(YEAR FROM issue_date) = EXTRACT(YEAR FROM CURRENT_DATE) THEN amount ELSE 0 END), 0) as revenue_ytd
         FROM invoices
-        WHERE 1=1${tenantFilter}
-      `, tenantParams),
-      // Active projects count
-      pool.query(`
-        SELECT COUNT(*) as count FROM projects WHERE status = 'active'${tenantFilter}
-      `, tenantParams),
-      // Projects list with company info
-      pool.query(`
-        SELECT 
+        WHERE 1=1${tenantFilter}`,
+        tenantParams,
+      ),
+      pool.query(
+        `SELECT COUNT(*) as count FROM projects WHERE status = 'active'${tenantFilter}`,
+        tenantParams,
+      ),
+      pool.query(
+        `SELECT 
           p.id,
           p.name,
           p.client,
@@ -57,27 +55,29 @@ router.get('/summary', async (req, res) => {
         FROM projects p
         WHERE p.status = 'active'${tenantFilter}
         ORDER BY p.created_at DESC
-        LIMIT 50
-      `, tenantParams),
-      // Team headcount for workforce
-      pool.query(`SELECT COUNT(*) as count FROM team_members WHERE 1=1${tenantFilter}`, tenantParams),
+        LIMIT 50`,
+        tenantParams,
+      ),
+      pool.query(
+        `SELECT COUNT(*) as count FROM team_members WHERE 1=1${tenantFilter}`,
+        tenantParams,
+      ),
     ]);
 
     const portfolioValue = Number(invoicesResult.rows[0]?.portfolio_value || 0);
     const revenueYtd = Number(invoicesResult.rows[0]?.revenue_ytd || 0);
-    const projectsActive = Number(projectsResult.rows[0]?.count || 0);
+    const projectsActive = Number(projectsCountResult.rows[0]?.count || 0);
     const workforce = Number(teamResult.rows[0]?.count || 0);
 
-    // Build projects array with RAG status and next milestone
-    const projects = projectsResult.rows.map(p => ({
-      id: p.id,
-      name: p.name,
-      client: p.client,
-      value: Number(p.value) || 0,
-      phase: p.phase || 'Pre-Construction',
-      completion: Number(p.completion) || 0,
-      nextMilestone: 'TBC', // Would need milestones table join
-      pm: p.pm || 'Unassigned',
+    const projects = projectsListResult.rows.map((project) => ({
+      id: project.id,
+      name: project.name,
+      client: project.client,
+      value: Number(project.value) || 0,
+      phase: project.phase || 'Pre-Construction',
+      completion: Number(project.completion) || 0,
+      nextMilestone: 'TBC',
+      pm: project.pm || 'Unassigned',
       ...getRagStatus(),
     }));
 
@@ -86,7 +86,7 @@ router.get('/summary', async (req, res) => {
         portfolioValue,
         projectsActive,
         revenueYtd,
-        margin: 25, // Hardcoded until cost data is available
+        margin: 25,
         workforce,
       },
       projects,
@@ -105,7 +105,6 @@ router.get('/trends', async (req, res) => {
   try {
     const { filter: tenantFilter, params: tenantParams } = getTenantFilter(req);
 
-    // Monthly revenue from paid invoices (last 6 months)
     const revenueWhere = `status = 'paid' AND issue_date >= DATE_TRUNC('month', CURRENT_DATE) - INTERVAL '5 months'${tenantFilter}`;
     const revenueQuery = `
       SELECT 
@@ -117,7 +116,6 @@ router.get('/trends', async (req, res) => {
       ORDER BY DATE_TRUNC('month', issue_date)
     `;
 
-    // Monthly headcount from team_members
     const headcountQuery = `
       SELECT COUNT(*) as count FROM team_members
       WHERE 1=1${tenantFilter}
@@ -128,31 +126,25 @@ router.get('/trends', async (req, res) => {
       pool.query(headcountQuery, tenantParams),
     ]);
 
-    // Build 6-month trend array
     const months = [];
     const now = new Date();
     const currentHeadcount = Number(headcountResult.rows[0]?.count || 0);
 
-    for (let i = 5; i >= 0; i--) {
-      const date = new Date(now.getFullYear(), now.getMonth() - i, 1);
-      const monthStart = new Date(date.getFullYear(), date.getMonth(), 1);
-      const monthEnd = new Date(date.getFullYear(), date.getMonth() + 1, 0);
-
-      // Find matching revenue data
-      const revenueRow = revenueResult.rows.find(r => {
-        const rDate = new Date(r.month);
-        return rDate.getFullYear() === monthStart.getFullYear() &&
-               rDate.getMonth() === monthStart.getMonth();
+    for (let i = 5; i >= 0; i -= 1) {
+      const monthStart = new Date(now.getFullYear(), now.getMonth() - i, 1);
+      const revenueRow = revenueResult.rows.find((row) => {
+        const rowDate = new Date(row.month);
+        return (
+          rowDate.getFullYear() === monthStart.getFullYear() &&
+          rowDate.getMonth() === monthStart.getMonth()
+        );
       });
 
-      const monthName = monthStart.toLocaleString('en-US', { month: 'short' });
-      const year = monthStart.getFullYear();
-
       months.push({
-        month: `${monthName} ${year}`,
+        month: monthStart.toLocaleString('en-US', { month: 'short', year: 'numeric' }),
         revenue: Number(revenueRow?.revenue || 0),
-        margin: 25, // Hardcoded until cost data is available
-        headcount: currentHeadcount, // Use current headcount for all months (no historical tracking)
+        margin: 25,
+        headcount: currentHeadcount,
       });
     }
 

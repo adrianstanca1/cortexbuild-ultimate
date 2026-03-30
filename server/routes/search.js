@@ -146,9 +146,9 @@ router.get('/', async (req, res) => {
         if (queryEmbedding) {
           // Try to fetch stored embeddings and compute cosine similarity
           const { rows: chunks } = await pool.query(
-            `SELECT de.chunk_text, de.embedding_id, de.file_id, f.name as file_name, f.type
+            `SELECT de.chunk_text, de.embedding_id, de.document_id, d.name as file_name, d.type
              FROM document_embeddings de
-             JOIN files f ON f.id = de.file_id
+             JOIN documents d ON d.id = de.document_id
              LIMIT 200`
           );
           // Embedding IDs are stored as JSON arrays from Ollama

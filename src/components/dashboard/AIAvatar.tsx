@@ -1,6 +1,8 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Send, Bot, User, Loader2 } from 'lucide-react';
 
+import { sendChatMessage } from '../../services/ai';
+
 interface Message {
   id: string;
   role: 'user' | 'assistant';
@@ -60,6 +62,7 @@ export function AIAvatar({ projectId, onSuggestionClick }: AIAvatarProps) {
   ]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [assistantMode, setAssistantMode] = useState<'ollama' | 'rule-based'>('ollama');
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const scrollToBottom = () => {
@@ -86,26 +89,18 @@ export function AIAvatar({ projectId, onSuggestionClick }: AIAvatarProps) {
     setIsLoading(true);
 
     try {
-      const response = await fetch('/api/ai/chat', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          message: input.trim(),
-          projectId,
-        }),
-      });
-
-      const data = await response.json();
+      const data = await sendChatMessage(input.trim(), projectId ? { projectId } : undefined);
+      setAssistantMode(data.source === 'rule-based' ? 'rule-based' : 'ollama');
 
       const assistantMessage: Message = {
         id: (Date.now() + 1).toString(),
         role: 'assistant',
-        content: data.message || 'I couldn\'t process that request. Please try again.',
+        content: data.reply || 'I couldn\'t process that request. Please try again.',
         timestamp: new Date(),
       };
 
       setMessages((prev) => [...prev, assistantMessage]);
-    } catch (_error) {
+    } catch {
       const errorMessage: Message = {
         id: (Date.now() + 1).toString(),
         role: 'assistant',
@@ -126,7 +121,9 @@ export function AIAvatar({ projectId, onSuggestionClick }: AIAvatarProps) {
         </div>
         <div>
           <CardTitle>AI Assistant</CardTitle>
-          <p className="text-xs text-gray-600 mt-1">Powered by Claude</p>
+          <p className="text-xs text-gray-600 mt-1">
+            {assistantMode === 'rule-based' ? 'Rule-based fallback active' : 'Powered by local Ollama'}
+          </p>
         </div>
       </CardHeader>
       <CardContent className="flex-1 flex flex-col overflow-hidden p-0">

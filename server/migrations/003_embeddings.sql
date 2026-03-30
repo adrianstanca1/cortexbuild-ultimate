@@ -4,13 +4,13 @@
 
 CREATE TABLE IF NOT EXISTS document_embeddings (
   id SERIAL PRIMARY KEY,
-  file_id INTEGER REFERENCES files(id) ON DELETE CASCADE,
+  document_id UUID REFERENCES documents(id) ON DELETE CASCADE,
   chunk_text TEXT NOT NULL,
   embedding_id TEXT,
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
-CREATE INDEX IF NOT EXISTS idx_document_embeddings_file_id ON document_embeddings(file_id);
+CREATE INDEX IF NOT EXISTS idx_document_embeddings_document_id ON document_embeddings(document_id);
 CREATE INDEX IF NOT EXISTS idx_document_embeddings_created_at ON document_embeddings(created_at);
 
 COMMENT ON TABLE document_embeddings IS 'Stores vector embeddings for document chunks enabling semantic search via Ollama';
