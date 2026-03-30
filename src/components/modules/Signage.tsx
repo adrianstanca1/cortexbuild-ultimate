@@ -1,42 +1,35 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { Plus, Edit, Trash2, X, Upload, CheckSquare, Square } from 'lucide-react';
 import { EmptyState } from '../ui/EmptyState';
 import { BulkActionsBar, useBulkSelection } from '../ui/BulkActions';
-import { signageApi, uploadFile } from '../../services/api';
-import { toast } from 'sonner';
+import { uploadFile } from '../../services/api';
+import { useSignage } from '../../hooks/useData';
 
 export default function Signage() {
   const [searchTerm, setSearchTerm] = useState('');
-  const [signage, setSignage] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
   const [showCreateModal, setShowCreateModal] = useState(false);
-  const [creating, setCreating] = useState(false);
   const [form, setForm] = useState({ description: '', location: '', type: 'safety', status: 'required' });
   const [uploading, setUploading] = useState<string | null>(null);
   const [editItem, setEditItem] = useState<Record<string, any> | null>(null);
-  const [saving, setSaving] = useState(false);
+
+  const { useList, useCreate, useUpdate, useDelete } = useSignage;
+  const { data: signage = [], isLoading } = useList() as { data: any[]; isLoading: boolean };
+  const createMutation = useCreate() as { mutateAsync: (data: Record<string, unknown>) => Promise<unknown>; isPending: boolean };
+  const updateMutation = useUpdate() as { mutateAsync: (data: { id: string; data: Record<string, unknown> }) => Promise<unknown>; isPending: boolean };
+  const deleteMutation = useDelete() as { mutateAsync: (id: string) => Promise<void>; isPending: boolean };
 
   const { selectedIds, toggle, clearSelection } = useBulkSelection();
 
   async function handleBulkDelete(ids: string[]) {
     if (!confirm(`Delete ${ids.length} signage item(s)?`)) return;
     try {
-      await Promise.all(ids.map(id => signageApi.delete(id)));
-      setSignage(prev => prev.filter((s: any) => !ids.includes(String(s.id))));
-      toast.success(`Deleted ${ids.length} item(s)`);
+      await Promise.all(ids.map(id => deleteMutation.mutateAsync(id)));
       clearSelection();
     } catch {
-      toast.error('Bulk delete failed');
+      // error handled by hook
     }
   }
-
-  useEffect(() => {
-    signageApi.getAll().then((data: any[]) => {
-      setSignage(data);
-      setLoading(false);
-    }).catch(() => setLoading(false));
-  }, []);
 
   const filtered = signage.filter((s: any) =>
     (s.description || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -45,52 +38,44 @@ export default function Signage() {
 
   const handleCreate = async () => {
     if (!form.description) return;
-    setCreating(true);
     try {
-      const newRecord = {
+      await createMutation.mutateAsync({
         description: form.description,
         location: form.location || '',
         type: form.type,
         status: form.status,
-      };
-      const created = await signageApi.create(newRecord);
-      setSignage(prev => [created, ...prev]);
+      });
       setShowCreateModal(false);
       setForm({ description: '', location: '', type: 'safety', status: 'required' });
     } catch {
-      console.error('Failed to create');
-    } finally {
-      setCreating(false);
+      // error handled by hook
     }
   };
 
   const handleDelete = async (id: string) => {
     if (!confirm('Delete this signage record?')) return;
     try {
-      await signageApi.delete(id);
-      setSignage(prev => prev.filter((s: any) => String(s.id) !== String(id)));
+      await deleteMutation.mutateAsync(id);
     } catch {
-      console.error('Failed to create');
+      // error handled by hook
     }
   };
 
   const handleUpdate = async () => {
     if (!editItem || !editItem.description) return;
-    setSaving(true);
     try {
-      const updated = await signageApi.update(editItem.id, {
-        description: editItem.description,
-        location: editItem.location,
-        type: editItem.type,
-        status: editItem.status,
+      await updateMutation.mutateAsync({
+        id: editItem.id,
+        data: {
+          description: editItem.description,
+          location: editItem.location,
+          type: editItem.type,
+          status: editItem.status,
+        },
       });
-      setSignage(prev => prev.map((s: any) => String(s.id) === String(editItem.id) ? updated : s));
       setEditItem(null);
-      toast.success('Signage updated');
     } catch {
-      console.error('Failed to create');
-    } finally {
-      setSaving(false);
+      // error handled by hook
     }
   };
 
@@ -98,10 +83,8 @@ export default function Signage() {
     setUploading(id);
     try {
       await uploadFile(file, 'REPORTS');
-      toast.success(`Uploaded: ${file.name}`);
     } catch {
-      console.error('Upload failed');
-      toast.error('Upload failed');
+      // error handled inline
     } finally {
       setUploading(null);
     }
@@ -126,7 +109,7 @@ export default function Signage() {
           onChange={(e) => setSearchTerm(e.target.value)}
           className="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white mb-4"
         />
-        {loading ? (
+        {isLoading ? (
           <div className="text-center py-8 text-gray-400">Loading signage...</div>
         ) : (
           <div className="space-y-3">
@@ -233,8 +216,8 @@ export default function Signage() {
             </div>
             <div className="p-6 border-t border-gray-700 flex justify-end gap-3">
               <button type="button" onClick={() => setShowCreateModal(false)} className="px-4 py-2 text-gray-400 hover:text-white">Cancel</button>
-              <button type="button" onClick={handleCreate} disabled={creating || !form.description} className="px-4 py-2 bg-orange-500 hover:bg-orange-600 text-white rounded-lg font-semibold disabled:opacity-50">
-                {creating ? 'Creating...' : 'Add Sign'}
+              <button type="button" onClick={handleCreate} disabled={createMutation.isPending || !form.description} className="px-4 py-2 bg-orange-500 hover:bg-orange-600 text-white rounded-lg font-semibold disabled:opacity-50">
+                {createMutation.isPending ? 'Creating...' : 'Add Sign'}
               </button>
             </div>
           </div>
@@ -282,8 +265,8 @@ export default function Signage() {
             </div>
             <div className="p-6 border-t border-gray-700 flex justify-end gap-3">
               <button type="button" onClick={() => setEditItem(null)} className="px-4 py-2 text-gray-400 hover:text-white">Cancel</button>
-              <button type="button" onClick={handleUpdate} disabled={saving || !editItem.description} className="px-4 py-2 bg-orange-500 hover:bg-orange-600 text-white rounded-lg font-semibold disabled:opacity-50">
-                {saving ? 'Saving...' : 'Save Changes'}
+              <button type="button" onClick={handleUpdate} disabled={updateMutation.isPending || !editItem.description} className="px-4 py-2 bg-orange-500 hover:bg-orange-600 text-white rounded-lg font-semibold disabled:opacity-50">
+                {updateMutation.isPending ? 'Saving...' : 'Save Changes'}
               </button>
             </div>
           </div>

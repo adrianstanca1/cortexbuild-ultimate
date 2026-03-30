@@ -1,24 +1,28 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { useState, useEffect, useRef } from 'react';
+import { useState, useRef } from 'react';
 import { Plus, GraduationCap, Award, Clock, AlertCircle, FileCheck, Trash2, X, Edit, CheckSquare, Square, Download } from 'lucide-react';
 import { EmptyState } from '../ui/EmptyState';
 import { DataImporter, ExportButton } from '../ui/DataImportExport';
 import { trainingApi, uploadFile } from '../../services/api';
 import { BulkActionsBar, useBulkSelection } from '../ui/BulkActions';
 import { toast } from 'sonner';
+import { useTraining } from '../../hooks/useData';
+import { useQueryClient } from '@tanstack/react-query';
 
 export default function Training() {
+  const { data: training = [] as any[], isLoading } = useTraining.useList();
+  const createMutation = useTraining.useCreate();
+  const updateMutation = useTraining.useUpdate();
+  const deleteMutation = useTraining.useDelete();
+  const queryClient = useQueryClient();
+
   const [searchTerm, setSearchTerm] = useState('');
-  const [training, setTraining] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const _fileInputRef = useRef<HTMLInputElement>(null);
   const [showCreateModal, setShowCreateModal] = useState(false);
-  const [creating, setCreating] = useState(false);
   const [form, setForm] = useState({ title: '', provider: '', type: '', status: 'scheduled', scheduledDate: '', completedDate: '', certification: '' });
   const [editItem, setEditItem] = useState<Record<string, any> | null>(null);
-  const [saving, setSaving] = useState(false);
   const [showBulkImport, setShowBulkImport] = useState(false);
 
   const { selectedIds, toggle, clearSelection } = useBulkSelection();
@@ -26,21 +30,13 @@ export default function Training() {
   async function handleBulkDelete(ids: string[]) {
     if (!confirm(`Delete ${ids.length} item(s)?`)) return;
     try {
-      await Promise.all(ids.map(id => trainingApi.delete(id)));
-      setTraining(prev => prev.filter((t: any) => !ids.includes(String(t.id))));
-      toast.success(`Deleted ${ids.length} item(s)`);
+      await Promise.all(ids.map(id => deleteMutation.mutateAsync(id)));
       clearSelection();
+      toast.success(`Deleted ${ids.length} item(s)`);
     } catch {
       toast.error('Bulk delete failed');
     }
   }
-
-  useEffect(() => {
-    trainingApi.getAll().then((data: any[]) => {
-      setTraining(data);
-      setLoading(false);
-    }).catch(() => setLoading(false));
-  }, []);
 
   const filtered = training.filter((t: any) =>
     (t.title || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -53,9 +49,8 @@ export default function Training() {
 
   const handleCreate = async () => {
     if (!form.title) return;
-    setCreating(true);
     try {
-      const newRecord = {
+      await createMutation.mutateAsync({
         title: form.title,
         provider: form.provider || 'CortexBuild Training',
         type: form.type || 'General',
@@ -63,48 +58,41 @@ export default function Training() {
         scheduled_date: form.scheduledDate || null,
         completed_date: form.completedDate || null,
         certification: form.certification || '',
-      };
-      const created = await trainingApi.create(newRecord);
-      setTraining(prev => [created, ...prev]);
+      });
       setShowCreateModal(false);
       setForm({ title: '', provider: '', type: '', status: 'scheduled', scheduledDate: '', completedDate: '', certification: '' });
     } catch {
-      console.error('Failed to create');
-    } finally {
-      setCreating(false);
+      toast.error('Failed to create training record');
     }
   };
 
   const handleDelete = async (id: string) => {
     if (!confirm('Delete this training record?')) return;
     try {
-      await trainingApi.delete(id);
-      setTraining(prev => prev.filter((t: any) => String(t.id) !== String(id)));
+      await deleteMutation.mutateAsync(id);
     } catch {
-      console.error('Failed to create');
+      toast.error('Failed to delete training record');
     }
   };
 
   const handleUpdate = async () => {
     if (!editItem || !editItem.title) return;
-    setSaving(true);
     try {
-      const updated = await trainingApi.update(editItem.id, {
-        title: editItem.title,
-        provider: editItem.provider,
-        type: editItem.type,
-        status: editItem.status,
-        scheduled_date: editItem.scheduledDate || null,
-        completed_date: editItem.completedDate || null,
-        certification: editItem.certification,
+      await updateMutation.mutateAsync({
+        id: editItem.id,
+        data: {
+          title: editItem.title,
+          provider: editItem.provider,
+          type: editItem.type,
+          status: editItem.status,
+          scheduled_date: editItem.scheduledDate || null,
+          completed_date: editItem.completedDate || null,
+          certification: editItem.certification,
+        },
       });
-      setTraining(prev => prev.map((t: any) => String(t.id) === String(editItem.id) ? updated : t));
       setEditItem(null);
-      toast.success('Training record updated');
     } catch {
-      console.error('Failed to create');
-    } finally {
-      setSaving(false);
+      toast.error('Failed to update training record');
     }
   };
 
@@ -112,15 +100,11 @@ export default function Training() {
     setUploading(true);
     setSelectedId(id);
     try {
-      const result = await uploadFile(file, 'REPORTS');
-      setTraining(prev => prev.map((t: any) => {
-        if (String(t.id) === String(id)) {
-          return { ...t, certification: file.name, certification_url: result.file_url || result.name };
-        }
-        return t;
-      }));
+      await uploadFile(file, 'REPORTS');
+      queryClient.invalidateQueries({ queryKey: ['training'] });
+      toast.success(`Uploaded: ${file.name}`);
     } catch {
-      console.error('Upload failed');
+      toast.error('Upload failed');
     } finally {
       setUploading(false);
       setSelectedId(null);
@@ -166,13 +150,13 @@ export default function Training() {
         </div>
       </div>
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div className="card p-4"><div className="flex items-center gap-3"><div className="w-10 h-10 rounded-lg bg-green-500/10 flex items-center justify-center"><Award className="text-green-400" size={20} /></div><div><p className="text-gray-400 text-xs">Completed</p><p className="text-2xl font-bold text-green-400">{loading ? '...' : validCount}</p></div></div></div>
-        <div className="card p-4"><div className="flex items-center gap-3"><div className="w-10 h-10 rounded-lg bg-amber-500/10 flex items-center justify-center"><AlertCircle className="text-amber-400" size={20} /></div><div><p className="text-gray-400 text-xs">Scheduled</p><p className="text-2xl font-bold text-amber-400">{loading ? '...' : expiringCount}</p></div></div></div>
-        <div className="card p-4"><div className="flex items-center gap-3"><div className="w-10 h-10 rounded-lg bg-blue-500/10 flex items-center justify-center"><GraduationCap className="text-blue-400" size={20} /></div><div><p className="text-gray-400 text-xs">Total Records</p><p className="text-2xl font-bold text-blue-400">{loading ? '...' : totalCount}</p></div></div></div>
+        <div className="card p-4"><div className="flex items-center gap-3"><div className="w-10 h-10 rounded-lg bg-green-500/10 flex items-center justify-center"><Award className="text-green-400" size={20} /></div><div><p className="text-gray-400 text-xs">Completed</p><p className="text-2xl font-bold text-green-400">{isLoading ? '...' : validCount}</p></div></div></div>
+        <div className="card p-4"><div className="flex items-center gap-3"><div className="w-10 h-10 rounded-lg bg-amber-500/10 flex items-center justify-center"><AlertCircle className="text-amber-400" size={20} /></div><div><p className="text-gray-400 text-xs">Scheduled</p><p className="text-2xl font-bold text-amber-400">{isLoading ? '...' : expiringCount}</p></div></div></div>
+        <div className="card p-4"><div className="flex items-center gap-3"><div className="w-10 h-10 rounded-lg bg-blue-500/10 flex items-center justify-center"><GraduationCap className="text-blue-400" size={20} /></div><div><p className="text-gray-400 text-xs">Total Records</p><p className="text-2xl font-bold text-blue-400">{isLoading ? '...' : totalCount}</p></div></div></div>
       </div>
       <div className="card p-4">
         <input type="text" placeholder="Search training records..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white mb-4" />
-        {loading ? (
+        {isLoading ? (
           <div className="text-center py-8 text-gray-400">Loading training data...</div>
         ) : (
           <div className="space-y-3">
@@ -304,8 +288,8 @@ export default function Training() {
             </div>
             <div className="p-6 border-t border-gray-700 flex justify-end gap-3">
               <button type="button" onClick={() => setShowCreateModal(false)} className="px-4 py-2 text-gray-400 hover:text-white">Cancel</button>
-              <button type="button" onClick={handleCreate} disabled={creating || !form.title} className="px-4 py-2 bg-orange-500 hover:bg-orange-600 text-white rounded-lg font-semibold disabled:opacity-50">
-                {creating ? 'Creating...' : 'Add Record'}
+              <button type="button" onClick={handleCreate} disabled={createMutation.isPending || !form.title} className="px-4 py-2 bg-orange-500 hover:bg-orange-600 text-white rounded-lg font-semibold disabled:opacity-50">
+                {createMutation.isPending ? 'Creating...' : 'Add Record'}
               </button>
             </div>
           </div>
@@ -367,8 +351,8 @@ export default function Training() {
             </div>
             <div className="p-6 border-t border-gray-700 flex justify-end gap-3">
               <button type="button" onClick={() => setEditItem(null)} className="px-4 py-2 text-gray-400 hover:text-white">Cancel</button>
-              <button type="button" onClick={handleUpdate} disabled={saving || !editItem.title} className="px-4 py-2 bg-orange-500 hover:bg-orange-600 text-white rounded-lg font-semibold disabled:opacity-50">
-                {saving ? 'Saving...' : 'Save Changes'}
+              <button type="button" onClick={handleUpdate} disabled={updateMutation.isPending || !editItem.title} className="px-4 py-2 bg-orange-500 hover:bg-orange-600 text-white rounded-lg font-semibold disabled:opacity-50">
+                {updateMutation.isPending ? 'Saving...' : 'Save Changes'}
               </button>
             </div>
           </div>

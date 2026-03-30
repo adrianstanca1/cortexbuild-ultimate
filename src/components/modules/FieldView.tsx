@@ -1,11 +1,10 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import {
   MapPin, Users, AlertTriangle, CheckCircle, Clock, Building2, Layers,
   Navigation2, CloudRain, Sun, Cloud, FileText, ShieldAlert, Wind,
   Map, FileCheck, CheckSquare, Square, Trash2
 } from 'lucide-react';
-import { useProjects, useDailyReports, useSafety } from '../../hooks/useData';
-import { sitePermitsApi } from '../../services/api';
+import { useProjects, useDailyReports, useSafety, useSitePermits } from '../../hooks/useData';
 import { BulkActionsBar, useBulkSelection } from '../ui/BulkActions';
 import { EmptyState } from '../ui/EmptyState';
 import { toast } from 'sonner';
@@ -66,32 +65,24 @@ export function FieldView() {
   const { data: rawProjects = [] } = useProjects.useList();
   const { data: rawReports = [], isLoading: loadingReports } = useDailyReports.useList();
   const { data: rawSafety = [], isLoading: loadingSafety } = useSafety.useList();
+  const { data: rawPermits = [] } = useSitePermits.useList();
+  const permitsMutation = useSitePermits.useCreate();
 
   const projects = rawProjects as AnyRow[];
   const reports = rawReports as AnyRow[];
   const incidents = rawSafety as AnyRow[];
+  const permits = (rawPermits as unknown as AnyRow[]).map(p => ({
+    ...p,
+    issuedBy: (p as AnyRow).issued_by,
+    from: (p as AnyRow).from_date,
+    to: (p as AnyRow).to_date,
+  })) as AnyRow[];
 
   const [subTab, setSubTab] = useState<SubTab>('live');
   const [selectedProject, setSelectedProject] = useState<string>('all');
   const [selectedWeatherProject, setSelectedWeatherProject] = useState<string>('london');
-  const [permits, setPermits] = useState<AnyRow[]>([]);
   const [showPermitModal, setShowPermitModal] = useState(false);
   const [permitForm, setPermitForm] = useState({ type: '', site: '', issuedBy: '', from_date: '', to_date: '', status: 'Active' });
-  const [savingPermit, setSavingPermit] = useState(false);
-
-  useEffect(() => {
-    sitePermitsApi.getAll().then(data => {
-      const mapped = (data as AnyRow[]).map(p => ({
-        ...p,
-        issuedBy: p.issued_by,
-        from: p.from_date,
-        to: p.to_date,
-      }));
-      setPermits(mapped);
-    }).catch((err) => {
-      console.error('Failed to load permits:', err);
-    });
-  }, []);
 
   const { selectedIds, toggle, clearSelection } = useBulkSelection();
 
@@ -107,17 +98,12 @@ export function FieldView() {
 
   const handleIssuePermit = async () => {
     if (!permitForm.type || !permitForm.site) { toast.error('Type and site are required'); return; }
-    setSavingPermit(true);
     try {
-      await sitePermitsApi.create({ ...permitForm, from_date: permitForm.from_date || null, to_date: permitForm.to_date || null });
+      await permitsMutation.mutateAsync({ data: { ...permitForm, from_date: permitForm.from_date || null, to_date: permitForm.to_date || null } });
       toast.success('Permit issued');
       setShowPermitModal(false);
       setPermitForm({ type: '', site: '', issuedBy: '', from_date: '', to_date: '', status: 'Active' });
-      const data = await sitePermitsApi.getAll();
-      const mapped = (data as AnyRow[]).map((p: AnyRow) => ({ ...p, issuedBy: p.issued_by, from: p.from_date, to: p.to_date }));
-      setPermits(mapped);
     } catch { toast.error('Failed to issue permit'); }
-    finally { setSavingPermit(false); }
   };
 
   const today = new Date().toISOString().slice(0, 10);
@@ -540,8 +526,8 @@ export function FieldView() {
             </div>
             <div className="flex gap-3 mt-5 justify-end">
               <button onClick={() => setShowPermitModal(false)} className="px-4 py-2 text-sm text-gray-400 hover:text-white">Cancel</button>
-              <button onClick={handleIssuePermit} disabled={savingPermit} className="px-4 py-2 text-sm bg-orange-600 hover:bg-orange-700 text-white rounded-lg disabled:opacity-50">
-                {savingPermit ? 'Saving…' : 'Issue Permit'}
+              <button onClick={handleIssuePermit} disabled={permitsMutation.isPending} className="px-4 py-2 text-sm bg-orange-600 hover:bg-orange-700 text-white rounded-lg disabled:opacity-50">
+                {permitsMutation.isPending ? 'Saving…' : 'Issue Permit'}
               </button>
             </div>
           </div>

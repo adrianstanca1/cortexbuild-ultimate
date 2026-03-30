@@ -1,5 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
-import { auditApi } from '@/services/api';
+import React, { useState } from 'react';
 import { backupApi } from '@/services/api';
 import { toast } from 'sonner';
 import {
@@ -16,29 +15,11 @@ import {
 } from 'lucide-react';
 import { EmptyState } from '../ui/EmptyState';
 import { BulkActionsBar, useBulkSelection } from '../ui/BulkActions';
+import { useAuditLog } from '../../hooks/useData';
 
 type AnyRow = Record<string, unknown>;
-
-interface AuditEntry extends AnyRow {
-  id: number;
-  user_id: string;
-  action: string;
-  table_name: string;
-  record_id: number;
-  changes: string;
-  created_at: string;
-  user?: { name: string; avatar?: string };
-  ip_address?: string;
-}
-
-interface AuditStats {
-  total_entries: number;
-  today_entries: number;
-  week_entries: number;
-  month_entries: number;
-  active_users: number;
-  security_alerts: number;
-}
+type AuditEntry = AnyRow & { id: number; user_id: string; action: string; table_name: string; record_id: number; changes: string; created_at: string; user?: { name: string; avatar?: string }; ip_address?: string };
+type AuditStats = AnyRow & { total_entries: number; today_entries: number; week_entries: number; month_entries: number; active_users: number; security_alerts: number };
 
 type SubTab = 'activity' | 'users' | 'changes' | 'security' | 'export';
 
@@ -51,16 +32,21 @@ const TABS: { key: SubTab; label: string; icon: React.ElementType }[] = [
 ];
 
 export function AuditLog() {
-  const [entries, setEntries] = useState<AuditEntry[]>([]);
-  const [stats, setStats] = useState<AuditStats>({
-    total_entries: 0,
-    today_entries: 0,
-    week_entries: 0,
-    month_entries: 0,
-    active_users: 0,
-    security_alerts: 0,
+  const { data: rawEntries = [], isLoading } = useAuditLog.useList();
+  const { data: rawStats } = useAuditLog.useStats();
+
+  const entries = (rawEntries as AnyRow[]) as AuditEntry[];
+  const stats: AuditStats = (rawStats ?? {}) as AuditStats;
+
+  // Client-side filtering
+  const filteredEntries = entries.filter(e => {
+    if (filterAction !== 'all' && e.action !== filterAction) return false;
+    if (filterTable !== 'all' && e.table_name !== filterTable) return false;
+    if (filterUser !== 'all' && e.user_id !== filterUser) return false;
+    if (searchQuery && !e.table_name.includes(searchQuery) && !(e.user?.name ?? '').includes(searchQuery)) return false;
+    return true;
   });
-  const [loading, setLoading] = useState(true);
+
   const [subTab, setSubTab] = useState<SubTab>('activity');
   const [filterAction, setFilterAction] = useState('all');
   const [filterTable, setFilterTable] = useState('all');
@@ -72,42 +58,6 @@ export function AuditLog() {
   const [exporting, setExporting] = useState(false);
 
   const { selectedIds, toggle, clearSelection } = useBulkSelection();
-
-  const loadData = useCallback(async () => {
-    setLoading(true);
-    try {
-      const [entriesData, statsData] = await Promise.all([
-        auditApi.getAll({ limit: 500 }),
-        auditApi.getStats(),
-      ]);
-      let filtered = entriesData as unknown as AuditEntry[];
-      if (filterAction !== 'all') {
-        filtered = filtered.filter(e => e.action === filterAction);
-      }
-      if (filterTable !== 'all') {
-        filtered = filtered.filter(e => e.table_name === filterTable);
-      }
-      if (filterUser !== 'all') {
-        filtered = filtered.filter(e => e.user_id === filterUser);
-      }
-      if (searchQuery) {
-        filtered = filtered.filter(e =>
-          String(e.table_name).includes(searchQuery) ||
-          String(e.user?.name ?? '').includes(searchQuery)
-        );
-      }
-      setEntries(filtered);
-      setStats(statsData as unknown as AuditStats);
-    } catch {
-      toast.error('Failed to load audit log');
-    } finally {
-      setLoading(false);
-    }
-  }, [filterAction, filterTable, filterUser, searchQuery]);
-
-  useEffect(() => {
-    loadData();
-  }, [loadData]);
 
   const getActionColor = (action: string): string => {
     switch (action) {
@@ -253,11 +203,11 @@ export function AuditLog() {
             </select>
           </div>
 
-          {loading ? (
+          {isLoading ? (
             <div className="text-center py-12">
               <p className="text-gray-400">Loading audit log...</p>
             </div>
-          ) : entries.length === 0 ? (
+          ) : filteredEntries.length === 0 ? (
             <EmptyState
               icon={FileText}
               title="No audit entries found"
@@ -279,7 +229,7 @@ export function AuditLog() {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-800">
-                    {entries.slice(0, 100).map(entry => {
+                    {filteredEntries.slice(0, 100).map(entry => {
                       const isSelected = selectedIds.has(String(entry.id));
                       return (
                       <tr key={Number(entry.id)} className="hover:bg-gray-800/50">

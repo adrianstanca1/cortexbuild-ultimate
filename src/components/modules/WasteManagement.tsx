@@ -1,27 +1,22 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { Plus, Leaf, Recycle, Trash2, X, Upload, Edit } from 'lucide-react';
-import { wasteManagementApi, uploadFile } from '../../services/api';
+import { uploadFile } from '../../services/api';
 import { toast } from 'sonner';
 import { EmptyState } from '../ui/EmptyState';
+import { useWasteManagement } from '../../hooks/useData';
 
 export default function WasteManagement() {
+  const { data: waste = [] as any[], isLoading } = useWasteManagement.useList();
+  const createMutation = useWasteManagement.useCreate();
+  const updateMutation = useWasteManagement.useUpdate();
+  const deleteMutation = useWasteManagement.useDelete();
+
   const [searchTerm, setSearchTerm] = useState('');
-  const [waste, setWaste] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
   const [showCreateModal, setShowCreateModal] = useState(false);
-  const [creating, setCreating] = useState(false);
   const [uploading, setUploading] = useState<string | null>(null);
   const [form, setForm] = useState({ wasteType: '', quantity: '', unit: 'tonnes', carrier: '', collectionDate: '', recyclingRate: '75', status: 'pending' });
   const [editItem, setEditItem] = useState<Record<string, any> | null>(null);
-  const [saving, setSaving] = useState(false);
-
-  useEffect(() => {
-    wasteManagementApi.getAll().then((data: any[]) => {
-      setWaste(data);
-      setLoading(false);
-    }).catch(() => setLoading(false));
-  }, []);
 
   const filtered = waste.filter((w: any) =>
     (w.waste_type || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -38,9 +33,8 @@ export default function WasteManagement() {
 
   const handleCreate = async () => {
     if (!form.wasteType) return;
-    setCreating(true);
     try {
-      const newRecord = {
+      await createMutation.mutateAsync({
         waste_type: form.wasteType,
         project: '',
         quantity: parseFloat(form.quantity) || 0,
@@ -49,50 +43,41 @@ export default function WasteManagement() {
         collection_date: form.collectionDate || null,
         recycling_rate: parseInt(form.recyclingRate) || 0,
         status: form.status,
-      };
-      const created = await wasteManagementApi.create(newRecord);
-      setWaste(prev => [created, ...prev]);
+      });
       setShowCreateModal(false);
       setForm({ wasteType: '', quantity: '', unit: 'tonnes', carrier: '', collectionDate: '', recyclingRate: '75', status: 'pending' });
     } catch {
-      console.error('Failed to create');
       toast.error('Failed to create waste record');
-    } finally {
-      setCreating(false);
     }
   };
 
   const handleUpdate = async () => {
     if (!editItem || !editItem.id) return;
-    setSaving(true);
     try {
-      const updated = await wasteManagementApi.update(editItem.id, {
-        waste_type: editItem.wasteType,
-        quantity: parseFloat(editItem.quantity) || 0,
-        unit: editItem.unit,
-        carrier: editItem.carrier || '',
-        collection_date: editItem.collectionDate || null,
-        recycling_rate: parseInt(editItem.recyclingRate) || 0,
-        status: editItem.status,
+      await updateMutation.mutateAsync({
+        id: editItem.id,
+        data: {
+          waste_type: editItem.wasteType,
+          quantity: parseFloat(editItem.quantity) || 0,
+          unit: editItem.unit,
+          carrier: editItem.carrier || '',
+          collection_date: editItem.collectionDate || null,
+          recycling_rate: parseInt(editItem.recyclingRate) || 0,
+          status: editItem.status,
+        },
       });
-      setWaste(prev => prev.map((w: any) => String(w.id) === String(editItem.id) ? updated : w));
       setEditItem(null);
-      toast.success('Waste record updated');
     } catch {
-      console.error('Failed to create');
       toast.error('Failed to update waste record');
-    } finally {
-      setSaving(false);
     }
   };
 
   const handleDelete = async (id: string) => {
     if (!confirm('Delete this waste record?')) return;
     try {
-      await wasteManagementApi.delete(id);
-      setWaste(prev => prev.filter((w: any) => String(w.id) !== String(id)));
+      await deleteMutation.mutateAsync(id);
     } catch {
-      console.error('Failed to create');
+      toast.error('Failed to delete waste record');
     }
   };
 
@@ -129,7 +114,7 @@ export default function WasteManagement() {
             </div>
             <div>
               <p className="text-gray-400 text-xs">Total Recycled</p>
-              <p className="text-2xl font-bold text-emerald-400">{loading ? '...' : `${totalRecycling.toFixed(1)}t`}</p>
+              <p className="text-2xl font-bold text-emerald-400">{isLoading ? '...' : `${totalRecycling.toFixed(1)}t`}</p>
             </div>
           </div>
         </div>
@@ -140,7 +125,7 @@ export default function WasteManagement() {
             </div>
             <div>
               <p className="text-gray-400 text-xs">Total Waste</p>
-              <p className="text-2xl font-bold text-amber-400">{loading ? '...' : `${totalWaste.toFixed(1)}t`}</p>
+              <p className="text-2xl font-bold text-amber-400">{isLoading ? '...' : `${totalWaste.toFixed(1)}t`}</p>
             </div>
           </div>
         </div>
@@ -151,7 +136,7 @@ export default function WasteManagement() {
             </div>
             <div>
               <p className="text-gray-400 text-xs">Recycling Rate</p>
-              <p className="text-2xl font-bold text-green-400">{loading ? '...' : `${recyclingRate}%`}</p>
+              <p className="text-2xl font-bold text-green-400">{isLoading ? '...' : `${recyclingRate}%`}</p>
             </div>
           </div>
         </div>
@@ -165,7 +150,7 @@ export default function WasteManagement() {
           onChange={(e) => setSearchTerm(e.target.value)}
           className="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white mb-4"
         />
-        {loading ? (
+        {isLoading ? (
           <div className="text-center py-8 text-gray-400">Loading waste data...</div>
         ) : (
           <div className="space-y-3">
@@ -287,8 +272,8 @@ export default function WasteManagement() {
             </div>
             <div className="p-6 border-t border-gray-700 flex justify-end gap-3">
               <button type="button" onClick={() => setShowCreateModal(false)} className="px-4 py-2 text-gray-400 hover:text-white">Cancel</button>
-              <button type="button" onClick={handleCreate} disabled={creating || !form.wasteType} className="px-4 py-2 bg-orange-500 hover:bg-orange-600 text-white rounded-lg font-semibold disabled:opacity-50">
-                {creating ? 'Creating...' : 'Log Waste'}
+              <button type="button" onClick={handleCreate} disabled={createMutation.isPending || !form.wasteType} className="px-4 py-2 bg-orange-500 hover:bg-orange-600 text-white rounded-lg font-semibold disabled:opacity-50">
+                {createMutation.isPending ? 'Creating...' : 'Log Waste'}
               </button>
             </div>
           </div>
@@ -355,8 +340,8 @@ export default function WasteManagement() {
             </div>
             <div className="p-6 border-t border-gray-700 flex justify-end gap-3">
               <button type="button" onClick={() => setEditItem(null)} className="px-4 py-2 text-gray-400 hover:text-white">Cancel</button>
-              <button type="button" onClick={handleUpdate} disabled={saving || !editItem.wasteType} className="px-4 py-2 bg-orange-500 hover:bg-orange-600 text-white rounded-lg font-semibold disabled:opacity-50">
-                {saving ? 'Saving...' : 'Save Changes'}
+              <button type="button" onClick={handleUpdate} disabled={updateMutation.isPending || !editItem.wasteType} className="px-4 py-2 bg-orange-500 hover:bg-orange-600 text-white rounded-lg font-semibold disabled:opacity-50">
+                {updateMutation.isPending ? 'Saving...' : 'Save Changes'}
               </button>
             </div>
           </div>

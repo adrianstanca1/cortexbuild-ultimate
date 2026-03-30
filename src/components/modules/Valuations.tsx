@@ -1,13 +1,16 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { useState, useEffect, useRef } from 'react';
+import { useState, useRef } from 'react';
 import {
   FileText, Plus, Search, Download,
   FileCheck, Eye, Edit, X, CreditCard, Receipt, Trash2,
   CheckSquare, Square
 } from 'lucide-react';
-import { valuationsApi, uploadFile } from '../../services/api';
+import { uploadFile } from '../../services/api';
 import { jsPDF } from 'jspdf';
 import { BulkActionsBar, useBulkSelection } from '../ui/BulkActions';
+import { toast } from 'sonner';
+import { useValuations } from '../../hooks/useData';
+import { useQueryClient } from '@tanstack/react-query';
 
 interface Valuation {
   id: string;
@@ -189,15 +192,16 @@ function generateValuationPDF(val: Valuation) {
 export default function Valuations() {
   const _fileInputRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
-  const [valuations, setValuations] = useState<any[]>([]);
-  const [_loading, setLoading] = useState(true);
+  const { data: valuations = [] as any[], isLoading } = useValuations.useList();
+  const createMutation = useValuations.useCreate();
+  const updateMutation = useValuations.useUpdate();
+  const deleteMutation = useValuations.useDelete();
+  const queryClient = useQueryClient();
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState<string>('all');
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [selectedValId, setSelectedValId] = useState<string | null>(null);
-  const [creating, setCreating] = useState(false);
   const [editItem, setEditItem] = useState<Record<string, any> | null>(null);
-  const [saving, setSaving] = useState(false);
   const [form, setForm] = useState({ project: '', contractor: '', grossValue: '', retention: '', periodStart: '', periodEnd: '' });
 
   const { selectedIds, toggle, clearSelection } = useBulkSelection();
@@ -205,29 +209,19 @@ export default function Valuations() {
   async function handleBulkDelete(ids: string[]) {
     if (!confirm(`Delete ${ids.length} item(s)?`)) return;
     try {
-      await Promise.all(ids.map(id => valuationsApi.delete(id)));
-      setValuations(prev => prev.filter(v => !ids.includes(String(v.id))));
+      await Promise.all(ids.map(id => deleteMutation.mutateAsync(id)));
       clearSelection();
+      toast.success(`Deleted ${ids.length} item(s)`);
     } catch {
-      console.error('Bulk delete failed');
+      toast.error('Bulk delete failed');
     }
   }
 
-  useEffect(() => {
-    valuationsApi.getAll()
-      .then(setValuations)
-      .catch((err) => {
-        console.error('Failed to load valuations:', err);
-      })
-      .finally(() => setLoading(false));
-  }, []);
-
   const handleCreate = async () => {
     if (!form.project) return;
-    setCreating(true);
     try {
       const ref = `VAL-${String(Date.now()).slice(-6)}`;
-      const newRecord = {
+      await createMutation.mutateAsync({
         reference: ref,
         project: form.project,
         contractor_name: form.contractor || 'CortexBuild Ltd',
@@ -240,50 +234,44 @@ export default function Valuations() {
         total_value: parseFloat(form.grossValue) || 0,
         retention: parseFloat(form.retention) || 0,
         amount_due: parseFloat(form.grossValue) || 0,
-      };
-      const created = await valuationsApi.create(newRecord);
-      setValuations(prev => [created, ...prev]);
+      });
       setShowCreateModal(false);
       setForm({ project: '', contractor: '', grossValue: '', retention: '', periodStart: '', periodEnd: '' });
     } catch {
-      console.error('Failed to create');
-    } finally {
-      setCreating(false);
+      toast.error('Failed to create valuation');
     }
   };
 
   const handleUpdate = async () => {
     if (!editItem?.id) return;
-    setSaving(true);
     try {
-      const updated = await valuationsApi.update(editItem.id, {
-        project: editItem.project,
-        contractor_name: editItem.contractorName || 'CortexBuild Ltd',
-        period_start: editItem.periodStart || new Date().toISOString().split('T')[0],
-        period_end: editItem.periodEnd || new Date().toISOString().split('T')[0],
-        original_value: parseFloat(editItem.originalValue) || 0,
-        variations: parseFloat(editItem.variations) || 0,
-        total_value: parseFloat(editItem.totalValue) || 0,
-        retention: parseFloat(editItem.retention) || 0,
-        amount_due: parseFloat(editItem.amountDue) || 0,
-        status: editItem.status,
+      await updateMutation.mutateAsync({
+        id: editItem.id,
+        data: {
+          project: editItem.project,
+          contractor_name: editItem.contractorName || 'CortexBuild Ltd',
+          period_start: editItem.periodStart || new Date().toISOString().split('T')[0],
+          period_end: editItem.periodEnd || new Date().toISOString().split('T')[0],
+          original_value: parseFloat(editItem.originalValue) || 0,
+          variations: parseFloat(editItem.variations) || 0,
+          total_value: parseFloat(editItem.totalValue) || 0,
+          retention: parseFloat(editItem.retention) || 0,
+          amount_due: parseFloat(editItem.amountDue) || 0,
+          status: editItem.status,
+        },
       });
-      setValuations(prev => prev.map(v => String(v.id) === String(editItem.id) ? updated : v));
       setEditItem(null);
     } catch {
-      console.error('Failed to create');
-    } finally {
-      setSaving(false);
+      toast.error('Failed to update valuation');
     }
   };
 
   const handleDelete = async (id: string) => {
     if (!confirm('Delete this valuation?')) return;
     try {
-      await valuationsApi.delete(id);
-      setValuations(prev => prev.filter(v => String(v.id) !== String(id)));
+      await deleteMutation.mutateAsync(id);
     } catch {
-      console.error('Failed to create');
+      toast.error('Failed to delete valuation');
     }
   };
 
@@ -291,18 +279,11 @@ export default function Valuations() {
     setUploading(true);
     setSelectedValId(valId);
     try {
-      const result = await uploadFile(file, 'REPORTS');
-      setValuations(prev => prev.map((v: any) => {
-        if (String(v.id) === String(valId)) {
-          return {
-            ...v,
-            documents: [...(v.documents || []), { name: file.name, type: file.name.split('.').pop() || 'pdf', url: result.file_url || result.name }]
-          };
-        }
-        return v;
-      }));
+      await uploadFile(file, 'REPORTS');
+      queryClient.invalidateQueries({ queryKey: ['valuations'] });
+      toast.success(`Uploaded: ${file.name}`);
     } catch {
-      console.error('Upload failed');
+      toast.error('Upload failed');
     } finally {
       setUploading(false);
       setSelectedValId(null);
@@ -568,8 +549,8 @@ export default function Valuations() {
             </div>
             <div className="p-6 border-t border-gray-700 flex justify-end gap-3">
               <button type="button" onClick={() => setShowCreateModal(false)} className="px-4 py-2 text-gray-400 hover:text-white">Cancel</button>
-              <button type="button" onClick={handleCreate} disabled={creating || !form.project} className="px-4 py-2 bg-orange-500 hover:bg-orange-600 text-white rounded-lg font-semibold disabled:opacity-50">
-                {creating ? 'Creating...' : 'Create Valuation'}
+              <button type="button" onClick={handleCreate} disabled={createMutation.isPending || !form.project} className="px-4 py-2 bg-orange-500 hover:bg-orange-600 text-white rounded-lg font-semibold disabled:opacity-50">
+                {createMutation.isPending ? 'Creating...' : 'Create Valuation'}
               </button>
             </div>
           </div>
@@ -645,8 +626,8 @@ export default function Valuations() {
             </div>
             <div className="p-6 border-t border-gray-700 flex justify-end gap-3">
               <button type="button" onClick={() => setEditItem(null)} className="px-4 py-2 text-gray-400 hover:text-white">Cancel</button>
-              <button type="button" onClick={handleUpdate} disabled={saving} className="px-4 py-2 bg-orange-500 hover:bg-orange-600 text-white rounded-lg font-semibold disabled:opacity-50">
-                {saving ? 'Saving...' : 'Save Changes'}
+              <button type="button" onClick={handleUpdate} disabled={updateMutation.isPending} className="px-4 py-2 bg-orange-500 hover:bg-orange-600 text-white rounded-lg font-semibold disabled:opacity-50">
+                {updateMutation.isPending ? 'Saving...' : 'Save Changes'}
               </button>
             </div>
           </div>

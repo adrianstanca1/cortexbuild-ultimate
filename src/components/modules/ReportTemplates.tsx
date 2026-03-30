@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import {
   FileText,
   Plus,
@@ -16,7 +16,8 @@ import {
   TrendingUp,
 } from 'lucide-react';
 import { EmptyState } from '../ui/EmptyState';
-import { reportTemplatesApi, type ReportTemplate } from '../../services/api';
+import { type ReportTemplate } from '../../services/api';
+import { useReportTemplates, useDuplicateTemplate } from '../../hooks/useData';
 import { toast } from 'sonner';
 import clsx from 'clsx';
 
@@ -45,8 +46,18 @@ const TABS: { key: SubTab; label: string; icon: React.ElementType }[] = [
 ];
 
 export function ReportTemplates() {
-  const [templates, setTemplates] = useState<ReportTemplateExt[]>([]);
-  const [loading, setLoading] = useState(true);
+  const { data: rawTemplates = [], isLoading } = useReportTemplates.useList();
+  const templates = (rawTemplates as unknown as AnyRow[]).map(t => ({
+    ...t,
+    usage: 0,
+    lastUsed: t.updated_at
+      ? new Date(String(t.updated_at)).toLocaleDateString()
+      : t.created_at ? new Date(String(t.created_at)).toLocaleDateString() : '—',
+  })) as ReportTemplateExt[];
+  const createMutation = useReportTemplates.useCreate();
+  const deleteMutation = useReportTemplates.useDelete();
+  const duplicateMutation = useDuplicateTemplate();
+
   const [subTab, setSubTab] = useState<SubTab>('templates');
   const [selectedType, setSelectedType] = useState<string>('all');
   const [expandedId, setExpandedId] = useState<number | null>(null);
@@ -54,35 +65,10 @@ export function ReportTemplates() {
   const [editingTemplate, setEditingTemplate] = useState<ReportTemplateExt | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
 
-  useEffect(() => {
-    loadTemplates();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedType]);
-
-  const loadTemplates = async () => {
-    setLoading(true);
-    try {
-      const data = await reportTemplatesApi.getAll(selectedType === 'all' ? undefined : selectedType);
-      setTemplates((data as unknown as AnyRow[]).map(t => ({
-        ...t,
-        usage: 0,
-        lastUsed: t.updated_at
-          ? new Date(String(t.updated_at)).toLocaleDateString()
-          : t.created_at ? new Date(String(t.created_at)).toLocaleDateString() : '—',
-      })) as ReportTemplateExt[]);
-    } catch {
-      toast.error('Failed to load templates');
-    } finally {
-      setLoading(false);
-    }
-  };
-
   const handleDelete = async (id: number) => {
     if (!window.confirm('Delete this template? This action cannot be undone.')) return;
     try {
-      await reportTemplatesApi.delete(String(id));
-      toast.success('Template deleted');
-      loadTemplates();
+      await deleteMutation.mutateAsync(String(id));
     } catch {
       toast.error('Failed to delete template');
     }
@@ -90,9 +76,7 @@ export function ReportTemplates() {
 
   const handleDuplicate = async (id: number) => {
     try {
-      await reportTemplatesApi.duplicate(String(id));
-      toast.success('Template duplicated');
-      loadTemplates();
+      await duplicateMutation.mutateAsync(String(id));
     } catch {
       toast.error('Failed to duplicate template');
     }
@@ -214,7 +198,7 @@ export function ReportTemplates() {
             })}
           </div>
 
-          {loading ? (
+          {isLoading ? (
             <div className="p-8 flex justify-center">
               <RefreshCw className="h-6 w-6 text-blue-500 animate-spin" />
             </div>
@@ -480,7 +464,6 @@ export function ReportTemplates() {
           onSave={() => {
             setShowCreateModal(false);
             setEditingTemplate(null);
-            loadTemplates();
           }}
         />
       )}
@@ -500,26 +483,28 @@ function TemplateModal({
   const [name, setName] = useState(String(template?.name ?? ''));
   const [type, setType] = useState(String(template?.type ?? 'custom'));
   const [description, setDescription] = useState(String(template?.description ?? ''));
-  const [saving, setSaving] = useState(false);
+  const createMutation = useReportTemplates.useCreate();
+  const updateMutation = useReportTemplates.useUpdate();
+
+  const isEditing = Boolean(template);
+  const mutation = isEditing ? updateMutation : createMutation;
 
   const handleSave = async () => {
     if (!name) {
       toast.error('Name is required');
       return;
     }
-    setSaving(true);
     try {
       if (template) {
-        await reportTemplatesApi.update(String(template.id), { name, type, description });
+        await updateMutation.mutateAsync({ id: String(template.id), data: { name, type, description } });
+        toast.success('Template updated');
       } else {
-        await reportTemplatesApi.create({ name, type, description, config: {} });
+        await createMutation.mutateAsync({ data: { name, type, description, config: {} } });
+        toast.success('Template created');
       }
-      toast.success(template ? 'Template updated' : 'Template created');
       onSave();
     } catch {
       toast.error('Failed to save template');
-    } finally {
-      setSaving(false);
     }
   };
 
@@ -575,10 +560,10 @@ function TemplateModal({
           </button>
           <button
             onClick={handleSave}
-            disabled={saving}
+            disabled={mutation.isPending}
             className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium flex items-center gap-2"
           >
-            {Boolean(saving) && <RefreshCw className="h-4 w-4 animate-spin" />}
+            {mutation.isPending && <RefreshCw className="h-4 w-4 animate-spin" />}
             {template ? 'Update' : 'Create'}
           </button>
         </div>

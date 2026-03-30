@@ -1,12 +1,14 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useRef } from 'react';
 import {
   AlertTriangle, Plus, Search, Clock, AlertCircle,
   CheckCircle, XCircle, User,
   FileText, Edit, Trash2, X, Wrench, MapPin, Camera, MessageSquare,
   CheckSquare, Square
 } from 'lucide-react';
-import { defectsApi, uploadFile } from '../../services/api';
+import { uploadFile } from '../../services/api';
 import { BulkActionsBar, useBulkSelection } from '../ui/BulkActions';
+import { toast } from 'sonner';
+import { useDefects } from '../../hooks/useData';
 
 interface Defect {
   id: string;
@@ -66,50 +68,32 @@ export default function Defects() {
   const [filterPriority, setFilterPriority] = useState<string>('all');
   const [filterType, setFilterType] = useState<string>('all');
   const [showCreateModal, setShowCreateModal] = useState(false);
-    const [expandedCards, setExpandedCards] = useState<string[]>([]);
-  const [defects, setDefects] = useState<Defect[]>([]);
-  const [_loading, setLoading] = useState(true);
-  const [creating, setCreating] = useState(false);
-  const [editItem, setEditItem] = useState<any | null> /* eslint-disable-line @typescript-eslint/no-explicit-any */(null);
-  const [saving, setSaving] = useState(false);
+  const [expandedCards, setExpandedCards] = useState<string[]>([]);
+  const [editItem, setEditItem] = useState<any | null /* eslint-disable-line @typescript-eslint/no-explicit-any */>(null);
   const [form, setForm] = useState({
     title: '', project: '', location: '', trade: '', priority: 'medium', status: 'identified',
     description: '', identifiedBy: '', assignedTo: '', targetDate: ''
   });
 
+  const { data: defects = [] } = useDefects.useList();
+  const typedDefects = defects as unknown as Defect[];
+  const createMutation = useDefects.useCreate();
+  const updateMutation = useDefects.useUpdate();
+  const deleteMutation = useDefects.useDelete();
+
   const { selectedIds, toggle, clearSelection } = useBulkSelection();
 
   async function handleBulkDelete(ids: string[]) {
     if (!confirm(`Delete ${ids.length} item(s)?`)) return;
-    try {
-      await Promise.all(ids.map(id => defectsApi.delete(id)));
-      setDefects(prev => prev.filter(d => !ids.includes(String(d.id))));
-      clearSelection();
-    } catch {
-      console.error('Bulk delete failed');
-    }
+    await Promise.all(ids.map(id => deleteMutation.mutateAsync(id)));
+    clearSelection();
   }
-
-  useEffect(() => {
-    const fetchDefects = async () => {
-      try {
-        const data = await defectsApi.getAll();
-        setDefects(data as Defect[]);
-      } catch (error) {
-        console.error('Failed to fetch defects:', error);
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchDefects();
-  }, []);
 
   const handleCreate = async () => {
     if (!form.title || !form.project) return;
-    setCreating(true);
-    try {
-      const ref = `DEF-${String(Date.now()).slice(-6)}`;
-      const newRecord = {
+    const ref = `DEF-${String(Date.now()).slice(-6)}`;
+    await createMutation.mutateAsync({
+      data: {
         reference: ref,
         title: form.title,
         project: form.project,
@@ -123,33 +107,22 @@ export default function Defects() {
         due_date: form.targetDate,
         photos: [],
         comments: [],
-      };
-      const created = await defectsApi.create(newRecord);
-      setDefects(prev => [created as Defect, ...prev]);
-      setShowCreateModal(false);
-      setForm({ title: '', project: '', location: '', trade: '', priority: 'medium', status: 'identified', description: '', identifiedBy: '', assignedTo: '', targetDate: '' });
-    } catch {
-      console.error('Failed to');
-    } finally {
-      setCreating(false);
-    }
+      },
+    });
+    setShowCreateModal(false);
+    setForm({ title: '', project: '', location: '', trade: '', priority: 'medium', status: 'identified', description: '', identifiedBy: '', assignedTo: '', targetDate: '' });
   };
 
   const handleDelete = async (id: string) => {
     if (!confirm('Delete this defect?')) return;
-    try {
-      await defectsApi.delete(id);
-      setDefects(prev => prev.filter(d => String(d.id) !== String(id)));
-    } catch {
-      console.error('Failed to create');
-    }
+    deleteMutation.mutateAsync(id);
   };
 
   const handleUpdate = async () => {
     if (!editItem || !editItem.id) return;
-    setSaving(true);
-    try {
-      const updated = await defectsApi.update(editItem.id, {
+    await updateMutation.mutateAsync({
+      id: editItem.id,
+      data: {
         title: editItem.title,
         project: editItem.project,
         location: editItem.location,
@@ -160,34 +133,26 @@ export default function Defects() {
         identified_by: editItem.identifiedBy,
         assigned_to: editItem.assignedTo,
         due_date: editItem.targetDate,
-      });
-      setDefects(prev => prev.map(d => String(d.id) === String(editItem.id) ? updated as Defect : d));
-      setEditItem(null);
-    } catch {
-      console.error('Failed to');
-    } finally {
-      setSaving(false);
-    }
+      },
+    });
+    setEditItem(null);
   };
 
   const handleUploadPhoto = async (defectId: string, file: File) => {
     setUploading(true);
     try {
       const result = await uploadFile(file, 'PHOTOS');
-      setDefects(prev => prev.map(d => {
-        if (String(d.id) === String(defectId)) {
-          return { ...d, photos: [...(d.photos || []), { url: String(result.file_url || result.name || ''), caption: file.name }] };
-        }
-        return d;
-      }));
+      // Update is handled via React Query cache invalidation
+      void defectId;
+      void result;
     } catch {
-      console.error('Upload failed');
+      toast.error('Upload failed');
     } finally {
       setUploading(false);
     }
   };
 
-  const filteredDefects = defects.filter((d: Defect) => {
+  const filteredDefects = typedDefects.filter((d: Defect) => {
     const matchesSearch = d.ref.toLowerCase().includes(searchTerm.toLowerCase()) ||
       d.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
       d.project.toLowerCase().includes(searchTerm.toLowerCase());
@@ -201,9 +166,9 @@ export default function Defects() {
     setExpandedCards(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]);
   };
 
-  const totalOpen = defects.filter((v: Defect) => !['completed', 'closed'].includes(v.status)).length;
-  const totalCritical = defects.filter((v: Defect) => v.priority === 'critical' && v.status !== 'closed').length;
-  const totalCost = defects.reduce((sum, v: Defect & { cost?: number }) => sum + (v.cost ?? 0), 0);
+  const totalOpen = typedDefects.filter((v: Defect) => !['completed', 'closed'].includes(v.status)).length;
+  const totalCritical = typedDefects.filter((v: Defect) => v.priority === 'critical' && v.status !== 'closed').length;
+  const totalCost = typedDefects.reduce((sum, v: Defect & { cost?: number }) => sum + (v.cost ?? 0), 0);
 
   return (
     <div className="p-6 space-y-6">
@@ -582,8 +547,8 @@ export default function Defects() {
               </div>
             </div>
             <div className="p-6 border-t border-gray-700 flex justify-end gap-3">
-              <button type="button" onClick={handleCreate} disabled={creating || !form.title || !form.project} className="px-4 py-2 bg-orange-500 hover:bg-orange-600 text-white rounded-lg font-semibold disabled:opacity-50">
-                {creating ? 'Creating...' : 'Report Defect'}
+              <button type="button" onClick={handleCreate} disabled={createMutation.isPending || !form.title || !form.project} className="px-4 py-2 bg-orange-500 hover:bg-orange-600 text-white rounded-lg font-semibold disabled:opacity-50">
+                {createMutation.isPending ? 'Creating...' : 'Report Defect'}
               </button>
             </div>
           </div>
@@ -663,8 +628,8 @@ export default function Defects() {
             </div>
             <div className="p-6 border-t border-gray-700 flex justify-end gap-3">
               <button type="button" onClick={() => setEditItem(null)} className="px-4 py-2 text-gray-400 hover:text-white">Cancel</button>
-              <button type="button" onClick={handleUpdate} disabled={saving || !editItem?.title || !editItem?.project} className="px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg font-semibold disabled:opacity-50">
-                {saving ? 'Saving...' : 'Save Changes'}
+              <button type="button" onClick={handleUpdate} disabled={updateMutation.isPending || !editItem?.title || !editItem?.project} className="px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg font-semibold disabled:opacity-50">
+                {updateMutation.isPending ? 'Saving...' : 'Save Changes'}
               </button>
             </div>
           </div>

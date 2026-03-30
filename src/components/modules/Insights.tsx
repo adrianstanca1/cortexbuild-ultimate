@@ -1,5 +1,5 @@
 // Module: Insights — CortexBuild Ultimate Enhanced
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { TrendingUp, AlertTriangle, Lightbulb, Activity, Shield, PoundSterling,
   Users, FileText, ClipboardList, Target, RefreshCw,
   CheckSquare, Square, Trash2,
@@ -11,6 +11,7 @@ import { EmptyState } from '../ui/EmptyState';
 import { BarChart, Bar, PieChart as RechartsPie,
   Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer,
 } from 'recharts';
+import { useQuery } from '@tanstack/react-query';
 
 type _AnyRow = Record<string, unknown>;
 type SeverityLevel = 'critical' | 'high' | 'medium' | 'low' | 'info';
@@ -42,17 +43,13 @@ export function Insights() {
   const [severityFilter, setSeverityFilter] = useState<SeverityLevel | 'all'>('all');
   const [categoryFilter, setCategoryFilter] = useState<CategoryType>('all');
   const [dismissed, setDismissed] = useState<Set<string>>(new Set());
-  const [allInsights, setAllInsights] = useState<ApiInsight[]>([]);
-  const [_loading, setLoading] = useState(true);
+
+  const { data: allInsights = [], isLoading } = useQuery({
+    queryKey: ['insights'],
+    queryFn: insightsApi.getAll,
+  });
 
   const { selectedIds, toggle, clearSelection } = useBulkSelection();
-
-  useEffect(() => {
-    insightsApi.getAll()
-      .then(setAllInsights)
-      .catch(() => toast.error('Failed to load insights'))
-      .finally(() => setLoading(false));
-  }, []);
 
   // Dismiss an insight (local state only — backend generates fresh)
   const _dismissInsight = (id: string) => {
@@ -61,17 +58,13 @@ export function Insights() {
 
   async function handleBulkDelete(ids: string[]) {
     if (!confirm(`Delete ${ids.length} insight(s)?`)) return;
-    try {
-      toast.success(`Deleted ${ids.length} insight(s)`);
-      setDismissed(prev => {
-        const next = new Set(prev);
-        ids.forEach(id => next.add(id));
-        return next;
-      });
-      clearSelection();
-    } catch {
-      toast.error('Bulk delete failed');
-    }
+    toast.success(`Deleted ${ids.length} insight(s)`);
+    setDismissed(prev => {
+      const next = new Set(prev);
+      ids.forEach(id => next.add(id));
+      return next;
+    });
+    clearSelection();
   }
 
   const filteredInsights = allInsights.filter((insight) => {

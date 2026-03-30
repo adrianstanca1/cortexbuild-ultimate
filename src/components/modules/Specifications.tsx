@@ -33,7 +33,7 @@ export default function Specifications() {
   const [editItem, setEditItem] = useState<Record<string, any> | null>(null);
 
   const { useList, useCreate, useUpdate, useDelete } = useSpecifications;
-  const { data: rawSpecs = [], isLoading } = useList();
+  const { data: rawSpecs = [], isLoading } = (useList() as { data: Specification[]; isLoading: boolean });
   const createMutation = useCreate();
   const updateMutation = useUpdate();
   const deleteMutation = useDelete();
@@ -93,7 +93,7 @@ export default function Specifications() {
   const handleDelete = async (id: string) => {
     if (!confirm('Delete this specification?')) return;
     try {
-      await deleteMutation.mutateAsync({ id });
+      await deleteMutation.mutateAsync(id);
       toast.success('Specification deleted');
     } catch {
       toast.error('Failed to delete specification');

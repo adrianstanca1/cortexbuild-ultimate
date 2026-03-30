@@ -1,101 +1,75 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { Plus, FileText, Clock, CheckCircle, Trash2, X, Upload, Pencil, CheckSquare, Square, Home } from 'lucide-react';
 import { EmptyState } from '../ui/EmptyState';
 import { BulkActionsBar, useBulkSelection } from '../ui/BulkActions';
-import { lettingsApi, uploadFile } from '../../services/api';
+import { uploadFile } from '../../services/api';
 import { toast } from 'sonner';
+import { useLettings } from '../../hooks/useData';
 
 export default function Lettings() {
   const [searchTerm, setSearchTerm] = useState('');
-  const [lettings, setLettings] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
   const [showCreateModal, setShowCreateModal] = useState(false);
-  const [creating, setCreating] = useState(false);
   const [uploading, setUploading] = useState<string | null>(null);
   const [editItem, setEditItem] = useState<Record<string, any> | null>(null);
-  const [saving, setSaving] = useState(false);
   const [form, setForm] = useState({ packageName: '', trade: '', contractor: '', contractValue: '', status: 'tendering' });
+
+  const { data: lettings = [] } = useLettings.useList();
+  const typedLettings = lettings as unknown as any[];
+  const createMutation = useLettings.useCreate();
+  const updateMutation = useLettings.useUpdate();
+  const deleteMutation = useLettings.useDelete();
 
   const { selectedIds, toggle, clearSelection } = useBulkSelection();
 
   async function handleBulkDelete(ids: string[]) {
     if (!confirm(`Delete ${ids.length} item(s)?`)) return;
-    try {
-      await Promise.all(ids.map(id => lettingsApi.delete(id)));
-      setLettings(prev => prev.filter((l: any) => !ids.includes(String(l.id))));
-      toast.success(`Deleted ${ids.length} item(s)`);
-      clearSelection();
-    } catch {
-      toast.error('Bulk delete failed');
-    }
+    await Promise.all(ids.map(id => deleteMutation.mutateAsync(id)));
+    toast.success(`Deleted ${ids.length} item(s)`);
+    clearSelection();
   }
 
-  useEffect(() => {
-    lettingsApi.getAll().then((data: any[]) => {
-      setLettings(data);
-      setLoading(false);
-    }).catch(() => setLoading(false));
-  }, []);
-
-  const filtered = lettings.filter((l: any) =>
+  const filtered = typedLettings.filter((l: any) =>
     (l.package_name || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
     (l.trade || '').toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  const awardedCount = lettings.filter((l: any) => l.status === 'awarded').length;
-  const evaluatingCount = lettings.filter((l: any) => l.status === 'evaluation' || l.status === 'tendering' || l.status === 'advertising').length;
+  const awardedCount = typedLettings.filter((l: any) => l.status === 'awarded').length;
+  const evaluatingCount = typedLettings.filter((l: any) => l.status === 'evaluation' || l.status === 'tendering' || l.status === 'advertising').length;
 
   const handleCreate = async () => {
     if (!form.packageName) return;
-    setCreating(true);
-    try {
-      const newRecord = {
+    await createMutation.mutateAsync({
+      data: {
         package_name: form.packageName,
         trade: form.trade || '',
         contractor: form.contractor || '',
         contract_value: parseFloat(form.contractValue) || 0,
         status: form.status,
-      };
-      const created = await lettingsApi.create(newRecord);
-      setLettings(prev => [created, ...prev]);
-      setShowCreateModal(false);
-      setForm({ packageName: '', trade: '', contractor: '', contractValue: '', status: 'tendering' });
-    } catch {
-      console.error('Failed to create');
-    } finally {
-      setCreating(false);
-    }
+      },
+    });
+    setShowCreateModal(false);
+    setForm({ packageName: '', trade: '', contractor: '', contractValue: '', status: 'tendering' });
   };
 
   const handleUpdate = async () => {
     if (!editItem || !editItem.id) return;
-    setSaving(true);
-    try {
-      const updated = await lettingsApi.update(editItem.id, {
+    await updateMutation.mutateAsync({
+      id: editItem.id,
+      data: {
         package_name: editItem.package_name,
         trade: editItem.trade || '',
         contractor: editItem.contractor || '',
         contract_value: parseFloat(editItem.contract_value) || 0,
         status: editItem.status,
-      });
-      setLettings(prev => prev.map((l: any) => String(l.id) === String(editItem.id) ? updated : l));
-      setEditItem(null);
-    } catch {
-      console.error('Failed to create');
-    } finally {
-      setSaving(false);
-    }
+      },
+    });
+    setEditItem(null);
   };
 
   const handleDelete = async (id: string) => {
     if (!confirm('Delete this package?')) return;
-    try {
-      await lettingsApi.delete(id);
-      setLettings(prev => prev.filter((l: any) => String(l.id) !== String(id)));
-    } catch {
-      console.error('Failed to create');
-    }
+    deleteMutation.mutateAsync(id);
   };
 
   async function handleUploadDoc(id: string, file: File) {
@@ -104,7 +78,6 @@ export default function Lettings() {
       await uploadFile(file, 'REPORTS');
       toast.success(`Uploaded: ${file.name}`);
     } catch {
-      console.error('Upload failed');
       toast.error('Upload failed');
     } finally {
       setUploading(null);
@@ -123,13 +96,13 @@ export default function Lettings() {
         </button>
       </div>
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div className="card p-4"><div className="flex items-center gap-3"><div className="w-10 h-10 rounded-lg bg-blue-500/10 flex items-center justify-center"><FileText className="text-blue-400" size={20} /></div><div><p className="text-gray-400 text-xs">Total Packages</p><p className="text-2xl font-bold text-white">{loading ? '...' : lettings.length}</p></div></div></div>
-        <div className="card p-4"><div className="flex items-center gap-3"><div className="w-10 h-10 rounded-lg bg-green-500/10 flex items-center justify-center"><CheckCircle className="text-green-400" size={20} /></div><div><p className="text-gray-400 text-xs">Awarded</p><p className="text-2xl font-bold text-green-400">{loading ? '...' : awardedCount}</p></div></div></div>
-        <div className="card p-4"><div className="flex items-center gap-3"><div className="w-10 h-10 rounded-lg bg-amber-500/10 flex items-center justify-center"><Clock className="text-amber-400" size={20} /></div><div><p className="text-gray-400 text-xs">In Evaluation</p><p className="text-2xl font-bold text-amber-400">{loading ? '...' : evaluatingCount}</p></div></div></div>
+        <div className="card p-4"><div className="flex items-center gap-3"><div className="w-10 h-10 rounded-lg bg-blue-500/10 flex items-center justify-center"><FileText className="text-blue-400" size={20} /></div><div><p className="text-gray-400 text-xs">Total Packages</p><p className="text-2xl font-bold text-white">{typedLettings.length}</p></div></div></div>
+        <div className="card p-4"><div className="flex items-center gap-3"><div className="w-10 h-10 rounded-lg bg-green-500/10 flex items-center justify-center"><CheckCircle className="text-green-400" size={20} /></div><div><p className="text-gray-400 text-xs">Awarded</p><p className="text-2xl font-bold text-green-400">{awardedCount}</p></div></div></div>
+        <div className="card p-4"><div className="flex items-center gap-3"><div className="w-10 h-10 rounded-lg bg-amber-500/10 flex items-center justify-center"><Clock className="text-amber-400" size={20} /></div><div><p className="text-gray-400 text-xs">In Evaluation</p><p className="text-2xl font-bold text-amber-400">{evaluatingCount}</p></div></div></div>
       </div>
       <div className="card p-4">
         <input type="text" placeholder="Search packages..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white mb-4" />
-        {loading ? (
+        {typedLettings.length === 0 ? (
           <div className="text-center py-8 text-gray-400">Loading lettings data...</div>
         ) : (
           <div className="space-y-3">
@@ -247,8 +220,8 @@ export default function Lettings() {
             </div>
             <div className="p-6 border-t border-gray-700 flex justify-end gap-3">
               <button type="button" onClick={() => setShowCreateModal(false)} className="px-4 py-2 text-gray-400 hover:text-white">Cancel</button>
-              <button type="button" onClick={handleCreate} disabled={creating || !form.packageName} className="px-4 py-2 bg-orange-500 hover:bg-orange-600 text-white rounded-lg font-semibold disabled:opacity-50">
-                {creating ? 'Creating...' : 'Create Package'}
+              <button type="button" onClick={handleCreate} disabled={createMutation.isPending || !form.packageName} className="px-4 py-2 bg-orange-500 hover:bg-orange-600 text-white rounded-lg font-semibold disabled:opacity-50">
+                {createMutation.isPending ? 'Creating...' : 'Create Package'}
               </button>
             </div>
           </div>
@@ -294,8 +267,8 @@ export default function Lettings() {
             </div>
             <div className="p-6 border-t border-gray-700 flex justify-end gap-3">
               <button type="button" onClick={() => setEditItem(null)} className="px-4 py-2 text-gray-400 hover:text-white">Cancel</button>
-              <button type="button" onClick={handleUpdate} disabled={saving || !editItem.package_name} className="px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg font-semibold disabled:opacity-50">
-                {saving ? 'Saving...' : 'Save Changes'}
+              <button type="button" onClick={handleUpdate} disabled={updateMutation.isPending || !editItem.package_name} className="px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg font-semibold disabled:opacity-50">
+                {updateMutation.isPending ? 'Saving...' : 'Save Changes'}
               </button>
             </div>
           </div>

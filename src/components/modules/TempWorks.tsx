@@ -44,7 +44,7 @@ export default function TempWorks() {
   const updateMutation = useUpdate();
   const deleteMutation = useDelete();
 
-  const filtered = rawTempWorks.filter((t: any) => {
+  const filtered = (rawTempWorks as unknown as _TempWork[]).filter((t: _TempWork) => {
     const matchesSearch = (t.ref || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
       (t.title || '').toLowerCase().includes(searchTerm.toLowerCase());
     const matchesStatus = filterStatus === 'all' || t.status === filterStatus;

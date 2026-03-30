@@ -13,7 +13,9 @@ import {
   projectImagesApi, projectTasksApi,
   variationsApi, defectsApi, specificationsApi, tempWorksApi, signageApi,
   wasteManagementApi, sustainabilityApi, trainingApi, certificationsApi,
-  prequalificationApi, lettingsApi, measuringApi,
+  prequalificationApi, lettingsApi, measuringApi, valuationsApi,
+  sitePermitsApi,
+  reportTemplatesApi, auditApi, ReportTemplate,
 } from '../services/api';
 import { eventBus } from '../lib/eventBus';
 
@@ -121,3 +123,79 @@ export const useCertifications  = makeHooks('certifications',   'certifications'
 export const usePrequalification = makeHooks('prequalification', 'prequalification', prequalificationApi);
 export const useLettings        = makeHooks('lettings',         'lettings',        lettingsApi);
 export const useMeasuring       = makeHooks('measuring',        'measuring',       measuringApi);
+export const useValuations      = makeHooks('valuations',        'valuations',       valuationsApi);
+export const useSitePermits     = makeHooks('site-permits',     'site-permits',    sitePermitsApi);
+export const useReportTemplates  = makeHooks<ReportTemplate>('report-templates', 'report_templates', {
+  getAll: () => reportTemplatesApi.getAll(),
+  create: (data: Row) => reportTemplatesApi.create(data as Parameters<typeof reportTemplatesApi.create>[0]) as Promise<ReportTemplate | null>,
+  update: (id, data) => reportTemplatesApi.update(id, data as Parameters<typeof reportTemplatesApi.update>[1]) as Promise<ReportTemplate | null>,
+  delete: (id) => reportTemplatesApi.delete(id),
+});
+
+function makeDuplicateHook(key: string, duplicateFn: (id: string) => Promise<unknown>) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: duplicateFn,
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: [key] });
+      toast.success('Record duplicated');
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+}
+
+function useDuplicateTemplate() {
+  return makeDuplicateHook('report-templates', (id: string) => reportTemplatesApi.duplicate(id) as Promise<unknown>);
+}
+
+export { useDuplicateTemplate };
+
+// ─── Custom hooks for non-standard APIs ──────────────────────────────────────
+
+function makeAuditHooks() {
+  const qc = useQueryClient();
+  function useList() {
+    return useQuery<AuditEntry[]>({
+      queryKey: ['audit'],
+      queryFn: () => auditApi.getAll({ limit: 500 }) as Promise<AuditEntry[]>,
+      staleTime: 30_000,
+    });
+  }
+  function useStats() {
+    return useQuery<AuditStats>({
+      queryKey: ['audit-stats'],
+      queryFn: () => auditApi.getStats() as unknown as Promise<AuditStats>,
+      staleTime: 60_000,
+    });
+  }
+  function useInvalidate() {
+    return () => {
+      qc.invalidateQueries({ queryKey: ['audit'] });
+      qc.invalidateQueries({ queryKey: ['audit-stats'] });
+    };
+  }
+  return { useList, useStats, useInvalidate };
+}
+
+export const useAuditLog = makeAuditHooks();
+
+interface AuditEntry extends Row {
+  id: number;
+  user_id: string;
+  action: string;
+  table_name: string;
+  record_id: number;
+  changes: string;
+  created_at: string;
+  user?: { name: string; avatar?: string };
+  ip_address?: string;
+}
+
+interface AuditStats extends Row {
+  total_entries: number;
+  today_entries: number;
+  week_entries: number;
+  month_entries: number;
+  active_users: number;
+  security_alerts: number;
+}

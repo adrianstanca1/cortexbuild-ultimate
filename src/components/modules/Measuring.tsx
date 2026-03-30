@@ -1,41 +1,36 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { Plus, Ruler, MapPin, FileText, Trash2, X, Upload, Pencil } from 'lucide-react';
 import { EmptyState } from '../ui/EmptyState';
-import { measuringApi, uploadFile } from '../../services/api';
+import { uploadFile } from '../../services/api';
 import { toast } from 'sonner';
+import { useMeasuring } from '../../hooks/useData';
 
 export default function Measuring() {
   const [searchTerm, setSearchTerm] = useState('');
-  const [measurements, setMeasurements] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
   const [showCreateModal, setShowCreateModal] = useState(false);
-  const [creating, setCreating] = useState(false);
   const [uploading, setUploading] = useState<string | null>(null);
   const [editItem, setEditItem] = useState<Record<string, any> | null>(null);
-  const [saving, setSaving] = useState(false);
   const [form, setForm] = useState({ location: '', surveyType: '', surveyor: '', surveyDate: '', totalArea: '', unit: 'm²', status: 'pending' });
 
-  useEffect(() => {
-    measuringApi.getAll().then((data: any[]) => {
-      setMeasurements(data);
-      setLoading(false);
-    }).catch(() => setLoading(false));
-  }, []);
+  const { data: measurements = [] } = useMeasuring.useList();
+  const typedMeasurements = measurements as unknown as any[];
+  const createMutation = useMeasuring.useCreate();
+  const updateMutation = useMeasuring.useUpdate();
+  const deleteMutation = useMeasuring.useDelete();
 
-  const filtered = measurements.filter((m: any) =>
+  const filtered = typedMeasurements.filter((m: any) =>
     (m.location || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
     (m.survey_type || '').toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  const completedCount = measurements.filter((m: any) => m.status === 'completed').length;
-  const pendingCount = measurements.filter((m: any) => m.status === 'pending' || m.status === 'scheduled').length;
+  const completedCount = typedMeasurements.filter((m: any) => m.status === 'completed').length;
+  const pendingCount = typedMeasurements.filter((m: any) => m.status === 'pending' || m.status === 'scheduled').length;
 
   const handleCreate = async () => {
     if (!form.location) return;
-    setCreating(true);
-    try {
-      const newRecord = {
+    await createMutation.mutateAsync({
+      data: {
         location: form.location,
         survey_type: form.surveyType || '',
         surveyor: form.surveyor || '',
@@ -43,33 +38,22 @@ export default function Measuring() {
         total_area: parseFloat(form.totalArea) || 0,
         unit: form.unit,
         status: form.status,
-      };
-      const created = await measuringApi.create(newRecord);
-      setMeasurements(prev => [created, ...prev]);
-      setShowCreateModal(false);
-      setForm({ location: '', surveyType: '', surveyor: '', surveyDate: '', totalArea: '', unit: 'm²', status: 'pending' });
-    } catch {
-      console.error('Failed to create');
-    } finally {
-      setCreating(false);
-    }
+      },
+    });
+    setShowCreateModal(false);
+    setForm({ location: '', surveyType: '', surveyor: '', surveyDate: '', totalArea: '', unit: 'm²', status: 'pending' });
   };
 
   const handleDelete = async (id: string) => {
     if (!confirm('Delete this measurement?')) return;
-    try {
-      await measuringApi.delete(id);
-      setMeasurements(prev => prev.filter((m: any) => String(m.id) !== String(id)));
-    } catch {
-      console.error('Failed to create');
-    }
+    deleteMutation.mutateAsync(id);
   };
 
   const handleUpdate = async () => {
     if (!editItem || !editItem.id) return;
-    setSaving(true);
-    try {
-      const updated = await measuringApi.update(editItem.id, {
+    await updateMutation.mutateAsync({
+      id: editItem.id,
+      data: {
         location: editItem.location,
         survey_type: editItem.surveyType || '',
         surveyor: editItem.surveyor || '',
@@ -77,14 +61,9 @@ export default function Measuring() {
         total_area: parseFloat(editItem.totalArea) || 0,
         unit: editItem.unit,
         status: editItem.status,
-      });
-      setMeasurements(prev => prev.map((m: any) => String(m.id) === String(editItem.id) ? updated : m));
-      setEditItem(null);
-    } catch {
-      console.error('Failed to create');
-    } finally {
-      setSaving(false);
-    }
+      },
+    });
+    setEditItem(null);
   };
 
   async function handleUploadDoc(id: string, file: File) {
@@ -93,7 +72,6 @@ export default function Measuring() {
       await uploadFile(file, 'REPORTS');
       toast.success(`Uploaded: ${file.name}`);
     } catch {
-      console.error('Upload failed');
       toast.error('Upload failed');
     } finally {
       setUploading(null);
@@ -112,13 +90,13 @@ export default function Measuring() {
         </button>
       </div>
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div className="card p-4"><div className="flex items-center gap-3"><div className="w-10 h-10 rounded-lg bg-blue-500/10 flex items-center justify-center"><Ruler className="text-blue-400" size={20} /></div><div><p className="text-gray-400 text-xs">Total Surveys</p><p className="text-2xl font-bold text-white">{loading ? '...' : measurements.length}</p></div></div></div>
-        <div className="card p-4"><div className="flex items-center gap-3"><div className="w-10 h-10 rounded-lg bg-green-500/10 flex items-center justify-center"><FileText className="text-green-400" size={20} /></div><div><p className="text-gray-400 text-xs">Completed</p><p className="text-2xl font-bold text-green-400">{loading ? '...' : completedCount}</p></div></div></div>
-        <div className="card p-4"><div className="flex items-center gap-3"><div className="w-10 h-10 rounded-lg bg-amber-500/10 flex items-center justify-center"><MapPin className="text-amber-400" size={20} /></div><div><p className="text-gray-400 text-xs">Pending</p><p className="text-2xl font-bold text-amber-400">{loading ? '...' : pendingCount}</p></div></div></div>
+        <div className="card p-4"><div className="flex items-center gap-3"><div className="w-10 h-10 rounded-lg bg-blue-500/10 flex items-center justify-center"><Ruler className="text-blue-400" size={20} /></div><div><p className="text-gray-400 text-xs">Total Surveys</p><p className="text-2xl font-bold text-white">{typedMeasurements.length}</p></div></div></div>
+        <div className="card p-4"><div className="flex items-center gap-3"><div className="w-10 h-10 rounded-lg bg-green-500/10 flex items-center justify-center"><FileText className="text-green-400" size={20} /></div><div><p className="text-gray-400 text-xs">Completed</p><p className="text-2xl font-bold text-green-400">{completedCount}</p></div></div></div>
+        <div className="card p-4"><div className="flex items-center gap-3"><div className="w-10 h-10 rounded-lg bg-amber-500/10 flex items-center justify-center"><MapPin className="text-amber-400" size={20} /></div><div><p className="text-gray-400 text-xs">Pending</p><p className="text-2xl font-bold text-amber-400">{pendingCount}</p></div></div></div>
       </div>
       <div className="card p-4">
         <input type="text" placeholder="Search measurements..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white mb-4" />
-        {loading ? (
+        {typedMeasurements.length === 0 ? (
           <div className="text-center py-8 text-gray-400">Loading measurements...</div>
         ) : (
           <div className="space-y-3">
@@ -254,8 +232,8 @@ export default function Measuring() {
             </div>
             <div className="p-6 border-t border-gray-700 flex justify-end gap-3">
               <button type="button" onClick={() => setShowCreateModal(false)} className="px-4 py-2 text-gray-400 hover:text-white">Cancel</button>
-              <button type="button" onClick={handleCreate} disabled={creating || !form.location} className="px-4 py-2 bg-orange-500 hover:bg-orange-600 text-white rounded-lg font-semibold disabled:opacity-50">
-                {creating ? 'Creating...' : 'Create Measurement'}
+              <button type="button" onClick={handleCreate} disabled={createMutation.isPending || !form.location} className="px-4 py-2 bg-orange-500 hover:bg-orange-600 text-white rounded-lg font-semibold disabled:opacity-50">
+                {createMutation.isPending ? 'Creating...' : 'Create Measurement'}
               </button>
             </div>
           </div>
@@ -323,8 +301,8 @@ export default function Measuring() {
             </div>
             <div className="p-6 border-t border-gray-700 flex justify-end gap-3">
               <button type="button" onClick={() => setEditItem(null)} className="px-4 py-2 text-gray-400 hover:text-white">Cancel</button>
-              <button type="button" onClick={handleUpdate} disabled={saving || !editItem.location} className="px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg font-semibold disabled:opacity-50">
-                {saving ? 'Saving...' : 'Save Changes'}
+              <button type="button" onClick={handleUpdate} disabled={updateMutation.isPending || !editItem.location} className="px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg font-semibold disabled:opacity-50">
+                {updateMutation.isPending ? 'Saving...' : 'Save Changes'}
               </button>
             </div>
           </div>

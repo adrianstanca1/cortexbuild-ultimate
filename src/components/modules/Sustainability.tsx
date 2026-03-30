@@ -1,42 +1,36 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { Plus, Leaf, Cloud, Factory, Gauge, Trash2, X, Upload, Pencil, CheckSquare, Square } from 'lucide-react';
 import { EmptyState } from '../ui/EmptyState';
 import { BulkActionsBar, useBulkSelection } from '../ui/BulkActions';
-import { sustainabilityApi, uploadFile } from '../../services/api';
+import { uploadFile } from '../../services/api';
 import { toast } from 'sonner';
+import { useSustainability } from '../../hooks/useData';
 
 export default function Sustainability() {
+  const { data: metrics = [] as any[], isLoading } = useSustainability.useList();
+  const createMutation = useSustainability.useCreate();
+  const updateMutation = useSustainability.useUpdate();
+  const deleteMutation = useSustainability.useDelete();
+
   const [searchTerm, setSearchTerm] = useState('');
-  const [metrics, setMetrics] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
   const [showCreateModal, setShowCreateModal] = useState(false);
-  const [creating, setCreating] = useState(false);
-  const [editItem, setEditItem] = useState<Record<string, any> | null>(null);
-  const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState<string | null>(null);
   const [form, setForm] = useState({ metricType: '', project: '', period: '', actual: '', target: '', unit: 'kgCO2' });
+  const [editItem, setEditItem] = useState<Record<string, any> | null>(null);
 
   const { selectedIds, toggle, clearSelection } = useBulkSelection();
 
   async function handleBulkDelete(ids: string[]) {
     if (!confirm(`Delete ${ids.length} metric(s)?`)) return;
     try {
-      await Promise.all(ids.map(id => sustainabilityApi.delete(id)));
-      setMetrics(prev => prev.filter((m: any) => !ids.includes(String(m.id))));
-      toast.success(`Deleted ${ids.length} metric(s)`);
+      await Promise.all(ids.map(id => deleteMutation.mutateAsync(id)));
       clearSelection();
+      toast.success(`Deleted ${ids.length} metric(s)`);
     } catch {
       toast.error('Bulk delete failed');
     }
   }
-
-  useEffect(() => {
-    sustainabilityApi.getAll().then((data: any[]) => {
-      setMetrics(data);
-      setLoading(false);
-    }).catch(() => setLoading(false));
-  }, []);
 
   const filtered = metrics.filter((m: any) =>
     (m.metric_type || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -48,55 +42,48 @@ export default function Sustainability() {
 
   const handleCreate = async () => {
     if (!form.metricType) return;
-    setCreating(true);
     try {
-      const newRecord = {
+      await createMutation.mutateAsync({
         metric_type: form.metricType,
         project: form.project || '',
         period: form.period || '',
         actual: parseFloat(form.actual) || 0,
         target: parseFloat(form.target) || 0,
         unit: form.unit,
-      };
-      const created = await sustainabilityApi.create(newRecord);
-      setMetrics(prev => [created, ...prev]);
+      });
       setShowCreateModal(false);
       setForm({ metricType: '', project: '', period: '', actual: '', target: '', unit: 'kgCO2' });
     } catch {
-      console.error('Failed to create');
-    } finally {
-      setCreating(false);
+      toast.error('Failed to create metric');
     }
   };
 
   const handleUpdate = async () => {
     if (!editItem || !editItem.id) return;
-    setSaving(true);
     try {
-      const updated = await sustainabilityApi.update(editItem.id, {
-        metric_type: editItem.metric_type,
-        project: editItem.project || '',
-        period: editItem.period || '',
-        actual: parseFloat(editItem.actual) || 0,
-        target: parseFloat(editItem.target) || 0,
-        unit: editItem.unit,
+      await updateMutation.mutateAsync({
+        id: editItem.id,
+        data: {
+          metric_type: editItem.metric_type,
+          project: editItem.project || '',
+          period: editItem.period || '',
+          actual: parseFloat(editItem.actual) || 0,
+          target: parseFloat(editItem.target) || 0,
+          unit: editItem.unit,
+        },
       });
-      setMetrics(prev => prev.map((m: any) => String(m.id) === String(editItem.id) ? updated : m));
       setEditItem(null);
     } catch {
-      console.error('Failed to create');
-    } finally {
-      setSaving(false);
+      toast.error('Failed to update metric');
     }
   };
 
   const handleDelete = async (id: string) => {
     if (!confirm('Delete this metric?')) return;
     try {
-      await sustainabilityApi.delete(id);
-      setMetrics(prev => prev.filter((m: any) => String(m.id) !== String(id)));
+      await deleteMutation.mutateAsync(id);
     } catch {
-      console.error('Failed to create');
+      toast.error('Failed to delete metric');
     }
   };
 
@@ -128,13 +115,13 @@ export default function Sustainability() {
         <div className="card p-4">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-lg bg-green-500/10 flex items-center justify-center"><Cloud className="text-green-400" size={20} /></div>
-            <div><p className="text-gray-400 text-xs">Carbon Reduction</p><p className="text-2xl font-bold text-green-400">{loading ? '...' : `${totalCarbon}%`}</p></div>
+            <div><p className="text-gray-400 text-xs">Carbon Reduction</p><p className="text-2xl font-bold text-green-400">{isLoading ? '...' : `${totalCarbon}%`}</p></div>
           </div>
         </div>
         <div className="card p-4">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-lg bg-amber-500/10 flex items-center justify-center"><Factory className="text-amber-400" size={20} /></div>
-            <div><p className="text-gray-400 text-xs">Energy Used</p><p className="text-2xl font-bold text-amber-400">{loading ? '...' : `${totalEnergy.toLocaleString()} kWh`}</p></div>
+            <div><p className="text-gray-400 text-xs">Energy Used</p><p className="text-2xl font-bold text-amber-400">{isLoading ? '...' : `${totalEnergy.toLocaleString()} kWh`}</p></div>
           </div>
         </div>
         <div className="card p-4">
@@ -146,7 +133,7 @@ export default function Sustainability() {
       </div>
       <div className="card p-4">
         <input type="text" placeholder="Search metrics..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white mb-4" />
-        {loading ? (
+        {isLoading ? (
           <div className="text-center py-8 text-gray-400">Loading sustainability data...</div>
         ) : (
           <div className="space-y-3">
@@ -277,8 +264,8 @@ export default function Sustainability() {
             </div>
             <div className="p-6 border-t border-gray-700 flex justify-end gap-3">
               <button type="button" onClick={() => setShowCreateModal(false)} className="px-4 py-2 text-gray-400 hover:text-white">Cancel</button>
-              <button type="button" onClick={handleCreate} disabled={creating || !form.metricType} className="px-4 py-2 bg-orange-500 hover:bg-orange-600 text-white rounded-lg font-semibold disabled:opacity-50">
-                {creating ? 'Creating...' : 'Log Metric'}
+              <button type="button" onClick={handleCreate} disabled={createMutation.isPending || !form.metricType} className="px-4 py-2 bg-orange-500 hover:bg-orange-600 text-white rounded-lg font-semibold disabled:opacity-50">
+                {createMutation.isPending ? 'Creating...' : 'Log Metric'}
               </button>
             </div>
           </div>
@@ -337,8 +324,8 @@ export default function Sustainability() {
             </div>
             <div className="p-6 border-t border-gray-700 flex justify-end gap-3">
               <button type="button" onClick={() => setEditItem(null)} className="px-4 py-2 text-gray-400 hover:text-white">Cancel</button>
-              <button type="button" onClick={handleUpdate} disabled={saving || !editItem.metric_type} className="px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg font-semibold disabled:opacity-50">
-                {saving ? 'Saving...' : 'Save Changes'}
+              <button type="button" onClick={handleUpdate} disabled={updateMutation.isPending || !editItem.metric_type} className="px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg font-semibold disabled:opacity-50">
+                {updateMutation.isPending ? 'Saving...' : 'Save Changes'}
               </button>
             </div>
           </div>

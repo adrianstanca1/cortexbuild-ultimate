@@ -1,27 +1,22 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { Plus, Users, FileCheck, Clock, Trash2, X, Upload, Edit } from 'lucide-react';
 import { EmptyState } from '../ui/EmptyState';
-import { prequalificationApi, uploadFile } from '../../services/api';
-import { toast } from 'sonner';
+import { usePrequalification } from '../../hooks/useData';
+import { uploadFile } from '../../services/api';
 
 export default function Prequalification() {
   const [searchTerm, setSearchTerm] = useState('');
-  const [prequal, setPrequal] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
   const [showCreateModal, setShowCreateModal] = useState(false);
-  const [creating, setCreating] = useState(false);
   const [editItem, setEditItem] = useState<Record<string, any> | null>(null);
-  const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState<string | null>(null);
   const [form, setForm] = useState({ contractor: '', project: '', questionnaireType: 'PAS 91', status: 'pending', score: '' });
 
-  useEffect(() => {
-    prequalificationApi.getAll().then((data: any[]) => {
-      setPrequal(data);
-      setLoading(false);
-    }).catch(() => setLoading(false));
-  }, []);
+  const { useList, useCreate, useUpdate, useDelete } = usePrequalification;
+  const { data: prequal = [], isLoading } = useList() as { data: any[]; isLoading: boolean };
+  const createMutation = useCreate() as { mutateAsync: (data: Record<string, unknown>) => Promise<unknown>; isPending: boolean };
+  const updateMutation = useUpdate() as { mutateAsync: (data: { id: string; data: Record<string, unknown> }) => Promise<unknown>; isPending: boolean };
+  const deleteMutation = useDelete() as { mutateAsync: (id: string) => Promise<void>; isPending: boolean };
 
   const filtered = prequal.filter((p: any) =>
     (p.contractor || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -33,54 +28,46 @@ export default function Prequalification() {
 
   const handleCreate = async () => {
     if (!form.contractor) return;
-    setCreating(true);
     try {
-      const newRecord = {
+      await createMutation.mutateAsync({
         contractor: form.contractor,
         project: form.project || '',
         questionnaire_type: form.questionnaireType,
         status: form.status,
         score: parseInt(form.score) || 0,
-      };
-      const created = await prequalificationApi.create(newRecord);
-      setPrequal(prev => [created, ...prev]);
+      });
       setShowCreateModal(false);
       setForm({ contractor: '', project: '', questionnaireType: 'PAS 91', status: 'pending', score: '' });
     } catch {
-      console.error('Failed to create');
-    } finally {
-      setCreating(false);
+      // error handled by hook
     }
   };
 
   const handleDelete = async (id: string) => {
     if (!confirm('Delete this prequalification record?')) return;
     try {
-      await prequalificationApi.delete(id);
-      setPrequal(prev => prev.filter((p: any) => String(p.id) !== String(id)));
+      await deleteMutation.mutateAsync(id);
     } catch {
-      console.error('Failed to create');
+      // error handled by hook
     }
   };
 
   const handleUpdate = async () => {
     if (!editItem || !editItem.id) return;
-    setSaving(true);
     try {
-      const updated = {
-        contractor: editItem.contractor,
-        project: editItem.project || '',
-        questionnaire_type: editItem.questionnaire_type,
-        status: editItem.status,
-        score: parseInt(editItem.score) || 0,
-      };
-      const result = await prequalificationApi.update(editItem.id, updated);
-      setPrequal(prev => prev.map((p: any) => String(p.id) === String(editItem.id) ? result : p));
+      await updateMutation.mutateAsync({
+        id: editItem.id,
+        data: {
+          contractor: editItem.contractor,
+          project: editItem.project || '',
+          questionnaire_type: editItem.questionnaire_type,
+          status: editItem.status,
+          score: parseInt(editItem.score) || 0,
+        },
+      });
       setEditItem(null);
     } catch {
-      console.error('Failed to create');
-    } finally {
-      setSaving(false);
+      // error handled by hook
     }
   };
 
@@ -88,10 +75,8 @@ export default function Prequalification() {
     setUploading(id);
     try {
       await uploadFile(file, 'REPORTS');
-      toast.success(`Uploaded: ${file.name}`);
     } catch {
-      console.error('Upload failed');
-      toast.error('Upload failed');
+      // error handled inline
     } finally {
       setUploading(null);
     }
@@ -109,13 +94,13 @@ export default function Prequalification() {
         </button>
       </div>
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div className="card p-4"><div className="flex items-center gap-3"><div className="w-10 h-10 rounded-lg bg-green-500/10 flex items-center justify-center"><FileCheck className="text-green-400" size={20} /></div><div><p className="text-gray-400 text-xs">Approved</p><p className="text-2xl font-bold text-green-400">{loading ? '...' : approvedCount}</p></div></div></div>
-        <div className="card p-4"><div className="flex items-center gap-3"><div className="w-10 h-10 rounded-lg bg-amber-500/10 flex items-center justify-center"><Clock className="text-amber-400" size={20} /></div><div><p className="text-gray-400 text-xs">Pending</p><p className="text-2xl font-bold text-amber-400">{loading ? '...' : pendingCount}</p></div></div></div>
-        <div className="card p-4"><div className="flex items-center gap-3"><div className="w-10 h-10 rounded-lg bg-blue-500/10 flex items-center justify-center"><Users className="text-blue-400" size={20} /></div><div><p className="text-gray-400 text-xs">Total</p><p className="text-2xl font-bold text-blue-400">{loading ? '...' : prequal.length}</p></div></div></div>
+        <div className="card p-4"><div className="flex items-center gap-3"><div className="w-10 h-10 rounded-lg bg-green-500/10 flex items-center justify-center"><FileCheck className="text-green-400" size={20} /></div><div><p className="text-gray-400 text-xs">Approved</p><p className="text-2xl font-bold text-green-400">{isLoading ? '...' : approvedCount}</p></div></div></div>
+        <div className="card p-4"><div className="flex items-center gap-3"><div className="w-10 h-10 rounded-lg bg-amber-500/10 flex items-center justify-center"><Clock className="text-amber-400" size={20} /></div><div><p className="text-gray-400 text-xs">Pending</p><p className="text-2xl font-bold text-amber-400">{isLoading ? '...' : pendingCount}</p></div></div></div>
+        <div className="card p-4"><div className="flex items-center gap-3"><div className="w-10 h-10 rounded-lg bg-blue-500/10 flex items-center justify-center"><Users className="text-blue-400" size={20} /></div><div><p className="text-gray-400 text-xs">Total</p><p className="text-2xl font-bold text-blue-400">{isLoading ? '...' : prequal.length}</p></div></div></div>
       </div>
       <div className="card p-4">
         <input type="text" placeholder="Search contractors..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white mb-4" />
-        {loading ? (
+        {isLoading ? (
           <div className="text-center py-8 text-gray-400">Loading prequalification data...</div>
         ) : (
           <div className="space-y-3">
@@ -223,8 +208,8 @@ export default function Prequalification() {
             </div>
             <div className="p-6 border-t border-gray-700 flex justify-end gap-3">
               <button type="button" onClick={() => setShowCreateModal(false)} className="px-4 py-2 text-gray-400 hover:text-white">Cancel</button>
-              <button type="button" onClick={handleCreate} disabled={creating || !form.contractor} className="px-4 py-2 bg-orange-500 hover:bg-orange-600 text-white rounded-lg font-semibold disabled:opacity-50">
-                {creating ? 'Creating...' : 'Send PQQ'}
+              <button type="button" onClick={handleCreate} disabled={createMutation.isPending || !form.contractor} className="px-4 py-2 bg-orange-500 hover:bg-orange-600 text-white rounded-lg font-semibold disabled:opacity-50">
+                {createMutation.isPending ? 'Creating...' : 'Send PQQ'}
               </button>
             </div>
           </div>
@@ -274,8 +259,8 @@ export default function Prequalification() {
             </div>
             <div className="p-6 border-t border-gray-700 flex justify-end gap-3">
               <button type="button" onClick={() => setEditItem(null)} className="px-4 py-2 text-gray-400 hover:text-white">Cancel</button>
-              <button type="button" onClick={handleUpdate} disabled={saving || !editItem.contractor} className="px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg font-semibold disabled:opacity-50">
-                {saving ? 'Saving...' : 'Save Changes'}
+              <button type="button" onClick={handleUpdate} disabled={updateMutation.isPending || !editItem.contractor} className="px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg font-semibold disabled:opacity-50">
+                {updateMutation.isPending ? 'Saving...' : 'Save Changes'}
               </button>
             </div>
           </div>

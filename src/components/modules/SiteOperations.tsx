@@ -4,7 +4,6 @@ import {
   Sun, Cloud, CloudRain, Activity, Calendar, Wrench, X, CheckSquare, Square, Trash2
 } from 'lucide-react';
 import { useDailyReports, useEquipment, useTeam } from '../../hooks/useData';
-import { dailyReportsApi } from '../../services/api';
 import { BulkActionsBar, useBulkSelection } from '../ui/BulkActions';
 import { toast } from 'sonner';
 
@@ -29,6 +28,7 @@ const TABS: { key: SubTab; label: string; icon: React.ElementType }[] = [
 
 export function SiteOperations() {
   const { data: rawReports = [] } = useDailyReports.useList();
+  const createMutation = useDailyReports.useCreate();
   const { data: rawEquipment = [] } = useEquipment.useList();
   const { data: rawTeam = [] } = useTeam.useList();
 
@@ -42,7 +42,6 @@ export function SiteOperations() {
   const [projectFilter, setProjectFilter] = useState<string>('');
   const [showNewEntry, setShowNewEntry] = useState(false);
   const [showNewDelay, setShowNewDelay] = useState(false);
-  const [savingEntry, setSavingEntry] = useState(false);
 
   // Form state for new entry
   const [newEntry, setNewEntry] = useState({
@@ -106,7 +105,6 @@ export function SiteOperations() {
 
   const handleSaveEntry = async () => {
     if (!newEntry.project) { toast.error('Project is required'); return; }
-    setSavingEntry(true);
     try {
       const payload = {
         project: newEntry.project,
@@ -121,9 +119,7 @@ export function SiteOperations() {
         progress: newEntry.progress,
         submitted_by: 'Site Manager',
       };
-      const created = await dailyReportsApi.create(payload) as AnyRow;
-      // Prepend to reports list
-      reports.unshift(created);
+      await createMutation.mutateAsync(payload);
       toast.success('Daily report saved');
       setShowNewEntry(false);
       setNewEntry({
@@ -140,8 +136,6 @@ export function SiteOperations() {
       });
     } catch {
       toast.error('Failed to save report');
-    } finally {
-      setSavingEntry(false);
     }
   };
 
@@ -165,8 +159,7 @@ const handleSaveDelay = async () => {
         progress: 0,
         submitted_by: 'Site Manager',
       };
-      const created = await dailyReportsApi.create(payload) as AnyRow;
-      reports.unshift(created);
+      await createMutation.mutateAsync(payload);
       toast.success('Delay logged');
       setShowNewDelay(false);
       setNewDelay({
@@ -486,7 +479,7 @@ const handleSaveDelay = async () => {
                   <div className="flex gap-3 pt-4">
                     <button
                       onClick={handleSaveEntry}
-                      disabled={savingEntry}
+                      disabled={createMutation.isPending}
                       className="flex-1 px-4 py-2 bg-orange-600 hover:bg-orange-700 text-white rounded font-medium transition-colors disabled:opacity-50"
                     >
                       Save Entry
