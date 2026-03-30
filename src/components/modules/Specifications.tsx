@@ -4,7 +4,9 @@ import {
   FileText, Plus, Search, Download, Clock, Eye, Edit, X, Upload, Trash2,
   CheckSquare, Square
 } from 'lucide-react';
-import { specificationsApi, uploadFile } from '../../services/api';
+import { useSpecifications } from '../../hooks/useData';
+import { toast } from 'sonner';
+import { uploadFile } from '../../services/api';
 import { BulkActionsBar, useBulkSelection } from '../ui/BulkActions';
 
 interface Specification {
@@ -23,96 +25,78 @@ interface Specification {
 }
 
 export default function Specifications() {
-  const [specifications, setSpecifications] = useState<Specification[]>([]);
-  const [_loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState<string>('all');
   const [uploading, setUploading] = useState<string | null>(null);
   const [showCreateModal, setShowCreateModal] = useState(false);
-  const [creating, setCreating] = useState(false);
   const [form, setForm] = useState({ title: '', project: '', section: '', discipline: '', description: '' });
   const [editItem, setEditItem] = useState<Record<string, any> | null>(null);
-  const [saving, setSaving] = useState(false);
+
+  const { useList, useCreate, useUpdate, useDelete } = useSpecifications;
+  const { data: rawSpecs = [], isLoading } = useList();
+  const createMutation = useCreate();
+  const updateMutation = useUpdate();
+  const deleteMutation = useDelete();
 
   const { selectedIds, toggle, clearSelection } = useBulkSelection();
 
   async function handleBulkDelete(ids: string[]) {
     if (!confirm(`Delete ${ids.length} item(s)?`)) return;
     try {
-      await Promise.all(ids.map(id => specificationsApi.delete(id)));
-      setSpecifications(prev => prev.filter(s => !ids.includes(String(s.id))));
+      await Promise.all(ids.map(id => deleteMutation.mutateAsync(String(id))));
       clearSelection();
     } catch {
-      console.error('Bulk delete failed');
+      toast.error('Bulk delete failed');
     }
   }
 
-  useEffect(() => {
-    async function loadSpecifications() {
-      try {
-        const data = await specificationsApi.getAll() as Specification[];
-        setSpecifications(data);
-      } catch (error) {
-        console.error('Failed to load specifications:', error);
-      } finally {
-        setLoading(false);
-      }
-    }
-    loadSpecifications();
-  }, []);
-
   const handleCreate = async () => {
     if (!form.title || !form.project) return;
-    setCreating(true);
     try {
-      const ref = `SPEC-${String(Date.now()).slice(-6)}`;
-      const newRecord = {
-        reference: ref,
+      await createMutation.mutateAsync({
+        reference: `SPEC-${String(Date.now()).slice(-6)}`,
         title: form.title,
         project: form.project,
         section: form.section,
         version: '1.0',
         status: 'draft',
         description: form.description,
-      };
-      const created = await specificationsApi.create(newRecord) as Specification;
-      setSpecifications(prev => [...prev, created]);
+      });
+      toast.success('Specification created');
       setShowCreateModal(false);
       setForm({ title: '', project: '', section: '', discipline: '', description: '' });
     } catch {
-      console.error('Failed to create');
-    } finally {
-      setCreating(false);
+      toast.error('Failed to create specification');
     }
   };
 
   const handleUpdate = async () => {
     if (!editItem || !editItem.id) return;
-    setSaving(true);
     try {
-      const updated = await specificationsApi.update(editItem.id, {
-        title: editItem.title,
-        project: editItem.project,
-        section: editItem.section,
-        discipline: editItem.discipline,
-        description: editItem.description,
-      }) as Specification;
-      setSpecifications(prev => prev.map(s => String(s.id) === String(editItem.id) ? updated : s));
+      await updateMutation.mutateAsync({
+        id: editItem.id,
+        data: {
+          title: editItem.title,
+          project: editItem.project,
+          section: editItem.section,
+          discipline: editItem.discipline,
+          description: editItem.description,
+        },
+      });
+      toast.success('Specification updated');
       setEditItem(null);
     } catch {
-      console.error('Failed to create');
-    } finally {
-      setSaving(false);
+      toast.error('Failed to update specification');
     }
   };
 
   const handleDelete = async (id: string) => {
     if (!confirm('Delete this specification?')) return;
     try {
-      await specificationsApi.delete(id);
-      setSpecifications(prev => prev.filter(s => String(s.id) !== String(id)));
+      await deleteMutation.mutateAsync({ id });
+      toast.success('Specification deleted');
     } catch {
-      console.error('Failed to create');
+      toast.error('Failed to delete specification');
     }
   };
 
@@ -120,23 +104,24 @@ export default function Specifications() {
     setUploading(specId);
     try {
       const result = await uploadFile(file, 'SPECS');
-      setSpecifications(prev => prev.map(s => {
-        if (String(s.id) === String(specId)) {
-          return {
-            ...s,
-            documents: [...(s.documents || []), { name: file.name, url: String(result.file_url || result.name || '') }]
-          };
-        }
-        return s;
-      }));
+      const spec = rawSpecs.find((s: any) => String(s.id) === String(specId));
+      if (spec) {
+        await updateMutation.mutateAsync({
+          id: String(specId),
+          data: {
+            ...spec,
+            documents: [...(spec.documents || []), { name: file.name, url: String(result.file_url || result.name || '') }],
+          },
+        });
+      }
     } catch {
-      console.error('Upload failed');
+      toast.error('Upload failed');
     } finally {
       setUploading(null);
     }
   };
 
-  const filtered = specifications.filter(s => {
+  const filtered = rawSpecs.filter((s: Specification) => {
     const matchesSearch = (s.ref || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
       (s.title || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
       (s.project || '').toLowerCase().includes(searchTerm.toLowerCase());
@@ -193,8 +178,8 @@ export default function Specifications() {
         </div>
 
         <div className="space-y-3">
-          {filtered.map((spec) => {
-            const status = statusConfig[spec.status] || statusConfig.draft;
+          {filtered.map((spec: Specification) => {
+            const status = statusConfig[spec.status as keyof typeof statusConfig] || statusConfig.draft;
             const isSelected = selectedIds.has(String(spec.id));
             return (
               <div key={spec.id} className={`border border-gray-700 rounded-lg p-4 hover:border-orange-500/50 transition-colors ${isSelected ? 'border-blue-500/50 bg-blue-900/10' : ''}`}>
@@ -267,7 +252,7 @@ export default function Specifications() {
                 </div>
                 {spec.documents && spec.documents.length > 0 && (
                   <div className="mt-3 flex gap-2 flex-wrap">
-                    {spec.documents.map((doc, idx) => (
+                    {(spec.documents as any[] || []).map((doc: any, idx: number) => (
                       <span key={idx} className="px-2 py-1 bg-gray-700 rounded text-xs text-gray-300 flex items-center gap-1">
                         <FileText size={12} /> {doc.name}
                       </span>
@@ -325,8 +310,8 @@ export default function Specifications() {
             </div>
             <div className="p-6 border-t border-gray-700 flex justify-end gap-3">
               <button type="button" onClick={() => setShowCreateModal(false)} className="px-4 py-2 text-gray-400 hover:text-white">Cancel</button>
-              <button type="button" onClick={handleCreate} disabled={creating || !form.title || !form.project} className="px-4 py-2 bg-orange-500 hover:bg-orange-600 text-white rounded-lg font-semibold disabled:opacity-50">
-                {creating ? 'Creating...' : 'Create Specification'}
+              <button type="button" onClick={handleCreate} disabled={createMutation.isPending || !form.title || !form.project} className="px-4 py-2 bg-orange-500 hover:bg-orange-600 text-white rounded-lg font-semibold disabled:opacity-50">
+                {createMutation.isPending ? 'Creating...' : 'Create Specification'}
               </button>
             </div>
           </div>
@@ -371,8 +356,8 @@ export default function Specifications() {
             </div>
             <div className="p-6 border-t border-gray-700 flex justify-end gap-3">
               <button type="button" onClick={() => setEditItem(null)} className="px-4 py-2 text-gray-400 hover:text-white">Cancel</button>
-              <button type="button" onClick={handleUpdate} disabled={saving || !editItem.title || !editItem.project} className="px-4 py-2 bg-orange-500 hover:bg-orange-600 text-white rounded-lg font-semibold disabled:opacity-50">
-                {saving ? 'Saving...' : 'Save Changes'}
+              <button type="button" onClick={handleUpdate} disabled={updateMutation.isPending || !editItem.title || !editItem.project} className="px-4 py-2 bg-orange-500 hover:bg-orange-600 text-white rounded-lg font-semibold disabled:opacity-50">
+                {updateMutation.isPending ? 'Saving...' : 'Save Changes'}
               </button>
             </div>
           </div>

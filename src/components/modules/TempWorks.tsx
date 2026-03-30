@@ -1,11 +1,12 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import {
   Plus, Search, AlertTriangle, Construction,
   Shield, Eye, Edit, X, Trash2, Upload
 } from 'lucide-react';
-import { tempWorksApi, uploadFile } from '../../services/api';
+import { useTempWorks } from '../../hooks/useData';
 import { toast } from 'sonner';
+import { uploadFile } from '../../services/api';
 
 interface _TempWork {
   id: string;
@@ -32,23 +33,18 @@ const statusConfig: Record<string, { label: string; color: string; bg: string }>
 export default function TempWorks() {
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState<string>('all');
-  const [tempWorks, setTempWorks] = useState<any[]>([]);
-  const [_loading, setLoading] = useState(true);
-  const [showCreateModal, setShowCreateModal] = useState(false);
-  const [creating, setCreating] = useState(false);
   const [uploading, setUploading] = useState<string | null>(null);
+  const [showCreateModal, setShowCreateModal] = useState(false);
   const [editItem, setEditItem] = useState<Record<string, any> | null>(null);
-  const [saving, setSaving] = useState(false);
   const [form, setForm] = useState({ title: '', project: '', type: 'Structural Support', designer: '', installer: '', description: '', status: 'design' });
 
-  useEffect(() => {
-    tempWorksApi.getAll().then((data: any[]) => {
-      setTempWorks(data);
-      setLoading(false);
-    }).catch(() => setLoading(false));
-  }, []);
+  const { useList, useCreate, useUpdate, useDelete } = useTempWorks;
+  const { data: rawTempWorks = [], isLoading } = useList();
+  const createMutation = useCreate();
+  const updateMutation = useUpdate();
+  const deleteMutation = useDelete();
 
-  const filtered = tempWorks.filter((t: any) => {
+  const filtered = rawTempWorks.filter((t: any) => {
     const matchesSearch = (t.ref || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
       (t.title || '').toLowerCase().includes(searchTerm.toLowerCase());
     const matchesStatus = filterStatus === 'all' || t.status === filterStatus;
@@ -57,35 +53,9 @@ export default function TempWorks() {
 
   const handleCreate = async () => {
     if (!form.title) return;
-    setCreating(true);
     try {
-      const ref = `TW-${String(Date.now()).slice(-6)}`;
-      const newRecord = {
-        ref,
-        title: form.title,
-        project: form.project || '',
-        type: form.type,
-        designer: form.designer || '',
-        installer: form.installer || '',
-        description: form.description || '',
-        status: form.status,
-      };
-      const created = await tempWorksApi.create(newRecord);
-      setTempWorks(prev => [created, ...prev]);
-      setShowCreateModal(false);
-      setForm({ title: '', project: '', type: 'Structural Support', designer: '', installer: '', description: '', status: 'design' });
-    } catch {
-      console.error('Failed to create');
-    } finally {
-      setCreating(false);
-    }
-  };
-
-  const handleUpdate = async () => {
-    if (!editItem || !editItem.id) return;
-    setSaving(true);
-    try {
-      const updated = await tempWorksApi.update(editItem.id, {
+      await createMutation.mutateAsync({
+        ref: `TW-${String(Date.now()).slice(-6)}`,
         title: form.title,
         project: form.project || '',
         type: form.type,
@@ -94,13 +64,34 @@ export default function TempWorks() {
         description: form.description || '',
         status: form.status,
       });
-      setTempWorks(prev => prev.map((t: any) => String(t.id) === String(editItem.id) ? updated : t));
+      toast.success('Temporary work created');
+      setShowCreateModal(false);
+      setForm({ title: '', project: '', type: 'Structural Support', designer: '', installer: '', description: '', status: 'design' });
+    } catch {
+      toast.error('Failed to create temporary work');
+    }
+  };
+
+  const handleUpdate = async () => {
+    if (!editItem || !editItem.id) return;
+    try {
+      await updateMutation.mutateAsync({
+        id: editItem.id,
+        data: {
+          title: form.title,
+          project: form.project || '',
+          type: form.type,
+          designer: form.designer || '',
+          installer: form.installer || '',
+          description: form.description || '',
+          status: form.status,
+        },
+      });
+      toast.success('Temporary work updated');
       setEditItem(null);
       setForm({ title: '', project: '', type: 'Structural Support', designer: '', installer: '', description: '', status: 'design' });
     } catch {
-      console.error('Failed to create');
-    } finally {
-      setSaving(false);
+      toast.error('Failed to update temporary work');
     }
   };
 
@@ -120,10 +111,10 @@ export default function TempWorks() {
   const handleDelete = async (id: string) => {
     if (!confirm('Delete this temporary work?')) return;
     try {
-      await tempWorksApi.delete(id);
-      setTempWorks(prev => prev.filter((t: any) => String(t.id) !== String(id)));
+      await deleteMutation.mutateAsync(String(id));
+      toast.success('Temporary work deleted');
     } catch {
-      console.error('Failed to create');
+      toast.error('Failed to delete temporary work');
     }
   };
 
@@ -162,7 +153,7 @@ export default function TempWorks() {
             </div>
             <div>
               <p className="text-gray-400 text-xs">In Design</p>
-              <p className="text-2xl font-bold text-white">{tempWorks.filter(t => t.status === 'design').length}</p>
+              <p className="text-2xl font-bold text-white">{rawTempWorks.filter((t: any) => t.status === 'design').length}</p>
             </div>
           </div>
         </div>
@@ -173,7 +164,7 @@ export default function TempWorks() {
             </div>
             <div>
               <p className="text-gray-400 text-xs">Pending Approval</p>
-              <p className="text-2xl font-bold text-amber-400">{tempWorks.filter(t => t.status === 'approval').length}</p>
+              <p className="text-2xl font-bold text-amber-400">{rawTempWorks.filter((t: any) => t.status === 'approval').length}</p>
             </div>
           </div>
         </div>
@@ -184,7 +175,7 @@ export default function TempWorks() {
             </div>
             <div>
               <p className="text-gray-400 text-xs">In Use</p>
-              <p className="text-2xl font-bold text-emerald-400">{tempWorks.filter(t => t.status === 'in_use').length}</p>
+              <p className="text-2xl font-bold text-emerald-400">{rawTempWorks.filter((t: any) => t.status === 'in_use').length}</p>
             </div>
           </div>
         </div>
@@ -347,8 +338,8 @@ export default function TempWorks() {
             </div>
             <div className="p-6 border-t border-gray-700 flex justify-end gap-3">
               <button type="button" onClick={() => setShowCreateModal(false)} className="px-4 py-2 text-gray-400 hover:text-white">Cancel</button>
-              <button type="button" onClick={handleCreate} disabled={creating || !form.title} className="px-4 py-2 bg-orange-500 hover:bg-orange-600 text-white rounded-lg font-semibold disabled:opacity-50">
-                {creating ? 'Creating...' : 'Create'}
+              <button type="button" onClick={handleCreate} disabled={createMutation.isPending || !form.title} className="px-4 py-2 bg-orange-500 hover:bg-orange-600 text-white rounded-lg font-semibold disabled:opacity-50">
+                {createMutation.isPending ? 'Creating...' : 'Create'}
               </button>
             </div>
           </div>
@@ -411,8 +402,8 @@ export default function TempWorks() {
             </div>
             <div className="p-6 border-t border-gray-700 flex justify-end gap-3">
               <button type="button" onClick={() => setEditItem(null)} className="px-4 py-2 text-gray-400 hover:text-white">Cancel</button>
-              <button type="button" onClick={handleUpdate} disabled={saving || !form.title} className="px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg font-semibold disabled:opacity-50">
-                {saving ? 'Saving...' : 'Save Changes'}
+              <button type="button" onClick={handleUpdate} disabled={updateMutation.isPending || !form.title} className="px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg font-semibold disabled:opacity-50">
+                {updateMutation.isPending ? 'Saving...' : 'Save Changes'}
               </button>
             </div>
           </div>

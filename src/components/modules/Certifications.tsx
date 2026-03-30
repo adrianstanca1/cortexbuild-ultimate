@@ -1,29 +1,31 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { Plus, Shield, FileCheck, Clock, AlertTriangle, FileText, Upload, Trash2, X, Edit, CheckSquare, Square } from 'lucide-react';
 import { BulkActionsBar, useBulkSelection } from '../ui/BulkActions';
 import { EmptyState } from '../ui/EmptyState';
-import { certificationsApi, uploadFile } from '../../services/api';
+import { useCertifications } from '../../hooks/useData';
+import { uploadFile } from '../../services/api';
 import { toast } from 'sonner';
 
 export default function Certifications() {
   const [searchTerm, setSearchTerm] = useState('');
-  const [certs, setCerts] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState<string | null>(null);
   const [showCreateModal, setShowCreateModal] = useState(false);
-  const [creating, setCreating] = useState(false);
   const [form, setForm] = useState({ certificationType: '', company: '', body: '', accreditationNumber: '', grade: '', expiryDate: '', status: 'active' });
   const [editItem, setEditItem] = useState<Record<string, any> | null>(null);
-  const [saving, setSaving] = useState(false);
+
+  const { useList, useCreate, useUpdate, useDelete } = useCertifications;
+  const { data: certs = [], isLoading } = useList();
+  const createMutation = useCreate();
+  const updateMutation = useUpdate();
+  const deleteMutation = useDelete();
 
   const { selectedIds, toggle, clearSelection } = useBulkSelection();
 
   async function handleBulkDelete(ids: string[]) {
     if (!confirm(`Delete ${ids.length} certification(s)?`)) return;
     try {
-      await Promise.all(ids.map(id => certificationsApi.delete(id)));
-      setCerts(prev => prev.filter((c: any) => !ids.includes(String(c.id))));
+      await Promise.all(ids.map(id => deleteMutation.mutateAsync(String(id))));
       toast.success(`Deleted ${ids.length} certification(s)`);
       clearSelection();
     } catch {
@@ -31,20 +33,13 @@ export default function Certifications() {
     }
   }
 
-  useEffect(() => {
-    certificationsApi.getAll().then((data: any[]) => {
-      setCerts(data);
-      setLoading(false);
-    }).catch(() => setLoading(false));
-  }, []);
-
-  const filtered = certs.filter((c: any) =>
+  const filtered = (certs as any[]).filter(c =>
     (c.certification_type || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
     (c.company || '').toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  const validCount = certs.filter((c: any) => c.status === 'active' || c.status === 'valid').length;
-  const expiringCount = certs.filter((c: any) => {
+  const validCount = (certs as any[]).filter(c => c.status === 'active' || c.status === 'valid').length;
+  const expiringCount = (certs as any[]).filter(c => {
     if (!c.expiry_date) return false;
     const daysUntil = (new Date(c.expiry_date).getTime() - Date.now()) / (1000 * 60 * 60 * 24);
     return daysUntil > 0 && daysUntil <= 90;
@@ -52,9 +47,8 @@ export default function Certifications() {
 
   const handleCreate = async () => {
     if (!form.certificationType) return;
-    setCreating(true);
     try {
-      const newRecord = {
+      await createMutation.mutateAsync({
         certification_type: form.certificationType,
         company: form.company || 'CortexBuild Ltd',
         body: form.body || '',
@@ -62,48 +56,44 @@ export default function Certifications() {
         grade: form.grade || '',
         expiry_date: form.expiryDate || null,
         status: form.status,
-      };
-      const created = await certificationsApi.create(newRecord);
-      setCerts(prev => [created, ...prev]);
+      });
+      toast.success('Certification created');
       setShowCreateModal(false);
       setForm({ certificationType: '', company: '', body: '', accreditationNumber: '', grade: '', expiryDate: '', status: 'active' });
     } catch {
-      console.error('Failed to create');
-    } finally {
-      setCreating(false);
+      toast.error('Failed to create certification');
     }
   };
 
   const handleDelete = async (id: string) => {
     if (!confirm('Delete this certification?')) return;
     try {
-      await certificationsApi.delete(id);
-      setCerts(prev => prev.filter((c: any) => String(c.id) !== String(id)));
+      await deleteMutation.mutateAsync(String(id));
+      toast.success('Certification deleted');
     } catch {
-      console.error('Failed to delete');
+      toast.error('Failed to delete certification');
     }
   };
 
   const handleUpdate = async () => {
     if (!editItem || !editItem.certificationType) return;
-    setSaving(true);
     try {
-      const updated = await certificationsApi.update(editItem.id, {
-        certification_type: editItem.certificationType,
-        company: editItem.company,
-        body: editItem.body,
-        accreditation_number: editItem.accreditationNumber,
-        grade: editItem.grade,
-        expiry_date: editItem.expiryDate || null,
-        status: editItem.status,
+      await updateMutation.mutateAsync({
+        id: editItem.id,
+        data: {
+          certification_type: editItem.certificationType,
+          company: editItem.company,
+          body: editItem.body,
+          accreditation_number: editItem.accreditationNumber,
+          grade: editItem.grade,
+          expiry_date: editItem.expiryDate || null,
+          status: editItem.status,
+        },
       });
-      setCerts(prev => prev.map((c: any) => String(c.id) === String(editItem.id) ? updated : c));
-      setEditItem(null);
       toast.success('Certification updated');
+      setEditItem(null);
     } catch {
-      console.error('Failed to update');
-    } finally {
-      setSaving(false);
+      toast.error('Failed to update certification');
     }
   };
 
@@ -111,14 +101,15 @@ export default function Certifications() {
     setUploading(certId);
     try {
       const result = await uploadFile(file, 'REPORTS');
-      setCerts(prev => prev.map(c => {
-        if (String(c.id) === String(certId)) {
-          return { ...c, document_url: result.file_url || result.name, document_name: file.name };
-        }
-        return c;
-      }));
+      const cert = (certs as any[]).find(c => String(c.id) === String(certId));
+      if (cert) {
+        await updateMutation.mutateAsync({
+          id: String(certId),
+          data: { ...cert, document_url: result.file_url || result.name, document_name: file.name },
+        });
+      }
     } catch {
-      console.error('Upload failed');
+      toast.error('Upload failed');
     } finally {
       setUploading(null);
     }
@@ -136,13 +127,13 @@ export default function Certifications() {
         </button>
       </div>
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div className="card p-4"><div className="flex items-center gap-3"><div className="w-10 h-10 rounded-lg bg-green-500/10 flex items-center justify-center"><FileCheck className="text-green-400" size={20} /></div><div><p className="text-gray-400 text-xs">Active</p><p className="text-2xl font-bold text-green-400">{loading ? '...' : validCount}</p></div></div></div>
-        <div className="card p-4"><div className="flex items-center gap-3"><div className="w-10 h-10 rounded-lg bg-amber-500/10 flex items-center justify-center"><AlertTriangle className="text-amber-400" size={20} /></div><div><p className="text-gray-400 text-xs">Expiring Soon</p><p className="text-2xl font-bold text-amber-400">{loading ? '...' : expiringCount}</p></div></div></div>
-        <div className="card p-4"><div className="flex items-center gap-3"><div className="w-10 h-10 rounded-lg bg-blue-500/10 flex items-center justify-center"><Shield className="text-blue-400" size={20} /></div><div><p className="text-gray-400 text-xs">Total</p><p className="text-2xl font-bold text-blue-400">{loading ? '...' : certs.length}</p></div></div></div>
+        <div className="card p-4"><div className="flex items-center gap-3"><div className="w-10 h-10 rounded-lg bg-green-500/10 flex items-center justify-center"><FileCheck className="text-green-400" size={20} /></div><div><p className="text-gray-400 text-xs">Active</p><p className="text-2xl font-bold text-green-400">{isLoading ? '...' : validCount}</p></div></div></div>
+        <div className="card p-4"><div className="flex items-center gap-3"><div className="w-10 h-10 rounded-lg bg-amber-500/10 flex items-center justify-center"><AlertTriangle className="text-amber-400" size={20} /></div><div><p className="text-gray-400 text-xs">Expiring Soon</p><p className="text-2xl font-bold text-amber-400">{isLoading ? '...' : expiringCount}</p></div></div></div>
+        <div className="card p-4"><div className="flex items-center gap-3"><div className="w-10 h-10 rounded-lg bg-blue-500/10 flex items-center justify-center"><Shield className="text-blue-400" size={20} /></div><div><p className="text-gray-400 text-xs">Total</p><p className="text-2xl font-bold text-blue-400">{isLoading ? '...' : certs.length}</p></div></div></div>
       </div>
       <div className="card p-4">
         <input type="text" placeholder="Search certifications..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white mb-4" />
-        {loading ? (
+        {isLoading ? (
           <div className="text-center py-8 text-gray-400">Loading certifications...</div>
         ) : (
           <div className="space-y-3">
@@ -271,8 +262,8 @@ export default function Certifications() {
             </div>
             <div className="p-6 border-t border-gray-700 flex justify-end gap-3">
               <button type="button" onClick={() => setShowCreateModal(false)} className="px-4 py-2 text-gray-400 hover:text-white">Cancel</button>
-              <button type="button" onClick={handleCreate} disabled={creating || !form.certificationType} className="px-4 py-2 bg-orange-500 hover:bg-orange-600 text-white rounded-lg font-semibold disabled:opacity-50">
-                {creating ? 'Creating...' : 'Add Certification'}
+              <button type="button" onClick={handleCreate} disabled={createMutation.isPending || !form.certificationType} className="px-4 py-2 bg-orange-500 hover:bg-orange-600 text-white rounded-lg font-semibold disabled:opacity-50">
+                {createMutation.isPending ? 'Creating...' : 'Add Certification'}
               </button>
             </div>
           </div>
@@ -327,8 +318,8 @@ export default function Certifications() {
             </div>
             <div className="p-6 border-t border-gray-700 flex justify-end gap-3">
               <button type="button" onClick={() => setEditItem(null)} className="px-4 py-2 text-gray-400 hover:text-white">Cancel</button>
-              <button type="button" onClick={handleUpdate} disabled={saving || !editItem.certificationType} className="px-4 py-2 bg-orange-500 hover:bg-orange-600 text-white rounded-lg font-semibold disabled:opacity-50">
-                {saving ? 'Saving...' : 'Save Changes'}
+              <button type="button" onClick={handleUpdate} disabled={updateMutation.isPending || !editItem.certificationType} className="px-4 py-2 bg-orange-500 hover:bg-orange-600 text-white rounded-lg font-semibold disabled:opacity-50">
+                {updateMutation.isPending ? 'Saving...' : 'Save Changes'}
               </button>
             </div>
           </div>

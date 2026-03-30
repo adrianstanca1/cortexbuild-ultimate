@@ -1,11 +1,12 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import {
   FileText, Plus, Search, Clock, AlertCircle,
   CheckCircle, XCircle,
   ChevronDown, ChevronRight,
   FileCheck, Eye, Edit, Trash2, X, CheckSquare, Square
 } from 'lucide-react';
-import { variationsApi } from '../../services/api';
+import { useVariations } from '../../hooks/useData';
+import { toast } from 'sonner';
 import { BulkActionsBar, useBulkSelection } from '../ui/BulkActions';
 
 interface Variation {
@@ -54,51 +55,37 @@ export default function Variations() {
   const [_selectedVar, setSelectedVar] = useState<Variation | null>(null);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [expandedCards, setExpandedCards] = useState<string[]>([]);
-  const [variations, setVariations] = useState<Variation[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [creating, setCreating] = useState(false);
-  const [editItem, setEditItem] = useState<any | null> /* eslint-disable-line @typescript-eslint/no-explicit-any */(null);
-  const [saving, setSaving] = useState(false);
+  const [editItem, setEditItem] = useState<any | null>(null);
   const [form, setForm] = useState({
     title: '', project: '', subcontractor: '', type: 'addition', value: '', reason: '', description: ''
   });
+
+  const { useList, useCreate, useUpdate, useDelete } = useVariations;
+  const { data: rawVariations = [], isLoading } = useList();
+  const createMutation = useCreate();
+  const updateMutation = useUpdate();
+  const deleteMutation = useDelete();
+
+  const variations = rawVariations as unknown as Variation[];
 
   const { selectedIds, toggle, clearSelection } = useBulkSelection();
 
   async function handleBulkDelete(ids: string[]) {
     if (!confirm(`Delete ${ids.length} item(s)?`)) return;
     try {
-      await Promise.all(ids.map(id => variationsApi.delete(id)));
-      setVariations(prev => prev.filter(v => !ids.includes(String(v.id))));
+      await Promise.all(ids.map(id => deleteMutation.mutateAsync(String(id))));
+      toast.success(`Deleted ${ids.length} variation(s)`);
       clearSelection();
     } catch {
-      console.error('Bulk delete failed');
+      toast.error('Bulk delete failed');
     }
   }
 
-  useEffect(() => {
-    variationsApi.getAll().then(data => {
-      // Map snake_case API fields to the camelCase Variation interface
-      const mapped = (data as Record<string, unknown>[]).map(v => ({
-        ...v,
-        originalValue: v.originalValue ?? v.original_value ?? 0,
-        submittedDate: v.submittedDate ?? v.submitted_date ?? '',
-        respondedDate: v.respondedDate ?? v.responded_date ?? '',
-        affectedItems: v.affectedItems ?? v.affected_items ?? [],
-        approvalChain: v.approvalChain ?? v.approval_chain ?? [],
-      }));
-      setVariations(mapped as unknown as Variation[]);
-      setLoading(false);
-    }).catch(() => setLoading(false));
-  }, []);
-
   const handleCreate = async () => {
     if (!form.title || !form.project) return;
-    setCreating(true);
     try {
-      const ref = `VAR-${String(Date.now()).slice(-6)}`;
-      const newRecord = {
-        ref,
+      await createMutation.mutateAsync({
+        ref: `VAR-${String(Date.now()).slice(-6)}`,
         title: form.title,
         project: form.project,
         subcontractor: form.subcontractor,
@@ -109,15 +96,12 @@ export default function Variations() {
         impact: parseFloat(form.value) > 0 ? 'increase' : parseFloat(form.value) < 0 ? 'decrease' : 'neutral',
         description: form.description,
         reason: form.reason,
-      };
-      const created = await variationsApi.create(newRecord);
-      setVariations(prev => [created as Variation, ...prev]);
+      });
+      toast.success('Variation created');
       setShowCreateModal(false);
       setForm({ title: '', project: '', subcontractor: '', type: 'addition', value: '', reason: '', description: '' });
     } catch {
-      console.error('Failed to');
-    } finally {
-      setCreating(false);
+      toast.error('Failed to create variation');
     }
   };
 
@@ -134,37 +118,37 @@ export default function Variations() {
   const handleDelete = async (id: string) => {
     if (!confirm('Delete this variation?')) return;
     try {
-      await variationsApi.delete(id);
-      setVariations(prev => prev.filter(v => String(v.id) !== String(id)));
+      await deleteMutation.mutateAsync(String(id));
+      toast.success('Variation deleted');
     } catch {
-      console.error('Failed to create');
+      toast.error('Failed to delete variation');
     }
   };
 
   const handleUpdate = async () => {
     if (!editItem || !editItem.id) return;
-    setSaving(true);
     try {
-      const updated = await variationsApi.update(editItem.id, {
-        ref: editItem.ref,
-        title: editItem.title,
-        project: editItem.project,
-        subcontractor: editItem.subcontractor,
-        type: editItem.type,
-        status: editItem.status,
-        value: parseFloat(editItem.value) || 0,
-        original_value: parseFloat(editItem.originalValue) || 0,
-        impact: editItem.impact,
-        description: editItem.description,
-        reason: editItem.reason,
-        submitted_date: editItem.submittedDate,
+      await updateMutation.mutateAsync({
+        id: editItem.id,
+        data: {
+          ref: editItem.ref,
+          title: editItem.title,
+          project: editItem.project,
+          subcontractor: editItem.subcontractor,
+          type: editItem.type,
+          status: editItem.status,
+          value: parseFloat(editItem.value) || 0,
+          original_value: parseFloat(editItem.originalValue) || 0,
+          impact: editItem.impact,
+          description: editItem.description,
+          reason: editItem.reason,
+          submitted_date: editItem.submittedDate,
+        },
       });
-      setVariations(prev => prev.map(v => String(v.id) === String(editItem.id) ? updated as Variation : v));
+      toast.success('Variation updated');
       setEditItem(null);
     } catch {
-      console.error('Failed to');
-    } finally {
-      setSaving(false);
+      toast.error('Failed to update variation');
     }
   };
 
@@ -238,7 +222,7 @@ export default function Variations() {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-gray-400 text-xs uppercase tracking-wider">Total Variations</p>
-              <p className="text-2xl font-bold text-white mt-1">{loading ? '...' : variations.length}</p>
+              <p className="text-2xl font-bold text-white mt-1">{isLoading ? '...' : variations.length}</p>
             </div>
             <div className="w-10 h-10 rounded-lg bg-orange-500/10 flex items-center justify-center">
               <FileText className="text-orange-400" size={20} />
@@ -552,10 +536,10 @@ export default function Variations() {
               <button
                 type="button"
                 onClick={handleCreate}
-                disabled={creating || !form.title || !form.project}
+                disabled={createMutation.isPending || !form.title || !form.project}
                 className="px-4 py-2 bg-orange-500 hover:bg-orange-600 text-white rounded-lg font-semibold disabled:opacity-50"
               >
-                {creating ? 'Creating...' : 'Create Variation'}
+                {createMutation.isPending ? 'Creating...' : 'Create Variation'}
               </button>
             </div>
           </div>
@@ -718,10 +702,10 @@ export default function Variations() {
               <button
                 type="button"
                 onClick={handleUpdate}
-                disabled={saving}
+                disabled={updateMutation.isPending}
                 className="px-4 py-2 bg-orange-500 hover:bg-orange-600 text-white rounded-lg font-semibold disabled:opacity-50"
               >
-                {saving ? 'Saving...' : 'Save Changes'}
+                {updateMutation.isPending ? 'Saving...' : 'Save Changes'}
               </button>
             </div>
           </div>
