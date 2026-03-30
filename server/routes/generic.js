@@ -25,7 +25,7 @@ const ALLOWED_COLUMNS = {
   contacts:         ['name','company','role','email','phone','type','value','last_contact','status','projects','address','website','notes','rating'],
   risk_register:    ['title','project_id','project','category','likelihood','impact','risk_score','owner','status','mitigation','review_date','notes','contingency','description'],
   purchase_orders:  ['number','supplier','project_id','project','amount','status','order_date','delivery_date','items','notes','category'],
-  daily_reports:   ['project_id','project','date','prepared_by','weather','temperature','workers_on_site','activities','materials','equipment','issues','photos','progress','temp_high','temp_low','delays','safety_observations','visitors','status','submitted_by'],
+  daily_reports:   ['project_id','project','report_date','prepared_by','weather','temperature','workers_on_site','activities','materials','equipment','issues','photos','progress','temp_high','temp_low','delays','safety_observations','visitors','status','submitted_by'],
   variations:        ['ref','title','project_id','project','subcontractor','status','type','value','original_value','impact','submitted_date','responded_date','description','reason','affected_items','approval_chain','documents'],
   defects:           ['reference','title','project_id','project','location','description','priority','status','trade','raised_by','assigned_to','due_date','closed_date','photos','cost','category'],
   valuations:        ['reference','project_id','project','application_number','period_start','period_end','status','contractor_name','client_name','original_value','variations','total_value','retention','amount_due','submitted_date','certified_date','certified_by','notes'],
