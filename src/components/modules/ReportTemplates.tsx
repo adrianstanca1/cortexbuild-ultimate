@@ -46,7 +46,7 @@ const TABS: { key: SubTab; label: string; icon: React.ElementType }[] = [
 ];
 
 export function ReportTemplates() {
-  const { data: rawTemplates = [], isLoading } = useReportTemplates.useList();
+  const { data: rawTemplates = [], isLoading: _isLoading } = useReportTemplates.useList();
   const templates = (rawTemplates as unknown as AnyRow[]).map(t => ({
     ...t,
     usage: 0,
@@ -54,7 +54,6 @@ export function ReportTemplates() {
       ? new Date(String(t.updated_at)).toLocaleDateString()
       : t.created_at ? new Date(String(t.created_at)).toLocaleDateString() : '—',
   })) as ReportTemplateExt[];
-  const createMutation = useReportTemplates.useCreate();
   const deleteMutation = useReportTemplates.useDelete();
   const duplicateMutation = useDuplicateTemplate();
 

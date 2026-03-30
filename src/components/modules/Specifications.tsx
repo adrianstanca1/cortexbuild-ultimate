@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import {
   FileText, Plus, Search, Download, Clock, Eye, Edit, X, Upload, Trash2,
   CheckSquare, Square
@@ -33,7 +33,7 @@ export default function Specifications() {
   const [editItem, setEditItem] = useState<Record<string, any> | null>(null);
 
   const { useList, useCreate, useUpdate, useDelete } = useSpecifications;
-  const { data: rawSpecs = [], isLoading } = (useList() as { data: Specification[]; isLoading: boolean });
+  const { data: rawSpecs = [] } = (useList() as { data: Specification[] });
   const createMutation = useCreate();
   const updateMutation = useUpdate();
   const deleteMutation = useDelete();

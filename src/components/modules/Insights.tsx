@@ -5,7 +5,7 @@ import { TrendingUp, AlertTriangle, Lightbulb, Activity, Shield, PoundSterling,
   CheckSquare, Square, Trash2,
 } from 'lucide-react';
 import { toast } from 'sonner';
-import { insightsApi, type Insight as ApiInsight } from '../../services/api';
+import { insightsApi } from '../../services/api';
 import { BulkActionsBar, useBulkSelection } from '../ui/BulkActions';
 import { EmptyState } from '../ui/EmptyState';
 import { BarChart, Bar, PieChart as RechartsPie,
@@ -44,7 +44,7 @@ export function Insights() {
   const [categoryFilter, setCategoryFilter] = useState<CategoryType>('all');
   const [dismissed, setDismissed] = useState<Set<string>>(new Set());
 
-  const { data: allInsights = [], isLoading } = useQuery({
+  const { data: allInsights = [] } = useQuery({
     queryKey: ['insights'],
     queryFn: insightsApi.getAll,
   });

@@ -39,7 +39,7 @@ export default function TempWorks() {
   const [form, setForm] = useState({ title: '', project: '', type: 'Structural Support', designer: '', installer: '', description: '', status: 'design' });
 
   const { useList, useCreate, useUpdate, useDelete } = useTempWorks;
-  const { data: rawTempWorks = [], isLoading } = useList();
+  const { data: rawTempWorks = [] } = useList();
   const createMutation = useCreate();
   const updateMutation = useUpdate();
   const deleteMutation = useDelete();

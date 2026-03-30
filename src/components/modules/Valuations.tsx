@@ -192,7 +192,7 @@ function generateValuationPDF(val: Valuation) {
 export default function Valuations() {
   const _fileInputRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
-  const { data: valuations = [] as any[], isLoading } = useValuations.useList();
+  const { data: valuations = [] as unknown[], isLoading: _isLoading } = useValuations.useList();
   const createMutation = useValuations.useCreate();
   const updateMutation = useValuations.useUpdate();
   const deleteMutation = useValuations.useDelete();

@@ -55,7 +55,7 @@ export default function Variations() {
   const [_selectedVar, setSelectedVar] = useState<Variation | null>(null);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [expandedCards, setExpandedCards] = useState<string[]>([]);
-  const [editItem, setEditItem] = useState<any | null>(null);
+  const [editItem, setEditItem] = useState<Variation | null>(null);
   const [form, setForm] = useState({
     title: '', project: '', subcontractor: '', type: 'addition', value: '', reason: '', description: ''
   });

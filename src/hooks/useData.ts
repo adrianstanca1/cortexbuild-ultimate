@@ -2,6 +2,7 @@
  * CortexBuild Ultimate — Universal Data Hooks
  * Uses React Query for caching, background refresh, and optimistic updates.
  */
+/* eslint-disable react-hooks/rules-of-hooks -- Factory pattern: hooks called inside returned hook functions */
 import { useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
@@ -132,26 +133,23 @@ export const useReportTemplates  = makeHooks<ReportTemplate>('report-templates',
   delete: (id) => reportTemplatesApi.delete(id),
 });
 
-function makeDuplicateHook(key: string, duplicateFn: (id: string) => Promise<unknown>) {
+function makeDuplicateTemplate() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: duplicateFn,
+    mutationFn: (id: string) => reportTemplatesApi.duplicate(id) as Promise<unknown>,
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: [key] });
+      qc.invalidateQueries({ queryKey: ['report-templates'] });
       toast.success('Record duplicated');
     },
     onError: (e: Error) => toast.error(e.message),
   });
 }
 
-function useDuplicateTemplate() {
-  return makeDuplicateHook('report-templates', (id: string) => reportTemplatesApi.duplicate(id) as Promise<unknown>);
-}
-
-export { useDuplicateTemplate };
+export const useDuplicateTemplate = makeDuplicateTemplate;
 
 // ─── Custom hooks for non-standard APIs ──────────────────────────────────────
 
+// eslint-disable-next-line react-hooks/rules-of-hooks -- factory pattern: hooks called inside returned hook functions
 function makeAuditHooks() {
   const qc = useQueryClient();
   function useList() {

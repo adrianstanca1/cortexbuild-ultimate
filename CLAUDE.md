@@ -14,7 +14,7 @@ CortexBuild Ultimate is an AI-Powered Unified Construction Management Platform f
 
 ### Frontend
 ```bash
-cd /root/cortexbuild-work
+cd /Users/adrianstanca/cortexbuild-ultimate
 npm install
 npm run dev              # Dev server on http://localhost:5173
 npm run build            # Production build → dist/
@@ -30,12 +30,22 @@ npx vitest run path/to/file.test.ts
 npx vitest run -t "test name pattern"
 ```
 
+Test files: `src/test/*.test.ts` or `*.test.tsx` alongside components. Setup in `src/test/setup.ts`.
+
+### Error Handling Pattern
+```ts
+.catch((err) => {
+  console.error('Failed to load X:', err);
+  // toast.error('Failed to load X'); // use toast if module imports it
+})
+```
+
 ### Backend
 ```bash
-cd /root/cortexbuild-work/server
+cd /Users/adrianstanca/cortexbuild-ultimate/server
 npm install
 npm run dev              # nodemon auto-reload on port 3001
-npm start                # Production (plain node)
+npm start               # Production (plain node)
 ```
 
 ### PM2 (production)
@@ -125,12 +135,127 @@ Dark industrial theme using CSS variables:
 - `--red-*` — errors, danger
 - `--cyan-*` — info states
 
+## Frontend Structure
+
+```
+src/
+├── components/
+│   ├── modules/     # 50+ lazy-loaded page modules (PascalCase.tsx)
+│   ├── layout/     # Header, Sidebar, etc.
+│   ├── dashboard/  # Dashboard widgets
+│   ├── forms/      # Reusable form components
+│   ├── auth/       # Login, auth pages
+│   └── ui/         # Shared UI (BulkActions, Charts, Skeleton, etc.)
+├── hooks/          # Custom hooks — useData.ts factory pattern
+├── lib/
+│   ├── agents/     # AI agents (change-order-agent, rfi-analyzer, safety-agent, etc.)
+│   ├── api.ts      # API client with JWT handling
+│   ├── eventBus.ts # Event bus for cross-module communication
+│   └── validations.ts
+├── services/       # API service layer (api.ts, ai.ts)
+├── types/          # TypeScript types
+└── context/       # React context (auth, app)
+```
+
+### Data Hooks Pattern
+
+Custom `useData.ts` factory using `makeHooks(name, table, api)`:
+- Generates `use<Data>` hooks from generic CRUD operations
+- All API calls go through service layer
+- Error handling via `useToast` (console.error + toast notifications)
+
+## Backend Routes
+
+```
+server/routes/
+├── generic.js              # Generic CRUD factory + ALLOWED_COLUMNS whitelist
+├── auth.js                # JWT login/register (bcrypt passwords)
+├── ai.js                  # Ollama AI integration (streaming)
+├── ai-conversations.js    # Chat history persistence
+├── files.js / upload.js   # Multer file uploads → server/uploads/
+├── email.js               # Nodemailer + SendGrid with rate limiting
+├── search.js              # Global cross-table search
+├── audit.js               # Audit log reads
+├── permissions.js         # RBAC custom roles
+├── notifications.js       # Real-time notifications
+├── dashboard-data.js      # Dashboard aggregation
+├── financial-reports.js   # Budget/cost reports
+├── insights.js            # ML-powered insights
+├── tender-ai.js           # AI tender analysis
+├── executive-reports.js   # C-suite dashboards
+├── daily-reports-summary.js
+├── project-tasks.js
+├── project-images.js
+├── team-member-data.js
+├── calendar.js
+├── analytics-data.js
+├── weather-data.js
+├── backup.js
+├── metrics.js             # Health metrics (no JWT auth)
+└── deploy.js              # Deployment endpoint (no JWT auth)
+```
+
+## AI Agents
+
+Local Ollama-powered agents in `src/lib/agents/`:
+- **change-order-agent** — Analyzes and suggests change orders
+- **rfi-analyzer** — Processes RFI documents
+- **safety-agent** — Safety incident analysis
+- Additional agents for risk, procurement, and timeline analysis
+
+> **Note:** AI routes use **local Ollama only** — no external AI API calls. External provider configs in ARCHITECTURE.md are aspirational.
+
+## Docker Stack
+
+Full stack via `docker-compose.yml`:
+
+```bash
+docker-compose up -d          # Start all services
+docker-compose logs -f api    # Tail API logs
+docker-compose down           # Stop all services
+```
+
+Services:
+- **postgres** (pgvector:pg16) — Port 5432
+- **redis** (7-alpine) — Port 6379
+- **ollama** — Port 11434
+- **api** — Port 3001
+- **nginx** — Ports 80/443
+- **prometheus** — Port 9090
+- **grafana** — Port 3002
+
+## Commit Conventions
+
+Uses **conventional commits** with scope:
+- `feat:` — New features
+- `fix:` — Bug fixes
+- `chore:` — Maintenance, deps, config
+- `feat(ui):`, `feat(ai):` — Scoped features
+- `fix(nginx):`, `fix(server):` — Scoped fixes
+- `ci:` — CI/CD changes
+- `docs:` — Documentation
+
+## Workflows
+
+### Adding a New Module
+1. Create `src/components/modules/ModuleName.tsx`
+2. Add data hook to `src/hooks/useData.ts` if needed
+3. Register in `src/App.tsx` via `React.lazy()`
+4. Add sidebar navigation entry
+
+### Adding a New Backend Route
+1. If generic CRUD: add table to `ALLOWED_COLUMNS` in `generic.js` and register in `server/index.js`
+2. If specialized: create `server/routes/<name>.js` with domain logic
+
 ## Key Files
 
 | Path | Purpose |
 |------|---------|
-| `src/App.tsx` | Main router with lazy-loaded modules |
+| `src/App.tsx` | Main router with 50+ lazy-loaded modules |
+| `src/hooks/useData.ts` | makeHooks factory for CRUD data hooks |
 | `src/services/api.ts` | API client with JWT handling |
+| `src/lib/eventBus.ts` | Event bus for cross-module communication |
+| `src/lib/agents/` | AI agents (change-order, RFI, safety, etc.) |
 | `src/lib/store/` | Zustand state stores |
 | `server/index.js` | Express + WebSocket entry point, all route registrations |
 | `server/routes/generic.js` | Generic CRUD factory + ALLOWED_COLUMNS whitelist |
@@ -140,3 +265,4 @@ Dark industrial theme using CSS variables:
 | `server/lib/ws-broadcast.js` | Broadcast helper for real-time updates |
 | `prisma/schema.prisma` | Schema reference (85+ models, not used at runtime) |
 | `server/migrations/` | Ordered SQL migration files |
+| `docker-compose.yml` | Full stack: postgres, redis, ollama, nginx, prometheus, grafana |
