@@ -2,7 +2,6 @@
  * CortexBuild Ultimate — Universal Data Hooks
  * Uses React Query for caching, background refresh, and optimistic updates.
  */
-/* eslint-disable react-hooks/rules-of-hooks -- Factory pattern: hooks called inside returned hook functions */
 import { useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
@@ -133,6 +132,7 @@ export const useReportTemplates  = makeHooks<ReportTemplate>('report-templates',
   delete: (id) => reportTemplatesApi.delete(id),
 });
 
+/* eslint-disable react-hooks/rules-of-hooks -- factory pattern: hooks called inside returned function */
 function makeDuplicateTemplate() {
   const qc = useQueryClient();
   return useMutation({
@@ -149,7 +149,7 @@ export const useDuplicateTemplate = makeDuplicateTemplate;
 
 // ─── Custom hooks for non-standard APIs ──────────────────────────────────────
 
-// eslint-disable-next-line react-hooks/rules-of-hooks -- factory pattern: hooks called inside returned hook functions
+/* eslint-disable react-hooks/rules-of-hooks -- factory pattern: hooks called inside returned function */
 function makeAuditHooks() {
   const qc = useQueryClient();
   function useList() {

@@ -45,7 +45,7 @@ Test files: `src/test/*.test.ts` or `*.test.tsx` alongside components. Setup in 
 cd /Users/adrianstanca/cortexbuild-ultimate/server
 npm install
 npm run dev              # nodemon auto-reload on port 3001
-npm start               # Production (plain node)
+npm start                # Production (plain node)
 ```
 
 ### PM2 (production)
