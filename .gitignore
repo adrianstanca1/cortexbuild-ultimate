@@ -20,3 +20,8 @@ fix_any.js
 backups/
 server/doc/
 server/doc/
+
+# SSL certificates - NEVER commit private keys
+nginx/ssl/*.pem
+nginx/ssl/*.key
+.env.docker
