@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import rateLimiter, { RATE_LIMITER_MAX, RATE_LIMITER_WINDOW_MS } from '../../server/middleware/rateLimiter';
 
-function createMockReq(path: string, token = 'Bearer test-token') {
+function createMockReq(path: string, token = 'Bearer test-token-12345') {
   return {
     path,
     headers: { authorization: token },
