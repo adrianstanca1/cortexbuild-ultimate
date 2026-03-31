@@ -192,7 +192,8 @@ function generateValuationPDF(val: Valuation) {
 export default function Valuations() {
   const _fileInputRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
-  const { data: valuations = [] as unknown[], isLoading: _isLoading } = useValuations.useList();
+  const { data: rawValuations = [], isLoading: _isLoading } = useValuations.useList();
+  const valuations = rawValuations as Valuation[];
   const createMutation = useValuations.useCreate();
   const updateMutation = useValuations.useUpdate();
   const deleteMutation = useValuations.useDelete();
@@ -290,7 +291,7 @@ export default function Valuations() {
     }
   };
 
-  const filteredValuations = valuations.filter((v: any) => {
+  const filteredValuations = valuations.filter((v: Valuation) => {
     const matchesSearch = v.ref.toLowerCase().includes(searchTerm.toLowerCase()) ||
       v.project.toLowerCase().includes(searchTerm.toLowerCase()) ||
       v.contractor.toLowerCase().includes(searchTerm.toLowerCase());
@@ -298,9 +299,9 @@ export default function Valuations() {
     return matchesSearch && matchesStatus;
   });
 
-  const totalSubmitted = valuations.filter((v: any) => v.status === 'submitted' || v.status === 'valued').reduce((sum, v: any) => sum + v.thisApplication, 0);
-  const totalCertified = valuations.filter((v: any) => v.status === 'certified' || v.status === 'paid').reduce((sum, v: any) => sum + v.certifiedValue, 0);
-  const totalPaid = valuations.filter((v: any) => v.status === 'paid').reduce((sum, v: any) => sum + v.certifiedValue, 0);
+  const totalSubmitted = valuations.filter((v: Valuation) => v.status === 'submitted' || v.status === 'valued').reduce((sum: number, v: Valuation) => sum + v.thisApplication, 0);
+  const totalCertified = valuations.filter((v: Valuation) => v.status === 'certified' || v.status === 'paid').reduce((sum: number, v: Valuation) => sum + v.certifiedValue, 0);
+  const totalPaid = valuations.filter((v: Valuation) => v.status === 'paid').reduce((sum: number, v: Valuation) => sum + v.certifiedValue, 0);
 
   return (
     <div className="p-6 space-y-6">
@@ -413,7 +414,7 @@ export default function Valuations() {
               </tr>
             </thead>
             <tbody className="text-white">
-              {filteredValuations.map((val) => {
+              {filteredValuations.map((val: Valuation) => {
                 const status = statusConfig[val.status];
                 const isSelected = selectedIds.has(String(val.id));
                 return (
@@ -474,7 +475,7 @@ export default function Valuations() {
                         </button>
                         <button
                           type="button"
-                          onClick={() => setEditItem({ ...val, project: val.project || '', contractorName: val.contractor_name || '', clientName: val.client_name || '', periodStart: val.period_start || '', periodEnd: val.period_end || '', originalValue: String(val.original_value || ''), variations: String(val.variations || ''), totalValue: String(val.total_value || ''), retention: String(val.retention || ''), amountDue: String(val.amount_due || ''), status: val.status })}
+                          onClick={() => setEditItem({ ...val, contractorName: val.contractor || '', periodStart: val.periodStart || '', periodEnd: val.periodEnd || '', originalValue: String(val.grossValue || ''), variations: String(0), totalValue: String(val.grossValue || ''), retention: String(val.retention || ''), amountDue: String(val.thisApplication || ''), status: val.status })}
                           className="p-1.5 hover:bg-gray-700 rounded text-gray-400 hover:text-white"
                           title="Edit"
                         >

@@ -197,7 +197,7 @@ export function ReportTemplates() {
             })}
           </div>
 
-          {isLoading ? (
+          {_isLoading ? (
             <div className="p-8 flex justify-center">
               <RefreshCw className="h-6 w-6 text-blue-500 animate-spin" />
             </div>

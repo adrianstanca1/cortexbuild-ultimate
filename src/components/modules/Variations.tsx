@@ -55,7 +55,12 @@ export default function Variations() {
   const [_selectedVar, setSelectedVar] = useState<Variation | null>(null);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [expandedCards, setExpandedCards] = useState<string[]>([]);
-  const [editItem, setEditItem] = useState<Variation | null>(null);
+  // Edit form state - uses strings for form inputs but converts to numbers for API
+  interface EditFormState extends Omit<Variation, 'value' | 'originalValue'> {
+    value: string;
+    originalValue: string;
+  }
+  const [editItem, setEditItem] = useState<EditFormState | null>(null);
   const [form, setForm] = useState({
     title: '', project: '', subcontractor: '', type: 'addition', value: '', reason: '', description: ''
   });
@@ -137,8 +142,8 @@ export default function Variations() {
           subcontractor: editItem.subcontractor,
           type: editItem.type,
           status: editItem.status,
-          value: parseFloat(editItem.value) || 0,
-          original_value: parseFloat(editItem.originalValue) || 0,
+          value: typeof editItem.value === 'string' ? parseFloat(editItem.value) || 0 : editItem.value || 0,
+          original_value: typeof editItem.originalValue === 'string' ? parseFloat(editItem.originalValue) || 0 : editItem.originalValue || 0,
           impact: editItem.impact,
           description: editItem.description,
           reason: editItem.reason,
@@ -342,7 +347,7 @@ export default function Variations() {
                     {isExpanded && (
                       <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
                         <button type="button" className="p-2 hover:bg-gray-700 rounded"><Eye size={16} className="text-gray-400" /></button>
-                        <button type="button" onClick={() => setEditItem({ ...variation, ref: variation.ref || '', title: variation.title || '', project: variation.project || '', subcontractor: variation.subcontractor || '', status: variation.status, type: variation.type || '', value: String(variation.value || ''), originalValue: String(variation.originalValue ?? ''), impact: variation.impact || '', submittedDate: variation.submittedDate || '', description: variation.description || '', reason: variation.reason || '' })} className="p-2 hover:bg-gray-700 rounded"><Edit size={16} className="text-gray-400" /></button>
+                        <button type="button" onClick={() => setEditItem({ ...variation, ref: variation.ref || '', title: variation.title || '', project: variation.project || '', subcontractor: variation.subcontractor || '', status: variation.status, type: variation.type || '', value: String(variation.value || 0), originalValue: String(variation.originalValue ?? 0), impact: variation.impact || 'neutral', submittedDate: variation.submittedDate || '', description: variation.description || '', reason: variation.reason || '' })} className="p-2 hover:bg-gray-700 rounded"><Edit size={16} className="text-gray-400" /></button>
                         <button
                           type="button"
                           onClick={() => handleDelete(String(variation.id))}

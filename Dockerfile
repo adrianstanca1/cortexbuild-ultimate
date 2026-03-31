@@ -1,4 +1,4 @@
-# CortexBuild Ultimate - Production Dockerfile
+# CortexBuild Ultimate - Production Dockerfile (Vite)
 FROM node:22-alpine AS base
 
 # Install dependencies
@@ -15,7 +15,7 @@ COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 
 ENV NODE_ENV=development
-EXPOSE 3000
+EXPOSE 5173
 
 CMD ["npm", "run", "dev"]
 
@@ -25,32 +25,46 @@ WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 
-ENV NEXT_TELEMETRY_DISABLED=1
 ENV NODE_ENV=production
 
 RUN npm run build
 
-# Production runner
-FROM base AS runner
-WORKDIR /app
+# Production runner - Lightweight static server
+FROM nginx:alpine AS runner
 
-ENV NODE_ENV=production
-ENV NEXT_TELEMETRY_DISABLED=1
+# Remove default nginx config
+RUN rm -rf /usr/share/nginx/html/*
 
-RUN addgroup --system --gid 1001 nodejs
-RUN adduser --system --uid 1001 nextjs
+# Copy built static files
+COPY --from=builder /app/dist /usr/share/nginx/html
 
-COPY --from=builder /app/public ./public
-COPY --from=builder /app/.next/standalone ./
-COPY --from=builder /app/.next/static ./.next/static
+# Copy nginx configuration for SPA
+COPY <<EOF /etc/nginx/conf.d/default.conf
+server {
+    listen 80;
+    server_name _;
+    root /usr/share/nginx/html;
+    index index.html;
 
-RUN chown -R nextjs:nodejs /app
+    # Handle client-side routing (SPA)
+    location / {
+        try_files \$uri \$uri/ /index.html;
+    }
 
-USER nextjs
+    # Gzip compression
+    gzip on;
+    gzip_vary on;
+    gzip_min_length 1024;
+    gzip_types text/plain text/css text/xml text/javascript application/javascript application/xml+rss application/json;
 
-EXPOSE 3000
+    # Cache static assets
+    location ~* \\.(?:ico|css|js|gif|jpe?g|png|svg|woff2?|ttf|eot)\$ {
+        expires 1y;
+        add_header Cache-Control "public, immutable";
+    }
+}
+EOF
 
-ENV PORT=3000
-ENV HOSTNAME="0.0.0.0"
+EXPOSE 80
 
-CMD ["node", "server.js"]
+CMD ["nginx", "-g", "daemon off;"]
