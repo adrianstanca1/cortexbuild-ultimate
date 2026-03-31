@@ -5,6 +5,7 @@ on:
     branches:
       - main
     paths:
+      - '.github/workflows/backend-deploy.yml'
       - 'server/**' # Only trigger if changes are in the server directory
       - 'package.json'
       - 'package-lock.json'
@@ -58,17 +59,15 @@ jobs:
     - name: Checkout code
       uses: actions/checkout@v5
 
-    - name: Deploy to VPS
-      uses: appleboy/ssh-action@v1.0.3
+    - name: Start SSH Agent
+      uses: webfactory/ssh-agent@v0.8.0
       with:
-        host: ${{ secrets.SSH_HOST }}
-        username: ${{ secrets.SSH_USERNAME }}
-        key: ${{ secrets.SSH_PRIVATE_KEY }}
-        passphrase: ${{ secrets.SSH_PASSPHRASE }}
-        script: |
-          cd /root/cortexbuild-work # Navigate to the directory containing docker-compose.yml
-          echo "Pulling latest Docker image..."
-          docker compose pull api
-          echo "Restarting API service..."
-          docker compose up -d api
-          echo "Deployment complete. Please check the API status on the VPS."
+        ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
+    
+    - name: Deploy to VPS
+      run: |
+        mkdir -p ~/.ssh
+        ssh-keyscan ${{ secrets.SSH_HOST }} >> ~/.ssh/known_hosts
+        chmod 600 ~/.ssh/known_hosts
+        ssh ${{ secrets.SSH_USERNAME }}@${{ secrets.SSH_HOST }} "cd /root/cortexbuild-work && docker compose pull api && docker compose up -d api"
+        echo "Deployment complete. Please check the API status on the VPS."
