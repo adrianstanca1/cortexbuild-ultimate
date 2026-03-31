@@ -16,6 +16,7 @@ import {
   PieChart, FileEdit, Coins, FileStack, Construction,
   Signpost, Trash2, Leaf, GraduationCap, Award, BadgeCheck,
   Building, Ruler, Eye, ChevronDown, Mail, Lock, FileEdit as FileTemplate,
+  Box, DollarSign, Upload,
 } from 'lucide-react';
 
 interface SidebarProps {
@@ -73,6 +74,7 @@ const NAV_GROUPS: { id: string; label: string; accent: string; items: NavItem[] 
       { id: 'change-orders',       label: 'Change Orders',          icon: GitPullRequest,   badge: null },
       { id: 'variations',          label: 'Variations',             icon: FileEdit,         badge: null },
       { id: 'valuations',          label: 'Valuations',             icon: Coins,            badge: null },
+      { id: 'cost-management',     label: 'Cost Management',        icon: DollarSign,       badge: 'NEW' },
       { id: 'prequalification',    label: 'Prequalification',       icon: BadgeCheck,       badge: null },
       { id: 'lettings',            label: 'Lettings',               icon: Building,         badge: null },
     ],
@@ -88,6 +90,8 @@ const NAV_GROUPS: { id: string; label: string; accent: string; items: NavItem[] 
       { id: 'plant',           label: 'Plant & Equipment',   icon: Wrench,        badge: null },
       { id: 'materials',       label: 'Materials',          icon: Package,       badge: null },
       { id: 'rfis',            label: 'RFIs',               icon: HardHat,       badge: null },
+      { id: 'bim-viewer',      label: 'BIM Viewer',         icon: Box,           badge: 'NEW' },
+      { id: 'submittal-management', label: 'Submittals',     icon: Upload,        badge: 'NEW' },
       { id: 'temp-works',      label: 'Temp Works',          icon: Construction,   badge: null },
       { id: 'measuring',       label: 'Measuring',           icon: Ruler,         badge: null },
     ],
@@ -126,6 +130,16 @@ const NAV_GROUPS: { id: string; label: string; accent: string; items: NavItem[] 
       { id: 'sustainability',     label: 'Sustainability',          icon: Leaf,           badge: null },
       { id: 'training',           label: 'Training',               icon: GraduationCap,  badge: null },
       { id: 'certifications',     label: 'Certifications',          icon: Award,          badge: null },
+    ],
+  },
+  {
+    id: 'ai-desktop',
+    label: 'AI & Desktop',
+    accent: '#8b5cf6', // purple
+    items: [
+      { id: 'ai-vision',      label: 'AI Vision',      icon: Eye,            badge: 'NEW' },
+      { id: 'dev-sandbox',    label: 'Dev Sandbox',   icon: Bot,            badge: 'DEV' },
+      { id: 'my-desktop',     label: 'My Desktop',    icon: LayoutDashboard, badge: 'BETA' },
     ],
   },
 ];

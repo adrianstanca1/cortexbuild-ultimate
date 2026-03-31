@@ -73,6 +73,16 @@ const EmailHistory        = lazy(() => import('./components/modules/EmailHistory
 const PermissionsManager  = lazy(() => import('./components/modules/PermissionsManager').then(m => ({ default: m.PermissionsManager })));
 const ReportTemplates     = lazy(() => import('./components/modules/ReportTemplates').then(m => ({ default: m.ReportTemplates })));
 
+// ── New Construction Features ─
+const BIMViewer           = lazy(() => import('./components/modules/BIMViewer'));
+const CostManagement      = lazy(() => import('./components/modules/CostManagement'));
+const SubmittalManagement = lazy(() => import('./components/modules/SubmittalManagement'));
+
+// ── AI & Desktop Features ─
+const DevSandbox          = lazy(() => import('./components/modules/DevSandbox'));
+const AIVision            = lazy(() => import('./components/modules/AIVision'));
+const MyDesktop           = lazy(() => import('./components/modules/MyDesktop'));
+
 const ModuleLoader = () => (
   <div className="flex items-center justify-center h-64">
     <div className="w-8 h-8 border-4 border-orange-500/30 border-t-orange-500 rounded-full animate-spin" />
@@ -167,6 +177,12 @@ function AppShell() {
       case 'email-history':         return <EmailHistory />;
       case 'permissions':           return <PermissionsManager />;
       case 'report-templates':      return <ReportTemplates />;
+      case 'bim-viewer':            return <BIMViewer />;
+      case 'cost-management':       return <CostManagement />;
+      case 'submittal-management':  return <SubmittalManagement />;
+      case 'dev-sandbox':           return <DevSandbox />;
+      case 'ai-vision':             return <AIVision />;
+      case 'my-desktop':            return <MyDesktop />;
       default:                      return <Dashboard />;
     }
   };

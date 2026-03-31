@@ -66,6 +66,12 @@ const MODULE_LABELS: Record<Module, string> = {
   'email-history':      'Email History',
   'permissions':        'Permissions & Roles',
   'report-templates':   'Report Templates',
+  'bim-viewer':         'BIM 3D Model Viewer',
+  'cost-management':    'Cost Management & Budgets',
+  'submittal-management': 'Submittal Management',
+  'dev-sandbox':        'AI Development Sandbox',
+  'ai-vision':          'AI Vision Analytics',
+  'my-desktop':         'Virtual Desktop Environment',
 };
 
 // Module accent colors for the breadcrumb bar

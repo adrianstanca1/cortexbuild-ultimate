@@ -64,7 +64,13 @@ export type Module =
   | 'measuring'
   | 'email-history'
   | 'permissions'
-  | 'report-templates';
+  | 'report-templates'
+  | 'bim-viewer'
+  | 'cost-management'
+  | 'submittal-management'
+  | 'dev-sandbox'
+  | 'ai-vision'
+  | 'my-desktop';
 
 export type ProjectStatus = 'planning' | 'active' | 'on_hold' | 'completed' | 'archived';
 export type TaskStatus = 'todo' | 'in_progress' | 'review' | 'done' | 'blocked';
