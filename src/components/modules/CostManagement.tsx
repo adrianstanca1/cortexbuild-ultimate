@@ -3,12 +3,10 @@ import {
   DollarSign,
   TrendingUp,
   TrendingDown,
-  AlertTriangle,
   CheckCircle,
   Plus,
   FileText,
   Calculator,
-  PieChart,
   Target
 } from 'lucide-react';
 
@@ -210,7 +208,7 @@ const CostManagement: React.FC = () => {
                     ? 'bg-white text-gray-900 shadow-sm'
                     : 'text-gray-600 hover:text-gray-900'
                 }`}
-                onClick={() => setActiveTab(tab as any)}
+                onClick={() => setActiveTab(tab as ('budget' | 'forecast' | 'variance'))}
               >
                 {tab.charAt(0).toUpperCase() + tab.slice(1)} Analysis
               </button>

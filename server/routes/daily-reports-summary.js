@@ -15,7 +15,7 @@ router.post('/summary', async (req, res) => {
     }
 
     const totalWorkers = reports.reduce((s, r) => s + Number(r.workers_on_site ?? 0), 0);
-    const totalIssues = reports.filter(r => r.issues_delays || r.issues?.length).length;
+    const totalIssues = reports.filter(r => r.issues?.length || r.delays?.length).length;
     const projectNames = [...new Set(reports.map(r => r.project || projectName).filter(Boolean))];
     const dates = reports.map(r => r.report_date).filter(Boolean).sort();
 
@@ -34,7 +34,7 @@ ${reports.map(r => {
   const workers = r.workers_on_site ?? 0;
   const weather = r.weather || 'N/A';
   const activities = Array.isArray(r.activities) ? r.activities.map((a) => a.description || a.title || '').filter(Boolean).slice(0, 2) : [];
-  const issues = r.issues_delays || '';
+  const issues = (r.issues || r.delays) ? String(r.issues || r.delays).substring(0, 60) : '';
   return `[${d}] ${workers} workers | ${weather}${activities.length ? ' | ' + activities.join(', ') : ''}${issues ? ' | ⚠️ ' + String(issues).substring(0, 60) : ''}`;
 }).join('\n')}`;
 
@@ -89,8 +89,8 @@ router.post('/weekly-pdf', async (req, res) => {
     <tbody>
       ${reports.map((r) => {
         const date = r.report_date ? new Date(String(r.report_date)).toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' }) : 'N/A';
-        const activities = Array.isArray(r.activities) ? r.activities.map((a) => a.description || '').filter(Boolean).join('; ') : (r.work_carried_out || '');
-        const issues = r.issues_delays ? String(r.issues_delays) : '';
+        const activities = Array.isArray(r.activities) ? r.activities.map((a) => a.description || '').filter(Boolean).join('; ') : '';
+        const issues = (r.issues || r.delays) ? String(r.issues || r.delays) : '';
         return `<tr>
           <td><strong>${date}</strong></td>
           <td>${r.weather || 'N/A'}</td>

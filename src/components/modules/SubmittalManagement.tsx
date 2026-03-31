@@ -6,8 +6,8 @@ import {
   CheckCircle,
   XCircle,
   AlertCircle,
-  User,
-  Calendar,
+
+
   Filter,
   Download,
   MessageSquare,
@@ -32,18 +32,12 @@ interface Submittal {
   trade: string;
 }
 
-interface Comment {
-  id: string;
-  author: string;
-  date: Date;
-  content: string;
-  type: 'comment' | 'approval' | 'rejection';
-}
+
 
 const SubmittalManagement: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'all' | 'pending' | 'approved' | 'rejected'>('all');
   const [selectedSubmittal, setSelectedSubmittal] = useState<Submittal | null>(null);
-  const [showFilters, setShowFilters] = useState(false);
+  const [_showFilters, _setShowFilters] = useState(false);
 
   const [submittals] = useState<Submittal[]>([
     {
@@ -279,7 +273,7 @@ const SubmittalManagement: React.FC = () => {
                     ? 'bg-white text-gray-900 shadow-sm'
                     : 'text-gray-600 hover:text-gray-900'
                 }`}
-                onClick={() => setActiveTab(key as any)}
+                onClick={() => setActiveTab(key as 'all' | 'pending' | 'approved' | 'rejected')}
               >
                 {label}
               </button>

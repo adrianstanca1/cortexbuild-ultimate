@@ -1,12 +1,10 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { 
-  Monitor, X, Minus, Square, Terminal, Activity, FileText, 
+  X, Minus, Square, Terminal, Activity, FileText, 
   Settings, Calculator, Folder, Globe, Code, Search,
-  Power, Clock, Wifi, Battery, Volume2, Grid,
-  Calendar as CalendarIcon, Plus, MoreVertical,
+  Wifi, Battery, Volume2, Grid,
   MessageSquare, HardHat, Layers, Shield
 } from 'lucide-react';
-
 interface AppInfo {
   id: string;
   name: string;
@@ -84,14 +82,65 @@ const MyDesktop: React.FC = () => {
     return () => clearInterval(timer);
   }, []);
 
+  // --- Window Management Callbacks ---
+  const focusWindow = useCallback((windowId: string) => {
+    setWindows(prev => prev.map(w => 
+      w.id === windowId 
+        ? { ...w, zIndex: maxZIndex + 1 }
+        : w
+    ));
+    setActiveWindowId(windowId);
+    setMaxZIndex(prev => prev + 1);
+  }, [maxZIndex, setActiveWindowId]);
+
+  const toggleMinimize = useCallback((windowId: string) => {
+    setWindows(prev => prev.map(w => 
+      w.id === windowId 
+        ? { ...w, isMinimized: !w.isMinimized }
+        : w
+    ));
+  }, []);
+
+  const toggleMaximize = useCallback((windowId: string) => {
+    setWindows(prev => prev.map(w => 
+      w.id === windowId 
+        ? { ...w, isMaximized: !w.isMaximized }
+        : w
+    ));
+  }, []);
+
+  const closeWindow = useCallback((windowId: string) => {
+    setWindows(prev => prev.filter(w => w.id !== windowId));
+    if (activeWindowId === windowId) {
+      setActiveWindowId(null);
+    } 
+  }, [activeWindowId]);
+
+  const handleMouseDown = useCallback((e: React.MouseEvent, windowId: string) => {
+    if ((e.target as HTMLElement).closest('.window-controls')) return;
+    
+    const window = windows.find(w => w.id === windowId);
+    if (!window) return;
+
+    focusWindow(windowId);
+    
+    dragRef.current = {
+      id: windowId,
+      startX: e.clientX,
+      startY: e.clientY,
+      initX: window.position.x,
+      initY: window.position.y
+    };
+  }, [windows, focusWindow]);
+
   // App Content Components
-  const getAppContent = (appId: string): React.ReactNode => {
+  const getAppContent = useCallback((appId: string): React.ReactNode => {
     switch (appId) {
       case 'terminal':
         return (
           <div className="bg-black text-green-400 font-mono p-4 h-full overflow-auto">
             <div>Welcome to CortexBuild Terminal v2.5</div>
-            <div className="mt-2">Type 'help' for available commands</div>
+            <div>Type 'help' for available commands</div>
             <div className="mt-4 flex items-center">
               <span className="text-blue-400">admin@cortexbuild:~$</span>
               <span className="ml-2 bg-green-400 w-2 h-4 animate-pulse"></span>
@@ -103,10 +152,10 @@ const MyDesktop: React.FC = () => {
         return (
           <div className="p-4 h-full bg-gray-50">
             <div className="border-b pb-3 mb-3">
-              <div className="text-sm text-gray-600">C:\Users\Admin\Documents</div>
+              <div className="text-sm text-gray-600">C:/Users/Admin/Documents</div>
             </div>
             <div className="space-y-2">
-              {['Project_Alpha.pdf', 'Budget_2025.xlsx', 'Safety_Report.docx', 'Meeting_Notes.txt'].map((file, index) => (
+              {[ 'Project_Alpha.pdf', 'Budget_2025.xlsx', 'Safety_Report.docx', 'Meeting_Notes.txt' ].map((file, index) => (
                 <div key={index} className="flex items-center gap-3 p-2 hover:bg-gray-100 rounded">
                   <FileText className="h-4 w-4 text-blue-600" />
                   <span className="text-sm">{file}</span>
@@ -121,7 +170,7 @@ const MyDesktop: React.FC = () => {
           <div className="p-4 bg-gray-100 h-full">
             <div className="bg-black text-white text-right p-3 mb-3 font-mono text-lg">0</div>
             <div className="grid grid-cols-4 gap-2">
-              {['C', '±', '%', '÷', '7', '8', '9', '×', '4', '5', '6', '-', '1', '2', '3', '+', '0', '0', '.', '='].map((btn) => (
+              {[ 'C', '±', '%', '÷', '7', '8', '9', '×', '4', '5', '6', '-', '1', '2', '3', '+', '0', '0', '.', '=' ].map((btn) => (
                 <button key={btn} className="bg-gray-300 hover:bg-gray-400 p-3 rounded text-sm font-medium">
                   {btn}
                 </button>
@@ -185,10 +234,9 @@ const MyDesktop: React.FC = () => {
           </div>
         );
     }
-  };
+  }, []);
 
-  // Window Management
-  const openApp = (app: AppInfo) => {
+  const openApp = useCallback((app: AppInfo) => {
     const existingWindow = windows.find(w => w.appId === app.id);
     if (existingWindow) {
       // Bring to front and restore if minimized
@@ -200,7 +248,7 @@ const MyDesktop: React.FC = () => {
     }
 
     const newWindow: WindowState = {
-      id: `window-${Date.now()}`,
+      id: `window-${Math.random().toString(36).substring(2, 9)}`,
       appId: app.id,
       title: app.name,
       icon: app.icon,
@@ -219,58 +267,7 @@ const MyDesktop: React.FC = () => {
     setActiveWindowId(newWindow.id);
     setMaxZIndex(prev => prev + 1);
     setStartMenuOpen(false);
-  };
-
-  const closeWindow = (windowId: string) => {
-    setWindows(prev => prev.filter(w => w.id !== windowId));
-    if (activeWindowId === windowId) {
-      setActiveWindowId(null);
-    }
-  };
-
-  const focusWindow = (windowId: string) => {
-    setWindows(prev => prev.map(w => 
-      w.id === windowId 
-        ? { ...w, zIndex: maxZIndex + 1 }
-        : w
-    ));
-    setActiveWindowId(windowId);
-    setMaxZIndex(prev => prev + 1);
-  };
-
-  const toggleMinimize = (windowId: string) => {
-    setWindows(prev => prev.map(w => 
-      w.id === windowId 
-        ? { ...w, isMinimized: !w.isMinimized }
-        : w
-    ));
-  };
-
-  const toggleMaximize = (windowId: string) => {
-    setWindows(prev => prev.map(w => 
-      w.id === windowId 
-        ? { ...w, isMaximized: !w.isMaximized }
-        : w
-    ));
-  };
-
-  // Mouse events for window dragging
-  const handleMouseDown = (e: React.MouseEvent, windowId: string) => {
-    if ((e.target as HTMLElement).closest('.window-controls')) return;
-    
-    const window = windows.find(w => w.id === windowId);
-    if (!window) return;
-
-    focusWindow(windowId);
-    
-    dragRef.current = {
-      id: windowId,
-      startX: e.clientX,
-      startY: e.clientY,
-      initX: window.position.x,
-      initY: window.position.y
-    };
-  };
+  }, [windows, maxZIndex, focusWindow, toggleMinimize, getAppContent]);
 
   useEffect(() => {
     const handleMouseMove = (e: MouseEvent) => {
@@ -322,7 +319,8 @@ const MyDesktop: React.FC = () => {
       <div className="absolute inset-0 opacity-5">
         <div className="w-full h-full bg-repeat" 
              style={{
-               backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.4'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")`
+               // Correctly escaped SVG data URL
+               backgroundImage: 'url("data:image/svg+xml,%3Csvg width=\'60\' height=\'60\' viewBox=\'0 0 60 60\' xmlns=\'http://www.w3.org/2000/svg\'%3E%3Cg fill=\'none\' fill-rule=\'evenodd\'%3E%3Cg fill=\'%23ffffff\' fill-opacity=\'0.4\'%3E%3Cpath d=\'M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z\'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")'
              }}>
         </div>
       </div>
@@ -500,12 +498,10 @@ const MyDesktop: React.FC = () => {
                     <button
                       key={app.id}
                       onClick={() => openApp(app)}
-                      className="flex flex-col items-center gap-2 p-3 rounded-lg hover:bg-slate-800 transition-colors group"
+                      className="flex flex-col items-center gap-1 p-2 rounded hover:bg-slate-800 transition-colors"
                     >
-                      <div className={`${app.color} p-2 rounded-lg group-hover:scale-105 transition-transform`}>
-                        <app.icon className="h-6 w-6 text-white" />
-                      </div>
-                      <span className="text-xs text-gray-300 text-center leading-tight">{app.name}</span>
+                      <app.icon className={`h-6 w-6 ${app.color}`} />
+                      <span className="text-white text-xs text-center">{app.name}</span>
                     </button>
                   ))}
                 </div>
@@ -513,43 +509,22 @@ const MyDesktop: React.FC = () => {
             ))}
           </div>
 
-          {/* Power Options */}
-          <div className="p-4 border-t border-slate-700">
-            <div className="flex justify-between">
-              <button className="flex items-center gap-2 text-gray-400 hover:text-white text-sm">
-                <Settings className="h-4 w-4" />
-                Settings
-              </button>
-              <button className="flex items-center gap-2 text-gray-400 hover:text-white text-sm">
-                <Power className="h-4 w-4" />
-                Power
-              </button>
-            </div>
+          {/* User Profile */}
+          <div className="p-4 border-t border-slate-700 flex items-center gap-3">
+            <div className="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center text-white font-bold">AS</div>
+            <div className="text-sm text-white">Adrian Stanca</div>
           </div>
         </div>
       )}
 
-      {/* System Stats Panel */}
+      {/* System Stats Overlay */}
       {showSystemStats && (
-        <div className="absolute bottom-14 right-4 bg-slate-900/95 backdrop-blur border border-slate-700 rounded-lg shadow-xl p-4 w-64">
-          <h3 className="text-white font-semibold mb-3">System Performance</h3>
-          <div className="space-y-3 text-sm">
-            <div className="flex justify-between text-gray-300">
-              <span>CPU Usage:</span>
-              <span>12%</span>
-            </div>
-            <div className="flex justify-between text-gray-300">
-              <span>Memory:</span>
-              <span>4.2GB / 16GB</span>
-            </div>
-            <div className="flex justify-between text-gray-300">
-              <span>Network:</span>
-              <span>↑ 1.2MB/s ↓ 3.1MB/s</span>
-            </div>
-            <div className="flex justify-between text-gray-300">
-              <span>Uptime:</span>
-              <span>2d 14h 32m</span>
-            </div>
+        <div className="absolute bottom-16 right-4 bg-slate-900/95 backdrop-blur border border-slate-700 rounded-lg shadow-2xl p-4 text-white text-sm w-64">
+          <h3 className="font-semibold mb-2">System Metrics</h3>
+          <div className="space-y-1">
+            <div className="flex justify-between"><span>CPU:</span><span>12%</span></div>
+            <div className="flex justify-between"><span>RAM:</span><span>8GB / 48GB</span></div>
+            <div className="flex justify-between"><span>Network:</span><span>50Mbps</span></div>
           </div>
         </div>
       )}

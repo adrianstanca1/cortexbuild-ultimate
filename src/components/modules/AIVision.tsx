@@ -1,10 +1,9 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { 
-  Camera, Eye, AlertTriangle, CheckCircle2, Shield, 
-  AlertOctagon, Play, Pause, Zap, ScanLine, 
+  Camera, Eye, AlertTriangle, CheckCircle2, 
+  AlertOctagon, Play, Pause, ScanLine, 
   Target, Activity, Upload, Image as ImageIcon, 
-  Maximize2, X, CheckSquare, ArrowRight, FileText,
-  Download, RefreshCw, Settings, Filter
+  X, ArrowRight, FileText
 } from 'lucide-react';
 
 type AnalysisMode = 'SAFETY' | 'QUALITY' | 'PROGRESS';
@@ -46,7 +45,6 @@ const AIVision: React.FC = () => {
   
   // Filter State
   const [severityFilter, setSeverityFilter] = useState<'ALL' | 'CRITICAL' | 'WARNING' | 'INFO' | 'PASS'>('ALL');
-  const [dateFilter, setDateFilter] = useState<'TODAY' | 'WEEK' | 'MONTH' | 'ALL'>('ALL');
 
   // Refs
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -55,93 +53,10 @@ const AIVision: React.FC = () => {
   const intervalRef = useRef<number | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // Camera Management
-  const startCamera = async () => {
-    try {
-      setCameraError(null);
-      const stream = await navigator.mediaDevices.getUserMedia({ 
-        video: { 
-          width: { ideal: 1280 }, 
-          height: { ideal: 720 }, 
-          facingMode: 'environment' 
-        } 
-      });
-      
-      if (videoRef.current) {
-        videoRef.current.srcObject = stream;
-        streamRef.current = stream;
-        setIsActive(true);
-        
-        // Start periodic analysis
-        intervalRef.current = window.setInterval(captureAndAnalyze, 5000);
-      }
-    } catch (error) {
-      setCameraError('Camera access denied or unavailable');
-      console.error('Camera error:', error);
-    }
-  };
-
-  const stopCamera = () => {
-    if (streamRef.current) {
-      streamRef.current.getTracks().forEach(track => track.stop());
-      streamRef.current = null;
-    }
-    if (intervalRef.current) {
-      clearInterval(intervalRef.current);
-      intervalRef.current = null;
-    }
-    setIsActive(false);
-  };
-
-  const captureAndAnalyze = useCallback(async () => {
-    if (!videoRef.current || !canvasRef.current) return;
-    
-    const canvas = canvasRef.current;
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return;
-
-    // Capture frame
-    canvas.width = videoRef.current.videoWidth;
-    canvas.height = videoRef.current.videoHeight;
-    ctx.drawImage(videoRef.current, 0, 0);
-    
-    // Convert to base64
-    const imageData = canvas.toDataURL('image/jpeg', 0.8);
-    
-    // Analyze image
-    await analyzeImage(imageData);
-  }, [mode]);
-
-  // Image Analysis
-  const analyzeImage = async (imageData: string) => {
-    setIsProcessing(true);
-    
-    try {
-      // Simulate AI vision analysis - in production, call your AI service
-      const mockDetections = generateMockDetections(mode);
-      
-      const result: AnalysisResult = {
-        detections: mockDetections,
-        summary: {
-          total: mockDetections.length,
-          critical: mockDetections.filter(d => d.severity === 'CRITICAL').length,
-          warnings: mockDetections.filter(d => d.severity === 'WARNING').length,
-          passed: mockDetections.filter(d => d.severity === 'PASS').length,
-        },
-        processedAt: new Date().toISOString()
-      };
-      
-      setAnalysisResults(prev => [result, ...prev.slice(0, 19)]); // Keep last 20 results
-      
-    } catch (error) {
-      console.error('Analysis failed:', error);
-    } finally {
-      setIsProcessing(false);
-    }
-  };
+  // --- Helper Callbacks (defined before their usage in other callbacks) ---
 
   // Mock detection generator based on analysis mode
-  const generateMockDetections = (analysisMode: AnalysisMode): Detection[] => {
+  const generateMockDetections = useCallback((analysisMode: AnalysisMode): Detection[] => {
     const baseDetections = {
       SAFETY: [
         {
@@ -205,10 +120,57 @@ const AIVision: React.FC = () => {
         h: 0.1 + Math.random() * 0.1
       }
     }));
-  };
+  }, []); 
+
+  // Image Analysis
+  const analyzeImage = useCallback(async (_imageData: string) => { 
+    setIsProcessing(true);
+    
+    try {
+      const mockDetections = generateMockDetections(mode);
+      
+      const result: AnalysisResult = {
+        detections: mockDetections,
+        summary: {
+          total: mockDetections.length,
+          critical: mockDetections.filter(d => d.severity === 'CRITICAL').length,
+          warnings: mockDetections.filter(d => d.severity === 'WARNING').length,
+          passed: mockDetections.filter(d => d.severity === 'PASS').length,
+        },
+        processedAt: new Date().toISOString()
+      };
+      
+      setAnalysisResults(prev => [result, ...prev.slice(0, 19)]); // Keep last 20 results
+      
+    } catch (error) {
+      console.error('Analysis failed:', error);
+    } finally {
+      setIsProcessing(false);
+    }
+  }, [mode, generateMockDetections, setAnalysisResults]);
+
+  // Camera Capture and Analysis
+  const captureAndAnalyze = useCallback(async () => {
+    if (!videoRef.current || !canvasRef.current) return;
+    
+    const canvas = canvasRef.current;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
+    // Capture frame
+    canvas.width = videoRef.current.videoWidth;
+    canvas.height = videoRef.current.videoHeight;
+    ctx.drawImage(videoRef.current, 0, 0);
+    
+    // Convert to base64
+    const imageData = canvas.toDataURL('image/jpeg', 0.8);
+    
+    // Analyze image
+    await analyzeImage(imageData);
+  }, [analyzeImage]); 
 
   // File handling
-  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const _handleFileSelect = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file && file.type.startsWith('image/')) {
       const reader = new FileReader();
@@ -219,7 +181,7 @@ const AIVision: React.FC = () => {
       };
       reader.readAsDataURL(file);
     }
-  };
+  }, [analyzeImage, setStaticImage]);
 
   const handleDrop = useCallback((e: React.DragEvent) => {
     e.preventDefault();
@@ -235,7 +197,7 @@ const AIVision: React.FC = () => {
       };
       reader.readAsDataURL(file);
     }
-  }, []);
+  }, [analyzeImage, setStaticImage]);
 
   const handleDragOver = useCallback((e: React.DragEvent) => {
     e.preventDefault();
@@ -247,18 +209,56 @@ const AIVision: React.FC = () => {
     setDragActive(false);
   }, []);
 
+  // Camera Management functions (now defined after necessary callbacks)
+  const startCamera = async () => {
+    try {
+      setCameraError(null);
+      const stream = await navigator.mediaDevices.getUserMedia({ 
+        video: { 
+          width: { ideal: 1280 }, 
+          height: { ideal: 720 }, 
+          facingMode: 'environment' 
+        } 
+      });
+      
+      if (videoRef.current) {
+        videoRef.current.srcObject = stream;
+        streamRef.current = stream;
+        setIsActive(true);
+        
+        // Start periodic analysis
+        intervalRef.current = window.setInterval(captureAndAnalyze, 5000);
+      }
+    } catch (error) {
+      setCameraError('Camera access denied or unavailable');
+      console.error('Camera error:', error);
+    }
+  };
+
+  const stopCamera = useCallback(() => {
+    if (streamRef.current) {
+      streamRef.current.getTracks().forEach(track => track.stop());
+      streamRef.current = null;
+    }
+    if (intervalRef.current) {
+      clearInterval(intervalRef.current);
+      intervalRef.current = null;
+    }
+    setIsActive(false);
+  }, []);
+
+  // Cleanup effect (needs stopCamera)
+  useEffect(() => {
+    return () => {
+      stopCamera();
+    };
+  }, [stopCamera]);
+
   // Filter results
   const filteredResults = analysisResults.filter(result => {
     if (severityFilter === 'ALL') return true;
     return result.detections.some(d => d.severity === severityFilter);
   });
-
-  // Cleanup
-  useEffect(() => {
-    return () => {
-      stopCamera();
-    };
-  }, []);
 
   const getSeverityColor = (severity: Detection['severity']) => {
     switch (severity) {
@@ -511,71 +511,30 @@ const AIVision: React.FC = () => {
                         <div className="text-xs text-green-600 font-medium">Passed</div>
                       </div>
                     </div>
+                    <div className="space-y-2 mt-4">
+                      <div className="flex justify-between items-center text-sm">
+                        <span>Total Detections:</span>
+                        <span className="font-medium">{analysisResults[0].summary.total}</span>
+                      </div>
+                      <div className="flex justify-between items-center text-sm">
+                        <span>Processed At:</span>
+                        <span className="font-medium">{new Date(analysisResults[0].processedAt).toLocaleTimeString()}</span>
+                      </div>
+                    </div>
                   </>
                 )}
               </div>
             </div>
           )}
 
-          {/* Analysis History */}
-          <div className="card">
-            <div className="card-header">
-              <h3 className="text-lg font-semibold flex items-center gap-2">
-                <FileText className="h-5 w-5 text-gray-600" />
-                Analysis History
-              </h3>
-            </div>
-            <div className="card-content">
-              <div className="space-y-3 max-h-80 overflow-y-auto">
-                {analysisResults.length === 0 ? (
-                  <div className="text-center text-gray-500 text-sm py-8">
-                    No analysis results yet
-                  </div>
-                ) : (
-                  analysisResults.map((result, index) => (
-                    <div key={index} className="p-3 border border-gray-200 rounded-lg">
-                      <div className="flex justify-between items-center mb-2">
-                        <span className="text-sm font-medium">{mode} Analysis</span>
-                        <span className="text-xs text-gray-500">
-                          {new Date(result.processedAt).toLocaleTimeString()}
-                        </span>
-                      </div>
-                      <div className="flex justify-between text-xs text-gray-600">
-                        <span>Total: {result.summary.total}</span>
-                        <span className="text-red-600">Critical: {result.summary.critical}</span>
-                        <span className="text-orange-600">Warnings: {result.summary.warnings}</span>
-                      </div>
-                    </div>
-                  ))
-                )}
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Hidden file input */}
-      <input
-        ref={fileInputRef}
-        type="file"
-        accept="image/*"
-        onChange={handleFileSelect}
-        className="hidden"
-      />
-      
-      {/* Hidden canvas for frame capture */}
-      <canvas ref={canvasRef} className="hidden" />
-      
-      {/* Detection Detail Modal */}
-      {selectedDetection && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg max-w-md w-full">
-            <div className="p-6">
-              <div className="flex justify-between items-start mb-4">
-                <div className={`flex items-center gap-2 px-2 py-1 rounded-lg ${getSeverityColor(selectedDetection.severity)}`}>
-                  {getSeverityIcon(selectedDetection.severity)}
-                  <span className="font-medium text-sm">{selectedDetection.severity}</span>
-                </div>
+          {/* Individual Detection Details */}
+          {selectedDetection && (
+            <div className="card">
+              <div className="card-header flex justify-between items-center">
+                <h3 className="text-lg font-semibold flex items-center gap-2">
+                  <FileText className="h-5 w-5 text-gray-600" />
+                  Detection Details
+                </h3>
                 <button
                   onClick={() => setSelectedDetection(null)}
                   className="text-gray-500 hover:text-gray-700"
@@ -583,23 +542,43 @@ const AIVision: React.FC = () => {
                   <X className="h-5 w-5" />
                 </button>
               </div>
-              
-              <h3 className="text-lg font-semibold mb-2">{selectedDetection.title}</h3>
-              <p className="text-gray-700 mb-4">{selectedDetection.description}</p>
-              
-              <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mb-4">
-                <h4 className="font-medium text-blue-900 mb-1">Recommendation</h4>
-                <p className="text-blue-800 text-sm">{selectedDetection.recommendation}</p>
-              </div>
-              
-              <div className="text-sm text-gray-600 space-y-1">
-                <div>Detected: {selectedDetection.timestamp}</div>
-                <div>Confidence: {Math.round(selectedDetection.confidence * 100)}%</div>
+              <div className="card-content space-y-3">
+                <div className={`p-3 border rounded-lg ${getSeverityColor(selectedDetection.severity)}`}>
+                  <div className="flex items-center gap-2 text-sm font-medium">
+                    {getSeverityIcon(selectedDetection.severity)}
+                    {selectedDetection.severity.toUpperCase()}
+                  </div>
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-gray-700 mb-1">Title:</p>
+                  <p className="text-gray-900">{selectedDetection.title}</p>
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-gray-700 mb-1">Description:</p>
+                  <p className="text-gray-900">{selectedDetection.description}</p>
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-gray-700 mb-1">Recommendation:</p>
+                  <p className="text-gray-900">{selectedDetection.recommendation}</p>
+                </div>
+                <div className="flex justify-between items-center text-sm text-gray-600">
+                  <span>Timestamp:</span>
+                  <span>{selectedDetection.timestamp}</span>
+                </div>
+                <div className="flex justify-between items-center text-sm text-gray-600">
+                  <span>Confidence:</span>
+                  <span>{Math.round(selectedDetection.confidence * 100)}%</span>
+                </div>
+                {selectedDetection.coordinates && (
+                  <div className="text-sm text-gray-600">
+                    Coordinates: ({selectedDetection.coordinates.x.toFixed(2)}, {selectedDetection.coordinates.y.toFixed(2)}, {selectedDetection.coordinates.w.toFixed(2)}, {selectedDetection.coordinates.h.toFixed(2)})
+                  </div>
+                )}
               </div>
             </div>
-          </div>
+          )}
         </div>
-      )}
+      </div>
     </div>
   );
 };

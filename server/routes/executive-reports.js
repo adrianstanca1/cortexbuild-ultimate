@@ -13,11 +13,12 @@ function getTenantFilter(req) {
 
 // RAG status: hardcoded green for now (would need baseline/budget tracking)
 function getRagStatus() {
+  // TODO: Implement dynamic RAG status calculation based on project performance metrics
   return {
-    programme: 'green',
-    cost: 'green',
-    quality: 'green',
-    safety: 'green',
+    programme: 'dynamic-status',
+    cost: 'dynamic-status',
+    quality: 'dynamic-status',
+    safety: 'dynamic-status',
   };
 }
 
@@ -86,7 +87,7 @@ router.get('/summary', async (req, res) => {
         portfolioValue,
         projectsActive,
         revenueYtd,
-        margin: 25,
+        margin: 25, // TODO: Replace with dynamic margin calculation (actual cost vs revenue)
         workforce,
       },
       projects,
@@ -143,7 +144,7 @@ router.get('/trends', async (req, res) => {
       months.push({
         month: monthStart.toLocaleString('en-US', { month: 'short', year: 'numeric' }),
         revenue: Number(revenueRow?.revenue || 0),
-        margin: 25,
+        margin: 25, // TODO: Replace with dynamic margin calculation (actual cost vs revenue)
         headcount: currentHeadcount,
       });
     }

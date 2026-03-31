@@ -10,7 +10,6 @@ import {
   Layers,
   AlertTriangle,
   CheckCircle,
-  FileText,
   Box
 } from 'lucide-react';
 
@@ -38,7 +37,7 @@ interface ClashDetection {
 const BIMViewer: React.FC = () => {
   const viewerRef = useRef<HTMLDivElement>(null);
   const [activeModel, setActiveModel] = useState<BIMModel | null>(null);
-  const [models, setModels] = useState<BIMModel[]>([
+  const [models] = useState<BIMModel[]>([
     {
       id: '1',
       name: 'Main Building Structure',
@@ -95,7 +94,8 @@ const BIMViewer: React.FC = () => {
   const [selectedLayers, setSelectedLayers] = useState<string[]>(['structure', 'hvac', 'electrical']);
 
   useEffect(() => {
-    if (!viewerRef.current) return;
+    const currentViewerRef = viewerRef.current;
+    if (!currentViewerRef) return;
 
     // Initialize Three.js BIM viewer placeholder
     const canvas = document.createElement('canvas');
@@ -107,7 +107,7 @@ const BIMViewer: React.FC = () => {
     
     const ctx = canvas.getContext('2d');
     if (ctx) {
-      canvas.width = viewerRef.current.clientWidth;
+      canvas.width = currentViewerRef.clientWidth;
       canvas.height = 400;
       
       // Draw placeholder BIM scene
@@ -131,11 +131,11 @@ const BIMViewer: React.FC = () => {
       ctx.fillText('Interactive model will load here', canvas.width / 2 - 100, canvas.height - 20);
     }
     
-    viewerRef.current.appendChild(canvas);
+    currentViewerRef.appendChild(canvas);
     
     return () => {
-      if (viewerRef.current?.contains(canvas)) {
-        viewerRef.current.removeChild(canvas);
+      if (currentViewerRef.contains(canvas)) {
+        currentViewerRef.removeChild(canvas);
       }
     };
   }, [activeModel]);
