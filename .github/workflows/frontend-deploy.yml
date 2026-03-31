@@ -35,9 +35,6 @@ jobs:
       run: |
         mkdir -p ~/.ssh
         echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
-        # Diagnostic: Verify the private key file is created (will be redacted by GitHub Actions)
-        echo "Contents of ~/.ssh/id_rsa (should be redacted):"
-        cat ~/.ssh/id_rsa
         chmod 600 ~/.ssh/id_rsa
         ssh-keyscan ${{ secrets.SSH_HOST }} >> ~/.ssh/known_hosts
         chmod 644 ~/.ssh/known_hosts
