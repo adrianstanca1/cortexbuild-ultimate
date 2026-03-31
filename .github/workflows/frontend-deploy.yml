@@ -1,0 +1,42 @@
+name: Frontend CI/CD
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20' # Or your specific Node.js version
+
+    - name: Install dependencies
+      run: npm install
+
+    - name: Build frontend
+      run: npm run build
+
+    - name: Deploy to VPS
+      uses: appleboy/ssh-action@v1.0.3
+      with:
+        host: ${{ secrets.SSH_HOST }}
+        username: ${{ secrets.SSH_USERNAME }}
+        key: ${{ secrets.SSH_PRIVATE_KEY }}
+        passphrase: ${{ secrets.SSH_PASSPHRASE }}
+        script: |
+          # Create target directory if it doesn't exist on the VPS
+          ssh -o StrictHostKeyChecking=no ${{ secrets.SSH_USERNAME }}@${{ secrets.SSH_HOST }} "mkdir -p /var/www/cortexbuild-ultimate/dist"
+          
+          # Use rsync to synchronize the build output
+          rsync -avz --delete -e "ssh -o StrictHostKeyChecking=no -p 22" ./dist/ ${{ secrets.SSH_USERNAME }}@${{ secrets.SSH_HOST }}:/var/www/cortexbuild-ultimate/dist/
+
+    - name: Verify deployment (optional)
+      run: echo "Deployment command initiated. Please check your GitHub Actions for successful file transfer."

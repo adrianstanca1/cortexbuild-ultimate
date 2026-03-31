@@ -30,20 +30,36 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   // On mount, restore session from localStorage
   useEffect(() => {
-    const token   = getToken();
-    const stored  = getStoredUser();
-    if (token && stored) {
-      // Use Promise.resolve().then() to defer state updates and avoid synchronous setState in effect
-      Promise.resolve().then(() => {
-        setUser(stored as unknown as Profile);
-        setLoading(false);
-      });
-    } else {
-      // Defer setLoading call to avoid synchronous setState in effect
-      Promise.resolve().then(() => {
-        setLoading(false);
-      });
-    }
+    const loadUser = async () => {
+      const token = getToken();
+      const stored = getStoredUser();
+
+      if (token && stored) {
+        try {
+          // Validate token with a backend call
+          const res = await fetch(`${API_BASE}/auth/me`, {
+            headers: {
+              'Authorization': `Bearer ${token}`
+            }
+          });
+          if (res.ok) {
+            const userData = await res.json();
+            setUser(userData as Profile);
+            setStoredUser(userData); // Refresh stored user data
+          } else {
+            console.warn('Token validation failed, logging out.', res.status);
+            clearToken();
+            setUser(null);
+          }
+        } catch (error) {
+          console.error('Error validating token:', error);
+          clearToken();
+          setUser(null);
+        }
+      }
+      setLoading(false);
+    };
+    loadUser();
   }, []);
 
   const signIn = async (email: string, password: string) => {
