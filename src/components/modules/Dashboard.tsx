@@ -26,6 +26,7 @@ import { useTasks } from '../../hooks/useTasks';
 import { useProjects } from '../../hooks/useProjects';
 import { ModuleBreadcrumbs } from '../ui/Breadcrumbs';
 import { type Module } from '../../types';
+import { KPICardSkeleton, ChartSkeleton } from '../ui/Skeleton';
 
 type AnyRow = Record<string, unknown>;
 
@@ -185,6 +186,7 @@ function ActivityItem({ user, action, module, time, accent, delay = 0 }: {
 
 // ─── Main Dashboard ───────────────────────────────────────────────────────
 export function Dashboard() {
+  const [isLoading, setIsLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<'overview' | 'projects' | 'finance' | 'safety' | 'activity'>('overview');
   const [dashboardKpi, setDashboardKpi] = useState<{
     activeProjects?: number; totalRevenue?: number; outstanding?: number;
@@ -262,7 +264,7 @@ export function Dashboard() {
   }, []);
 
   // eslint-disable-next-line react-hooks/set-state-in-effect
-  useEffect(() => { setMounted(true); }, []);
+  useEffect(() => { setMounted(true); setIsLoading(false); }, []);
 
   useEffect(() => {
     dashboardApi.getOverview().then(d => setDashboardKpi(d.kpi)).catch((err) => {
