@@ -1,3 +1,12 @@
+/**
+ * CortexBuild Ultimate - Export Utilities
+ * 
+ * PDF and CSV export functionality for data tables and reports.
+ * Uses jsPDF and autoTable for PDF generation.
+ * 
+ * @packageDocumentation
+ */
+
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 

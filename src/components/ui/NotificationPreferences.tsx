@@ -80,7 +80,13 @@ export function NotificationPreferences({ onClose }: { onClose?: () => void }) {
   };
 
   return (
-    <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" onClick={onClose}>
+    <div 
+    className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" 
+    onClick={onClose}
+    role="dialog"
+    aria-modal="true"
+    aria-label="Notification preferences"
+  >
       <div 
         className="bg-base-100 rounded-lg shadow-2xl w-full max-w-3xl max-h-[80vh] overflow-hidden flex flex-col"
         onClick={e => e.stopPropagation()}
@@ -89,7 +95,11 @@ export function NotificationPreferences({ onClose }: { onClose?: () => void }) {
         <div className="p-4 border-b border-base-300 flex items-center justify-between">
           <h2 className="text-lg font-bold">Notification Preferences</h2>
           {onClose && (
-            <button onClick={onClose} className="btn btn-sm btn-ghost btn-circle">
+            <button 
+        onClick={onClose} 
+        className="btn btn-sm btn-ghost btn-circle"
+        aria-label="Close preferences"
+      >
               <X className="w-5 h-5" />
             </button>
           )}
@@ -172,7 +182,13 @@ export function NotificationPreferences({ onClose }: { onClose?: () => void }) {
         {/* Footer */}
         <div className="p-4 border-t border-base-300 flex justify-end gap-2">
           <button onClick={onClose} className="btn btn-ghost">Cancel</button>
-          <button onClick={savePreferences} className="btn btn-primary">Save Preferences</button>
+          <button 
+        onClick={savePreferences} 
+        className="btn btn-primary"
+        aria-label="Save notification preferences"
+      >
+        Save Preferences
+      </button>
         </div>
       </div>
     </div>

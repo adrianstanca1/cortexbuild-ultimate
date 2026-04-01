@@ -1,4 +1,13 @@
 /**
+ * CortexBuild Ultimate - Runtime Validation Schemas
+ * 
+ * Zod schemas for API response validation and type safety.
+ * Provides runtime type checking for all new feature data.
+ * 
+ * @packageDocumentation
+ */
+
+/**
  * Runtime Validation Schemas for CortexBuild Ultimate
  * Using Zod for API response validation and type safety
  */

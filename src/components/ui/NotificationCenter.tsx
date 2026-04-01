@@ -110,7 +110,13 @@ export function NotificationCenter({ onClose }: NotificationCenterProps) {
   };
 
   return (
-    <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" onClick={onClose}>
+    <div 
+  className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" 
+  onClick={onClose}
+  role="dialog"
+  aria-modal="true"
+  aria-label="Notification center"
+>
       <div 
         className="bg-base-100 rounded-lg shadow-2xl w-full max-w-2xl max-h-[80vh] overflow-hidden flex flex-col"
         onClick={e => e.stopPropagation()}
@@ -132,12 +138,20 @@ export function NotificationCenter({ onClose }: NotificationCenterProps) {
             </div>
           </div>
           <div className="flex items-center gap-2">
-            <button onClick={markAllAsRead} className="btn btn-sm btn-ghost gap-1">
+            <button 
+        onClick={markAllAsRead} 
+        className="btn btn-sm btn-ghost gap-1"
+        aria-label="Mark all notifications as read"
+      >
               <CheckCheck className="w-4 h-4" />
               Mark all read
             </button>
             {onClose && (
-              <button onClick={onClose} className="btn btn-sm btn-ghost btn-circle">
+              <button 
+        onClick={onClose} 
+        className="btn btn-sm btn-ghost btn-circle"
+        aria-label="Close notification center"
+      >
                 <X className="w-5 h-5" />
               </button>
             )}
@@ -168,14 +182,18 @@ export function NotificationCenter({ onClose }: NotificationCenterProps) {
             <option value="alert">Alert</option>
           </select>
           <div className="flex-1" />
-          <button className="btn btn-sm btn-ghost">
+          <button className="btn btn-sm btn-ghost" aria-label="Notification settings">
             <Settings className="w-4 h-4" />
             Settings
           </button>
         </div>
 
         {/* Notifications List */}
-        <div className="flex-1 overflow-y-auto">
+        <div 
+        className="flex-1 overflow-y-auto" 
+        role="list"
+        aria-label="Notifications list"
+      >
           {filteredNotifications.length === 0 ? (
             <div className="p-8 text-center text-gray-500">
               <Bell className="w-12 h-12 mx-auto mb-2 opacity-20" />
@@ -185,6 +203,7 @@ export function NotificationCenter({ onClose }: NotificationCenterProps) {
             filteredNotifications.map(notification => (
               <div
                 key={notification.id}
+        role="listitem"
                 className={`p-4 border-b border-base-300 hover:bg-base-200 transition-colors ${
                   !notification.read ? 'bg-primary/5' : ''
                 }`}

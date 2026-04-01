@@ -1,3 +1,12 @@
+/**
+ * CortexBuild Ultimate - AI Search
+ * 
+ * Semantic search powered by Ollama AI.
+ * Provides intelligent search across projects, documents, and other modules.
+ * 
+ * @packageDocumentation
+ */
+
 import { eventBus } from './eventBus';
 
 interface AISearchResult {
