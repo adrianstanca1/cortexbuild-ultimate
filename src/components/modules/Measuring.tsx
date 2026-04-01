@@ -98,7 +98,7 @@ export default function Measuring() {
         <div className="card p-4"><div className="flex items-center gap-3"><div className="w-10 h-10 rounded-lg bg-amber-500/10 flex items-center justify-center"><MapPin className="text-amber-400" size={20} /></div><div><p className="text-gray-400 text-xs">Pending</p><p className="text-2xl font-bold text-amber-400">{pendingCount}</p></div></div></div>
       </div>
       <div className="card p-4">
-        <input type="text" placeholder="Search measurements..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white mb-4" />
+        <input type="text" placeholder="Search measurements..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="w-full px-4 py-2 input input-bordered text-white mb-4" />
         {typedMeasurements.length === 0 ? (
           <div className="text-center py-8 text-gray-400">Loading measurements...</div>
         ) : (
@@ -184,12 +184,12 @@ export default function Measuring() {
             <div className="p-6 space-y-4">
               <div>
                 <label htmlFor="measLoc" className="block text-gray-400 text-xs mb-1">Location *</label>
-                <input id="measLoc" type="text" value={form.location} onChange={e => setForm(f => ({ ...f, location: e.target.value }))} placeholder="e.g. Building A - Level 2" className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500" />
+                <input id="measLoc" type="text" value={form.location} onChange={e => setForm(f => ({ ...f, location: e.target.value }))} placeholder="e.g. Building A - Level 2" className="w-full px-3 py-2 input input-bordered text-white placeholder-gray-500" />
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label htmlFor="measType" className="block text-gray-400 text-xs mb-1">Survey Type</label>
-                  <select id="measType" value={form.surveyType} onChange={e => setForm(f => ({ ...f, surveyType: e.target.value }))} className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white">
+                  <select id="measType" value={form.surveyType} onChange={e => setForm(f => ({ ...f, surveyType: e.target.value }))} className="w-full px-3 py-2 input input-bordered text-white">
                     <option value="">Select type...</option>
                     <option value="Area Survey">Area Survey</option>
                     <option value="Level Survey">Level Survey</option>
@@ -200,17 +200,17 @@ export default function Measuring() {
                 </div>
                 <div>
                   <label htmlFor="measSurveyor" className="block text-gray-400 text-xs mb-1">Surveyor</label>
-                  <input id="measSurveyor" type="text" value={form.surveyor} onChange={e => setForm(f => ({ ...f, surveyor: e.target.value }))} placeholder="Surveyor name" className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500" />
+                  <input id="measSurveyor" type="text" value={form.surveyor} onChange={e => setForm(f => ({ ...f, surveyor: e.target.value }))} placeholder="Surveyor name" className="w-full px-3 py-2 input input-bordered text-white placeholder-gray-500" />
                 </div>
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label htmlFor="measDate" className="block text-gray-400 text-xs mb-1">Survey Date</label>
-                  <input id="measDate" type="date" value={form.surveyDate} onChange={e => setForm(f => ({ ...f, surveyDate: e.target.value }))} className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white" />
+                  <input id="measDate" type="date" value={form.surveyDate} onChange={e => setForm(f => ({ ...f, surveyDate: e.target.value }))} className="w-full px-3 py-2 input input-bordered text-white" />
                 </div>
                 <div>
                   <label htmlFor="measStatus" className="block text-gray-400 text-xs mb-1">Status</label>
-                  <select id="measStatus" value={form.status} onChange={e => setForm(f => ({ ...f, status: e.target.value }))} className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white">
+                  <select id="measStatus" value={form.status} onChange={e => setForm(f => ({ ...f, status: e.target.value }))} className="w-full px-3 py-2 input input-bordered text-white">
                     <option value="pending">Pending</option>
                     <option value="scheduled">Scheduled</option>
                     <option value="completed">Completed</option>
@@ -220,11 +220,11 @@ export default function Measuring() {
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label htmlFor="measArea" className="block text-gray-400 text-xs mb-1">Total Area</label>
-                  <input id="measArea" type="number" value={form.totalArea} onChange={e => setForm(f => ({ ...f, totalArea: e.target.value }))} placeholder="0.00" className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500" />
+                  <input id="measArea" type="number" value={form.totalArea} onChange={e => setForm(f => ({ ...f, totalArea: e.target.value }))} placeholder="0.00" className="w-full px-3 py-2 input input-bordered text-white placeholder-gray-500" />
                 </div>
                 <div>
                   <label htmlFor="measUnit" className="block text-gray-400 text-xs mb-1">Unit</label>
-                  <select id="measUnit" value={form.unit} onChange={e => setForm(f => ({ ...f, unit: e.target.value }))} className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white">
+                  <select id="measUnit" value={form.unit} onChange={e => setForm(f => ({ ...f, unit: e.target.value }))} className="w-full px-3 py-2 input input-bordered text-white">
                     <option value="m²">m²</option>
                     <option value="m³">m³</option>
                     <option value="lin m">lin m</option>
@@ -253,12 +253,12 @@ export default function Measuring() {
             <div className="p-6 space-y-4">
               <div>
                 <label htmlFor="editMeasLoc" className="block text-gray-400 text-xs mb-1">Location *</label>
-                <input id="editMeasLoc" type="text" value={editItem.location} onChange={e => setEditItem(item => item ? { ...item, location: e.target.value } : null)} placeholder="e.g. Building A - Level 2" className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500" />
+                <input id="editMeasLoc" type="text" value={editItem.location} onChange={e => setEditItem(item => item ? { ...item, location: e.target.value } : null)} placeholder="e.g. Building A - Level 2" className="w-full px-3 py-2 input input-bordered text-white placeholder-gray-500" />
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label htmlFor="editMeasType" className="block text-gray-400 text-xs mb-1">Survey Type</label>
-                  <select id="editMeasType" value={editItem.surveyType} onChange={e => setEditItem(item => item ? { ...item, surveyType: e.target.value } : null)} className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white">
+                  <select id="editMeasType" value={editItem.surveyType} onChange={e => setEditItem(item => item ? { ...item, surveyType: e.target.value } : null)} className="w-full px-3 py-2 input input-bordered text-white">
                     <option value="">Select type...</option>
                     <option value="Area Survey">Area Survey</option>
                     <option value="Level Survey">Level Survey</option>
@@ -269,17 +269,17 @@ export default function Measuring() {
                 </div>
                 <div>
                   <label htmlFor="editMeasSurveyor" className="block text-gray-400 text-xs mb-1">Surveyor</label>
-                  <input id="editMeasSurveyor" type="text" value={editItem.surveyor} onChange={e => setEditItem(item => item ? { ...item, surveyor: e.target.value } : null)} placeholder="Surveyor name" className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500" />
+                  <input id="editMeasSurveyor" type="text" value={editItem.surveyor} onChange={e => setEditItem(item => item ? { ...item, surveyor: e.target.value } : null)} placeholder="Surveyor name" className="w-full px-3 py-2 input input-bordered text-white placeholder-gray-500" />
                 </div>
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label htmlFor="editMeasDate" className="block text-gray-400 text-xs mb-1">Survey Date</label>
-                  <input id="editMeasDate" type="date" value={editItem.surveyDate} onChange={e => setEditItem(item => item ? { ...item, surveyDate: e.target.value } : null)} className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white" />
+                  <input id="editMeasDate" type="date" value={editItem.surveyDate} onChange={e => setEditItem(item => item ? { ...item, surveyDate: e.target.value } : null)} className="w-full px-3 py-2 input input-bordered text-white" />
                 </div>
                 <div>
                   <label htmlFor="editMeasStatus" className="block text-gray-400 text-xs mb-1">Status</label>
-                  <select id="editMeasStatus" value={editItem.status} onChange={e => setEditItem(item => item ? { ...item, status: e.target.value } : null)} className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white">
+                  <select id="editMeasStatus" value={editItem.status} onChange={e => setEditItem(item => item ? { ...item, status: e.target.value } : null)} className="w-full px-3 py-2 input input-bordered text-white">
                     <option value="pending">Pending</option>
                     <option value="scheduled">Scheduled</option>
                     <option value="completed">Completed</option>
@@ -289,11 +289,11 @@ export default function Measuring() {
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label htmlFor="editMeasArea" className="block text-gray-400 text-xs mb-1">Total Area</label>
-                  <input id="editMeasArea" type="number" value={editItem.totalArea} onChange={e => setEditItem(item => item ? { ...item, totalArea: e.target.value } : null)} placeholder="0.00" className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500" />
+                  <input id="editMeasArea" type="number" value={editItem.totalArea} onChange={e => setEditItem(item => item ? { ...item, totalArea: e.target.value } : null)} placeholder="0.00" className="w-full px-3 py-2 input input-bordered text-white placeholder-gray-500" />
                 </div>
                 <div>
                   <label htmlFor="editMeasUnit" className="block text-gray-400 text-xs mb-1">Unit</label>
-                  <select id="editMeasUnit" value={editItem.unit} onChange={e => setEditItem(item => item ? { ...item, unit: e.target.value } : null)} className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white">
+                  <select id="editMeasUnit" value={editItem.unit} onChange={e => setEditItem(item => item ? { ...item, unit: e.target.value } : null)} className="w-full px-3 py-2 input input-bordered text-white">
                     <option value="m²">m²</option>
                     <option value="m³">m³</option>
                     <option value="lin m">lin m</option>

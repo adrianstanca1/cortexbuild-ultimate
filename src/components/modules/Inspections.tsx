@@ -292,7 +292,7 @@ export function Inspections() {
                 const scoreColour = getScoreColour(score);
                 const defectCount = Number(i.defect_count??0);
                 return (
-                  <div key={id} className="bg-gray-800 border border-gray-700 rounded-xl overflow-hidden hover:border-gray-600 transition-colors">
+                  <div key={id} className="card bg-base-200 overflow-hidden hover:border-gray-600 transition-colors">
                     <div className="p-4 cursor-pointer hover:bg-gray-750" onClick={()=>setExpanded(isExp?null:id)}>
                       <div className="flex items-start justify-between gap-4">
                         <button type="button" onClick={e => { e.stopPropagation(); toggle(id); }}>
@@ -363,7 +363,7 @@ export function Inspections() {
             inspections.filter(i => Number(i.defect_count??0) > 0).map(i => {
               const defectCount = Number(i.defect_count??0);
               return (
-                <div key={String(i.id??'')} className="bg-gray-800 border border-gray-700 rounded-xl p-4">
+                <div key={String(i.id??'')} className="card bg-base-200 p-4">
                   <div className="flex items-start justify-between gap-3">
                     <div className="flex-1 min-w-0">
                       <p className="font-semibold text-white">{String(i.title??'Untitled')}</p>
@@ -387,7 +387,7 @@ export function Inspections() {
             <div className="text-center py-16 text-gray-500 bg-gray-800 rounded-xl border border-gray-700"><Clock size={40} className="mx-auto mb-3 opacity-30"/><p>No scheduled inspections</p></div>
           ) : (
             inspections.filter(i => i.status === 'Scheduled').map(i => (
-              <div key={String(i.id??'')} className="bg-gray-800 border border-gray-700 rounded-xl p-4">
+              <div key={String(i.id??'')} className="card bg-base-200 p-4">
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="font-semibold text-white">{String(i.title??'Untitled')}</p>

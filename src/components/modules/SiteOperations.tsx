@@ -356,7 +356,7 @@ const handleSaveDelay = async () => {
           {/* New Entry Modal */}
           {showNewEntry && (
             <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-              <div className="bg-gray-800 border border-gray-700 rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+              <div className="input input-bordered max-w-2xl w-full max-h-[90vh] overflow-y-auto">
                 <div className="sticky top-0 bg-gray-800 border-b border-gray-700 px-6 py-4 flex items-center justify-between">
                   <h2 className="text-lg font-semibold text-gray-100">New Daily Report</h2>
                   <button type="button" onClick={() => setShowNewEntry(false)} className="text-gray-400 hover:text-gray-300">
@@ -544,7 +544,7 @@ const handleSaveDelay = async () => {
                 const isServiceSoon = nextService && new Date(nextService) <= new Date(Date.now() + 14 * 24 * 60 * 60 * 1000);
 
                 return (
-                  <div key={id} className="bg-gray-800 border border-gray-700 rounded-lg p-4 space-y-3">
+                  <div key={id} className="input input-bordered p-4 space-y-3">
                     <div className="flex items-start justify-between">
                       <div className="flex items-center gap-2 flex-1 min-w-0">
                         <button type="button" onClick={e => { e.stopPropagation(); toggle(id); }}>
@@ -688,7 +688,7 @@ const handleSaveDelay = async () => {
             </div>
             <button
               onClick={() => setShowNewDelay(true)}
-              className="flex items-center gap-2 px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded font-medium text-sm transition-colors whitespace-nowrap"
+              className="flex items-center gap-2 px-4 py-2 btn btn-error rounded font-medium text-sm transition-colors whitespace-nowrap"
             >
               <Plus size={16} />
               Log Delay
@@ -778,7 +778,7 @@ const handleSaveDelay = async () => {
           {/* New Delay Modal */}
           {showNewDelay && (
             <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-              <div className="bg-gray-800 border border-gray-700 rounded-lg max-w-2xl w-full">
+              <div className="input input-bordered max-w-2xl w-full">
                 <div className="bg-gray-800 border-b border-gray-700 px-6 py-4 flex items-center justify-between">
                   <h2 className="text-lg font-semibold text-gray-100">Log Delay</h2>
                   <button type="button" onClick={() => setShowNewDelay(false)} className="text-gray-400 hover:text-gray-300">
@@ -871,7 +871,7 @@ const handleSaveDelay = async () => {
                   <div className="flex gap-3 pt-4">
                     <button
                       onClick={handleSaveDelay}
-                      className="flex-1 px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded font-medium transition-colors"
+                      className="flex-1 px-4 py-2 btn btn-error rounded font-medium transition-colors"
                     >
                       Log Delay
                     </button>

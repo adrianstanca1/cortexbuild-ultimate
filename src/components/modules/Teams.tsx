@@ -502,9 +502,9 @@ export function Teams() {
           <div className="flex flex-wrap gap-3 items-center bg-gray-900 rounded-xl border border-gray-700 p-4">
             <div className="relative flex-1 min-w-48">
               <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500"/>
-              <input value={search} onChange={e=>setSearch(e.target.value)} placeholder="Search name or role…" className="w-full pl-9 pr-4 py-2 text-sm bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-orange-500"/>
+              <input value={search} onChange={e=>setSearch(e.target.value)} placeholder="Search name or role…" className="w-full pl-9 pr-4 py-2 text-sm input input-bordered text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-orange-500"/>
             </div>
-            <select value={statusFilter} onChange={e=>setStatusFilter(e.target.value)} className="text-sm bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-gray-300 focus:outline-none focus:ring-2 focus:ring-orange-500">
+            <select value={statusFilter} onChange={e=>setStatusFilter(e.target.value)} className="text-sm input input-bordered text-gray-300 focus:outline-none focus:ring-2 focus:ring-orange-500">
               {['All',...STATUS_OPTIONS].map(s=><option key={s}>{s}</option>)}
             </select>
           </div>
@@ -842,58 +842,58 @@ export function Teams() {
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-300 mb-1">Name *</label>
-                  <input required value={form.name} onChange={e=>setForm(f=>({...f,name:e.target.value}))} className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-orange-500"/>
+                  <input required value={form.name} onChange={e=>setForm(f=>({...f,name:e.target.value}))} className="w-full input input-bordered w-full placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-orange-500"/>
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-300 mb-1">Role</label>
-                  <select value={form.role} onChange={e=>setForm(f=>({...f,role:e.target.value}))} className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-orange-500">
+                  <select value={form.role} onChange={e=>setForm(f=>({...f,role:e.target.value}))} className="w-full input input-bordered w-full focus:outline-none focus:ring-2 focus:ring-orange-500">
                     <option value="">Select role…</option>
                     {ROLES.map(r=><option key={r}>{r}</option>)}
                   </select>
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-300 mb-1">Trade Type</label>
-                  <select value={form.trade_type} onChange={e=>setForm(f=>({...f,trade_type:e.target.value}))} className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-orange-500">
+                  <select value={form.trade_type} onChange={e=>setForm(f=>({...f,trade_type:e.target.value}))} className="w-full input input-bordered w-full focus:outline-none focus:ring-2 focus:ring-orange-500">
                     <option value="">Select trade…</option>
                     {TRADE_TYPES.map(t=><option key={t}>{t}</option>)}
                   </select>
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-300 mb-1">Daily Rate (£)</label>
-                  <input type="number" step="0.01" value={form.daily_rate} onChange={e=>setForm(f=>({...f,daily_rate:e.target.value}))} className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-orange-500"/>
+                  <input type="number" step="0.01" value={form.daily_rate} onChange={e=>setForm(f=>({...f,daily_rate:e.target.value}))} className="w-full input input-bordered w-full focus:outline-none focus:ring-2 focus:ring-orange-500"/>
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-300 mb-1">Email</label>
-                  <input type="email" value={form.email} onChange={e=>setForm(f=>({...f,email:e.target.value}))} className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-orange-500"/>
+                  <input type="email" value={form.email} onChange={e=>setForm(f=>({...f,email:e.target.value}))} className="w-full input input-bordered w-full placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-orange-500"/>
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-300 mb-1">Phone</label>
-                  <input value={form.phone} onChange={e=>setForm(f=>({...f,phone:e.target.value}))} className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-orange-500"/>
+                  <input value={form.phone} onChange={e=>setForm(f=>({...f,phone:e.target.value}))} className="w-full input input-bordered w-full placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-orange-500"/>
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-300 mb-1">CSCS Card Number</label>
-                  <input value={form.cscs_card} onChange={e=>setForm(f=>({...f,cscs_card:e.target.value}))} className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-orange-500"/>
+                  <input value={form.cscs_card} onChange={e=>setForm(f=>({...f,cscs_card:e.target.value}))} className="w-full input input-bordered w-full placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-orange-500"/>
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-300 mb-1">CSCS Card Type</label>
-                  <select value={form.cscs_type} onChange={e=>setForm(f=>({...f,cscs_type:e.target.value}))} className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-orange-500">
+                  <select value={form.cscs_type} onChange={e=>setForm(f=>({...f,cscs_type:e.target.value}))} className="w-full input input-bordered w-full focus:outline-none focus:ring-2 focus:ring-orange-500">
                     {CSCS_TYPES.map(t=><option key={t}>{t}</option>)}
                   </select>
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-300 mb-1">CSCS Expiry Date</label>
-                  <input type="date" value={form.cscs_expiry} onChange={e=>setForm(f=>({...f,cscs_expiry:e.target.value}))} className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-orange-500"/>
+                  <input type="date" value={form.cscs_expiry} onChange={e=>setForm(f=>({...f,cscs_expiry:e.target.value}))} className="w-full input input-bordered w-full focus:outline-none focus:ring-2 focus:ring-orange-500"/>
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-300 mb-1">Status</label>
-                  <select value={form.status} onChange={e=>setForm(f=>({...f,status:e.target.value}))} className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-orange-500">
+                  <select value={form.status} onChange={e=>setForm(f=>({...f,status:e.target.value}))} className="w-full input input-bordered w-full focus:outline-none focus:ring-2 focus:ring-orange-500">
                     {STATUS_OPTIONS.map(s=><option key={s}>{s}</option>)}
                   </select>
                 </div>
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-300 mb-1">Notes</label>
-                <textarea value={form.notes} onChange={e=>setForm(f=>({...f,notes:e.target.value}))} rows={3} className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-orange-500"/>
+                <textarea value={form.notes} onChange={e=>setForm(f=>({...f,notes:e.target.value}))} rows={3} className="w-full input input-bordered w-full placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-orange-500"/>
               </div>
               <div className="flex gap-3 pt-2">
                 <button type="button" onClick={()=>setShowModal(false)} className="flex-1 px-4 py-2 border border-gray-700 rounded-lg text-sm text-gray-300 hover:bg-gray-800">Cancel</button>
@@ -923,7 +923,7 @@ export function Teams() {
                     const found = members.find(m => String(m.id) === e.target.value);
                     if (found) setSkillMember(found);
                   }}
-                  className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-orange-500"
+                  className="w-full input input-bordered w-full focus:outline-none focus:ring-2 focus:ring-orange-500"
                 >
                   <option value="">Select member…</option>
                   {members.filter(m => m.status === 'Active').map(m => <option key={String(m.id)} value={String(m.id)}>{String(m.name)}</option>)}
@@ -934,7 +934,7 @@ export function Teams() {
                 <select
                   value={skillForm.skill_name}
                   onChange={e => setSkillForm(f => ({ ...f, skill_name: e.target.value }))}
-                  className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-orange-500"
+                  className="w-full input input-bordered w-full focus:outline-none focus:ring-2 focus:ring-orange-500"
                 >
                   <option value="">Select skill…</option>
                   {SKILLS.map(s => <option key={s}>{s}</option>)}
@@ -945,7 +945,7 @@ export function Teams() {
                 <select
                   value={skillForm.status}
                   onChange={e => setSkillForm(f => ({ ...f, status: e.target.value }))}
-                  className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-orange-500"
+                  className="w-full input input-bordered w-full focus:outline-none focus:ring-2 focus:ring-orange-500"
                 >
                   <option value="no">No</option>
                   <option value="yes">Yes</option>
@@ -994,7 +994,7 @@ export function Teams() {
                     const found = members.find(m => String(m.id) === e.target.value);
                     if (found) setInductionMember(found);
                   }}
-                  className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-orange-500"
+                  className="w-full input input-bordered w-full focus:outline-none focus:ring-2 focus:ring-orange-500"
                 >
                   <option value="">Select member…</option>
                   {members.filter(m => m.status === 'Active').map(m => <option key={String(m.id)} value={String(m.id)}>{String(m.name)}</option>)}
@@ -1007,7 +1007,7 @@ export function Teams() {
                   value={inductionForm.project}
                   onChange={e => setInductionForm(f => ({ ...f, project: e.target.value }))}
                   placeholder="e.g. Site A"
-                  className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-orange-500"
+                  className="w-full input input-bordered w-full placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-orange-500"
                 />
               </div>
               <div>
@@ -1016,7 +1016,7 @@ export function Teams() {
                   type="date"
                   value={inductionForm.date}
                   onChange={e => setInductionForm(f => ({ ...f, date: e.target.value }))}
-                  className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-orange-500"
+                  className="w-full input input-bordered w-full focus:outline-none focus:ring-2 focus:ring-orange-500"
                 />
               </div>
               <div>
@@ -1025,7 +1025,7 @@ export function Teams() {
                   type="date"
                   value={inductionForm.next_due}
                   onChange={e => setInductionForm(f => ({ ...f, next_due: e.target.value }))}
-                  className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-orange-500"
+                  className="w-full input input-bordered w-full focus:outline-none focus:ring-2 focus:ring-orange-500"
                 />
               </div>
               <div>
@@ -1033,7 +1033,7 @@ export function Teams() {
                 <select
                   value={inductionForm.status}
                   onChange={e => setInductionForm(f => ({ ...f, status: e.target.value as Induction['status'] }))}
-                  className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-orange-500"
+                  className="w-full input input-bordered w-full focus:outline-none focus:ring-2 focus:ring-orange-500"
                 >
                   <option value="current">Current</option>
                   <option value="due_soon">Due Soon</option>
@@ -1082,7 +1082,7 @@ export function Teams() {
                     const found = members.find(m => String(m.id) === e.target.value);
                     if (found) setAvailMember(found);
                   }}
-                  className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-orange-500"
+                  className="w-full input input-bordered w-full focus:outline-none focus:ring-2 focus:ring-orange-500"
                 >
                   <option value="">Select member…</option>
                   {members.filter(m => m.status === 'Active').map(m => <option key={String(m.id)} value={String(m.id)}>{String(m.name)}</option>)}
@@ -1095,7 +1095,7 @@ export function Teams() {
                   value={availForm.project}
                   onChange={e => setAvailForm(f => ({ ...f, project: e.target.value }))}
                   placeholder="e.g. Site A or Mon/Tue/Wed/Thu/Fri"
-                  className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-orange-500"
+                  className="w-full input input-bordered w-full placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-orange-500"
                 />
               </div>
               <div>
@@ -1103,7 +1103,7 @@ export function Teams() {
                 <select
                   value={availForm.status}
                   onChange={e => setAvailForm(f => ({ ...f, status: e.target.value as Availability['status'] }))}
-                  className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-orange-500"
+                  className="w-full input input-bordered w-full focus:outline-none focus:ring-2 focus:ring-orange-500"
                 >
                   <option value="onsite">On Site</option>
                   <option value="office">Office</option>

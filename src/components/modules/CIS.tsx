@@ -215,7 +215,7 @@ export function CIS() {
             ))}
           </div>
 
-          <div className="flex flex-wrap gap-3 items-center bg-gray-800 border border-gray-700 rounded-xl p-4">
+          <div className="flex flex-wrap gap-3 items-center card bg-base-200 p-4">
             <div className="relative flex-1 min-w-48">
               <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500"/>
               <input value={search} onChange={e=>setSearch(e.target.value)} placeholder="Search subcontractor…" className="w-full pl-9 pr-4 py-2 text-sm border border-gray-700 rounded-lg bg-gray-900 text-white focus:outline-none focus:ring-2 focus:ring-orange-500"/>
@@ -228,7 +228,7 @@ export function CIS() {
           {isLoading ? (
             <div className="flex justify-center py-20"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-600"/></div>
           ) : (
-            <div className="bg-gray-800 border border-gray-700 rounded-xl overflow-hidden">
+            <div className="card bg-base-200 overflow-hidden">
               <table className="w-full text-sm">
                 <thead className="bg-gray-900 border-b border-gray-700">
                   <tr>{['Subcontractor','UTR','Tax Period','Gross','Materials','CIS Rate','Deduction','Net Pay','Status',''].map(h=><th key={h} className="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider whitespace-nowrap">{h}</th>)}</tr>
@@ -287,7 +287,7 @@ export function CIS() {
 
       {/* REGISTER TAB */}
       {mainTab==='register' && (
-        <div className="bg-gray-800 border border-gray-700 rounded-xl overflow-hidden">
+        <div className="card bg-base-200 overflow-hidden">
           <table className="w-full text-sm">
             <thead className="bg-gray-900 border-b border-gray-700">
               <tr>{['Subcontractor','CIS Status','UTR (Masked)','HMRC Ref','Last Verified',''].map(h=><th key={h} className="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider whitespace-nowrap">{h}</th>)}</tr>
@@ -356,7 +356,7 @@ export function CIS() {
             )}
           </div>
 
-          <div className="bg-gray-800 border border-gray-700 rounded-xl p-6">
+          <div className="card bg-base-200 p-6">
             <h4 className="text-lg font-bold text-white mb-4">Monthly Return Generator</h4>
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
@@ -398,7 +398,7 @@ export function CIS() {
 
       {/* SUBMISSIONS TAB */}
       {mainTab==='submissions' && (
-        <div className="bg-gray-800 border border-gray-700 rounded-xl overflow-hidden">
+        <div className="card bg-base-200 overflow-hidden">
           <table className="w-full text-sm">
             <thead className="bg-gray-900 border-b border-gray-700">
               <tr>{['Period','Status','Submission Date','Total Deductions','Penalties',''].map(h=><th key={h} className="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">{h}</th>)}</tr>

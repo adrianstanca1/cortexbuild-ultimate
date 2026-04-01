@@ -519,7 +519,7 @@ export function RFIs() {
                       {r.status !== 'Answered' && r.status !== 'Closed' && (
                         <button
                           onClick={e=>{e.stopPropagation();sendResponse(r);}}
-                          className="flex items-center gap-2 px-3 py-2 bg-green-600 hover:bg-green-700 text-white rounded text-xs font-medium transition-colors"
+                          className="flex items-center gap-2 px-3 py-2 btn btn-success rounded text-xs font-medium transition-colors"
                         >
                           <Send size={12}/>Send Response
                         </button>
@@ -527,7 +527,7 @@ export function RFIs() {
                       {r.status === 'Pending Response' && (
                         <button
                           onClick={e=>{e.stopPropagation();markAnswered(r);}}
-                          className="flex items-center gap-2 px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded text-xs font-medium transition-colors"
+                          className="flex items-center gap-2 px-3 py-2 btn btn-primary rounded text-xs font-medium transition-colors"
                         >
                           <CheckCircle size={12}/>Mark Answered
                         </button>

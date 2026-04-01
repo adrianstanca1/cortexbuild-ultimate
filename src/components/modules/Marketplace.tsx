@@ -199,15 +199,15 @@ export function Marketplace() {
 
       {/* KPI Stats */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div className="bg-gray-800 border border-gray-700 rounded-lg p-4">
+        <div className="input input-bordered p-4">
           <p className="text-sm text-gray-400 mb-1">Records Indexed</p>
           <p className="text-2xl font-bold text-white">15.2M</p>
         </div>
-        <div className="bg-gray-800 border border-gray-700 rounded-lg p-4">
+        <div className="input input-bordered p-4">
           <p className="text-sm text-gray-400 mb-1">Last Indexed</p>
           <p className="text-2xl font-bold text-white">2 hours ago</p>
         </div>
-        <div className="bg-gray-800 border border-gray-700 rounded-lg p-4">
+        <div className="input input-bordered p-4">
           <p className="text-sm text-gray-400 mb-1">Active Apps</p>
           <p className="text-2xl font-bold text-white">{Number(installedApps.length)}</p>
         </div>
@@ -242,7 +242,7 @@ export function Marketplace() {
             placeholder="Search apps..."
             value={searchQuery}
             onChange={e => setSearchQuery(e.target.value)}
-            className="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-3 text-white placeholder-gray-500"
+            className="w-full input input-bordered px-4 py-3 text-white placeholder-gray-500"
           />
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-4">
             {APPS.map(app => {
@@ -283,8 +283,8 @@ export function Marketplace() {
                     onClick={() => toggleApp(String(app.id))}
                     className={`w-full px-4 py-2 rounded-lg font-medium text-sm transition ${
                       isInstalled
-                        ? 'bg-gray-700 hover:bg-gray-600 text-white'
-                        : 'bg-blue-600 hover:bg-blue-700 text-white'
+                        ? 'btn btn-ghost'
+                        : 'btn btn-primary'
                     }`}
                   >
                     {Boolean(isInstalled) && 'Uninstall'}
@@ -338,7 +338,7 @@ export function Marketplace() {
                   className={`flex-shrink-0 px-3 py-1.5 rounded-lg text-xs font-medium transition ${
                     intg.status === 'connected'
                       ? 'bg-gray-800 text-gray-300 hover:bg-gray-700'
-                      : 'bg-blue-600 hover:bg-blue-700 text-white'
+                      : 'btn btn-primary'
                   }`}
                 >
                   {intg.status === 'connected' ? 'Manage' : 'Connect'}
@@ -365,7 +365,7 @@ export function Marketplace() {
                   <p className="text-sm text-gray-400 mb-3">{String(tpl.desc)}</p>
                   <div className="flex items-center justify-between">
                     <span className="text-xs text-gray-500">{Number(tpl.downloads)} downloads</span>
-                    <button className="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs font-medium transition">
+                    <button className="px-3 py-1.5 btn btn-primary rounded-lg text-xs font-medium transition">
                       <Download className="h-3 w-3 inline mr-1" />
                       Download
                     </button>
@@ -382,7 +382,7 @@ export function Marketplace() {
         <div className="space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             {TRAINING_RESOURCES.map(resource => (
-              <div key={String(resource.id)} className="bg-gray-900 border border-gray-800 rounded-xl p-4">
+              <div key={String(resource.id)} className="card bg-base-100 border border-base-300 p-4">
                 <div className="flex items-center justify-between mb-3">
                   <p className="text-xs text-blue-400 uppercase font-medium">{String(resource.type)}</p>
                   {Boolean(resource.completed) && <CheckCircle2 className="h-4 w-4 text-green-400" />}
@@ -416,7 +416,7 @@ export function Marketplace() {
                 <MessageCircle className="h-5 w-5 text-blue-400" />
                 <p className="font-medium text-white">Live Chat Support</p>
               </div>
-              <button className="mt-3 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium w-full">
+              <button className="mt-3 px-4 py-2 btn btn-primary rounded-lg text-sm font-medium w-full">
                 Start Chat
               </button>
             </div>
@@ -427,18 +427,18 @@ export function Marketplace() {
               <input
                 type="text"
                 placeholder="Subject"
-                className="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-2 text-white"
+                className="w-full bg-gray-800 border border-gray-700 btn text-white"
               />
               <textarea
                 placeholder="Description"
-                className="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-2 text-white h-32"
+                className="w-full bg-gray-800 border border-gray-700 btn text-white h-32"
               />
-              <select className="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-2 text-white">
+              <select className="w-full bg-gray-800 border border-gray-700 btn text-white">
                 <option>Priority: Medium</option>
                 <option>Priority: High</option>
                 <option>Priority: Low</option>
               </select>
-              <button type="button" className="w-full px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium">
+              <button type="button" className="w-full px-4 py-2 btn btn-primary rounded-lg font-medium">
                 Submit Ticket
               </button>
             </form>

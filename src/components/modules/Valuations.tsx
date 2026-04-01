@@ -382,14 +382,14 @@ export default function Valuations() {
                 placeholder="Search valuations..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-10 pr-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:border-orange-500 focus:outline-none"
+                className="w-full pl-10 pr-4 py-2 input input-bordered text-white placeholder-gray-500 focus:border-orange-500 focus:outline-none"
               />
             </div>
           </div>
           <select
             value={filterStatus}
             onChange={(e) => setFilterStatus(e.target.value)}
-            className="px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white focus:border-orange-500 focus:outline-none"
+            className="px-3 py-2 input input-bordered text-white focus:border-orange-500 focus:outline-none"
           >
             <option value="all">All Status</option>
             <option value="draft">Draft</option>
@@ -519,7 +519,7 @@ export default function Valuations() {
             <div className="p-6 space-y-4">
               <div>
                 <label className="block text-gray-400 text-xs mb-1">Project</label>
-                <select value={form.project} onChange={e => setForm(f => ({ ...f, project: e.target.value }))} className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white">
+                <select value={form.project} onChange={e => setForm(f => ({ ...f, project: e.target.value }))} className="w-full px-3 py-2 input input-bordered text-white">
                   <option value="">Select project...</option>
                   <option>Canary Wharf Office Complex</option>
                   <option>Manchester City Apartments</option>
@@ -528,26 +528,26 @@ export default function Valuations() {
               </div>
               <div>
                 <label className="block text-gray-400 text-xs mb-1">Contractor</label>
-                <input type="text" value={form.contractor} onChange={e => setForm(f => ({ ...f, contractor: e.target.value }))} placeholder="Contractor name..." className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500" />
+                <input type="text" value={form.contractor} onChange={e => setForm(f => ({ ...f, contractor: e.target.value }))} placeholder="Contractor name..." className="w-full px-3 py-2 input input-bordered text-white placeholder-gray-500" />
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-gray-400 text-xs mb-1">Gross Value (£)</label>
-                  <input type="number" value={form.grossValue} onChange={e => setForm(f => ({ ...f, grossValue: e.target.value }))} placeholder="0.00" className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500" />
+                  <input type="number" value={form.grossValue} onChange={e => setForm(f => ({ ...f, grossValue: e.target.value }))} placeholder="0.00" className="w-full px-3 py-2 input input-bordered text-white placeholder-gray-500" />
                 </div>
                 <div>
                   <label className="block text-gray-400 text-xs mb-1">Retention (£)</label>
-                  <input type="number" value={form.retention} onChange={e => setForm(f => ({ ...f, retention: e.target.value }))} placeholder="0.00" className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500" />
+                  <input type="number" value={form.retention} onChange={e => setForm(f => ({ ...f, retention: e.target.value }))} placeholder="0.00" className="w-full px-3 py-2 input input-bordered text-white placeholder-gray-500" />
                 </div>
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-gray-400 text-xs mb-1">Period Start</label>
-                  <input type="date" value={form.periodStart} onChange={e => setForm(f => ({ ...f, periodStart: e.target.value }))} className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white" />
+                  <input type="date" value={form.periodStart} onChange={e => setForm(f => ({ ...f, periodStart: e.target.value }))} className="w-full px-3 py-2 input input-bordered text-white" />
                 </div>
                 <div>
                   <label className="block text-gray-400 text-xs mb-1">Period End</label>
-                  <input type="date" value={form.periodEnd} onChange={e => setForm(f => ({ ...f, periodEnd: e.target.value }))} className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white" />
+                  <input type="date" value={form.periodEnd} onChange={e => setForm(f => ({ ...f, periodEnd: e.target.value }))} className="w-full px-3 py-2 input input-bordered text-white" />
                 </div>
               </div>
             </div>
@@ -571,7 +571,7 @@ export default function Valuations() {
             <div className="p-6 space-y-4">
               <div>
                 <label className="block text-gray-400 text-xs mb-1">Project</label>
-                <select value={editItem.project} onChange={e => setEditItem(f => ({ ...f, project: e.target.value }))} className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white">
+                <select value={editItem.project} onChange={e => setEditItem(f => ({ ...f, project: e.target.value }))} className="w-full px-3 py-2 input input-bordered text-white">
                   <option value="">Select project...</option>
                   <option>Canary Wharf Office Complex</option>
                   <option>Manchester City Apartments</option>
@@ -580,45 +580,45 @@ export default function Valuations() {
               </div>
               <div>
                 <label className="block text-gray-400 text-xs mb-1">Contractor</label>
-                <input type="text" value={editItem.contractorName || ''} onChange={e => setEditItem(f => ({ ...f, contractorName: e.target.value }))} placeholder="Contractor name..." className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500" />
+                <input type="text" value={editItem.contractorName || ''} onChange={e => setEditItem(f => ({ ...f, contractorName: e.target.value }))} placeholder="Contractor name..." className="w-full px-3 py-2 input input-bordered text-white placeholder-gray-500" />
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-gray-400 text-xs mb-1">Original Value (£)</label>
-                  <input type="number" value={editItem.originalValue || ''} onChange={e => setEditItem(f => ({ ...f, originalValue: e.target.value }))} placeholder="0.00" className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500" />
+                  <input type="number" value={editItem.originalValue || ''} onChange={e => setEditItem(f => ({ ...f, originalValue: e.target.value }))} placeholder="0.00" className="w-full px-3 py-2 input input-bordered text-white placeholder-gray-500" />
                 </div>
                 <div>
                   <label className="block text-gray-400 text-xs mb-1">Variations (£)</label>
-                  <input type="number" value={editItem.variations || ''} onChange={e => setEditItem(f => ({ ...f, variations: e.target.value }))} placeholder="0.00" className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500" />
+                  <input type="number" value={editItem.variations || ''} onChange={e => setEditItem(f => ({ ...f, variations: e.target.value }))} placeholder="0.00" className="w-full px-3 py-2 input input-bordered text-white placeholder-gray-500" />
                 </div>
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-gray-400 text-xs mb-1">Total Value (£)</label>
-                  <input type="number" value={editItem.totalValue || ''} onChange={e => setEditItem(f => ({ ...f, totalValue: e.target.value }))} placeholder="0.00" className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500" />
+                  <input type="number" value={editItem.totalValue || ''} onChange={e => setEditItem(f => ({ ...f, totalValue: e.target.value }))} placeholder="0.00" className="w-full px-3 py-2 input input-bordered text-white placeholder-gray-500" />
                 </div>
                 <div>
                   <label className="block text-gray-400 text-xs mb-1">Retention (£)</label>
-                  <input type="number" value={editItem.retention || ''} onChange={e => setEditItem(f => ({ ...f, retention: e.target.value }))} placeholder="0.00" className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500" />
+                  <input type="number" value={editItem.retention || ''} onChange={e => setEditItem(f => ({ ...f, retention: e.target.value }))} placeholder="0.00" className="w-full px-3 py-2 input input-bordered text-white placeholder-gray-500" />
                 </div>
               </div>
               <div>
                 <label className="block text-gray-400 text-xs mb-1">Amount Due (£)</label>
-                <input type="number" value={editItem.amountDue || ''} onChange={e => setEditItem(f => ({ ...f, amountDue: e.target.value }))} placeholder="0.00" className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500" />
+                <input type="number" value={editItem.amountDue || ''} onChange={e => setEditItem(f => ({ ...f, amountDue: e.target.value }))} placeholder="0.00" className="w-full px-3 py-2 input input-bordered text-white placeholder-gray-500" />
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-gray-400 text-xs mb-1">Period Start</label>
-                  <input type="date" value={editItem.periodStart || ''} onChange={e => setEditItem(f => ({ ...f, periodStart: e.target.value }))} className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white" />
+                  <input type="date" value={editItem.periodStart || ''} onChange={e => setEditItem(f => ({ ...f, periodStart: e.target.value }))} className="w-full px-3 py-2 input input-bordered text-white" />
                 </div>
                 <div>
                   <label className="block text-gray-400 text-xs mb-1">Period End</label>
-                  <input type="date" value={editItem.periodEnd || ''} onChange={e => setEditItem(f => ({ ...f, periodEnd: e.target.value }))} className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white" />
+                  <input type="date" value={editItem.periodEnd || ''} onChange={e => setEditItem(f => ({ ...f, periodEnd: e.target.value }))} className="w-full px-3 py-2 input input-bordered text-white" />
                 </div>
               </div>
               <div>
                 <label className="block text-gray-400 text-xs mb-1">Status</label>
-                <select value={editItem.status || 'draft'} onChange={e => setEditItem(f => ({ ...f, status: e.target.value }))} className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white">
+                <select value={editItem.status || 'draft'} onChange={e => setEditItem(f => ({ ...f, status: e.target.value }))} className="w-full px-3 py-2 input input-bordered text-white">
                   <option value="draft">Draft</option>
                   <option value="submitted">Submitted</option>
                   <option value="valued">Valued</option>

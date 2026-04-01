@@ -451,7 +451,7 @@ export function FinancialReports() {
           <select
             value={dateRange}
             onChange={(e) => setDateRange(e.target.value)}
-            className="bg-gray-800 border border-gray-700 text-white text-sm rounded-lg px-4 py-2"
+            className="bg-gray-800 border border-gray-700 text-white text-sm btn"
           >
             <option value="this_month">This Month</option>
             <option value="last_month">Last Month</option>

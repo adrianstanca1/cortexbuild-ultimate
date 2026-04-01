@@ -104,7 +104,7 @@ export default function Lettings() {
         <div className="card p-4"><div className="flex items-center gap-3"><div className="w-10 h-10 rounded-lg bg-amber-500/10 flex items-center justify-center"><Clock className="text-amber-400" size={20} /></div><div><p className="text-gray-400 text-xs">In Evaluation</p><p className="text-2xl font-bold text-amber-400">{evaluatingCount}</p></div></div></div>
       </div>
       <div className="card p-4">
-        <input type="text" placeholder="Search packages..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white mb-4" />
+        <input type="text" placeholder="Search packages..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="w-full px-4 py-2 input input-bordered text-white mb-4" />
         {typedLettings.length === 0 ? (
           <div className="text-center py-8 text-gray-400">Loading lettings data...</div>
         ) : (
@@ -194,25 +194,25 @@ export default function Lettings() {
             <div className="p-6 space-y-4">
               <div>
                 <label htmlFor="letPkg" className="block text-gray-400 text-xs mb-1">Package Name *</label>
-                <input id="letPkg" type="text" value={form.packageName} onChange={e => setForm(f => ({ ...f, packageName: e.target.value }))} placeholder="e.g. M&E Installation" className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500" />
+                <input id="letPkg" type="text" value={form.packageName} onChange={e => setForm(f => ({ ...f, packageName: e.target.value }))} placeholder="e.g. M&E Installation" className="w-full px-3 py-2 input input-bordered text-white placeholder-gray-500" />
               </div>
               <div>
                 <label htmlFor="letTrade" className="block text-gray-400 text-xs mb-1">Trade</label>
-                <input id="letTrade" type="text" value={form.trade} onChange={e => setForm(f => ({ ...f, trade: e.target.value }))} placeholder="e.g. Electrical" className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500" />
+                <input id="letTrade" type="text" value={form.trade} onChange={e => setForm(f => ({ ...f, trade: e.target.value }))} placeholder="e.g. Electrical" className="w-full px-3 py-2 input input-bordered text-white placeholder-gray-500" />
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label htmlFor="letContractor" className="block text-gray-400 text-xs mb-1">Contractor</label>
-                  <input id="letContractor" type="text" value={form.contractor} onChange={e => setForm(f => ({ ...f, contractor: e.target.value }))} placeholder="Contractor name" className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500" />
+                  <input id="letContractor" type="text" value={form.contractor} onChange={e => setForm(f => ({ ...f, contractor: e.target.value }))} placeholder="Contractor name" className="w-full px-3 py-2 input input-bordered text-white placeholder-gray-500" />
                 </div>
                 <div>
                   <label htmlFor="letValue" className="block text-gray-400 text-xs mb-1">Contract Value (£)</label>
-                  <input id="letValue" type="number" value={form.contractValue} onChange={e => setForm(f => ({ ...f, contractValue: e.target.value }))} placeholder="0.00" className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500" />
+                  <input id="letValue" type="number" value={form.contractValue} onChange={e => setForm(f => ({ ...f, contractValue: e.target.value }))} placeholder="0.00" className="w-full px-3 py-2 input input-bordered text-white placeholder-gray-500" />
                 </div>
               </div>
               <div>
                 <label htmlFor="letStatus" className="block text-gray-400 text-xs mb-1">Status</label>
-                <select id="letStatus" value={form.status} onChange={e => setForm(f => ({ ...f, status: e.target.value }))} className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white">
+                <select id="letStatus" value={form.status} onChange={e => setForm(f => ({ ...f, status: e.target.value }))} className="w-full px-3 py-2 input input-bordered text-white">
                   <option value="advertising">Advertising</option>
                   <option value="tendering">Tendering</option>
                   <option value="evaluation">Evaluation</option>
@@ -241,25 +241,25 @@ export default function Lettings() {
             <div className="p-6 space-y-4">
               <div>
                 <label htmlFor="editPkg" className="block text-gray-400 text-xs mb-1">Package Name *</label>
-                <input id="editPkg" type="text" value={editItem.package_name || ''} onChange={e => setEditItem((f: any) => ({ ...f, package_name: e.target.value }))} placeholder="e.g. M&E Installation" className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500" />
+                <input id="editPkg" type="text" value={editItem.package_name || ''} onChange={e => setEditItem((f: any) => ({ ...f, package_name: e.target.value }))} placeholder="e.g. M&E Installation" className="w-full px-3 py-2 input input-bordered text-white placeholder-gray-500" />
               </div>
               <div>
                 <label htmlFor="editTrade" className="block text-gray-400 text-xs mb-1">Trade</label>
-                <input id="editTrade" type="text" value={editItem.trade || ''} onChange={e => setEditItem((f: any) => ({ ...f, trade: e.target.value }))} placeholder="e.g. Electrical" className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500" />
+                <input id="editTrade" type="text" value={editItem.trade || ''} onChange={e => setEditItem((f: any) => ({ ...f, trade: e.target.value }))} placeholder="e.g. Electrical" className="w-full px-3 py-2 input input-bordered text-white placeholder-gray-500" />
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label htmlFor="editContractor" className="block text-gray-400 text-xs mb-1">Contractor</label>
-                  <input id="editContractor" type="text" value={editItem.contractor || ''} onChange={e => setEditItem((f: any) => ({ ...f, contractor: e.target.value }))} placeholder="Contractor name" className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500" />
+                  <input id="editContractor" type="text" value={editItem.contractor || ''} onChange={e => setEditItem((f: any) => ({ ...f, contractor: e.target.value }))} placeholder="Contractor name" className="w-full px-3 py-2 input input-bordered text-white placeholder-gray-500" />
                 </div>
                 <div>
                   <label htmlFor="editValue" className="block text-gray-400 text-xs mb-1">Contract Value (£)</label>
-                  <input id="editValue" type="number" value={editItem.contract_value || ''} onChange={e => setEditItem((f: any) => ({ ...f, contract_value: e.target.value }))} placeholder="0.00" className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500" />
+                  <input id="editValue" type="number" value={editItem.contract_value || ''} onChange={e => setEditItem((f: any) => ({ ...f, contract_value: e.target.value }))} placeholder="0.00" className="w-full px-3 py-2 input input-bordered text-white placeholder-gray-500" />
                 </div>
               </div>
               <div>
                 <label htmlFor="editStatus" className="block text-gray-400 text-xs mb-1">Status</label>
-                <select id="editStatus" value={editItem.status || 'tendering'} onChange={e => setEditItem((f: any) => ({ ...f, status: e.target.value }))} className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white">
+                <select id="editStatus" value={editItem.status || 'tendering'} onChange={e => setEditItem((f: any) => ({ ...f, status: e.target.value }))} className="w-full px-3 py-2 input input-bordered text-white">
                   <option value="advertising">Advertising</option>
                   <option value="tendering">Tendering</option>
                   <option value="evaluation">Evaluation</option>

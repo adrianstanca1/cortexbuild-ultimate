@@ -397,7 +397,7 @@ export function DailyReports() {
           <button
             onClick={() => photoInputRef.current?.click()}
             disabled={photoUploading}
-            className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium transition-colors disabled:opacity-50"
+            className="flex items-center gap-2 px-4 py-2 btn btn-primary rounded-lg text-sm font-medium transition-colors disabled:opacity-50"
           >
             {photoUploading ? <Loader2 size={16} className="animate-spin" /> : <Plus size={16} />}
             {photoUploading ? 'Uploading...' : 'Upload Photo'}

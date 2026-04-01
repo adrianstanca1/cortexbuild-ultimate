@@ -106,7 +106,7 @@ export function AuditLog() {
       <div>
         <h2 className="text-2xl font-bold text-white mb-4">Audit & Compliance Log</h2>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          <div className="bg-gray-800 border border-gray-700 rounded-lg p-4">
+          <div className="input input-bordered p-4">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-xs text-gray-400 uppercase">Events Today</p>
@@ -115,7 +115,7 @@ export function AuditLog() {
               <Activity className="h-6 w-6 text-blue-400" />
             </div>
           </div>
-          <div className="bg-gray-800 border border-gray-700 rounded-lg p-4">
+          <div className="input input-bordered p-4">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-xs text-gray-400 uppercase">Active Users</p>
@@ -124,7 +124,7 @@ export function AuditLog() {
               <Users className="h-6 w-6 text-cyan-400" />
             </div>
           </div>
-          <div className="bg-gray-800 border border-gray-700 rounded-lg p-4">
+          <div className="input input-bordered p-4">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-xs text-gray-400 uppercase">Security Alerts</p>
@@ -133,7 +133,7 @@ export function AuditLog() {
               <AlertTriangle className="h-6 w-6 text-red-400" />
             </div>
           </div>
-          <div className="bg-gray-800 border border-gray-700 rounded-lg p-4">
+          <div className="input input-bordered p-4">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-xs text-gray-400 uppercase">This Week</p>
@@ -175,12 +175,12 @@ export function AuditLog() {
               placeholder="Search by user or module..."
               value={searchQuery}
               onChange={e => setSearchQuery(e.target.value)}
-              className="flex-1 bg-gray-800 border border-gray-700 rounded-lg px-4 py-2 text-white text-sm placeholder-gray-500"
+              className="flex-1 bg-gray-800 border border-gray-700 btn text-white text-sm placeholder-gray-500"
             />
             <select
               value={filterAction}
               onChange={e => setFilterAction(e.target.value)}
-              className="bg-gray-800 border border-gray-700 rounded-lg px-4 py-2 text-white text-sm"
+              className="bg-gray-800 border border-gray-700 btn text-white text-sm"
             >
               <option value="all">All Actions</option>
               <option value="create">Create</option>
@@ -192,7 +192,7 @@ export function AuditLog() {
             <select
               value={filterTable}
               onChange={e => setFilterTable(e.target.value)}
-              className="bg-gray-800 border border-gray-700 rounded-lg px-4 py-2 text-white text-sm"
+              className="bg-gray-800 border border-gray-700 btn text-white text-sm"
             >
               <option value="all">All Modules</option>
               <option value="projects">Projects</option>
@@ -285,7 +285,7 @@ export function AuditLog() {
           <select
             value={filterUser}
             onChange={e => setFilterUser(e.target.value)}
-            className="bg-gray-800 border border-gray-700 rounded-lg px-4 py-2 text-white text-sm max-w-sm"
+            className="bg-gray-800 border border-gray-700 btn text-white text-sm max-w-sm"
           >
             <option value="all">All Users</option>
             {uniqueUsers.map(([userId, user]) => (
@@ -355,14 +355,14 @@ export function AuditLog() {
               <select
                 value={filterTable}
                 onChange={e => setFilterTable(e.target.value)}
-                className="bg-gray-800 border border-gray-700 rounded-lg px-4 py-2 text-white text-sm flex-1"
+                className="bg-gray-800 border border-gray-700 btn text-white text-sm flex-1"
               >
                 <option value="all">All Modules</option>
                 <option value="projects">Projects</option>
                 <option value="invoices">Invoices</option>
                 <option value="safety">Safety</option>
               </select>
-              <button className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium">
+              <button className="px-4 py-2 btn btn-primary rounded-lg text-sm font-medium">
                 <Download className="h-4 w-4 inline mr-2" />
                 Export CSV
               </button>
@@ -425,7 +425,7 @@ export function AuditLog() {
                   type="date"
                   value={filterDateFrom}
                   onChange={e => setFilterDateFrom(e.target.value)}
-                  className="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-2 text-white text-sm"
+                  className="w-full bg-gray-800 border border-gray-700 btn text-white text-sm"
                 />
               </div>
               <div>
@@ -435,7 +435,7 @@ export function AuditLog() {
                   type="date"
                   value={filterDateTo}
                   onChange={e => setFilterDateTo(e.target.value)}
-                  className="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-2 text-white text-sm"
+                  className="w-full bg-gray-800 border border-gray-700 btn text-white text-sm"
                 />
               </div>
               <div>
@@ -444,7 +444,7 @@ export function AuditLog() {
                   id="audit-export-format"
                   value={exportFormat}
                   onChange={e => setExportFormat(e.target.value as 'csv' | 'json')}
-                  className="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-2 text-white text-sm"
+                  className="w-full bg-gray-800 border border-gray-700 btn text-white text-sm"
                 >
                   <option value="csv">CSV</option>
                   <option value="json">JSON</option>
@@ -481,7 +481,7 @@ export function AuditLog() {
                   }
                 }}
                 disabled={exporting}
-                className="w-full px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white rounded-lg font-medium flex items-center justify-center gap-2"
+                className="w-full px-4 py-2 btn btn-primary disabled:opacity-50 text-white rounded-lg font-medium flex items-center justify-center gap-2"
               >
                 <Download className="h-4 w-4" />
                 {exporting ? 'Exporting...' : 'Export'}

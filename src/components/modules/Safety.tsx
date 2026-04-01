@@ -329,7 +329,7 @@ export function Safety() {
     toast.success(`${data.length - failed} item(s) imported`);
   }
 
-  const inp = "w-full bg-gray-800 border border-gray-700 rounded-xl px-4 py-2.5 text-white text-sm placeholder-gray-600 focus:outline-none focus:border-red-500 transition-colors";
+  const inp = "w-full card bg-base-200 px-4 py-2.5 text-white text-sm placeholder-gray-600 focus:outline-none focus:border-red-500 transition-colors";
   const lbl = "block text-xs font-semibold text-gray-400 mb-1.5 uppercase tracking-wide";
 
   return (
@@ -387,7 +387,7 @@ export function Safety() {
       </div>
 
       {/* Main Tab Navigation */}
-      <div className="flex gap-1 bg-gray-900 border border-gray-800 rounded-xl p-1 overflow-x-auto">
+      <div className="flex gap-1 card bg-base-100 border border-base-300 p-1 overflow-x-auto">
         {[
           { id: 'incidents', label: 'Incidents' },
           { id: 'permits', label: 'Permits' },
@@ -395,7 +395,7 @@ export function Safety() {
         ].map(t => (
           <button type="button"  key={t.id} onClick={() => setMainTab(t.id)}
             className={clsx('px-4 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-all',
-              mainTab === t.id ? 'bg-red-600 text-white' : 'text-gray-400 hover:text-white hover:bg-gray-800')}>
+              mainTab === t.id ? 'bg-red-600 text-white' : 'btn btn-ghost')}>
             {t.label}
           </button>
         ))}
@@ -423,7 +423,7 @@ export function Safety() {
           </div>
 
           {/* Category sub-nav */}
-          <div className="flex gap-1 bg-gray-900 border border-gray-800 rounded-xl p-1 overflow-x-auto">
+          <div className="flex gap-1 card bg-base-100 border border-base-300 p-1 overflow-x-auto">
             {[
               {id:'all',        label:'All Records'},
               {id:'incidents',  label:'Incidents'},
@@ -433,7 +433,7 @@ export function Safety() {
             ].map(t => (
               <button type="button"  key={t.id} onClick={() => setCategoryTab(t.id)}
                 className={clsx('px-3 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-all',
-                  categoryTab===t.id ? 'bg-red-600 text-white' : 'text-gray-400 hover:text-white hover:bg-gray-800')}>
+                  categoryTab===t.id ? 'bg-red-600 text-white' : 'btn btn-ghost')}>
                 {t.label}
                 <span className={clsx('ml-1.5 text-xs', categoryTab===t.id ? 'text-red-200' : 'text-gray-600')}>
                   {t.id==='all' ? incidents.length
@@ -448,7 +448,7 @@ export function Safety() {
             <div className="relative flex-1 max-w-sm">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
               <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search incidents..."
-                className="w-full bg-gray-800 border border-gray-700 rounded-xl pl-9 pr-3 py-2 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-red-500" />
+                className="w-full card bg-base-200 pl-9 pr-3 py-2 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-red-500" />
             </div>
             {['all','open','investigating','closed'].map(s => (
               <button type="button"  key={s} onClick={() => setFilter(s)}
@@ -823,19 +823,19 @@ export function Safety() {
                 <label className={lbl}>Description</label>
                 <textarea rows={3} value={form.description} onChange={e => setForm(p=>({...p,description:e.target.value}))}
                   placeholder="What happened? Include sequence of events..."
-                  className="w-full bg-gray-800 border border-gray-700 rounded-xl px-4 py-2.5 text-white text-sm placeholder-gray-600 focus:outline-none focus:border-red-500 transition-colors resize-none" />
+                  className="w-full card bg-base-200 px-4 py-2.5 text-white text-sm placeholder-gray-600 focus:outline-none focus:border-red-500 transition-colors resize-none" />
               </div>
               <div className="col-span-2">
                 <label className={lbl}>Immediate Action Taken</label>
                 <textarea rows={2} value={form.immediate_action} onChange={e => setForm(p=>({...p,immediate_action:e.target.value}))}
                   placeholder="Steps taken immediately after the incident..."
-                  className="w-full bg-gray-800 border border-gray-700 rounded-xl px-4 py-2.5 text-white text-sm placeholder-gray-600 focus:outline-none focus:border-red-500 transition-colors resize-none" />
+                  className="w-full card bg-base-200 px-4 py-2.5 text-white text-sm placeholder-gray-600 focus:outline-none focus:border-red-500 transition-colors resize-none" />
               </div>
               <div className="col-span-2">
                 <label className={lbl}>Corrective Action Required</label>
                 <textarea rows={2} value={form.corrective_action} onChange={e => setForm(p=>({...p,corrective_action:e.target.value}))}
                   placeholder="Actions required to prevent recurrence..."
-                  className="w-full bg-gray-800 border border-gray-700 rounded-xl px-4 py-2.5 text-white text-sm placeholder-gray-600 focus:outline-none focus:border-red-500 transition-colors resize-none" />
+                  className="w-full card bg-base-200 px-4 py-2.5 text-white text-sm placeholder-gray-600 focus:outline-none focus:border-red-500 transition-colors resize-none" />
               </div>
               <div className="col-span-2 flex items-center gap-3 p-3 rounded-xl bg-purple-500/10 border border-purple-600/30">
                 <input type="checkbox" id="riddor" checked={form.riddor_reportable}

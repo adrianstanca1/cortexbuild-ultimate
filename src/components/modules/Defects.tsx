@@ -248,14 +248,14 @@ export default function Defects() {
                 placeholder="Search by ref, title, or project..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-10 pr-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:border-orange-500 focus:outline-none"
+                className="w-full pl-10 pr-4 py-2 input input-bordered text-white placeholder-gray-500 focus:border-orange-500 focus:outline-none"
               />
             </div>
           </div>
           <select
             value={filterStatus}
             onChange={(e) => setFilterStatus(e.target.value)}
-            className="px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white focus:border-orange-500 focus:outline-none"
+            className="px-3 py-2 input input-bordered text-white focus:border-orange-500 focus:outline-none"
           >
             <option value="all">All Status</option>
             <option value="identified">Identified</option>
@@ -268,7 +268,7 @@ export default function Defects() {
           <select
             value={filterPriority}
             onChange={(e) => setFilterPriority(e.target.value)}
-            className="px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white focus:border-orange-500 focus:outline-none"
+            className="px-3 py-2 input input-bordered text-white focus:border-orange-500 focus:outline-none"
           >
             <option value="all">All Priorities</option>
             <option value="critical">Critical</option>
@@ -279,7 +279,7 @@ export default function Defects() {
           <select
             value={filterType}
             onChange={(e) => setFilterType(e.target.value)}
-            className="px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white focus:border-orange-500 focus:outline-none"
+            className="px-3 py-2 input input-bordered text-white focus:border-orange-500 focus:outline-none"
           >
             <option value="all">All Types</option>
             <option value="structural">Structural</option>
@@ -499,7 +499,7 @@ export default function Defects() {
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-gray-400 text-xs mb-1">Project</label>
-                  <select value={form.project} onChange={e => setForm(f => ({ ...f, project: e.target.value }))} className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white">
+                  <select value={form.project} onChange={e => setForm(f => ({ ...f, project: e.target.value }))} className="w-full px-3 py-2 input input-bordered text-white">
                     <option value="">Select project...</option>
                     <option>Canary Wharf Office Complex</option>
                     <option>Manchester City Apartments</option>
@@ -508,7 +508,7 @@ export default function Defects() {
                 </div>
                 <div>
                   <label className="block text-gray-400 text-xs mb-1">Priority</label>
-                  <select value={form.priority} onChange={e => setForm(f => ({ ...f, priority: e.target.value }))} className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white">
+                  <select value={form.priority} onChange={e => setForm(f => ({ ...f, priority: e.target.value }))} className="w-full px-3 py-2 input input-bordered text-white">
                     <option value="critical">Critical</option>
                     <option value="high">High</option>
                     <option value="medium">Medium</option>
@@ -518,35 +518,35 @@ export default function Defects() {
               </div>
               <div>
                 <label className="block text-gray-400 text-xs mb-1">Title</label>
-                <input type="text" value={form.title} onChange={e => setForm(f => ({ ...f, title: e.target.value }))} placeholder="Defect title..." className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500" />
+                <input type="text" value={form.title} onChange={e => setForm(f => ({ ...f, title: e.target.value }))} placeholder="Defect title..." className="w-full px-3 py-2 input input-bordered text-white placeholder-gray-500" />
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-gray-400 text-xs mb-1">Location</label>
-                  <input type="text" value={form.location} onChange={e => setForm(f => ({ ...f, location: e.target.value }))} placeholder="Location on site..." className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500" />
+                  <input type="text" value={form.location} onChange={e => setForm(f => ({ ...f, location: e.target.value }))} placeholder="Location on site..." className="w-full px-3 py-2 input input-bordered text-white placeholder-gray-500" />
                 </div>
                 <div>
                   <label className="block text-gray-400 text-xs mb-1">Trade</label>
-                  <input type="text" value={form.trade} onChange={e => setForm(f => ({ ...f, trade: e.target.value }))} placeholder="Trade responsible..." className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500" />
+                  <input type="text" value={form.trade} onChange={e => setForm(f => ({ ...f, trade: e.target.value }))} placeholder="Trade responsible..." className="w-full px-3 py-2 input input-bordered text-white placeholder-gray-500" />
                 </div>
               </div>
               <div>
                 <label className="block text-gray-400 text-xs mb-1">Description</label>
-                <textarea rows={3} value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))} placeholder="Describe the defect..." className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500" />
+                <textarea rows={3} value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))} placeholder="Describe the defect..." className="w-full px-3 py-2 input input-bordered text-white placeholder-gray-500" />
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-gray-400 text-xs mb-1">Identified By</label>
-                  <input type="text" value={form.identifiedBy} onChange={e => setForm(f => ({ ...f, identifiedBy: e.target.value }))} placeholder="Your name..." className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500" />
+                  <input type="text" value={form.identifiedBy} onChange={e => setForm(f => ({ ...f, identifiedBy: e.target.value }))} placeholder="Your name..." className="w-full px-3 py-2 input input-bordered text-white placeholder-gray-500" />
                 </div>
                 <div>
                   <label className="block text-gray-400 text-xs mb-1">Assigned To</label>
-                  <input type="text" value={form.assignedTo} onChange={e => setForm(f => ({ ...f, assignedTo: e.target.value }))} placeholder="Contractor/worker..." className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500" />
+                  <input type="text" value={form.assignedTo} onChange={e => setForm(f => ({ ...f, assignedTo: e.target.value }))} placeholder="Contractor/worker..." className="w-full px-3 py-2 input input-bordered text-white placeholder-gray-500" />
                 </div>
               </div>
               <div>
                 <label className="block text-gray-400 text-xs mb-1">Target Date</label>
-                <input type="date" value={form.targetDate} onChange={e => setForm(f => ({ ...f, targetDate: e.target.value }))} className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white" />
+                <input type="date" value={form.targetDate} onChange={e => setForm(f => ({ ...f, targetDate: e.target.value }))} className="w-full px-3 py-2 input input-bordered text-white" />
               </div>
             </div>
             <div className="p-6 border-t border-gray-700 flex justify-end gap-3">
@@ -571,11 +571,11 @@ export default function Defects() {
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-gray-400 text-xs mb-1">Project</label>
-                  <input type="text" value={editItem.project || ''} onChange={e => setEditItem((prev: any /* eslint-disable-line @typescript-eslint/no-explicit-any */) => ({ ...prev, project: e.target.value }))} className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white" />
+                  <input type="text" value={editItem.project || ''} onChange={e => setEditItem((prev: any /* eslint-disable-line @typescript-eslint/no-explicit-any */) => ({ ...prev, project: e.target.value }))} className="w-full px-3 py-2 input input-bordered text-white" />
                 </div>
                 <div>
                   <label className="block text-gray-400 text-xs mb-1">Priority</label>
-                  <select value={editItem.priority || 'medium'} onChange={e => setEditItem((prev: any /* eslint-disable-line @typescript-eslint/no-explicit-any */) => ({ ...prev, priority: e.target.value }))} className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white">
+                  <select value={editItem.priority || 'medium'} onChange={e => setEditItem((prev: any /* eslint-disable-line @typescript-eslint/no-explicit-any */) => ({ ...prev, priority: e.target.value }))} className="w-full px-3 py-2 input input-bordered text-white">
                     <option value="critical">Critical</option>
                     <option value="high">High</option>
                     <option value="medium">Medium</option>
@@ -585,26 +585,26 @@ export default function Defects() {
               </div>
               <div>
                 <label className="block text-gray-400 text-xs mb-1">Title</label>
-                <input type="text" value={editItem.title || ''} onChange={e => setEditItem((prev: any /* eslint-disable-line @typescript-eslint/no-explicit-any */) => ({ ...prev, title: e.target.value }))} className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500" />
+                <input type="text" value={editItem.title || ''} onChange={e => setEditItem((prev: any /* eslint-disable-line @typescript-eslint/no-explicit-any */) => ({ ...prev, title: e.target.value }))} className="w-full px-3 py-2 input input-bordered text-white placeholder-gray-500" />
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-gray-400 text-xs mb-1">Location</label>
-                  <input type="text" value={editItem.location || ''} onChange={e => setEditItem((prev: any /* eslint-disable-line @typescript-eslint/no-explicit-any */) => ({ ...prev, location: e.target.value }))} className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500" />
+                  <input type="text" value={editItem.location || ''} onChange={e => setEditItem((prev: any /* eslint-disable-line @typescript-eslint/no-explicit-any */) => ({ ...prev, location: e.target.value }))} className="w-full px-3 py-2 input input-bordered text-white placeholder-gray-500" />
                 </div>
                 <div>
                   <label className="block text-gray-400 text-xs mb-1">Trade</label>
-                  <input type="text" value={editItem.trade || ''} onChange={e => setEditItem((prev: any /* eslint-disable-line @typescript-eslint/no-explicit-any */) => ({ ...prev, trade: e.target.value }))} className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500" />
+                  <input type="text" value={editItem.trade || ''} onChange={e => setEditItem((prev: any /* eslint-disable-line @typescript-eslint/no-explicit-any */) => ({ ...prev, trade: e.target.value }))} className="w-full px-3 py-2 input input-bordered text-white placeholder-gray-500" />
                 </div>
               </div>
               <div>
                 <label className="block text-gray-400 text-xs mb-1">Description</label>
-                <textarea rows={3} value={editItem.description || ''} onChange={e => setEditItem((prev: any /* eslint-disable-line @typescript-eslint/no-explicit-any */) => ({ ...prev, description: e.target.value }))} className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500" />
+                <textarea rows={3} value={editItem.description || ''} onChange={e => setEditItem((prev: any /* eslint-disable-line @typescript-eslint/no-explicit-any */) => ({ ...prev, description: e.target.value }))} className="w-full px-3 py-2 input input-bordered text-white placeholder-gray-500" />
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-gray-400 text-xs mb-1">Status</label>
-                  <select value={editItem.status || 'identified'} onChange={e => setEditItem((prev: any /* eslint-disable-line @typescript-eslint/no-explicit-any */) => ({ ...prev, status: e.target.value }))} className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white">
+                  <select value={editItem.status || 'identified'} onChange={e => setEditItem((prev: any /* eslint-disable-line @typescript-eslint/no-explicit-any */) => ({ ...prev, status: e.target.value }))} className="w-full px-3 py-2 input input-bordered text-white">
                     <option value="identified">Identified</option>
                     <option value="assigned">Assigned</option>
                     <option value="in_progress">In Progress</option>
@@ -615,17 +615,17 @@ export default function Defects() {
                 </div>
                 <div>
                   <label className="block text-gray-400 text-xs mb-1">Identified By</label>
-                  <input type="text" value={editItem.identifiedBy || ''} onChange={e => setEditItem((prev: any /* eslint-disable-line @typescript-eslint/no-explicit-any */) => ({ ...prev, identifiedBy: e.target.value }))} className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500" />
+                  <input type="text" value={editItem.identifiedBy || ''} onChange={e => setEditItem((prev: any /* eslint-disable-line @typescript-eslint/no-explicit-any */) => ({ ...prev, identifiedBy: e.target.value }))} className="w-full px-3 py-2 input input-bordered text-white placeholder-gray-500" />
                 </div>
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-gray-400 text-xs mb-1">Assigned To</label>
-                  <input type="text" value={editItem.assignedTo || ''} onChange={e => setEditItem((prev: any /* eslint-disable-line @typescript-eslint/no-explicit-any */) => ({ ...prev, assignedTo: e.target.value }))} className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500" />
+                  <input type="text" value={editItem.assignedTo || ''} onChange={e => setEditItem((prev: any /* eslint-disable-line @typescript-eslint/no-explicit-any */) => ({ ...prev, assignedTo: e.target.value }))} className="w-full px-3 py-2 input input-bordered text-white placeholder-gray-500" />
                 </div>
                 <div>
                   <label className="block text-gray-400 text-xs mb-1">Target Date</label>
-                  <input type="date" value={editItem.targetDate || ''} onChange={e => setEditItem((prev: any /* eslint-disable-line @typescript-eslint/no-explicit-any */) => ({ ...prev, targetDate: e.target.value }))} className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white" />
+                  <input type="date" value={editItem.targetDate || ''} onChange={e => setEditItem((prev: any /* eslint-disable-line @typescript-eslint/no-explicit-any */) => ({ ...prev, targetDate: e.target.value }))} className="w-full px-3 py-2 input input-bordered text-white" />
                 </div>
               </div>
             </div>

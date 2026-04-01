@@ -246,7 +246,7 @@ export function Analytics() {
             {id:'labour',label:'Labour'}
           ].map(tab=>(
             <button type="button"  key={tab.id} onClick={()=>setActiveTab(tab.id as typeof activeTab)}
-              className={clsx('rounded-lg px-4 py-2 text-sm font-semibold transition-all',
+              className={clsx('btn text-sm font-semibold transition-all',
                 activeTab===tab.id?'bg-blue-600 text-white':'bg-gray-800 text-gray-400 hover:bg-gray-700')}>
               {tab.label}
             </button>

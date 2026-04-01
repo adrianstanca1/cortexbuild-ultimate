@@ -110,7 +110,7 @@ export default function Signage() {
           placeholder="Search signage..."
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
-          className="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white mb-4"
+          className="w-full px-4 py-2 input input-bordered text-white mb-4"
         />
         {isLoading ? (
           <div className="text-center py-8 text-gray-400">Loading signage...</div>
@@ -188,16 +188,16 @@ export default function Signage() {
             <div className="p-6 space-y-4">
               <div>
                 <label htmlFor="signDesc" className="block text-gray-400 text-xs mb-1">Description *</label>
-                <input id="signDesc" type="text" value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))} placeholder="e.g. Hard Hat Area" className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500" />
+                <input id="signDesc" type="text" value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))} placeholder="e.g. Hard Hat Area" className="w-full px-3 py-2 input input-bordered text-white placeholder-gray-500" />
               </div>
               <div>
                 <label htmlFor="signLocation" className="block text-gray-400 text-xs mb-1">Location</label>
-                <input id="signLocation" type="text" value={form.location} onChange={e => setForm(f => ({ ...f, location: e.target.value }))} placeholder="e.g. Site Entrance" className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500" />
+                <input id="signLocation" type="text" value={form.location} onChange={e => setForm(f => ({ ...f, location: e.target.value }))} placeholder="e.g. Site Entrance" className="w-full px-3 py-2 input input-bordered text-white placeholder-gray-500" />
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label htmlFor="signType" className="block text-gray-400 text-xs mb-1">Type</label>
-                  <select id="signType" value={form.type} onChange={e => setForm(f => ({ ...f, type: e.target.value }))} className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white">
+                  <select id="signType" value={form.type} onChange={e => setForm(f => ({ ...f, type: e.target.value }))} className="w-full px-3 py-2 input input-bordered text-white">
                     <option value="safety">Safety</option>
                     <option value="warning">Warning</option>
                     <option value="information">Information</option>
@@ -208,7 +208,7 @@ export default function Signage() {
                 </div>
                 <div>
                   <label htmlFor="signStatus" className="block text-gray-400 text-xs mb-1">Status</label>
-                  <select id="signStatus" value={form.status} onChange={e => setForm(f => ({ ...f, status: e.target.value }))} className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white">
+                  <select id="signStatus" value={form.status} onChange={e => setForm(f => ({ ...f, status: e.target.value }))} className="w-full px-3 py-2 input input-bordered text-white">
                     <option value="required">Required</option>
                     <option value="ordered">Ordered</option>
                     <option value="installed">Installed</option>
@@ -237,16 +237,16 @@ export default function Signage() {
             <div className="p-6 space-y-4">
               <div>
                 <label htmlFor="editSignDesc" className="block text-gray-400 text-xs mb-1">Description *</label>
-                <input id="editSignDesc" type="text" value={editItem.description} onChange={e => setEditItem(f => ({ ...f, description: e.target.value }))} className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500" />
+                <input id="editSignDesc" type="text" value={editItem.description} onChange={e => setEditItem(f => ({ ...f, description: e.target.value }))} className="w-full px-3 py-2 input input-bordered text-white placeholder-gray-500" />
               </div>
               <div>
                 <label htmlFor="editSignLocation" className="block text-gray-400 text-xs mb-1">Location</label>
-                <input id="editSignLocation" type="text" value={editItem.location} onChange={e => setEditItem(f => ({ ...f, location: e.target.value }))} className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500" />
+                <input id="editSignLocation" type="text" value={editItem.location} onChange={e => setEditItem(f => ({ ...f, location: e.target.value }))} className="w-full px-3 py-2 input input-bordered text-white placeholder-gray-500" />
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label htmlFor="editSignType" className="block text-gray-400 text-xs mb-1">Type</label>
-                  <select id="editSignType" value={editItem.type} onChange={e => setEditItem(f => ({ ...f, type: e.target.value }))} className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white">
+                  <select id="editSignType" value={editItem.type} onChange={e => setEditItem(f => ({ ...f, type: e.target.value }))} className="w-full px-3 py-2 input input-bordered text-white">
                     <option value="safety">Safety</option>
                     <option value="warning">Warning</option>
                     <option value="information">Information</option>
@@ -257,7 +257,7 @@ export default function Signage() {
                 </div>
                 <div>
                   <label htmlFor="editSignStatus" className="block text-gray-400 text-xs mb-1">Status</label>
-                  <select id="editSignStatus" value={editItem.status} onChange={e => setEditItem(f => ({ ...f, status: e.target.value }))} className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white">
+                  <select id="editSignStatus" value={editItem.status} onChange={e => setEditItem(f => ({ ...f, status: e.target.value }))} className="w-full px-3 py-2 input input-bordered text-white">
                     <option value="required">Required</option>
                     <option value="ordered">Ordered</option>
                     <option value="installed">Installed</option>

@@ -205,7 +205,7 @@ export function RAMS() {
     toast.success(`${data.length - failed} RAMS document(s) imported`);
   }
 
-  const inputCls = 'w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-orange-500';
+  const inputCls = 'w-full input input-bordered w-full placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-orange-500';
   const labelCls = 'block text-sm font-medium text-gray-300 mb-1';
 
   return (
@@ -273,7 +273,7 @@ export function RAMS() {
             <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500" />
             <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search title or activity…" className={inputCls + ' pl-9'} />
           </div>
-          <select value={statusFilter} onChange={e => setStatusFilter(e.target.value)} className="bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-orange-500">
+          <select value={statusFilter} onChange={e => setStatusFilter(e.target.value)} className="input input-bordered w-full focus:outline-none focus:ring-2 focus:ring-orange-500">
             {['All', ...STATUS_OPTIONS].map(s => <option key={s}>{s}</option>)}
           </select>
         </div>

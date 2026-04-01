@@ -397,13 +397,13 @@ export function PunchList() {
                                   </button>
                                   <button
                                     onClick={() => updateStatus(id, 'Resolved')}
-                                    className="px-3 py-1.5 text-xs bg-blue-600 hover:bg-blue-700 text-white rounded transition-colors"
+                                    className="px-3 py-1.5 text-xs btn btn-primary rounded transition-colors"
                                   >
                                     Mark Resolved
                                   </button>
                                   <button
                                     onClick={() => updateStatus(id, 'Signed Off')}
-                                    className="px-3 py-1.5 text-xs bg-green-600 hover:bg-green-700 text-white rounded transition-colors"
+                                    className="px-3 py-1.5 text-xs btn btn-success rounded transition-colors"
                                   >
                                     Sign Off
                                   </button>

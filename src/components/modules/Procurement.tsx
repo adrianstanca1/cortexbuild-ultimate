@@ -298,7 +298,7 @@ export function Procurement() {
       <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h1 className="text-3xl font-bold text-white">Procurement & Purchase Orders</h1>
-        <button type="button" onClick={openCreate} className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded-lg text-white font-medium transition-colors">
+        <button type="button" onClick={openCreate} className="flex items-center gap-2 px-4 py-2 btn btn-primary rounded-lg text-white font-medium transition-colors">
           <Plus className="w-4 h-4"/>Raise PO
         </button>
       </div>
@@ -319,7 +319,7 @@ export function Procurement() {
           {label:'Delivered This Month',value:String(deliveredThisMonth),         icon:CheckCircle2,col:'text-emerald-400'},
           {label:'Outstanding',        value:String(pendingDelivery),              icon:Truck,       col:'text-purple-400'},
         ].map(({label,value,icon:Icon,col})=>(
-          <div key={label} className="bg-gray-900 border border-gray-800 rounded-xl p-4 flex flex-col">
+          <div key={label} className="card bg-base-100 border border-base-300 p-4 flex flex-col">
             <div className="flex items-start justify-between mb-2">
               <p className="text-xs text-gray-400">{label}</p>
               <Icon className="w-4 h-4 text-gray-500"/>
@@ -370,21 +370,21 @@ export function Procurement() {
             <div className="relative flex-1 min-w-[220px]">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400"/>
               <input value={search} onChange={e=>setSearch(e.target.value)} placeholder="Search supplier, description, PO #…"
-                className="w-full pl-9 pr-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white text-sm focus:outline-none focus:border-blue-500"/>
+                className="w-full pl-9 pr-3 py-2 input input-bordered text-white text-sm focus:outline-none focus:border-blue-500"/>
             </div>
             <div className="flex gap-2 flex-wrap">
               <select value={filterStatus} onChange={e=>setFilterStatus(e.target.value)}
-                className="bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-blue-500">
+                className="input input-bordered text-white text-sm focus:outline-none focus:border-blue-500">
                 <option value="all">All Statuses</option>
                 {STATUSES.map(s=><option key={s} value={s}>{s.replace(/_/g,' ')}</option>)}
               </select>
               <select value={filterCategory} onChange={e=>setFilterCategory(e.target.value)}
-                className="bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-blue-500">
+                className="input input-bordered text-white text-sm focus:outline-none focus:border-blue-500">
                 <option value="all">All Categories</option>
                 {CATEGORIES.map(c=><option key={c} value={c}>{c}</option>)}
               </select>
               <select value={filterProject} onChange={e=>setFilterProject(e.target.value)}
-                className="bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-blue-500">
+                className="input input-bordered text-white text-sm focus:outline-none focus:border-blue-500">
                 <option value="all">All Projects</option>
                 {projectList.map(p=><option key={p} value={p}>{p}</option>)}
               </select>
@@ -392,7 +392,7 @@ export function Procurement() {
           </div>
 
           {/* POs Table */}
-          <div className="bg-gray-900 border border-gray-800 rounded-xl overflow-hidden">
+          <div className="card bg-base-100 border border-base-300 overflow-hidden">
             {isLoading ? (
               <div className="p-8 text-center text-gray-400">Loading purchase orders…</div>
             ) : (
@@ -469,17 +469,17 @@ export function Procurement() {
       {/* TAB: Suppliers */}
       {mainTab === 'suppliers' && (
         <div className="space-y-6">
-          <button type="button" onClick={()=>setShowSupplierModal(true)} className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded-lg text-white font-medium transition-colors">
+          <button type="button" onClick={()=>setShowSupplierModal(true)} className="flex items-center gap-2 px-4 py-2 btn btn-primary rounded-lg text-white font-medium transition-colors">
             <Plus className="w-4 h-4"/>Add Supplier
           </button>
           <div className="relative flex-1 max-w-xs">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400"/>
             <input value={search} onChange={e=>setSearch(e.target.value)} placeholder="Search supplier…"
-              className="w-full pl-9 pr-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white text-sm focus:outline-none focus:border-blue-500"/>
+              className="w-full pl-9 pr-3 py-2 input input-bordered text-white text-sm focus:outline-none focus:border-blue-500"/>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {suppliers.filter(s => !search || s.name.toLowerCase().includes(search.toLowerCase())).map(sup=>(
-              <div key={sup.name} className="bg-gray-900 border border-gray-800 rounded-xl p-5 hover:border-gray-700 transition-colors">
+              <div key={sup.name} className="card bg-base-100 border border-base-300 p-5 hover:border-gray-700 transition-colors">
                 <div className="flex items-start justify-between mb-3">
                   <h3 className="text-white font-semibold">{sup.name}</h3>
                   <Building2 className="w-4 h-4 text-gray-500"/>
@@ -507,7 +507,7 @@ export function Procurement() {
         <div className="space-y-6">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             {/* Spend by Category */}
-            <div className="bg-gray-900 border border-gray-800 rounded-xl p-6">
+            <div className="card bg-base-100 border border-base-300 p-6">
               <h3 className="text-white font-semibold mb-4 flex items-center gap-2"><BarChart3 className="w-4 h-4"/>Spend by Category</h3>
               <ResponsiveContainer width="100%" height={300}>
                 <BarChart data={spendByCategory}>
@@ -521,7 +521,7 @@ export function Procurement() {
             </div>
 
             {/* Spend by Project */}
-            <div className="bg-gray-900 border border-gray-800 rounded-xl p-6">
+            <div className="card bg-base-100 border border-base-300 p-6">
               <h3 className="text-white font-semibold mb-4 flex items-center gap-2"><Users className="w-4 h-4"/>Spend by Project</h3>
               <ResponsiveContainer width="100%" height={300}>
                 <BarChart data={spendByProject}>
@@ -535,7 +535,7 @@ export function Procurement() {
             </div>
 
             {/* Monthly Trend */}
-            <div className="lg:col-span-2 bg-gray-900 border border-gray-800 rounded-xl p-6">
+            <div className="lg:col-span-2 card bg-base-100 border border-base-300 p-6">
               <h3 className="text-white font-semibold mb-4 flex items-center gap-2"><TrendingUp className="w-4 h-4"/>6-Month Spend Trend</h3>
               <ResponsiveContainer width="100%" height={300}>
                 <LineChart data={monthlyTrend}>
@@ -550,7 +550,7 @@ export function Procurement() {
           </div>
 
           {/* Category Summary Table */}
-          <div className="bg-gray-900 border border-gray-800 rounded-xl overflow-hidden">
+          <div className="card bg-base-100 border border-base-300 overflow-hidden">
             <div className="px-6 py-4 border-b border-gray-800">
               <h3 className="text-white font-semibold">Category Summary</h3>
             </div>
@@ -581,7 +581,7 @@ export function Procurement() {
           </div>
 
           {/* Top Suppliers by Spend */}
-          <div className="bg-gray-900 border border-gray-800 rounded-xl overflow-hidden">
+          <div className="card bg-base-100 border border-base-300 overflow-hidden">
             <div className="px-6 py-4 border-b border-gray-800">
               <h3 className="text-white font-semibold">Top 5 Suppliers by Spend</h3>
             </div>
@@ -631,7 +631,7 @@ export function Procurement() {
             </div>
           </div>
 
-          <div className="bg-gray-900 border border-gray-800 rounded-xl overflow-hidden">
+          <div className="card bg-base-100 border border-base-300 overflow-hidden">
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead className="bg-gray-800/60 border-b border-gray-700">
@@ -697,38 +697,38 @@ export function Procurement() {
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-xs font-medium text-gray-400 mb-1">PO Number</label>
-                  <input value={fPO} onChange={e=>setFPO(e.target.value)} className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-blue-500"/>
+                  <input value={fPO} onChange={e=>setFPO(e.target.value)} className="w-full input input-bordered text-white text-sm focus:outline-none focus:border-blue-500"/>
                 </div>
                 <div>
                   <label className="block text-xs font-medium text-gray-400 mb-1">Status</label>
-                  <select value={fStatus} onChange={e=>setFStatus(e.target.value)} className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-blue-500">
+                  <select value={fStatus} onChange={e=>setFStatus(e.target.value)} className="w-full input input-bordered text-white text-sm focus:outline-none focus:border-blue-500">
                     {STATUSES.map(s=><option key={s} value={s}>{s.replace(/_/g,' ')}</option>)}
                   </select>
                 </div>
               </div>
               <div>
                 <label className="block text-xs font-medium text-gray-400 mb-1">Supplier *</label>
-                <input value={fSupplier} onChange={e=>setFSupplier(e.target.value)} placeholder="Supplier name" className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-blue-500"/>
+                <input value={fSupplier} onChange={e=>setFSupplier(e.target.value)} placeholder="Supplier name" className="w-full input input-bordered text-white text-sm focus:outline-none focus:border-blue-500"/>
               </div>
               <div>
                 <label className="block text-xs font-medium text-gray-400 mb-1">Description *</label>
-                <textarea value={fDesc} onChange={e=>setFDesc(e.target.value)} rows={2} placeholder="Materials / works description…" className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-white text-sm resize-none focus:outline-none focus:border-blue-500"/>
+                <textarea value={fDesc} onChange={e=>setFDesc(e.target.value)} rows={2} placeholder="Materials / works description…" className="w-full input input-bordered text-white text-sm resize-none focus:outline-none focus:border-blue-500"/>
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-xs font-medium text-gray-400 mb-1">Value (£)</label>
-                  <input type="number" value={fValue} onChange={e=>setFValue(e.target.value)} placeholder="0.00" className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-blue-500"/>
+                  <input type="number" value={fValue} onChange={e=>setFValue(e.target.value)} placeholder="0.00" className="w-full input input-bordered text-white text-sm focus:outline-none focus:border-blue-500"/>
                 </div>
                 <div>
                   <label className="block text-xs font-medium text-gray-400 mb-1">Category</label>
-                  <select value={fCategory} onChange={e=>setFCategory(e.target.value)} className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-blue-500">
+                  <select value={fCategory} onChange={e=>setFCategory(e.target.value)} className="w-full input input-bordered text-white text-sm focus:outline-none focus:border-blue-500">
                     {CATEGORIES.map(c=><option key={c} value={c}>{c}</option>)}
                   </select>
                 </div>
               </div>
               <div>
                 <label className="block text-xs font-medium text-gray-400 mb-1">Project</label>
-                <select value={fProject} onChange={e=>setFProject(e.target.value)} className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-blue-500">
+                <select value={fProject} onChange={e=>setFProject(e.target.value)} className="w-full input input-bordered text-white text-sm focus:outline-none focus:border-blue-500">
                   <option value="">— Select project —</option>
                   {projects.map(p=><option key={String(p.id)} value={String(p.name)}>{String(p.name)}</option>)}
                 </select>
@@ -736,23 +736,23 @@ export function Procurement() {
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-xs font-medium text-gray-400 mb-1">Order Date</label>
-                  <input type="date" value={fOrder} onChange={e=>setFOrder(e.target.value)} className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-blue-500"/>
+                  <input type="date" value={fOrder} onChange={e=>setFOrder(e.target.value)} className="w-full input input-bordered text-white text-sm focus:outline-none focus:border-blue-500"/>
                 </div>
                 <div>
                   <label className="block text-xs font-medium text-gray-400 mb-1">Expected Delivery</label>
-                  <input type="date" value={fDelivery} onChange={e=>setFDelivery(e.target.value)} className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-blue-500"/>
+                  <input type="date" value={fDelivery} onChange={e=>setFDelivery(e.target.value)} className="w-full input input-bordered text-white text-sm focus:outline-none focus:border-blue-500"/>
                 </div>
               </div>
               <div>
                 <label className="block text-xs font-medium text-gray-400 mb-1">Notes</label>
-                <textarea value={fNotes} onChange={e=>setFNotes(e.target.value)} rows={2} placeholder="Additional notes…" className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-white text-sm resize-none focus:outline-none focus:border-blue-500"/>
+                <textarea value={fNotes} onChange={e=>setFNotes(e.target.value)} rows={2} placeholder="Additional notes…" className="w-full input input-bordered text-white text-sm resize-none focus:outline-none focus:border-blue-500"/>
               </div>
             </div>
             <div className="flex gap-3 px-6 py-4 border-t border-gray-800 sticky bottom-0 bg-gray-900">
-              <button type="button" onClick={handleSave} className="flex-1 bg-blue-600 hover:bg-blue-700 text-white rounded-lg py-2 text-sm font-semibold transition-colors">
+              <button type="button" onClick={handleSave} className="flex-1 btn btn-primary rounded-lg py-2 text-sm font-semibold transition-colors">
                 {editId?'Save Changes':'Raise PO'}
               </button>
-              <button type="button" onClick={()=>setShowModal(false)} className="flex-1 bg-gray-800 hover:bg-gray-700 text-white rounded-lg py-2 text-sm font-semibold transition-colors">
+              <button type="button" onClick={()=>setShowModal(false)} className="flex-1 btn btn-ghost rounded-lg py-2 text-sm font-semibold transition-colors">
                 Cancel
               </button>
             </div>
@@ -831,16 +831,16 @@ export function Procurement() {
             <div className="flex gap-3 px-6 py-4 border-t border-gray-800 sticky bottom-0 bg-gray-900">
               {String(selectedPO.status??'') === 'pending_approval' ? (
                 <>
-                  <button type="button" onClick={approveApprovalPO} className="flex-1 bg-green-600 hover:bg-green-700 text-white rounded-lg py-2 text-sm font-semibold transition-colors">
+                  <button type="button" onClick={approveApprovalPO} className="flex-1 btn btn-success rounded-lg py-2 text-sm font-semibold transition-colors">
                     <CheckCircle2 className="inline w-4 h-4 mr-2"/>Approve
                   </button>
-                  <button type="button" onClick={rejectApprovalPO} className="flex-1 bg-red-600 hover:bg-red-700 text-white rounded-lg py-2 text-sm font-semibold transition-colors">
+                  <button type="button" onClick={rejectApprovalPO} className="flex-1 btn btn-error rounded-lg py-2 text-sm font-semibold transition-colors">
                     Reject & Delete
                   </button>
                 </>
               ) : (
                 <>
-                  <button type="button" onClick={()=>{openEdit(selectedPO);setShowDetailModal(false);}} className="flex-1 bg-blue-600 hover:bg-blue-700 text-white rounded-lg py-2 text-sm font-semibold transition-colors">
+                  <button type="button" onClick={()=>{openEdit(selectedPO);setShowDetailModal(false);}} className="flex-1 btn btn-primary rounded-lg py-2 text-sm font-semibold transition-colors">
                     <Edit2 className="inline w-4 h-4 mr-2"/>Edit
                   </button>
                   <button type="button" onClick={()=>advanceStatus(selectedPO)} className="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg py-2 text-sm font-semibold transition-colors">
@@ -848,7 +848,7 @@ export function Procurement() {
                   </button>
                 </>
               )}
-              <button type="button" onClick={()=>setShowDetailModal(false)} className="flex-1 bg-gray-800 hover:bg-gray-700 text-white rounded-lg py-2 text-sm font-semibold transition-colors">
+              <button type="button" onClick={()=>setShowDetailModal(false)} className="flex-1 btn btn-ghost rounded-lg py-2 text-sm font-semibold transition-colors">
                 Close
               </button>
             </div>
@@ -867,29 +867,29 @@ export function Procurement() {
             <div className="p-6 space-y-4">
               <div>
                 <label className="block text-xs font-medium text-gray-400 mb-1">Supplier Name *</label>
-                <input placeholder="Supplier name" className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-blue-500"/>
+                <input placeholder="Supplier name" className="w-full input input-bordered text-white text-sm focus:outline-none focus:border-blue-500"/>
               </div>
               <div>
                 <label className="block text-xs font-medium text-gray-400 mb-1">Category</label>
-                <select className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-blue-500">
+                <select className="w-full input input-bordered text-white text-sm focus:outline-none focus:border-blue-500">
                   <option value="">— Select category —</option>
                   {CATEGORIES.map(c=><option key={c} value={c}>{c}</option>)}
                 </select>
               </div>
               <div>
                 <label className="block text-xs font-medium text-gray-400 mb-1">Contact Email</label>
-                <input type="email" placeholder="supplier@company.com" className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-blue-500"/>
+                <input type="email" placeholder="supplier@company.com" className="w-full input input-bordered text-white text-sm focus:outline-none focus:border-blue-500"/>
               </div>
               <div>
                 <label className="block text-xs font-medium text-gray-400 mb-1">Phone</label>
-                <input placeholder="+44 (0)..." className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-blue-500"/>
+                <input placeholder="+44 (0)..." className="w-full input input-bordered text-white text-sm focus:outline-none focus:border-blue-500"/>
               </div>
             </div>
             <div className="flex gap-3 px-6 py-4 border-t border-gray-800">
-              <button type="button" onClick={()=>{setShowSupplierModal(false);toast.success('Supplier added (static)');}} className="flex-1 bg-blue-600 hover:bg-blue-700 text-white rounded-lg py-2 text-sm font-semibold transition-colors">
+              <button type="button" onClick={()=>{setShowSupplierModal(false);toast.success('Supplier added (static)');}} className="flex-1 btn btn-primary rounded-lg py-2 text-sm font-semibold transition-colors">
                 Add Supplier
               </button>
-              <button type="button" onClick={()=>setShowSupplierModal(false)} className="flex-1 bg-gray-800 hover:bg-gray-700 text-white rounded-lg py-2 text-sm font-semibold transition-colors">
+              <button type="button" onClick={()=>setShowSupplierModal(false)} className="flex-1 btn btn-ghost rounded-lg py-2 text-sm font-semibold transition-colors">
                 Cancel
               </button>
             </div>

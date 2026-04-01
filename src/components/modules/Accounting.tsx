@@ -170,7 +170,7 @@ export function Accounting() {
       <div className="space-y-6 bg-gray-900 min-h-screen p-6">
       <div className="flex items-center justify-between">
         <h1 className="text-3xl font-bold text-white">Accounting &amp; Finance</h1>
-        <button type="button" onClick={openCreate} className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded-lg text-white font-medium transition-colors">
+        <button type="button" onClick={openCreate} className="flex items-center gap-2 px-4 py-2 btn btn-primary rounded-lg text-white font-medium transition-colors">
           <Plus className="w-4 h-4"/>New Invoice
         </button>
       </div>
@@ -189,7 +189,7 @@ export function Accounting() {
           {label:'Outstanding',   value:fmt(totalOutstanding), icon:PoundSterling, col:'text-yellow-400'},
           {label:'Overdue',       value:fmt(totalOverdue),     icon:AlertCircle,   col:'text-red-400'},
         ].map(({label,value,icon:Icon,col})=>(
-          <div key={label} className="bg-gray-800 border border-gray-700 rounded-xl p-5">
+          <div key={label} className="card bg-base-200 p-5">
             <div className="flex items-center justify-between mb-3">
               <p className="text-gray-400 text-sm">{label}</p>
               <Icon className={`w-5 h-5 ${col}`}/>
@@ -210,7 +210,7 @@ export function Accounting() {
 
       {tab==='pl' && (
         <div className="space-y-6">
-          <div className="bg-gray-800 border border-gray-700 rounded-xl p-6">
+          <div className="card bg-base-200 p-6">
             <h3 className="text-lg font-bold text-white mb-6">Profit & Loss Statement — 2026 YTD</h3>
 
             <div className="space-y-6">
@@ -294,7 +294,7 @@ export function Accounting() {
       )}
 
       {tab==='vat' && (
-        <div className="bg-gray-800 border border-gray-700 rounded-xl p-6">
+        <div className="card bg-base-200 p-6">
           <h3 className="text-lg font-bold text-white mb-4">VAT Return Calculator</h3>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
@@ -351,7 +351,7 @@ export function Accounting() {
       )}
 
       {tab==='bank' && (
-        <div className="bg-gray-800 border border-gray-700 rounded-xl p-6">
+        <div className="card bg-base-200 p-6">
           <h3 className="text-lg font-bold text-white mb-6">Bank Reconciliation</h3>
 
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
@@ -407,7 +407,7 @@ export function Accounting() {
 
       {tab==='invoices' && (
         <>
-          <div className="bg-gray-800 border border-gray-700 rounded-xl overflow-hidden">
+          <div className="card bg-base-200 overflow-hidden">
             {isLoading ? <div className="p-8 text-center text-gray-400">Loading…</div> : (
               <div className="overflow-x-auto">
                 <table className="w-full text-sm">
@@ -467,7 +467,7 @@ export function Accounting() {
       )}
 
       {tab==='cash' && (
-        <div className="bg-gray-800 border border-gray-700 rounded-xl p-6">
+        <div className="card bg-base-200 p-6">
           <h3 className="text-lg font-bold text-white mb-4">Cash Position — Last 7 Months</h3>
           <ResponsiveContainer width="100%" height={400}>
             <LineChart data={CASH_DATA}>
@@ -486,7 +486,7 @@ export function Accounting() {
 
       {tab==='budget' && (
         <div className="space-y-6">
-          <div className="bg-gray-800 border border-gray-700 rounded-xl p-6">
+          <div className="card bg-base-200 p-6">
             <h3 className="text-lg font-bold text-white mb-4">Budget vs Actual — By Project</h3>
             <ResponsiveContainer width="100%" height={360}>
               <BarChart data={BUDGET_CHART_DATA}>
@@ -502,7 +502,7 @@ export function Accounting() {
             </ResponsiveContainer>
           </div>
 
-          <div className="bg-gray-800 border border-gray-700 rounded-xl overflow-hidden">
+          <div className="card bg-base-200 overflow-hidden">
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead className="bg-gray-900 border-b border-gray-700">
@@ -585,10 +585,10 @@ export function Accounting() {
               </div>
             </div>
             <div className="flex gap-3 px-6 py-4 border-t border-gray-700">
-              <button type="button" onClick={handleSave} className="flex-1 bg-blue-600 hover:bg-blue-700 text-white rounded-lg py-2 text-sm font-semibold transition-colors">
+              <button type="button" onClick={handleSave} className="flex-1 btn btn-primary rounded-lg py-2 text-sm font-semibold transition-colors">
                 {editId?'Save Changes':'Create Invoice'}
               </button>
-              <button type="button" onClick={()=>setShowModal(false)} className="flex-1 bg-gray-700 hover:bg-gray-600 text-white rounded-lg py-2 text-sm font-semibold transition-colors">
+              <button type="button" onClick={()=>setShowModal(false)} className="flex-1 btn btn-ghost rounded-lg py-2 text-sm font-semibold transition-colors">
                 Cancel
               </button>
             </div>

@@ -425,7 +425,7 @@ export function GlobalSearch({ onClose }: { onClose?: () => void }) {
                   onChange={e =>
                     setAdvancedFilters(prev => ({ ...prev, module: e.target.value }))
                   }
-                  className="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-2 text-white text-sm"
+                  className="w-full bg-gray-800 border border-gray-700 btn text-white text-sm"
                 >
                   <option value="all">All Modules</option>
                   <option value="projects">Projects</option>
@@ -440,14 +440,14 @@ export function GlobalSearch({ onClose }: { onClose?: () => void }) {
                   onChange={e =>
                     setAdvancedFilters(prev => ({ ...prev, status: e.target.value }))
                   }
-                  className="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-2 text-white text-sm"
+                  className="w-full bg-gray-800 border border-gray-700 btn text-white text-sm"
                 >
                   <option value="all">All Statuses</option>
                   <option value="active">Active</option>
                   <option value="archived">Archived</option>
                 </select>
               </div>
-              <button className="w-full px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium text-sm">
+              <button className="w-full px-4 py-2 btn btn-primary rounded-lg font-medium text-sm">
                 <Filter className="h-4 w-4 inline mr-2" />
                 Run Advanced Search
               </button>

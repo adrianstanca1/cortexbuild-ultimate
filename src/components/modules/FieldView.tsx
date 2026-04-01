@@ -326,7 +326,7 @@ export function FieldView() {
                   {openInc.length > 0 && (
                     <div className="px-5 pb-4 space-y-1">
                       {openInc.slice(0, 2).map(i => (
-                        <div key={String(i.id)} className="flex items-center gap-2 text-xs bg-red-500/10 border border-red-500/30 rounded-lg px-3 py-1.5">
+                        <div key={String(i.id)} className="flex items-center gap-2 text-xs bg-red-500/10 border border-red-500/30 btn btn-sm">
                           <AlertTriangle size={11} className="text-red-400 flex-shrink-0" />
                           <span className="text-gray-300 truncate">{String(i.title ?? i.description ?? 'Incident')}</span>
                           <span className="ml-auto text-red-400 font-medium">{String(i.severity ?? '')}</span>
