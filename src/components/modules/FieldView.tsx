@@ -674,3 +674,4 @@ export function FieldView() {
     </div>
   );
 }
+export default FieldView;

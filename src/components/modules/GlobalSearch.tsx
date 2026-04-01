@@ -473,3 +473,4 @@ export function GlobalSearch({ onClose }: { onClose?: () => void }) {
     </div>
   );
 }
+export default GlobalSearch;

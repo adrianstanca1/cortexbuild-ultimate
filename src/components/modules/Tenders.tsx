@@ -1155,3 +1155,4 @@ export function Tenders() {
     </div>
   );
 }
+export default Tenders;

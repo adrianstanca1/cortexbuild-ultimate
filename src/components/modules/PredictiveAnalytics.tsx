@@ -673,3 +673,4 @@ export function PredictiveAnalytics() {
     </div>
   );
 }
+export default PredictiveAnalytics;

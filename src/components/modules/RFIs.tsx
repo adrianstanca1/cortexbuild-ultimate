@@ -756,3 +756,4 @@ export function RFIs() {
     </div>
   );
 }
+export default RFIs;

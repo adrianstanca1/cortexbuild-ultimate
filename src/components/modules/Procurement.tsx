@@ -896,3 +896,4 @@ export function Procurement() {
     </div>
   );
 }
+export default Procurement;

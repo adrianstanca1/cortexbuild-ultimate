@@ -510,3 +510,4 @@ function CreateRoleModal({ onClose, onSave }: { onClose: () => void; onSave: () 
     </div>
   );
 }
+export default PermissionsManager;

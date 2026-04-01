@@ -1059,3 +1059,4 @@ export function PlantEquipment() {
     </div>
   );
 }
+export default PlantEquipment;

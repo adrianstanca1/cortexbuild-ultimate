@@ -445,3 +445,4 @@ export function Marketplace() {
     </div>
   );
 }
+export default Marketplace;

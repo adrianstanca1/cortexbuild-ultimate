@@ -802,3 +802,4 @@ export function Drawings() {
     </div>
   );
 }
+export default Drawings;

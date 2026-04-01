@@ -573,3 +573,4 @@ export function Meetings() {
     </div>
   );
 }
+export default Meetings;

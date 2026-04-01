@@ -455,3 +455,4 @@ export function EmailHistory() {
     </div>
   );
 }
+export default EmailHistory;

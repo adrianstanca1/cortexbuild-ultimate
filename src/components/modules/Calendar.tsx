@@ -660,3 +660,4 @@ export function Calendar() {
     </div>
   );
 }
+export default Calendar;

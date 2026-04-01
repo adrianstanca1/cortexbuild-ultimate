@@ -1272,3 +1272,4 @@ export function Invoicing() {
     </div>
   );
 }
+export default Invoicing;

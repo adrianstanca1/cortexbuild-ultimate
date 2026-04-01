@@ -989,3 +989,4 @@ export function Safety() {
     </div>
   );
 }
+export default Safety;

@@ -517,3 +517,4 @@ export function Inspections() {
     </div>
   );
 }
+export default Inspections;

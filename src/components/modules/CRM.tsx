@@ -655,3 +655,4 @@ export function CRM() {
     </div>
   );
 }
+export default CRM;

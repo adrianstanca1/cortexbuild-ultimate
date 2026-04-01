@@ -1246,3 +1246,4 @@ ${r.activities ? JSON.parse(String(r.activities)).map((a: AnyRow) => `- ${a.desc
   }
 }
 
+export default DailyReports;

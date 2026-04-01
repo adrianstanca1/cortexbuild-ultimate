@@ -519,3 +519,4 @@ export function AuditLog() {
     </div>
   );
 }
+export default AuditLog;

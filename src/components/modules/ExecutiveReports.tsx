@@ -553,3 +553,4 @@ export function ExecutiveReports() {
 
 // Add missing import
 const Target = TrendingUp;
+export default ExecutiveReports;

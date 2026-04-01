@@ -489,3 +489,4 @@ export function CIS() {
     </div>
   );
 }
+export default CIS;

@@ -747,3 +747,4 @@ export function Materials() {
     </div>
   );
 }
+export default Materials;

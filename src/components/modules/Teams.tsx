@@ -1143,3 +1143,4 @@ function TrendingUp(props: React.SVGProps<SVGSVGElement>) {
     </svg>
   );
 }
+export default Teams;

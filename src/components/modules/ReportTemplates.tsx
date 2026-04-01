@@ -570,3 +570,4 @@ function TemplateModal({
     </div>
   );
 }
+export default ReportTemplates;

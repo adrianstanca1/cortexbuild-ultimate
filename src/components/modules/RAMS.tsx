@@ -578,3 +578,4 @@ export function RAMS() {
     </div>
   );
 }
+export default RAMS;

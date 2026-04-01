@@ -595,3 +595,4 @@ export function Accounting() {
     </div>
   );
 }
+export default Accounting;
