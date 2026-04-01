@@ -80,7 +80,7 @@ export function useNotifications(
   const [error, setError] = useState<Error | null>(null);
   const [isConnected, setIsConnected] = useState(false);
 
-  // Fetch notifications from API
+  // Fetch notifications from API with caching
   const fetchNotificationsData = useCallback(async () => {
     setLoading(true);
     setIsLoading(true);
@@ -98,9 +98,8 @@ export function useNotifications(
       setUnreadCount(result.unreadCount);
       setTotal(result.total);
     } catch (err) {
-      const error =
-        err instanceof Error ? err : new Error('Failed to fetch notifications');
-      setError(error);
+      setError(err instanceof Error ? err : new Error('Failed to fetch notifications'));
+      console.error('Failed to fetch notifications:', err);
     } finally {
       setLoading(false);
       setIsLoading(false);
