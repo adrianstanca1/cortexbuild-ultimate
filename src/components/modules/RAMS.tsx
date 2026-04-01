@@ -1,6 +1,7 @@
 import { useState, useRef } from 'react';
 import { Shield, Plus, Search, FileCheck, AlertTriangle, Clock, CheckCircle, Edit2, Trash2, X, ChevronDown, ChevronUp, Download, Award, Upload, CheckSquare, Square } from 'lucide-react';
 import { DataImporter, ExportButton } from '../ui/DataImportExport';
+import { ModuleBreadcrumbs } from '../ui/Breadcrumbs';
 import { useRAMS } from '../../hooks/useData';
 import { uploadFile } from '../../services/api';
 import { EmptyState } from '../ui/EmptyState';
@@ -208,7 +209,9 @@ export function RAMS() {
   const labelCls = 'block text-sm font-medium text-gray-300 mb-1';
 
   return (
-    <div className="p-6 space-y-6">
+    <>
+      <ModuleBreadcrumbs currentModule="rams" onNavigate={() => {}} />
+      <div className="p-6 space-y-6">
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-white">RAMS</h1>
@@ -576,6 +579,7 @@ export function RAMS() {
         </div>
       )}
     </div>
+    </>
   );
 }
 export default RAMS;

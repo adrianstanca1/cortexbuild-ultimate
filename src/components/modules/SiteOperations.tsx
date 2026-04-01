@@ -5,6 +5,7 @@ import {
 } from 'lucide-react';
 import { useDailyReports, useEquipment, useTeam } from '../../hooks/useData';
 import { BulkActionsBar, useBulkSelection } from '../ui/BulkActions';
+import { ModuleBreadcrumbs } from '../ui/Breadcrumbs';
 import { toast } from 'sonner';
 
 type AnyRow = Record<string, unknown>;
@@ -175,7 +176,9 @@ const handleSaveDelay = async () => {
   };
 
   return (
-    <div className="p-6 space-y-6">
+    <>
+      <ModuleBreadcrumbs currentModule="site-ops" onNavigate={() => {}} />
+      <div className="p-6 space-y-6">
       <div>
         <h1 className="text-2xl font-bold text-gray-100">Site Operations</h1>
         <p className="text-sm text-gray-400 mt-1">Comprehensive site overview, daily reporting, equipment & labour management</p>
@@ -894,6 +897,7 @@ const handleSaveDelay = async () => {
         onClearSelection={clearSelection}
       />
     </div>
+    </>
   );
 }
 export default SiteOperations;

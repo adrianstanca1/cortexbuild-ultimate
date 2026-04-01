@@ -3,6 +3,7 @@ import { Receipt, Plus, Search, PoundSterling, Calculator, CheckCircle, Clock, E
 import { useCIS } from '../../hooks/useData';
 import { toast } from 'sonner';
 import { BulkActionsBar, useBulkSelection } from '../ui/BulkActions';
+import { ModuleBreadcrumbs } from '../ui/Breadcrumbs';
 import { EmptyState } from '../ui/EmptyState';
 
 type AnyRow = Record<string, unknown>;
@@ -142,7 +143,9 @@ export function CIS() {
   const calcNetPayment = calcGrossNum - calcDeductionAmount;
 
   return (
-    <div className="space-y-6 bg-gray-900 min-h-screen p-6">
+    <>
+      <ModuleBreadcrumbs currentModule="cis" onNavigate={() => {}} />
+      <div className="space-y-6 bg-gray-900 min-h-screen p-6">
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold text-white">CIS Management</h1>
@@ -487,6 +490,7 @@ export function CIS() {
         </div>
       )}
     </div>
+    </>
   );
 }
 export default CIS;

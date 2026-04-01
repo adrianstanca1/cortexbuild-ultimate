@@ -12,6 +12,7 @@ import {
   Square,
 } from 'lucide-react';
 import { BulkActionsBar, useBulkSelection } from '../ui/BulkActions';
+import { ModuleBreadcrumbs } from '../ui/Breadcrumbs';
 import { permissionsApi, type Role, type Permissions } from '../../services/api';
 import { toast } from 'sonner';
 import clsx from 'clsx';
@@ -159,7 +160,9 @@ export function PermissionsManager() {
   );
 
   return (
-    <div className="space-y-6">
+    <>
+      <ModuleBreadcrumbs currentModule="permissions" onNavigate={() => {}} />
+      <div className="space-y-6">
       <div className="flex justify-between items-center">
         <h1 className="text-2xl font-bold text-white">Permissions & Access Control</h1>
         <button
@@ -434,6 +437,7 @@ export function PermissionsManager() {
         />
       )}
     </div>
+    </>
   );
 }
 

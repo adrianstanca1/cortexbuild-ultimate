@@ -2,6 +2,7 @@
 import { useState } from 'react';
 import { Plus, Users, FileCheck, Clock, Trash2, X, Upload, Edit } from 'lucide-react';
 import { EmptyState } from '../ui/EmptyState';
+import { ModuleBreadcrumbs } from '../ui/Breadcrumbs';
 import { usePrequalification } from '../../hooks/useData';
 import { uploadFile } from '../../services/api';
 
@@ -83,7 +84,9 @@ export default function Prequalification() {
   }
 
   return (
-    <div className="p-6 space-y-6">
+    <>
+      <ModuleBreadcrumbs currentModule="prequalification" onNavigate={() => {}} />
+      <div className="p-6 space-y-6">
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-2xl font-bold text-white">Prequalification</h2>
@@ -267,5 +270,6 @@ export default function Prequalification() {
         </div>
       )}
     </div>
+    </>
   );
 }

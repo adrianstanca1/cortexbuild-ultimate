@@ -2,6 +2,7 @@
 import { useState } from 'react';
 import { Plus, Shield, FileCheck, Clock, AlertTriangle, FileText, Upload, Trash2, X, Edit, CheckSquare, Square } from 'lucide-react';
 import { BulkActionsBar, useBulkSelection } from '../ui/BulkActions';
+import { ModuleBreadcrumbs } from '../ui/Breadcrumbs';
 import { EmptyState } from '../ui/EmptyState';
 import { useCertifications } from '../../hooks/useData';
 import { uploadFile } from '../../services/api';
@@ -116,7 +117,9 @@ export default function Certifications() {
   };
 
   return (
-    <div className="p-6 space-y-6">
+    <>
+      <ModuleBreadcrumbs currentModule="certifications" onNavigate={() => {}} />
+      <div className="p-6 space-y-6">
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-2xl font-bold text-white">Certifications & Licenses</h2>
@@ -326,5 +329,6 @@ export default function Certifications() {
         </div>
       )}
     </div>
+    </>
   );
 }

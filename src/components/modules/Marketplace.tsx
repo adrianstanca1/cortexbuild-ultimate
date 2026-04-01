@@ -14,6 +14,7 @@ import {
   Trash2,
 } from 'lucide-react';
 import { BulkActionsBar, useBulkSelection } from '../ui/BulkActions';
+import { ModuleBreadcrumbs } from '../ui/Breadcrumbs';
 
 type SubTab = 'apps' | 'integrations' | 'templates' | 'training' | 'support';
 type _AnyRow = Record<string, unknown>;
@@ -191,7 +192,9 @@ export function Marketplace() {
   };
 
   return (
-    <div className="space-y-6">
+    <>
+      <ModuleBreadcrumbs currentModule="marketplace" onNavigate={() => {}} />
+      <div className="space-y-6">
       <h1 className="text-3xl font-bold text-white">CortexBuild Marketplace</h1>
 
       {/* KPI Stats */}
@@ -443,6 +446,7 @@ export function Marketplace() {
         </div>
       )}
     </div>
+    </>
   );
 }
 export default Marketplace;

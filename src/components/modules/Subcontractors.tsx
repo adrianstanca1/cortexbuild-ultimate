@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { HardHat, CheckCircle2, AlertTriangle, XCircle, Star, DollarSign, Plus, Search, Shield, FileText, BarChart3, X, Edit2, Trash2, Phone, Mail, Building2, CheckSquare, Square, Download } from 'lucide-react';
 import { DataImporter, ExportButton } from '../ui/DataImportExport';
+import { ModuleBreadcrumbs } from '../ui/Breadcrumbs';
 import { BulkActionsBar, useBulkSelection } from '../ui/BulkActions';
 import { useSubcontractors } from '../../hooks/useData';
 import { EmptyState } from '../ui/EmptyState';
@@ -200,7 +201,9 @@ export function Subcontractors() {
   };
 
   return (
-    <div className="p-6 space-y-6">
+    <>
+      <ModuleBreadcrumbs currentModule="subcontractors" onNavigate={() => {}} />
+      <div className="p-6 space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
@@ -948,6 +951,7 @@ export function Subcontractors() {
         </div>
       )}
     </div>
+    </>
   );
 }
 export default Subcontractors;

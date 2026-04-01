@@ -5,6 +5,7 @@ import {
   Loader2, CheckSquare, Square,
 } from 'lucide-react';
 import { EmptyState } from '../ui/EmptyState';
+import { ModuleBreadcrumbs } from '../ui/Breadcrumbs';
 import { useRFIs } from '../../hooks/useData';
 import { toast } from 'sonner';
 import { z } from 'zod';
@@ -247,7 +248,9 @@ export function RFIs() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-900 p-6 space-y-6">
+    <>
+      <ModuleBreadcrumbs currentModule="rfis" onNavigate={() => {}} />
+      <div className="min-h-screen bg-gray-900 p-6 space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
@@ -754,6 +757,7 @@ export function RFIs() {
         </div>
       )}
     </div>
+    </>
   );
 }
 export default RFIs;

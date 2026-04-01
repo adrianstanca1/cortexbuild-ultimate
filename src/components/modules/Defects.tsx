@@ -7,6 +7,7 @@ import {
 } from 'lucide-react';
 import { uploadFile } from '../../services/api';
 import { BulkActionsBar, useBulkSelection } from '../ui/BulkActions';
+import { ModuleBreadcrumbs } from '../ui/Breadcrumbs';
 import { toast } from 'sonner';
 import { useDefects } from '../../hooks/useData';
 
@@ -171,7 +172,9 @@ export default function Defects() {
   const totalCost = typedDefects.reduce((sum, v: Defect & { cost?: number }) => sum + (v.cost ?? 0), 0);
 
   return (
-    <div className="p-6 space-y-6">
+    <>
+      <ModuleBreadcrumbs currentModule="defects" onNavigate={() => {}} />
+      <div className="p-6 space-y-6">
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-2xl font-bold text-white" style={{ fontFamily: 'var(--font-display)' }}>
@@ -636,5 +639,6 @@ export default function Defects() {
         </div>
       )}
     </div>
+    </>
   );
 }

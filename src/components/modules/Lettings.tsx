@@ -2,6 +2,7 @@
 import { useState } from 'react';
 import { Plus, FileText, Clock, CheckCircle, Trash2, X, Upload, Pencil, CheckSquare, Square, Home } from 'lucide-react';
 import { EmptyState } from '../ui/EmptyState';
+import { ModuleBreadcrumbs } from '../ui/Breadcrumbs';
 import { BulkActionsBar, useBulkSelection } from '../ui/BulkActions';
 import { uploadFile } from '../../services/api';
 import { toast } from 'sonner';
@@ -85,7 +86,9 @@ export default function Lettings() {
   }
 
   return (
-    <div className="p-6 space-y-6">
+    <>
+      <ModuleBreadcrumbs currentModule="lettings" onNavigate={() => {}} />
+      <div className="p-6 space-y-6">
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-2xl font-bold text-white">Contract Lettings</h2>
@@ -275,5 +278,6 @@ export default function Lettings() {
         </div>
       )}
     </div>
+    </>
   );
 }

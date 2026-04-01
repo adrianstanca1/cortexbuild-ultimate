@@ -5,6 +5,7 @@ import {
   Plus, X, ChevronLeft, ChevronRight, MapPin, Users, AlertTriangle, Calendar as CalendarIcon, Flag, Zap, CheckSquare, Square, Trash2
 } from 'lucide-react';
 import { BulkActionsBar, useBulkSelection } from '../ui/BulkActions';
+import { ModuleBreadcrumbs } from '../ui/Breadcrumbs';
 
 type AnyRow = Record<string, unknown>;
 type SubTab = 'month' | 'week' | 'events' | 'deadlines' | 'resources';
@@ -131,7 +132,9 @@ export function Calendar() {
   });
 
   return (
-    <div className="space-y-6">
+    <>
+      <ModuleBreadcrumbs currentModule="calendar" onNavigate={() => {}} />
+      <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-white">Calendar</h1>
@@ -658,6 +661,7 @@ export function Calendar() {
         onClearSelection={clearSelection}
       />
     </div>
+    </>
   );
 }
 export default Calendar;

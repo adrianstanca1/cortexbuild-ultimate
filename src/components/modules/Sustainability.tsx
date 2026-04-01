@@ -2,6 +2,7 @@
 import { useState } from 'react';
 import { Plus, Leaf, Cloud, Factory, Gauge, Trash2, X, Upload, Pencil, CheckSquare, Square } from 'lucide-react';
 import { EmptyState } from '../ui/EmptyState';
+import { ModuleBreadcrumbs } from '../ui/Breadcrumbs';
 import { BulkActionsBar, useBulkSelection } from '../ui/BulkActions';
 import { uploadFile } from '../../services/api';
 import { toast } from 'sonner';
@@ -101,7 +102,9 @@ export default function Sustainability() {
   }
 
   return (
-    <div className="p-6 space-y-6">
+    <>
+      <ModuleBreadcrumbs currentModule="sustainability" onNavigate={() => {}} />
+      <div className="p-6 space-y-6">
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-2xl font-bold text-white">Sustainability & ESG</h2>
@@ -332,5 +335,6 @@ export default function Sustainability() {
         </div>
       )}
     </div>
+    </>
   );
 }

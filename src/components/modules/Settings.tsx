@@ -7,6 +7,7 @@ import {
   CheckSquare, Square, Loader2,
 } from 'lucide-react';
 import { BulkActionsBar, useBulkSelection } from '../ui/BulkActions';
+import { ModuleBreadcrumbs } from '../ui/Breadcrumbs';
 import { settingsApi, usersApi } from '../../services/api';
 import { toast } from 'sonner';
 
@@ -172,7 +173,9 @@ export function Settings() {
   };
 
   return (
-    <div className="space-y-6">
+    <>
+      <ModuleBreadcrumbs currentModule="settings" onNavigate={() => {}} />
+      <div className="space-y-6">
       <h1 className="text-3xl font-bold text-white">Settings</h1>
 
       {/* Tab Nav */}
@@ -608,6 +611,7 @@ export function Settings() {
         </div>
       )}
     </div>
+    </>
   );
 }
 export default Settings;

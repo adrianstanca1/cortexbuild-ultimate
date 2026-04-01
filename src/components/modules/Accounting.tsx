@@ -7,6 +7,7 @@ import {
 import { FileText, AlertCircle, Plus, Edit2, Trash2, X, CheckCircle2, PoundSterling, CheckSquare, Square } from 'lucide-react';
 import { useProjects, useInvoices } from '../../hooks/useData';
 import { BulkActionsBar, useBulkSelection } from '../ui/BulkActions';
+import { ModuleBreadcrumbs } from '../ui/Breadcrumbs';
 import { toast } from 'sonner';
 
 type AnyRow = Record<string, unknown>;
@@ -164,7 +165,9 @@ export function Accounting() {
   const TABS=[{id:'pl',label:'P&L Statement'},{id:'vat',label:'VAT Return'},{id:'bank',label:'Bank Rec'},{id:'invoices',label:'Invoices'},{id:'cash',label:'Cash Flow'},{id:'budget',label:'Budget'}] as const;
 
   return (
-    <div className="space-y-6 bg-gray-900 min-h-screen p-6">
+    <>
+      <ModuleBreadcrumbs currentModule="accounting" onNavigate={() => {}} />
+      <div className="space-y-6 bg-gray-900 min-h-screen p-6">
       <div className="flex items-center justify-between">
         <h1 className="text-3xl font-bold text-white">Accounting &amp; Finance</h1>
         <button type="button" onClick={openCreate} className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded-lg text-white font-medium transition-colors">
@@ -593,6 +596,7 @@ export function Accounting() {
         </div>
       )}
     </div>
+    </>
   );
 }
 export default Accounting;

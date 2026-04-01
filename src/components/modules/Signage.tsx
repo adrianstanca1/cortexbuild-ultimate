@@ -2,6 +2,7 @@
 import { useState } from 'react';
 import { Plus, Edit, Trash2, X, Upload, CheckSquare, Square } from 'lucide-react';
 import { EmptyState } from '../ui/EmptyState';
+import { ModuleBreadcrumbs } from '../ui/Breadcrumbs';
 import { BulkActionsBar, useBulkSelection } from '../ui/BulkActions';
 import { uploadFile } from '../../services/api';
 import { useSignage } from '../../hooks/useData';
@@ -91,7 +92,9 @@ export default function Signage() {
   }
 
   return (
-    <div className="p-6 space-y-6">
+    <>
+      <ModuleBreadcrumbs currentModule="signage" onNavigate={() => {}} />
+      <div className="p-6 space-y-6">
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-2xl font-bold text-white">Site Signage</h2>
@@ -273,5 +276,6 @@ export default function Signage() {
         </div>
       )}
     </div>
+    </>
   );
 }

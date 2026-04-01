@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { ClipboardList, Plus, Search, Camera, CheckCircle2, AlertCircle, Clock, X, ChevronRight, Edit2, Trash2, Image, Tag, MapPin, ChevronDown, CheckSquare, Square } from 'lucide-react';
 import { EmptyState } from '../ui/EmptyState';
+import { ModuleBreadcrumbs } from '../ui/Breadcrumbs';
 import { BulkActionsBar, useBulkSelection } from '../ui/BulkActions';
 import { usePunchList } from '../../hooks/useData';
 import { toast } from 'sonner';
@@ -173,7 +174,9 @@ export function PunchList() {
   }
 
   return (
-    <div className="p-6 space-y-6 bg-gray-950 min-h-screen">
+    <>
+      <ModuleBreadcrumbs currentModule="punch-list" onNavigate={() => {}} />
+      <div className="p-6 space-y-6 bg-gray-950 min-h-screen">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
@@ -707,6 +710,7 @@ export function PunchList() {
         </div>
       )}
     </div>
+    </>
   );
 }
 export default PunchList;

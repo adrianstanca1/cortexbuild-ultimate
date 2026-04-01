@@ -7,6 +7,7 @@ import { TrendingUp, AlertTriangle, Lightbulb, Activity, Shield, PoundSterling,
 import { toast } from 'sonner';
 import { insightsApi } from '../../services/api';
 import { BulkActionsBar, useBulkSelection } from '../ui/BulkActions';
+import { ModuleBreadcrumbs } from '../ui/Breadcrumbs';
 import { EmptyState } from '../ui/EmptyState';
 import { BarChart, Bar, PieChart as RechartsPie,
   Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer,
@@ -155,7 +156,9 @@ export function Insights() {
   };
 
   return (
-    <div className="space-y-6">
+    <>
+      <ModuleBreadcrumbs currentModule="insights" onNavigate={() => {}} />
+      <div className="space-y-6">
       {/* Header */}
       <div className="flex justify-between items-start">
         <div>
@@ -289,6 +292,7 @@ export function Insights() {
         onClearSelection={clearSelection}
       />
     </div>
+    </>
   );
 }
 export default Insights;

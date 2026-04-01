@@ -4,6 +4,7 @@ import {
   BarChart3, Activity, CheckSquare, Square, FileEdit, DollarSign, Calendar
 } from 'lucide-react';
 import { BulkActionsBar, useBulkSelection } from '../ui/BulkActions';
+import { ModuleBreadcrumbs } from '../ui/Breadcrumbs';
 import { EmptyState } from '../ui/EmptyState';
 import { useChangeOrders } from '../../hooks/useData';
 import { toast } from 'sonner';
@@ -128,7 +129,9 @@ function ApprovalTimeline({ status }: { status: string }) {
   const isRejected = status === 'Rejected';
 
   return (
-    <div className="flex items-center justify-between mb-6 p-4 bg-gray-700/50 rounded-lg">
+    <>
+      <ModuleBreadcrumbs currentModule="change-orders" onNavigate={() => {}} />
+      <div className="flex items-center justify-between mb-6 p-4 bg-gray-700/50 rounded-lg">
       {steps.map((step, idx) => (
         <div key={step.label} className="flex flex-col items-center flex-1">
           <div className={`w-10 h-10 rounded-full flex items-center justify-center text-lg font-bold ${
@@ -145,6 +148,7 @@ function ApprovalTimeline({ status }: { status: string }) {
         </div>
       ))}
     </div>
+    </>
   );
 }
 

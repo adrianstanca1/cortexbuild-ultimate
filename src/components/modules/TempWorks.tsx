@@ -7,6 +7,7 @@ import {
 import { useTempWorks } from '../../hooks/useData';
 import { toast } from 'sonner';
 import { uploadFile } from '../../services/api';
+import { ModuleBreadcrumbs } from '../ui/Breadcrumbs';
 
 interface _TempWork {
   id: string;
@@ -132,7 +133,9 @@ export default function TempWorks() {
   }
 
   return (
-    <div className="p-6 space-y-6">
+    <>
+      <ModuleBreadcrumbs currentModule="temp-works" onNavigate={() => {}} />
+      <div className="p-6 space-y-6">
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-2xl font-bold text-white" style={{ fontFamily: 'var(--font-display)' }}>
@@ -410,5 +413,6 @@ export default function TempWorks() {
         </div>
       )}
     </div>
+    </>
   );
 }

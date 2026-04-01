@@ -1,6 +1,7 @@
 import { useState, useMemo, useEffect } from 'react';
 import { AlertTriangle, Plus, Search, AlertOctagon, Edit2, Trash2, X, ChevronDown, ChevronUp, TrendingUp, BarChart3, CheckCircle2, Clock, Users, Target, Calendar, CheckSquare, Square } from 'lucide-react';
 import { EmptyState } from '../ui/EmptyState';
+import { ModuleBreadcrumbs } from '../ui/Breadcrumbs';
 import { useRiskRegister } from '../../hooks/useData';
 import { riskRegisterApi } from '../../services/api';
 import { toast } from 'sonner';
@@ -143,7 +144,9 @@ export function RiskRegister() {
   const formLevel = riskLevel(formScore);
 
   return (
-    <div className="p-6 space-y-6 bg-gray-950 min-h-screen">
+    <>
+      <ModuleBreadcrumbs currentModule="risk-register" onNavigate={() => {}} />
+      <div className="p-6 space-y-6 bg-gray-950 min-h-screen">
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold text-white">Risk Register</h1>
@@ -651,6 +654,7 @@ export function RiskRegister() {
         </div>
       )}
     </div>
+    </>
   );
 }
 

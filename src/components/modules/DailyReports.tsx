@@ -5,6 +5,7 @@ import {
   Camera, Brain, CheckCircle2, CheckSquare, Square, Loader2
 } from 'lucide-react';
 import { BulkActionsBar, useBulkSelection } from '../ui/BulkActions';
+import { ModuleBreadcrumbs } from '../ui/Breadcrumbs';
 import { EmptyState } from '../ui/EmptyState';
 import { LineChart, Line, CartesianGrid, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
 import { useProjects, useDailyReports } from '../../hooks/useData';
@@ -187,7 +188,9 @@ export function DailyReports() {
   const averageWorkersPerDay = reports.length > 0 ? Math.round(totalWorkerDays / reports.length) : 0;
 
   return (
-    <div className="p-6 space-y-6 bg-gray-900 min-h-screen">
+    <>
+      <ModuleBreadcrumbs currentModule="daily-reports" onNavigate={() => {}} />
+      <div className="p-6 space-y-6 bg-gray-900 min-h-screen">
       {/* Header */}
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div>
@@ -1187,6 +1190,7 @@ export function DailyReports() {
       {/* ── PDF Export ─────────────────────────────────────── */}
       <div className="hidden print:block" />
     </div>
+    </>
   );
 }
 

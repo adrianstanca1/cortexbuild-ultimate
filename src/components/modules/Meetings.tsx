@@ -4,6 +4,7 @@ import {
   ChevronDown, ChevronUp, Video, AlertCircle, FileText, MoreVertical, Building2, CheckSquare, Square
 } from 'lucide-react';
 import { BulkActionsBar, useBulkSelection } from '../ui/BulkActions';
+import { ModuleBreadcrumbs } from '../ui/Breadcrumbs';
 import { EmptyState } from '../ui/EmptyState';
 import { useMeetings } from '../../hooks/useData';
 import { toast } from 'sonner';
@@ -199,7 +200,9 @@ export function Meetings() {
   };
 
   return (
-    <div className="p-6 space-y-6">
+    <>
+      <ModuleBreadcrumbs currentModule="meetings" onNavigate={() => {}} />
+      <div className="p-6 space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
@@ -571,6 +574,7 @@ export function Meetings() {
         </div>
       )}
     </div>
+    </>
   );
 }
 export default Meetings;

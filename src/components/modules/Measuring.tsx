@@ -2,6 +2,7 @@
 import { useState } from 'react';
 import { Plus, Ruler, MapPin, FileText, Trash2, X, Upload, Pencil } from 'lucide-react';
 import { EmptyState } from '../ui/EmptyState';
+import { ModuleBreadcrumbs } from '../ui/Breadcrumbs';
 import { uploadFile } from '../../services/api';
 import { toast } from 'sonner';
 import { useMeasuring } from '../../hooks/useData';
@@ -79,7 +80,9 @@ export default function Measuring() {
   }
 
   return (
-    <div className="p-6 space-y-6">
+    <>
+      <ModuleBreadcrumbs currentModule="measuring" onNavigate={() => {}} />
+      <div className="p-6 space-y-6">
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-2xl font-bold text-white">Site Measuring & Surveys</h2>
@@ -309,5 +312,6 @@ export default function Measuring() {
         </div>
       )}
     </div>
+    </>
   );
 }

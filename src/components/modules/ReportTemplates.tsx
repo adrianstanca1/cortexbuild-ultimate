@@ -16,6 +16,7 @@ import {
   TrendingUp,
 } from 'lucide-react';
 import { EmptyState } from '../ui/EmptyState';
+import { ModuleBreadcrumbs } from '../ui/Breadcrumbs';
 import { type ReportTemplate } from '../../services/api';
 import { useReportTemplates, useDuplicateTemplate } from '../../hooks/useData';
 import { toast } from 'sonner';
@@ -91,7 +92,9 @@ export function ReportTemplates() {
   );
 
   return (
-    <div className="space-y-6">
+    <>
+      <ModuleBreadcrumbs currentModule="report-templates" onNavigate={() => {}} />
+      <div className="space-y-6">
       <div className="flex justify-between items-center">
         <h1 className="text-2xl font-bold text-white">Report Templates</h1>
       </div>
@@ -467,6 +470,7 @@ export function ReportTemplates() {
         />
       )}
     </div>
+    </>
   );
 }
 

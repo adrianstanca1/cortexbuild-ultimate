@@ -6,6 +6,7 @@ import {
   Calendar, TrendingUp, Users, ChevronRight, CheckSquare, Square,
 } from 'lucide-react';
 import { EmptyState } from '../ui/EmptyState';
+import { ModuleBreadcrumbs } from '../ui/Breadcrumbs';
 import { useProcurement, useProjects } from '../../hooks/useData';
 import { toast } from 'sonner';
 import { BulkActionsBar, useBulkSelection } from '../ui/BulkActions';
@@ -292,7 +293,9 @@ export function Procurement() {
   }
 
   return (
-    <div className="space-y-6">
+    <>
+      <ModuleBreadcrumbs currentModule="procurement" onNavigate={() => {}} />
+      <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h1 className="text-3xl font-bold text-white">Procurement & Purchase Orders</h1>
         <button type="button" onClick={openCreate} className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded-lg text-white font-medium transition-colors">
@@ -894,6 +897,7 @@ export function Procurement() {
         </div>
       )}
     </div>
+    </>
   );
 }
 export default Procurement;

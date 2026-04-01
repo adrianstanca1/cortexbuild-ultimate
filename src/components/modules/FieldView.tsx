@@ -6,6 +6,7 @@ import {
 } from 'lucide-react';
 import { useProjects, useDailyReports, useSafety, useSitePermits } from '../../hooks/useData';
 import { BulkActionsBar, useBulkSelection } from '../ui/BulkActions';
+import { ModuleBreadcrumbs } from '../ui/Breadcrumbs';
 import { EmptyState } from '../ui/EmptyState';
 import { toast } from 'sonner';
 
@@ -155,7 +156,9 @@ export function FieldView() {
   };
 
   return (
-    <div className="p-6 space-y-6 bg-gray-900 min-h-screen">
+    <>
+      <ModuleBreadcrumbs currentModule="field-view" onNavigate={() => {}} />
+      <div className="p-6 space-y-6 bg-gray-900 min-h-screen">
       {/* Header */}
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div>
@@ -672,6 +675,7 @@ export function FieldView() {
         onClearSelection={clearSelection}
       />
     </div>
+    </>
   );
 }
 export default FieldView;

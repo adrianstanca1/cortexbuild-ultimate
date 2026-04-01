@@ -8,6 +8,7 @@ import { useSpecifications } from '../../hooks/useData';
 import { toast } from 'sonner';
 import { uploadFile } from '../../services/api';
 import { BulkActionsBar, useBulkSelection } from '../ui/BulkActions';
+import { ModuleBreadcrumbs } from '../ui/Breadcrumbs';
 
 interface Specification {
   id: string;
@@ -137,7 +138,9 @@ export default function Specifications() {
   };
 
   return (
-    <div className="p-6 space-y-6">
+    <>
+      <ModuleBreadcrumbs currentModule="specifications" onNavigate={() => {}} />
+      <div className="p-6 space-y-6">
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-2xl font-bold text-white" style={{ fontFamily: 'var(--font-display)' }}>
@@ -364,5 +367,6 @@ export default function Specifications() {
         </div>
       )}
     </div>
+    </>
   );
 }

@@ -8,6 +8,7 @@ import {
 import { uploadFile } from '../../services/api';
 import { jsPDF } from 'jspdf';
 import { BulkActionsBar, useBulkSelection } from '../ui/BulkActions';
+import { ModuleBreadcrumbs } from '../ui/Breadcrumbs';
 import { toast } from 'sonner';
 import { useValuations } from '../../hooks/useData';
 import { useQueryClient } from '@tanstack/react-query';
@@ -304,7 +305,9 @@ export default function Valuations() {
   const totalPaid = valuations.filter((v: Valuation) => v.status === 'paid').reduce((sum: number, v: Valuation) => sum + v.certifiedValue, 0);
 
   return (
-    <div className="p-6 space-y-6">
+    <>
+      <ModuleBreadcrumbs currentModule="valuations" onNavigate={() => {}} />
+      <div className="p-6 space-y-6">
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-2xl font-bold text-white" style={{ fontFamily: 'var(--font-display)' }}>
@@ -635,5 +638,6 @@ export default function Valuations() {
         </div>
       )}
     </div>
+    </>
   );
 }

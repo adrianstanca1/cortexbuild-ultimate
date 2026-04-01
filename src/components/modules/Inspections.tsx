@@ -3,6 +3,7 @@ import { ClipboardCheck, Plus, Search, CheckCircle, XCircle, Clock, Edit2, Trash
 import { useInspections } from '../../hooks/useData';
 import { toast } from 'sonner';
 import { BulkActionsBar, useBulkSelection } from '../ui/BulkActions';
+import { ModuleBreadcrumbs } from '../ui/Breadcrumbs';
 import { EmptyState } from '../ui/EmptyState';
 
 type AnyRow = Record<string, unknown>;
@@ -202,7 +203,9 @@ export function Inspections() {
   }
 
   return (
-    <div className="p-6 space-y-6 bg-gray-900 min-h-screen">
+    <>
+      <ModuleBreadcrumbs currentModule="inspections" onNavigate={() => {}} />
+      <div className="p-6 space-y-6 bg-gray-900 min-h-screen">
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-white">Inspections</h1>
@@ -515,6 +518,7 @@ export function Inspections() {
         </div>
       )}
     </div>
+    </>
   );
 }
 export default Inspections;

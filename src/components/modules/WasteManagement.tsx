@@ -4,6 +4,7 @@ import { Plus, Leaf, Recycle, Trash2, X, Upload, Edit } from 'lucide-react';
 import { uploadFile } from '../../services/api';
 import { toast } from 'sonner';
 import { EmptyState } from '../ui/EmptyState';
+import { ModuleBreadcrumbs } from '../ui/Breadcrumbs';
 import { useWasteManagement } from '../../hooks/useData';
 
 export default function WasteManagement() {
@@ -95,7 +96,9 @@ export default function WasteManagement() {
   }
 
   return (
-    <div className="p-6 space-y-6">
+    <>
+      <ModuleBreadcrumbs currentModule="waste-management" onNavigate={() => {}} />
+      <div className="p-6 space-y-6">
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-2xl font-bold text-white">Waste Management</h2>
@@ -348,5 +351,6 @@ export default function WasteManagement() {
         </div>
       )}
     </div>
+    </>
   );
 }
