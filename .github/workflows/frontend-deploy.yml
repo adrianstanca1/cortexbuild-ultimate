@@ -38,7 +38,9 @@ jobs:
 
     - name: Deploy to VPS with rsync
       run: |
-        # Create target directory if it doesn't exist on the VPS
+        mkdir -p ~/.ssh
+        ssh-keyscan -H ${{ secrets.SSH_HOST }} >> ~/.ssh/known_hosts 2>/dev/null
+        chmod 600 ~/.ssh/known_hosts
         ssh ${{ secrets.SSH_USERNAME }}@${{ secrets.SSH_HOST }} "mkdir -p /var/www/cortexbuild-ultimate/dist"
         
         # Use rsync to synchronize the build output
