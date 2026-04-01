@@ -57,7 +57,7 @@ export const DEFAULT_SHORTCUTS = {
   goToCalendar: { key: '6', ctrl: true, description: 'Go to Calendar' },
 
   // Actions
-  newProject: { key: 'n', ctrl: true, description: 'New Project' },
+  newProject: { key: 'n', ctrl: true, shift: true, description: 'New Project' },
   newInvoice: { key: 'i', ctrl: true, description: 'New Invoice' },
   search: { key: 'k', ctrl: true, description: 'Search' },
 
@@ -66,8 +66,8 @@ export const DEFAULT_SHORTCUTS = {
 
   // New Features (v3.0.0)
   openNotifications: { key: 'n', alt: true, description: 'Open Notifications' },
-  openTeamChat: { key: 'c', ctrl: true, shift: true, description: 'Open Team Chat' },
-  openActivityFeed: { key: 'a', alt: true, description: 'Open Activity Feed' },
+  openTeamChat: { key: 't', ctrl: true, description: 'Open Team Chat' },
+  openActivityFeed: { key: 'a', ctrl: true, shift: true, description: 'Open Activity Feed' },
 
   // Help
   showHelp: { key: '?', shift: true, description: 'Show Shortcuts' },

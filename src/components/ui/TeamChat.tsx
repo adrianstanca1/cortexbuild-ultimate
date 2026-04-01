@@ -2,6 +2,30 @@ import { useState, useEffect, useRef } from 'react';
 import { Send, User, X } from 'lucide-react';
 import { toast } from 'sonner';
 
+/**
+ * TeamChat Component
+ * 
+ * Real-time team messaging interface with message history and typing indicators.
+ * Supports project-specific chat rooms.
+ * 
+ * @param props - Component props
+ * @param props.projectId - Optional project ID for project-specific chat
+ * @param props.onClose - Callback function when chat is closed
+ * @returns JSX element displaying team chat modal
+ * 
+ * @example
+ * ```tsx
+ * <TeamChat projectId="proj-123" onClose={() => setShowChat(false)} />
+ * ```
+ * 
+ * @remarks
+ * - Displays message history
+ * - Shows typing indicators
+ * - Supports system notifications
+ * - Accessible with ARIA labels
+ */
+
+
 interface ChatMessage {
   id: string;
   userId: string;

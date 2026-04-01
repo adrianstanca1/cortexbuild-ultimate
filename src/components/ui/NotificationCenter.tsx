@@ -2,6 +2,29 @@ import { useState, useEffect } from 'react';
 import { Bell, Check, CheckCheck, X, Settings, Filter } from 'lucide-react';
 import { toast } from 'sonner';
 
+/**
+ * NotificationCenter Component
+ * 
+ * Displays all user notifications with filtering and management capabilities.
+ * Supports real-time updates via WebSocket connection.
+ * 
+ * @param props - Component props
+ * @param props.onClose - Callback function when modal is closed
+ * @returns JSX element displaying notification center modal
+ * 
+ * @example
+ * ```tsx
+ * <NotificationCenter onClose={() => setShowNotifications(false)} />
+ * ```
+ * 
+ * @remarks
+ * - Supports filtering by read/unread status
+ * - Supports filtering by notification type
+ * - Provides mark all as read functionality
+ * - Accessible with ARIA labels for screen readers
+ */
+
+
 interface Notification {
   id: string;
   type: 'info' | 'success' | 'warning' | 'error' | 'alert';

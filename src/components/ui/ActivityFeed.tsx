@@ -1,6 +1,30 @@
 import { useEffect, useState } from 'react';
 import { User, FileText, AlertTriangle, CheckCircle, Clock } from 'lucide-react';
 
+/**
+ * ActivityFeed Component
+ * 
+ * Displays real-time activity stream for the dashboard.
+ * Shows user actions, updates, alerts, and completions.
+ * 
+ * @param props - Component props
+ * @param props.projectId - Optional project ID to filter activities
+ * @param props.limit - Maximum number of activities to display (default: 10)
+ * @returns JSX element displaying activity feed
+ * 
+ * @example
+ * ```tsx
+ * <ActivityFeed limit={5} />
+ * <ActivityFeed projectId="proj-123" limit={10} />
+ * ```
+ * 
+ * @remarks
+ * - Supports multiple activity types (create, update, alert, complete, comment)
+ * - Displays relative timestamps
+ * - Auto-refreshes via WebSocket
+ */
+
+
 interface Activity {
   id: string;
   type: 'comment' | 'update' | 'alert' | 'complete' | 'create';
