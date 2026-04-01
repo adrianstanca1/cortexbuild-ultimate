@@ -7,6 +7,7 @@ import { toast } from 'sonner';
 import { z } from 'zod';
 import { BulkActionsBar, useBulkSelection } from '../ui/BulkActions';
 import { DataImporter, ExportButton } from '../ui/DataImportExport';
+import { ModuleBreadcrumbs } from '../ui/Breadcrumbs';
 
 type AnyRow = Record<string, unknown>;
 
@@ -430,6 +431,9 @@ export function Teams() {
 
   return (
     <div className="p-6 space-y-6 bg-gray-950 min-h-screen text-gray-100">
+      {/* Breadcrumbs */}
+      <ModuleBreadcrumbs currentModule="teams" onNavigate={() => {}} />
+
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
