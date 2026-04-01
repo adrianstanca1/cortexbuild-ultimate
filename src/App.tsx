@@ -9,6 +9,8 @@ import { useAuth, AuthProvider } from './context/AuthContext';
 import { useTheme } from './context/ThemeContext';
 import { useKeyboardShortcuts, DEFAULT_SHORTCUTS } from './hooks/useKeyboardShortcuts';
 import LoginPage from './components/auth/LoginPage';
+import { ErrorBoundary } from './components/ui/ErrorBoundary';
+import { CommandPalette } from './components/ui/CommandPalette';
 
 // Layout components kept eager — always rendered
 import { NotificationsPanel } from './components/layout/NotificationsPanel';
@@ -89,6 +91,7 @@ function AppShell() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [showShortcuts, setShowShortcuts] = useState(false);
   const [showGlobalSearch, setShowGlobalSearch] = useState(false);
+  const [showCommandPalette, setShowCommandPalette] = useState(false);
   const [isOnline, setIsOnline] = useState(typeof navigator !== 'undefined' ? navigator.onLine : true);
 
   useEffect(() => {
@@ -103,6 +106,7 @@ function AppShell() {
   }, []);
 
   const toggleSearch = () => setShowGlobalSearch(p => !p);
+  const toggleCommandPalette = () => setShowCommandPalette(p => !p);
 
   useKeyboardShortcuts([
     { ...DEFAULT_SHORTCUTS.goToDashboard, handler: () => setActiveModule('dashboard') },
@@ -113,6 +117,7 @@ function AppShell() {
     { ...DEFAULT_SHORTCUTS.toggleSidebar, handler: () => setSidebarCollapsed(p => !p) },
     { ...DEFAULT_SHORTCUTS.showHelp, handler: () => setShowShortcuts(true) },
     { ...DEFAULT_SHORTCUTS.search, handler: toggleSearch },
+    { key: 'k', ctrl: true, shift: false, handler: toggleCommandPalette, description: 'Open command palette' },
   ]);
 
   const renderModule = () => {
@@ -258,6 +263,11 @@ function AppShell() {
           <GlobalSearch onClose={() => setShowGlobalSearch(false)} />
         </Suspense>
       )}
+      <CommandPalette
+        isOpen={showCommandPalette}
+        onClose={() => setShowCommandPalette(false)}
+        onNavigate={(m) => { setActiveModule(m); setShowCommandPalette(false); }}
+      />
     </>
   );
 }
@@ -278,7 +288,7 @@ function ThemedApp() {
   }
 
   return (
-    <>
+    <ErrorBoundary>
       <Toaster
         theme={resolvedTheme}
         position="top-right"
@@ -287,7 +297,7 @@ function ThemedApp() {
         }}
       />
       {isAuthenticated ? <AppShell /> : <LoginPage />}
-    </>
+    </ErrorBoundary>
   );
 }
 
