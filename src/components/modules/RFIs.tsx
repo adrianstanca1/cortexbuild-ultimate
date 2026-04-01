@@ -10,6 +10,7 @@ import { useRFIs } from '../../hooks/useData';
 import { toast } from 'sonner';
 import { z } from 'zod';
 import { BulkActionsBar, useBulkSelection } from '../ui/BulkActions';
+import { CardSkeleton } from '../ui/Skeleton';
 
 type AnyRow = Record<string, unknown>;
 

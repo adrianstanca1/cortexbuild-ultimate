@@ -7,6 +7,7 @@ import { toast } from 'sonner';
 import { z } from 'zod';
 import { BulkActionsBar, useBulkSelection } from '../ui/BulkActions';
 import { DataImporter, ExportButton } from '../ui/DataImportExport';
+import { CardSkeleton } from '../ui/Skeleton';
 import { ModuleBreadcrumbs } from '../ui/Breadcrumbs';
 
 type AnyRow = Record<string, unknown>;

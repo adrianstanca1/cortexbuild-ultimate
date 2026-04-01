@@ -9,6 +9,7 @@ import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, Responsi
 import clsx from 'clsx';
 import { z } from 'zod';
 import { BulkActionsBar, useBulkSelection } from '../ui/BulkActions';
+import { CardSkeleton } from '../ui/Skeleton';
 import { ModuleBreadcrumbs } from '../ui/Breadcrumbs';
 
 const incidentSchema = z.object({
