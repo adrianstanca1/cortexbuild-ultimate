@@ -46,7 +46,9 @@ test.describe('Authentication', () => {
 
     // Switch to signup mode
     await loginPage.modeToggle.click()
-    await page.waitForTimeout(100)
+
+    // Wait for signup form fields to appear (reliable wait over arbitrary timeout)
+    await expect(loginPage.nameInput).toBeVisible()
 
     // Submit without filling fields
     await loginPage.submitButton.click()

@@ -25,3 +25,7 @@ server/doc/
 nginx/ssl/*.pem
 nginx/ssl/*.key
 .env.docker
+
+# Playwright
+playwright-report/
+test-results/
