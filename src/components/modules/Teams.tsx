@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Users, Plus, Search, Phone, Mail, Edit2, Trash2, X, ChevronDown, ChevronUp, Shield, Clock, Award, AlertTriangle, PoundSterling, MapPin, CheckCircle2, Calendar, Upload, CheckSquare, Square, Download, Pencil } from 'lucide-react';
+import { Users, Plus, Search, Phone, Mail, Edit2, Trash2, X, ChevronDown, ChevronUp, Shield, Clock, Award, AlertTriangle, PoundSterling, MapPin, CheckCircle2, Calendar, Upload, CheckSquare, Square, Download, Pencil, MessageSquare } from 'lucide-react';
 import { EmptyState } from '../ui/EmptyState';
 import { useTeam } from '../../hooks/useData';
 import { uploadFile, teamApi } from '../../services/api';
@@ -9,6 +9,7 @@ import { BulkActionsBar, useBulkSelection } from '../ui/BulkActions';
 import { DataImporter, ExportButton } from '../ui/DataImportExport';
 import { CardSkeleton } from '../ui/Skeleton';
 import { ModuleBreadcrumbs } from '../ui/Breadcrumbs';
+import { TeamChat } from '../ui/TeamChat';
 
 type AnyRow = Record<string, unknown>;
 
@@ -63,6 +64,7 @@ export function Teams() {
   const [expanded, setExpanded] = useState<string | null>(null);
   const [uploadingCscs, setUploadingCscs] = useState<string | null>(null);
   const [showBulkImport, setShowBulkImport] = useState(false);
+  const [showTeamChat, setShowTeamChat] = useState(false);
 
   // Skills modal
   const [showSkillModal, setShowSkillModal] = useState(false);
@@ -442,6 +444,9 @@ export function Teams() {
           <p className="text-sm text-gray-400 mt-1">Site workforce & personnel records</p>
         </div>
         <div className="flex items-center gap-2">
+          <button type="button" onClick={() => setShowTeamChat(true)} className="flex items-center gap-2 px-3 py-2 bg-blue-700 text-white rounded-lg hover:bg-blue-600 text-sm font-medium">
+            <MessageSquare size={16}/><span>Team Chat</span>
+          </button>
           <button type="button" onClick={() => setShowBulkImport(true)} className="flex items-center gap-2 px-3 py-2 bg-gray-700 text-white rounded-lg hover:bg-gray-600 text-sm font-medium">
             <Download size={16}/><span>Import</span>
           </button>
@@ -1135,6 +1140,11 @@ export function Teams() {
             </div>
           </div>
         </div>
+      )}
+
+      {/* Team Chat Modal */}
+      {showTeamChat && (
+        <TeamChat onClose={() => setShowTeamChat(false)} />
       )}
     </div>
   );
