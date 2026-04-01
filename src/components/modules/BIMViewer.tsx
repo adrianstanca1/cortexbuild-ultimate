@@ -34,7 +34,7 @@ interface ClashDetection {
   status: 'open' | 'resolved' | 'ignored';
 }
 
-const BIMViewer: React.FC = () => {
+export const BIMViewer: React.FC = () => {
   const viewerRef = useRef<HTMLDivElement>(null);
   const [activeModel, setActiveModel] = useState<BIMModel | null>(null);
   const [models] = useState<BIMModel[]>([

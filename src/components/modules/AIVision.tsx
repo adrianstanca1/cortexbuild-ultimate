@@ -30,7 +30,7 @@ interface AnalysisResult {
   processedAt: string;
 }
 
-const AIVision: React.FC = () => {
+export const AIVision: React.FC = () => {
   // Camera and Analysis State
   const [isActive, setIsActive] = useState(false);
   const [mode, setMode] = useState<AnalysisMode>('SAFETY');

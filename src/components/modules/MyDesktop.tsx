@@ -27,7 +27,7 @@ interface WindowState {
   zIndex: number;
 }
 
-const MyDesktop: React.FC = () => {
+export const MyDesktop: React.FC = () => {
   // Desktop State
   const [windows, setWindows] = useState<WindowState[]>([]);
   const [activeWindowId, setActiveWindowId] = useState<string | null>(null);
