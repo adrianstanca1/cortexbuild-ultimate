@@ -7,6 +7,7 @@ import { TrendingUp, DollarSign, Download, RefreshCw, ArrowUpRight,
 import { BulkActionsBar, useBulkSelection } from '../../components/ui/BulkActions';
 import { financialReportsApi } from '../../services/api';
 import { toast } from 'sonner';
+import { exportToPDF, exportTableToCSV } from '../../lib/exportUtils';
 import clsx from 'clsx';
 import {
   AreaChart, Area, BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer,

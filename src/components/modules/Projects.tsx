@@ -11,6 +11,7 @@ import {
 } from 'lucide-react';
 import { BulkActionsBar, useBulkSelection } from '../ui/BulkActions';
 import { EmptyState } from '../ui/EmptyState';
+import { AdvancedTableFilter } from '../ui/AdvancedTableFilter';
 import { CardSkeleton } from '../ui/Skeleton';
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend,

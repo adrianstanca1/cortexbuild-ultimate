@@ -5,6 +5,7 @@ import { useInvoices, useProjects } from '../../hooks/useData';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import clsx from 'clsx';
 import { toast } from 'sonner';
+import { exportToPDF, exportTableToCSV } from '../../lib/exportUtils';
 import { BulkActionsBar, useBulkSelection } from '../ui/BulkActions';
 import { EmptyState } from '../ui/EmptyState';
 import { ModuleBreadcrumbs } from '../ui/Breadcrumbs';
