@@ -7,6 +7,7 @@ import clsx from 'clsx';
 import { toast } from 'sonner';
 import { BulkActionsBar, useBulkSelection } from '../ui/BulkActions';
 import { EmptyState } from '../ui/EmptyState';
+import { ModuleBreadcrumbs } from '../ui/Breadcrumbs';
 
 const statusConfig: Record<string, { label: string; color: string; bg: string }> = {
   draft:    { label: 'Draft',    color: 'text-gray-400',   bg: 'bg-gray-700' },
@@ -282,6 +283,9 @@ export function Invoicing() {
 
   return (
     <div className="min-h-full">
+      {/* Breadcrumbs */}
+      <ModuleBreadcrumbs currentModule="invoicing" onNavigate={() => {}} />
+
       {/* Header */}
       <div className="mb-6 flex items-center justify-between">
         <div>
