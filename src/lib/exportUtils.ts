@@ -49,7 +49,7 @@ export function exportToPDF(options: ExportOptions) {
   doc.save(filename);
 }
 
-export function exportTableToCSV(data: Record<string, unknown>[], filename: string = 'export.csv') {
+export function exportToCSV(data: Record<string, unknown>[], filename: string = 'export.csv') {
   if (!data || data.length === 0) return;
 
   const headers = Object.keys(data[0]);

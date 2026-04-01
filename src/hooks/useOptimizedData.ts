@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo, useCallback } from 'react';
 
 interface UseOptimizedDataOptions<T> {
   data: T[];
@@ -17,12 +17,12 @@ export function useOptimizedData<T>({ data, isLoading, pageSize = 50 }: UseOptim
     }
   }, [data, isLoading, pageSize]);
 
-  const loadMore = () => {
+  const loadMore = useCallback(() => {
     const nextPage = page + 1;
     const nextData = data.slice(0, nextPage * pageSize);
     setVisibleData(nextData);
     setPage(nextPage);
-  };
+  }, [page, pageSize, data]);
 
   const hasMore = visibleData.length < data.length;
   const isFullyLoaded = !isLoading && visibleData.length === data.length;

@@ -41,7 +41,7 @@ class IntegrationManager {
         name: 'SendGrid Email',
         type: 'email',
         enabled: true,
-        config: { apiKey: 'configured' },
+        config: { apiKey: process.env.SENDGRID_API_KEY || '' }, // TODO: Move to environment variables
       },
       {
         id: 'dropbox',

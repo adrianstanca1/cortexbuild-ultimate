@@ -12,6 +12,9 @@ interface AISearchResult {
 export async function semanticSearch(query: string, limit = 10): Promise<AISearchResult[]> {
   try {
     // Use Ollama for semantic understanding
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 10000); // 10s timeout
+    
     const response = await fetch('http://localhost:11434/api/generate', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -23,6 +26,7 @@ export async function semanticSearch(query: string, limit = 10): Promise<AISearc
     });
 
     const data = await response.json();
+    clearTimeout(timeoutId);
     const searchTerms = data.response.split(',').map((t: string) => t.trim());
 
     // Search across modules
@@ -66,6 +70,7 @@ export async function semanticSearch(query: string, limit = 10): Promise<AISearc
 
     return results.sort((a, b) => b.relevance - a.relevance).slice(0, limit);
   } catch (error) {
+    console.error('AI Search error:', error instanceof Error ? error.message : 'Unknown error');
     console.error('AI Search error:', error);
     return [];
   }

@@ -8,6 +8,26 @@ interface ReportConfig {
   orientation?: 'portrait' | 'landscape';
 }
 
+
+// Sanitize text for PDF (prevent XSS)
+
+// Sanitize text for PDF (prevent XSS)
+const sanitizeText = (text: string): string => text.replace(/[<>]/g, '');
+
+
+// PDF layout constants
+const PDF_MARGIN_X = 14;
+const TITLE_Y = 20;
+const SUBTITLE_Y = 28;
+const TIMESTAMP_Y = 36;
+const START_Y = 45;
+const FONT_SIZE_TITLE = 20;
+const FONT_SIZE_SUBTITLE = 12;
+const FONT_SIZE_BODY = 10;
+const FONT_SIZE_SECTION = 14;
+
+
+
 interface ReportSection {
   type: 'text' | 'table' | 'chart' | 'kpi';
   title?: string;
@@ -25,18 +45,18 @@ export class ReportGenerator {
     this.doc = new jsPDF({ orientation: config.orientation || 'portrait' });
 
     // Add title
-    this.doc.setFontSize(20);
+    this.doc.setFontSize(FONT_SIZE_TITLE);
     this.doc.setFont('helvetica', 'bold');
-    this.doc.text(config.title, 14, 20);
+    this.doc.text(sanitizeText(config.title), 14, 20);
 
     if (config.subtitle) {
-      this.doc.setFontSize(12);
+      this.doc.setFontSize(FONT_SIZE_SUBTITLE);
       this.doc.setFont('helvetica', 'normal');
-      this.doc.text(config.subtitle, 14, 28);
+      this.doc.text(sanitizeText(config.subtitle || ''), 14, 28);
     }
 
     // Add timestamp
-    this.doc.setFontSize(10);
+    this.doc.setFontSize(FONT_SIZE_BODY);
     this.doc.text(`Generated: ${new Date().toLocaleString()}`, 14, 36);
 
     let yPos = 45;
@@ -64,7 +84,7 @@ export class ReportGenerator {
 
   private addTextSection(section: ReportSection, yPos: number): number {
     if (section.title) {
-      this.doc.setFontSize(14);
+      this.doc.setFontSize(FONT_SIZE_SECTION);
       this.doc.setFont('helvetica', 'bold');
       this.doc.text(section.title, 14, yPos);
       yPos += 10;
@@ -80,7 +100,7 @@ export class ReportGenerator {
 
   private addTableSection(section: ReportSection, yPos: number): number {
     if (section.title) {
-      this.doc.setFontSize(14);
+      this.doc.setFontSize(FONT_SIZE_SECTION);
       this.doc.setFont('helvetica', 'bold');
       this.doc.text(section.title, 14, yPos);
       yPos += 10;
@@ -102,7 +122,7 @@ export class ReportGenerator {
 
   private addKpiSection(section: ReportSection, yPos: number): number {
     if (section.title) {
-      this.doc.setFontSize(14);
+      this.doc.setFontSize(FONT_SIZE_SECTION);
       this.doc.setFont('helvetica', 'bold');
       this.doc.text(section.title, 14, yPos);
       yPos += 10;
@@ -117,11 +137,11 @@ export class ReportGenerator {
         yPos += 20;
       }
 
-      this.doc.setFontSize(10);
+      this.doc.setFontSize(FONT_SIZE_BODY);
       this.doc.setFont('helvetica', 'normal');
       this.doc.text(kpi.label, xPos, yPos);
       
-      this.doc.setFontSize(14);
+      this.doc.setFontSize(FONT_SIZE_SECTION);
       this.doc.setFont('helvetica', 'bold');
       this.doc.text(String(kpi.value), xPos, yPos + 6);
 
