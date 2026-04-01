@@ -195,7 +195,7 @@ router.put('/roles/:id', async (req, res) => {
     if (!id.startsWith('custom_')) {
       return res.status(400).json({ message: 'Cannot modify system roles' });
     }
-    const customId = id.replace('custom_');
+    const customId = id.replace('custom_', '');
     const { name, description, permissions } = req.body;
     const { rows } = await pool.query(
       `UPDATE custom_roles
@@ -225,7 +225,7 @@ router.delete('/roles/:id', async (req, res) => {
     if (!id.startsWith('custom_')) {
       return res.status(400).json({ message: 'Cannot delete system roles' });
     }
-    const customId = id.replace('custom_');
+    const customId = id.replace('custom_', '');
     const { rowCount } = await pool.query(
       'DELETE FROM custom_roles WHERE id = $1',
       [customId]
