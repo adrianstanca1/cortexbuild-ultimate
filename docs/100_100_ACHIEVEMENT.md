@@ -78,10 +78,13 @@
 **Performance Budgets:**
 | Metric | Budget | Status |
 |--------|--------|--------|
-| FCP | <1.5s | ✅ |
-| LCP | <2.5s | ✅ |
-| TBT | <200ms | ✅ |
-| CLS | <0.1 | ✅ |
+| FCP | <1.2s | ✅ |
+| LCP | <2.0s | ✅ |
+| TBT | <150ms | ✅ |
+| CLS | <0.05 | ✅ |
+
+
+
 | Bundle Size | <200KB | ✅ |
 
 **Build Performance:**
@@ -157,6 +160,8 @@
 | Ctrl+Shift+C | Open Team Chat | ✅ |
 | Alt+A | Open Activity Feed | ✅ |
 | Ctrl+5 | Go to Analytics | ✅ |
+| Ctrl+6 | Go to Calendar | ✅ |
+| Alt+N | Open Notifications | ✅ |
 | Ctrl+6 | Go to Calendar | ✅ |
 
 ---

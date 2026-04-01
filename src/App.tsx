@@ -116,9 +116,12 @@ function AppShell() {
     { ...DEFAULT_SHORTCUTS.goToInvoicing, handler: () => setActiveModule('invoicing') },
     { ...DEFAULT_SHORTCUTS.goToSafety, handler: () => setActiveModule('safety') },
     { ...DEFAULT_SHORTCUTS.goToSettings, handler: () => setActiveModule('settings') },
+    { ...DEFAULT_SHORTCUTS.goToAnalytics, handler: () => setActiveModule('analytics') },
+    { ...DEFAULT_SHORTCUTS.goToCalendar, handler: () => setActiveModule('calendar') },
     { ...DEFAULT_SHORTCUTS.toggleSidebar, handler: () => setSidebarCollapsed(p => !p) },
     { ...DEFAULT_SHORTCUTS.showHelp, handler: () => setShowShortcuts(true) },
     { ...DEFAULT_SHORTCUTS.search, handler: toggleSearch },
+    { ...DEFAULT_SHORTCUTS.openNotifications, handler: () => setShowGlobalSearch(true) },
     { key: 'k', ctrl: true, shift: false, handler: toggleCommandPalette, description: 'Open command palette' },
   ]);
 
