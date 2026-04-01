@@ -10,6 +10,8 @@ import { type Module } from '../../types';
 import { NotificationsPanel } from './NotificationsPanel';
 import { useTheme } from '../../context/ThemeContext';
 import { useIsMobile } from '../../hooks/useIsMobile';
+import { NotificationCenter } from '../ui/NotificationCenter';
+import { NotificationPreferences } from '../ui/NotificationPreferences';
 
 const MODULE_LABELS: Record<Module, string> = {
   'dashboard':            'Dashboard',
@@ -97,6 +99,8 @@ export function Header({ activeModule, onMenuToggle }: { activeModule: Module; o
   const [profileOpen, setProfileOpen] = useState(false);
   const [searchFocused, setSearchFocused] = useState(false);
   const [currentTime, setCurrentTime] = useState(new Date());
+  const [showNotificationCenter, setShowNotificationCenter] = useState(false);
+  const [showNotificationPrefs, setShowNotificationPrefs] = useState(false);
   const accent = MODULE_ACCENTS[activeModule] || '#f59e0b';
   useTheme?.();
   const isMobile = useIsMobile();
@@ -302,6 +306,81 @@ export function Header({ activeModule, onMenuToggle }: { activeModule: Module; o
           isOpen={notifOpen}
           onToggle={() => { setNotifOpen(p => !p); setProfileOpen(false); }}
         />
+        {/* Notification Center Button */}
+        <button
+          onClick={() => setShowNotificationCenter(true)}
+          title="Notification Center"
+          aria-label="Open notification center"
+          style={{
+            position: 'relative',
+            width: '34px',
+            height: '34px',
+            borderRadius: '9px',
+            background: 'rgba(255,255,255,0.04)',
+            border: '1px solid rgba(255,255,255,0.08)',
+            cursor: 'pointer',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            color: '#64748b',
+            transition: 'all 0.15s',
+            marginLeft: '8px',
+          }}
+          onMouseEnter={e => {
+            e.currentTarget.style.background = 'rgba(245,158,11,0.1)';
+            e.currentTarget.style.color = '#f59e0b';
+          }}
+          onMouseLeave={e => {
+            e.currentTarget.style.background = 'rgba(255,255,255,0.04)';
+            e.currentTarget.style.color = '#64748b';
+          }}
+        >
+          <Bell style={{ width: '16px', height: '16px' }} />
+          {/* Unread indicator */}
+          <span style={{
+            position: 'absolute',
+            top: '6px',
+            right: '6px',
+            width: '6px',
+            height: '6px',
+            borderRadius: '50%',
+            background: '#ef4444',
+            border: '2px solid #0d1117',
+          }} />
+        </button>
+        {/* Notification Preferences Button */}
+        <button
+          onClick={() => setShowNotificationPrefs(true)}
+          title="Notification Settings"
+          aria-label="Open notification settings"
+          style={{
+            width: '34px',
+            height: '34px',
+            borderRadius: '9px',
+            background: 'rgba(255,255,255,0.04)',
+            border: '1px solid rgba(255,255,255,0.08)',
+            cursor: 'pointer',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            color: '#64748b',
+            transition: 'all 0.15s',
+            marginLeft: '4px',
+          }}
+          onMouseEnter={e => {
+            e.currentTarget.style.background = 'rgba(245,158,11,0.1)';
+            e.currentTarget.style.color = '#f59e0b';
+          }}
+          onMouseLeave={e => {
+            e.currentTarget.style.background = 'rgba(255,255,255,0.04)';
+            e.currentTarget.style.color = '#64748b';
+          }}
+        >
+          <svg style={{ width: '16px', height: '16px' }} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.75 2.924-1.75 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.75.426 1.75 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.75-2.924 1.75-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.75-.426-1.75-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+          </svg>
+        </button>
 
         {/* Profile */}
         <ProfileButton
@@ -327,6 +406,16 @@ export function Header({ activeModule, onMenuToggle }: { activeModule: Module; o
             onClose={() => setNotifOpen(false)}
           />
         </div>
+      )}
+
+      {/* Notification Center Modal */}
+      {showNotificationCenter && (
+        <NotificationCenter onClose={() => setShowNotificationCenter(false)} />
+      )}
+
+      {/* Notification Preferences Modal */}
+      {showNotificationPrefs && (
+        <NotificationPreferences onClose={() => setShowNotificationPrefs(false)} />
       )}
     </header>
   );
