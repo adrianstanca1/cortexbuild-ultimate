@@ -11,6 +11,7 @@ import {
   PolarGrid, PolarAngleAxis, PolarRadiusAxis, ComposedChart,
 } from 'recharts';
 import { weatherApi, projectsApi, financialReportsApi, type WeatherForecastDay } from '../../services/api';
+import { ModuleBreadcrumbs } from '../ui/Breadcrumbs';
 
 type _AnyRow = Record<string, unknown>;
 type RiskLevel = 'critical' | 'high' | 'medium' | 'low';
@@ -270,7 +271,9 @@ export function PredictiveAnalytics() {
   ];
 
   return (
-    <div className="space-y-6">
+    <>
+      <ModuleBreadcrumbs currentModule="predictive-analytics" onNavigate={() => {}} />
+      <div className="space-y-6">
       {/* Header */}
       <div className="flex justify-between items-start">
         <div>
@@ -671,6 +674,7 @@ export function PredictiveAnalytics() {
         </div>
       )}
     </div>
+    </>
   );
 }
 export default PredictiveAnalytics;

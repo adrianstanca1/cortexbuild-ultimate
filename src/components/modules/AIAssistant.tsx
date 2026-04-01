@@ -9,6 +9,7 @@ import clsx from 'clsx';
 import { sendChatMessage } from '../../services/ai';
 import { aiConversationsApi, dashboardApi } from '../../services/api';
 import { toast } from 'sonner';
+import { ModuleBreadcrumbs } from '../ui/Breadcrumbs';
 
 // ── Render markdown-like content for AI responses ──────────────────────────────
 function renderMessageContent(content: string): React.ReactNode {
@@ -476,7 +477,9 @@ export function AIAssistant() {
   const selectedAgentData = agents.find(a => a.id === selectedAgent)!;
 
   return (
-    <div className="h-full flex bg-gradient-to-br from-gray-950 via-gray-900 to-gray-950">
+    <>
+      <ModuleBreadcrumbs currentModule="ai-assistant" onNavigate={() => {}} />
+      <div className="h-full flex bg-gradient-to-br from-gray-950 via-gray-900 to-gray-950">
       {/* Left Sidebar - Chat History & Agents */}
       <div className="w-64 border-r border-gray-800 bg-gray-900/50 p-4 overflow-y-auto flex flex-col">
         {/* New Chat Button */}
@@ -710,6 +713,7 @@ export function AIAssistant() {
         />
       </div>
     </div>
+    </>
   );
 }
 export default AIAssistant;

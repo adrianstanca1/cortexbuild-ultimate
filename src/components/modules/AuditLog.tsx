@@ -16,6 +16,7 @@ import {
 import { EmptyState } from '../ui/EmptyState';
 import { BulkActionsBar, useBulkSelection } from '../ui/BulkActions';
 import { useAuditLog } from '../../hooks/useData';
+import { ModuleBreadcrumbs } from '../ui/Breadcrumbs';
 
 type AnyRow = Record<string, unknown>;
 type AuditEntry = AnyRow & { id: number; user_id: string; action: string; table_name: string; record_id: number; changes: string; created_at: string; user?: { name: string; avatar?: string }; ip_address?: string };
@@ -101,7 +102,9 @@ export function AuditLog() {
   });
 
   return (
-    <div className="space-y-6">
+    <>
+      <ModuleBreadcrumbs currentModule="audit-log" onNavigate={() => {}} />
+      <div className="space-y-6">
       {/* Header with KPIs */}
       <div>
         <h2 className="text-2xl font-bold text-white mb-4">Audit & Compliance Log</h2>
@@ -517,6 +520,7 @@ export function AuditLog() {
         </div>
       )}
     </div>
+    </>
   );
 }
 export default AuditLog;

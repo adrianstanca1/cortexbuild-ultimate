@@ -11,6 +11,7 @@ import {
 } from 'recharts';
 import { toast } from 'sonner';
 import { executiveReportsApi } from '../../services/api';
+import { ModuleBreadcrumbs } from '../ui/Breadcrumbs';
 
 type _AnyRow = Record<string, unknown>;
 type RAG = 'red' | 'amber' | 'green';
@@ -34,7 +35,10 @@ const RAGStatus = ({ status }: { status: RAG }) => {
     green: 'bg-emerald-500',
   };
   return (
-    <div className={`w-3 h-3 rounded-full ${colors[status]}`} />
+    <>
+      <ModuleBreadcrumbs currentModule="executive-reports" onNavigate={() => {}} />
+      <div className={`w-3 h-3 rounded-full ${colors[status]}`} />
+    </>
   );
 };
 
