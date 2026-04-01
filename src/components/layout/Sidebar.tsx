@@ -42,9 +42,11 @@ const NAV_GROUPS: { id: string; label: string; accent: string; items: NavItem[] 
     items: [
       { id: 'dashboard',             label: 'Dashboard',           icon: LayoutDashboard,   badge: null },
       { id: 'analytics',             label: 'Analytics & BI',      icon: BarChart3,         badge: null },
+      { id: 'advanced-analytics',    label: 'Advanced Analytics',  icon: TrendingUp,        badge: 'NEW' },
+      { id: 'project-calendar',      label: 'Project Calendar',    icon: Clock,             badge: 'NEW' },
       { id: 'ai-assistant',          label: 'AI Assistant',        icon: Bot,               badge: 'AI' },
-      { id: 'insights',              label: 'AI Insights',          icon: Brain,             badge: 'NEW' },
-      { id: 'predictive-analytics',  label: 'Predictive Analytics', icon: TrendingUpIcon,    badge: 'NEW' },
+      { id: 'insights',              label: 'AI Insights',         icon: Brain,             badge: 'NEW' },
+      { id: 'predictive-analytics',  label: 'Predictive Analytics', icon: TrendingUpIcon,   badge: 'NEW' },
     ],
   },
   {
