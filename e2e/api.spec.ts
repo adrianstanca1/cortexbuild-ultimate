@@ -27,9 +27,9 @@ test.describe('API Authentication', { skip: !isApiEnabled }, () => {
         password: process.env.TEST_USER_PASSWORD || 'Lolozania1',
       },
     })
-
+    
     // Accept success or rate limit
-    expect([200, 201, 429]).toContain(response.status())
+    expect([200, 429]).toContain(response.status())
   })
 
   test('login with invalid credentials fails or rate limited', async ({ request }) => {
