@@ -20,6 +20,7 @@ export function TeamChat({ projectId, onClose }: TeamChatProps) {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [newMessage, setNewMessage] = useState('');
   const [isTyping, setIsTyping] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const scrollToBottom = () => {
@@ -32,26 +33,35 @@ export function TeamChat({ projectId, onClose }: TeamChatProps) {
 
   // Simulate receiving messages (replace with WebSocket)
   useEffect(() => {
-    // Load initial messages
-    const initialMessages: ChatMessage[] = [
-      {
-        id: '1',
-        userId: 'user1',
-        userName: 'Sarah Chen',
-        content: 'Team meeting at 2 PM today',
-        timestamp: new Date().toISOString(),
-        type: 'text',
-      },
-      {
-        id: '2',
-        userId: 'system',
-        userName: 'System',
-        content: 'Project status updated to In Progress',
-        timestamp: new Date().toISOString(),
-        type: 'system',
-      },
-    ];
-    setMessages(initialMessages);
+    // Simulate loading delay
+    const loadMessages = async () => {
+      setIsLoading(true);
+      // Simulate API delay
+      await new Promise(resolve => setTimeout(resolve, 500));
+      
+      const initialMessages: ChatMessage[] = [
+        {
+          id: '1',
+          userId: 'user1',
+          userName: 'Sarah Chen',
+          content: 'Team meeting at 2 PM today',
+          timestamp: new Date().toISOString(),
+          type: 'text',
+        },
+        {
+          id: '2',
+          userId: 'system',
+          userName: 'System',
+          content: 'Project status updated to In Progress',
+          timestamp: new Date().toISOString(),
+          type: 'system',
+        },
+      ];
+      setMessages(initialMessages);
+      setIsLoading(false);
+    };
+    
+    loadMessages();
   }, []);
 
   const sendMessage = () => {
@@ -108,7 +118,13 @@ export function TeamChat({ projectId, onClose }: TeamChatProps) {
 
       {/* Messages */}
       <div className="flex-1 overflow-y-auto p-4 space-y-3">
-        {messages.map(msg => (
+        {isLoading ? (
+          <div className="flex justify-center items-center h-full">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+          </div>
+        ) : (
+          <>
+            {messages.map(msg => (
           <div
             key={msg.id}
             className={`flex ${msg.userId === 'current-user' ? 'justify-end' : 'justify-start'}`}
@@ -157,6 +173,8 @@ export function TeamChat({ projectId, onClose }: TeamChatProps) {
           </div>
         )}
         <div ref={messagesEndRef} />
+          </>
+        )}
       </div>
 
       {/* Input */}
