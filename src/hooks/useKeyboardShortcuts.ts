@@ -53,15 +53,22 @@ export const DEFAULT_SHORTCUTS = {
   goToInvoicing: { key: '3', ctrl: true, description: 'Go to Invoicing' },
   goToSafety: { key: '4', ctrl: true, description: 'Go to Safety' },
   goToSettings: { key: ',', ctrl: true, description: 'Go to Settings' },
-  
+  goToAnalytics: { key: '5', ctrl: true, description: 'Go to Analytics' },
+  goToCalendar: { key: '6', ctrl: true, description: 'Go to Calendar' },
+
   // Actions
   newProject: { key: 'n', ctrl: true, description: 'New Project' },
   newInvoice: { key: 'i', ctrl: true, description: 'New Invoice' },
   search: { key: 'k', ctrl: true, description: 'Search' },
-  
+
   // Quick navigation
   toggleSidebar: { key: 'b', ctrl: true, description: 'Toggle Sidebar' },
-  
+
+  // New Features (v3.0.0)
+  openNotifications: { key: 'n', alt: true, description: 'Open Notifications' },
+  openTeamChat: { key: 'c', ctrl: true, shift: true, description: 'Open Team Chat' },
+  openActivityFeed: { key: 'a', alt: true, description: 'Open Activity Feed' },
+
   // Help
   showHelp: { key: '?', shift: true, description: 'Show Shortcuts' },
 };
