@@ -241,3 +241,4 @@ export function ProjectCalendar() {
     </div>
   );
 }
+export default ProjectCalendar;

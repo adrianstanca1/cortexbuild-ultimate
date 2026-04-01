@@ -11,6 +11,11 @@ import { useKeyboardShortcuts, DEFAULT_SHORTCUTS } from './hooks/useKeyboardShor
 import LoginPage from './components/auth/LoginPage';
 import { ErrorBoundary } from './components/ui/ErrorBoundary';
 import { CommandPalette } from './components/ui/CommandPalette';
+import { NotificationCenter } from './components/ui/NotificationCenter';
+import { NotificationPreferences } from './components/ui/NotificationPreferences';
+import { TeamChat } from './components/ui/TeamChat';
+import { PresenceIndicator } from './components/ui/PresenceIndicator';
+import { ActivityFeed } from './components/ui/ActivityFeed';
 
 // Layout components kept eager — always rendered
 import { NotificationsPanel } from './components/layout/NotificationsPanel';
@@ -78,6 +83,8 @@ const SubmittalManagement = lazy(() => import('./components/modules/SubmittalMan
 const DevSandbox          = lazy(() => import('./components/modules/DevSandbox'));
 const AIVision            = lazy(() => import('./components/modules/AIVision'));
 const MyDesktop           = lazy(() => import('./components/modules/MyDesktop'));
+const AdvancedAnalytics   = lazy(() => import('./components/modules/AdvancedAnalytics'));
+const ProjectCalendar     = lazy(() => import('./components/modules/ProjectCalendar'));
 
 const ModuleLoader = () => (
   <div className="flex items-center justify-center h-64">

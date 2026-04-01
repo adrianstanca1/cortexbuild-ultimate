@@ -72,6 +72,8 @@ const MODULE_LABELS: Record<Module, string> = {
   'dev-sandbox':        'AI Development Sandbox',
   'ai-vision':          'AI Vision Analytics',
   'my-desktop':         'Virtual Desktop Environment',
+  'advanced-analytics': 'Advanced Analytics',
+  'project-calendar':   'Project Calendar',
 };
 
 // Module accent colors for the breadcrumb bar

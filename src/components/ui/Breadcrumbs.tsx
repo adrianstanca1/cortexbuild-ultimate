@@ -77,6 +77,8 @@ const MODULE_LABELS: Record<Module, string> = {
   'dev-sandbox': 'Dev Sandbox',
   'ai-vision': 'AI Vision',
   'my-desktop': 'My Desktop',
+  'advanced-analytics': 'Advanced Analytics',
+  'project-calendar': 'Project Calendar',
 };
 
 export function Breadcrumbs({ items, onNavigate }: BreadcrumbsProps) {
