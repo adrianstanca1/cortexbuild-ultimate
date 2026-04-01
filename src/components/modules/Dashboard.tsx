@@ -24,6 +24,8 @@ import { useSafetyIncidents } from '../../hooks/useSafetyIncidents';
 import { useRFIs } from '../../hooks/useRFIs';
 import { useTasks } from '../../hooks/useTasks';
 import { useProjects } from '../../hooks/useProjects';
+import { ModuleBreadcrumbs } from '../ui/Breadcrumbs';
+import { type Module } from '../../types';
 
 type AnyRow = Record<string, unknown>;
 
@@ -355,6 +357,9 @@ export function Dashboard() {
 
   return (
     <div className="space-y-5">
+      {/* ── Breadcrumbs ────────────────────────────────────────────── */}
+      <ModuleBreadcrumbs currentModule="dashboard" onNavigate={() => {}} />
+
       {/* ── Site Status Banner ─────────────────────────────────────── */}
       <SiteStatusBanner />
 

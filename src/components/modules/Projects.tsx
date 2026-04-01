@@ -24,6 +24,7 @@ import { projectImagesApi, projectTasksApi } from '../../services/api';
 import type { ProjectStatus } from '../../types';
 import clsx from 'clsx';
 import { toast } from 'sonner';
+import { ModuleBreadcrumbs } from '../ui/Breadcrumbs';
 
 type AnyRow = Record<string, unknown>;
 
@@ -1604,6 +1605,9 @@ export function Projects() {
 
   return (
     <div className="space-y-6">
+      {/* Breadcrumbs */}
+      <ModuleBreadcrumbs currentModule="projects" onNavigate={() => {}} />
+
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>

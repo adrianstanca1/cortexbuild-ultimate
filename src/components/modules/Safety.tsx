@@ -9,6 +9,7 @@ import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, Responsi
 import clsx from 'clsx';
 import { z } from 'zod';
 import { BulkActionsBar, useBulkSelection } from '../ui/BulkActions';
+import { ModuleBreadcrumbs } from '../ui/Breadcrumbs';
 
 const incidentSchema = z.object({
   title: z.string().min(3, 'Title must be at least 3 characters'),
@@ -333,6 +334,9 @@ export function Safety() {
 
   return (
     <div className="min-h-full space-y-6">
+      {/* Breadcrumbs */}
+      <ModuleBreadcrumbs currentModule="safety" onNavigate={() => {}} />
+
       {/* Header */}
       <div className="flex items-start justify-between gap-4 flex-wrap">
         <div>
