@@ -150,8 +150,8 @@ router.get('/context', async (req, res) => {
 
       let query, params;
       if (filter) {
-        query = `SELECT * FROM ${tableName} WHERE id = $2 AND ${filter.replace('WHERE', '')}`;
-        params = [...filterParams.slice(1), rowId]; // remove $1 org_id, use row_id as $2
+        query = `SELECT * FROM ${tableName} WHERE id = $1 AND organization_id = $2`;
+        params = [rowId, filterParams[0]];
       } else {
         query = `SELECT * FROM ${tableName} WHERE id = $1`;
         params = [rowId];

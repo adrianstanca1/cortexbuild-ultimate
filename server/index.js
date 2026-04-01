@@ -135,6 +135,8 @@ app.use('/api/weather-forecast', require('./routes/weather-data'));
 app.use('/api/backup',         require('./routes/backup'));
 app.use('/api/report-templates', require('./routes/report-templates'));
 app.use('/api/permissions',    require('./routes/permissions'));
+app.use('/api/rag',           require('./routes/rag'));
+app.use('/api/rag-chat',      require('./routes/ai-rag'));
 
 // ─── 404 ──────────────────────────────────────────────────────────────────────
 app.use((_req, res) => res.status(404).json({ message: 'Route not found' }));

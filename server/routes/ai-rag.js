@@ -6,7 +6,7 @@
  * Body: { question, history?: [{role, content}], tables?: string[] }
  */
 const express  = require('express');
-const { pool }  = require('../db');
+const pool      = require('../db');
 const authMw   = require('../middleware/auth');
 const https    = require('https');
 const http     = require('http');
@@ -102,7 +102,7 @@ async function retrieveContext(question, tables, orgFilter) {
 }
 
 /** POST /api/rag-chat */
-router.post('/rag-chat', async (req, res) => {
+router.post('/', async (req, res) => {
   try {
     const { question, history = [], tables = [] } = req.body;
     if (!question || question.length < 2) {

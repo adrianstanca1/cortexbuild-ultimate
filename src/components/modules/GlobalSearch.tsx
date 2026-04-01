@@ -13,6 +13,8 @@ import {
   History,
   Star,
   Filter,
+  Sparkles,
+  Brain,
 } from 'lucide-react';
 import { searchApi } from '../../services/api';
 import { EmptyState } from '../ui/EmptyState';
@@ -22,13 +24,15 @@ type AnyRow = Record<string, unknown>;
 type SubTab = 'search' | 'recent' | 'saved' | 'advanced';
 
 interface SearchResult {
-  projects: AnyRow[];
-  invoices: AnyRow[];
-  contacts: AnyRow[];
-  rfis: AnyRow[];
-  documents: AnyRow[];
-  team: AnyRow[];
-  [key: string]: unknown;
+  [key: string]: AnyRow[] | unknown;
+}
+
+interface SemanticMatch {
+  type: 'semantic';
+  table: string;
+  row_id: string;
+  chunk_text: string;
+  score: number;
 }
 
 interface SearchHistory {
@@ -52,6 +56,7 @@ const resultIcons: Record<string, React.ElementType> = {
   rfis: ClipboardList,
   documents: FolderOpen,
   team: Users,
+  default: Search,
 };
 
 const resultLabels: Record<string, string> = {
@@ -67,6 +72,8 @@ export function GlobalSearch({ onClose }: { onClose?: () => void }) {
   const [subTab, setSubTab] = useState<SubTab>('search');
   const [query, setQuery] = useState('');
   const [results, setResults] = useState<SearchResult | null>(null);
+  const [semanticResults, setSemanticResults] = useState<SemanticMatch[]>([]);
+  const [searchMode, setSearchMode] = useState<string>('text');
   const [loading, setLoading] = useState(false);
   const [selectedIndex, setSelectedIndex] = useState(0);
   const [history, setHistory] = useState<SearchHistory[]>([]);
@@ -89,13 +96,16 @@ export function GlobalSearch({ onClose }: { onClose?: () => void }) {
     if (debounceRef.current) clearTimeout(debounceRef.current);
     if (query.length < 2) {
       setResults(null);
+      setSemanticResults([]);
       return;
     }
     setLoading(true);
     debounceRef.current = setTimeout(async () => {
       try {
         const data = await searchApi.search(query);
-        setResults(data.results as SearchResult);
+        setResults((data.results || {}) as SearchResult);
+        setSemanticResults((data.semanticResults || []) as SemanticMatch[]);
+        setSearchMode(data.searchMode || 'text');
       } catch {
         console.error('Search error');
       } finally {
@@ -132,6 +142,8 @@ export function GlobalSearch({ onClose }: { onClose?: () => void }) {
           : []
       )
     : [];
+
+  const totalCount = allResults.length + semanticResults.length;
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'ArrowDown') {
@@ -178,7 +190,7 @@ export function GlobalSearch({ onClose }: { onClose?: () => void }) {
                 setSelectedIndex(0);
               }}
               onKeyDown={handleKeyDown}
-              placeholder="Search projects, invoices, contacts, RFIs, documents..."
+              placeholder="Search projects, invoices, contacts, RFIs, documents, AI..."
               className="flex-1 bg-transparent text-white text-lg outline-none placeholder-gray-500"
             />
             {query && (
@@ -187,6 +199,12 @@ export function GlobalSearch({ onClose }: { onClose?: () => void }) {
               </button>
             )}
           </div>
+          {searchMode === 'hybrid' && (
+            <div className="mt-2 flex items-center gap-2 text-xs text-cyan-400">
+              <Sparkles className="h-3 w-3" />
+              AI semantic search active — showing ranked contextual results
+            </div>
+          )}
           <div className="mt-3 flex gap-2 text-xs text-gray-500">
             <kbd className="px-2 py-1 bg-gray-800 rounded">Ctrl+K</kbd>
             <span>to open search</span>
@@ -255,13 +273,50 @@ export function GlobalSearch({ onClose }: { onClose?: () => void }) {
                 </div>
               )}
 
-              {results && allResults.length === 0 && (
+              {results && totalCount === 0 && (
                 <EmptyState
                   icon={Search}
                   title={`No results found for "${String(query)}"`}
                   description="Try a different search term or check your filters."
                   className="py-12"
                 />
+              )}
+
+              {/* Semantic / AI Results */}
+              {semanticResults.length > 0 && (
+                <div className="p-4 border-b border-gray-800 bg-gray-800/30">
+                  <div className="flex items-center gap-2 mb-3 text-xs text-cyan-400 uppercase font-medium">
+                    <Brain className="h-4 w-4" />
+                    AI Semantic Results (RAG)
+                  </div>
+                  <div className="space-y-2">
+                    {semanticResults.slice(0, 8).map((match, i) => {
+                      const Icon = resultIcons[match.table] || Search;
+                      return (
+                        <button
+                          key={`${match.table}-${match.row_id}-${i}`}
+                          onClick={() => { handleSearch(); onClose?.(); }}
+                          className="w-full text-left px-3 py-2 rounded-lg hover:bg-gray-700 transition-colors"
+                        >
+                          <div className="flex items-start justify-between gap-2">
+                            <div className="flex items-start gap-2">
+                              <Icon className="h-4 w-4 text-gray-500 mt-0.5 flex-shrink-0" />
+                              <div>
+                                <p className="text-sm text-gray-300 line-clamp-2">{match.chunk_text}</p>
+                                <p className="text-xs text-gray-500 mt-1">
+                                  {resultLabels[match.table] || match.table}
+                                </p>
+                              </div>
+                            </div>
+                            <span className="text-xs text-cyan-400 flex-shrink-0">
+                              {Math.round(match.score * 100)}%
+                            </span>
+                          </div>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
               )}
 
               {results &&
