@@ -173,14 +173,24 @@ export function AIAssistant() {
     }).catch(() => {});
   }, []);
 
-  // Load sessions from localStorage on mount
+  // Load sessions from backend on mount, fall back to localStorage
   useEffect(() => {
-    try {
-      const saved = localStorage.getItem('cortex_ai_sessions');
-      if (saved) setChatSessions(JSON.parse(saved));
-    } catch (err) {
-      console.warn('Failed to load AI sessions from localStorage:', err);
-    }
+    aiConversationsApi.getSessions().then(data => {
+      if (data.sessions.length > 0) {
+        setChatSessions(data.sessions.map(s => ({
+          id: s.id,
+          firstMessage: s.first_user_message || 'New conversation',
+          date: new Date(s.updated_at),
+        })));
+        return;
+      }
+      throw new Error('empty');
+    }).catch(() => {
+      try {
+        const saved = localStorage.getItem('cortex_ai_sessions');
+        if (saved) setChatSessions(JSON.parse(saved));
+      } catch { /* ignore */ }
+    });
   }, []);
 
   // Save sessions to localStorage on change

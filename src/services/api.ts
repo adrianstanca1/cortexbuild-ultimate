@@ -370,6 +370,8 @@ export interface AiMessage {
 }
 
 export const aiConversationsApi = {
+  getSessions: () =>
+    apiFetch<{ sessions: { id: string; updated_at: string; message_count: string; first_user_message: string | null }[] }>('/ai-conversations'),
   getSession: (sessionId: string) =>
     apiFetch<{ messages: AiMessage[] }>(`/ai-conversations/${sessionId}`),
   saveMessage: (data: { sessionId: string; role: 'user' | 'assistant'; content: string; model?: string }) =>

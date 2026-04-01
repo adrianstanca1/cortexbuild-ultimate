@@ -8,7 +8,7 @@ const ALLOWED_COLUMNS = {
   projects:         ['name','client','status','progress','budget','spent','start_date','end_date','manager','location','type','phase','workers','contract_value','description'],
   invoices:         ['number','client','project_id','project','amount','vat','cis_deduction','status','issue_date','due_date','description','payment_terms','bank_account','notes'],
   safety_incidents: ['type','title','severity','status','project_id','project','reported_by','reported_by_name','date','location','description','root_cause','corrective_actions','injured_party','immediate_actions','riddor_reportable','injury_type','body_part_affected','days_lost','witness_name','target_closure_date'],
-  rfis:             ['number','project_id','project','rfi_number','subject','question','priority','status','submitted_by','submitted_date','due_date','assigned_to','response','discipline','notes','ball_in_court','cost_impact','schedule_impact'],
+  rfis:             ['number','title','project_id','project','rfi_number','subject','question','answer','priority','status','submitted_by','submitted_date','due_date','assigned_to','response','discipline','notes','ball_in_court','cost_impact','schedule_impact'],
   change_orders:    ['number','co_number','project_id','project','title','description','amount','value','status','submitted_date','approved_date','reason','schedule_impact','days_extension','rejection_reason','cost_change','schedule_change','type'],
   team_members:    ['name','role','trade','trade_type','email','phone','status','cis_status','utr_number','ni_number','hours_this_week','rams_completed','notes','daily_rate','cscs_card','cscs_expiry','cscs_type'],
   equipment:        ['name','type','registration','status','location','next_service','daily_rate','hire_period','category','serial_number','ownership','inspection_due','mewp_check','project_id','supplier','notes'],
@@ -149,12 +149,15 @@ function makeRouter(tableName, orderCol = 'created_at') {
 
   // POST / — create
   router.post('/', async (req, res) => {
-    const keys = filterKeys(req.body);
+    // Normalise camelCase → snake_case for known aliases
+    const body = { ...req.body };
+    if ('aiScore' in body) { body.ai_score = body.aiScore; delete body.aiScore; }
+    const keys = filterKeys(body);
     if (!keys.length) return res.status(400).json({ message: 'No valid fields provided' });
 
     const cols         = keys.join(', ');
     const placeholders = keys.map((_, i) => `$${i + 1}`).join(', ');
-    const values       = keys.map(k => req.body[k]);
+    const values       = keys.map(k => body[k]);
 
     // Auto-inject tenant columns on insert
     let colSuffix = '';

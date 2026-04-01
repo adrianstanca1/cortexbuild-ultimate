@@ -59,8 +59,9 @@ router.get('/cashflow', async (req, res) => {
     const orgClause = org.filter ? ' AND' + org.filter : '';
     const baseParams = org.params;
 
-    let query = `SELECT * FROM invoices WHERE status = $1${orgClause}`;
     const params = ['paid', ...baseParams];
+    const orgOffset = baseParams.length > 0 ? ` AND organization_id = $2` : '';
+    let query = `SELECT * FROM invoices WHERE status = $1${orgOffset}`;
 
     if (startDate) {
       params.push(startDate);

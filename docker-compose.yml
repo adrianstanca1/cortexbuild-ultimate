@@ -47,7 +47,7 @@ services:
     container_name: cortexbuild-api
     restart: always
     environment:
-      DATABASE_URL: postgresql://cortexbuild:${POSTGRES_PASSWORD:-cortexbuild_dev_password}@postgres:5432/cortexbuild?schema=public
+      DATABASE_URL: postgresql://cortexbuild:***@postgres:5432/cortexbuild?schema=public
       DB_HOST: postgres
       DB_PORT: 5432
       DB_NAME: ${POSTGRES_DB:-cortexbuild}
@@ -57,6 +57,7 @@ services:
       PORT: ${PORT:-3001}
       OLLAMA_HOST: ${OLLAMA_HOST:-http://ollama:11434}
       OLLAMA_MODEL: ${OLLAMA_MODEL:-qwen3.5:latest}
+      CORS_ORIGIN: ${CORS_ORIGIN:-https://cortexbuildpro.com}
     ports:
       - "127.0.0.1:3001:3001"
     networks:
