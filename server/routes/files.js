@@ -267,7 +267,12 @@ router.get('/:id/download', async (req, res) => {
     const doc = rows[0];
     if (!doc.file_path) return res.status(404).json({ message: 'File not found on server' });
 
-    const fullPath = path.join(__dirname, '..', doc.file_path);
+    // Resolve to absolute path and validate it's within uploads directory
+    const fullPath = path.resolve(UPLOADS_DIR, path.basename(doc.file_path));
+    if (!fullPath.startsWith(UPLOADS_DIR)) {
+      console.error('[SECURITY] Path traversal attempt detected:', doc.file_path);
+      return res.status(403).json({ message: 'Invalid file path' });
+    }
     if (!fs.existsSync(fullPath)) {
       return res.status(404).json({ message: 'File not found on server' });
     }
@@ -283,13 +288,19 @@ router.get('/:id/download', async (req, res) => {
 router.get('/:id/preview', async (req, res) => {
   try {
     const { id } = req.params;
-    const { rows } = await pool.query('SELECT file_path, name, type FROM documents WHERE id = $1', [id]);
+    const org = orgFilter(req.user);
+    const { rows } = await pool.query(`SELECT file_path, name, type FROM documents WHERE id = $1${org.filter}`, [id, ...org.params]);
     if (rows.length === 0) return res.status(404).json({ message: 'Document not found' });
 
     const doc = rows[0];
     if (!doc.file_path) return res.status(404).json({ message: 'File not found on server' });
 
-    const fullPath = path.join(__dirname, '..', doc.file_path);
+    // Resolve to absolute path and validate it's within uploads directory
+    const fullPath = path.resolve(UPLOADS_DIR, path.basename(doc.file_path));
+    if (!fullPath.startsWith(UPLOADS_DIR)) {
+      console.error('[SECURITY] Path traversal attempt detected:', doc.file_path);
+      return res.status(403).json({ message: 'Invalid file path' });
+    }
     if (!fs.existsSync(fullPath)) {
       return res.status(404).json({ message: 'File not found on server' });
     }
@@ -353,7 +364,12 @@ router.delete('/:id', async (req, res) => {
     await pool.query('DELETE FROM documents WHERE id = $1', [id]);
 
     if (filePath) {
-      const fullPath = path.join(__dirname, '..', filePath);
+      // Resolve to absolute path and validate it's within uploads directory
+      const fullPath = path.resolve(UPLOADS_DIR, path.basename(filePath));
+      if (!fullPath.startsWith(UPLOADS_DIR)) {
+        console.error('[SECURITY] Path traversal attempt detected:', filePath);
+        return res.status(403).json({ message: 'Invalid file path' });
+      }
       if (fs.existsSync(fullPath)) {
         fs.unlinkSync(fullPath);
       }

@@ -3,6 +3,18 @@ const pool = require('../db');
 
 const router = express.Router();
 
+// HTML escape helper to prevent XSS
+function escapeHtml(str) {
+  if (typeof str !== 'string') return str;
+  return str
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#x27;')
+    .replace(/\//g, '&#x2F;');
+}
+
 /**
  * POST /daily-reports/summary
  * AI-powered summary of daily reports for a given week
@@ -60,7 +72,7 @@ router.post('/weekly-pdf', async (req, res) => {
 <html>
 <head>
   <meta charset="utf-8">
-  <title>Weekly Report – ${projectName}</title>
+  <title>Weekly Report – ${escapeHtml(projectName)}</title>
   <style>
     body { font-family: Arial, sans-serif; padding: 40px; color: #111; }
     h1 { font-size: 20px; border-bottom: 2px solid #333; padding-bottom: 8px; }
@@ -74,7 +86,7 @@ router.post('/weekly-pdf', async (req, res) => {
   </style>
 </head>
 <body>
-  <h1>📋 Weekly Site Report — ${projectName}</h1>
+  <h1>📋 Weekly Site Report — ${escapeHtml(projectName)}</h1>
   <p class="meta">Generated: ${new Date().toLocaleDateString('en-GB', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</p>
   <table>
     <thead>
@@ -89,11 +101,11 @@ router.post('/weekly-pdf', async (req, res) => {
     <tbody>
       ${reports.map((r) => {
         const date = r.report_date ? new Date(String(r.report_date)).toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' }) : 'N/A';
-        const activities = Array.isArray(r.activities) ? r.activities.map((a) => a.description || '').filter(Boolean).join('; ') : '';
-        const issues = (r.issues || r.delays) ? String(r.issues || r.delays) : '';
+        const activities = Array.isArray(r.activities) ? r.activities.map((a) => escapeHtml(a.description) || '').filter(Boolean).join('; ') : '';
+        const issues = (r.issues || r.delays) ? escapeHtml(String(r.issues || r.delays)) : '';
         return `<tr>
           <td><strong>${date}</strong></td>
-          <td>${r.weather || 'N/A'}</td>
+          <td>${escapeHtml(r.weather || 'N/A')}</td>
           <td>${r.workers_on_site ?? 0}</td>
           <td>${activities.substring(0, 120)}${activities.length > 120 ? '…' : ''}</td>
           <td class="${issues ? 'issues' : ''}">${issues ? '⚠️ ' + issues.substring(0, 80) : '—'}</td>

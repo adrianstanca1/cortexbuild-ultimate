@@ -6,7 +6,16 @@
 const WebSocket = require('ws');
 const jwt = require('jsonwebtoken');
 
-const JWT_SECRET = process.env.JWT_SECRET || 'cortexbuild_secret';
+// JWT_SECRET must be set via environment variable - no fallback allowed
+const JWT_SECRET = process.env.JWT_SECRET;
+if (!JWT_SECRET) {
+  console.error('[FATAL] JWT_SECRET environment variable is not set - refusing to start WebSocket server');
+  process.exit(1);
+}
+if (JWT_SECRET.length < 32) {
+  console.error('[FATAL] JWT_SECRET must be at least 32 characters for security');
+  process.exit(1);
+}
 
 // Message types
 const MESSAGE_TYPES = {

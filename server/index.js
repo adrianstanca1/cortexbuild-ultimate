@@ -20,8 +20,18 @@ const PORT = process.env.PORT || 3001;
 initWebSocket(server);
 
 // ─── Session & Passport middleware for OAuth ─────────────────────────────────
+const sessionSecret = process.env.SESSION_SECRET || process.env.JWT_SECRET;
+if (!sessionSecret) {
+  console.error('[FATAL] SESSION_SECRET or JWT_SECRET environment variable must be set');
+  process.exit(1);
+}
+if (sessionSecret.length < 32) {
+  console.error('[FATAL] SESSION_SECRET must be at least 32 characters for security');
+  process.exit(1);
+}
+
 app.use(session({
-  secret: process.env.SESSION_SECRET || process.env.JWT_SECRET || 'oauth-session-secret-change-in-production',
+  secret: sessionSecret,
   resave: false,
   saveUninitialized: false,
   cookie: {
@@ -76,11 +86,13 @@ app.use('/api/auth', authRoutes);
 app.use('/api/auth', require('./routes/oauth')); // Google OAuth
 app.get('/api/health', (_req, res) => res.json({ status: 'ok', version: '1.0.0' }));
 app.use('/api/deploy', require('./routes/deploy'));
-app.use('/api/company', require('./routes/company'));
+app.use('/api/metrics', require('./routes/metrics'));
 
 // ─── JWT auth on all other /api routes ───────────────────────────────────────
-  app.use('/api/metrics',       require('./routes/metrics'));
 app.use('/api', authMiddleware);
+
+// ─── Routes requiring authentication ─────────────────────────────────────────
+app.use('/api/company', require('./routes/company'));
 
 // ─── Upload route ─────────────────────────────────────────────────────────────
 app.use('/api/files',           require('./routes/files'));
