@@ -12,6 +12,7 @@ import { useTheme } from '../../context/ThemeContext';
 import { useIsMobile } from '../../hooks/useIsMobile';
 import { NotificationCenter } from '../ui/NotificationCenter';
 import { NotificationPreferences } from '../ui/NotificationPreferences';
+import { ThemeSwitcher } from '../daisyui/ThemeSwitcher';
 
 const MODULE_LABELS: Record<Module, string> = {
   'dashboard':            'Dashboard',
@@ -383,6 +384,9 @@ export function Header({ activeModule, onMenuToggle }: { activeModule: Module; o
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
           </svg>
         </button>
+
+        {/* Theme Switcher */}
+        {!isMobile && <ThemeSwitcher className="ml-2" />}
 
         {/* Profile */}
         <ProfileButton

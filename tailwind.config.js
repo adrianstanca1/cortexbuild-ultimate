@@ -88,6 +88,68 @@ export default {
       'dark',
       'corporate',
       'synthwave',
+      'cyberpunk',
+      'dracula',
+      'nord',
+      'sunset',
+      {
+        // CortexBuild Ultimate custom theme
+        cortexbuild: {
+          primary: '#f59e0b',      // Amber 500
+          'primary-focus': '#d97706', // Amber 600
+          'primary-content': '#080b12',
+          secondary: '#3b82f6',    // Brand 500
+          'secondary-focus': '#2563eb', // Brand 600
+          'secondary-content': '#ffffff',
+          accent: '#10b981',       // Emerald 500
+          'accent-focus': '#059669',
+          'accent-content': '#ffffff',
+          neutral: '#1e293b',      // Slate 700
+          'neutral-focus': '#0d1117', // Slate 900
+          'neutral-content': '#f1f5f9',
+          'base-100': '#080b12',   // Slate 950
+          'base-200': '#0d1117',   // Slate 900
+          'base-300': '#111827',   // Slate 850
+          'base-content': '#e2e8f0', // Slate 100
+          info: '#3b82f6',
+          'info-content': '#ffffff',
+          success: '#10b981',
+          'success-content': '#ffffff',
+          warning: '#f59e0b',
+          'warning-content': '#080b12',
+          error: '#ef4444',
+          'error-content': '#ffffff',
+        },
+      },
+      {
+        // Light CortexBuild theme
+        'cortex-light': {
+          primary: '#d97706',      // Amber 600
+          'primary-focus': '#b45309',
+          'primary-content': '#ffffff',
+          secondary: '#2563eb',    // Brand 600
+          'secondary-focus': '#1d4ed8',
+          'secondary-content': '#ffffff',
+          accent: '#059669',       // Emerald 600
+          'accent-focus': '#047857',
+          'accent-content': '#ffffff',
+          neutral: '#e2e8f0',      // Slate 100
+          'neutral-focus': '#b8c4d4', // Slate 200
+          'neutral-content': '#1e293b',
+          'base-100': '#ffffff',
+          'base-200': '#f1f5f9',   // Slate 50
+          'base-300': '#e2e8f0',   // Slate 100
+          'base-content': '#0d1117',
+          info: '#3b82f6',
+          'info-content': '#ffffff',
+          success: '#10b981',
+          'success-content': '#ffffff',
+          warning: '#f59e0b',
+          'warning-content': '#080b12',
+          error: '#ef4444',
+          'error-content': '#ffffff',
+        },
+      },
     ],
     darkTheme: 'dark',
     base: true,
