@@ -161,6 +161,7 @@
 - ✅ Add runtime validation (Zod schemas + validation utilities + 15 tests)
 - ✅ Set up performance monitoring (Lighthouse CI + budgets)
 - ✅ Fixed TypeScript errors (Zod v4 API: `errors` → `issues`, type casts)
+- ✅ Code review complete - Fixed LHCI workflow (added preview server), adjusted TBT budget to 200ms
 - [ ] Add accessibility improvements (optional)
 
 ### Week 3

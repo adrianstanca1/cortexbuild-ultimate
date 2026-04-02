@@ -331,4 +331,19 @@ describe('safeValidateNotification', () => {
     expect(safeValidateNotification('string')).toBeNull();
     expect(safeValidateNotification(123)).toBeNull();
   });
+
+  it('returns partial notification with defaults for wrong-type inputs', () => {
+    const wrongTypeInput = {
+      id: 123, // should be string
+      title: 'Test',
+      severity: 'invalid', // should be valid enum
+    };
+
+    const result = safeValidateNotification(wrongTypeInput, { strict: false });
+    expect(result).not.toBeNull();
+    // Zod validation fails for wrong types, so safeValidate falls back to defaults
+    // Since id=123 is provided (even if wrong type), it's used as-is in fallback
+    expect(result?.title).toBe('Test');
+    expect(result?.type).toBe('system_alert'); // Default value
+  });
 });
