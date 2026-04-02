@@ -16,6 +16,7 @@ import {
   TrendingUp,
 } from 'lucide-react';
 import { EmptyState } from '../ui/EmptyState';
+import { ModuleBreadcrumbs } from '../ui/Breadcrumbs';
 import { type ReportTemplate } from '../../services/api';
 import { useReportTemplates, useDuplicateTemplate } from '../../hooks/useData';
 import { toast } from 'sonner';
@@ -91,26 +92,28 @@ export function ReportTemplates() {
   );
 
   return (
-    <div className="space-y-6">
+    <>
+      <ModuleBreadcrumbs currentModule="report-templates" onNavigate={() => {}} />
+      <div className="space-y-6">
       <div className="flex justify-between items-center">
         <h1 className="text-2xl font-bold text-white">Report Templates</h1>
       </div>
 
       {/* KPI Stats */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <div className="bg-gray-800 border border-gray-700 rounded-lg p-4">
+        <div className="input input-bordered p-4">
           <p className="text-xs text-gray-400 uppercase mb-1">Total Templates</p>
           <p className="text-2xl font-bold text-white">{Number(templates.length)}</p>
         </div>
-        <div className="bg-gray-800 border border-gray-700 rounded-lg p-4">
+        <div className="input input-bordered p-4">
           <p className="text-xs text-gray-400 uppercase mb-1">Scheduled Reports</p>
           <p className="text-2xl font-bold text-white">12</p>
         </div>
-        <div className="bg-gray-800 border border-gray-700 rounded-lg p-4">
+        <div className="input input-bordered p-4">
           <p className="text-xs text-gray-400 uppercase mb-1">Generated This Month</p>
           <p className="text-2xl font-bold text-white">47</p>
         </div>
-        <div className="bg-gray-800 border border-gray-700 rounded-lg p-4">
+        <div className="input input-bordered p-4">
           <p className="text-xs text-gray-400 uppercase mb-1">Avg Generation Time</p>
           <p className="text-2xl font-bold text-white">2.3s</p>
         </div>
@@ -146,12 +149,12 @@ export function ReportTemplates() {
               placeholder="Search templates..."
               value={searchQuery}
               onChange={e => setSearchQuery(e.target.value)}
-              className="flex-1 bg-gray-800 border border-gray-700 rounded-lg px-4 py-2 text-white text-sm"
+              className="flex-1 bg-gray-800 border border-gray-700 btn text-white text-sm"
             />
             <select
               value={selectedType}
               onChange={e => setSelectedType(e.target.value)}
-              className="bg-gray-800 border border-gray-700 rounded-lg px-4 py-2 text-white text-sm"
+              className="bg-gray-800 border border-gray-700 btn text-white text-sm"
             >
               <option value="all">All Types</option>
               {Object.entries(REPORT_TYPES).map(([key, val]) => (
@@ -162,7 +165,7 @@ export function ReportTemplates() {
             </select>
             <button
               onClick={() => setShowCreateModal(true)}
-              className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium flex items-center gap-2"
+              className="px-4 py-2 btn btn-primary rounded-lg text-sm font-medium flex items-center gap-2"
             >
               <Plus className="h-4 w-4" />
               New Template
@@ -292,7 +295,7 @@ export function ReportTemplates() {
               {['Summary', 'KPI Metrics', 'Table', 'Chart', 'Image', 'Page Break'].map(section => (
                 <button
                   key={section}
-                  className="w-full px-3 py-2 bg-gray-800 hover:bg-gray-700 text-white rounded text-sm text-left flex items-center gap-2"
+                  className="w-full px-3 py-2 btn btn-ghost rounded text-sm text-left flex items-center gap-2"
                 >
                   <Plus className="h-4 w-4" />
                   {section}
@@ -325,7 +328,7 @@ export function ReportTemplates() {
                   <option>Invoices</option>
                 </select>
               </div>
-              <button className="w-full px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium mt-4">
+              <button className="w-full px-4 py-2 btn btn-primary rounded-lg text-sm font-medium mt-4">
                 Save Template
               </button>
             </div>
@@ -336,7 +339,7 @@ export function ReportTemplates() {
       {/* SCHEDULED TAB */}
       {subTab === 'scheduled' && (
         <div className="space-y-4">
-          <button className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium flex items-center gap-2">
+          <button className="px-4 py-2 btn btn-primary rounded-lg text-sm font-medium flex items-center gap-2">
             <Plus className="h-4 w-4" />
             Schedule New Report
           </button>
@@ -467,6 +470,7 @@ export function ReportTemplates() {
         />
       )}
     </div>
+    </>
   );
 }
 
@@ -525,7 +529,7 @@ function TemplateModal({
               type="text"
               value={name}
               onChange={e => setName(e.target.value)}
-              className="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-2 text-white"
+              className="w-full bg-gray-800 border border-gray-700 btn text-white"
               placeholder="Monthly Financial Report"
             />
           </div>
@@ -534,7 +538,7 @@ function TemplateModal({
             <select
               value={type}
               onChange={e => setType(e.target.value)}
-              className="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-2 text-white"
+              className="w-full bg-gray-800 border border-gray-700 btn text-white"
             >
               {Object.entries(REPORT_TYPES).map(([key, val]) => (
                 <option key={key} value={key}>
@@ -548,19 +552,19 @@ function TemplateModal({
             <textarea
               value={description}
               onChange={e => setDescription(e.target.value)}
-              className="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-2 text-white h-20"
+              className="w-full bg-gray-800 border border-gray-700 btn text-white h-20"
               placeholder="Brief description of this template..."
             />
           </div>
         </div>
         <div className="p-6 border-t border-gray-800 flex justify-end gap-3">
-          <button type="button" onClick={onClose} className="px-4 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded-lg">
+          <button type="button" onClick={onClose} className="px-4 py-2 btn btn-ghost rounded-lg">
             Cancel
           </button>
           <button
             onClick={handleSave}
             disabled={mutation.isPending}
-            className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium flex items-center gap-2"
+            className="px-4 py-2 btn btn-primary rounded-lg font-medium flex items-center gap-2"
           >
             {mutation.isPending && <RefreshCw className="h-4 w-4 animate-spin" />}
             {template ? 'Update' : 'Create'}
@@ -570,3 +574,4 @@ function TemplateModal({
     </div>
   );
 }
+export default ReportTemplates;

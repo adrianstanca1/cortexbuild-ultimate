@@ -5,10 +5,12 @@ import {
   Loader2, CheckSquare, Square,
 } from 'lucide-react';
 import { EmptyState } from '../ui/EmptyState';
+import { ModuleBreadcrumbs } from '../ui/Breadcrumbs';
 import { useRFIs } from '../../hooks/useData';
 import { toast } from 'sonner';
 import { z } from 'zod';
 import { BulkActionsBar, useBulkSelection } from '../ui/BulkActions';
+import { CardSkeleton } from '../ui/Skeleton';
 
 type AnyRow = Record<string, unknown>;
 
@@ -247,7 +249,9 @@ export function RFIs() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-900 p-6 space-y-6">
+    <>
+      <ModuleBreadcrumbs currentModule="rfis" onNavigate={() => {}} />
+      <div className="min-h-screen bg-gray-900 p-6 space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
@@ -516,7 +520,7 @@ export function RFIs() {
                       {r.status !== 'Answered' && r.status !== 'Closed' && (
                         <button
                           onClick={e=>{e.stopPropagation();sendResponse(r);}}
-                          className="flex items-center gap-2 px-3 py-2 bg-green-600 hover:bg-green-700 text-white rounded text-xs font-medium transition-colors"
+                          className="flex items-center gap-2 px-3 py-2 btn btn-success rounded text-xs font-medium transition-colors"
                         >
                           <Send size={12}/>Send Response
                         </button>
@@ -524,7 +528,7 @@ export function RFIs() {
                       {r.status === 'Pending Response' && (
                         <button
                           onClick={e=>{e.stopPropagation();markAnswered(r);}}
-                          className="flex items-center gap-2 px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded text-xs font-medium transition-colors"
+                          className="flex items-center gap-2 px-3 py-2 btn btn-primary rounded text-xs font-medium transition-colors"
                         >
                           <CheckCircle size={12}/>Mark Answered
                         </button>
@@ -754,5 +758,7 @@ export function RFIs() {
         </div>
       )}
     </div>
+    </>
   );
 }
+export default RFIs;

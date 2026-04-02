@@ -70,7 +70,9 @@ export type Module =
   | 'submittal-management'
   | 'dev-sandbox'
   | 'ai-vision'
-  | 'my-desktop';
+  | 'my-desktop'
+  | 'advanced-analytics'
+  | 'project-calendar';
 
 export type ProjectStatus = 'planning' | 'active' | 'on_hold' | 'completed' | 'archived';
 export type TaskStatus = 'todo' | 'in_progress' | 'review' | 'done' | 'blocked';

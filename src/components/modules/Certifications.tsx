@@ -2,6 +2,7 @@
 import { useState } from 'react';
 import { Plus, Shield, FileCheck, Clock, AlertTriangle, FileText, Upload, Trash2, X, Edit, CheckSquare, Square } from 'lucide-react';
 import { BulkActionsBar, useBulkSelection } from '../ui/BulkActions';
+import { ModuleBreadcrumbs } from '../ui/Breadcrumbs';
 import { EmptyState } from '../ui/EmptyState';
 import { useCertifications } from '../../hooks/useData';
 import { uploadFile } from '../../services/api';
@@ -116,7 +117,9 @@ export default function Certifications() {
   };
 
   return (
-    <div className="p-6 space-y-6">
+    <>
+      <ModuleBreadcrumbs currentModule="certifications" onNavigate={() => {}} />
+      <div className="p-6 space-y-6">
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-2xl font-bold text-white">Certifications & Licenses</h2>
@@ -132,7 +135,7 @@ export default function Certifications() {
         <div className="card p-4"><div className="flex items-center gap-3"><div className="w-10 h-10 rounded-lg bg-blue-500/10 flex items-center justify-center"><Shield className="text-blue-400" size={20} /></div><div><p className="text-gray-400 text-xs">Total</p><p className="text-2xl font-bold text-blue-400">{isLoading ? '...' : certs.length}</p></div></div></div>
       </div>
       <div className="card p-4">
-        <input type="text" placeholder="Search certifications..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white mb-4" />
+        <input type="text" placeholder="Search certifications..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="w-full px-4 py-2 input input-bordered text-white mb-4" />
         {isLoading ? (
           <div className="text-center py-8 text-gray-400">Loading certifications...</div>
         ) : (
@@ -224,34 +227,34 @@ export default function Certifications() {
             <div className="p-6 space-y-4">
               <div>
                 <label htmlFor="certType" className="block text-gray-400 text-xs mb-1">Certification Type *</label>
-                <input id="certType" type="text" value={form.certificationType} onChange={e => setForm(f => ({ ...f, certificationType: e.target.value }))} placeholder="e.g. ISO 9001" className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500" />
+                <input id="certType" type="text" value={form.certificationType} onChange={e => setForm(f => ({ ...f, certificationType: e.target.value }))} placeholder="e.g. ISO 9001" className="w-full px-3 py-2 input input-bordered text-white placeholder-gray-500" />
               </div>
               <div>
                 <label htmlFor="certCompany" className="block text-gray-400 text-xs mb-1">Company</label>
-                <input id="certCompany" type="text" value={form.company} onChange={e => setForm(f => ({ ...f, company: e.target.value }))} placeholder="Company name" className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500" />
+                <input id="certCompany" type="text" value={form.company} onChange={e => setForm(f => ({ ...f, company: e.target.value }))} placeholder="Company name" className="w-full px-3 py-2 input input-bordered text-white placeholder-gray-500" />
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label htmlFor="certBody" className="block text-gray-400 text-xs mb-1">Issuing Body</label>
-                  <input id="certBody" type="text" value={form.body} onChange={e => setForm(f => ({ ...f, body: e.target.value }))} placeholder="e.g. BSI" className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500" />
+                  <input id="certBody" type="text" value={form.body} onChange={e => setForm(f => ({ ...f, body: e.target.value }))} placeholder="e.g. BSI" className="w-full px-3 py-2 input input-bordered text-white placeholder-gray-500" />
                 </div>
                 <div>
                   <label htmlFor="certGrade" className="block text-gray-400 text-xs mb-1">Grade</label>
-                  <input id="certGrade" type="text" value={form.grade} onChange={e => setForm(f => ({ ...f, grade: e.target.value }))} placeholder="e.g. A" className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500" />
+                  <input id="certGrade" type="text" value={form.grade} onChange={e => setForm(f => ({ ...f, grade: e.target.value }))} placeholder="e.g. A" className="w-full px-3 py-2 input input-bordered text-white placeholder-gray-500" />
                 </div>
               </div>
               <div>
                 <label htmlFor="certAccred" className="block text-gray-400 text-xs mb-1">Accreditation Number</label>
-                <input id="certAccred" type="text" value={form.accreditationNumber} onChange={e => setForm(f => ({ ...f, accreditationNumber: e.target.value }))} placeholder="e.g. ABC-12345" className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500" />
+                <input id="certAccred" type="text" value={form.accreditationNumber} onChange={e => setForm(f => ({ ...f, accreditationNumber: e.target.value }))} placeholder="e.g. ABC-12345" className="w-full px-3 py-2 input input-bordered text-white placeholder-gray-500" />
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label htmlFor="certExpiry" className="block text-gray-400 text-xs mb-1">Expiry Date</label>
-                  <input id="certExpiry" type="date" value={form.expiryDate} onChange={e => setForm(f => ({ ...f, expiryDate: e.target.value }))} className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white" />
+                  <input id="certExpiry" type="date" value={form.expiryDate} onChange={e => setForm(f => ({ ...f, expiryDate: e.target.value }))} className="w-full px-3 py-2 input input-bordered text-white" />
                 </div>
                 <div>
                   <label htmlFor="certStatus" className="block text-gray-400 text-xs mb-1">Status</label>
-                  <select id="certStatus" value={form.status} onChange={e => setForm(f => ({ ...f, status: e.target.value }))} className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white">
+                  <select id="certStatus" value={form.status} onChange={e => setForm(f => ({ ...f, status: e.target.value }))} className="w-full px-3 py-2 input input-bordered text-white">
                     <option value="active">Active</option>
                     <option value="pending">Pending</option>
                     <option value="expired">Expired</option>
@@ -280,34 +283,34 @@ export default function Certifications() {
             <div className="p-6 space-y-4">
               <div>
                 <label htmlFor="editCertType" className="block text-gray-400 text-xs mb-1">Certification Type *</label>
-                <input id="editCertType" type="text" value={editItem.certificationType} onChange={e => setEditItem(f => ({ ...f, certificationType: e.target.value }))} className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500" />
+                <input id="editCertType" type="text" value={editItem.certificationType} onChange={e => setEditItem(f => ({ ...f, certificationType: e.target.value }))} className="w-full px-3 py-2 input input-bordered text-white placeholder-gray-500" />
               </div>
               <div>
                 <label htmlFor="editCertCompany" className="block text-gray-400 text-xs mb-1">Company</label>
-                <input id="editCertCompany" type="text" value={editItem.company} onChange={e => setEditItem(f => ({ ...f, company: e.target.value }))} className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500" />
+                <input id="editCertCompany" type="text" value={editItem.company} onChange={e => setEditItem(f => ({ ...f, company: e.target.value }))} className="w-full px-3 py-2 input input-bordered text-white placeholder-gray-500" />
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label htmlFor="editCertBody" className="block text-gray-400 text-xs mb-1">Issuing Body</label>
-                  <input id="editCertBody" type="text" value={editItem.body} onChange={e => setEditItem(f => ({ ...f, body: e.target.value }))} className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500" />
+                  <input id="editCertBody" type="text" value={editItem.body} onChange={e => setEditItem(f => ({ ...f, body: e.target.value }))} className="w-full px-3 py-2 input input-bordered text-white placeholder-gray-500" />
                 </div>
                 <div>
                   <label htmlFor="editCertGrade" className="block text-gray-400 text-xs mb-1">Grade</label>
-                  <input id="editCertGrade" type="text" value={editItem.grade} onChange={e => setEditItem(f => ({ ...f, grade: e.target.value }))} className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500" />
+                  <input id="editCertGrade" type="text" value={editItem.grade} onChange={e => setEditItem(f => ({ ...f, grade: e.target.value }))} className="w-full px-3 py-2 input input-bordered text-white placeholder-gray-500" />
                 </div>
               </div>
               <div>
                 <label htmlFor="editCertAccred" className="block text-gray-400 text-xs mb-1">Accreditation Number</label>
-                <input id="editCertAccred" type="text" value={editItem.accreditationNumber} onChange={e => setEditItem(f => ({ ...f, accreditationNumber: e.target.value }))} className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500" />
+                <input id="editCertAccred" type="text" value={editItem.accreditationNumber} onChange={e => setEditItem(f => ({ ...f, accreditationNumber: e.target.value }))} className="w-full px-3 py-2 input input-bordered text-white placeholder-gray-500" />
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label htmlFor="editCertExpiry" className="block text-gray-400 text-xs mb-1">Expiry Date</label>
-                  <input id="editCertExpiry" type="date" value={editItem.expiryDate} onChange={e => setEditItem(f => ({ ...f, expiryDate: e.target.value }))} className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white" />
+                  <input id="editCertExpiry" type="date" value={editItem.expiryDate} onChange={e => setEditItem(f => ({ ...f, expiryDate: e.target.value }))} className="w-full px-3 py-2 input input-bordered text-white" />
                 </div>
                 <div>
                   <label htmlFor="editCertStatus" className="block text-gray-400 text-xs mb-1">Status</label>
-                  <select id="editCertStatus" value={editItem.status} onChange={e => setEditItem(f => ({ ...f, status: e.target.value }))} className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white">
+                  <select id="editCertStatus" value={editItem.status} onChange={e => setEditItem(f => ({ ...f, status: e.target.value }))} className="w-full px-3 py-2 input input-bordered text-white">
                     <option value="active">Active</option>
                     <option value="pending">Pending</option>
                     <option value="expired">Expired</option>
@@ -326,5 +329,6 @@ export default function Certifications() {
         </div>
       )}
     </div>
+    </>
   );
 }

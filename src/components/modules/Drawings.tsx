@@ -4,6 +4,7 @@ import { useDocuments } from '../../hooks/useData';
 import { documentsApi } from '../../services/api';
 import { toast } from 'sonner';
 import { EmptyState } from '../ui/EmptyState';
+import { ModuleBreadcrumbs } from '../ui/Breadcrumbs';
 import { PieChart, Pie, BarChart, Bar, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from 'recharts';
 import { BulkActionsBar, useBulkSelection } from '../ui/BulkActions';
 
@@ -273,7 +274,9 @@ export function Drawings() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-950 p-6 space-y-6">
+    <>
+      <ModuleBreadcrumbs currentModule="drawings" onNavigate={() => {}} />
+      <div className="min-h-screen bg-gray-950 p-6 space-y-6">
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold text-white">Drawings</h1>
@@ -800,5 +803,7 @@ export function Drawings() {
         </div>
       )}
     </div>
+    </>
   );
 }
+export default Drawings;

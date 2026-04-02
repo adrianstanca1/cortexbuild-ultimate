@@ -4,6 +4,7 @@ import { useContacts } from '../../hooks/useData';
 import { contactsApi } from '../../services/api';
 import { toast } from 'sonner';
 import { BulkActionsBar, useBulkSelection } from '../ui/BulkActions';
+import { ModuleBreadcrumbs } from '../ui/Breadcrumbs';
 import { EmptyState } from '../ui/EmptyState';
 
 type AnyRow = Record<string, unknown>;
@@ -231,7 +232,9 @@ export function CRM() {
   }
 
   return (
-    <div className="p-6 space-y-6 bg-gray-900 min-h-screen">
+    <>
+      <ModuleBreadcrumbs currentModule="crm" onNavigate={() => {}} />
+      <div className="p-6 space-y-6 bg-gray-900 min-h-screen">
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-white">CRM</h1>
@@ -653,5 +656,7 @@ export function CRM() {
         </div>
       )}
     </div>
+    </>
   );
 }
+export default CRM;

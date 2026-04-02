@@ -7,6 +7,8 @@ import {
 import { toast } from 'sonner';
 import clsx from 'clsx';
 import { EmptyState } from '../ui/EmptyState';
+import { CardSkeleton } from '../ui/Skeleton';
+import { ModuleBreadcrumbs } from '../ui/Breadcrumbs';
 
 interface DocumentVersion {
   id: string;
@@ -203,7 +205,9 @@ export function Documents() {
   const isPdf = (type: string) => type.toUpperCase() === 'PDF';
 
   return (
-    <div className="min-h-screen bg-slate-950 p-6 space-y-6">
+    <>
+      <ModuleBreadcrumbs currentModule="documents" onNavigate={() => {}} />
+      <div className="min-h-screen bg-slate-950 p-6 space-y-6">
       <div className="flex items-center justify-between flex-wrap gap-4">
         <div><h1 className="text-3xl font-bold text-white">Documents</h1><p className="text-sm text-slate-400 mt-1">{documents.length} files</p></div>
         <button onClick={() => setShowUploadModal(true)} className="btn-primary flex items-center gap-2"><UploadCloud className="w-4 h-4" /> Upload</button>
@@ -379,5 +383,7 @@ export function Documents() {
         </div>
       )}
     </div>
+    </>
   );
 }
+export default Documents;

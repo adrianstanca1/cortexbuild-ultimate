@@ -27,7 +27,7 @@ interface WindowState {
   zIndex: number;
 }
 
-const MyDesktop: React.FC = () => {
+export const MyDesktop: React.FC = () => {
   // Desktop State
   const [windows, setWindows] = useState<WindowState[]>([]);
   const [activeWindowId, setActiveWindowId] = useState<string | null>(null);
@@ -378,7 +378,7 @@ const MyDesktop: React.FC = () => {
               </button>
               <button
                 onClick={() => closeWindow(window.id)}
-                className="w-6 h-6 rounded bg-red-500 hover:bg-red-600 flex items-center justify-center transition-colors"
+                className="w-6 h-6 rounded btn btn-error flex items-center justify-center transition-colors"
               >
                 <X className="h-3 w-3 text-white" />
               </button>

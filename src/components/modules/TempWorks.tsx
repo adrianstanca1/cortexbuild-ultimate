@@ -7,6 +7,7 @@ import {
 import { useTempWorks } from '../../hooks/useData';
 import { toast } from 'sonner';
 import { uploadFile } from '../../services/api';
+import { ModuleBreadcrumbs } from '../ui/Breadcrumbs';
 
 interface _TempWork {
   id: string;
@@ -132,7 +133,9 @@ export default function TempWorks() {
   }
 
   return (
-    <div className="p-6 space-y-6">
+    <>
+      <ModuleBreadcrumbs currentModule="temp-works" onNavigate={() => {}} />
+      <div className="p-6 space-y-6">
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-2xl font-bold text-white" style={{ fontFamily: 'var(--font-display)' }}>
@@ -191,14 +194,14 @@ export default function TempWorks() {
                 placeholder="Search temporary works..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-10 pr-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500"
+                className="w-full pl-10 pr-4 py-2 input input-bordered text-white placeholder-gray-500"
               />
             </div>
           </div>
           <select
             value={filterStatus}
             onChange={(e) => setFilterStatus(e.target.value)}
-            className="px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white"
+            className="px-3 py-2 input input-bordered text-white"
           >
             <option value="all">All Status</option>
             <option value="design">In Design</option>
@@ -293,16 +296,16 @@ export default function TempWorks() {
             <div className="p-6 space-y-4">
               <div>
                 <label htmlFor="twTitle" className="block text-gray-400 text-xs mb-1">Title *</label>
-                <input id="twTitle" type="text" value={form.title} onChange={e => setForm(f => ({ ...f, title: e.target.value }))} placeholder="e.g. Tower Crane Bases" className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500" />
+                <input id="twTitle" type="text" value={form.title} onChange={e => setForm(f => ({ ...f, title: e.target.value }))} placeholder="e.g. Tower Crane Bases" className="w-full px-3 py-2 input input-bordered text-white placeholder-gray-500" />
               </div>
               <div>
                 <label htmlFor="twProject" className="block text-gray-400 text-xs mb-1">Project</label>
-                <input id="twProject" type="text" value={form.project} onChange={e => setForm(f => ({ ...f, project: e.target.value }))} placeholder="Project name" className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500" />
+                <input id="twProject" type="text" value={form.project} onChange={e => setForm(f => ({ ...f, project: e.target.value }))} placeholder="Project name" className="w-full px-3 py-2 input input-bordered text-white placeholder-gray-500" />
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label htmlFor="twType" className="block text-gray-400 text-xs mb-1">Type</label>
-                  <select id="twType" value={form.type} onChange={e => setForm(f => ({ ...f, type: e.target.value }))} className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white">
+                  <select id="twType" value={form.type} onChange={e => setForm(f => ({ ...f, type: e.target.value }))} className="w-full px-3 py-2 input input-bordered text-white">
                     <option value="Structural Support">Structural Support</option>
                     <option value="Propping">Propping</option>
                     <option value="Scaffolding">Scaffolding</option>
@@ -313,7 +316,7 @@ export default function TempWorks() {
                 </div>
                 <div>
                   <label htmlFor="twStatus" className="block text-gray-400 text-xs mb-1">Status</label>
-                  <select id="twStatus" value={form.status} onChange={e => setForm(f => ({ ...f, status: e.target.value }))} className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white">
+                  <select id="twStatus" value={form.status} onChange={e => setForm(f => ({ ...f, status: e.target.value }))} className="w-full px-3 py-2 input input-bordered text-white">
                     <option value="design">In Design</option>
                     <option value="approval">Pending Approval</option>
                     <option value="installed">Installed</option>
@@ -324,16 +327,16 @@ export default function TempWorks() {
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label htmlFor="twDesigner" className="block text-gray-400 text-xs mb-1">Designer</label>
-                  <input id="twDesigner" type="text" value={form.designer} onChange={e => setForm(f => ({ ...f, designer: e.target.value }))} placeholder="Designer name" className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500" />
+                  <input id="twDesigner" type="text" value={form.designer} onChange={e => setForm(f => ({ ...f, designer: e.target.value }))} placeholder="Designer name" className="w-full px-3 py-2 input input-bordered text-white placeholder-gray-500" />
                 </div>
                 <div>
                   <label htmlFor="twInstaller" className="block text-gray-400 text-xs mb-1">Installer</label>
-                  <input id="twInstaller" type="text" value={form.installer} onChange={e => setForm(f => ({ ...f, installer: e.target.value }))} placeholder="Installer name" className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500" />
+                  <input id="twInstaller" type="text" value={form.installer} onChange={e => setForm(f => ({ ...f, installer: e.target.value }))} placeholder="Installer name" className="w-full px-3 py-2 input input-bordered text-white placeholder-gray-500" />
                 </div>
               </div>
               <div>
                 <label htmlFor="twDesc" className="block text-gray-400 text-xs mb-1">Description</label>
-                <textarea id="twDesc" value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))} placeholder="Description..." rows={3} className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500" />
+                <textarea id="twDesc" value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))} placeholder="Description..." rows={3} className="w-full px-3 py-2 input input-bordered text-white placeholder-gray-500" />
               </div>
             </div>
             <div className="p-6 border-t border-gray-700 flex justify-end gap-3">
@@ -356,16 +359,16 @@ export default function TempWorks() {
             <div className="p-6 space-y-4">
               <div>
                 <label htmlFor="twTitle" className="block text-gray-400 text-xs mb-1">Title *</label>
-                <input id="twTitle" type="text" value={form.title} onChange={e => setForm(f => ({ ...f, title: e.target.value }))} placeholder="e.g. Tower Crane Bases" className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500" />
+                <input id="twTitle" type="text" value={form.title} onChange={e => setForm(f => ({ ...f, title: e.target.value }))} placeholder="e.g. Tower Crane Bases" className="w-full px-3 py-2 input input-bordered text-white placeholder-gray-500" />
               </div>
               <div>
                 <label htmlFor="twProject" className="block text-gray-400 text-xs mb-1">Project</label>
-                <input id="twProject" type="text" value={form.project} onChange={e => setForm(f => ({ ...f, project: e.target.value }))} placeholder="Project name" className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500" />
+                <input id="twProject" type="text" value={form.project} onChange={e => setForm(f => ({ ...f, project: e.target.value }))} placeholder="Project name" className="w-full px-3 py-2 input input-bordered text-white placeholder-gray-500" />
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label htmlFor="twType" className="block text-gray-400 text-xs mb-1">Type</label>
-                  <select id="twType" value={form.type} onChange={e => setForm(f => ({ ...f, type: e.target.value }))} className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white">
+                  <select id="twType" value={form.type} onChange={e => setForm(f => ({ ...f, type: e.target.value }))} className="w-full px-3 py-2 input input-bordered text-white">
                     <option value="Structural Support">Structural Support</option>
                     <option value="Propping">Propping</option>
                     <option value="Scaffolding">Scaffolding</option>
@@ -376,7 +379,7 @@ export default function TempWorks() {
                 </div>
                 <div>
                   <label htmlFor="twStatus" className="block text-gray-400 text-xs mb-1">Status</label>
-                  <select id="twStatus" value={form.status} onChange={e => setForm(f => ({ ...f, status: e.target.value }))} className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white">
+                  <select id="twStatus" value={form.status} onChange={e => setForm(f => ({ ...f, status: e.target.value }))} className="w-full px-3 py-2 input input-bordered text-white">
                     <option value="design">In Design</option>
                     <option value="approval">Pending Approval</option>
                     <option value="installed">Installed</option>
@@ -388,16 +391,16 @@ export default function TempWorks() {
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label htmlFor="twDesigner" className="block text-gray-400 text-xs mb-1">Designer</label>
-                  <input id="twDesigner" type="text" value={form.designer} onChange={e => setForm(f => ({ ...f, designer: e.target.value }))} placeholder="Designer name" className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500" />
+                  <input id="twDesigner" type="text" value={form.designer} onChange={e => setForm(f => ({ ...f, designer: e.target.value }))} placeholder="Designer name" className="w-full px-3 py-2 input input-bordered text-white placeholder-gray-500" />
                 </div>
                 <div>
                   <label htmlFor="twInstaller" className="block text-gray-400 text-xs mb-1">Installer</label>
-                  <input id="twInstaller" type="text" value={form.installer} onChange={e => setForm(f => ({ ...f, installer: e.target.value }))} placeholder="Installer name" className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500" />
+                  <input id="twInstaller" type="text" value={form.installer} onChange={e => setForm(f => ({ ...f, installer: e.target.value }))} placeholder="Installer name" className="w-full px-3 py-2 input input-bordered text-white placeholder-gray-500" />
                 </div>
               </div>
               <div>
                 <label htmlFor="twDesc" className="block text-gray-400 text-xs mb-1">Description</label>
-                <textarea id="twDesc" value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))} placeholder="Description..." rows={3} className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500" />
+                <textarea id="twDesc" value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))} placeholder="Description..." rows={3} className="w-full px-3 py-2 input input-bordered text-white placeholder-gray-500" />
               </div>
             </div>
             <div className="p-6 border-t border-gray-700 flex justify-end gap-3">
@@ -410,5 +413,6 @@ export default function TempWorks() {
         </div>
       )}
     </div>
+    </>
   );
 }

@@ -1,12 +1,24 @@
 import { useState } from 'react';
 import {
-  GripVertical,
-  Eye,
-  EyeOff,
-  X,
-  Check,
-  Plus,
-} from 'lucide-react';
+  DndContext,
+  DragEndEvent,
+  DragOverlay,
+  DragStartEvent,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+} from '@dnd-kit/core';
+import {
+  SortableContext,
+  sortableKeyboardCoordinates,
+  verticalListSortingStrategy,
+  arrayMove,
+  useSortable,
+} from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
+import { GripVertical, Eye, EyeOff, X, Check, Plus } from 'lucide-react';
 import { toast } from 'sonner';
 import clsx from 'clsx';
 
@@ -26,9 +38,63 @@ interface WidgetCustomizerProps {
   onClose: () => void;
 }
 
+function SortableWidget({ widget, onToggleVisibility }: { widget: DashboardWidget; onToggleVisibility: (id: string) => void }) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: widget.id });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.5 : 1,
+  };
+
+  return (
+    <div
+      ref={setNodeRef}
+      style={style}
+      className={clsx(
+        'flex items-center gap-3 p-3 bg-base-200 rounded-lg border border-base-300',
+        isDragging && 'shadow-lg'
+      )}
+    >
+      <button
+        {...attributes}
+        {...listeners}
+        className="cursor-grab active:cursor-grabbing text-gray-400 hover:text-primary"
+      >
+        <GripVertical className="w-5 h-5" />
+      </button>
+
+      <div className="flex-1">
+        <span className="font-medium">{widget.title}</span>
+        <span className={clsx('text-xs ml-2', widget.visible ? 'text-success' : 'text-gray-500')}>
+          {widget.visible ? 'Visible' : 'Hidden'}
+        </span>
+      </div>
+
+      <button
+        onClick={() => onToggleVisibility(widget.id)}
+        className={clsx('btn btn-sm btn-ghost', !widget.visible && 'text-gray-500')}
+      >
+        {widget.visible ? <Eye className="w-4 h-4" /> : <EyeOff className="w-4 h-4" />}
+      </button>
+    </div>
+  );
+}
+
 export function WidgetCustomizer({ widgets, onSave, onClose }: WidgetCustomizerProps) {
   const [localWidgets, setLocalWidgets] = useState(widgets);
-  const [draggedId, setDraggedId] = useState<string | null>(null);
+  const [activeId, setActiveId] = useState<string | null>(null);
+
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: {
+        distance: 8,
+      },
+    }),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    })
+  );
 
   const toggleVisibility = (id: string) => {
     setLocalWidgets(prev =>
@@ -36,28 +102,22 @@ export function WidgetCustomizer({ widgets, onSave, onClose }: WidgetCustomizerP
     );
   };
 
-  const handleDragStart = (id: string) => {
-    setDraggedId(id);
+  const handleDragStart = (event: DragStartEvent) => {
+    setActiveId(event.active.id as string);
   };
 
-  const handleDragOver = (e: React.DragEvent, targetId: string) => {
-    e.preventDefault();
-    if (!draggedId || draggedId === targetId) return;
+  const handleDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+    setActiveId(null);
 
-    setLocalWidgets(prev => {
-      const items = [...prev];
-      const draggedIndex = items.findIndex(i => i.id === draggedId);
-      const targetIndex = items.findIndex(i => i.id === targetId);
-      
-      const [draggedItem] = items.splice(draggedIndex, 1);
-      items.splice(targetIndex, 0, draggedItem);
-      
-      return items.map((item, i) => ({ ...item, order: i }));
-    });
-  };
-
-  const handleDragEnd = () => {
-    setDraggedId(null);
+    if (over && active.id !== over.id) {
+      setLocalWidgets(items => {
+        const oldIndex = items.findIndex(i => i.id === active.id);
+        const newIndex = items.findIndex(i => i.id === over.id);
+        const newItems = arrayMove(items, oldIndex, newIndex);
+        return newItems.map((item, i) => ({ ...item, order: i }));
+      });
+    }
   };
 
   const handleSave = () => {
@@ -98,131 +158,81 @@ export function WidgetCustomizer({ widgets, onSave, onClose }: WidgetCustomizerP
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50" onClick={onClose}>
-      <div
-        className="bg-gray-900 border border-gray-700 rounded-xl w-full max-w-2xl max-h-[80vh] overflow-hidden flex flex-col"
-        onClick={e => e.stopPropagation()}
-      >
-        <div className="p-6 border-b border-gray-800 flex items-center justify-between">
-          <div>
-            <h2 className="text-xl font-bold text-white">Customize Dashboard</h2>
-            <p className="text-sm text-gray-500">Drag to reorder, toggle to show/hide widgets</p>
+      <div className="card bg-base-100 w-full max-w-2xl m-4 max-h-[90vh] overflow-auto" onClick={e => e.stopPropagation()}>
+        <div className="card-body">
+          <div className="flex justify-between items-center">
+            <h2 className="card-title">Customize Dashboard</h2>
+            <button onClick={onClose} className="btn btn-sm btn-ghost btn-circle">
+              <X className="w-5 h-5" />
+            </button>
           </div>
-          <button onClick={onClose} className="text-gray-500 hover:text-white">
-            <X className="h-5 w-5" />
-          </button>
-        </div>
 
-        <div className="flex-1 overflow-y-auto p-6 space-y-6">
-          <div>
-            <h3 className="text-sm font-medium text-gray-400 uppercase tracking-wider mb-3">
-              Current Widgets
-            </h3>
-            <div className="space-y-2">
-              {localWidgets.map((widget) => (
-                <div
-                  key={widget.id}
-                  draggable
-                  onDragStart={() => handleDragStart(widget.id)}
-                  onDragOver={(e) => handleDragOver(e, widget.id)}
-                  onDragEnd={handleDragEnd}
-                  className={clsx(
-                    'flex items-center gap-3 p-3 rounded-lg border transition-all',
-                    draggedId === widget.id
-                      ? 'border-blue-500 bg-blue-500/10 opacity-50'
-                      : 'border-gray-700 bg-gray-800/50 hover:border-gray-600'
-                  )}
-                >
-                  <GripVertical className="h-5 w-5 text-gray-500 cursor-grab" />
-                  <span className="text-gray-400 text-sm">{widget.title}</span>
-                  <div className="flex items-center gap-2 ml-auto">
-                    <span className={clsx(
-                      'px-2 py-0.5 rounded text-xs',
-                      widget.visible ? 'bg-emerald-500/20 text-emerald-400' : 'bg-gray-700 text-gray-500'
-                    )}>
-                      {widget.visible ? 'Visible' : 'Hidden'}
+          <p className="text-sm text-gray-500">
+            Drag and drop to reorder widgets. Toggle visibility with the eye icon.
+          </p>
+
+          <DndContext
+            sensors={sensors}
+            collisionDetection={closestCenter}
+            onDragStart={handleDragStart}
+            onDragEnd={handleDragEnd}
+          >
+            <div className="space-y-2 my-4">
+              <SortableContext items={localWidgets.map(w => w.id)} strategy={verticalListSortingStrategy}>
+                {localWidgets.map(widget => (
+                  <SortableWidget
+                    key={widget.id}
+                    widget={widget}
+                    onToggleVisibility={toggleVisibility}
+                  />
+                ))}
+              </SortableContext>
+            </div>
+
+            <DragOverlay>
+              {activeId ? (
+                <div className="p-3 bg-primary text-primary-content rounded-lg shadow-lg">
+                  <div className="flex items-center gap-2">
+                    <GripVertical className="w-5 h-5" />
+                    <span>
+                      {localWidgets.find(w => w.id === activeId)?.title}
                     </span>
-                    <button
-                      onClick={() => toggleVisibility(widget.id)}
-                      className="p-1.5 hover:bg-gray-700 rounded transition-colors"
-                    >
-                      {widget.visible ? (
-                        <Eye className="h-4 w-4 text-gray-400" />
-                      ) : (
-                        <EyeOff className="h-4 w-4 text-gray-500" />
-                      )}
-                    </button>
                   </div>
                 </div>
-              ))}
-            </div>
-          </div>
+              ) : null}
+            </DragOverlay>
+          </DndContext>
 
           {notAddedWidgets.length > 0 && (
-            <div>
-              <h3 className="text-sm font-medium text-gray-400 uppercase tracking-wider mb-3">
-                Available Widgets
-              </h3>
-              <div className="grid grid-cols-2 gap-2">
-                {notAddedWidgets.map((widget) => (
-                  <button
-                    key={widget.id}
-                    onClick={() => addWidget(widget)}
-                    className="flex items-center gap-2 p-3 rounded-lg border border-gray-700 bg-gray-800/50 hover:bg-gray-800 hover:border-gray-600 transition-all text-left"
-                  >
-                    <Plus className="h-4 w-4 text-gray-500" />
-                    <span className="text-sm text-gray-300">{widget.title}</span>
-                  </button>
-                ))}
-              </div>
+            <div className="divider">Add Widgets</div>
+          )}
+
+          {notAddedWidgets.length > 0 && (
+            <div className="grid grid-cols-2 gap-2">
+              {notAddedWidgets.map(widget => (
+                <button
+                  key={widget.id}
+                  onClick={() => addWidget(widget)}
+                  className="btn btn-sm btn-outline gap-2"
+                >
+                  <Plus className="w-4 h-4" />
+                  {widget.title}
+                </button>
+              ))}
             </div>
           )}
-        </div>
 
-        <div className="p-6 border-t border-gray-800 flex items-center justify-between">
-          <button onClick={resetToDefault} className="text-sm text-gray-500 hover:text-white">
-            Reset to Default
-          </button>
-          <div className="flex gap-3">
-            <button onClick={onClose} className="btn btn-secondary">
-              Cancel
+          <div className="card-actions justify-end mt-4">
+            <button onClick={resetToDefault} className="btn btn-ghost">
+              Reset to Default
             </button>
             <button onClick={handleSave} className="btn btn-primary">
-              <Check className="h-4 w-4 mr-2" />
-              Save Changes
+              <Check className="w-4 h-4" />
+              Save Layout
             </button>
           </div>
         </div>
       </div>
     </div>
   );
-}
-
-export function useDashboardLayout(defaultWidgets: DashboardWidget[]) {
-  const [widgets, setWidgets] = useState<DashboardWidget[]>(() => {
-    const saved = localStorage.getItem('dashboard-layout');
-    if (saved) {
-      try {
-        return JSON.parse(saved);
-      } catch {
-        return defaultWidgets;
-      }
-    }
-    return defaultWidgets;
-  });
-
-  const saveWidgets = (newWidgets: DashboardWidget[]) => {
-    setWidgets(newWidgets);
-    localStorage.setItem('dashboard-layout', JSON.stringify(newWidgets));
-  };
-
-  const resetWidgets = () => {
-    setWidgets(defaultWidgets);
-    localStorage.removeItem('dashboard-layout');
-  };
-
-  const visibleWidgets = widgets
-    .filter(w => w.visible)
-    .sort((a, b) => a.order - b.order);
-
-  return { widgets, visibleWidgets, saveWidgets, resetWidgets };
 }

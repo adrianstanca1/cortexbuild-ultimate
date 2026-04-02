@@ -3,6 +3,7 @@ import {
   Plus, Search, TrendingUp, Clock, XCircle, Edit2, Trash2, X, Calendar, DollarSign, Target, Award, BarChart3, Brain, Zap, CheckSquare, Square
 } from 'lucide-react';
 import { EmptyState } from '../ui/EmptyState';
+import { ModuleBreadcrumbs } from '../ui/Breadcrumbs';
 import { useTenders } from '../../hooks/useData';
 import { toast } from 'sonner';
 import { BulkActionsBar, useBulkSelection } from '../ui/BulkActions';
@@ -322,7 +323,9 @@ export function Tenders() {
   }
 
   return (
-    <div className="p-6 space-y-6 bg-gradient-to-br from-gray-950 via-gray-900 to-gray-950 min-h-screen">
+    <>
+      <ModuleBreadcrumbs currentModule="tenders" onNavigate={() => {}} />
+      <div className="p-6 space-y-6 bg-gradient-to-br from-gray-950 via-gray-900 to-gray-950 min-h-screen">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
@@ -1025,7 +1028,7 @@ export function Tenders() {
                 )}
                 <button
                   type="submit"
-                  className="px-4 py-2 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors"
+                  className="px-4 py-2 text-sm font-medium text-white btn btn-primary rounded-lg transition-colors"
                 >
                   {editing ? 'Update' : 'Create'}
                 </button>
@@ -1134,7 +1137,7 @@ export function Tenders() {
                     openEdit(selectedDetail);
                     setSelectedDetail(null);
                   }}
-                  className="flex-1 px-4 py-2 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors"
+                  className="flex-1 px-4 py-2 text-sm font-medium text-white btn btn-primary rounded-lg transition-colors"
                 >
                   Edit
                 </button>
@@ -1153,5 +1156,7 @@ export function Tenders() {
         </div>
       )}
     </div>
+    </>
   );
 }
+export default Tenders;

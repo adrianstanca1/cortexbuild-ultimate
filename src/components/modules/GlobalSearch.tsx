@@ -19,6 +19,7 @@ import {
 import { searchApi } from '../../services/api';
 import { EmptyState } from '../ui/EmptyState';
 import clsx from 'clsx';
+import { ModuleBreadcrumbs } from '../ui/Breadcrumbs';
 
 type AnyRow = Record<string, unknown>;
 type SubTab = 'search' | 'recent' | 'saved' | 'advanced';
@@ -169,7 +170,9 @@ export function GlobalSearch({ onClose }: { onClose?: () => void }) {
   };
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-start justify-center pt-16 z-50" onClick={onClose}>
+    <>
+      <ModuleBreadcrumbs currentModule="search" onNavigate={() => {}} />
+      <div className="fixed inset-0 bg-black/50 flex items-start justify-center pt-16 z-50" onClick={onClose}>
       <div
         className="bg-gray-900 border border-gray-700 rounded-xl w-full max-w-3xl shadow-2xl max-h-[85vh] flex flex-col"
         onClick={e => e.stopPropagation()}
@@ -425,7 +428,7 @@ export function GlobalSearch({ onClose }: { onClose?: () => void }) {
                   onChange={e =>
                     setAdvancedFilters(prev => ({ ...prev, module: e.target.value }))
                   }
-                  className="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-2 text-white text-sm"
+                  className="w-full bg-gray-800 border border-gray-700 btn text-white text-sm"
                 >
                   <option value="all">All Modules</option>
                   <option value="projects">Projects</option>
@@ -440,14 +443,14 @@ export function GlobalSearch({ onClose }: { onClose?: () => void }) {
                   onChange={e =>
                     setAdvancedFilters(prev => ({ ...prev, status: e.target.value }))
                   }
-                  className="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-2 text-white text-sm"
+                  className="w-full bg-gray-800 border border-gray-700 btn text-white text-sm"
                 >
                   <option value="all">All Statuses</option>
                   <option value="active">Active</option>
                   <option value="archived">Archived</option>
                 </select>
               </div>
-              <button className="w-full px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium text-sm">
+              <button className="w-full px-4 py-2 btn btn-primary rounded-lg font-medium text-sm">
                 <Filter className="h-4 w-4 inline mr-2" />
                 Run Advanced Search
               </button>
@@ -471,5 +474,7 @@ export function GlobalSearch({ onClose }: { onClose?: () => void }) {
         </div>
       </div>
     </div>
+    </>
   );
 }
+export default GlobalSearch;

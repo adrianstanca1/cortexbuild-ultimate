@@ -2,6 +2,7 @@
 import { useState, useRef } from 'react';
 import { Plus, GraduationCap, Award, Clock, AlertCircle, FileCheck, Trash2, X, Edit, CheckSquare, Square, Download } from 'lucide-react';
 import { EmptyState } from '../ui/EmptyState';
+import { ModuleBreadcrumbs } from '../ui/Breadcrumbs';
 import { DataImporter, ExportButton } from '../ui/DataImportExport';
 import { trainingApi, uploadFile } from '../../services/api';
 import { BulkActionsBar, useBulkSelection } from '../ui/BulkActions';
@@ -133,7 +134,9 @@ export default function Training() {
   }
 
   return (
-    <div className="p-6 space-y-6">
+    <>
+      <ModuleBreadcrumbs currentModule="training" onNavigate={() => {}} />
+      <div className="p-6 space-y-6">
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-2xl font-bold text-white">Training & Certifications</h2>
@@ -155,7 +158,7 @@ export default function Training() {
         <div className="card p-4"><div className="flex items-center gap-3"><div className="w-10 h-10 rounded-lg bg-blue-500/10 flex items-center justify-center"><GraduationCap className="text-blue-400" size={20} /></div><div><p className="text-gray-400 text-xs">Total Records</p><p className="text-2xl font-bold text-blue-400">{isLoading ? '...' : totalCount}</p></div></div></div>
       </div>
       <div className="card p-4">
-        <input type="text" placeholder="Search training records..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white mb-4" />
+        <input type="text" placeholder="Search training records..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="w-full px-4 py-2 input input-bordered text-white mb-4" />
         {isLoading ? (
           <div className="text-center py-8 text-gray-400">Loading training data...</div>
         ) : (
@@ -243,16 +246,16 @@ export default function Training() {
             <div className="p-6 space-y-4">
               <div>
                 <label className="block text-gray-400 text-xs mb-1">Title *</label>
-                <input type="text" value={form.title} onChange={e => setForm(f => ({ ...f, title: e.target.value }))} placeholder="e.g. CSCS Health & Safety" className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500" />
+                <input type="text" value={form.title} onChange={e => setForm(f => ({ ...f, title: e.target.value }))} placeholder="e.g. CSCS Health & Safety" className="w-full px-3 py-2 input input-bordered text-white placeholder-gray-500" />
               </div>
               <div>
                 <label className="block text-gray-400 text-xs mb-1">Provider</label>
-                <input type="text" value={form.provider} onChange={e => setForm(f => ({ ...f, provider: e.target.value }))} placeholder="e.g. CITB" className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500" />
+                <input type="text" value={form.provider} onChange={e => setForm(f => ({ ...f, provider: e.target.value }))} placeholder="e.g. CITB" className="w-full px-3 py-2 input input-bordered text-white placeholder-gray-500" />
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-gray-400 text-xs mb-1">Type</label>
-                  <select value={form.type} onChange={e => setForm(f => ({ ...f, type: e.target.value }))} className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white">
+                  <select value={form.type} onChange={e => setForm(f => ({ ...f, type: e.target.value }))} className="w-full px-3 py-2 input input-bordered text-white">
                     <option value="">Select type...</option>
                     <option value="Health & Safety">Health & Safety</option>
                     <option value="Technical">Technical</option>
@@ -263,7 +266,7 @@ export default function Training() {
                 </div>
                 <div>
                   <label className="block text-gray-400 text-xs mb-1">Status</label>
-                  <select value={form.status} onChange={e => setForm(f => ({ ...f, status: e.target.value }))} className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white">
+                  <select value={form.status} onChange={e => setForm(f => ({ ...f, status: e.target.value }))} className="w-full px-3 py-2 input input-bordered text-white">
                     <option value="scheduled">Scheduled</option>
                     <option value="in_progress">In Progress</option>
                     <option value="completed">Completed</option>
@@ -274,16 +277,16 @@ export default function Training() {
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-gray-400 text-xs mb-1">Scheduled Date</label>
-                  <input type="date" value={form.scheduledDate} onChange={e => setForm(f => ({ ...f, scheduledDate: e.target.value }))} className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white" />
+                  <input type="date" value={form.scheduledDate} onChange={e => setForm(f => ({ ...f, scheduledDate: e.target.value }))} className="w-full px-3 py-2 input input-bordered text-white" />
                 </div>
                 <div>
                   <label className="block text-gray-400 text-xs mb-1">Completed Date</label>
-                  <input type="date" value={form.completedDate} onChange={e => setForm(f => ({ ...f, completedDate: e.target.value }))} className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white" />
+                  <input type="date" value={form.completedDate} onChange={e => setForm(f => ({ ...f, completedDate: e.target.value }))} className="w-full px-3 py-2 input input-bordered text-white" />
                 </div>
               </div>
               <div>
                 <label className="block text-gray-400 text-xs mb-1">Certification Reference</label>
-                <input type="text" value={form.certification} onChange={e => setForm(f => ({ ...f, certification: e.target.value }))} placeholder="e.g. CSCS-123456" className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500" />
+                <input type="text" value={form.certification} onChange={e => setForm(f => ({ ...f, certification: e.target.value }))} placeholder="e.g. CSCS-123456" className="w-full px-3 py-2 input input-bordered text-white placeholder-gray-500" />
               </div>
             </div>
             <div className="p-6 border-t border-gray-700 flex justify-end gap-3">
@@ -306,16 +309,16 @@ export default function Training() {
             <div className="p-6 space-y-4">
               <div>
                 <label className="block text-gray-400 text-xs mb-1">Title *</label>
-                <input type="text" value={editItem.title} onChange={e => setEditItem(f => ({ ...f, title: e.target.value }))} className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500" />
+                <input type="text" value={editItem.title} onChange={e => setEditItem(f => ({ ...f, title: e.target.value }))} className="w-full px-3 py-2 input input-bordered text-white placeholder-gray-500" />
               </div>
               <div>
                 <label className="block text-gray-400 text-xs mb-1">Provider</label>
-                <input type="text" value={editItem.provider} onChange={e => setEditItem(f => ({ ...f, provider: e.target.value }))} className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500" />
+                <input type="text" value={editItem.provider} onChange={e => setEditItem(f => ({ ...f, provider: e.target.value }))} className="w-full px-3 py-2 input input-bordered text-white placeholder-gray-500" />
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-gray-400 text-xs mb-1">Type</label>
-                  <select value={editItem.type} onChange={e => setEditItem(f => ({ ...f, type: e.target.value }))} className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white">
+                  <select value={editItem.type} onChange={e => setEditItem(f => ({ ...f, type: e.target.value }))} className="w-full px-3 py-2 input input-bordered text-white">
                     <option value="">Select type...</option>
                     <option value="Health & Safety">Health & Safety</option>
                     <option value="Technical">Technical</option>
@@ -326,7 +329,7 @@ export default function Training() {
                 </div>
                 <div>
                   <label className="block text-gray-400 text-xs mb-1">Status</label>
-                  <select value={editItem.status} onChange={e => setEditItem(f => ({ ...f, status: e.target.value }))} className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white">
+                  <select value={editItem.status} onChange={e => setEditItem(f => ({ ...f, status: e.target.value }))} className="w-full px-3 py-2 input input-bordered text-white">
                     <option value="scheduled">Scheduled</option>
                     <option value="in_progress">In Progress</option>
                     <option value="completed">Completed</option>
@@ -337,16 +340,16 @@ export default function Training() {
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-gray-400 text-xs mb-1">Scheduled Date</label>
-                  <input type="date" value={editItem.scheduledDate} onChange={e => setEditItem(f => ({ ...f, scheduledDate: e.target.value }))} className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white" />
+                  <input type="date" value={editItem.scheduledDate} onChange={e => setEditItem(f => ({ ...f, scheduledDate: e.target.value }))} className="w-full px-3 py-2 input input-bordered text-white" />
                 </div>
                 <div>
                   <label className="block text-gray-400 text-xs mb-1">Completed Date</label>
-                  <input type="date" value={editItem.completedDate} onChange={e => setEditItem(f => ({ ...f, completedDate: e.target.value }))} className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white" />
+                  <input type="date" value={editItem.completedDate} onChange={e => setEditItem(f => ({ ...f, completedDate: e.target.value }))} className="w-full px-3 py-2 input input-bordered text-white" />
                 </div>
               </div>
               <div>
                 <label className="block text-gray-400 text-xs mb-1">Certification Reference</label>
-                <input type="text" value={editItem.certification} onChange={e => setEditItem(f => ({ ...f, certification: e.target.value }))} className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500" />
+                <input type="text" value={editItem.certification} onChange={e => setEditItem(f => ({ ...f, certification: e.target.value }))} className="w-full px-3 py-2 input input-bordered text-white placeholder-gray-500" />
               </div>
             </div>
             <div className="p-6 border-t border-gray-700 flex justify-end gap-3">
@@ -377,5 +380,6 @@ export default function Training() {
         </div>
       )}
     </div>
+    </>
   );
 }

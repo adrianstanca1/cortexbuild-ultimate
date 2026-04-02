@@ -2,6 +2,7 @@
 import { useState } from 'react';
 import { Plus, Leaf, Cloud, Factory, Gauge, Trash2, X, Upload, Pencil, CheckSquare, Square } from 'lucide-react';
 import { EmptyState } from '../ui/EmptyState';
+import { ModuleBreadcrumbs } from '../ui/Breadcrumbs';
 import { BulkActionsBar, useBulkSelection } from '../ui/BulkActions';
 import { uploadFile } from '../../services/api';
 import { toast } from 'sonner';
@@ -101,7 +102,9 @@ export default function Sustainability() {
   }
 
   return (
-    <div className="p-6 space-y-6">
+    <>
+      <ModuleBreadcrumbs currentModule="sustainability" onNavigate={() => {}} />
+      <div className="p-6 space-y-6">
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-2xl font-bold text-white">Sustainability & ESG</h2>
@@ -132,7 +135,7 @@ export default function Sustainability() {
         </div>
       </div>
       <div className="card p-4">
-        <input type="text" placeholder="Search metrics..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white mb-4" />
+        <input type="text" placeholder="Search metrics..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="w-full px-4 py-2 input input-bordered text-white mb-4" />
         {isLoading ? (
           <div className="text-center py-8 text-gray-400">Loading sustainability data...</div>
         ) : (
@@ -222,7 +225,7 @@ export default function Sustainability() {
             <div className="p-6 space-y-4">
               <div>
                 <label htmlFor="sustType" className="block text-gray-400 text-xs mb-1">Metric Type *</label>
-                <select id="sustType" value={form.metricType} onChange={e => setForm(f => ({ ...f, metricType: e.target.value }))} className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white">
+                <select id="sustType" value={form.metricType} onChange={e => setForm(f => ({ ...f, metricType: e.target.value }))} className="w-full px-3 py-2 input input-bordered text-white">
                   <option value="">Select type...</option>
                   <option value="Carbon Emissions">Carbon Emissions</option>
                   <option value="Energy Consumption">Energy Consumption</option>
@@ -233,16 +236,16 @@ export default function Sustainability() {
               </div>
               <div>
                 <label htmlFor="sustProject" className="block text-gray-400 text-xs mb-1">Project</label>
-                <input id="sustProject" type="text" value={form.project} onChange={e => setForm(f => ({ ...f, project: e.target.value }))} placeholder="Project name" className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500" />
+                <input id="sustProject" type="text" value={form.project} onChange={e => setForm(f => ({ ...f, project: e.target.value }))} placeholder="Project name" className="w-full px-3 py-2 input input-bordered text-white placeholder-gray-500" />
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label htmlFor="sustPeriod" className="block text-gray-400 text-xs mb-1">Period</label>
-                  <input id="sustPeriod" type="text" value={form.period} onChange={e => setForm(f => ({ ...f, period: e.target.value }))} placeholder="e.g. Q1 2026" className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500" />
+                  <input id="sustPeriod" type="text" value={form.period} onChange={e => setForm(f => ({ ...f, period: e.target.value }))} placeholder="e.g. Q1 2026" className="w-full px-3 py-2 input input-bordered text-white placeholder-gray-500" />
                 </div>
                 <div>
                   <label htmlFor="sustUnit" className="block text-gray-400 text-xs mb-1">Unit</label>
-                  <select id="sustUnit" value={form.unit} onChange={e => setForm(f => ({ ...f, unit: e.target.value }))} className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white">
+                  <select id="sustUnit" value={form.unit} onChange={e => setForm(f => ({ ...f, unit: e.target.value }))} className="w-full px-3 py-2 input input-bordered text-white">
                     <option value="kgCO2">kgCO2</option>
                     <option value="kWh">kWh</option>
                     <option value="m3">m3</option>
@@ -254,11 +257,11 @@ export default function Sustainability() {
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label htmlFor="sustActual" className="block text-gray-400 text-xs mb-1">Actual Value</label>
-                  <input id="sustActual" type="number" value={form.actual} onChange={e => setForm(f => ({ ...f, actual: e.target.value }))} placeholder="0" className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500" />
+                  <input id="sustActual" type="number" value={form.actual} onChange={e => setForm(f => ({ ...f, actual: e.target.value }))} placeholder="0" className="w-full px-3 py-2 input input-bordered text-white placeholder-gray-500" />
                 </div>
                 <div>
                   <label htmlFor="sustTarget" className="block text-gray-400 text-xs mb-1">Target</label>
-                  <input id="sustTarget" type="number" value={form.target} onChange={e => setForm(f => ({ ...f, target: e.target.value }))} placeholder="0" className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500" />
+                  <input id="sustTarget" type="number" value={form.target} onChange={e => setForm(f => ({ ...f, target: e.target.value }))} placeholder="0" className="w-full px-3 py-2 input input-bordered text-white placeholder-gray-500" />
                 </div>
               </div>
             </div>
@@ -282,7 +285,7 @@ export default function Sustainability() {
             <div className="p-6 space-y-4">
               <div>
                 <label htmlFor="editSustType" className="block text-gray-400 text-xs mb-1">Metric Type *</label>
-                <select id="editSustType" value={editItem.metric_type || ''} onChange={e => setEditItem((prev: any) => ({ ...prev, metric_type: e.target.value }))} className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white">
+                <select id="editSustType" value={editItem.metric_type || ''} onChange={e => setEditItem((prev: any) => ({ ...prev, metric_type: e.target.value }))} className="w-full px-3 py-2 input input-bordered text-white">
                   <option value="">Select type...</option>
                   <option value="Carbon Emissions">Carbon Emissions</option>
                   <option value="Energy Consumption">Energy Consumption</option>
@@ -293,16 +296,16 @@ export default function Sustainability() {
               </div>
               <div>
                 <label htmlFor="editSustProject" className="block text-gray-400 text-xs mb-1">Project</label>
-                <input id="editSustProject" type="text" value={editItem.project || ''} onChange={e => setEditItem((prev: any) => ({ ...prev, project: e.target.value }))} placeholder="Project name" className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500" />
+                <input id="editSustProject" type="text" value={editItem.project || ''} onChange={e => setEditItem((prev: any) => ({ ...prev, project: e.target.value }))} placeholder="Project name" className="w-full px-3 py-2 input input-bordered text-white placeholder-gray-500" />
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label htmlFor="editSustPeriod" className="block text-gray-400 text-xs mb-1">Period</label>
-                  <input id="editSustPeriod" type="text" value={editItem.period || ''} onChange={e => setEditItem((prev: any) => ({ ...prev, period: e.target.value }))} placeholder="e.g. Q1 2026" className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500" />
+                  <input id="editSustPeriod" type="text" value={editItem.period || ''} onChange={e => setEditItem((prev: any) => ({ ...prev, period: e.target.value }))} placeholder="e.g. Q1 2026" className="w-full px-3 py-2 input input-bordered text-white placeholder-gray-500" />
                 </div>
                 <div>
                   <label htmlFor="editSustUnit" className="block text-gray-400 text-xs mb-1">Unit</label>
-                  <select id="editSustUnit" value={editItem.unit || 'kgCO2'} onChange={e => setEditItem((prev: any) => ({ ...prev, unit: e.target.value }))} className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white">
+                  <select id="editSustUnit" value={editItem.unit || 'kgCO2'} onChange={e => setEditItem((prev: any) => ({ ...prev, unit: e.target.value }))} className="w-full px-3 py-2 input input-bordered text-white">
                     <option value="kgCO2">kgCO2</option>
                     <option value="kWh">kWh</option>
                     <option value="m3">m3</option>
@@ -314,11 +317,11 @@ export default function Sustainability() {
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label htmlFor="editSustActual" className="block text-gray-400 text-xs mb-1">Actual Value</label>
-                  <input id="editSustActual" type="number" value={editItem.actual || ''} onChange={e => setEditItem((prev: any) => ({ ...prev, actual: e.target.value }))} placeholder="0" className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500" />
+                  <input id="editSustActual" type="number" value={editItem.actual || ''} onChange={e => setEditItem((prev: any) => ({ ...prev, actual: e.target.value }))} placeholder="0" className="w-full px-3 py-2 input input-bordered text-white placeholder-gray-500" />
                 </div>
                 <div>
                   <label htmlFor="editSustTarget" className="block text-gray-400 text-xs mb-1">Target</label>
-                  <input id="editSustTarget" type="number" value={editItem.target || ''} onChange={e => setEditItem((prev: any) => ({ ...prev, target: e.target.value }))} placeholder="0" className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500" />
+                  <input id="editSustTarget" type="number" value={editItem.target || ''} onChange={e => setEditItem((prev: any) => ({ ...prev, target: e.target.value }))} placeholder="0" className="w-full px-3 py-2 input input-bordered text-white placeholder-gray-500" />
                 </div>
               </div>
             </div>
@@ -332,5 +335,6 @@ export default function Sustainability() {
         </div>
       )}
     </div>
+    </>
   );
 }

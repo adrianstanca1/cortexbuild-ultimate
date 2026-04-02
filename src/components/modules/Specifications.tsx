@@ -8,6 +8,7 @@ import { useSpecifications } from '../../hooks/useData';
 import { toast } from 'sonner';
 import { uploadFile } from '../../services/api';
 import { BulkActionsBar, useBulkSelection } from '../ui/BulkActions';
+import { ModuleBreadcrumbs } from '../ui/Breadcrumbs';
 
 interface Specification {
   id: string;
@@ -137,7 +138,9 @@ export default function Specifications() {
   };
 
   return (
-    <div className="p-6 space-y-6">
+    <>
+      <ModuleBreadcrumbs currentModule="specifications" onNavigate={() => {}} />
+      <div className="p-6 space-y-6">
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-2xl font-bold text-white" style={{ fontFamily: 'var(--font-display)' }}>
@@ -160,14 +163,14 @@ export default function Specifications() {
                 placeholder="Search specifications..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-10 pr-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500"
+                className="w-full pl-10 pr-4 py-2 input input-bordered text-white placeholder-gray-500"
               />
             </div>
           </div>
           <select
             value={filterStatus}
             onChange={(e) => setFilterStatus(e.target.value)}
-            className="px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white"
+            className="px-3 py-2 input input-bordered text-white"
           >
             <option value="all">All Status</option>
             <option value="draft">Draft</option>
@@ -282,11 +285,11 @@ export default function Specifications() {
             <div className="p-6 space-y-4">
               <div>
                 <label className="block text-gray-400 text-xs mb-1">Title</label>
-                <input type="text" value={form.title} onChange={e => setForm(f => ({ ...f, title: e.target.value }))} placeholder="Specification title..." className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500" />
+                <input type="text" value={form.title} onChange={e => setForm(f => ({ ...f, title: e.target.value }))} placeholder="Specification title..." className="w-full px-3 py-2 input input-bordered text-white placeholder-gray-500" />
               </div>
               <div>
                 <label className="block text-gray-400 text-xs mb-1">Project</label>
-                <select value={form.project} onChange={e => setForm(f => ({ ...f, project: e.target.value }))} className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white">
+                <select value={form.project} onChange={e => setForm(f => ({ ...f, project: e.target.value }))} className="w-full px-3 py-2 input input-bordered text-white">
                   <option value="">Select project...</option>
                   <option>Canary Wharf Office Complex</option>
                   <option>Manchester City Apartments</option>
@@ -296,16 +299,16 @@ export default function Specifications() {
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-gray-400 text-xs mb-1">Section</label>
-                  <input type="text" value={form.section} onChange={e => setForm(f => ({ ...f, section: e.target.value }))} placeholder="e.g. 05 00 00" className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500" />
+                  <input type="text" value={form.section} onChange={e => setForm(f => ({ ...f, section: e.target.value }))} placeholder="e.g. 05 00 00" className="w-full px-3 py-2 input input-bordered text-white placeholder-gray-500" />
                 </div>
                 <div>
                   <label className="block text-gray-400 text-xs mb-1">Discipline</label>
-                  <input type="text" value={form.discipline} onChange={e => setForm(f => ({ ...f, discipline: e.target.value }))} placeholder="e.g. Structural" className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500" />
+                  <input type="text" value={form.discipline} onChange={e => setForm(f => ({ ...f, discipline: e.target.value }))} placeholder="e.g. Structural" className="w-full px-3 py-2 input input-bordered text-white placeholder-gray-500" />
                 </div>
               </div>
               <div>
                 <label className="block text-gray-400 text-xs mb-1">Description</label>
-                <textarea rows={3} value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))} placeholder="Specification details..." className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500" />
+                <textarea rows={3} value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))} placeholder="Specification details..." className="w-full px-3 py-2 input input-bordered text-white placeholder-gray-500" />
               </div>
             </div>
             <div className="p-6 border-t border-gray-700 flex justify-end gap-3">
@@ -328,11 +331,11 @@ export default function Specifications() {
             <div className="p-6 space-y-4">
               <div>
                 <label htmlFor="edit-title" className="block text-gray-400 text-xs mb-1">Title</label>
-                <input id="edit-title" type="text" value={editItem.title} onChange={e => setEditItem((f: any) => ({ ...f, title: e.target.value }))} placeholder="Specification title..." className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500" />
+                <input id="edit-title" type="text" value={editItem.title} onChange={e => setEditItem((f: any) => ({ ...f, title: e.target.value }))} placeholder="Specification title..." className="w-full px-3 py-2 input input-bordered text-white placeholder-gray-500" />
               </div>
               <div>
                 <label htmlFor="edit-project" className="block text-gray-400 text-xs mb-1">Project</label>
-                <select id="edit-project" value={editItem.project} onChange={e => setEditItem((f: any) => ({ ...f, project: e.target.value }))} className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white">
+                <select id="edit-project" value={editItem.project} onChange={e => setEditItem((f: any) => ({ ...f, project: e.target.value }))} className="w-full px-3 py-2 input input-bordered text-white">
                   <option value="">Select project...</option>
                   <option>Canary Wharf Office Complex</option>
                   <option>Manchester City Apartments</option>
@@ -342,16 +345,16 @@ export default function Specifications() {
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label htmlFor="edit-section" className="block text-gray-400 text-xs mb-1">Section</label>
-                  <input id="edit-section" type="text" value={editItem.section} onChange={e => setEditItem((f: any) => ({ ...f, section: e.target.value }))} placeholder="e.g. 05 00 00" className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500" />
+                  <input id="edit-section" type="text" value={editItem.section} onChange={e => setEditItem((f: any) => ({ ...f, section: e.target.value }))} placeholder="e.g. 05 00 00" className="w-full px-3 py-2 input input-bordered text-white placeholder-gray-500" />
                 </div>
                 <div>
                   <label htmlFor="edit-discipline" className="block text-gray-400 text-xs mb-1">Discipline</label>
-                  <input id="edit-discipline" type="text" value={editItem.discipline} onChange={e => setEditItem((f: any) => ({ ...f, discipline: e.target.value }))} placeholder="e.g. Structural" className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500" />
+                  <input id="edit-discipline" type="text" value={editItem.discipline} onChange={e => setEditItem((f: any) => ({ ...f, discipline: e.target.value }))} placeholder="e.g. Structural" className="w-full px-3 py-2 input input-bordered text-white placeholder-gray-500" />
                 </div>
               </div>
               <div>
                 <label htmlFor="edit-description" className="block text-gray-400 text-xs mb-1">Description</label>
-                <textarea id="edit-description" rows={3} value={editItem.description} onChange={e => setEditItem((f: any) => ({ ...f, description: e.target.value }))} placeholder="Specification details..." className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500" />
+                <textarea id="edit-description" rows={3} value={editItem.description} onChange={e => setEditItem((f: any) => ({ ...f, description: e.target.value }))} placeholder="Specification details..." className="w-full px-3 py-2 input input-bordered text-white placeholder-gray-500" />
               </div>
             </div>
             <div className="p-6 border-t border-gray-700 flex justify-end gap-3">
@@ -364,5 +367,6 @@ export default function Specifications() {
         </div>
       )}
     </div>
+    </>
   );
 }

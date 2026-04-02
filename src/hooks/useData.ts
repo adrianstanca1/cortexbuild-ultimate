@@ -43,7 +43,10 @@ function makeHooks<T>(key: string, tableName: string, api: {
     return useQuery<T[]>({
       queryKey: [key],
       queryFn: api.getAll,
-      staleTime: 30_000,
+      staleTime: 60_000, // Increased from 30s to 60s for better caching
+      gcTime: 5 * 60_000, // Keep unused data in cache for 5 minutes
+      retry: 2, // Retry failed requests up to 2 times
+      refetchOnWindowFocus: false, // Don't refetch when window regains focus
     });
   }
 

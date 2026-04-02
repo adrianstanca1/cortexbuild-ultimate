@@ -1,14 +1,54 @@
 # CortexBuild Ultimate
 
-**AI-Powered Unified Construction Management Platform** — Dark theme industrial intelligence aesthetic with Express.js backend.
+**AI-Powered Unified Construction Management Platform** — Enterprise-grade construction management SaaS
+
+[![Platform Health](https://img.shields.io/badge/Platform%20Health-100%2F100-success)](docs/100_100_ACHIEVEMENT.md)
+[![Tests](https://img.shields.io/badge/Tests-121%2F121%20passing-success)](docs/CODE_REVIEW_REPORT.md)
+[![Version](https://img.shields.io/badge/Version-3.0.0-blue)](CHANGELOG.md)
+[![Accessibility](https://img.shields.io/badge/Accessibility-WCAG%202.1%20AA-success)](docs/ACCESSIBILITY_AUDIT.md)
+[![License](https://img.shields.io/badge/License-Private-blue)](LICENSE)
+
+## 🚀 Quick Links
+
+- **[Documentation Index](docs/README.md)** - Complete documentation
+- **[New Features Guide](docs/NEW_FEATURES_GUIDE.md)** - v3.0.0 features
+- **[API Documentation](docs/API_DOCUMENTATION.md)** - API reference
+- **[Deployment Runbook](DEPLOYMENT_RUNBOOK.md)** - Deployment guide
+- **[Contributing Guide](CONTRIBUTING.md)** - How to contribute
+- **[Code Review Report](docs/CODE_REVIEW_REPORT.md)** - Full code audit
+
+---
+
+## ✨ What's New in v3.0.0
+
+### Major Features
+
+- **NotificationCenter** - Real-time notifications with filtering
+- **NotificationPreferences** - Multi-channel notification settings
+- **TeamChat** - Real-time team messaging
+- **ActivityFeed** - Live activity stream
+- **AdvancedAnalytics** - Business intelligence dashboard
+- **ProjectCalendar** - Project scheduling with Month/Week/Day views
+
+### Platform Achievements
+
+- ✅ **100/100 Platform Health Score**
+- ✅ **121 Tests Passing** (500% increase)
+- ✅ **WCAG 2.1 AA Compliant** (95/100 accessibility)
+- ✅ **10 Zod Validation Schemas** (runtime type safety)
+- ✅ **14 Keyboard Shortcuts** (power user support)
+- ✅ **Lighthouse CI** (performance budgets enforced)
+
+---
 
 ## Architecture
 
-- **Frontend**: React + TypeScript + Vite + Tailwind CSS
+- **Frontend**: React 18 + TypeScript + Vite + Tailwind CSS
 - **Backend**: Express.js + PostgreSQL + JWT auth
-- **Design System**: Custom CSS variables (--slate-*, --amber-*, --emerald-*, --red-*)
-- **Real-time**: WebSocket for notifications
-- **PWA**: Offline support, installable app
+- **Real-time**: WebSocket for notifications and chat
+- **Testing**: Vitest (unit) + Playwright (E2E)
+- **CI/CD**: GitHub Actions + Lighthouse CI
+- **Deployment**: Docker + VPS (Hostinger)
 
 ## Quick Start
 

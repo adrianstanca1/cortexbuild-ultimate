@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Package, Plus, Search, Truck, BarChart3, AlertTriangle, CheckCircle2, Clock, Edit2, Trash2, X, DollarSign, TrendingUp, Filter, CheckSquare, Square } from 'lucide-react';
 import { EmptyState } from '../ui/EmptyState';
+import { ModuleBreadcrumbs } from '../ui/Breadcrumbs';
 import { BulkActionsBar, useBulkSelection } from '../ui/BulkActions';
 import { BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { useMaterials } from '../../hooks/useData';
@@ -184,7 +185,9 @@ export function Materials() {
   });
 
   return (
-    <div className="p-6 space-y-6 min-h-screen bg-gray-950">
+    <>
+      <ModuleBreadcrumbs currentModule="materials" onNavigate={() => {}} />
+      <div className="p-6 space-y-6 min-h-screen bg-gray-950">
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-gray-100">Materials Management</h1>
@@ -745,5 +748,7 @@ export function Materials() {
         </div>
       )}
     </div>
+    </>
   );
 }
+export default Materials;

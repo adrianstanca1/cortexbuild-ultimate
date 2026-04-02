@@ -7,6 +7,7 @@ import {
   CheckSquare, Square, Loader2,
 } from 'lucide-react';
 import { BulkActionsBar, useBulkSelection } from '../ui/BulkActions';
+import { ModuleBreadcrumbs } from '../ui/Breadcrumbs';
 import { settingsApi, usersApi } from '../../services/api';
 import { toast } from 'sonner';
 
@@ -172,16 +173,18 @@ export function Settings() {
   };
 
   return (
-    <div className="space-y-6">
+    <>
+      <ModuleBreadcrumbs currentModule="settings" onNavigate={() => {}} />
+      <div className="space-y-6">
       <h1 className="text-3xl font-bold text-white">Settings</h1>
 
       {/* Tab Nav */}
-      <div className="flex gap-1 bg-gray-900 border border-gray-800 rounded-xl p-1 overflow-x-auto">
+      <div className="flex gap-1 card bg-base-100 border border-base-300 p-1 overflow-x-auto">
         {TABS.map(t => {
           const Icon = t.icon;
           return (
             <button type="button"  key={t.id} onClick={()=>setTab(t.id)}
-              className={`flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-all ${tab===t.id?'bg-blue-600 text-white':'text-gray-400 hover:text-white hover:bg-gray-800'}`}>
+              className={`flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-all ${tab===t.id?'bg-blue-600 text-white':'btn btn-ghost'}`}>
               <Icon className="w-4 h-4"/>{t.label}
             </button>
           );
@@ -191,58 +194,58 @@ export function Settings() {
       {/* ── COMPANY ─────────────────────────────────────────────────────── */}
       {tab==='company' && (
         <div className="space-y-4">
-          <div className="bg-gray-900 border border-gray-800 rounded-xl p-6">
+          <div className="card bg-base-100 border border-base-300 p-6">
             <h3 className="text-base font-bold text-white mb-5 flex items-center gap-2"><Building2 className="w-4 h-4 text-blue-400"/>Company Information</h3>
             <div className="grid grid-cols-2 gap-4">
               <div className="col-span-2">
                 <label className="block text-xs font-medium text-gray-400 mb-1">Company Name</label>
                 <input value={company.name} onChange={e=>setCompany(c=>({...c,name:e.target.value}))}
-                  className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-blue-500"/>
+                  className="w-full input input-bordered text-white text-sm focus:outline-none focus:border-blue-500"/>
               </div>
               <div>
                 <label className="block text-xs font-medium text-gray-400 mb-1">Companies House No.</label>
                 <input value={company.reg} onChange={e=>setCompany(c=>({...c,reg:e.target.value}))}
-                  className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-blue-500"/>
+                  className="w-full input input-bordered text-white text-sm focus:outline-none focus:border-blue-500"/>
               </div>
               <div>
                 <label className="block text-xs font-medium text-gray-400 mb-1">VAT Number</label>
                 <input value={company.vat} onChange={e=>setCompany(c=>({...c,vat:e.target.value}))}
-                  className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-blue-500"/>
+                  className="w-full input input-bordered text-white text-sm focus:outline-none focus:border-blue-500"/>
               </div>
               <div>
                 <label className="block text-xs font-medium text-gray-400 mb-1">UTR Number</label>
                 <input value={company.utr} onChange={e=>setCompany(c=>({...c,utr:e.target.value}))}
-                  className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-blue-500"/>
+                  className="w-full input input-bordered text-white text-sm focus:outline-none focus:border-blue-500"/>
               </div>
               <div>
                 <label className="block text-xs font-medium text-gray-400 mb-1">HMRC Tax Office</label>
                 <input value={company.hmrc_office} onChange={e=>setCompany(c=>({...c,hmrc_office:e.target.value}))}
-                  className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-blue-500"/>
+                  className="w-full input input-bordered text-white text-sm focus:outline-none focus:border-blue-500"/>
               </div>
               <div className="col-span-2">
                 <label className="block text-xs font-medium text-gray-400 mb-1">Registered Address</label>
                 <input value={company.address} onChange={e=>setCompany(c=>({...c,address:e.target.value}))}
-                  className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-blue-500"/>
+                  className="w-full input input-bordered text-white text-sm focus:outline-none focus:border-blue-500"/>
               </div>
               <div>
                 <label className="block text-xs font-medium text-gray-400 mb-1">Phone</label>
                 <input value={company.phone} onChange={e=>setCompany(c=>({...c,phone:e.target.value}))}
-                  className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-blue-500"/>
+                  className="w-full input input-bordered text-white text-sm focus:outline-none focus:border-blue-500"/>
               </div>
               <div>
                 <label className="block text-xs font-medium text-gray-400 mb-1">Email</label>
                 <input value={company.email} onChange={e=>setCompany(c=>({...c,email:e.target.value}))}
-                  className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-blue-500"/>
+                  className="w-full input input-bordered text-white text-sm focus:outline-none focus:border-blue-500"/>
               </div>
               <div>
                 <label className="block text-xs font-medium text-gray-400 mb-1">Website</label>
                 <input value={company.website} onChange={e=>setCompany(c=>({...c,website:e.target.value}))}
-                  className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-blue-500"/>
+                  className="w-full input input-bordered text-white text-sm focus:outline-none focus:border-blue-500"/>
               </div>
             </div>
           </div>
 
-          <div className="bg-gray-900 border border-gray-800 rounded-xl p-6">
+          <div className="card bg-base-100 border border-base-300 p-6">
             <h3 className="text-base font-bold text-white mb-4">CIS Status</h3>
             <div className="grid grid-cols-2 gap-4">
               <label className="flex items-center justify-between bg-gray-800 rounded-xl p-4 cursor-pointer">
@@ -263,7 +266,7 @@ export function Settings() {
           </div>
 
           <button type="button" onClick={handleSaveCompany} disabled={savingCompany}
-            className="flex items-center gap-2 px-5 py-2.5 bg-blue-600 hover:bg-blue-700 rounded-lg text-white text-sm font-semibold transition-colors disabled:opacity-50">
+            className="flex items-center gap-2 px-5 py-2.5 btn btn-primary rounded-lg text-white text-sm font-semibold transition-colors disabled:opacity-50">
             {savingCompany ? <Loader2 className="w-4 h-4 animate-spin"/> : <Save className="w-4 h-4"/>}
             {savingCompany ? 'Saving…' : 'Save Company Settings'}
           </button>
@@ -276,11 +279,11 @@ export function Settings() {
           <div className="flex items-center justify-between">
             <p className="text-gray-400 text-sm">{users.filter(u=>u.status==='active').length} active users · {users.length} total</p>
             <button type="button" onClick={()=>setShowInviteModal(true)}
-              className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded-lg text-white text-sm font-medium transition-colors">
+              className="flex items-center gap-2 px-4 py-2 btn btn-primary rounded-lg text-white text-sm font-medium transition-colors">
               <Plus className="w-4 h-4"/>Invite User
             </button>
           </div>
-          <div className="bg-gray-900 border border-gray-800 rounded-xl overflow-hidden">
+          <div className="card bg-base-100 border border-base-300 overflow-hidden">
             <table className="w-full text-sm">
               <thead className="bg-gray-800/60 border-b border-gray-700">
                 <tr>{['User','Email','Role','Status','Last Login',''].map(h=><th key={h} className="px-4 py-3 text-left text-xs font-semibold text-gray-400 uppercase tracking-wide">{h}</th>)}</tr>
@@ -336,22 +339,22 @@ export function Settings() {
                   <div>
                     <label className="block text-xs font-medium text-gray-400 mb-1">Email Address</label>
                     <input value={inviteEmail} onChange={e=>setInviteEmail(e.target.value)} placeholder="name@company.co.uk"
-                      className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-blue-500"/>
+                      className="w-full input input-bordered text-white text-sm focus:outline-none focus:border-blue-500"/>
                   </div>
                   <div>
                     <label className="block text-xs font-medium text-gray-400 mb-1">Role</label>
                     <select value={inviteRole} onChange={e=>setInviteRole(e.target.value)}
-                      className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-blue-500">
+                      className="w-full input input-bordered text-white text-sm focus:outline-none focus:border-blue-500">
                       {['admin','project_manager','field_worker','client'].map(r=><option key={r} value={r}>{r.replace(/_/g,' ')}</option>)}
                     </select>
                   </div>
                 </div>
                 <div className="flex gap-3 px-6 py-4 border-t border-gray-800">
                   <button type="button" onClick={handleInviteUser} disabled={inviting || !inviteEmail}
-                    className="flex-1 bg-blue-600 hover:bg-blue-700 text-white rounded-lg py-2 text-sm font-semibold transition-colors disabled:opacity-50">
+                    className="flex-1 btn btn-primary rounded-lg py-2 text-sm font-semibold transition-colors disabled:opacity-50">
                       {inviting ? 'Sending…' : 'Send Invite'}
                   </button>
-                  <button type="button" onClick={()=>setShowInviteModal(false)} className="flex-1 bg-gray-800 hover:bg-gray-700 text-white rounded-lg py-2 text-sm font-semibold transition-colors">Cancel</button>
+                  <button type="button" onClick={()=>setShowInviteModal(false)} className="flex-1 btn btn-ghost rounded-lg py-2 text-sm font-semibold transition-colors">Cancel</button>
                 </div>
               </div>
             </div>
@@ -375,7 +378,7 @@ export function Settings() {
                 </ul>
                 {plan!==currentPlan && (
                   <button type="button" onClick={()=>toast.success(`Contact sales to switch to ${plan}`)}
-                    className="w-full py-2 rounded-lg text-sm font-medium bg-gray-800 hover:bg-gray-700 text-white transition-colors">
+                    className="w-full py-2 rounded-lg text-sm font-medium btn btn-ghost transition-colors">
                     {plan==='Enterprise'?'Contact Sales':'Upgrade'}
                   </button>
                 )}
@@ -383,7 +386,7 @@ export function Settings() {
             ))}
           </div>
 
-          <div className="bg-gray-900 border border-gray-800 rounded-xl p-5">
+          <div className="card bg-base-100 border border-base-300 p-5">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-base font-bold text-white">Payment Method</h3>
               <button type="button" onClick={()=>toast.success('Update card details in your billing portal')} className="text-sm text-blue-400 hover:text-blue-300">Update</button>
@@ -397,7 +400,7 @@ export function Settings() {
             </div>
           </div>
 
-          <div className="bg-gray-900 border border-gray-800 rounded-xl overflow-hidden">
+          <div className="card bg-base-100 border border-base-300 overflow-hidden">
             <div className="px-5 py-4 border-b border-gray-800">
               <h3 className="text-base font-bold text-white">Billing History</h3>
             </div>
@@ -422,7 +425,7 @@ export function Settings() {
       {/* ── NOTIFICATIONS ───────────────────────────────────────────────── */}
       {tab==='notifications' && (
         <div className="space-y-4">
-          <div className="bg-gray-900 border border-gray-800 rounded-xl p-6">
+          <div className="card bg-base-100 border border-base-300 p-6">
             <h3 className="text-base font-bold text-white mb-5">Delivery Channels</h3>
             <div className="grid grid-cols-3 gap-4">
               {[
@@ -460,7 +463,7 @@ export function Settings() {
               {k:'team_updates',label:'Team member status changes'},
             ]},
           ].map(({section,items})=>(
-            <div key={section} className="bg-gray-900 border border-gray-800 rounded-xl p-6">
+            <div key={section} className="card bg-base-100 border border-base-300 p-6">
               <h3 className="text-base font-bold text-white mb-4">{section}</h3>
               <div className="space-y-3">
                 {items.map(({k,label})=>(
@@ -473,7 +476,7 @@ export function Settings() {
             </div>
           ))}
           <button type="button" onClick={async () => { setSavingNotifs(true); try { await settingsApi.updateSetting('notifications', notifs); toast.success('Notification preferences saved'); } catch { toast.error('Failed to save'); } finally { setSavingNotifs(false); } }} disabled={savingNotifs}
-            className="flex items-center gap-2 px-5 py-2.5 bg-blue-600 hover:bg-blue-700 rounded-lg text-white text-sm font-semibold transition-colors disabled:opacity-50">
+            className="flex items-center gap-2 px-5 py-2.5 btn btn-primary rounded-lg text-white text-sm font-semibold transition-colors disabled:opacity-50">
             {savingNotifs ? <Loader2 className="w-4 h-4 animate-spin"/> : <Save className="w-4 h-4"/>}
             {savingNotifs ? 'Saving…' : 'Save Preferences'}
           </button>
@@ -486,7 +489,7 @@ export function Settings() {
           <p className="text-gray-400 text-sm">Connect CortexBuild to your existing tools and services.</p>
           <div className="grid grid-cols-2 gap-4">
             {Object.entries(integrations).map(([k, int])=>(
-              <div key={k} className="bg-gray-900 border border-gray-800 rounded-xl p-5">
+              <div key={k} className="card bg-base-100 border border-base-300 p-5">
                 <div className="flex items-start justify-between mb-3">
                   <div>
                     <div className="flex items-center gap-2">
@@ -503,21 +506,21 @@ export function Settings() {
                     setIntegrations(prev=>({...prev,[k]:{...prev[k as keyof typeof integrations],connected:!int.connected,status:!int.connected?'Connected':'Not connected'}}));
                     toast.success(`${int.name} ${int.connected?'disconnected':'connected'}`);
                   }}
-                  className={`w-full py-2 rounded-lg text-sm font-medium transition-colors ${int.connected?'bg-red-900/40 hover:bg-red-900/60 text-red-400 border border-red-800/50':'bg-blue-600 hover:bg-blue-700 text-white'}`}>
+                  className={`w-full py-2 rounded-lg text-sm font-medium transition-colors ${int.connected?'bg-red-900/40 hover:bg-red-900/60 text-red-400 border border-red-800/50':'btn btn-primary'}`}>
                   {int.connected?'Disconnect':'Connect'}
                 </button>
               </div>
             ))}
           </div>
-          <div className="bg-gray-900 border border-gray-800 rounded-xl p-5">
+          <div className="card bg-base-100 border border-base-300 p-5">
             <h3 className="text-base font-bold text-white mb-2">API Access</h3>
             <p className="text-gray-400 text-sm mb-4">Use the CortexBuild API to build custom integrations. Your API key is available on the Professional plan and above.</p>
             <div className="flex items-center gap-3">
-              <code className="flex-1 bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-green-400 text-xs font-mono">
+              <code className="flex-1 input input-bordered text-green-400 text-xs font-mono">
                 cb_live_••••••••••••••••••••••••••••••••
               </code>
-              <button type="button" onClick={()=>toast.success('API key copied to clipboard')} className="px-3 py-2 bg-gray-700 hover:bg-gray-600 text-white text-xs rounded-lg transition-colors">Copy</button>
-              <button type="button" onClick={()=>toast.success('New API key generated')} className="px-3 py-2 bg-gray-700 hover:bg-gray-600 text-white text-xs rounded-lg transition-colors flex items-center gap-1"><RefreshCw className="w-3 h-3"/>Rotate</button>
+              <button type="button" onClick={()=>toast.success('API key copied to clipboard')} className="px-3 py-2 btn btn-ghost text-xs rounded-lg transition-colors">Copy</button>
+              <button type="button" onClick={()=>toast.success('New API key generated')} className="px-3 py-2 btn btn-ghost text-xs rounded-lg transition-colors flex items-center gap-1"><RefreshCw className="w-3 h-3"/>Rotate</button>
             </div>
           </div>
         </div>
@@ -526,7 +529,7 @@ export function Settings() {
       {/* ── SECURITY ────────────────────────────────────────────────────── */}
       {tab==='security' && (
         <div className="space-y-4">
-          <div className="bg-gray-900 border border-gray-800 rounded-xl p-6">
+          <div className="card bg-base-100 border border-base-300 p-6">
             <h3 className="text-base font-bold text-white mb-5 flex items-center gap-2"><Lock className="w-4 h-4 text-blue-400"/>Change Password</h3>
             <div className="space-y-4 max-w-md">
               {['Current Password','New Password','Confirm New Password'].map(label=>(
@@ -534,7 +537,7 @@ export function Settings() {
                   <label className="block text-xs font-medium text-gray-400 mb-1">{label}</label>
                   <div className="relative">
                     <input type={showPass?'text':'password'} placeholder="••••••••••••"
-                      className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-blue-500 pr-10"/>
+                      className="w-full input input-bordered text-white text-sm focus:outline-none focus:border-blue-500 pr-10"/>
                     <button type="button" onClick={()=>setShowPass(p=>!p)} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-white">
                       {showPass ? <EyeOff className="w-4 h-4"/> : <Eye className="w-4 h-4"/>}
                     </button>
@@ -542,13 +545,13 @@ export function Settings() {
                 </div>
               ))}
               <button type="button" onClick={()=>toast.success('Password updated successfully')}
-                className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded-lg text-white text-sm font-semibold transition-colors">
+                className="flex items-center gap-2 px-4 py-2 btn btn-primary rounded-lg text-white text-sm font-semibold transition-colors">
                 <Save className="w-4 h-4"/>Update Password
               </button>
             </div>
           </div>
 
-          <div className="bg-gray-900 border border-gray-800 rounded-xl p-6">
+          <div className="card bg-base-100 border border-base-300 p-6">
             <div className="flex items-center justify-between mb-4">
               <div>
                 <h3 className="text-base font-bold text-white">Two-Factor Authentication</h3>
@@ -569,7 +572,7 @@ export function Settings() {
             )}
           </div>
 
-          <div className="bg-gray-900 border border-gray-800 rounded-xl p-6">
+          <div className="card bg-base-100 border border-base-300 p-6">
             <h3 className="text-base font-bold text-white mb-4">Active Sessions</h3>
             <div className="space-y-3">
               {sessions.map(s=>(
@@ -600,7 +603,7 @@ export function Settings() {
                 Delete Account
               </button>
               <button type="button" onClick={()=>toast.error('Please contact support to export your data')}
-                className="px-4 py-2 bg-gray-800 hover:bg-gray-700 text-white rounded-lg text-sm font-medium transition-colors">
+                className="px-4 py-2 btn btn-ghost rounded-lg text-sm font-medium transition-colors">
                 Export All Data
               </button>
             </div>
@@ -608,5 +611,7 @@ export function Settings() {
         </div>
       )}
     </div>
+    </>
   );
 }
+export default Settings;

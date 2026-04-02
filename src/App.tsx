@@ -9,6 +9,8 @@ import { useAuth, AuthProvider } from './context/AuthContext';
 import { useTheme } from './context/ThemeContext';
 import { useKeyboardShortcuts, DEFAULT_SHORTCUTS } from './hooks/useKeyboardShortcuts';
 import LoginPage from './components/auth/LoginPage';
+import { ErrorBoundary } from './components/ui/ErrorBoundary';
+import { CommandPalette } from './components/ui/CommandPalette';
 
 // Layout components kept eager — always rendered
 import { NotificationsPanel } from './components/layout/NotificationsPanel';
@@ -16,46 +18,44 @@ import { ShortcutsHelp } from './components/layout/ShortcutsHelp';
 import { MobileNav } from './components/layout/MobileNav';
 import { QuickActionsHUD } from './components/layout/QuickActionsHUD';
 
-// ── Named-export modules ────────────────────────────────────────────────────
-const Dashboard           = lazy(() => import('./components/modules/Dashboard').then(m => ({ default: m.Dashboard })));
-const Projects            = lazy(() => import('./components/modules/Projects').then(m => ({ default: m.Projects })));
-const Invoicing           = lazy(() => import('./components/modules/Invoicing').then(m => ({ default: m.Invoicing })));
-const Accounting          = lazy(() => import('./components/modules/Accounting').then(m => ({ default: m.Accounting })));
-const FinancialReports    = lazy(() => import('./components/modules/FinancialReports').then(m => ({ default: m.FinancialReports })));
-const Procurement         = lazy(() => import('./components/modules/Procurement').then(m => ({ default: m.Procurement })));
-const RAMS                = lazy(() => import('./components/modules/RAMS').then(m => ({ default: m.RAMS })));
-const CIS                 = lazy(() => import('./components/modules/CIS').then(m => ({ default: m.CIS })));
-const SiteOperations      = lazy(() => import('./components/modules/SiteOperations').then(m => ({ default: m.SiteOperations })));
-const Teams               = lazy(() => import('./components/modules/Teams').then(m => ({ default: m.Teams })));
-const Tenders             = lazy(() => import('./components/modules/Tenders').then(m => ({ default: m.Tenders })));
-const Analytics           = lazy(() => import('./components/modules/Analytics').then(m => ({ default: m.Analytics })));
-const Safety              = lazy(() => import('./components/modules/Safety').then(m => ({ default: m.Safety })));
-const FieldView           = lazy(() => import('./components/modules/FieldView').then(m => ({ default: m.FieldView })));
-const CRM                 = lazy(() => import('./components/modules/CRM').then(m => ({ default: m.CRM })));
-const Documents           = lazy(() => import('./components/modules/Documents').then(m => ({ default: m.Documents })));
-const Timesheets          = lazy(() => import('./components/modules/Timesheets').then(m => ({ default: m.Timesheets })));
-const PlantEquipment      = lazy(() => import('./components/modules/PlantEquipment').then(m => ({ default: m.PlantEquipment })));
-const Subcontractors      = lazy(() => import('./components/modules/Subcontractors').then(m => ({ default: m.Subcontractors })));
-const AIAssistant         = lazy(() => import('./components/modules/AIAssistant').then(m => ({ default: m.AIAssistant })));
-const RFIs                = lazy(() => import('./components/modules/RFIs').then(m => ({ default: m.RFIs })));
-const ChangeOrders        = lazy(() => import('./components/modules/ChangeOrders').then(m => ({ default: m.ChangeOrders })));
-const PunchList           = lazy(() => import('./components/modules/PunchList').then(m => ({ default: m.PunchList })));
-const Inspections         = lazy(() => import('./components/modules/Inspections').then(m => ({ default: m.Inspections })));
-const RiskRegister        = lazy(() => import('./components/modules/RiskRegister').then(m => ({ default: m.RiskRegister })));
-const Drawings            = lazy(() => import('./components/modules/Drawings').then(m => ({ default: m.Drawings })));
-const Meetings            = lazy(() => import('./components/modules/Meetings').then(m => ({ default: m.Meetings })));
-const Materials           = lazy(() => import('./components/modules/Materials').then(m => ({ default: m.Materials })));
-const DailyReports        = lazy(() => import('./components/modules/DailyReports').then(m => ({ default: m.DailyReports })));
-const Marketplace         = lazy(() => import('./components/modules/Marketplace').then(m => ({ default: m.Marketplace })));
-const Settings            = lazy(() => import('./components/modules/Settings').then(m => ({ default: m.Settings })));
-const Insights            = lazy(() => import('./components/modules/Insights').then(m => ({ default: m.Insights })));
-const ExecutiveReports    = lazy(() => import('./components/modules/ExecutiveReports').then(m => ({ default: m.ExecutiveReports })));
-const PredictiveAnalytics = lazy(() => import('./components/modules/PredictiveAnalytics').then(m => ({ default: m.PredictiveAnalytics })));
-const Calendar            = lazy(() => import('./components/modules/Calendar').then(m => ({ default: m.Calendar })));
-const GlobalSearch        = lazy(() => import('./components/modules/GlobalSearch').then(m => ({ default: m.GlobalSearch })));
-const AuditLog            = lazy(() => import('./components/modules/AuditLog').then(m => ({ default: m.AuditLog })));
-
-// ── Default-export modules (new modules + Variations/Defects/Valuations/Specs) ─
+// ── All modules now have default exports ──────────────────────────────────
+const Dashboard           = lazy(() => import('./components/modules/Dashboard'));
+const Projects            = lazy(() => import('./components/modules/Projects'));
+const Invoicing           = lazy(() => import('./components/modules/Invoicing'));
+const Accounting          = lazy(() => import('./components/modules/Accounting'));
+const FinancialReports    = lazy(() => import('./components/modules/FinancialReports'));
+const Procurement         = lazy(() => import('./components/modules/Procurement'));
+const RAMS                = lazy(() => import('./components/modules/RAMS'));
+const CIS                 = lazy(() => import('./components/modules/CIS'));
+const SiteOperations      = lazy(() => import('./components/modules/SiteOperations'));
+const Teams               = lazy(() => import('./components/modules/Teams'));
+const Tenders             = lazy(() => import('./components/modules/Tenders'));
+const Analytics           = lazy(() => import('./components/modules/Analytics'));
+const Safety              = lazy(() => import('./components/modules/Safety'));
+const FieldView           = lazy(() => import('./components/modules/FieldView'));
+const CRM                 = lazy(() => import('./components/modules/CRM'));
+const Documents           = lazy(() => import('./components/modules/Documents'));
+const Timesheets          = lazy(() => import('./components/modules/Timesheets'));
+const PlantEquipment      = lazy(() => import('./components/modules/PlantEquipment'));
+const Subcontractors      = lazy(() => import('./components/modules/Subcontractors'));
+const AIAssistant         = lazy(() => import('./components/modules/AIAssistant'));
+const RFIs                = lazy(() => import('./components/modules/RFIs'));
+const ChangeOrders        = lazy(() => import('./components/modules/ChangeOrders'));
+const PunchList           = lazy(() => import('./components/modules/PunchList'));
+const Inspections         = lazy(() => import('./components/modules/Inspections'));
+const RiskRegister        = lazy(() => import('./components/modules/RiskRegister'));
+const Drawings            = lazy(() => import('./components/modules/Drawings'));
+const Meetings            = lazy(() => import('./components/modules/Meetings'));
+const Materials           = lazy(() => import('./components/modules/Materials'));
+const DailyReports        = lazy(() => import('./components/modules/DailyReports'));
+const Marketplace         = lazy(() => import('./components/modules/Marketplace'));
+const Settings            = lazy(() => import('./components/modules/Settings'));
+const Insights            = lazy(() => import('./components/modules/Insights'));
+const ExecutiveReports    = lazy(() => import('./components/modules/ExecutiveReports'));
+const PredictiveAnalytics = lazy(() => import('./components/modules/PredictiveAnalytics'));
+const Calendar            = lazy(() => import('./components/modules/Calendar'));
+const GlobalSearch        = lazy(() => import('./components/modules/GlobalSearch'));
+const AuditLog            = lazy(() => import('./components/modules/AuditLog'));
 const Variations          = lazy(() => import('./components/modules/Variations'));
 const Defects             = lazy(() => import('./components/modules/Defects'));
 const Valuations          = lazy(() => import('./components/modules/Valuations'));
@@ -69,19 +69,17 @@ const Certifications      = lazy(() => import('./components/modules/Certificatio
 const Prequalification    = lazy(() => import('./components/modules/Prequalification'));
 const Lettings            = lazy(() => import('./components/modules/Lettings'));
 const Measuring           = lazy(() => import('./components/modules/Measuring'));
-const EmailHistory        = lazy(() => import('./components/modules/EmailHistory').then(m => ({ default: m.EmailHistory })));
-const PermissionsManager  = lazy(() => import('./components/modules/PermissionsManager').then(m => ({ default: m.PermissionsManager })));
-const ReportTemplates     = lazy(() => import('./components/modules/ReportTemplates').then(m => ({ default: m.ReportTemplates })));
-
-// ── New Construction Features ─
+const EmailHistory        = lazy(() => import('./components/modules/EmailHistory'));
+const PermissionsManager  = lazy(() => import('./components/modules/PermissionsManager'));
+const ReportTemplates     = lazy(() => import('./components/modules/ReportTemplates'));
 const BIMViewer           = lazy(() => import('./components/modules/BIMViewer'));
 const CostManagement      = lazy(() => import('./components/modules/CostManagement'));
 const SubmittalManagement = lazy(() => import('./components/modules/SubmittalManagement'));
-
-// ── AI & Desktop Features ─
 const DevSandbox          = lazy(() => import('./components/modules/DevSandbox'));
 const AIVision            = lazy(() => import('./components/modules/AIVision'));
 const MyDesktop           = lazy(() => import('./components/modules/MyDesktop'));
+const AdvancedAnalytics   = lazy(() => import('./components/modules/AdvancedAnalytics'));
+const ProjectCalendar     = lazy(() => import('./components/modules/ProjectCalendar'));
 
 const ModuleLoader = () => (
   <div className="flex items-center justify-center h-64">
@@ -95,6 +93,7 @@ function AppShell() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [showShortcuts, setShowShortcuts] = useState(false);
   const [showGlobalSearch, setShowGlobalSearch] = useState(false);
+  const [showCommandPalette, setShowCommandPalette] = useState(false);
   const [isOnline, setIsOnline] = useState(typeof navigator !== 'undefined' ? navigator.onLine : true);
 
   useEffect(() => {
@@ -109,6 +108,7 @@ function AppShell() {
   }, []);
 
   const toggleSearch = () => setShowGlobalSearch(p => !p);
+  const toggleCommandPalette = () => setShowCommandPalette(p => !p);
 
   useKeyboardShortcuts([
     { ...DEFAULT_SHORTCUTS.goToDashboard, handler: () => setActiveModule('dashboard') },
@@ -116,9 +116,13 @@ function AppShell() {
     { ...DEFAULT_SHORTCUTS.goToInvoicing, handler: () => setActiveModule('invoicing') },
     { ...DEFAULT_SHORTCUTS.goToSafety, handler: () => setActiveModule('safety') },
     { ...DEFAULT_SHORTCUTS.goToSettings, handler: () => setActiveModule('settings') },
+    { ...DEFAULT_SHORTCUTS.goToAnalytics, handler: () => setActiveModule('analytics') },
+    { ...DEFAULT_SHORTCUTS.goToCalendar, handler: () => setActiveModule('calendar') },
     { ...DEFAULT_SHORTCUTS.toggleSidebar, handler: () => setSidebarCollapsed(p => !p) },
     { ...DEFAULT_SHORTCUTS.showHelp, handler: () => setShowShortcuts(true) },
     { ...DEFAULT_SHORTCUTS.search, handler: toggleSearch },
+    { ...DEFAULT_SHORTCUTS.openNotifications, handler: () => setShowGlobalSearch(true) },
+    { key: 'k', ctrl: true, shift: false, handler: toggleCommandPalette, description: 'Open command palette' },
   ]);
 
   const renderModule = () => {
@@ -135,6 +139,8 @@ function AppShell() {
       case 'teams':                 return <Teams />;
       case 'tenders':               return <Tenders />;
       case 'analytics':             return <Analytics />;
+      case 'advanced-analytics':    return <AdvancedAnalytics />;
+      case 'project-calendar':      return <ProjectCalendar />;
       case 'safety':                return <Safety />;
       case 'field-view':            return <FieldView />;
       case 'crm':                   return <CRM />;
@@ -264,6 +270,11 @@ function AppShell() {
           <GlobalSearch onClose={() => setShowGlobalSearch(false)} />
         </Suspense>
       )}
+      <CommandPalette
+        isOpen={showCommandPalette}
+        onClose={() => setShowCommandPalette(false)}
+        onNavigate={(m) => { setActiveModule(m); setShowCommandPalette(false); }}
+      />
     </>
   );
 }
@@ -284,7 +295,7 @@ function ThemedApp() {
   }
 
   return (
-    <>
+    <ErrorBoundary>
       <Toaster
         theme={resolvedTheme}
         position="top-right"
@@ -293,7 +304,7 @@ function ThemedApp() {
         }}
       />
       {isAuthenticated ? <AppShell /> : <LoginPage />}
-    </>
+    </ErrorBoundary>
   );
 }
 
