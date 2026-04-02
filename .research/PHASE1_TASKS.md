@@ -954,10 +954,18 @@ Respond with just the date in ISO format (YYYY-MM-DD) or "null" if not found.`;
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ prompt }),
+    signal: AbortSignal.timeout(15000), // 15 second timeout
   });
 
-  const result = await response.json();
-  return result.reply.trim() === 'null' ? null : result.reply.trim();
+  if (!response.ok) {
+    throw new Error(`AI extraction failed: ${response.status} ${response.statusText}`);
+  }
+
+  const result = await response.json() as { reply?: string };
+  // Defensive: handle undefined, null, or non-string reply
+  const reply = typeof result.reply === 'string' ? result.reply.trim() : '';
+  // Treat empty strings and 'null' as no result found
+  return reply === 'null' || reply === '' ? null : reply;
 }
 ```
 
