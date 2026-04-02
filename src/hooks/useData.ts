@@ -135,7 +135,6 @@ export const useReportTemplates  = makeHooks<ReportTemplate>('report-templates',
   delete: (id) => reportTemplatesApi.delete(id),
 });
 
-/* eslint-disable react-hooks/rules-of-hooks -- factory pattern: hooks called inside returned function */
 export function useDuplicateTemplate() {
   const qc = useQueryClient();
   return useMutation({
@@ -150,10 +149,9 @@ export function useDuplicateTemplate() {
 
 // ─── Custom hooks for non-standard APIs ──────────────────────────────────────
 
-/* eslint-disable react-hooks/rules-of-hooks -- factory pattern: hooks called inside returned function */
 /**
  * Returns audit log hooks. Must be called inside a component.
- * @example const { useList, useStats } = useAuditLog();
+ * @example const { useList, useStats, useInvalidate } = useAuditLog();
  */
 export function useAuditLog() {
   const qc = useQueryClient();
