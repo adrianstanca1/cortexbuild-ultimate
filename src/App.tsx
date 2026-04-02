@@ -81,6 +81,7 @@ const AIVision            = lazy(() => import('./components/modules/AIVision'));
 const MyDesktop           = lazy(() => import('./components/modules/MyDesktop'));
 const AdvancedAnalytics   = lazy(() => import('./components/modules/AdvancedAnalytics'));
 const ProjectCalendar     = lazy(() => import('./components/modules/ProjectCalendar'));
+const AdminDashboard      = lazy(() => import('./components/modules/AdminDashboard'));
 
 const ModuleLoader = () => (
   <div className="flex items-center justify-center h-64">
@@ -190,6 +191,7 @@ function AppShell() {
       case 'dev-sandbox':           return <DevSandbox />;
       case 'ai-vision':             return <AIVision />;
       case 'my-desktop':            return <MyDesktop />;
+      case 'admin-dashboard':       return <AdminDashboard />;
       default:                      return <Dashboard />;
     }
   };
