@@ -16,11 +16,11 @@ const sanitizeText = (text: string): string => text.replace(/[<>]/g, '');
 
 
 // PDF layout constants
-const PDF_MARGIN_X = 14;
-const TITLE_Y = 20;
-const SUBTITLE_Y = 28;
-const TIMESTAMP_Y = 36;
-const START_Y = 45;
+const _PDF_MARGIN_X = 14;
+const _TITLE_Y = 20;
+const _SUBTITLE_Y = 28;
+const _TIMESTAMP_Y = 36;
+const _START_Y = 45;
 const FONT_SIZE_TITLE = 20;
 const FONT_SIZE_SUBTITLE = 12;
 const FONT_SIZE_BODY = 10;

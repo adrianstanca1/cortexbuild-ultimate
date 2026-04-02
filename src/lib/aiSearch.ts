@@ -7,7 +7,6 @@
  * @packageDocumentation
  */
 
-import { eventBus } from './eventBus';
 
 interface AISearchResult {
   id: string;
@@ -97,7 +96,7 @@ export async function getAISuggestions(context: {
     suggestions.push({
       type: 'info',
       message: 'Consider reviewing projects with budget variance > 10%',
-      action: () => console.log('Filter projects by budget variance'),
+      action: undefined, // TODO: Wire up to filter action
     });
   }
 
@@ -105,7 +104,7 @@ export async function getAISuggestions(context: {
     suggestions.push({
       type: 'warning',
       message: '3 incidents reported this week - review safety protocols',
-      action: () => console.log('Navigate to safety'),
+      action: undefined, // TODO: Wire up to navigation
     });
   }
 

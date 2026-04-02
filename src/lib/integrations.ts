@@ -41,7 +41,7 @@ class IntegrationManager {
         name: 'SendGrid Email',
         type: 'email',
         enabled: true,
-        config: { apiKey: process.env.SENDGRID_API_KEY || '' }, // TODO: Move to environment variables
+        config: { apiKey: import.meta.env.VITE_SENDGRID_API_KEY || '' },
       },
       {
         id: 'dropbox',
@@ -82,16 +82,14 @@ class IntegrationManager {
     return true;
   }
 
-  disableIntegration(id: string) {
+  disableIntegration(id: string): boolean {
     const integration = this.integrations.find(i => i.id === id);
-    if (integration) {
-      integration.enabled = false;
-    }
+    if (!integration) return false;
+    integration.enabled = false;
+    return true;
   }
 
-  private async validateIntegration(id: string, config: Record<string, string>): Promise<boolean> {
-    // Simulate validation
-    console.log(`Validating ${id} integration...`);
+  private async validateIntegration(id: string, _config: Record<string, string>): Promise<boolean> {
     return true;
   }
 
@@ -101,7 +99,7 @@ class IntegrationManager {
       throw new Error('Integration not enabled');
     }
 
-    console.log(`Syncing data to ${integration.name}...`);
+    // Sync data to integration
     // Implement sync logic based on integration type
     return { success: true, id: Date.now().toString() };
   }

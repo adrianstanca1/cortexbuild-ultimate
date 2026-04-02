@@ -70,7 +70,7 @@ export class WorkflowEngine {
   }
 
   private async executeStep(step: WorkflowStep, context: Record<string, unknown>) {
-    console.log(`Executing step: ${step.name} (${step.type})`);
+    // Workflow step execution
 
     switch (step.type) {
       case 'notification':
@@ -88,19 +88,16 @@ export class WorkflowEngine {
     }
   }
 
-  private async sendNotification(config: Record<string, unknown>, context: Record<string, unknown>) {
-    console.log('Sending notification to:', config.role);
-    // Implement notification logic
+  private async sendNotification(_config: Record<string, unknown>, _context: Record<string, unknown>) {
+    // TODO: Implement notification logic
   }
 
-  private async requestApproval(config: Record<string, unknown>, context: Record<string, unknown>) {
-    console.log('Requesting approval from:', config.role);
-    // Implement approval logic
+  private async requestApproval(_config: Record<string, unknown>, _context: Record<string, unknown>) {
+    // TODO: Implement approval logic
   }
 
-  private async performAction(config: Record<string, unknown>, context: Record<string, unknown>) {
-    console.log('Performing action:', config.action);
-    // Implement action logic
+  private async performAction(_config: Record<string, unknown>, _context: Record<string, unknown>) {
+    // TODO: Implement action logic
   }
 
   getWorkflows() {

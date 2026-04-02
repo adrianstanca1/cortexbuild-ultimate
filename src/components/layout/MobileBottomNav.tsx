@@ -215,7 +215,6 @@ export function MobileBottomNav({
       icon: CheckSquare,
       accent: '#3b82f6',
       onClick: () => {
-        console.log('Quick action: Add Task');
         setQuickActionsOpen(false);
         if (navigator.vibrate) navigator.vibrate(30);
       },
@@ -226,7 +225,6 @@ export function MobileBottomNav({
       icon: MessageSquare,
       accent: '#f59e0b',
       onClick: () => {
-        console.log('Quick action: Add RFI');
         setQuickActionsOpen(false);
         if (navigator.vibrate) navigator.vibrate(30);
       },
@@ -237,7 +235,6 @@ export function MobileBottomNav({
       icon: AlertTriangle,
       accent: '#ef4444',
       onClick: () => {
-        console.log('Quick action: Report Incident');
         setQuickActionsOpen(false);
         if (navigator.vibrate) navigator.vibrate(30);
       },
@@ -248,7 +245,6 @@ export function MobileBottomNav({
       icon: FileText,
       accent: '#10b981',
       onClick: () => {
-        console.log('Quick action: Upload Document');
         setQuickActionsOpen(false);
         if (navigator.vibrate) navigator.vibrate(30);
       },
@@ -259,7 +255,6 @@ export function MobileBottomNav({
       icon: Camera,
       accent: '#8b5cf6',
       onClick: () => {
-        console.log('Quick action: Take Photo');
         setQuickActionsOpen(false);
         if (navigator.vibrate) navigator.vibrate(30);
       },

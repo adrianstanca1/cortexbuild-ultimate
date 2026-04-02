@@ -152,7 +152,7 @@ class OfflineQueueService {
         await this.db.updateTask(action.payload.id, action.payload.updates);
         break;
       case 'ADD_LOG':
-        console.log("Syncing log:", action.payload);
+        // Log synced
         break;
       default:
         console.warn("Unknown action type:", action.type);
