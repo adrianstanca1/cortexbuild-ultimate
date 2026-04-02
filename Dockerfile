@@ -1,4 +1,4 @@
-# CortexBuild Ultimate - Production Dockerfile (Vite)
+# CortexBuild Ultimate - Production Dockerfile (Vite + API)
 FROM node:22-alpine AS base
 
 # Install dependencies
@@ -28,6 +28,27 @@ COPY . .
 ENV NODE_ENV=production
 
 RUN npm run build
+
+# API Builder - Install server dependencies including OAuth
+FROM base AS api-deps
+WORKDIR /app/server
+COPY server/package.json server/package-lock.json* ./
+RUN npm install --production
+# Install OAuth packages
+RUN npm install passport passport-google-oauth20 passport-microsoft express-session --save
+
+# API Runner
+FROM base AS api-runner
+WORKDIR /app
+COPY --from=api-deps /app/server/node_modules ./server/node_modules
+COPY server ./server
+COPY --from=builder /app/dist ./dist
+
+ENV NODE_ENV=production
+EXPOSE 3001
+
+WORKDIR /app/server
+CMD ["node", "index.js"]
 
 # Production runner - Lightweight static server
 FROM nginx:alpine AS runner
