@@ -10,6 +10,31 @@ export interface User {
   phone?: string;
 }
 
+// Re-export notification types
+export type {
+  Notification,
+  NotificationType,
+  NotificationCategory,
+  NotificationSeverity,
+  NotificationStatus,
+  NotificationSettings,
+  NotificationMetadata,
+  NotificationAction,
+  RelatedItem,
+  NotificationGroup,
+  NotificationStats,
+  NotificationFilter,
+  ExportOptions,
+  QuickReply,
+  QuietHours,
+  CategoryPreferences,
+  NotificationsResponse,
+  UnreadCountResponse,
+  WebSocketNotificationMessage,
+  WebSocketConnectionStatus,
+  NotificationQuery,
+} from './notification';
+
 export type Module =
   | 'dashboard'
   | 'projects'
@@ -66,13 +91,15 @@ export type Module =
   | 'permissions'
   | 'report-templates'
   | 'bim-viewer'
+  | 'bim'
   | 'cost-management'
   | 'submittal-management'
   | 'dev-sandbox'
   | 'ai-vision'
   | 'my-desktop'
   | 'advanced-analytics'
-  | 'project-calendar';
+  | 'project-calendar'
+  | 'admin-dashboard';
 
 export type ProjectStatus = 'planning' | 'active' | 'on_hold' | 'completed' | 'archived';
 export type TaskStatus = 'todo' | 'in_progress' | 'review' | 'done' | 'blocked';

@@ -228,7 +228,7 @@ export function TeamChat({ projectId, onClose }: TeamChatProps) {
             aria-label="Message input"
             className="input input-bordered flex-1 text-sm"
           />
-          <button onClick={sendMessage} className="btn btn-primary btn-sm">
+          <button onClick={sendMessage} className="btn btn-primary btn-sm" aria-label="Send message">
             <Send className="w-4 h-4" />
           </button>
         </div>

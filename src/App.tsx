@@ -9,6 +9,7 @@ import { useAuth, AuthProvider } from './context/AuthContext';
 import { useTheme } from './context/ThemeContext';
 import { useKeyboardShortcuts, DEFAULT_SHORTCUTS } from './hooks/useKeyboardShortcuts';
 import LoginPage from './components/auth/LoginPage';
+import { OAuthCallback } from './components/auth/OAuthCallback';
 import { ErrorBoundary } from './components/ui/ErrorBoundary';
 import { CommandPalette } from './components/ui/CommandPalette';
 
@@ -80,6 +81,7 @@ const AIVision            = lazy(() => import('./components/modules/AIVision'));
 const MyDesktop           = lazy(() => import('./components/modules/MyDesktop'));
 const AdvancedAnalytics   = lazy(() => import('./components/modules/AdvancedAnalytics'));
 const ProjectCalendar     = lazy(() => import('./components/modules/ProjectCalendar'));
+const AdminDashboard      = lazy(() => import('./components/modules/AdminDashboard'));
 
 const ModuleLoader = () => (
   <div className="flex items-center justify-center h-64">
@@ -189,6 +191,7 @@ function AppShell() {
       case 'dev-sandbox':           return <DevSandbox />;
       case 'ai-vision':             return <AIVision />;
       case 'my-desktop':            return <MyDesktop />;
+      case 'admin-dashboard':       return <AdminDashboard />;
       default:                      return <Dashboard />;
     }
   };
@@ -282,6 +285,14 @@ function AppShell() {
 function ThemedApp() {
   const { isAuthenticated, loading } = useAuth();
   const { resolvedTheme } = useTheme();
+  
+  // Check for OAuth callback route
+  const isOAuthCallback = typeof window !== 'undefined' && 
+    window.location.pathname === '/auth/callback';
+
+  if (isOAuthCallback) {
+    return <OAuthCallback />;
+  }
 
   if (loading) {
     return (

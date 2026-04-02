@@ -33,8 +33,9 @@ const TABS: { key: SubTab; label: string; icon: React.ElementType }[] = [
 ];
 
 export function AuditLog() {
-  const { data: rawEntries = [], isLoading } = useAuditLog.useList();
-  const { data: rawStats } = useAuditLog.useStats();
+  const { useList, useStats } = useAuditLog();
+  const { data: rawEntries = [], isLoading } = useList();
+  const { data: rawStats } = useStats();
 
   const entries = (rawEntries as AnyRow[]) as AuditEntry[];
   const stats: AuditStats = (rawStats ?? {}) as AuditStats;

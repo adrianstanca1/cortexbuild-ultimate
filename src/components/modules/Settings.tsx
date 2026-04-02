@@ -8,7 +8,7 @@ import {
 } from 'lucide-react';
 import { BulkActionsBar, useBulkSelection } from '../ui/BulkActions';
 import { ModuleBreadcrumbs } from '../ui/Breadcrumbs';
-import { settingsApi, usersApi } from '../../services/api';
+import { settingsApi, usersApi, companyApi } from '../../services/api';
 import { toast } from 'sonner';
 
 type Tab = 'company'|'users'|'billing'|'notifications'|'integrations'|'security';
@@ -63,8 +63,8 @@ export function Settings() {
 
   // ── Load company settings on mount ────────────────────────────────────────
   useEffect(() => {
-    settingsApi.getAll().then(settings => {
-      if (settings.company) setCompany(prev => ({ ...prev, ...settings.company as Record<string, string | boolean> }));
+    companyApi.get().then(data => {
+      if (data) setCompany(prev => ({ ...prev, ...data as Record<string, string | boolean> }));
     }).catch(() => { /* use defaults */ });
   }, []);
 
@@ -72,7 +72,18 @@ export function Settings() {
   useEffect(() => {
     setLoadingUsers(true);
     usersApi.getAll().then(data => {
-      if (Array.isArray(data) && data.length > 0) setUsers(data as typeof users);
+      if (Array.isArray(data) && data.length > 0) {
+        // Transform API response to match UI structure
+        const transformed = data.map(u => ({
+          id: String(u.id),
+          name: `${u.first_name || u.firstName || ''} ${u.last_name || u.lastName || ''}`.trim() || 'Unknown',
+          email: u.email,
+          role: u.role,
+          status: u.is_active !== false ? 'active' : 'inactive',
+          lastLogin: u.last_login_at ? 'Recently' : 'Never',
+        }));
+        setUsers(transformed as typeof users);
+      }
     }).catch(() => { /* use defaults */ })
       .finally(() => setLoadingUsers(false));
   }, []);
@@ -92,7 +103,7 @@ export function Settings() {
   async function handleSaveCompany() {
     setSavingCompany(true);
     try {
-      await settingsApi.updateSetting('company', company);
+      await companyApi.update(company);
       toast.success('Company settings saved');
     } catch {
       toast.error('Failed to save company settings');
@@ -105,10 +116,15 @@ export function Settings() {
     if (!inviteEmail) return;
     setInviting(true);
     try {
-      await usersApi.create({ email: inviteEmail, role: inviteRole });
+      await usersApi.create({ email: inviteEmail, firstName: inviteEmail.split('@')[0], lastName: 'User', role: inviteRole });
       toast.success(`Invite sent to ${inviteEmail}`);
       setShowInviteModal(false);
       setInviteEmail('');
+      // Reload users
+      setLoadingUsers(true);
+      usersApi.getAll().then(data => {
+        if (Array.isArray(data) && data.length > 0) setUsers(data as typeof users);
+      }).finally(() => setLoadingUsers(false));
     } catch {
       toast.error('Failed to send invite');
     } finally {

@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { Building2, Eye, EyeOff, Loader2, ArrowRight, CheckCircle, ShieldCheck, Zap, Users, TrendingUp, HardHat, type LucideIcon } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
+import { OAuthButton } from './OAuthButtons';
 
 // ─── Animated counter hook ─────────────────────────────────────────────────
 function useCounter(target: number, duration = 1800, startDelay = 0) {
@@ -741,6 +742,27 @@ export default function LoginPage() {
               {!loading && <ArrowRight size={15} />}
             </button>
           </form>
+
+          {/* OAuth Divider */}
+          <div style={{
+            display: 'flex', alignItems: 'center', gap: '12px',
+            margin: '24px 0 16px',
+          }}>
+            <div style={{ flex: 1, height: '1px', background: 'rgba(30,41,59,0.9)' }} />
+            <span style={{
+              fontFamily: "'JetBrains Mono', monospace",
+              fontSize: '9px',
+              color: 'rgba(90,106,130,0.5)',
+              letterSpacing: '0.1em',
+            }}>CONTINUE WITH</span>
+            <div style={{ flex: 1, height: '1px', background: 'rgba(30,41,59,0.9)' }} />
+          </div>
+
+          {/* OAuth Buttons */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginBottom: '20px' }}>
+            <OAuthButton provider="google" />
+            <OAuthButton provider="microsoft" />
+          </div>
 
           {/* Mode toggle */}
           <div style={{
