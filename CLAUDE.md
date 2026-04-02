@@ -78,6 +78,7 @@ psql -d cortexbuild -f server/migrations/001_add_audit_log.sql
 ### Specialized Backend Routes
 Beyond the generic router, these handle domain-specific logic:
 - `routes/auth.js` — JWT login/register (bcrypt passwords)
+- `routes/oauth.js` — Google/Microsoft OAuth (Passport strategies, CSRF-protected state, token-in-fragment)
 - `routes/ai.js` — Ollama AI integration (streaming)
 - `routes/ai-conversations.js` — Chat history persistence
 - `routes/files.js` / `routes/upload.js` — Multer file uploads to `server/uploads/`
@@ -89,7 +90,15 @@ Beyond the generic router, these handle domain-specific logic:
 - `routes/metrics.js` — Health metrics (**excluded from JWT auth**)
 
 ### Authentication
-All `/api/*` routes require JWT Bearer token **except** `/api/auth/*`, `/api/health`, `/api/deploy`, and `/api/metrics`. The middleware is `server/middleware/auth.js`. RBAC roles: `super_admin`, `company_owner`, `admin`, `project_manager`, `field_worker`.
+
+**JWT Authentication**: All `/api/*` routes require JWT Bearer token **except** `/api/auth/*`, `/api/health`, `/api/deploy`, and `/api/metrics`. The middleware is `server/middleware/auth.js`. RBAC roles: `super_admin`, `company_owner`, `admin`, `project_manager`, `field_worker`.
+
+**OAuth 2.0 Flow** (`routes/oauth.js`):
+- Google/Microsoft strategies via Passport.js
+- CSRF protection via cryptographically random `state` parameter (stored in-memory with 10-min expiry)
+- JWT token returned in URL fragment (`#token=`) to prevent server logging
+- OAuth tokens stored in `oauth_providers` table with unique constraint on `(provider, provider_user_id)`
+- Rate limiting on callback endpoints (10 requests per 15 minutes)
 
 ### Frontend Module System
 `src/App.tsx` lazy-loads 50+ modules via `React.lazy()`. The sidebar nav maps to module components in `src/components/` and `src/pages/` (or equivalent).
@@ -105,7 +114,7 @@ AI routes use **local Ollama** only — no external AI API calls. The `routes/ai
 
 ## Environment
 
-### Backend (`server/.env`)
+### Backend (`server/.env` or Docker via `.env.docker`)
 ```
 DB_PASSWORD=<required — server refuses to start without this>
 DB_HOST=127.0.0.1          # Must be IP, not 'localhost', for TCP (not Unix socket)
@@ -113,9 +122,19 @@ DB_NAME=cortexbuild
 DB_USER=cortexbuild
 DB_PORT=5432
 JWT_SECRET=<your-secret>
+SESSION_SECRET=<your-session-secret>  # Separate from JWT for security
 PORT=3001
 CORS_ORIGIN=http://localhost:5173   # Required — CORS denies all if unset
 REDIS_URL=redis://localhost:6379    # Optional, used for pub/sub
+
+# OAuth (required for Google/Microsoft login)
+GOOGLE_CLIENT_ID=<your_client_id>
+GOOGLE_CLIENT_SECRET=<your_client_secret>
+GOOGLE_CALLBACK_URL=http://localhost:3001/api/auth/google/callback
+MICROSOFT_CLIENT_ID=<your_client_id>
+MICROSOFT_CLIENT_SECRET=<your_client_secret>
+MICROSOFT_CALLBACK_URL=http://localhost:3001/api/auth/microsoft/callback
+FRONTEND_URL=http://localhost:5173
 ```
 
 ### Frontend (`.env.local`)
@@ -170,6 +189,7 @@ Custom `useData.ts` factory using `makeHooks(name, table, api)`:
 server/routes/
 ├── generic.js              # Generic CRUD factory + ALLOWED_COLUMNS whitelist
 ├── auth.js                # JWT login/register (bcrypt passwords)
+├── oauth.js               # Google/Microsoft OAuth (Passport, CSRF state, rate-limited callbacks)
 ├── ai.js                  # Ollama AI integration (streaming)
 ├── ai-conversations.js    # Chat history persistence
 ├── files.js / upload.js   # Multer file uploads → server/uploads/
@@ -219,10 +239,12 @@ Services:
 - **postgres** (pgvector:pg16) — Port 5432
 - **redis** (7-alpine) — Port 6379
 - **ollama** — Port 11434
-- **api** — Port 3001
+- **api** — Port 3001 (multi-stage build with `api-runner` target)
 - **nginx** — Ports 80/443
 - **prometheus** — Port 9090
 - **grafana** — Port 3002
+
+Environment variables loaded from `.env.docker` via `env_file` directive.
 
 ## Commit Conventions
 
@@ -247,6 +269,12 @@ Uses **conventional commits** with scope:
 1. If generic CRUD: add table to `ALLOWED_COLUMNS` in `generic.js` and register in `server/index.js`
 2. If specialized: create `server/routes/<name>.js` with domain logic
 
+### Adding OAuth Provider
+1. Add Passport strategy in `routes/oauth.js` with CSRF-protected state
+2. Create migration for `oauth_providers` table (include unique constraint on provider+provider_user_id)
+3. Add environment variables to `.env.docker`
+4. Rate-limit callback endpoints
+
 ## Key Files
 
 | Path | Purpose |
@@ -259,10 +287,13 @@ Uses **conventional commits** with scope:
 | `src/lib/store/` | Zustand state stores |
 | `server/index.js` | Express + WebSocket entry point, all route registrations |
 | `server/routes/generic.js` | Generic CRUD factory + ALLOWED_COLUMNS whitelist |
+| `server/routes/oauth.js` | OAuth 2.0 strategies (Google, Microsoft) with CSRF protection |
 | `server/db.js` | PostgreSQL connection pool (requires DB_PASSWORD) |
 | `server/middleware/auth.js` | JWT verification middleware |
+| `server/middleware/rateLimiter.js` | Rate limiting for sensitive endpoints |
 | `server/lib/websocket.js` | WebSocket init + message routing |
 | `server/lib/ws-broadcast.js` | Broadcast helper for real-time updates |
 | `prisma/schema.prisma` | Schema reference (85+ models, not used at runtime) |
 | `server/migrations/` | Ordered SQL migration files |
 | `docker-compose.yml` | Full stack: postgres, redis, ollama, nginx, prometheus, grafana |
+| `.env.docker` | Docker environment variables (OAuth credentials, secrets) |
