@@ -4,6 +4,8 @@ const cors       = require('cors');
 const helmet     = require('helmet');
 const path       = require('path');
 const http       = require('http');
+const passport   = require('passport');
+const session    = require('express-session');
 const authMiddleware = require('./middleware/auth');
 const makeRouter     = require('./routes/generic');
 const authRoutes     = require('./routes/auth');
@@ -16,6 +18,21 @@ const PORT = process.env.PORT || 3001;
 
 // Initialize WebSocket server
 initWebSocket(server);
+
+// ─── Session & Passport middleware for OAuth ─────────────────────────────────
+app.use(session({
+  secret: process.env.JWT_SECRET || 'oauth-session-secret-change-in-production',
+  resave: false,
+  saveUninitialized: false,
+  cookie: {
+    secure: process.env.NODE_ENV === 'production',
+    httpOnly: true,
+    maxAge: 24 * 60 * 60 * 1000 // 24 hours
+  }
+}));
+
+app.use(passport.initialize());
+app.use(passport.session());
 
 // ─── Security middleware ─────────────────────────────────────────────────────────
 app.use(helmet({
@@ -56,6 +73,7 @@ app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 // ─── Public routes ────────────────────────────────────────────────────────────
 app.use('/api/auth', authRoutes);
+app.use('/api/auth', require('./routes/oauth')); // Google OAuth
 app.get('/api/health', (_req, res) => res.json({ status: 'ok', version: '1.0.0' }));
 app.use('/api/deploy', require('./routes/deploy'));
 
