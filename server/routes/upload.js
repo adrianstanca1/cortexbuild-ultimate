@@ -4,13 +4,13 @@ const path    = require('path');
 const fs      = require('fs');
 const pool    = require('../db');
 const authMiddleware = require('../middleware/auth');
-const rateLimiter = require('../middleware/rateLimiter');
+const uploadRateLimiter = require('../middleware/uploadRateLimiter');
 const { validateFileContent } = require('../lib/file-validation');
 
 const router = express.Router();
 router.use(authMiddleware);
 // Stricter rate limit for uploads: 20 requests per minute (uploads are expensive)
-router.use(rateLimiter);
+router.use(uploadRateLimiter);
 
 // ─── Multer config ────────────────────────────────────────────────────────────
 const ALLOWED_EXTS = new Set(['.pdf','.doc','.docx','.xls','.xlsx','.png','.jpg','.jpeg','.dwg','.zip']);

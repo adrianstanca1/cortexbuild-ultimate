@@ -526,14 +526,17 @@ router.put('/:id/clashes/:clashId', authMiddleware, async (req, res) => {
 
 /**
  * GET /api/bim-models/:id/layers - Get model layers
+ * SECURITY: Join with bim_models to verify company_id ownership
  */
 router.get('/:id/layers', authMiddleware, async (req, res) => {
   try {
     const { rows } = await pool.query(
-      `SELECT * FROM bim_model_layers
-       WHERE model_id = $1
+      `SELECT l.*
+       FROM bim_model_layers l
+       INNER JOIN bim_models m ON l.model_id = m.id
+       WHERE l.model_id = $1 AND m.company_id = $2
        ORDER BY layer_name`,
-      [req.params.id]
+      [req.params.id, req.user.company_id]
     );
 
     res.json(rows);

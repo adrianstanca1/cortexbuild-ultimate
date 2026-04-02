@@ -4,9 +4,11 @@ const path    = require('path');
 const fs      = require('fs');
 const pool    = require('../db');
 const authMiddleware = require('../middleware/auth');
+const uploadRateLimiter = require('../middleware/uploadRateLimiter');
 
 const router = express.Router();
 router.use(authMiddleware);
+router.use(uploadRateLimiter);
 
 // Multi-tenancy helper
 function orgFilter(user) {
@@ -223,7 +225,10 @@ router.post('/:id/upload-version', upload.single('file'), async (req, res) => {
   try {
     if (!req.file) return res.status(400).json({ message: 'No file provided' });
     const { id } = req.params;
-    const { rows: existing } = await pool.query('SELECT * FROM documents WHERE id = $1', [id]);
+    const org = orgFilter(req.user);
+
+    // SECURITY: Filter by organization_id to prevent cross-tenant access
+    const { rows: existing } = await pool.query(`SELECT * FROM documents WHERE id = $1${org.filter}`, [id, ...org.params]);
     if (existing.length === 0) return res.status(404).json({ message: 'Document not found' });
 
     const currentVersion = existing[0].version;
@@ -237,9 +242,10 @@ router.post('/:id/upload-version', upload.single('file'), async (req, res) => {
     const ext = path.extname(req.file.originalname).replace('.', '').toUpperCase();
     const fileSize = formatSize(req.file.size);
 
+    // SECURITY: Include organization_id filter in UPDATE
     await pool.query(
-      `UPDATE documents SET version = $1, size = $2, type = $3, file_path = $4 WHERE id = $5`,
-      [newVersion, fileSize, ext, filePath, id]
+      `UPDATE documents SET version = $1, size = $2, type = $3, file_path = $4 WHERE id = $5${org.filter}`,
+      [newVersion, fileSize, ext, filePath, id, ...org.params]
     );
 
     await pool.query(
@@ -248,7 +254,7 @@ router.post('/:id/upload-version', upload.single('file'), async (req, res) => {
       [id, newVersion, filePath, uploadedBy, changes]
     );
 
-    const { rows } = await pool.query('SELECT * FROM documents WHERE id = $1', [id]);
+    const { rows } = await pool.query(`SELECT * FROM documents WHERE id = $1${org.filter}`, [id, ...org.params]);
     res.json(rows[0]);
   } catch (err) {
     console.error('[POST /api/files/:id/upload-version]', err.message);
@@ -366,7 +372,10 @@ router.delete('/:id', async (req, res) => {
     if (filePath) {
       // Resolve to absolute path and validate it's within uploads directory
       const fullPath = path.resolve(UPLOADS_DIR, path.basename(filePath));
-      if (!fullPath.startsWith(UPLOADS_DIR)) {
+      // Normalize paths to prevent traversal attacks (e.g., ../../etc/passwd)
+      const normalizedFull = path.normalize(fullPath);
+      const normalizedUploads = path.normalize(UPLOADS_DIR);
+      if (!normalizedFull.startsWith(normalizedUploads + path.sep)) {
         console.error('[SECURITY] Path traversal attempt detected:', filePath);
         return res.status(403).json({ message: 'Invalid file path' });
       }

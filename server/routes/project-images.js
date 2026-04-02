@@ -4,9 +4,12 @@ const path    = require('path');
 const fs      = require('fs');
 const pool    = require('../db');
 const authMiddleware = require('../middleware/auth');
+const uploadRateLimiter = require('../middleware/uploadRateLimiter');
 
 const router = express.Router();
 router.use(authMiddleware);
+// Stricter rate limit for uploads: 20 requests per minute (uploads are expensive)
+router.use(uploadRateLimiter);
 
 const GALLERY_DIR = path.join(__dirname, '../uploads/gallery');
 if (!fs.existsSync(GALLERY_DIR)) fs.mkdirSync(GALLERY_DIR, { recursive: true });
@@ -64,9 +67,11 @@ const upload = multer({ storage, fileFilter, limits: { fileSize: 50 * 1024 * 102
 router.get('/', async (req, res) => {
   try {
     const { project_id } = req.query;
-    let query = 'SELECT * FROM project_images WHERE 1=1';
-    const params = [];
-    let paramCount = 0;
+    const organizationId = req.user.organization_id;
+
+    let query = 'SELECT * FROM project_images WHERE organization_id = $1';
+    const params = [organizationId];
+    let paramCount = 1;
 
     if (project_id) {
       paramCount++;
@@ -93,12 +98,13 @@ router.post('/upload', upload.single('file'), async (req, res) => {
     const uploadedBy = req.user?.name || req.user?.email || 'Unknown';
     const imagePath = `/uploads/gallery/${req.file.filename}`;
     const category = req.body.category || 'general';
+    const organizationId = req.user.organization_id;
 
     const { rows } = await pool.query(
-      `INSERT INTO project_images (project_id, file_path, caption, uploaded_by, category)
-       VALUES ($1, $2, $3, $4, $5)
+      `INSERT INTO project_images (organization_id, project_id, file_path, caption, uploaded_by, category)
+       VALUES ($1, $2, $3, $4, $5, $6)
        RETURNING *`,
-      [projectId, imagePath, caption, uploadedBy, category]
+      [organizationId, projectId, imagePath, caption, uploadedBy, category]
     );
 
     res.status(201).json(rows[0]);
@@ -116,6 +122,7 @@ router.put('/:id', async (req, res) => {
   try {
     const { id } = req.params;
     const { caption, category } = req.body;
+    const organizationId = req.user.organization_id;
     const updates = [];
     const params = [];
     let paramCount = 0;
@@ -135,9 +142,9 @@ router.put('/:id', async (req, res) => {
       return res.status(400).json({ message: 'No fields to update' });
     }
 
-    params.push(id);
+    params.push(id, organizationId);
     const { rows } = await pool.query(
-      `UPDATE project_images SET ${updates.join(', ')} WHERE id = $${paramCount + 1} RETURNING *`,
+      `UPDATE project_images SET ${updates.join(', ')} WHERE id = $${paramCount + 1} AND organization_id = $${paramCount + 2} RETURNING *`,
       params
     );
 
@@ -156,15 +163,20 @@ router.put('/:id', async (req, res) => {
 router.delete('/:id', async (req, res) => {
   try {
     const { id } = req.params;
+    const organizationId = req.user.organization_id;
 
-    const { rows } = await pool.query('SELECT file_path FROM project_images WHERE id = $1', [id]);
+    // SECURITY: Filter by organization_id to prevent cross-tenant data access
+    const { rows } = await pool.query(
+      'SELECT file_path FROM project_images WHERE id = $1 AND organization_id = $2',
+      [id, organizationId]
+    );
     if (rows.length === 0) {
       return res.status(404).json({ message: 'Image not found' });
     }
 
     const filePath = rows[0].file_path;
 
-    await pool.query('DELETE FROM project_images WHERE id = $1', [id]);
+    await pool.query('DELETE FROM project_images WHERE id = $1 AND organization_id = $2', [id, organizationId]);
 
     if (filePath) {
       const fullPath = path.resolve(__dirname, '..', filePath);
