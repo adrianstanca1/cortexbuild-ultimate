@@ -13,14 +13,18 @@ function getTenantFilter(req) {
   return { filter: ' AND organization_id = $1', params: [auth.organization_id] };
 }
 
-// RAG status: hardcoded green for now (would need baseline/budget tracking)
+// RAG status: hardcoded green with TODO for future dynamic calculation
 function getRagStatus() {
   // TODO: Implement dynamic RAG status calculation based on project performance metrics
+  // - programme: from project schedule/progress vs baseline
+  // - cost: from budget_items variance_percent
+  // - quality: from quality checks/completions
+  // - safety: from safety incident counts
   return {
-    programme: 'dynamic-status',
-    cost: 'dynamic-status',
-    quality: 'dynamic-status',
-    safety: 'dynamic-status',
+    programme: 'green',
+    cost: 'green',
+    quality: 'green',
+    safety: 'green',
   };
 }
 
@@ -32,7 +36,7 @@ router.get('/summary', async (req, res) => {
   try {
     const { filter: tenantFilter, params: tenantParams } = getTenantFilter(req);
 
-    const [invoicesResult, projectsCountResult, projectsListResult, teamResult] = await Promise.all([
+    const [invoicesResult, projectsCountResult, projectsListResult, teamResult, budgetResult] = await Promise.all([
       pool.query(
         `SELECT 
           COALESCE(SUM(CASE WHEN status = 'paid' THEN amount ELSE 0 END), 0) as portfolio_value,
@@ -65,12 +69,28 @@ router.get('/summary', async (req, res) => {
         `SELECT COUNT(*) as count FROM team_members WHERE 1=1${tenantFilter}`,
         tenantParams,
       ),
+      pool.query(
+        `SELECT
+          COALESCE(SUM(budgeted), 0) as total_budgeted,
+          COALESCE(SUM(spent), 0) as total_spent
+        FROM budget_items bi
+        JOIN projects p ON p.id = bi.project_id
+        WHERE p.status = 'active'${tenantFilter}`,
+        tenantParams,
+      ),
     ]);
 
     const portfolioValue = Number(invoicesResult.rows[0]?.portfolio_value || 0);
     const revenueYtd = Number(invoicesResult.rows[0]?.revenue_ytd || 0);
     const projectsActive = Number(projectsCountResult.rows[0]?.count || 0);
     const workforce = Number(teamResult.rows[0]?.count || 0);
+
+    // Calculate margin from budget data (profit margin = (budget - spent) / budget)
+    const totalBudgeted = Number(budgetResult.rows[0]?.total_budgeted || 0);
+    const totalSpent = Number(budgetResult.rows[0]?.total_spent || 0);
+    const margin = totalBudgeted > 0
+      ? Math.round(((totalBudgeted - totalSpent) / totalBudgeted) * 100)
+      : 25;
 
     const projects = projectsListResult.rows.map((project) => ({
       id: project.id,
@@ -89,7 +109,7 @@ router.get('/summary', async (req, res) => {
         portfolioValue,
         projectsActive,
         revenueYtd,
-        margin: 25, // TODO: Replace with dynamic margin calculation (actual cost vs revenue)
+        margin,
         workforce,
       },
       projects,
@@ -124,14 +144,29 @@ router.get('/trends', async (req, res) => {
       WHERE 1=1${tenantFilter}
     `;
 
-    const [revenueResult, headcountResult] = await Promise.all([
+    const budgetQuery = `
+      SELECT
+        COALESCE(SUM(budgeted), 0) as total_budgeted,
+        COALESCE(SUM(spent), 0) as total_spent
+      FROM budget_items bi
+      JOIN projects p ON p.id = bi.project_id
+      WHERE p.status = 'active'${tenantFilter}
+    `;
+
+    const [revenueResult, headcountResult, budgetData] = await Promise.all([
       pool.query(revenueQuery, tenantParams),
       pool.query(headcountQuery, tenantParams),
+      pool.query(budgetQuery, tenantParams),
     ]);
 
     const months = [];
     const now = new Date();
     const currentHeadcount = Number(headcountResult.rows[0]?.count || 0);
+    const trendTotalBudgeted = Number(budgetData.rows[0]?.total_budgeted || 0);
+    const trendTotalSpent = Number(budgetData.rows[0]?.total_spent || 0);
+    const trendMargin = trendTotalBudgeted > 0
+      ? Math.round(((trendTotalBudgeted - trendTotalSpent) / trendTotalBudgeted) * 100)
+      : 25;
 
     for (let i = 5; i >= 0; i -= 1) {
       const monthStart = new Date(now.getFullYear(), now.getMonth() - i, 1);
@@ -146,7 +181,7 @@ router.get('/trends', async (req, res) => {
       months.push({
         month: monthStart.toLocaleString('en-US', { month: 'short', year: 'numeric' }),
         revenue: Number(revenueRow?.revenue || 0),
-        margin: 25, // TODO: Replace with dynamic margin calculation (actual cost vs revenue)
+        margin: trendMargin,
         headcount: currentHeadcount,
       });
     }
