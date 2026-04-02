@@ -22,6 +22,7 @@ npm run lint             # ESLint check
 npm run lint:fix         # Auto-fix ESLint
 npm run test             # Run Vitest tests (jsdom environment)
 npm run test:coverage    # Coverage report
+npm run lighthouse       # Lighthouse CI audit (production build required)
 ```
 
 Run a single test:
@@ -31,6 +32,23 @@ npx vitest run -t "test name pattern"
 ```
 
 Test files: `src/test/*.test.ts` or `*.test.tsx` alongside components. Setup in `src/test/setup.ts`.
+
+**Test Coverage (180 tests across 14 files):**
+- `NotificationCenter.test.tsx` - 14 tests
+- `TeamChat.test.tsx` - 10 tests
+- `ActivityFeed.test.tsx` - 8 tests
+- `useOptimizedData.test.ts` - 11 tests
+- `validateNotification.test.ts` - 15 tests (Zod runtime validation)
+- `utilities.test.ts`, `hooks.test.ts`, `validation.test.ts` - Core utilities
+- `DataImportExport.test.tsx`, `BulkActions.test.tsx`, `AdvancedTableFilter.test.tsx` - UI components
+- `usePWA.test.ts`, `AIAvatar.test.tsx`, `rateLimiter.test.ts` - Features
+
+**E2E Tests (Playwright):**
+```bash
+npm run test:e2e         # Run all E2E tests
+npm run test:e2e:ui      # Interactive UI mode
+npm run test:e2e:headed  # Run in visible browser
+```
 
 ### Error Handling Pattern
 ```ts
@@ -103,6 +121,28 @@ Beyond the generic router, these handle domain-specific logic:
 ### Frontend Module System
 `src/App.tsx` lazy-loads 50+ modules via `React.lazy()`. The sidebar nav maps to module components in `src/components/` and `src/pages/` (or equivalent).
 
+## Runtime Validation Pattern
+
+All API responses are validated with Zod v4 before use. Key utilities:
+
+```ts
+import { validateNotification, safeValidateNotification } from '@/lib/validateNotification';
+
+// Strict validation - returns null if invalid
+const notification = validateNotification(rawData);
+if (!notification) {
+  // Handle invalid data
+}
+
+// Lenient validation - applies defaults for missing optional fields
+const safe = safeValidateNotification(rawData, { strict: false });
+```
+
+Schemas defined in `src/lib/validations.ts`:
+- `notificationSchema` - Full notification object with relatedItem, actions, fromUser
+- `notificationsResponseSchema` - API response wrapper with unreadCount, total, hasMore
+- `notificationSettingsSchema` - User preferences with quietHours, categoryPreferences
+
 ### State Management
 Zustand stores in `src/lib/store/` — key stores: `useAuthStore` (JWT token + user), `useAppStore` (UI state). No Redux.
 
@@ -153,6 +193,23 @@ Dark industrial theme using CSS variables:
 - `--emerald-*` — success states
 - `--red-*` — errors, danger
 - `--cyan-*` — info states
+
+## Performance Monitoring
+
+Lighthouse CI configured with performance budgets in `lighthouserc.json`:
+
+| Metric | Threshold | Level |
+|--------|-----------|--------|
+| Performance | ≥95% | error |
+| Accessibility | 100% | error |
+| Best Practices | ≥95% | error |
+| SEO | ≥95% | error |
+| FCP | <1200ms | error |
+| LCP | <2000ms | error |
+| TBT | <200ms | warn |
+| CLS | <0.05 | error |
+
+CI runs on `http://localhost:4173` using `npm run preview` server.
 
 ## Frontend Structure
 
@@ -285,6 +342,8 @@ Uses **conventional commits** with scope:
 | `src/lib/eventBus.ts` | Event bus for cross-module communication |
 | `src/lib/agents/` | AI agents (change-order, RFI, safety, etc.) |
 | `src/lib/store/` | Zustand state stores |
+| `src/lib/validateNotification.ts` | Zod runtime validation utilities |
+| `src/lib/validations.ts` | Zod schemas for notifications, settings, API responses |
 | `server/index.js` | Express + WebSocket entry point, all route registrations |
 | `server/routes/generic.js` | Generic CRUD factory + ALLOWED_COLUMNS whitelist |
 | `server/routes/oauth.js` | OAuth 2.0 strategies (Google, Microsoft) with CSRF protection |
@@ -297,3 +356,5 @@ Uses **conventional commits** with scope:
 | `server/migrations/` | Ordered SQL migration files |
 | `docker-compose.yml` | Full stack: postgres, redis, ollama, nginx, prometheus, grafana |
 | `.env.docker` | Docker environment variables (OAuth credentials, secrets) |
+| `lighthouserc.json` | Lighthouse CI performance budgets and audit config |
+| `.github/workflows/lighthouse.yml` | CI workflow for performance monitoring |
