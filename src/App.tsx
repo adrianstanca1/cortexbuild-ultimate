@@ -283,6 +283,14 @@ function AppShell() {
 function ThemedApp() {
   const { isAuthenticated, loading } = useAuth();
   const { resolvedTheme } = useTheme();
+  
+  // Check for OAuth callback route
+  const isOAuthCallback = typeof window !== 'undefined' && 
+    window.location.pathname === '/auth/callback';
+
+  if (isOAuthCallback) {
+    return <OAuthCallback />;
+  }
 
   if (loading) {
     return (

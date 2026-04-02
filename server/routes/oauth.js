@@ -192,8 +192,8 @@ router.get('/google', (req, res, next) => {
   })(req, res, next);
 });
 
-// Google OAuth callback
-router.get('/google/callback', (req, res, next) => {
+// Google OAuth callback (rate limited)
+router.get('/google/callback', oauthLimiter, (req, res, next) => {
   const { state } = req.query;
 
   // Validate state parameter (CSRF protection)
