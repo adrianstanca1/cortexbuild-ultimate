@@ -1,4 +1,5 @@
 const express = require('express');
+const authMiddleware = require('../middleware/auth');
 const pool    = require('../db');
 const { logAudit } = require('./audit-helper');
 const { broadcastDashboardUpdate } = require('../lib/ws-broadcast');
@@ -82,6 +83,7 @@ function makeRouter(tableName, orderCol = 'created_at') {
   }
   const safeOrderCol = VALID_ORDER_COLS.has(orderCol) ? orderCol : 'created_at';
   const router  = express.Router();
+  router.use(authMiddleware);
   const allowed = ALLOWED_COLUMNS[tableName];
 
   function filterKeys(data) {

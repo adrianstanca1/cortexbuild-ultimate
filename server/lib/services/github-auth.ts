@@ -154,39 +154,33 @@ class GitHubAuthService {
     }
 
     const data: GitHubTokenResponse = await response.json();
-    // SECURITY NOTE: In production, use httpOnly cookies instead of localStorage
-    localStorage.setItem(this.tokenKey, data.access_token);
+    // SECURITY: Token is now stored in httpOnly cookie set by server
+    // Do not store tokens in localStorage - vulnerable to XSS
     return data.access_token;
   }
 
   /**
    * Get the stored access token
-   * SECURITY NOTE: localStorage is vulnerable to XSS. Use httpOnly cookies in production.
+   * Note: Token is retrieved from httpOnly cookie via /api/auth/user endpoint
    */
   getAccessToken(): string | null {
-    return localStorage.getItem(this.tokenKey);
+    // Tokens are no longer stored client-side
+    // Authentication state is managed via httpOnly cookies
+    return null;
   }
 
   /**
    * Fetch the authenticated GitHub user's profile
+   * Uses httpOnly cookie for authentication
    */
   async getCurrentUser(): Promise<GitHubUser> {
-    const token = this.getAccessToken();
-    if (!token) {
-      throw new Error('Not authenticated');
-    }
-
-    const response = await fetch('https://api.github.com/user', {
-      headers: {
-        'Authorization': `Bearer ${token}`,
-        'Accept': 'application/vnd.github.v3+json',
-      },
-      signal: AbortSignal.timeout(15000), // 15 second timeout
+    const response = await fetch('/api/auth/github/user', {
+      credentials: 'include', // Include httpOnly cookies
+      signal: AbortSignal.timeout(15000),
     });
 
     if (!response.ok) {
       if (response.status === 401) {
-        localStorage.removeItem(this.tokenKey);
         throw new Error('Token expired or invalid');
       }
       throw new Error('Failed to fetch user data');

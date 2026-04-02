@@ -1,6 +1,9 @@
 const express = require('express');
+const authMiddleware = require('../middleware/auth');
 const router = express.Router();
 const pool = require('../db');
+
+router.use(authMiddleware);
 
 const ALLOWED_TABLES = [
   'projects', 'invoices', 'safety_incidents', 'rfis', 'change_orders',
@@ -41,13 +44,18 @@ router.get('/export/:table', async (req, res) => {
         return res.status(200).send('No data');
       }
       const headers = Object.keys(result.rows[0]);
+      const escapeCsvField = (val) => {
+        if (val === null || val === undefined) return '""';
+        const str = String(val);
+        if (str.includes(',') || str.includes('"') || str.includes('\n') || str.includes('\r')) {
+          return '"' + str.replace(/"/g, '""') + '"';
+        }
+        return str;
+      };
       const csvRows = [
-        headers.join(','),
+        headers.map(h => escapeCsvField(h)).join(','),
         ...result.rows.map(row =>
-          headers.map(h => {
-            const val = row[h] === null ? '' : String(row[h]).replace(/"/g, '""');
-            return `"${val}"`;
-          }).join(',')
+          headers.map(h => escapeCsvField(row[h])).join(',')
         ),
       ];
       res.setHeader('Content-Type', 'text/csv');

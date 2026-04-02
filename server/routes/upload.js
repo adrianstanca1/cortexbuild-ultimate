@@ -1,12 +1,57 @@
 const express = require('express');
 const multer  = require('multer');
 const path    = require('path');
+const fs      = require('fs');
 const pool    = require('../db');
+const authMiddleware = require('../middleware/auth');
+const rateLimiter = require('../middleware/rateLimiter');
+const { validateFileContent } = require('../lib/file-validation');
 
 const router = express.Router();
+router.use(authMiddleware);
+// Stricter rate limit for uploads: 20 requests per minute (uploads are expensive)
+router.use(rateLimiter);
 
 // ─── Multer config ────────────────────────────────────────────────────────────
-const ALLOWED_EXTS = ['.pdf','.doc','.docx','.xls','.xlsx','.png','.jpg','.jpeg','.dwg','.zip'];
+const ALLOWED_EXTS = new Set(['.pdf','.doc','.docx','.xls','.xlsx','.png','.jpg','.jpeg','.dwg','.zip']);
+const ALLOWED_MIME_TYPES = new Set([
+  'application/pdf',
+  'application/msword',
+  'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+  'application/vnd.ms-excel',
+  'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+  'image/png',
+  'image/jpeg',
+  'image/gif',
+  'image/webp',
+  'application/zip',
+  'application/x-zip-compressed',
+  'application/octet-stream' // For .dwg files
+]);
+
+// Magic numbers for file type validation (prevents extension spoofing)
+const MAGIC_NUMBERS = {
+  pdf: '25504446',
+  png: '89504e470d0a1a0a',
+  jpg: 'ffd8ff',
+  jpeg: 'ffd8ff',
+  gif: '47494638',
+  zip: '504b0304',
+  docx: '504b0304',
+  xlsx: '504b0304',
+  dwg: '41433130',
+};
+
+function getFileTypeFromBuffer(buffer) {
+  const hex = buffer.toString('hex').substring(0, 16).toLowerCase();
+  if (hex.startsWith(MAGIC_NUMBERS.pdf)) return 'pdf';
+  if (hex.startsWith(MAGIC_NUMBERS.png)) return 'png';
+  if (hex.startsWith(MAGIC_NUMBERS.jpg)) return 'jpg';
+  if (hex.startsWith(MAGIC_NUMBERS.gif)) return 'gif';
+  if (hex.startsWith(MAGIC_NUMBERS.zip)) return 'zip'; // Also matches docx, xlsx
+  if (hex.startsWith(MAGIC_NUMBERS.dwg)) return 'dwg';
+  return null;
+}
 
 const storage = multer.diskStorage({
   destination: (_req, _file, cb) => cb(null, path.join(__dirname, '../uploads')),
@@ -16,10 +61,49 @@ const storage = multer.diskStorage({
   },
 });
 
-const fileFilter = (_req, file, cb) => {
+const fileFilter = (req, file, cb) => {
   const ext = path.extname(file.originalname).toLowerCase();
-  if (ALLOWED_EXTS.includes(ext)) cb(null, true);
-  else cb(new Error(`File type not allowed: ${ext}`), false);
+
+  // First check extension
+  if (!ALLOWED_EXTS.has(ext)) {
+    return cb(new Error(`File extension not allowed: ${ext}`), false);
+  }
+
+  // Validate MIME type
+  if (file.mimetype && !ALLOWED_MIME_TYPES.has(file.mimetype)) {
+    // Allow some flexibility for Office documents and CAD files
+    const isOfficeFile = ext.match(/\.(docx|xlsx)$/);
+    const isCADFile = ext === '.dwg';
+    const isZipVariant = file.mimetype.includes('zip') || file.mimetype === 'application/octet-stream';
+
+    if (!(isOfficeFile || isCADFile || isZipVariant)) {
+      return cb(new Error(`MIME type not allowed: ${file.mimetype}`), false);
+    }
+  }
+
+  cb(null, true);
+};
+
+// Async wrapper for magic number validation (called after multer buffers the file)
+const validateAfterUpload = async (req, res, next) => {
+  if (!req.file) return next();
+
+  try {
+    const fileBuffer = await fs.promises.readFile(req.file.path);
+    const ext = path.extname(req.file.originalname).toLowerCase();
+    const validation = validateFileContent(fileBuffer, ext);
+
+    if (!validation.valid) {
+      // Delete the uploaded file
+      await fs.promises.unlink(req.file.path);
+      return res.status(400).json({ message: validation.message });
+    }
+
+    next();
+  } catch (err) {
+    console.error('[upload.js validateAfterUpload]', err);
+    next(err);
+  }
 };
 
 const upload = multer({
@@ -36,7 +120,7 @@ function formatSize(bytes) {
 }
 
 // ─── POST /api/upload ─────────────────────────────────────────────────────────
-router.post('/', upload.single('file'), async (req, res) => {
+router.post('/', upload.single('file'), validateAfterUpload, async (req, res) => {
   try {
     if (!req.file) return res.status(400).json({ message: 'No file provided' });
 

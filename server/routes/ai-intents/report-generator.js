@@ -1,6 +1,22 @@
 const pool = require('../../db');
 
 /**
+ * HTML escape helper to prevent XSS
+ * @param {string} str - String to escape
+ * @returns {string} Escaped string
+ */
+function escapeHtml(str) {
+  if (typeof str !== 'string') return str;
+  return str
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#x27;')
+    .replace(/\//g, '&#x2F;');
+}
+
+/**
  * Format currency for display.
  * @param {number} n - Value to format
  * @returns {string} Formatted currency string
@@ -55,7 +71,7 @@ async function handleGenerateReport(message) {
     htmlSections.push(`<h2>📋 Projects Overview</h2>
 <p><strong>Total Projects:</strong> ${projects.length} | <strong>Active:</strong> ${active.length} | <strong>Budget:</strong> ${fmt(totalBudget)} | <strong>Spent:</strong> ${fmt(totalSpent)} (${pct(totalSpent, totalBudget)}%)</p>
 <table><thead><tr><th>Project</th><th>Client</th><th>Status</th><th>Progress</th><th>Budget</th><th>Spent</th></tr></thead><tbody>
-${projects.slice(0, 10).map(p => `<tr><td>${p.name}</td><td>${p.client || 'N/A'}</td><td>${p.status}</td><td>${p.progress ?? 0}%</td><td>${fmt(p.budget)}</td><td>${fmt(p.spent)}</td></tr>`).join('')}
+${projects.slice(0, 10).map(p => `<tr><td>${escapeHtml(p.name)}</td><td>${escapeHtml(p.client) || 'N/A'}</td><td>${escapeHtml(p.status)}</td><td>${p.progress ?? 0}%</td><td>${fmt(p.budget)}</td><td>${fmt(p.spent)}</td></tr>`).join('')}
 </tbody></table>`);
 
     sections.push({
@@ -79,7 +95,7 @@ ${projects.slice(0, 10).map(p => `<tr><td>${p.name}</td><td>${p.client || 'N/A'}
     htmlSections.push(`<h2>🛡️ Safety Incidents</h2>
 <p><strong>Total:</strong> ${incidents.length} | <strong>Open:</strong> ${open.length} | <strong>High/Critical:</strong> ${high.length}</p>
 ${open.length ? `<table><thead><tr><th>Title</th><th>Project</th><th>Severity</th><th>Status</th><th>Date</th></tr></thead><tbody>
-${open.slice(0, 8).map(i => `<tr><td>${i.title}</td><td>${i.project}</td><td>${i.severity}</td><td>${i.status}</td><td>${i.date ? new Date(i.date).toLocaleDateString('en-GB') : 'N/A'}</td></tr>`).join('')}
+${open.slice(0, 8).map(i => `<tr><td>${escapeHtml(i.title)}</td><td>${escapeHtml(i.project)}</td><td>${escapeHtml(i.severity)}</td><td>${escapeHtml(i.status)}</td><td>${i.date ? new Date(i.date).toLocaleDateString('en-GB') : 'N/A'}</td></tr>`).join('')}
 </tbody></table>` : '<p>No open incidents — great news!</p>'}`);
 
     sections.push({
@@ -104,7 +120,7 @@ ${open.slice(0, 8).map(i => `<tr><td>${i.title}</td><td>${i.project}</td><td>${i
     htmlSections.push(`<h2>💰 Financial Summary</h2>
 <p><strong>Total Invoiced:</strong> ${fmt(totalAmt)} | <strong>Paid:</strong> ${paid.length} | <strong>Pending:</strong> ${pending.length} | <strong>Overdue:</strong> ${overdue.length} (${fmt(overdueAmt)})</p>
 ${overdue.length ? `<table><thead><tr><th>Invoice</th><th>Client</th><th>Project</th><th>Amount</th><th>Due Date</th></tr></thead><tbody>
-${overdue.slice(0, 8).map(i => `<tr><td>${i.number}</td><td>${i.client}</td><td>${i.project}</td><td>${fmt(i.amount)}</td><td>${i.due_date ? new Date(i.due_date).toLocaleDateString('en-GB') : 'N/A'}</td></tr>`).join('')}
+${overdue.slice(0, 8).map(i => `<tr><td>${escapeHtml(i.number)}</td><td>${escapeHtml(i.client)}</td><td>${escapeHtml(i.project)}</td><td>${fmt(i.amount)}</td><td>${i.due_date ? new Date(i.due_date).toLocaleDateString('en-GB') : 'N/A'}</td></tr>`).join('')}
 </tbody></table>` : '<p>No overdue invoices!</p>'}`);
 
     sections.push({
@@ -130,7 +146,7 @@ ${overdue.slice(0, 8).map(i => `<tr><td>${i.number}</td><td>${i.client}</td><td>
     htmlSections.push(`<h2>📅 Daily Reports (Last 7 Days)</h2>
 <p><strong>Average Workers on Site:</strong> ${avgWorkers}</p>
 <table><thead><tr><th>Project</th><th>Date</th><th>Weather</th><th>Workers</th><th>Progress</th><th>Prepared By</th></tr></thead><tbody>
-${dailyReports.map(d => `<tr><td>${d.project}</td><td>${d.date ? new Date(d.date).toLocaleDateString('en-GB') : 'N/A'}</td><td>${d.weather || 'N/A'}</td><td>${d.workers_on_site || 0}</td><td>${d.progress || 0}%</td><td>${d.prepared_by}</td></tr>`).join('')}
+${dailyReports.map(d => `<tr><td>${escapeHtml(d.project)}</td><td>${d.date ? new Date(d.date).toLocaleDateString('en-GB') : 'N/A'}</td><td>${escapeHtml(d.weather) || 'N/A'}</td><td>${d.workers_on_site || 0}</td><td>${d.progress || 0}%</td><td>${escapeHtml(d.prepared_by)}</td></tr>`).join('')}
 </tbody></table>`);
   }
 
@@ -148,7 +164,7 @@ ${dailyReports.map(d => `<tr><td>${d.project}</td><td>${d.date ? new Date(d.date
   .footer { margin-top: 40px; font-size: 11px; color: #888; border-top: 1px solid #e5e7eb; padding-top: 10px; }
 </style></head>
 <body>
-<h1>${title}</h1>
+<h1>${escapeHtml(title)}</h1>
 <p><strong>Generated:</strong> ${now.toLocaleString('en-GB')} | <strong>Report Type:</strong> ${reportType.toUpperCase()}</p>
 ${htmlSections.join('\n')}
 <div class="footer">CortexBuild Ultimate — Construction Management Platform — Confidential</div>

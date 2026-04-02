@@ -139,9 +139,20 @@ router.post('/users', authMiddleware, async (req, res) => {
     return res.status(400).json({ message: 'Email, first name, and last name are required' });
   }
 
-  const VALID_ROLES = ['super_admin', 'company_owner', 'admin', 'project_manager', 'field_worker', 'viewer'];
-  if (role && !VALID_ROLES.includes(role)) {
-    return res.status(400).json({ message: `Invalid role. Must be one of: ${VALID_ROLES.join(', ')}` });
+  // SECURITY: Restrict creatable roles based on creator's role to prevent privilege escalation
+  const CREATABLE_ROLES = {
+    super_admin: [], // Cannot create other super_admins via this endpoint
+    company_owner: ['admin', 'project_manager', 'field_worker', 'viewer'],
+    admin: ['project_manager', 'field_worker', 'viewer']
+  };
+  
+  const allowedRoles = CREATABLE_ROLES[req.user.role] || ['field_worker', 'viewer'];
+  const targetRole = role || 'field_worker';
+  
+  if (!allowedRoles.includes(targetRole)) {
+    return res.status(403).json({ 
+      message: `Cannot create user with role '${targetRole}'. Your role allows creating: ${allowedRoles.join(', ')}` 
+    });
   }
 
   try {
@@ -153,13 +164,13 @@ router.post('/users', authMiddleware, async (req, res) => {
 
     // Hash password or generate random one
     const bcrypt = require('bcrypt');
-    const passwordHash = password 
+    const passwordHash = password
       ? await bcrypt.hash(password, 10)
       : await bcrypt.hash(Math.random().toString(36).slice(-8), 10);
 
     const { rows } = await pool.query(
       `INSERT INTO users (
-        email, first_name, last_name, role, phone, job_title, 
+        email, first_name, last_name, role, phone, job_title,
         password_hash, company_id, organization_id, is_active
        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, true)
        RETURNING id, email, first_name, last_name, role, phone, job_title, is_active, created_at`,
@@ -167,7 +178,7 @@ router.post('/users', authMiddleware, async (req, res) => {
         email.toLowerCase().trim(),
         firstName.trim(),
         lastName.trim(),
-        role || 'field_worker',
+        targetRole,
         phone || null,
         jobTitle || null,
         passwordHash,

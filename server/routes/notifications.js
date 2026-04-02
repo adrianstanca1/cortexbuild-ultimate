@@ -4,9 +4,11 @@
  */
 const express = require('express');
 const pool = require('../db');
+const authMiddleware = require('../middleware/auth');
 const { createNotification, createAlert } = require('../lib/websocket');
 
 const router = express.Router();
+router.use(authMiddleware);
 
 // Get notifications for user
 router.get('/', async (req, res) => {

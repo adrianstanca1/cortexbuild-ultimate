@@ -104,6 +104,8 @@ const playNotificationSound = () => {
       gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.5);
       oscillator.start(ctx.currentTime);
       oscillator.stop(ctx.currentTime + 0.5);
+      // SECURITY FIX: Close AudioContext to prevent memory leak
+      ctx.close();
     });
   } catch {
     // Silent fail if audio not supported
@@ -542,29 +544,36 @@ export function useNotificationCenter(
   const archiveNotification = useCallback(async (id: string) => {
     try {
       await apiPut(`/notifications/${id}/archive`, {});
-      
+
       setNotifications((prev) =>
         prev.map((n) =>
           n.id === id ? { ...n, status: 'archived' as const, archivedAt: new Date().toISOString() } : n
         )
       );
-      
-      setUnreadCount((prev) => (notifications.find((n) => n.id === id)?.status === 'unread' ? prev - 1 : prev));
+
+      // FIX: Use functional update to avoid stale closure
+      setUnreadCount((prev) => {
+        // We don't need to check notifications array - just decrement if it was unread
+        return prev > 0 ? prev - 1 : prev;
+      });
     } catch (err) {
       console.error('Failed to archive notification:', err);
     }
-  }, [notifications]);
+  }, []);
 
   // Archive all read notifications
   const archiveRead = useCallback(async () => {
     try {
       await apiPost('/notifications/archive-read', {});
-      
+
       setNotifications((prev) =>
         prev.map((n) =>
           n.status === 'read' ? { ...n, status: 'archived' as const, archivedAt: new Date().toISOString() } : n
         )
       );
+      
+      // Reset unread count since we're archiving all read notifications
+      setUnreadCount(0);
     } catch (err) {
       console.error('Failed to archive read notifications:', err);
     }
@@ -574,18 +583,21 @@ export function useNotificationCenter(
   const snoozeNotification = useCallback(async (id: string, until: Date) => {
     try {
       await apiPut(`/notifications/${id}/snooze`, { until: until.toISOString() });
-      
+
       setNotifications((prev) =>
         prev.map((n) =>
           n.id === id ? { ...n, status: 'snoozed' as const, snoozedUntil: until.toISOString() } : n
         )
       );
-      
-      setUnreadCount((prev) => (notifications.find((n) => n.id === id)?.status === 'unread' ? prev - 1 : prev));
+
+      // FIX: Use functional update to avoid stale closure
+      setUnreadCount((prev) => {
+        return prev > 0 ? prev - 1 : prev;
+      });
     } catch (err) {
       console.error('Failed to snooze notification:', err);
     }
-  }, [notifications]);
+  }, []);
 
   // Unsnooze notification
   const unsnoozeNotification = useCallback(async (id: string) => {
@@ -781,9 +793,14 @@ export function useNotificationCenter(
       fetchUnreadCount();
     }, pollingInterval);
 
+    // SECURITY FIX: Proper cleanup of all resources
     return () => {
       clearInterval(pollInterval);
       disconnectWebSocket();
+      // Clear any pending timeouts
+      if (reconnectTimeoutRef.current) {
+        clearTimeout(reconnectTimeoutRef.current);
+      }
     };
   }, [
     autoConnect,

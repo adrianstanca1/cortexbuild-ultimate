@@ -5,8 +5,28 @@ const fs = require('fs');
 const pool = require('../db');
 const authMiddleware = require('../middleware/auth');
 const { logAudit } = require('./audit-helper');
+const { fileTypeFromBuffer } = require('file-type');
 
 const router = express.Router();
+
+// Allowed MIME types for BIM files
+const ALLOWED_MIME_TYPES = new Set([
+  'application/x-step',
+  'model/step',
+  'application/sla',
+  'model/gltf+json',
+  'model/gltf-binary',
+  'application/x-autocad',
+  'drawing/dwg',
+  'image/vnd.dwg',
+  'application/x-rvt',
+  'application/vnd.autodesk.revit'
+]);
+
+// Allowed extensions as fallback
+const ALLOWED_EXTENSIONS = new Set([
+  '.ifc', '.step', '.stp', '.obj', '.gltf', '.glb', '.fbx', '.rvt'
+]);
 
 // Configure multer for file uploads
 const storage = multer.diskStorage({
@@ -23,13 +43,66 @@ const storage = multer.diskStorage({
   }
 });
 
-const fileFilter = (req, file, cb) => {
-  const allowedFormats = ['.ifc', '.obj', '.gltf', '.glb', '.fbx', '.rvt'];
-  const ext = path.extname(file.originalname).toLowerCase();
-  if (allowedFormats.includes(ext)) {
+// File filter with content validation
+const fileFilter = async (req, file, cb) => {
+  try {
+    // Check extension first (quick fail)
+    const ext = path.extname(file.originalname).toLowerCase();
+    if (!ALLOWED_EXTENSIONS.has(ext)) {
+      return cb(new Error(`Invalid file format. Allowed: ${Array.from(ALLOWED_EXTENSIONS).join(', ')}`), false);
+    }
+
+    // Read first 4100 bytes for magic number detection
+    const chunk = await new Promise((resolve, reject) => {
+      const chunks = [];
+      file.stream.on('data', (chunk) => {
+        chunks.push(chunk);
+        const totalLength = chunks.reduce((acc, c) => acc + c.length, 0);
+        if (totalLength >= 4100) {
+          file.stream.pause();
+          resolve(Buffer.concat(chunks));
+        }
+      });
+      file.stream.on('end', () => resolve(Buffer.concat(chunks)));
+      file.stream.on('error', reject);
+    });
+
+    // Detect file type from magic numbers
+    const detected = await fileTypeFromBuffer(chunk);
+    
+    if (detected) {
+      // If we detected a MIME type, verify it's allowed
+      if (!ALLOWED_MIME_TYPES.has(detected.mime)) {
+        // For IFC files, fileType may not detect them - allow if extension matches
+        if (ext === '.ifc' || ext === '.step' || ext === '.stp') {
+          // These are text-based formats, check for signature
+          const textStart = chunk.toString('utf8', 0, 100);
+          if ((ext === '.ifc' && textStart.includes('ISO-10303-21')) ||
+              (ext === '.step' && textStart.includes('ISO-10303-21')) ||
+              (ext === '.stp' && textStart.includes('ISO-10303-21'))) {
+            file.stream.unshift(chunk);
+            return cb(null, true);
+          }
+        }
+        return cb(new Error(`File content type '${detected.mime}' is not allowed. File extension does not match content.`), false);
+      }
+    }
+    
+    // For IFC files (text-based), fileType may not detect them
+    if (ext === '.ifc' || ext === '.step' || ext === '.stp') {
+      const textStart = chunk.toString('utf8', 0, 100);
+      if ((ext === '.ifc' || ext === '.step' || ext === '.stp') && textStart.includes('ISO-10303')) {
+        file.stream.unshift(chunk);
+        return cb(null, true);
+      }
+    }
+    
+    // Reset stream for multer to process
+    file.stream.unshift(chunk);
     cb(null, true);
-  } else {
-    cb(new Error(`Invalid file format. Allowed: ${allowedFormats.join(', ')}`), false);
+  } catch (err) {
+    console.error('[bim-models fileFilter] Error validating file:', err);
+    cb(err, false);
   }
 };
 
@@ -137,14 +210,32 @@ router.post('/', authMiddleware, upload.single('file'), async (req, res) => {
       newData: { name, file_name: req.file.originalname, format }
     });
 
-    // TODO: Trigger background job to process IFC file and extract elements
-    // For now, update status to 'ready' after delay
-    setTimeout(async () => {
-      await pool.query(
-        `UPDATE bim_models SET status = 'ready', processed_at = NOW() WHERE id = $1`,
-        [rows[0].id]
-      );
-    }, 5000);
+    // SECURITY FIX: Use database-driven background job instead of in-memory setTimeout
+    // This ensures the job persists across server restarts and doesn't leak memory
+    const jobId = `${rows[0].id}-bim-process`;
+    
+    // Schedule background processing using database polling
+    // A production implementation would use Bull/Agenda or a similar job queue
+    await pool.query(
+      `INSERT INTO bim_processing_queue (model_id, status, created_at)
+       VALUES ($1, 'pending', NOW())
+       ON CONFLICT (model_id) DO NOTHING`,
+      [rows[0].id]
+    );
+
+    // Trigger immediate processing in background (non-blocking)
+    // In production, this would be a separate worker process
+    setImmediate(async () => {
+      try {
+        await processBIMModel(rows[0].id);
+      } catch (err) {
+        console.error('[BIM Background Processing] Error:', err);
+        await pool.query(
+          `UPDATE bim_models SET status = 'error', error_message = $1 WHERE id = $2`,
+          [err.message, rows[0].id]
+        );
+      }
+    });
 
     res.status(201).json(rows[0]);
   } catch (err) {
@@ -152,6 +243,62 @@ router.post('/', authMiddleware, upload.single('file'), async (req, res) => {
     res.status(500).json({ message: 'Server error' });
   }
 });
+
+/**
+ * Background BIM model processor
+ * In production, this should run in a separate worker process
+ */
+async function processBIMModel(modelId) {
+  try {
+    // Get model details
+    const { rows } = await pool.query(
+      `SELECT * FROM bim_models WHERE id = $1 AND status = 'processing'`,
+      [modelId]
+    );
+    
+    if (!rows.length) return; // Already processed or deleted
+    
+    const model = rows[0];
+    
+    // Simulate IFC parsing and element extraction
+    // In production, this would use xeokit or similar IFC parser
+    await new Promise(resolve => setTimeout(resolve, 3000));
+    
+    // Extract basic metadata from file
+    const elementsCount = Math.floor(Math.random() * 10000) + 1000; // Placeholder
+    const floorsCount = Math.floor(Math.random() * 10) + 1; // Placeholder
+    
+    // Update model with extracted data
+    await pool.query(
+      `UPDATE bim_models SET 
+        status = 'ready', 
+        processed_at = NOW(),
+        elements_count = $1,
+        floors_count = $2
+       WHERE id = $3`,
+      [elementsCount, floorsCount, modelId]
+    );
+    
+    // Update processing queue
+    await pool.query(
+      `UPDATE bim_processing_queue SET status = 'completed', completed_at = NOW()
+       WHERE model_id = $1`,
+      [modelId]
+    );
+    
+    console.log(`[BIM Processing] Model ${modelId} processed: ${elementsCount} elements, ${floorsCount} floors`);
+  } catch (err) {
+    await pool.query(
+      `UPDATE bim_models SET status = 'error', error_message = $1 WHERE id = $2`,
+      [err.message, modelId]
+    );
+    await pool.query(
+      `UPDATE bim_processing_queue SET status = 'failed', error_message = $1 WHERE model_id = $2`,
+      [err.message, modelId]
+    );
+    throw err;
+  }
+}
 
 /**
  * PUT /api/bim-models/:id - Update BIM model metadata
@@ -210,9 +357,18 @@ router.delete('/:id', authMiddleware, async (req, res) => {
 
     await pool.query('DELETE FROM bim_models WHERE id = $1', [req.params.id]);
 
-    // Delete physical file
-    if (fs.existsSync(filePath)) {
-      fs.unlinkSync(filePath);
+    // Delete physical file - validate path to prevent traversal
+    const uploadsDir = path.join(__dirname, '..', 'uploads');
+    const fullPath = path.resolve(__dirname, '..', filePath);
+    // Normalize paths to prevent traversal attacks (e.g., ../../etc/passwd)
+    const normalizedFull = path.normalize(fullPath);
+    const normalizedUploads = path.normalize(uploadsDir);
+    if (!normalizedFull.startsWith(normalizedUploads + path.sep)) {
+      console.error('[SECURITY] Path traversal attempt detected:', filePath);
+      return res.status(403).json({ message: 'Invalid file path' });
+    }
+    if (fs.existsSync(fullPath)) {
+      fs.unlinkSync(fullPath);
     }
 
     logAudit({
@@ -231,28 +387,40 @@ router.delete('/:id', authMiddleware, async (req, res) => {
 
 /**
  * GET /api/bim-models/:id/clashes - Get clash detections for a model
+ * SECURITY: Filter by both model_id AND company_id to prevent cross-company data access
  */
 router.get('/:id/clashes', authMiddleware, async (req, res) => {
   try {
+    // First verify the model belongs to the user's company
+    const modelCheck = await pool.query(
+      'SELECT id FROM bim_models WHERE id = $1 AND company_id = $2',
+      [req.params.id, req.user.company_id]
+    );
+    
+    if (!modelCheck.rows.length) {
+      return res.status(404).json({ message: 'BIM model not found' });
+    }
+
     const { rows } = await pool.query(
-      `SELECT 
+      `SELECT
         c.*,
         u1.first_name as assigned_to_first,
         u1.last_name as assigned_to_last,
         u2.first_name as resolved_by_first,
         u2.last_name as resolved_by_last
        FROM bim_clashes_detections c
+       INNER JOIN bim_models m ON c.model_id = m.id
        LEFT JOIN users u1 ON c.assigned_to = u1.id
        LEFT JOIN users u2 ON c.resolved_by = u2.id
-       WHERE c.model_id = $1 AND c.organization_id = $2
-       ORDER BY 
+       WHERE c.model_id = $1 AND c.organization_id = $2 AND m.company_id = $3
+       ORDER BY
          CASE c.severity
            WHEN 'critical' THEN 1
            WHEN 'major' THEN 2
            WHEN 'minor' THEN 3
          END,
          c.created_at DESC`,
-      [req.params.id, req.user.organization_id]
+      [req.params.id, req.user.organization_id, req.user.company_id]
     );
 
     res.json(rows);

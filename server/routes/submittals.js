@@ -5,8 +5,35 @@ const fs = require('fs');
 const pool = require('../db');
 const authMiddleware = require('../middleware/auth');
 const { logAudit } = require('./audit-helper');
+const { fileTypeFromBuffer } = require('file-type');
 
 const router = express.Router();
+
+// Allowed MIME types for submittals
+const ALLOWED_MIME_TYPES = new Set([
+  'application/pdf',
+  'image/png',
+  'image/jpeg',
+  'image/gif',
+  'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+  'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+  'application/msword',
+  'application/vnd.ms-excel',
+  'application/acad',
+  'application/x-autocad',
+  'drawing/dwg',
+  'image/vnd.dwg',
+  'application/x-gltf-binary',
+  'model/gltf-binary',
+  'text/plain'
+]);
+
+// Allowed extensions as fallback
+const ALLOWED_EXTENSIONS = new Set([
+  '.pdf', '.png', '.jpg', '.jpeg', '.gif',
+  '.xlsx', '.docx', '.doc', '.xls',
+  '.dwg', '.dxf', '.glb', '.gltf', '.txt', '.csv'
+]);
 
 // Configure multer for file uploads
 const storage = multer.diskStorage({
@@ -23,8 +50,52 @@ const storage = multer.diskStorage({
   }
 });
 
+// File filter with content validation
+const fileFilter = async (req, file, cb) => {
+  try {
+    // Check extension first (quick fail)
+    const ext = path.extname(file.originalname).toLowerCase();
+    if (!ALLOWED_EXTENSIONS.has(ext)) {
+      return cb(new Error(`Invalid file type. Allowed: ${Array.from(ALLOWED_EXTENSIONS).join(', ')}`), false);
+    }
+
+    // Read first 4100 bytes for magic number detection
+    const chunk = await new Promise((resolve, reject) => {
+      const chunks = [];
+      file.stream.on('data', (chunk) => {
+        chunks.push(chunk);
+        const totalLength = chunks.reduce((acc, c) => acc + c.length, 0);
+        if (totalLength >= 4100) {
+          file.stream.pause();
+          resolve(Buffer.concat(chunks));
+        }
+      });
+      file.stream.on('end', () => resolve(Buffer.concat(chunks)));
+      file.stream.on('error', reject);
+    });
+
+    // Detect file type from magic numbers
+    const detected = await fileTypeFromBuffer(chunk);
+    
+    if (detected) {
+      // If we detected a MIME type, verify it's allowed
+      if (!ALLOWED_MIME_TYPES.has(detected.mime)) {
+        return cb(new Error(`File content type '${detected.mime}' is not allowed. File extension does not match content.`), false);
+      }
+    }
+    
+    // Reset stream for multer to process
+    file.stream.unshift(chunk);
+    cb(null, true);
+  } catch (err) {
+    console.error('[submittals fileFilter] Error validating file:', err);
+    cb(err, false);
+  }
+};
+
 const upload = multer({
   storage,
+  fileFilter,
   limits: {
     fileSize: 50 * 1024 * 1024 // 50MB limit
   }
@@ -141,8 +212,12 @@ router.post('/', authMiddleware, upload.array('files'), async (req, res) => {
     return res.status(400).json({ message: 'Submittal number, title, and type are required' });
   }
 
+  const client = await pool.connect();
+  
   try {
-    const { rows } = await pool.query(
+    await client.query('BEGIN');
+
+    const { rows } = await client.query(
       `INSERT INTO submittals (
         organization_id, company_id, project_id,
         submittal_number, title, description, type, trade,
@@ -170,7 +245,7 @@ router.post('/', authMiddleware, upload.array('files'), async (req, res) => {
     // Upload files if any
     if (req.files && req.files.length > 0) {
       for (const file of req.files) {
-        await pool.query(
+        await client.query(
           `INSERT INTO submittal_attachments (submittal_id, file_name, file_path, file_size, file_type, uploaded_by)
            VALUES ($1, $2, $3, $4, $5, $6)`,
           [
@@ -185,6 +260,8 @@ router.post('/', authMiddleware, upload.array('files'), async (req, res) => {
       }
     }
 
+    await client.query('COMMIT');
+
     logAudit({
       auth: req.user,
       action: 'create',
@@ -195,11 +272,14 @@ router.post('/', authMiddleware, upload.array('files'), async (req, res) => {
 
     res.status(201).json(rows[0]);
   } catch (err) {
+    await client.query('ROLLBACK');
     console.error('[submittals POST]', err);
     if (err.code === '23505') {
       return res.status(409).json({ message: 'Submittal number already exists' });
     }
     res.status(500).json({ message: 'Server error' });
+  } finally {
+    client.release();
   }
 });
 
@@ -300,7 +380,24 @@ router.put('/:id', authMiddleware, async (req, res) => {
  */
 router.delete('/:id', authMiddleware, async (req, res) => {
   try {
+    // Get attachments first to delete files
+    const attachments = await pool.query(
+      'SELECT file_path FROM submittal_attachments WHERE submittal_id = $1',
+      [req.params.id]
+    );
+
     await pool.query('DELETE FROM submittals WHERE id = $1 AND company_id = $2', [req.params.id, req.user.company_id]);
+
+    // Delete physical files
+    for (const attachment of attachments.rows) {
+      try {
+        if (fs.existsSync(attachment.file_path)) {
+          fs.unlinkSync(attachment.file_path);
+        }
+      } catch (err) {
+        console.error('[submittals DELETE] Failed to delete file:', attachment.file_path, err);
+      }
+    }
 
     logAudit({
       auth: req.user,

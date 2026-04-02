@@ -8,9 +8,14 @@ interface OAuthButtonProps {
 
 export function OAuthButton({ provider, onClick, className = '' }: OAuthButtonProps) {
   const baseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001';
-  
+
   const handleOAuthClick = () => {
-    window.location.href = `${baseUrl}/api/auth/${provider}`;
+    // SECURITY: Generate and store state parameter for CSRF protection
+    const state = crypto.randomUUID();
+    sessionStorage.setItem('oauth_state', state);
+    
+    // Redirect to OAuth provider with state parameter
+    window.location.href = `${baseUrl}/api/auth/${provider}?state=${state}`;
     onClick?.();
   };
 

@@ -22,7 +22,7 @@ const SUPER_ADMIN_ROLES = new Set(['super_admin', 'company_owner']);
 function tenantFilter(req) {
   if (!req.user) return '';
   if (SUPER_ADMIN_ROLES.has(req.user.role)) return '';
-  if (req.user.organization_id) return `organization_id = '${req.user.organization_id}'`;
+  if (req.user.organization_id) return `organization_id = '${req.user.organization_id.replace(/'/g, "''")}'`;
   return '';
 }
 
@@ -74,25 +74,22 @@ async function retrieveContext(question, tables, orgFilter) {
   const context = [];
 
   for (const table of tables) {
-    const orgParam  = orgFilter ? `AND ${orgFilter}` : '';
-    const paramBase = orgFilter ? 3 : 2;
+    const orgClause = orgFilter ? `AND ${orgFilter}` : '';
 
     const { rows } = await pool.query(
       `SELECT row_id, (embedding <=> $1) AS similarity
        FROM rag_embeddings
-       WHERE table_name = $2 ${orgParam}
+       WHERE table_name = $2 ${orgClause}
        ORDER BY embedding <=> $1
        LIMIT 5`,
-      orgFilter
-        ? [JSON.stringify(embedding), table]
-        : [JSON.stringify(embedding), table]
+      [JSON.stringify(embedding), table]
     ).catch(() => ({ rows: [] }));
 
     for (const r of rows.slice(0, 3)) {
       const similarity = 1 - parseFloat(r.similarity);
       if (similarity < 0.5) continue;
       const { rows: dataRows } = await pool.query(
-        `SELECT * FROM ${table} WHERE id = $1 ${orgParam} LIMIT 1`,
+        `SELECT * FROM ${table} WHERE id = $1 ${orgFilter} LIMIT 1`,
         [r.row_id]
       ).catch(() => ({ rows: [] }));
       if (dataRows[0]) context.push({ table, row_id: r.row_id, data: dataRows[0] });
@@ -109,10 +106,10 @@ router.post('/', async (req, res) => {
       return res.status(400).json({ message: 'question is required (min 2 chars)' });
     }
 
-    const orgFilter = tenantFilter(req);
+    const orgFilterObj = tenantFilter(req);
 
     const contextItems = tables.length
-      ? await retrieveContext(question, tables, orgFilter)
+      ? await retrieveContext(question, tables, orgFilterObj)
       : [];
 
     const systemPrompt = `You are a helpful construction management AI assistant. Answer questions using ONLY the provided context data. If the context doesn't contain enough information to answer, say so clearly. Be specific and reference actual values from the data.`;

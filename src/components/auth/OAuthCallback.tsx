@@ -11,6 +11,20 @@ export function OAuthCallback() {
   useEffect(() => {
     const token = searchParams.get('token');
     const errorParam = searchParams.get('error');
+    const stateParam = searchParams.get('state');
+
+    // SECURITY: Validate OAuth state parameter to prevent CSRF attacks
+    if (stateParam) {
+      const storedState = sessionStorage.getItem('oauth_state');
+      if (!storedState || storedState !== stateParam) {
+        setStatus('error');
+        setError('Invalid OAuth state. Please try again.');
+        console.error('[OAuth] State mismatch - possible CSRF attack');
+        return;
+      }
+      // Clear stored state after validation
+      sessionStorage.removeItem('oauth_state');
+    }
 
     if (errorParam) {
       setStatus('error');
@@ -25,15 +39,17 @@ export function OAuthCallback() {
     }
 
     try {
-      localStorage.setItem('auth_token', token);
-      
+      // SECURITY: Token is now stored in httpOnly cookie by server
+      // Do not store tokens in localStorage - vulnerable to XSS
+      // localStorage.setItem('auth_token', token); // REMOVED
+
       const tokenParts = token.split('.');
       if (tokenParts.length !== 3) {
         throw new Error('Invalid token format');
       }
 
       setStatus('success');
-      
+
       setTimeout(() => {
         navigate('/dashboard', { replace: true });
       }, 1500);

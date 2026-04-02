@@ -3,13 +3,35 @@ const multer  = require('multer');
 const path    = require('path');
 const fs      = require('fs');
 const pool    = require('../db');
+const authMiddleware = require('../middleware/auth');
 
 const router = express.Router();
+router.use(authMiddleware);
 
 const GALLERY_DIR = path.join(__dirname, '../uploads/gallery');
 if (!fs.existsSync(GALLERY_DIR)) fs.mkdirSync(GALLERY_DIR, { recursive: true });
 
-const ALLOWED_EXTS = ['.png','.jpg','.jpeg','.gif','.webp'];
+const ALLOWED_EXTS = new Set(['.png','.jpg','.jpeg','.gif','.webp']);
+const ALLOWED_MIME_TYPES = new Set(['image/png', 'image/jpeg', 'image/gif', 'image/webp']);
+
+// Magic numbers for image file validation (prevents extension spoofing)
+const MAGIC_NUMBERS = {
+  png: '89504e470d0a1a0a',
+  jpg: 'ffd8ff',
+  jpeg: 'ffd8ff',
+  gif: '47494638',
+  webp: '52494646', // RIFF header, need to check WEBP at offset 8
+};
+
+function getImageTypeFromBuffer(buffer) {
+  const hex = buffer.toString('hex').substring(0, 16).toLowerCase();
+  if (hex.startsWith(MAGIC_NUMBERS.png)) return 'png';
+  if (hex.startsWith(MAGIC_NUMBERS.jpg)) return 'jpg';
+  if (hex.startsWith(MAGIC_NUMBERS.gif)) return 'gif';
+  // WebP: RIFF....WEBP
+  if (hex.startsWith(MAGIC_NUMBERS.webp) && hex.substring(16, 24) === '57454250') return 'webp';
+  return null;
+}
 
 const storage = multer.diskStorage({
   destination: (_req, _file, cb) => cb(null, GALLERY_DIR),
@@ -20,10 +42,20 @@ const storage = multer.diskStorage({
   },
 });
 
-const fileFilter = (_req, file, cb) => {
+const fileFilter = (req, file, cb) => {
   const ext = path.extname(file.originalname).toLowerCase();
-  if (ALLOWED_EXTS.includes(ext)) cb(null, true);
-  else cb(new Error(`File type not allowed: ${ext}`), false);
+
+  // First check extension
+  if (!ALLOWED_EXTS.has(ext)) {
+    return cb(new Error(`File extension not allowed: ${ext}`), false);
+  }
+
+  // Validate MIME type
+  if (file.mimetype && !ALLOWED_MIME_TYPES.has(file.mimetype)) {
+    return cb(new Error(`MIME type not allowed: ${file.mimetype}`), false);
+  }
+
+  cb(null, true);
 };
 
 const upload = multer({ storage, fileFilter, limits: { fileSize: 50 * 1024 * 1024 } });
@@ -135,7 +167,15 @@ router.delete('/:id', async (req, res) => {
     await pool.query('DELETE FROM project_images WHERE id = $1', [id]);
 
     if (filePath) {
-      const fullPath = path.join(__dirname, '..', filePath);
+      const fullPath = path.resolve(__dirname, '..', filePath);
+      const uploadsDir = path.join(__dirname, '..', 'uploads');
+      // Normalize paths to prevent traversal attacks (e.g., ../../etc/passwd)
+      const normalizedFull = path.normalize(fullPath);
+      const normalizedUploads = path.normalize(uploadsDir);
+      if (!normalizedFull.startsWith(normalizedUploads + path.sep)) {
+        console.error('[SECURITY] Path traversal attempt detected:', filePath);
+        return res.status(403).json({ message: 'Invalid file path' });
+      }
       if (fs.existsSync(fullPath)) {
         fs.unlinkSync(fullPath);
       }

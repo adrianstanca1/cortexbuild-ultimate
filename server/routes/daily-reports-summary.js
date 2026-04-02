@@ -1,7 +1,9 @@
 const express = require('express');
+const authMiddleware = require('../middleware/auth');
 const pool = require('../db');
 
 const router = express.Router();
+router.use(authMiddleware);
 
 // HTML escape helper to prevent XSS
 function escapeHtml(str) {
