@@ -10,6 +10,31 @@ export interface User {
   phone?: string;
 }
 
+// Re-export notification types
+export type {
+  Notification,
+  NotificationType,
+  NotificationCategory,
+  NotificationSeverity,
+  NotificationStatus,
+  NotificationSettings,
+  NotificationMetadata,
+  NotificationAction,
+  RelatedItem,
+  NotificationGroup,
+  NotificationStats,
+  NotificationFilter,
+  ExportOptions,
+  QuickReply,
+  QuietHours,
+  CategoryPreferences,
+  NotificationsResponse,
+  UnreadCountResponse,
+  WebSocketNotificationMessage,
+  WebSocketConnectionStatus,
+  NotificationQuery,
+} from './notification';
+
 export type Module =
   | 'dashboard'
   | 'projects'

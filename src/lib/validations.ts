@@ -76,3 +76,131 @@ export type RFIInput = z.infer<typeof rfiSchema>;
 export type ChangeOrderInput = z.infer<typeof changeOrderSchema>;
 export type DailyReportInput = z.infer<typeof dailyReportSchema>;
 export type SafetyReportInput = z.infer<typeof safetyReportSchema>;
+
+// Notification schemas for runtime validation
+export const notificationQuietHoursSchema = z.object({
+  enabled: z.boolean(),
+  startTime: z.string().regex(/^\d{2}:\d{2}$/, 'Invalid time format (HH:mm)'),
+  endTime: z.string().regex(/^\d{2}:\d{2}$/, 'Invalid time format (HH:mm)'),
+  timezone: z.string(),
+});
+
+export const notificationCategoryPreferencesSchema = z.object({
+  project_update: z.boolean(),
+  task_assignment: z.boolean(),
+  rfi_response: z.boolean(),
+  safety_incident: z.boolean(),
+  document_upload: z.boolean(),
+  meeting_reminder: z.boolean(),
+  team_mention: z.boolean(),
+  system_alert: z.boolean(),
+  approval_request: z.boolean(),
+  deadline_warning: z.boolean(),
+  budget_alert: z.boolean(),
+  change_order: z.boolean(),
+  inspection_scheduled: z.boolean(),
+  material_delivery: z.boolean(),
+  timesheet_approval: z.boolean(),
+  subcontractor_update: z.boolean(),
+});
+
+export const notificationSettingsSchema = z.object({
+  emailNotifications: z.boolean(),
+  pushNotifications: z.boolean(),
+  soundAlerts: z.boolean(),
+  browserNotifications: z.boolean(),
+  quietHours: notificationQuietHoursSchema,
+  digestFrequency: z.enum(['never', 'hourly', 'daily', 'weekly']),
+  categoryPreferences: notificationCategoryPreferencesSchema,
+});
+
+export const relatedItemSchema = z.object({
+  type: z.enum([
+    'project', 'task', 'rfi', 'safety_incident', 'document',
+    'meeting', 'approval', 'change_order', 'budget', 'timesheet',
+    'subcontractor', 'inspection', 'material'
+  ]),
+  id: z.string(),
+  title: z.string(),
+  url: z.string().url(),
+});
+
+export const notificationActionSchema = z.object({
+  type: z.enum(['navigate', 'approve', 'reject', 'reply', 'snooze', 'dismiss']),
+  label: z.string(),
+  url: z.string().url().optional(),
+  payload: z.record(z.string(), z.unknown()).optional(),
+});
+
+export const notificationMetadataSchema = z.object({
+  projectId: z.string().optional(),
+  projectName: z.string().optional(),
+  taskId: z.string().optional(),
+  rfiId: z.string().optional(),
+  safetyIncidentId: z.string().optional(),
+  documentId: z.string().optional(),
+  meetingId: z.string().optional(),
+  approvalId: z.string().optional(),
+  changeOrderId: z.string().optional(),
+  budgetId: z.string().optional(),
+  timesheetId: z.string().optional(),
+  subcontractorId: z.string().optional(),
+  inspectionId: z.string().optional(),
+  materialId: z.string().optional(),
+  priority: z.enum(['low', 'medium', 'high', 'critical']).optional(),
+  dueDate: z.string().optional(),
+  originalValue: z.number().optional(),
+  newValue: z.number().optional(),
+  currency: z.string().optional(),
+  mentionedUsers: z.array(z.string()).optional(),
+  attachmentCount: z.number().optional(),
+  commentCount: z.number().optional(),
+});
+
+export const notificationSchema = z.object({
+  id: z.string(),
+  type: z.enum([
+    'project_update', 'task_assignment', 'rfi_response', 'safety_incident',
+    'document_upload', 'meeting_reminder', 'team_mention', 'system_alert',
+    'approval_request', 'deadline_warning', 'budget_alert', 'change_order',
+    'inspection_scheduled', 'material_delivery', 'timesheet_approval',
+    'subcontractor_update'
+  ]),
+  category: z.enum([
+    'all', 'unread', 'mentions', 'assignments', 'system', 'safety',
+    'projects', 'documents', 'meetings', 'approvals', 'deadlines'
+  ]),
+  severity: z.enum(['critical', 'error', 'warning', 'info', 'success']),
+  status: z.enum(['unread', 'read', 'archived', 'snoozed']),
+  title: z.string().min(1, 'Title is required'),
+  message: z.string().min(1, 'Message is required'),
+  description: z.string().optional(),
+  relatedItem: relatedItemSchema.optional(),
+  actions: z.array(notificationActionSchema).optional(),
+  fromUser: z.object({
+    id: z.string(),
+    name: z.string(),
+    avatar: z.string().optional(),
+    role: z.enum(['super_admin', 'company_owner', 'admin', 'project_manager', 'field_worker']),
+  }).optional(),
+  createdAt: z.string().datetime(),
+  readAt: z.string().datetime().optional(),
+  archivedAt: z.string().datetime().optional(),
+  snoozedUntil: z.string().datetime().optional(),
+  metadata: notificationMetadataSchema.optional(),
+});
+
+// Schema for API response validation
+export const notificationsResponseSchema = z.object({
+  notifications: z.array(notificationSchema),
+  unreadCount: z.number().int().min(0),
+  total: z.number().int().min(0),
+  hasMore: z.boolean(),
+  nextCursor: z.string().optional(),
+});
+
+// Type exports for notification validation
+export type NotificationQuietHoursInput = z.infer<typeof notificationQuietHoursSchema>;
+export type NotificationSettingsInput = z.infer<typeof notificationSettingsSchema>;
+export type NotificationInput = z.infer<typeof notificationSchema>;
+export type NotificationsResponseInput = z.infer<typeof notificationsResponseSchema>;

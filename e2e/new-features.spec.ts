@@ -249,11 +249,20 @@ test.describe('New Features E2E', () => {
       await page.goto('/');
       await page.waitForLoadState('networkidle');
 
+      // Check if login page is shown (requires authentication)
+      const loginHeading = page.getByRole('heading', { name: /Welcome/i });
+      if (await loginHeading.isVisible()) {
+        // Login page shown - test passes as KPI cards require auth
+        return;
+      }
+
       // KPI cards may require authentication - check for either KPI content or login page
       // Look for stat cards with numerical values or the "Active Projects" label
-      const kpiCards = page.locator('[class*="stat"], [class*="Stat"], [class*="kpi"], text=/\\d{1,3}(,\\d{3})*|[KM]B?/');
-      if (await kpiCards.count() > 0) {
-        await expect(kpiCards.first()).toBeVisible({ timeout: 5000 });
+      const kpiCards = page.locator('[class*="stat"], [class*="Stat"], [class*="kpi"]');
+      const numericalValues = page.locator('text=/\\d{1,3}(,\\d{3})*|[KM]B?/');
+
+      if ((await kpiCards.count() > 0) || (await numericalValues.count() > 0)) {
+        await expect(kpiCards.first().or(numericalValues.first())).toBeVisible({ timeout: 5000 });
       }
       // If login page is shown, test passes as KPI cards require auth
     });
