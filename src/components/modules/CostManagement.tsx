@@ -7,7 +7,7 @@ import {
 } from 'lucide-react';
 import {
   BarChart, Bar, LineChart, Line, AreaChart, Area, XAxis, YAxis,
-  CartesianGrid, Tooltip, Legend, ResponsiveContainer, Pie, Cell,
+  CartesianGrid, Tooltip, Legend, ResponsiveContainer, Pie, Cell, PieChart
 } from 'recharts';
 import { toast } from 'sonner';
 
