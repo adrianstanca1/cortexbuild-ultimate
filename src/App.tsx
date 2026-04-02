@@ -139,6 +139,8 @@ function AppShell() {
       case 'teams':                 return <Teams />;
       case 'tenders':               return <Tenders />;
       case 'analytics':             return <Analytics />;
+      case 'advanced-analytics':    return <AdvancedAnalytics />;
+      case 'project-calendar':      return <ProjectCalendar />;
       case 'safety':                return <Safety />;
       case 'field-view':            return <FieldView />;
       case 'crm':                   return <CRM />;
