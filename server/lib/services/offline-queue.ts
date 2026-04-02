@@ -7,21 +7,52 @@
 // Frontend-only: db is imported from the main app, not this file
 // This service is designed for browser use only
 
+/**
+ * Payload types for different queue actions.
+ */
+export interface TaskPayload {
+  title?: string;
+  description?: string;
+  status?: string;
+  [key: string]: unknown;
+}
+
+export interface TaskUpdatePayload {
+  id: string;
+  updates: Record<string, unknown>;
+}
+
+export interface LogPayload {
+  message?: string;
+  level?: string;
+  [key: string]: unknown;
+}
+
+export type QueuePayload = TaskPayload | TaskUpdatePayload | LogPayload | Record<string, unknown>;
+
 export interface QueuedAction {
   id: string;
   type: 'ADD_TASK' | 'UPDATE_TASK' | 'ADD_LOG' | 'SYNC';
-  payload: any;
+  payload: QueuePayload;
   timestamp: number;
 }
 
 // Maximum queue size to prevent localStorage overflow
 const MAX_QUEUE_SIZE = 100;
 
+/**
+ * Database interface for offline queue operations.
+ */
+export interface OfflineQueueDatabase {
+  addTask: (payload: TaskPayload) => Promise<void>;
+  updateTask: (id: string, updates: Record<string, unknown>) => Promise<void>;
+}
+
 class OfflineQueueService {
   private queue: QueuedAction[] = [];
   private storageKey = 'buildpro_offline_queue';
   private isProcessing = false;
-  private db: any = null;
+  private db: OfflineQueueDatabase | null = null;
 
   constructor() {
     this.loadQueue();
@@ -33,7 +64,7 @@ class OfflineQueueService {
   /**
    * Inject database instance (call this from main app)
    */
-  public setDb(db: any) {
+  public setDb(db: OfflineQueueDatabase) {
     this.db = db;
   }
 
@@ -53,7 +84,7 @@ class OfflineQueueService {
     localStorage.setItem(this.storageKey, JSON.stringify(this.queue));
   }
 
-  public enqueue(type: QueuedAction['type'], payload: any) {
+  public enqueue(type: QueuedAction['type'], payload: QueuePayload) {
     const action: QueuedAction = {
       id: `act_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
       type,

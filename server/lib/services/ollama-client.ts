@@ -43,6 +43,23 @@ export interface OllamaGenConfig {
 }
 
 /**
+ * Ollama model information.
+ */
+export interface OllamaModel {
+  name: string;
+  model?: string;
+  modified_at?: string;
+  size?: number;
+}
+
+/**
+ * Callback for streaming response chunks.
+ */
+export interface OllamaStreamCallback {
+  (text: string, metadata?: Record<string, unknown>): void;
+}
+
+/**
  * Checks if Ollama service is available
  */
 export const checkOllamaAvailability = async (): Promise<boolean> => {
@@ -62,8 +79,8 @@ export const listOllamaModels = async (): Promise<string[]> => {
   try {
     const response = await fetch(`${OLLAMA_HOST}/api/tags`);
     if (!response.ok) throw new Error('Failed to fetch models');
-    const data = await response.json();
-    return data.models.map((model: any) => model.name);
+    const data = await response.json() as { models: OllamaModel[] };
+    return data.models.map((model) => model.name);
   } catch (error) {
     console.error('Error listing Ollama models:', error);
     return [];
@@ -78,9 +95,9 @@ export const streamOllamaChatResponse = async (
   newMessage: string,
   imageData?: string,
   mimeType: string = 'image/jpeg',
-  onChunk?: (text: string, metadata?: any) => void,
+  onChunk?: OllamaStreamCallback,
   configOverride?: OllamaChatConfig
-): Promise<any> => {
+): Promise<Record<string, unknown>> => {
   try {
     // Check if Ollama is available
     const isAvailable = await checkOllamaAvailability();
@@ -156,7 +173,7 @@ export const streamOllamaChatResponse = async (
     }
 
     let accumulatedText = '';
-    let finalMetadata: any = {};
+    let finalMetadata: Record<string, unknown> = {};
 
     // Process the streaming response
     while (true) {
