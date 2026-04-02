@@ -14,7 +14,7 @@ CortexBuild Ultimate is an AI-Powered Unified Construction Management Platform f
 
 ### Frontend
 ```bash
-cd /Users/adrianstanca/cortexbuild-ultimate
+cd /root/cortexbuild-work
 npm install
 npm run dev              # Dev server on http://localhost:5173
 npm run build            # Production build → dist/
@@ -42,7 +42,7 @@ Test files: `src/test/*.test.ts` or `*.test.tsx` alongside components. Setup in 
 
 ### Backend
 ```bash
-cd /Users/adrianstanca/cortexbuild-ultimate/server
+cd /root/cortexbuild-work/server
 npm install
 npm run dev              # nodemon auto-reload on port 3001
 npm start                # Production (plain node)
