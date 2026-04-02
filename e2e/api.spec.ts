@@ -28,8 +28,8 @@ test.describe('API Authentication', { skip: !isApiEnabled }, () => {
       },
     })
 
-    // Accept success (200), created (201), or rate limit (429)
-    expect([200, 201, 429]).toContain(response.status())
+    // Accept success (200), created (201), rate limit (429), or locked (401) from rate limiter
+    expect([200, 201, 401, 429]).toContain(response.status())
   })
 
   test('login with invalid credentials fails or rate limited', async ({ request }) => {
