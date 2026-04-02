@@ -1,17 +1,26 @@
 import { test, expect } from '@playwright/test';
+import { LoginPage } from './pages/LoginPage';
 
 /**
  * E2E Tests for New Features v3.0.0
  * Tests for: NotificationCenter, TeamChat, ActivityFeed, Advanced Analytics, Project Calendar
  *
- * Total: 20 tests covering all new features
+ * Total: 26 tests covering all new features
  */
 
 test.describe('New Features E2E', () => {
-  // Login before each test
+  let loginPage: LoginPage;
+
+  // Authenticate before each test
   test.beforeEach(async ({ page }) => {
-    await page.goto('/');
-    await page.waitForLoadState('networkidle');
+    loginPage = new LoginPage(page);
+    await loginPage.goto();
+    await loginPage.login(
+      process.env.TEST_USER_EMAIL || 'adrian.stanca1@gmail.com',
+      process.env.TEST_USER_PASSWORD || 'Lolozania1'
+    );
+    await page.waitForURL(/\/?$/, { timeout: 10000 });
+    await page.waitForTimeout(3000);
   });
 
   test.describe('NotificationCenter', () => {
@@ -198,8 +207,8 @@ test.describe('New Features E2E', () => {
       await page.goto('/');
       await page.waitForLoadState('networkidle');
 
-      // Look for any activity content or the ActivityFeed component
-      await page.waitForSelector('text=Activity, [class*="activity"], [class*="ActivityFeed"]', { timeout: 5000 });
+      // Wait for activity feed content - user names are unique identifiers
+      await page.waitForSelector('text=Sarah Chen', { timeout: 10000 });
     });
 
     test('displays activity timestamps', async ({ page }) => {
@@ -239,8 +248,8 @@ test.describe('New Features E2E', () => {
       await page.goto('/');
       await page.waitForLoadState('networkidle');
 
-      // Look for any metrics or stats cards
-      await page.waitForSelector('text=Revenue, text=Projects, text=Total, text=Count, text=Budget, text=Cost, [class*="stat"], [class*="metric"], [class*="kpi"], [class*="card"]', { timeout: 5000 });
+      // Wait for KPI content - "Active" is the label for Active Projects KPI
+      await page.waitForSelector('text=Active Projects', { timeout: 10000 });
     });
 
     test('exports data from dashboard', async ({ page }) => {

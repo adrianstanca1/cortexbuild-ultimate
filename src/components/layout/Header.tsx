@@ -69,6 +69,7 @@ const MODULE_LABELS: Record<Module, string> = {
   'permissions':        'Permissions & Roles',
   'report-templates':   'Report Templates',
   'bim-viewer':         'BIM 3D Model Viewer',
+  'bim':                'BIM Viewer',
   'cost-management':    'Cost Management & Budgets',
   'submittal-management': 'Submittal Management',
   'dev-sandbox':        'AI Development Sandbox',

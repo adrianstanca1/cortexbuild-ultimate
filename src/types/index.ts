@@ -66,6 +66,7 @@ export type Module =
   | 'permissions'
   | 'report-templates'
   | 'bim-viewer'
+  | 'bim'
   | 'cost-management'
   | 'submittal-management'
   | 'dev-sandbox'
