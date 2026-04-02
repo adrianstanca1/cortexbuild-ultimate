@@ -1,5 +1,11 @@
 
-import { db } from './db';
+/**
+ * Offline Queue Service - Frontend only
+ * Queues actions when offline and syncs when back online
+ */
+
+// Frontend-only: db is imported from the main app, not this file
+// This service is designed for browser use only
 
 export interface QueuedAction {
   id: string;
@@ -8,15 +14,27 @@ export interface QueuedAction {
   timestamp: number;
 }
 
+// Maximum queue size to prevent localStorage overflow
+const MAX_QUEUE_SIZE = 100;
+
 class OfflineQueueService {
   private queue: QueuedAction[] = [];
   private storageKey = 'buildpro_offline_queue';
+  private isProcessing = false;
+  private db: any = null;
 
   constructor() {
     this.loadQueue();
     if (typeof window !== 'undefined') {
         window.addEventListener('online', () => this.processQueue());
     }
+  }
+
+  /**
+   * Inject database instance (call this from main app)
+   */
+  public setDb(db: any) {
+    this.db = db;
   }
 
   private loadQueue() {
@@ -42,15 +60,30 @@ class OfflineQueueService {
       payload,
       timestamp: Date.now()
     };
+    
+    // Prevent unbounded growth
+    if (this.queue.length >= MAX_QUEUE_SIZE) {
+      this.queue.shift(); // Remove oldest
+      console.warn('[Offline] Queue full, dropping oldest action');
+    }
+    
     this.queue.push(action);
     this.saveQueue();
-    console.log(`[Offline] Action queued: ${type}`);
+    console.log(`[Offline] Action queued: ${type} (queue size: ${this.queue.length})`);
   }
 
   public async processQueue() {
+    // Prevent race condition: only one process at a time
+    if (this.isProcessing) {
+      console.log('[Offline] Already processing queue, skipping...');
+      return;
+    }
+    
     if (!navigator.onLine || this.queue.length === 0) return;
 
+    this.isProcessing = true;
     console.log(`[Offline] Processing ${this.queue.length} actions...`);
+    
     const actions = [...this.queue];
     
     // Optimistic clear, will re-queue on failure
@@ -67,16 +100,25 @@ class OfflineQueueService {
         this.saveQueue();
       }
     }
+    
+    this.isProcessing = false;
+    console.log(`[Offline] Queue processing complete. Remaining: ${this.queue.length}`);
   }
 
   private async executeAction(action: QueuedAction) {
+    // Require db to be injected before use
+    if (!this.db) {
+      console.warn('[Offline] Database not injected, skipping action execution');
+      return;
+    }
+    
     // Map queue actions to DB calls
     switch (action.type) {
       case 'ADD_TASK':
-        await db.addTask(action.payload);
+        await this.db.addTask(action.payload);
         break;
       case 'UPDATE_TASK':
-        await db.updateTask(action.payload.id, action.payload.updates);
+        await this.db.updateTask(action.payload.id, action.payload.updates);
         break;
       case 'ADD_LOG':
         console.log("Syncing log:", action.payload);
@@ -88,6 +130,11 @@ class OfflineQueueService {
 
   public getQueueSize(): number {
     return this.queue.length;
+  }
+  
+  public clearQueue(): void {
+    this.queue = [];
+    this.saveQueue();
   }
 }
 

@@ -146,6 +146,7 @@ class GitHubAuthService {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({ code }),
+      signal: AbortSignal.timeout(15000), // 15 second timeout
     });
 
     if (!response.ok) {
@@ -153,12 +154,14 @@ class GitHubAuthService {
     }
 
     const data: GitHubTokenResponse = await response.json();
+    // SECURITY NOTE: In production, use httpOnly cookies instead of localStorage
     localStorage.setItem(this.tokenKey, data.access_token);
     return data.access_token;
   }
 
   /**
    * Get the stored access token
+   * SECURITY NOTE: localStorage is vulnerable to XSS. Use httpOnly cookies in production.
    */
   getAccessToken(): string | null {
     return localStorage.getItem(this.tokenKey);
@@ -178,6 +181,7 @@ class GitHubAuthService {
         'Authorization': `Bearer ${token}`,
         'Accept': 'application/vnd.github.v3+json',
       },
+      signal: AbortSignal.timeout(15000), // 15 second timeout
     });
 
     if (!response.ok) {
@@ -205,6 +209,7 @@ class GitHubAuthService {
         'Authorization': `Bearer ${token}`,
         'Accept': 'application/vnd.github.v3+json',
       },
+      signal: AbortSignal.timeout(15000), // 15 second timeout
     });
 
     if (!response.ok) {

@@ -53,17 +53,19 @@ jobs:
           VPS_SSH_KEY: ${{ secrets.VPS_SSH_KEY }}
         run: |
           echo "Deploying to VPS..."
-          # Set up SSH
+          # Set up SSH with secure handling
           mkdir -p ~/.ssh
           echo "$VPS_SSH_KEY" > ~/.ssh/id_ed25519_vps
           chmod 600 ~/.ssh/id_ed25519_vps
-          ssh-keyscan -H $VPS_HOST >> ~/.ssh/known_hosts
+          
+          # Scan host key for security (don't disable verification)
+          ssh-keyscan -H $VPS_HOST >> ~/.ssh/known_hosts 2>/dev/null || true
           
           # Create deployment directory on VPS
           ssh $VPS_USER@$VPS_HOST "mkdir -p ~/cortexbuildpro-deploy"
           
-          # Copy files to VPS
-          rsync -avz -e "ssh -i ~/.ssh/id_ed25519_vps -o StrictHostKeyChecking=no" \
+          # Copy files to VPS (keep StrictHostKeyChecking for security)
+          rsync -avz -e "ssh -i ~/.ssh/id_ed25519_vps" \
             --exclude='node_modules' \
             --exclude='.git' \
             --exclude='.env' \
@@ -71,6 +73,13 @@ jobs:
           
           # Execute redeploy script on VPS
           ssh $VPS_USER@$VPS_HOST "cd ~/cortexbuildpro-deploy && chmod +x redeploy_script.sh && ./redeploy_script.sh"
+
+      - name: Cleanup SSH key
+        if: always()
+        run: |
+          # Securely remove SSH key file
+          rm -f ~/.ssh/id_ed25519_vps
+          echo "SSH key cleaned up"
 
       - name: Deploy to Vercel (staging/production)
         if: github.event.inputs.environment != 'vps'
