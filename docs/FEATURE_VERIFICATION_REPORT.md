@@ -91,8 +91,8 @@ All pages and features have been systematically verified and are functioning cor
 |--------|-------|--------|----------|
 | CRM | `/crm` | ✅ | ✅ |
 | Settings | `/settings` | ✅ | ✅ |
-| Notifications | `/notifications` | ✅ | ✅ |
-| Search | `/search` | ✅ | ✅ |
+| Notifications | `/notifications` | ✅ | ✅ (Header bell icon) |
+| Search | `/search` | ✅ | ✅ (Ctrl+K keyboard shortcut) |
 | Marketplace | `/marketplace` | ✅ | ✅ |
 | Waste Management | `/waste-management` | ✅ | ✅ |
 | Sustainability | `/sustainability` | ✅ | ✅ |
