@@ -187,6 +187,7 @@ export function NotificationCenter({ onClose }: NotificationCenterProps) {
             value={filter}
             onChange={e => setFilter(e.target.value as 'all' | 'unread' | 'read')}
             className="select select-bordered select-sm"
+            aria-label="Filter by read status"
           >
             <option value="all">All</option>
             <option value="unread">Unread</option>
@@ -196,6 +197,7 @@ export function NotificationCenter({ onClose }: NotificationCenterProps) {
             value={selectedType}
             onChange={e => setSelectedType(e.target.value)}
             className="select select-bordered select-sm"
+            aria-label="Filter by notification type"
           >
             <option value="all">All Types</option>
             <option value="info">Info</option>
@@ -268,6 +270,7 @@ export function NotificationCenter({ onClose }: NotificationCenterProps) {
                           <button
                             onClick={() => markAsRead(notification.id)}
                             className="btn btn-sm btn-ghost"
+                            aria-label="Mark as read"
                           >
                             <Check className="w-4 h-4" />
                           </button>
@@ -275,6 +278,7 @@ export function NotificationCenter({ onClose }: NotificationCenterProps) {
                         <button
                           onClick={() => deleteNotification(notification.id)}
                           className="btn btn-sm btn-ghost btn-circle"
+                          aria-label="Delete"
                         >
                           <X className="w-4 h-4" />
                         </button>

@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { TrendingUp, TrendingDown, DollarSign, Users, AlertTriangle, CheckCircle } from 'lucide-react';
 import { BarChart, Bar, LineChart, Line, AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
+import { ModuleBreadcrumbs } from '../ui/Breadcrumbs';
 
 interface AnalyticsMetric {
   name: string;
@@ -51,16 +52,19 @@ export function AdvancedAnalytics() {
 
   return (
     <div className="space-y-6">
+      {/* Breadcrumbs */}
+      <ModuleBreadcrumbs currentModule="advanced-analytics" onNavigate={() => {}} />
+
       {/* Header */}
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-2xl font-bold">Advanced Analytics</h1>
-          <p className="text-gray-500">Comprehensive business intelligence dashboard</p>
+          <h1 className="text-2xl font-bold text-white">Advanced Analytics</h1>
+          <p className="text-gray-400">Comprehensive business intelligence dashboard</p>
         </div>
         <select
           value={timeRange}
           onChange={(e) => setTimeRange(e.target.value as '7d' | '30d' | '90d')}
-          className="select select-bordered"
+          className="select select-bordered bg-base-200 border-base-300 text-gray-300"
         >
           <option value="7d">Last 7 days</option>
           <option value="30d">Last 30 days</option>
@@ -71,16 +75,16 @@ export function AdvancedAnalytics() {
       {/* KPI Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         {metrics.map((metric, index) => (
-          <div key={index} className="card bg-base-100 border border-base-300">
+          <div key={index} className="card bg-base-200 border border-base-300">
             <div className="card-body p-4">
               <div className="flex justify-between items-start">
                 <div>
-                  <p className="text-sm text-gray-500">{metric.name}</p>
-                  <p className="text-2xl font-bold mt-1">
+                  <p className="text-sm text-gray-400">{metric.name}</p>
+                  <p className="text-2xl font-bold mt-1 text-white">
                     {metric.name.includes('Revenue') ? '£' : ''}{metric.value.toLocaleString()}
                     {metric.name.includes('Members') || metric.name.includes('Projects') || metric.name.includes('Incidents') ? '' : ''}
                   </p>
-                  <div className={`flex items-center gap-1 mt-2 text-sm ${metric.trend === 'up' ? 'text-success' : metric.change < 0 ? 'text-error' : 'text-gray-500'}`}>
+                  <div className={`flex items-center gap-1 mt-2 text-sm ${metric.trend === 'up' ? 'text-success' : metric.change < 0 ? 'text-error' : 'text-gray-400'}`}>
                     {metric.trend === 'up' ? <TrendingUp className="w-4 h-4" /> : <TrendingDown className="w-4 h-4" />}
                     <span>{Math.abs(metric.change)}%</span>
                   </div>
@@ -100,16 +104,16 @@ export function AdvancedAnalytics() {
       {/* Charts Row 1 */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Revenue vs Costs */}
-        <div className="card bg-base-100 border border-base-300">
+        <div className="card bg-base-200 border border-base-300">
           <div className="card-body">
-            <h2 className="card-title">Revenue vs Costs</h2>
+            <h2 className="card-title text-white">Revenue vs Costs</h2>
             <ResponsiveContainer width="100%" height={300}>
               <AreaChart data={revenueData}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
-                <XAxis dataKey="month" stroke="#6B7280" />
-                <YAxis stroke="#6B7280" />
-                <Tooltip contentStyle={{ background: '#1F2937', border: '1px solid #374151' }} />
-                <Legend />
+                <CartesianGrid strokeDasharray="3 3" stroke="#4B5563" />
+                <XAxis dataKey="month" stroke="#9CA3AF" />
+                <YAxis stroke="#9CA3AF" />
+                <Tooltip contentStyle={{ background: '#1F2937', border: '1px solid #374151', color: '#F3F4F6' }} />
+                <Legend wrapperStyle={{ color: '#F3F4F6' }} />
                 <Area type="monotone" dataKey="revenue" stroke="#F59E0B" fill="#F59E0B" fillOpacity={0.3} />
                 <Area type="monotone" dataKey="costs" stroke="#EF4444" fill="#EF4444" fillOpacity={0.3} />
               </AreaChart>
@@ -118,9 +122,9 @@ export function AdvancedAnalytics() {
         </div>
 
         {/* Project Status Distribution */}
-        <div className="card bg-base-100 border border-base-300">
+        <div className="card bg-base-200 border border-base-300">
           <div className="card-body">
-            <h2 className="card-title">Project Status Distribution</h2>
+            <h2 className="card-title text-white">Project Status Distribution</h2>
             <ResponsiveContainer width="100%" height={300}>
               <PieChart>
                 <Pie
@@ -137,7 +141,7 @@ export function AdvancedAnalytics() {
                     <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                   ))}
                 </Pie>
-                <Tooltip contentStyle={{ background: '#1F2937', border: '1px solid #374151' }} />
+                <Tooltip contentStyle={{ background: '#1F2937', border: '1px solid #374151', color: '#F3F4F6' }} />
               </PieChart>
             </ResponsiveContainer>
           </div>
@@ -147,16 +151,16 @@ export function AdvancedAnalytics() {
       {/* Charts Row 2 */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Productivity Trends */}
-        <div className="card bg-base-100 border border-base-300">
+        <div className="card bg-base-200 border border-base-300">
           <div className="card-body">
-            <h2 className="card-title">Productivity Trends</h2>
+            <h2 className="card-title text-white">Productivity Trends</h2>
             <ResponsiveContainer width="100%" height={300}>
               <LineChart data={productivityData}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
-                <XAxis dataKey="week" stroke="#6B7280" />
-                <YAxis stroke="#6B7280" />
-                <Tooltip contentStyle={{ background: '#1F2937', border: '1px solid #374151' }} />
-                <Legend />
+                <CartesianGrid strokeDasharray="3 3" stroke="#4B5563" />
+                <XAxis dataKey="week" stroke="#9CA3AF" />
+                <YAxis stroke="#9CA3AF" />
+                <Tooltip contentStyle={{ background: '#1F2937', border: '1px solid #374151', color: '#F3F4F6' }} />
+                <Legend wrapperStyle={{ color: '#F3F4F6' }} />
                 <Line type="monotone" dataKey="productivity" stroke="#10B981" strokeWidth={2} />
                 <Line type="monotone" dataKey="tasks" stroke="#3B82F6" strokeWidth={2} />
               </LineChart>
@@ -165,9 +169,9 @@ export function AdvancedAnalytics() {
         </div>
 
         {/* Performance Metrics */}
-        <div className="card bg-base-100 border border-base-300">
+        <div className="card bg-base-200 border border-base-300">
           <div className="card-body">
-            <h2 className="card-title">Key Performance Indicators</h2>
+            <h2 className="card-title text-white">Key Performance Indicators</h2>
             <div className="space-y-4">
               {[
                 { label: 'On-Time Delivery', value: 92, target: 90 },
@@ -177,12 +181,12 @@ export function AdvancedAnalytics() {
               ].map((kpi, index) => (
                 <div key={index}>
                   <div className="flex justify-between text-sm mb-1">
-                    <span>{kpi.label}</span>
+                    <span className="text-gray-300">{kpi.label}</span>
                     <span className={kpi.value >= kpi.target ? 'text-success' : 'text-warning'}>
                       {kpi.value}% (Target: {kpi.target}%)
                     </span>
                   </div>
-                  <div className="w-full bg-base-200 rounded-full h-2">
+                  <div className="w-full bg-base-300 rounded-full h-2">
                     <div
                       className={`h-2 rounded-full ${kpi.value >= kpi.target ? 'bg-success' : 'bg-warning'}`}
                       style={{ width: `${kpi.value}%` }}
