@@ -202,7 +202,7 @@ export function CostManagement() {
                   <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
                   <XAxis dataKey="name" stroke="#9ca3af" fontSize={12} />
                   <YAxis stroke="#9ca3af" fontSize={12} tickFormatter={(v) => `£${v}K`} />
-                  <Tooltip contentStyle={{ backgroundColor: '#1f2937', border: '1px solid #374151', color: '#fff' }} formatter={(v: number) => `£${v * 1000.toLocaleString()}`} />
+                  <Tooltip contentStyle={{ backgroundColor: '#1f2937', border: '1px solid #374151', color: '#fff' }} formatter={(v: number) => `£${(v * 1000).toLocaleString()}`} />
                   <Legend />
                   <Bar dataKey="budgeted" name="Budgeted (£K)" fill="#3b82f6" radius={[4, 4, 0, 0]} />
                   <Bar dataKey="spent" name="Spent (£K)" fill="#ef4444" radius={[4, 4, 0, 0]} />
@@ -337,7 +337,7 @@ export function CostManagement() {
                   <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
                   <XAxis dataKey="name" stroke="#9ca3af" fontSize={12} />
                   <YAxis stroke="#9ca3af" fontSize={12} tickFormatter={(v) => `£${v}K`} />
-                  <Tooltip contentStyle={{ backgroundColor: '#1f2937', border: '1px solid #374151' }} formatter={(v: number) => `£${v * 1000.toLocaleString()}`} />
+                  <Tooltip contentStyle={{ backgroundColor: '#1f2937', border: '1px solid #374151' }} formatter={(v: number) => `£${(v * 1000).toLocaleString()}`} />
                   <Bar dataKey="variance" name="Variance (£K)" fill="#8b5cf6" radius={[4, 4, 0, 0]} />
                 </BarChart>
               </ResponsiveContainer>
