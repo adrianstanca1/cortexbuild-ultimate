@@ -15,8 +15,8 @@ async function globalSetup(config: FullConfig) {
   await page.waitForLoadState('networkidle');
 
   // Login with test credentials
-  const email = process.env.TEST_USER_EMAIL || 'adrian.stanca1@gmail.com';
-  const password = process.env.TEST_USER_PASSWORD || 'Lolozania1';
+  const email = process.env.TEST_USER_EMAIL || 'test@cortexbuild.local';
+  const password = process.env.TEST_USER_PASSWORD || 'TestPassword123!';
 
   await page.fill('input[type="email"], input[placeholder*="email"]', email);
   await page.fill('input[type="password"], input[placeholder*="password"]', password);
