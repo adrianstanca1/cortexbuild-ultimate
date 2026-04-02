@@ -73,7 +73,8 @@ export type Module =
   | 'ai-vision'
   | 'my-desktop'
   | 'advanced-analytics'
-  | 'project-calendar';
+  | 'project-calendar'
+  | 'admin-dashboard';
 
 export type ProjectStatus = 'planning' | 'active' | 'on_hold' | 'completed' | 'archived';
 export type TaskStatus = 'todo' | 'in_progress' | 'review' | 'done' | 'blocked';

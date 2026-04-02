@@ -1,26 +1,21 @@
 import { test, expect } from '@playwright/test';
-import { LoginPage } from './pages/LoginPage';
 
 /**
  * E2E Tests for New Features v3.0.0
  * Tests for: NotificationCenter, TeamChat, ActivityFeed, Advanced Analytics, Project Calendar
  *
  * Total: 26 tests covering all new features
+ *
+ * Note: Authentication is handled by global-setup.ts which runs once before all tests
  */
 
 test.describe('New Features E2E', () => {
-  let loginPage: LoginPage;
-
-  // Authenticate before each test
+  // Note: Authentication is handled globally via storageState
+  // Navigate to dashboard before each test
   test.beforeEach(async ({ page }) => {
-    loginPage = new LoginPage(page);
-    await loginPage.goto();
-    await loginPage.login(
-      process.env.TEST_USER_EMAIL || 'adrian.stanca1@gmail.com',
-      process.env.TEST_USER_PASSWORD || 'Lolozania1'
-    );
-    await page.waitForURL(/\/?$/, { timeout: 10000 });
-    await page.waitForTimeout(3000);
+    await page.goto('/');
+    await page.waitForLoadState('networkidle');
+    await page.waitForTimeout(2000); // Allow dashboard to fully load
   });
 
   test.describe('NotificationCenter', () => {

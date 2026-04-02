@@ -80,6 +80,7 @@ const MODULE_LABELS: Record<Module, string> = {
   'my-desktop': 'My Desktop',
   'advanced-analytics': 'Advanced Analytics',
   'project-calendar': 'Project Calendar',
+  'admin-dashboard': 'Admin Dashboard',
 };
 
 export function Breadcrumbs({ items, onNavigate }: BreadcrumbsProps) {

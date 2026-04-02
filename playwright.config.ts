@@ -1,4 +1,8 @@
 import { defineConfig, devices } from '@playwright/test'
+import { fileURLToPath } from 'url'
+import { dirname, resolve } from 'path'
+
+const __dirname = dirname(fileURLToPath(import.meta.url))
 
 export default defineConfig({
   testDir: './e2e',
@@ -10,8 +14,10 @@ export default defineConfig({
     ['html', { outputFolder: 'playwright-report' }],
     ['list'],
   ],
+  globalSetup: resolve(__dirname, './e2e/global-setup'),
   use: {
     baseURL: process.env.E2E_BASE_URL || 'http://localhost:5173',
+    storageState: 'e2e/.auth/storage-state.json',
     trace: 'on-first-retry',
     screenshot: 'only-on-failure',
     video: 'retain-on-failure',

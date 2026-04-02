@@ -77,6 +77,7 @@ const MODULE_LABELS: Record<Module, string> = {
   'my-desktop':         'Virtual Desktop Environment',
   'advanced-analytics': 'Advanced Analytics',
   'project-calendar':   'Project Calendar',
+  'admin-dashboard':    'Admin Dashboard',
 };
 
 // Module accent colors for the breadcrumb bar
