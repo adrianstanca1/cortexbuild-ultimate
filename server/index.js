@@ -21,7 +21,7 @@ initWebSocket(server);
 
 // ─── Session & Passport middleware for OAuth ─────────────────────────────────
 app.use(session({
-  secret: process.env.JWT_SECRET || 'oauth-session-secret-change-in-production',
+  secret: process.env.SESSION_SECRET || process.env.JWT_SECRET || 'oauth-session-secret-change-in-production',
   resave: false,
   saveUninitialized: false,
   cookie: {

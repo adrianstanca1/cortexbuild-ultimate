@@ -16,7 +16,9 @@ CREATE TABLE IF NOT EXISTS oauth_providers (
     updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
 
     -- Ensure one provider per user
-    UNIQUE(user_id, provider)
+    UNIQUE(user_id, provider),
+    -- Prevent same provider account from linking to multiple users (security)
+    UNIQUE(provider, provider_user_id)
 );
 
 -- Indexes for fast lookups
