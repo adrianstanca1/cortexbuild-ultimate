@@ -76,8 +76,9 @@ router.get('/status', async (req, res) => {
       req.on('timeout', () => { result.ollama.error = 'Connection timed out'; req.destroy(); reject(new Error('timeout')); });
       req.end();
     });
-  } catch (_) {
-    // already set error/reachable=false above
+  } catch (err) {
+    result.ollama.error = err.message;
+    result.ollama.reachable = false;
   }
 
   result.ollama.latencyMs = Date.now() - start;
@@ -102,7 +103,9 @@ router.get('/status', async (req, res) => {
               const parsed = JSON.parse(data);
               result.capabilities.chat = (parsed.models || []).some(m => m.name === LLM_MODEL || m.name.includes('qwen') || m.name.includes('llama'));
               result.capabilities.summarise = result.capabilities.chat;
-            } catch (_) {}
+            } catch (parseErr) {
+              console.error('[AI Health] Failed to parse Ollama models response:', parseErr.message);
+            }
             resolve();
           });
         });
@@ -110,8 +113,8 @@ router.get('/status', async (req, res) => {
         req.on('timeout', () => { req.destroy(); reject(new Error('timeout')); });
         req.end();
       });
-    } catch (_) {
-      result.ollama.error = result.ollama.error || 'Model check failed';
+    } catch (checkErr) {
+      result.ollama.error = result.ollama.error || `Model check failed: ${checkErr.message}`;
     }
   }
 
