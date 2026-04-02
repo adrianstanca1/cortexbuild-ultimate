@@ -30,7 +30,7 @@ interface CostForecast {
   cumulative: number;
 }
 
-const CostManagement: React.FC = () => {
+export const CostManagement: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'budget' | 'forecast' | 'variance'>('budget');
 
   const [budgetItems] = useState<BudgetItem[]>([

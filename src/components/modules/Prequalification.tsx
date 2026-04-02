@@ -2,6 +2,7 @@
 import { useState } from 'react';
 import { Plus, Users, FileCheck, Clock, Trash2, X, Upload, Edit } from 'lucide-react';
 import { EmptyState } from '../ui/EmptyState';
+import { ModuleBreadcrumbs } from '../ui/Breadcrumbs';
 import { usePrequalification } from '../../hooks/useData';
 import { uploadFile } from '../../services/api';
 
@@ -83,7 +84,9 @@ export default function Prequalification() {
   }
 
   return (
-    <div className="p-6 space-y-6">
+    <>
+      <ModuleBreadcrumbs currentModule="prequalification" onNavigate={() => {}} />
+      <div className="p-6 space-y-6">
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-2xl font-bold text-white">Prequalification</h2>
@@ -99,7 +102,7 @@ export default function Prequalification() {
         <div className="card p-4"><div className="flex items-center gap-3"><div className="w-10 h-10 rounded-lg bg-blue-500/10 flex items-center justify-center"><Users className="text-blue-400" size={20} /></div><div><p className="text-gray-400 text-xs">Total</p><p className="text-2xl font-bold text-blue-400">{isLoading ? '...' : prequal.length}</p></div></div></div>
       </div>
       <div className="card p-4">
-        <input type="text" placeholder="Search contractors..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white mb-4" />
+        <input type="text" placeholder="Search contractors..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="w-full px-4 py-2 input input-bordered text-white mb-4" />
         {isLoading ? (
           <div className="text-center py-8 text-gray-400">Loading prequalification data...</div>
         ) : (
@@ -175,16 +178,16 @@ export default function Prequalification() {
             <div className="p-6 space-y-4">
               <div>
                 <label htmlFor="preqContractor" className="block text-gray-400 text-xs mb-1">Contractor *</label>
-                <input id="preqContractor" type="text" value={form.contractor} onChange={e => setForm(f => ({ ...f, contractor: e.target.value }))} placeholder="Contractor name" className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500" />
+                <input id="preqContractor" type="text" value={form.contractor} onChange={e => setForm(f => ({ ...f, contractor: e.target.value }))} placeholder="Contractor name" className="w-full px-3 py-2 input input-bordered text-white placeholder-gray-500" />
               </div>
               <div>
                 <label htmlFor="preqProject" className="block text-gray-400 text-xs mb-1">Project</label>
-                <input id="preqProject" type="text" value={form.project} onChange={e => setForm(f => ({ ...f, project: e.target.value }))} placeholder="Project name" className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500" />
+                <input id="preqProject" type="text" value={form.project} onChange={e => setForm(f => ({ ...f, project: e.target.value }))} placeholder="Project name" className="w-full px-3 py-2 input input-bordered text-white placeholder-gray-500" />
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label htmlFor="preqType" className="block text-gray-400 text-xs mb-1">Questionnaire Type</label>
-                  <select id="preqType" value={form.questionnaireType} onChange={e => setForm(f => ({ ...f, questionnaireType: e.target.value }))} className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white">
+                  <select id="preqType" value={form.questionnaireType} onChange={e => setForm(f => ({ ...f, questionnaireType: e.target.value }))} className="w-full px-3 py-2 input input-bordered text-white">
                     <option value="PAS 91">PAS 91</option>
                     <option value="SHE Q">SHE Q</option>
                     <option value="Financial">Financial</option>
@@ -194,7 +197,7 @@ export default function Prequalification() {
                 </div>
                 <div>
                   <label htmlFor="preqStatus" className="block text-gray-400 text-xs mb-1">Status</label>
-                  <select id="preqStatus" value={form.status} onChange={e => setForm(f => ({ ...f, status: e.target.value }))} className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white">
+                  <select id="preqStatus" value={form.status} onChange={e => setForm(f => ({ ...f, status: e.target.value }))} className="w-full px-3 py-2 input input-bordered text-white">
                     <option value="pending">Pending</option>
                     <option value="approved">Approved</option>
                     <option value="rejected">Rejected</option>
@@ -203,7 +206,7 @@ export default function Prequalification() {
               </div>
               <div>
                 <label htmlFor="preqScore" className="block text-gray-400 text-xs mb-1">Score (%)</label>
-                <input id="preqScore" type="number" value={form.score} onChange={e => setForm(f => ({ ...f, score: e.target.value }))} placeholder="0" className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500" />
+                <input id="preqScore" type="number" value={form.score} onChange={e => setForm(f => ({ ...f, score: e.target.value }))} placeholder="0" className="w-full px-3 py-2 input input-bordered text-white placeholder-gray-500" />
               </div>
             </div>
             <div className="p-6 border-t border-gray-700 flex justify-end gap-3">
@@ -226,16 +229,16 @@ export default function Prequalification() {
             <div className="p-6 space-y-4">
               <div>
                 <label htmlFor="editContractor" className="block text-gray-400 text-xs mb-1">Contractor *</label>
-                <input id="editContractor" type="text" value={editItem.contractor || ''} onChange={e => setEditItem((prev: any) => ({ ...prev, contractor: e.target.value }))} placeholder="Contractor name" className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500" />
+                <input id="editContractor" type="text" value={editItem.contractor || ''} onChange={e => setEditItem((prev: any) => ({ ...prev, contractor: e.target.value }))} placeholder="Contractor name" className="w-full px-3 py-2 input input-bordered text-white placeholder-gray-500" />
               </div>
               <div>
                 <label htmlFor="editProject" className="block text-gray-400 text-xs mb-1">Project</label>
-                <input id="editProject" type="text" value={editItem.project || ''} onChange={e => setEditItem((prev: any) => ({ ...prev, project: e.target.value }))} placeholder="Project name" className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500" />
+                <input id="editProject" type="text" value={editItem.project || ''} onChange={e => setEditItem((prev: any) => ({ ...prev, project: e.target.value }))} placeholder="Project name" className="w-full px-3 py-2 input input-bordered text-white placeholder-gray-500" />
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label htmlFor="editType" className="block text-gray-400 text-xs mb-1">Questionnaire Type</label>
-                  <select id="editType" value={editItem.questionnaire_type || 'PAS 91'} onChange={e => setEditItem((prev: any) => ({ ...prev, questionnaire_type: e.target.value }))} className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white">
+                  <select id="editType" value={editItem.questionnaire_type || 'PAS 91'} onChange={e => setEditItem((prev: any) => ({ ...prev, questionnaire_type: e.target.value }))} className="w-full px-3 py-2 input input-bordered text-white">
                     <option value="PAS 91">PAS 91</option>
                     <option value="SHE Q">SHE Q</option>
                     <option value="Financial">Financial</option>
@@ -245,7 +248,7 @@ export default function Prequalification() {
                 </div>
                 <div>
                   <label htmlFor="editStatus" className="block text-gray-400 text-xs mb-1">Status</label>
-                  <select id="editStatus" value={editItem.status || 'pending'} onChange={e => setEditItem((prev: any) => ({ ...prev, status: e.target.value }))} className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white">
+                  <select id="editStatus" value={editItem.status || 'pending'} onChange={e => setEditItem((prev: any) => ({ ...prev, status: e.target.value }))} className="w-full px-3 py-2 input input-bordered text-white">
                     <option value="pending">Pending</option>
                     <option value="approved">Approved</option>
                     <option value="rejected">Rejected</option>
@@ -254,7 +257,7 @@ export default function Prequalification() {
               </div>
               <div>
                 <label htmlFor="editScore" className="block text-gray-400 text-xs mb-1">Score (%)</label>
-                <input id="editScore" type="number" value={editItem.score || ''} onChange={e => setEditItem((prev: any) => ({ ...prev, score: e.target.value }))} placeholder="0" className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500" />
+                <input id="editScore" type="number" value={editItem.score || ''} onChange={e => setEditItem((prev: any) => ({ ...prev, score: e.target.value }))} placeholder="0" className="w-full px-3 py-2 input input-bordered text-white placeholder-gray-500" />
               </div>
             </div>
             <div className="p-6 border-t border-gray-700 flex justify-end gap-3">
@@ -267,5 +270,6 @@ export default function Prequalification() {
         </div>
       )}
     </div>
+    </>
   );
 }

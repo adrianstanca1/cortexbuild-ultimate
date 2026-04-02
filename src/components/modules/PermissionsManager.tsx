@@ -12,6 +12,7 @@ import {
   Square,
 } from 'lucide-react';
 import { BulkActionsBar, useBulkSelection } from '../ui/BulkActions';
+import { ModuleBreadcrumbs } from '../ui/Breadcrumbs';
 import { permissionsApi, type Role, type Permissions } from '../../services/api';
 import { toast } from 'sonner';
 import clsx from 'clsx';
@@ -159,12 +160,14 @@ export function PermissionsManager() {
   );
 
   return (
-    <div className="space-y-6">
+    <>
+      <ModuleBreadcrumbs currentModule="permissions" onNavigate={() => {}} />
+      <div className="space-y-6">
       <div className="flex justify-between items-center">
         <h1 className="text-2xl font-bold text-white">Permissions & Access Control</h1>
         <button
           onClick={() => setShowCreateModal(true)}
-          className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium flex items-center gap-2"
+          className="px-4 py-2 btn btn-primary rounded-lg text-sm font-medium flex items-center gap-2"
         >
           <Plus className="h-4 w-4" />
           Create Role
@@ -173,19 +176,19 @@ export function PermissionsManager() {
 
       {/* KPI Stats */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <div className="bg-gray-800 border border-gray-700 rounded-lg p-4">
+        <div className="input input-bordered p-4">
           <p className="text-xs text-gray-400 uppercase mb-1">Total Users</p>
           <p className="text-2xl font-bold text-white">124</p>
         </div>
-        <div className="bg-gray-800 border border-gray-700 rounded-lg p-4">
+        <div className="input input-bordered p-4">
           <p className="text-xs text-gray-400 uppercase mb-1">Roles Defined</p>
           <p className="text-2xl font-bold text-white">{Number(roles.length)}</p>
         </div>
-        <div className="bg-gray-800 border border-gray-700 rounded-lg p-4">
+        <div className="input input-bordered p-4">
           <p className="text-xs text-gray-400 uppercase mb-1">Permission Changes</p>
           <p className="text-2xl font-bold text-white">18</p>
         </div>
-        <div className="bg-gray-800 border border-gray-700 rounded-lg p-4">
+        <div className="input input-bordered p-4">
           <p className="text-xs text-gray-400 uppercase mb-1">Inactive Users</p>
           <p className="text-2xl font-bold text-white">7</p>
         </div>
@@ -320,9 +323,9 @@ export function PermissionsManager() {
             <input
               type="text"
               placeholder="Search users..."
-              className="flex-1 bg-gray-800 border border-gray-700 rounded-lg px-4 py-2 text-white text-sm"
+              className="flex-1 bg-gray-800 border border-gray-700 btn text-white text-sm"
             />
-            <button className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium flex items-center gap-2">
+            <button className="px-4 py-2 btn btn-primary rounded-lg text-sm font-medium flex items-center gap-2">
               <Plus className="h-4 w-4" />
               Invite User
             </button>
@@ -369,7 +372,7 @@ export function PermissionsManager() {
       {/* TEAMS TAB */}
       {subTab === 'teams' && (
         <div className="space-y-4">
-          <button className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium flex items-center gap-2">
+          <button className="px-4 py-2 btn btn-primary rounded-lg text-sm font-medium flex items-center gap-2">
             <Plus className="h-4 w-4" />
             Create Team
           </button>
@@ -434,6 +437,7 @@ export function PermissionsManager() {
         />
       )}
     </div>
+    </>
   );
 }
 
@@ -479,7 +483,7 @@ function CreateRoleModal({ onClose, onSave }: { onClose: () => void; onSave: () 
               type="text"
               value={name}
               onChange={e => setName(e.target.value)}
-              className="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-2 text-white"
+              className="w-full bg-gray-800 border border-gray-700 btn text-white"
               placeholder="Site Supervisor"
             />
           </div>
@@ -488,19 +492,19 @@ function CreateRoleModal({ onClose, onSave }: { onClose: () => void; onSave: () 
             <textarea
               value={description}
               onChange={e => setDescription(e.target.value)}
-              className="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-2 text-white h-20"
+              className="w-full bg-gray-800 border border-gray-700 btn text-white h-20"
               placeholder="Manage site operations..."
             />
           </div>
         </div>
         <div className="p-6 border-t border-gray-800 flex justify-end gap-3">
-          <button type="button" onClick={onClose} className="px-4 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded-lg">
+          <button type="button" onClick={onClose} className="px-4 py-2 btn btn-ghost rounded-lg">
             Cancel
           </button>
           <button
             onClick={handleCreate}
             disabled={saving}
-            className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium flex items-center gap-2"
+            className="px-4 py-2 btn btn-primary rounded-lg font-medium flex items-center gap-2"
           >
             {Boolean(saving) && <RefreshCw className="h-4 w-4 animate-spin" />}
             Create
@@ -510,3 +514,4 @@ function CreateRoleModal({ onClose, onSave }: { onClose: () => void; onSave: () 
     </div>
   );
 }
+export default PermissionsManager;

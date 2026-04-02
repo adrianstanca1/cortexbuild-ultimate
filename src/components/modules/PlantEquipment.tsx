@@ -6,6 +6,7 @@ import { useEquipment } from '../../hooks/useData';
 import { equipmentApi } from '../../services/api';
 import { toast } from 'sonner';
 import { BulkActionsBar, useBulkSelection } from '../ui/BulkActions';
+import { ModuleBreadcrumbs } from '../ui/Breadcrumbs';
 import { EmptyState } from '../ui/EmptyState';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 
@@ -239,7 +240,9 @@ export function PlantEquipment() {
   }
 
   return (
-    <div className="p-6 space-y-6">
+    <>
+      <ModuleBreadcrumbs currentModule="plant" onNavigate={() => {}} />
+      <div className="p-6 space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
@@ -1057,5 +1060,7 @@ export function PlantEquipment() {
         </div>
       )}
     </div>
+    </>
   );
 }
+export default PlantEquipment;

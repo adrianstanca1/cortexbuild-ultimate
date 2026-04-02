@@ -8,6 +8,7 @@ import {
 import { useVariations } from '../../hooks/useData';
 import { toast } from 'sonner';
 import { BulkActionsBar, useBulkSelection } from '../ui/BulkActions';
+import { ModuleBreadcrumbs } from '../ui/Breadcrumbs';
 
 interface Variation {
   id: string;
@@ -166,7 +167,9 @@ export default function Variations() {
   const totalRejected = variations.filter((v: Variation) => v.status === 'rejected').reduce((sum: number, v: Variation) => sum + Math.abs(Number(v.value)), 0);
 
   return (
-    <div className="p-6 space-y-6">
+    <>
+      <ModuleBreadcrumbs currentModule="variations" onNavigate={() => {}} />
+      <div className="p-6 space-y-6">
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-2xl font-bold text-white" style={{ fontFamily: 'var(--font-display)' }}>
@@ -246,14 +249,14 @@ export default function Variations() {
                 placeholder="Search by ref, title, or project..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-10 pr-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:border-orange-500 focus:outline-none"
+                className="w-full pl-10 pr-4 py-2 input input-bordered text-white placeholder-gray-500 focus:border-orange-500 focus:outline-none"
               />
             </div>
           </div>
           <select
             value={filterStatus}
             onChange={(e) => setFilterStatus(e.target.value)}
-            className="px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white focus:border-orange-500 focus:outline-none"
+            className="px-3 py-2 input input-bordered text-white focus:border-orange-500 focus:outline-none"
           >
             <option value="all">All Status</option>
             <option value="draft">Draft</option>
@@ -266,7 +269,7 @@ export default function Variations() {
           <select
             value={filterType}
             onChange={(e) => setFilterType(e.target.value)}
-            className="px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white focus:border-orange-500 focus:outline-none"
+            className="px-3 py-2 input input-bordered text-white focus:border-orange-500 focus:outline-none"
           >
             <option value="all">All Types</option>
             <option value="addition">Addition</option>
@@ -278,7 +281,7 @@ export default function Variations() {
           <select
             value={filterImpact}
             onChange={(e) => setFilterImpact(e.target.value)}
-            className="px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white focus:border-orange-500 focus:outline-none"
+            className="px-3 py-2 input input-bordered text-white focus:border-orange-500 focus:outline-none"
           >
             <option value="all">All Impacts</option>
             <option value="increase">Increase</option>
@@ -453,7 +456,7 @@ export default function Variations() {
                   <select
                     value={form.project}
                     onChange={e => setForm(f => ({ ...f, project: e.target.value }))}
-                    className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white"
+                    className="w-full px-3 py-2 input input-bordered text-white"
                   >
                     <option value="">Select project...</option>
                     <option>Canary Wharf Office Complex</option>
@@ -466,7 +469,7 @@ export default function Variations() {
                   <select
                     value={form.type}
                     onChange={e => setForm(f => ({ ...f, type: e.target.value }))}
-                    className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white"
+                    className="w-full px-3 py-2 input input-bordered text-white"
                   >
                     <option value="addition">Addition</option>
                     <option value="omission">Omission</option>
@@ -483,7 +486,7 @@ export default function Variations() {
                   value={form.title}
                   onChange={e => setForm(f => ({ ...f, title: e.target.value }))}
                   placeholder="Variation title..."
-                  className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500"
+                  className="w-full px-3 py-2 input input-bordered text-white placeholder-gray-500"
                 />
               </div>
               <div>
@@ -493,7 +496,7 @@ export default function Variations() {
                   value={form.description}
                   onChange={e => setForm(f => ({ ...f, description: e.target.value }))}
                   placeholder="Describe the variation..."
-                  className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500"
+                  className="w-full px-3 py-2 input input-bordered text-white placeholder-gray-500"
                 />
               </div>
               <div className="grid grid-cols-2 gap-4">
@@ -504,7 +507,7 @@ export default function Variations() {
                     value={form.value}
                     onChange={e => setForm(f => ({ ...f, value: e.target.value }))}
                     placeholder="0.00"
-                    className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500"
+                    className="w-full px-3 py-2 input input-bordered text-white placeholder-gray-500"
                   />
                 </div>
                 <div>
@@ -512,7 +515,7 @@ export default function Variations() {
                   <select
                     value={form.reason}
                     onChange={e => setForm(f => ({ ...f, reason: e.target.value }))}
-                    className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white"
+                    className="w-full px-3 py-2 input input-bordered text-white"
                   >
                     <option value="">Select reason...</option>
                     <option>Site condition</option>
@@ -530,7 +533,7 @@ export default function Variations() {
                   value={form.subcontractor}
                   onChange={e => setForm(f => ({ ...f, subcontractor: e.target.value }))}
                   placeholder="Subcontractor name..."
-                  className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500"
+                  className="w-full px-3 py-2 input input-bordered text-white placeholder-gray-500"
                 />
               </div>
             </div>
@@ -568,7 +571,7 @@ export default function Variations() {
                     type="text"
                     value={editItem.ref}
                     onChange={e => setEditItem((f: any /* eslint-disable-line @typescript-eslint/no-explicit-any */) => ({ ...f, ref: e.target.value }))}
-                    className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500"
+                    className="w-full px-3 py-2 input input-bordered text-white placeholder-gray-500"
                   />
                 </div>
                 <div>
@@ -576,7 +579,7 @@ export default function Variations() {
                   <select
                     value={editItem.status}
                     onChange={e => setEditItem((f: any /* eslint-disable-line @typescript-eslint/no-explicit-any */) => ({ ...f, status: e.target.value }))}
-                    className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white"
+                    className="w-full px-3 py-2 input input-bordered text-white"
                   >
                     <option value="draft">Draft</option>
                     <option value="pending">Pending</option>
@@ -594,7 +597,7 @@ export default function Variations() {
                     type="text"
                     value={editItem.project}
                     onChange={e => setEditItem((f: any /* eslint-disable-line @typescript-eslint/no-explicit-any */) => ({ ...f, project: e.target.value }))}
-                    className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500"
+                    className="w-full px-3 py-2 input input-bordered text-white placeholder-gray-500"
                   />
                 </div>
                 <div>
@@ -602,7 +605,7 @@ export default function Variations() {
                   <select
                     value={editItem.type}
                     onChange={e => setEditItem((f: any /* eslint-disable-line @typescript-eslint/no-explicit-any */) => ({ ...f, type: e.target.value }))}
-                    className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white"
+                    className="w-full px-3 py-2 input input-bordered text-white"
                   >
                     <option value="addition">Addition</option>
                     <option value="omission">Omission</option>
@@ -618,7 +621,7 @@ export default function Variations() {
                   type="text"
                   value={editItem.title}
                   onChange={e => setEditItem((f: any /* eslint-disable-line @typescript-eslint/no-explicit-any */) => ({ ...f, title: e.target.value }))}
-                  className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500"
+                  className="w-full px-3 py-2 input input-bordered text-white placeholder-gray-500"
                 />
               </div>
               <div>
@@ -627,7 +630,7 @@ export default function Variations() {
                   rows={3}
                   value={editItem.description}
                   onChange={e => setEditItem((f: any /* eslint-disable-line @typescript-eslint/no-explicit-any */) => ({ ...f, description: e.target.value }))}
-                  className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500"
+                  className="w-full px-3 py-2 input input-bordered text-white placeholder-gray-500"
                 />
               </div>
               <div className="grid grid-cols-2 gap-4">
@@ -637,7 +640,7 @@ export default function Variations() {
                     type="number"
                     value={editItem.value}
                     onChange={e => setEditItem((f: any /* eslint-disable-line @typescript-eslint/no-explicit-any */) => ({ ...f, value: e.target.value }))}
-                    className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500"
+                    className="w-full px-3 py-2 input input-bordered text-white placeholder-gray-500"
                   />
                 </div>
                 <div>
@@ -646,7 +649,7 @@ export default function Variations() {
                     type="number"
                     value={editItem.originalValue}
                     onChange={e => setEditItem((f: any /* eslint-disable-line @typescript-eslint/no-explicit-any */) => ({ ...f, originalValue: e.target.value }))}
-                    className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500"
+                    className="w-full px-3 py-2 input input-bordered text-white placeholder-gray-500"
                   />
                 </div>
               </div>
@@ -656,7 +659,7 @@ export default function Variations() {
                   <select
                     value={editItem.reason}
                     onChange={e => setEditItem((f: any /* eslint-disable-line @typescript-eslint/no-explicit-any */) => ({ ...f, reason: e.target.value }))}
-                    className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white"
+                    className="w-full px-3 py-2 input input-bordered text-white"
                   >
                     <option value="">Select reason...</option>
                     <option>Site condition</option>
@@ -671,7 +674,7 @@ export default function Variations() {
                   <select
                     value={editItem.impact}
                     onChange={e => setEditItem((f: any /* eslint-disable-line @typescript-eslint/no-explicit-any */) => ({ ...f, impact: e.target.value }))}
-                    className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white"
+                    className="w-full px-3 py-2 input input-bordered text-white"
                   >
                     <option value="increase">Increase</option>
                     <option value="decrease">Decrease</option>
@@ -686,7 +689,7 @@ export default function Variations() {
                     type="text"
                     value={editItem.subcontractor}
                     onChange={e => setEditItem((f: any /* eslint-disable-line @typescript-eslint/no-explicit-any */) => ({ ...f, subcontractor: e.target.value }))}
-                    className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500"
+                    className="w-full px-3 py-2 input input-bordered text-white placeholder-gray-500"
                   />
                 </div>
                 <div>
@@ -695,7 +698,7 @@ export default function Variations() {
                     type="date"
                     value={editItem.submittedDate}
                     onChange={e => setEditItem((f: any /* eslint-disable-line @typescript-eslint/no-explicit-any */) => ({ ...f, submittedDate: e.target.value }))}
-                    className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500"
+                    className="w-full px-3 py-2 input input-bordered text-white placeholder-gray-500"
                   />
                 </div>
               </div>
@@ -717,5 +720,6 @@ export default function Variations() {
         </div>
       )}
     </div>
+    </>
   );
 }

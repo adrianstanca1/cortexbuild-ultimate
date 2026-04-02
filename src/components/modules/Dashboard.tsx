@@ -24,6 +24,10 @@ import { useSafetyIncidents } from '../../hooks/useSafetyIncidents';
 import { useRFIs } from '../../hooks/useRFIs';
 import { useTasks } from '../../hooks/useTasks';
 import { useProjects } from '../../hooks/useProjects';
+import { ModuleBreadcrumbs } from '../ui/Breadcrumbs';
+import { type Module } from '../../types';
+import { KPICardSkeleton, ChartSkeleton } from '../ui/Skeleton';
+import { ActivityFeed } from '../ui/ActivityFeed';
 
 type AnyRow = Record<string, unknown>;
 
@@ -183,6 +187,7 @@ function ActivityItem({ user, action, module, time, accent, delay = 0 }: {
 
 // ─── Main Dashboard ───────────────────────────────────────────────────────
 export function Dashboard() {
+  const [isLoading, setIsLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<'overview' | 'projects' | 'finance' | 'safety' | 'activity'>('overview');
   const [dashboardKpi, setDashboardKpi] = useState<{
     activeProjects?: number; totalRevenue?: number; outstanding?: number;
@@ -260,7 +265,7 @@ export function Dashboard() {
   }, []);
 
   // eslint-disable-next-line react-hooks/set-state-in-effect
-  useEffect(() => { setMounted(true); }, []);
+  useEffect(() => { setMounted(true); setIsLoading(false); }, []);
 
   useEffect(() => {
     dashboardApi.getOverview().then(d => setDashboardKpi(d.kpi)).catch((err) => {
@@ -355,6 +360,9 @@ export function Dashboard() {
 
   return (
     <div className="space-y-5">
+      {/* ── Breadcrumbs ────────────────────────────────────────────── */}
+      <ModuleBreadcrumbs currentModule="dashboard" onNavigate={() => {}} />
+
       {/* ── Site Status Banner ─────────────────────────────────────── */}
       <SiteStatusBanner />
 
@@ -725,6 +733,13 @@ export function Dashboard() {
         <QuickStats />
         <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
           <RFITimeline rfis={rfis.slice(0, 5).map(r => ({ id: r.id, number: String(r.number), title: r.title, status: (r.status === 'OVERDUE' ? 'OPEN' : r.status) as 'OPEN'|'ANSWERED'|'CLOSED', dueDate: r.dueDate ?? undefined, createdAt: r.createdAt }))} />
+          {/* Activity Feed */}
+          <div className="card bg-base-100 border border-base-300">
+            <div className="card-body p-4">
+              <h3 className="card-title text-sm">Recent Activity</h3>
+              <ActivityFeed limit={5} />
+            </div>
+          </div>
         </div>
         <TaskList tasks={tasks.slice(0, 6).map(t => ({ id: t.id, title: t.title, status: t.status as 'TODO'|'IN_PROGRESS'|'REVIEW'|'COMPLETE'|'BLOCKED', priority: t.priority as 'LOW'|'MEDIUM'|'HIGH'|'CRITICAL', dueDate: t.dueDate ?? undefined, assignee: t.assignee ? { name: t.assignee.name } : undefined }))} onViewAll={() => {}} />
       </div>
@@ -1037,3 +1052,4 @@ export function Dashboard() {
     </div>
   );
 }
+export default Dashboard;

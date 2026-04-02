@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { Search, Mail, CheckCircle, X, Bell, Send, FileText } from 'lucide-react';
 import { emailApi } from '../../services/api';
 import { toast } from 'sonner';
+import { ModuleBreadcrumbs } from '../ui/Breadcrumbs';
 
 type AnyRow = Record<string, unknown>;
 type SubTab = 'inbox' | 'sent' | 'threads' | 'notifications' | 'templates';
@@ -93,7 +94,9 @@ export function EmailHistory() {
   const projects = Array.from(new Set(emails.map((e) => String(e.project ?? '')).filter((p) => p)));
 
   return (
-    <div className="p-6 space-y-6">
+    <>
+      <ModuleBreadcrumbs currentModule="email-history" onNavigate={() => {}} />
+      <div className="p-6 space-y-6">
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-white">Email</h1>
@@ -453,5 +456,7 @@ export function EmailHistory() {
         </div>
       )}
     </div>
+    </>
   );
 }
+export default EmailHistory;

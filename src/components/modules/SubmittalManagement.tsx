@@ -34,7 +34,7 @@ interface Submittal {
 
 
 
-const SubmittalManagement: React.FC = () => {
+export const SubmittalManagement: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'all' | 'pending' | 'approved' | 'rejected'>('all');
   const [selectedSubmittal, setSelectedSubmittal] = useState<Submittal | null>(null);
   const [_showFilters, _setShowFilters] = useState(false);

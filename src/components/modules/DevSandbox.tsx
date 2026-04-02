@@ -32,7 +32,7 @@ const generateMockResponse = (prompt: string): string => {
   return `Processed prompt: "${prompt}"\n\nThis is a mock response from the DevSandbox environment. In production, this would connect to your preferred AI service (OpenAI, Anthropic, Google, etc.) with the configured parameters.`;
 };
 
-const DevSandbox: React.FC = () => {
+export const DevSandbox: React.FC = () => {
   const [prompt, setPrompt] = useState('Explain the concept of BIM (Building Information Modeling) in one sentence.');
   const [response, setResponse] = useState('');
   const [isLoading, setIsLoading] = useState(false);

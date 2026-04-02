@@ -4,6 +4,7 @@ import { Plus, Leaf, Recycle, Trash2, X, Upload, Edit } from 'lucide-react';
 import { uploadFile } from '../../services/api';
 import { toast } from 'sonner';
 import { EmptyState } from '../ui/EmptyState';
+import { ModuleBreadcrumbs } from '../ui/Breadcrumbs';
 import { useWasteManagement } from '../../hooks/useData';
 
 export default function WasteManagement() {
@@ -95,7 +96,9 @@ export default function WasteManagement() {
   }
 
   return (
-    <div className="p-6 space-y-6">
+    <>
+      <ModuleBreadcrumbs currentModule="waste-management" onNavigate={() => {}} />
+      <div className="p-6 space-y-6">
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-2xl font-bold text-white">Waste Management</h2>
@@ -148,7 +151,7 @@ export default function WasteManagement() {
           placeholder="Search waste records..."
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
-          className="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white mb-4"
+          className="w-full px-4 py-2 input input-bordered text-white mb-4"
         />
         {isLoading ? (
           <div className="text-center py-8 text-gray-400">Loading waste data...</div>
@@ -222,7 +225,7 @@ export default function WasteManagement() {
             <div className="p-6 space-y-4">
               <div>
                 <label htmlFor="wmType" className="block text-gray-400 text-xs mb-1">Waste Type *</label>
-                <select id="wmType" value={form.wasteType} onChange={e => setForm(f => ({ ...f, wasteType: e.target.value }))} className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white">
+                <select id="wmType" value={form.wasteType} onChange={e => setForm(f => ({ ...f, wasteType: e.target.value }))} className="w-full px-3 py-2 input input-bordered text-white">
                   <option value="">Select type...</option>
                   <option value="Hardcore">Hardcore</option>
                   <option value="Concrete">Concrete</option>
@@ -237,11 +240,11 @@ export default function WasteManagement() {
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label htmlFor="wmQty" className="block text-gray-400 text-xs mb-1">Quantity</label>
-                  <input id="wmQty" type="number" value={form.quantity} onChange={e => setForm(f => ({ ...f, quantity: e.target.value }))} placeholder="0.00" className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500" />
+                  <input id="wmQty" type="number" value={form.quantity} onChange={e => setForm(f => ({ ...f, quantity: e.target.value }))} placeholder="0.00" className="w-full px-3 py-2 input input-bordered text-white placeholder-gray-500" />
                 </div>
                 <div>
                   <label htmlFor="wmUnit" className="block text-gray-400 text-xs mb-1">Unit</label>
-                  <select id="wmUnit" value={form.unit} onChange={e => setForm(f => ({ ...f, unit: e.target.value }))} className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white">
+                  <select id="wmUnit" value={form.unit} onChange={e => setForm(f => ({ ...f, unit: e.target.value }))} className="w-full px-3 py-2 input input-bordered text-white">
                     <option value="tonnes">Tonnes</option>
                     <option value="kg">Kilograms</option>
                     <option value="m3">Cubic Metres</option>
@@ -250,21 +253,21 @@ export default function WasteManagement() {
               </div>
               <div>
                 <label htmlFor="wmCarrier" className="block text-gray-400 text-xs mb-1">Waste Carrier</label>
-                <input id="wmCarrier" type="text" value={form.carrier} onChange={e => setForm(f => ({ ...f, carrier: e.target.value }))} placeholder="Carrier company name" className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500" />
+                <input id="wmCarrier" type="text" value={form.carrier} onChange={e => setForm(f => ({ ...f, carrier: e.target.value }))} placeholder="Carrier company name" className="w-full px-3 py-2 input input-bordered text-white placeholder-gray-500" />
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label htmlFor="wmDate" className="block text-gray-400 text-xs mb-1">Collection Date</label>
-                  <input id="wmDate" type="date" value={form.collectionDate} onChange={e => setForm(f => ({ ...f, collectionDate: e.target.value }))} className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white" />
+                  <input id="wmDate" type="date" value={form.collectionDate} onChange={e => setForm(f => ({ ...f, collectionDate: e.target.value }))} className="w-full px-3 py-2 input input-bordered text-white" />
                 </div>
                 <div>
                   <label htmlFor="wmRate" className="block text-gray-400 text-xs mb-1">Recycling Rate (%)</label>
-                  <input id="wmRate" type="number" value={form.recyclingRate} onChange={e => setForm(f => ({ ...f, recyclingRate: e.target.value }))} placeholder="75" className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500" />
+                  <input id="wmRate" type="number" value={form.recyclingRate} onChange={e => setForm(f => ({ ...f, recyclingRate: e.target.value }))} placeholder="75" className="w-full px-3 py-2 input input-bordered text-white placeholder-gray-500" />
                 </div>
               </div>
               <div>
                 <label htmlFor="wmStatus" className="block text-gray-400 text-xs mb-1">Status</label>
-                <select id="wmStatus" value={form.status} onChange={e => setForm(f => ({ ...f, status: e.target.value }))} className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white">
+                <select id="wmStatus" value={form.status} onChange={e => setForm(f => ({ ...f, status: e.target.value }))} className="w-full px-3 py-2 input input-bordered text-white">
                   <option value="pending">Pending Collection</option>
                   <option value="collected">Collected</option>
                 </select>
@@ -290,7 +293,7 @@ export default function WasteManagement() {
             <div className="p-6 space-y-4">
               <div>
                 <label htmlFor="editWmType" className="block text-gray-400 text-xs mb-1">Waste Type *</label>
-                <select id="editWmType" value={editItem.wasteType || ''} onChange={e => setEditItem((f: any) => ({ ...f, wasteType: e.target.value }))} className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white">
+                <select id="editWmType" value={editItem.wasteType || ''} onChange={e => setEditItem((f: any) => ({ ...f, wasteType: e.target.value }))} className="w-full px-3 py-2 input input-bordered text-white">
                   <option value="">Select type...</option>
                   <option value="Hardcore">Hardcore</option>
                   <option value="Concrete">Concrete</option>
@@ -305,11 +308,11 @@ export default function WasteManagement() {
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label htmlFor="editWmQty" className="block text-gray-400 text-xs mb-1">Quantity</label>
-                  <input id="editWmQty" type="number" value={editItem.quantity || ''} onChange={e => setEditItem((f: any) => ({ ...f, quantity: e.target.value }))} className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500" />
+                  <input id="editWmQty" type="number" value={editItem.quantity || ''} onChange={e => setEditItem((f: any) => ({ ...f, quantity: e.target.value }))} className="w-full px-3 py-2 input input-bordered text-white placeholder-gray-500" />
                 </div>
                 <div>
                   <label htmlFor="editWmUnit" className="block text-gray-400 text-xs mb-1">Unit</label>
-                  <select id="editWmUnit" value={editItem.unit || 'tonnes'} onChange={e => setEditItem((f: any) => ({ ...f, unit: e.target.value }))} className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white">
+                  <select id="editWmUnit" value={editItem.unit || 'tonnes'} onChange={e => setEditItem((f: any) => ({ ...f, unit: e.target.value }))} className="w-full px-3 py-2 input input-bordered text-white">
                     <option value="tonnes">Tonnes</option>
                     <option value="kg">Kilograms</option>
                     <option value="m3">Cubic Metres</option>
@@ -318,21 +321,21 @@ export default function WasteManagement() {
               </div>
               <div>
                 <label htmlFor="editWmCarrier" className="block text-gray-400 text-xs mb-1">Waste Carrier</label>
-                <input id="editWmCarrier" type="text" value={editItem.carrier || ''} onChange={e => setEditItem((f: any) => ({ ...f, carrier: e.target.value }))} className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500" />
+                <input id="editWmCarrier" type="text" value={editItem.carrier || ''} onChange={e => setEditItem((f: any) => ({ ...f, carrier: e.target.value }))} className="w-full px-3 py-2 input input-bordered text-white placeholder-gray-500" />
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label htmlFor="editWmDate" className="block text-gray-400 text-xs mb-1">Collection Date</label>
-                  <input id="editWmDate" type="date" value={editItem.collectionDate || ''} onChange={e => setEditItem((f: any) => ({ ...f, collectionDate: e.target.value }))} className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white" />
+                  <input id="editWmDate" type="date" value={editItem.collectionDate || ''} onChange={e => setEditItem((f: any) => ({ ...f, collectionDate: e.target.value }))} className="w-full px-3 py-2 input input-bordered text-white" />
                 </div>
                 <div>
                   <label htmlFor="editWmRate" className="block text-gray-400 text-xs mb-1">Recycling Rate (%)</label>
-                  <input id="editWmRate" type="number" value={editItem.recyclingRate || '75'} onChange={e => setEditItem((f: any) => ({ ...f, recyclingRate: e.target.value }))} className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500" />
+                  <input id="editWmRate" type="number" value={editItem.recyclingRate || '75'} onChange={e => setEditItem((f: any) => ({ ...f, recyclingRate: e.target.value }))} className="w-full px-3 py-2 input input-bordered text-white placeholder-gray-500" />
                 </div>
               </div>
               <div>
                 <label htmlFor="editWmStatus" className="block text-gray-400 text-xs mb-1">Status</label>
-                <select id="editWmStatus" value={editItem.status || 'pending'} onChange={e => setEditItem((f: any) => ({ ...f, status: e.target.value }))} className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white">
+                <select id="editWmStatus" value={editItem.status || 'pending'} onChange={e => setEditItem((f: any) => ({ ...f, status: e.target.value }))} className="w-full px-3 py-2 input input-bordered text-white">
                   <option value="pending">Pending Collection</option>
                   <option value="collected">Collected</option>
                 </select>
@@ -348,5 +351,6 @@ export default function WasteManagement() {
         </div>
       )}
     </div>
+    </>
   );
 }

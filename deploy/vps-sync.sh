@@ -2,13 +2,15 @@
 set -euo pipefail
 
 # CortexBuild Ultimate - VPS Deployment Script
-# Syncs local development changes to production VPS
+# Syncs local development changes to production VPS using SSH key authentication
 
 readonly SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 readonly PROJECT_ROOT="$(dirname "$SCRIPT_DIR")"
 readonly VPS_HOST="root@72.62.132.43"
-readonly VPS_PATH="/opt/cortexbuild-ultimate"
-readonly BACKUP_PATH="/opt/backups/cortexbuild-$(date +%Y%m%d_%H%M%S)"
+readonly VPS_PATH="/var/www/cortexbuild-ultimate"
+readonly BACKUP_PATH="/var/backups/cortexbuild-$(date +%Y%m%d_%H%M%S)"
+readonly SSH_KEY="${SSH_KEY:-$HOME/.ssh/id_ed25519_vps}"
+readonly SSH_OPTS="-o ConnectTimeout=10 -o StrictHostKeyChecking=accept-new -o IdentitiesOnly=yes -i $SSH_KEY"
 
 echo "🚀 CortexBuild Ultimate - VPS Deployment"
 echo "=========================================="
@@ -20,22 +22,23 @@ echo
 # Preflight checks
 echo "🔍 Preflight Checks..."
 
-# Check if we can connect to VPS
-if ! ssh -o ConnectTimeout=10 "$VPS_HOST" "echo 'SSH connection successful'" >/dev/null 2>&1; then
-    echo "❌ Cannot connect to VPS. Please ensure:"
-    echo "   1. SSH access is configured: ssh-add ~/.ssh/id_ed25519_vps"
-    echo "   2. VPS is accessible: ping 72.62.132.43"
-    echo "   3. Credentials are correct (check Hostinger panel)"
-    echo
-    echo "🔧 To fix VPS access:"
-    echo "   1. Login to Hostinger panel"
-    echo "   2. Go to VPS management for srv1262179.hstgr.cloud"
-    echo "   3. Reset root password or upload SSH public key"
-    echo "   4. Add public key to /root/.ssh/authorized_keys"
+# Check SSH key exists
+if [[ ! -f "$SSH_KEY" ]]; then
+    echo "❌ SSH key not found: $SSH_KEY"
+    echo "   Generate one: ssh-keygen -t ed25519 -f $SSH_KEY -C 'cortexbuild-deploy'"
+    echo "   Then copy to VPS: ssh-copy-id -i ${SSH_KEY}.pub $VPS_HOST"
     exit 1
 fi
 
-# Check local build status
+# Check if we can connect to VPS
+if ! ssh $SSH_OPTS "$VPS_HOST" "echo 'SSH connection successful'" >/dev/null 2>&1; then
+    echo "❌ Cannot connect to VPS via SSH"
+    echo "   1. Add key to agent: ssh-add $SSH_KEY"
+    echo "   2. Copy key to VPS: ssh-copy-id -i ${SSH_KEY}.pub $VPS_HOST"
+    echo "   3. Or manually: cat ${SSH_KEY}.pub | ssh $VPS_HOST 'mkdir -p ~/.ssh && cat >> ~/.ssh/authorized_keys'"
+    exit 1
+fi
+
 echo "✅ SSH connection verified"
 echo "🏗️ Building production assets..."
 
@@ -78,7 +81,7 @@ echo "✅ Package created: $TAR_FILE"
 echo "🌐 Deploying to VPS..."
 
 # Create backup of existing deployment
-ssh "$VPS_HOST" "
+ssh $SSH_OPTS "$VPS_HOST" "
     if [ -d '$VPS_PATH' ]; then
         echo 'Creating backup...'
         sudo mkdir -p $(dirname '$BACKUP_PATH')
@@ -89,37 +92,37 @@ ssh "$VPS_HOST" "
 
 # Upload and extract
 echo "📤 Uploading package..."
-scp "$TAR_FILE" "$VPS_HOST:/tmp/cortexbuild-deploy.tar.gz"
+scp $SSH_OPTS "$TAR_FILE" "$VPS_HOST:/tmp/cortexbuild-deploy.tar.gz"
 
-ssh "$VPS_HOST" "
+ssh $SSH_OPTS "$VPS_HOST" "
     # Setup deployment directory
     sudo mkdir -p '$VPS_PATH'
     cd '$VPS_PATH'
-    
+
     # Extract new code
     sudo tar -xzf /tmp/cortexbuild-deploy.tar.gz
-    
+
     # Set permissions
     sudo chown -R root:root .
-    
+
     # Install dependencies
     echo '📦 Installing dependencies...'
     npm ci --production
     cd server && npm ci --production && cd ..
-    
+
     # Build production assets
     echo '🏗️ Building production assets on VPS...'
     npm run build
-    
+
     # Start services
     echo '🚀 Starting services...'
     docker-compose down || true
     docker-compose up -d
-    
+
     # Health check
     echo '🏥 Waiting for services to start...'
     sleep 30
-    
+
     # Verify deployment
     if curl -f http://localhost/api/health >/dev/null 2>&1; then
         echo '✅ Deployment successful!'
@@ -127,8 +130,9 @@ ssh "$VPS_HOST" "
     else
         echo '⚠️ Service health check failed'
         echo 'Please check logs: docker-compose logs'
+        exit 1
     fi
-    
+
     # Cleanup
     rm -f /tmp/cortexbuild-deploy.tar.gz
 "
@@ -153,4 +157,4 @@ echo "   - Grafana: http://72.62.132.43:3002"
 echo "   - Prometheus: http://72.62.132.43:9090"
 echo
 echo "🛠️ Rollback if needed:"
-echo "   ssh $VPS_HOST 'sudo rm -rf $VPS_PATH && sudo mv $BACKUP_PATH $VPS_PATH'"
+echo "   ssh $SSH_OPTS $VPS_HOST 'sudo rm -rf $VPS_PATH && sudo mv $BACKUP_PATH $VPS_PATH'"

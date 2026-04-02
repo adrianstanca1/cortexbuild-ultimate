@@ -11,6 +11,8 @@ import {
 } from 'lucide-react';
 import { BulkActionsBar, useBulkSelection } from '../ui/BulkActions';
 import { EmptyState } from '../ui/EmptyState';
+import { AdvancedTableFilter } from '../ui/AdvancedTableFilter';
+import { CardSkeleton } from '../ui/Skeleton';
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend,
   ResponsiveContainer,
@@ -24,6 +26,7 @@ import { projectImagesApi, projectTasksApi } from '../../services/api';
 import type { ProjectStatus } from '../../types';
 import clsx from 'clsx';
 import { toast } from 'sonner';
+import { ModuleBreadcrumbs } from '../ui/Breadcrumbs';
 
 type AnyRow = Record<string, unknown>;
 
@@ -152,7 +155,7 @@ function GalleryTab({ projectId, projectName }: GalleryTabProps) {
           <select
             value={filterCat}
             onChange={e => setFilterCat(e.target.value)}
-            className="bg-gray-800 border border-gray-700 rounded-lg px-3 py-1.5 text-sm text-white focus:outline-none focus:border-blue-500"
+            className="bg-gray-800 border border-gray-700 btn btn-sm text-sm text-white focus:outline-none focus:border-blue-500"
           >
             <option value="all">All Categories</option>
             {IMAGE_CATEGORIES.map(c => <option key={c} value={c}>{c.replace(/_/g,' ')}</option>)}
@@ -165,7 +168,7 @@ function GalleryTab({ projectId, projectName }: GalleryTabProps) {
           </button>
           <button
             onClick={() => setShowUpload(true)}
-            className="flex items-center gap-2 px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-sm rounded-lg transition-colors"
+            className="flex items-center gap-2 px-3 py-1.5 btn btn-primary text-sm rounded-lg transition-colors"
           >
             <Upload className="w-3.5 h-3.5" /> Add Photos
           </button>
@@ -183,14 +186,14 @@ function GalleryTab({ projectId, projectName }: GalleryTabProps) {
             <div>
               <label className="block text-xs text-gray-400 mb-1">Category</label>
               <select value={imgCategory} onChange={e => setImgCategory(e.target.value)}
-                className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-blue-500">
+                className="w-full input input-bordered w-full focus:outline-none focus:border-blue-500">
                 {IMAGE_CATEGORIES.map(c => <option key={c} value={c}>{c.replace(/_/g,' ')}</option>)}
               </select>
             </div>
             <div>
               <label className="block text-xs text-gray-400 mb-1">Caption (optional)</label>
               <input value={caption} onChange={e => setCaption(e.target.value)} placeholder="e.g. Steel frame completion"
-                className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-blue-500" />
+                className="w-full input input-bordered w-full focus:outline-none focus:border-blue-500" />
             </div>
           </div>
           <div
@@ -214,7 +217,7 @@ function GalleryTab({ projectId, projectName }: GalleryTabProps) {
       {isLoading ? (
         <div className="flex items-center justify-center py-16"><Loader2 className="w-8 h-8 text-blue-400 animate-spin" /></div>
       ) : displayed.length === 0 ? (
-        <div className="bg-gray-900 border border-gray-800 rounded-xl py-16 text-center">
+        <div className="card bg-base-100 border border-base-300 py-16 text-center">
           <Image className="w-12 h-12 text-gray-600 mx-auto mb-3" />
           <p className="text-gray-400 font-medium">No photos yet</p>
           <p className="text-gray-500 text-sm mt-1">Upload site photos to track progress visually</p>
@@ -222,7 +225,7 @@ function GalleryTab({ projectId, projectName }: GalleryTabProps) {
       ) : (
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
           {displayed.map((img: AnyRow) => (
-            <div key={String(img.id)} className="group relative bg-gray-900 border border-gray-800 rounded-xl overflow-hidden cursor-pointer hover:border-blue-600/50 transition-all"
+            <div key={String(img.id)} className="group relative card bg-base-100 border border-base-300 overflow-hidden cursor-pointer hover:border-blue-600/50 transition-all"
               onClick={() => setSelectedImage(img)}>
               <div className="aspect-[4/3] bg-gray-800">
                 <img
@@ -274,7 +277,7 @@ function GalleryTab({ projectId, projectName }: GalleryTabProps) {
                   </div>
                   <div className="flex items-center gap-2">
                     <button onClick={() => window.open(`https://www.cortexbuildpro.com${selectedImage.file_path}`, '_blank')}
-                      className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-sm rounded-lg transition-colors">
+                      className="flex items-center gap-1.5 px-3 py-1.5 btn btn-primary text-sm rounded-lg transition-colors">
                       <Download className="w-3.5 h-3.5" /> Download
                     </button>
                     <button onClick={() => handleDelete(String(selectedImage.id))}
@@ -413,19 +416,19 @@ function DocumentsTab({ projectId, projectName }: DocumentsTabProps) {
       <div className="flex items-center justify-between gap-3 flex-wrap">
         <div className="flex items-center gap-2 flex-wrap">
           <select value={filterCat} onChange={e => setFilterCat(e.target.value)}
-            className="bg-gray-800 border border-gray-700 rounded-lg px-3 py-1.5 text-sm text-white focus:outline-none focus:border-blue-500">
+            className="bg-gray-800 border border-gray-700 btn btn-sm text-sm text-white focus:outline-none focus:border-blue-500">
             <option value="all">All Categories</option>
             {DOC_CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
           </select>
           <div className="relative">
             <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400" />
             <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search documents..."
-              className="pl-8 pr-3 py-1.5 bg-gray-800 border border-gray-700 rounded-lg text-sm text-white focus:outline-none focus:border-blue-500 w-48" />
+              className="pl-8 pr-3 py-1.5 input input-bordered text-sm text-white focus:outline-none focus:border-blue-500 w-48" />
           </div>
           <span className="text-xs text-gray-400">{docs.length} document{docs.length !== 1 ? 's' : ''}</span>
         </div>
         <button onClick={() => setShowUpload(true)}
-          className="flex items-center gap-2 px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-sm rounded-lg transition-colors">
+          className="flex items-center gap-2 px-3 py-1.5 btn btn-primary text-sm rounded-lg transition-colors">
           <Upload className="w-3.5 h-3.5" /> Upload Document
         </button>
       </div>
@@ -442,31 +445,31 @@ function DocumentsTab({ projectId, projectName }: DocumentsTabProps) {
               <div>
                 <label className="block text-xs text-gray-400 mb-1">Category</label>
                 <select value={uploadForm.category} onChange={e => setUploadForm(f => ({ ...f, category: e.target.value }))}
-                  className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-blue-500">
+                  className="w-full input input-bordered w-full focus:outline-none focus:border-blue-500">
                   {DOC_CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
                 </select>
               </div>
               <div>
                 <label className="block text-xs text-gray-400 mb-1">Document Name</label>
                 <input value={uploadForm.name} onChange={e => setUploadForm(f => ({ ...f, name: e.target.value }))} placeholder="Leave blank to use filename"
-                  className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-blue-500" />
+                  className="w-full input input-bordered w-full focus:outline-none focus:border-blue-500" />
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="block text-xs text-gray-400 mb-1">Discipline</label>
                   <input value={uploadForm.discipline} onChange={e => setUploadForm(f => ({ ...f, discipline: e.target.value }))} placeholder="e.g. Structural"
-                    className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-blue-500" />
+                    className="w-full input input-bordered w-full focus:outline-none focus:border-blue-500" />
                 </div>
                 <div>
                   <label className="block text-xs text-gray-400 mb-1">Date Issued</label>
                   <input type="date" value={uploadForm.date_issued} onChange={e => setUploadForm(f => ({ ...f, date_issued: e.target.value }))}
-                    className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-blue-500" />
+                    className="w-full input input-bordered w-full focus:outline-none focus:border-blue-500" />
                 </div>
               </div>
               <div>
                 <label className="block text-xs text-gray-400 mb-1">Author</label>
                 <input value={uploadForm.author} onChange={e => setUploadForm(f => ({ ...f, author: e.target.value }))} placeholder="Author name"
-                  className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-blue-500" />
+                  className="w-full input input-bordered w-full focus:outline-none focus:border-blue-500" />
               </div>
               <div onClick={() => fileRef.current?.click()}
                 className="border-2 border-dashed border-gray-600 rounded-lg p-6 text-center cursor-pointer hover:border-blue-500 transition-colors">
@@ -489,11 +492,11 @@ function DocumentsTab({ projectId, projectName }: DocumentsTabProps) {
       {isLoading ? (
         <div className="flex items-center justify-center py-16"><Loader2 className="w-8 h-8 text-blue-400 animate-spin" /></div>
       ) : docs.length === 0 ? (
-        <div className="bg-gray-900 border border-gray-800 rounded-xl py-16 text-center">
+        <div className="card bg-base-100 border border-base-300 py-16 text-center">
           <EmptyState title="No documents found" description="Upload documents to keep project records organized" variant="documents" />
         </div>
       ) : (
-        <div className="bg-gray-900 border border-gray-800 rounded-xl overflow-hidden">
+        <div className="card bg-base-100 border border-base-300 overflow-hidden">
           <table className="w-full text-sm">
             <thead className="bg-gray-800/60 border-b border-gray-700">
               <tr>
@@ -551,34 +554,34 @@ function DocumentsTab({ projectId, projectName }: DocumentsTabProps) {
               <div>
                 <label className="block text-xs text-gray-400 mb-1">Name</label>
                 <input value={editForm.name} onChange={e => setEditForm(f => ({ ...f, name: e.target.value }))}
-                  className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-blue-500" />
+                  className="w-full input input-bordered w-full focus:outline-none focus:border-blue-500" />
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="block text-xs text-gray-400 mb-1">Category</label>
                   <select value={editForm.category} onChange={e => setEditForm(f => ({ ...f, category: e.target.value }))}
-                    className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-blue-500">
+                    className="w-full input input-bordered w-full focus:outline-none focus:border-blue-500">
                     {DOC_CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
                   </select>
                 </div>
                 <div>
                   <label className="block text-xs text-gray-400 mb-1">Author</label>
                   <input value={editForm.author} onChange={e => setEditForm(f => ({ ...f, author: e.target.value }))}
-                    className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-blue-500" />
+                    className="w-full input input-bordered w-full focus:outline-none focus:border-blue-500" />
                 </div>
               </div>
               <div>
                 <label className="block text-xs text-gray-400 mb-1">Discipline</label>
                 <input value={editForm.discipline} onChange={e => setEditForm(f => ({ ...f, discipline: e.target.value }))}
-                  className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-blue-500" />
+                  className="w-full input input-bordered w-full focus:outline-none focus:border-blue-500" />
               </div>
               <div className="flex gap-3 pt-2">
                 <button onClick={() => handleEdit(String(editDoc.id))}
-                  className="flex-1 bg-blue-600 hover:bg-blue-700 text-white rounded-lg py-2 text-sm font-semibold transition-colors">
+                  className="flex-1 btn btn-primary rounded-lg py-2 text-sm font-semibold transition-colors">
                   Save Changes
                 </button>
                 <button onClick={() => setEditDoc(null)}
-                  className="flex-1 bg-gray-800 hover:bg-gray-700 text-white rounded-lg py-2 text-sm font-semibold transition-colors">
+                  className="flex-1 btn btn-ghost rounded-lg py-2 text-sm font-semibold transition-colors">
                   Cancel
                 </button>
               </div>
@@ -765,14 +768,14 @@ function TasksTab({ projectId }: TasksTabProps) {
       <div className="flex items-center justify-between gap-3 flex-wrap">
         <div className="flex items-center gap-2 flex-wrap">
           <select value={filterPriority} onChange={e => setFilterPriority(e.target.value)}
-            className="bg-gray-800 border border-gray-700 rounded-lg px-3 py-1.5 text-sm text-white focus:outline-none focus:border-blue-500">
+            className="bg-gray-800 border border-gray-700 btn btn-sm text-sm text-white focus:outline-none focus:border-blue-500">
             <option value="all">All Priorities</option>
             {Object.entries(PRIORITY_CFG).map(([k, v]) => <option key={k} value={k}>{v.label}</option>)}
           </select>
           <span className="text-xs text-gray-400">{filteredTasks.length} task{filteredTasks.length !== 1 ? 's' : ''}</span>
         </div>
         <button onClick={() => setShowCreate(true)}
-          className="flex items-center gap-2 px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-sm rounded-lg transition-colors">
+          className="flex items-center gap-2 px-3 py-1.5 btn btn-primary text-sm rounded-lg transition-colors">
           <Plus className="w-3.5 h-3.5" /> Create Task
         </button>
       </div>
@@ -789,52 +792,52 @@ function TasksTab({ projectId }: TasksTabProps) {
               <div>
                 <label className="block text-xs text-gray-400 mb-1">Title *</label>
                 <input value={createForm.title} onChange={e => setCreateForm(f => ({ ...f, title: e.target.value }))} placeholder="Task title"
-                  className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-blue-500" />
+                  className="w-full input input-bordered w-full focus:outline-none focus:border-blue-500" />
               </div>
               <div>
                 <label className="block text-xs text-gray-400 mb-1">Description</label>
                 <textarea value={createForm.description} onChange={e => setCreateForm(f => ({ ...f, description: e.target.value }))} rows={2}
                   placeholder="Task details..."
-                  className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white resize-none focus:outline-none focus:border-blue-500" />
+                  className="w-full input input-bordered w-full resize-none focus:outline-none focus:border-blue-500" />
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="block text-xs text-gray-400 mb-1">Priority</label>
                   <select value={createForm.priority} onChange={e => setCreateForm(f => ({ ...f, priority: e.target.value }))}
-                    className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-blue-500">
+                    className="w-full input input-bordered w-full focus:outline-none focus:border-blue-500">
                     {Object.entries(PRIORITY_CFG).map(([k, v]) => <option key={k} value={k}>{v.label}</option>)}
                   </select>
                 </div>
                 <div>
                   <label className="block text-xs text-gray-400 mb-1">Due Date</label>
                   <input type="date" value={createForm.due_date} onChange={e => setCreateForm(f => ({ ...f, due_date: e.target.value }))}
-                    className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-blue-500" />
+                    className="w-full input input-bordered w-full focus:outline-none focus:border-blue-500" />
                 </div>
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="block text-xs text-gray-400 mb-1">Assigned To</label>
                   <input value={createForm.assigned_to} onChange={e => setCreateForm(f => ({ ...f, assigned_to: e.target.value }))} placeholder="Name"
-                    className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-blue-500" />
+                    className="w-full input input-bordered w-full focus:outline-none focus:border-blue-500" />
                 </div>
                 <div>
                   <label className="block text-xs text-gray-400 mb-1">Estimated Hours</label>
                   <input type="number" value={createForm.estimated_hours} onChange={e => setCreateForm(f => ({ ...f, estimated_hours: e.target.value }))} placeholder="0"
-                    className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-blue-500" />
+                    className="w-full input input-bordered w-full focus:outline-none focus:border-blue-500" />
                 </div>
               </div>
               <div>
                 <label className="block text-xs text-gray-400 mb-1">Category</label>
                 <input value={createForm.category} onChange={e => setCreateForm(f => ({ ...f, category: e.target.value }))} placeholder="general"
-                  className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-blue-500" />
+                  className="w-full input input-bordered w-full focus:outline-none focus:border-blue-500" />
               </div>
               <div className="flex gap-3 pt-2">
                 <button onClick={handleCreate}
-                  className="flex-1 bg-blue-600 hover:bg-blue-700 text-white rounded-lg py-2 text-sm font-semibold transition-colors">
+                  className="flex-1 btn btn-primary rounded-lg py-2 text-sm font-semibold transition-colors">
                   Create Task
                 </button>
                 <button onClick={() => setShowCreate(false)}
-                  className="flex-1 bg-gray-800 hover:bg-gray-700 text-white rounded-lg py-2 text-sm font-semibold transition-colors">
+                  className="flex-1 btn btn-ghost rounded-lg py-2 text-sm font-semibold transition-colors">
                   Cancel
                 </button>
               </div>
@@ -855,46 +858,46 @@ function TasksTab({ projectId }: TasksTabProps) {
               <div>
                 <label className="block text-xs text-gray-400 mb-1">Title *</label>
                 <input value={editForm.title} onChange={e => setEditForm(f => ({ ...f, title: e.target.value }))}
-                  className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-blue-500" />
+                  className="w-full input input-bordered w-full focus:outline-none focus:border-blue-500" />
               </div>
               <div>
                 <label className="block text-xs text-gray-400 mb-1">Description</label>
                 <textarea value={editForm.description} onChange={e => setEditForm(f => ({ ...f, description: e.target.value }))} rows={2}
-                  className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white resize-none focus:outline-none focus:border-blue-500" />
+                  className="w-full input input-bordered w-full resize-none focus:outline-none focus:border-blue-500" />
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="block text-xs text-gray-400 mb-1">Priority</label>
                   <select value={editForm.priority} onChange={e => setEditForm(f => ({ ...f, priority: e.target.value }))}
-                    className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-blue-500">
+                    className="w-full input input-bordered w-full focus:outline-none focus:border-blue-500">
                     {Object.entries(PRIORITY_CFG).map(([k, v]) => <option key={k} value={k}>{v.label}</option>)}
                   </select>
                 </div>
                 <div>
                   <label className="block text-xs text-gray-400 mb-1">Due Date</label>
                   <input type="date" value={editForm.due_date} onChange={e => setEditForm(f => ({ ...f, due_date: e.target.value }))}
-                    className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-blue-500" />
+                    className="w-full input input-bordered w-full focus:outline-none focus:border-blue-500" />
                 </div>
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="block text-xs text-gray-400 mb-1">Assigned To</label>
                   <input value={editForm.assigned_to} onChange={e => setEditForm(f => ({ ...f, assigned_to: e.target.value }))}
-                    className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-blue-500" />
+                    className="w-full input input-bordered w-full focus:outline-none focus:border-blue-500" />
                 </div>
                 <div>
                   <label className="block text-xs text-gray-400 mb-1">Estimated Hours</label>
                   <input type="number" value={editForm.estimated_hours} onChange={e => setEditForm(f => ({ ...f, estimated_hours: e.target.value }))}
-                    className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-blue-500" />
+                    className="w-full input input-bordered w-full focus:outline-none focus:border-blue-500" />
                 </div>
               </div>
               <div className="flex gap-3 pt-2">
                 <button onClick={handleUpdate}
-                  className="flex-1 bg-blue-600 hover:bg-blue-700 text-white rounded-lg py-2 text-sm font-semibold transition-colors">
+                  className="flex-1 btn btn-primary rounded-lg py-2 text-sm font-semibold transition-colors">
                   Save Changes
                 </button>
                 <button onClick={() => setEditingTask(null)}
-                  className="flex-1 bg-gray-800 hover:bg-gray-700 text-white rounded-lg py-2 text-sm font-semibold transition-colors">
+                  className="flex-1 btn btn-ghost rounded-lg py-2 text-sm font-semibold transition-colors">
                   Cancel
                 </button>
               </div>
@@ -934,7 +937,7 @@ function TasksTab({ projectId }: TasksTabProps) {
 
       {/* Summary bar */}
       {!isLoading && filteredTasks.length > 0 && (
-        <div className="flex items-center gap-4 text-xs text-gray-400 bg-gray-900 border border-gray-800 rounded-xl px-4 py-3">
+        <div className="flex items-center gap-4 text-xs text-gray-400 card bg-base-100 border border-base-300 px-4 py-3">
           <span><strong className="text-white">{filteredTasks.length}</strong> total tasks</span>
           <span>·</span>
           <span><strong className="text-green-400">{(filteredTasks as AnyRow[]).filter((t: AnyRow) => t.status === 'done').length}</strong> done</span>
@@ -1087,7 +1090,7 @@ function ProjectWorkspace({ project, onBack, onEdit }: WorkspaceProps) {
             <p className="text-gray-400 text-sm">{String(project.client??'')} &nbsp;·&nbsp; <MapPin className="inline w-3.5 h-3.5"/> {String(project.location??project.address??'')}</p>
           </div>
           <div className="flex items-center gap-2 ml-4 flex-shrink-0">
-            <button type="button" onClick={onEdit} className="flex items-center gap-1.5 px-3 py-1.5 bg-gray-800 hover:bg-gray-700 text-white text-sm rounded-lg transition-colors">
+            <button type="button" onClick={onEdit} className="flex items-center gap-1.5 px-3 py-1.5 btn btn-ghost text-sm rounded-lg transition-colors">
               <Edit2 className="w-3.5 h-3.5"/> Edit
             </button>
           </div>
@@ -1136,13 +1139,13 @@ function ProjectWorkspace({ project, onBack, onEdit }: WorkspaceProps) {
       </div>
 
       {/* Tab bar */}
-      <div className="flex gap-1 mb-4 bg-gray-900 border border-gray-800 rounded-xl p-1 overflow-x-auto">
+      <div className="flex gap-1 mb-4 card bg-base-100 border border-base-300 p-1 overflow-x-auto">
         {TABS.map(t => {
           const Icon = t.icon;
           return (
             <button type="button"  key={t.id} onClick={()=>setTab(t.id as WorkspaceTab)}
               className={clsx('flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-all',
-                tab===t.id ? 'bg-blue-600 text-white shadow' : 'text-gray-400 hover:text-white hover:bg-gray-800')}>
+                tab===t.id ? 'bg-blue-600 text-white shadow' : 'btn btn-ghost')}>
               <Icon className="w-3.5 h-3.5"/>{t.label}
             </button>
           );
@@ -1166,7 +1169,7 @@ function ProjectWorkspace({ project, onBack, onEdit }: WorkspaceProps) {
               {label:'Open RFIs',       value:String(rfis.length),   sub:`${openRFIs} awaiting response`, icon:MessageSquare, col:'text-orange-400'},
               {label:'CO Value Approved',value:fmtM(approvedCOVal),   sub:`${cos.length} total change orders`, icon:ClipboardList, col:'text-purple-400'},
             ].map(({label,value,sub,icon:Icon,col})=>(
-              <div key={label} className="bg-gray-900 border border-gray-800 rounded-xl p-4">
+              <div key={label} className="card bg-base-100 border border-base-300 p-4">
                 <div className="flex items-center justify-between mb-2"><p className="text-gray-400 text-sm">{label}</p><Icon className={`w-4 h-4 ${col}`}/></div>
                 <p className="text-white font-bold text-xl">{value}</p>
                 <p className="text-gray-500 text-xs mt-1">{sub}</p>
@@ -1174,7 +1177,7 @@ function ProjectWorkspace({ project, onBack, onEdit }: WorkspaceProps) {
             ))}
           </div>
           <div className="grid grid-cols-2 gap-4">
-            <div className="bg-gray-900 border border-gray-800 rounded-xl p-5">
+            <div className="card bg-base-100 border border-base-300 p-5">
               <h3 className="text-sm font-semibold text-white mb-4">Project Details</h3>
               <dl className="space-y-3 text-sm">
                 {[
@@ -1191,7 +1194,7 @@ function ProjectWorkspace({ project, onBack, onEdit }: WorkspaceProps) {
                 ))}
               </dl>
             </div>
-            <div className="bg-gray-900 border border-gray-800 rounded-xl p-5">
+            <div className="card bg-base-100 border border-base-300 p-5">
               <h3 className="text-sm font-semibold text-white mb-4">Phase Milestones</h3>
               <div className="space-y-2">
                 {PROJECT_PHASES.slice(0, 7).map(phase => {
@@ -1211,7 +1214,7 @@ function ProjectWorkspace({ project, onBack, onEdit }: WorkspaceProps) {
             </div>
           </div>
           {!!project.description && (
-            <div className="bg-gray-900 border border-gray-800 rounded-xl p-5">
+            <div className="card bg-base-100 border border-base-300 p-5">
               <h3 className="text-sm font-semibold text-white mb-2">Description</h3>
               <p className="text-gray-300 text-sm leading-relaxed">{String(project.description)}</p>
             </div>
@@ -1221,7 +1224,7 @@ function ProjectWorkspace({ project, onBack, onEdit }: WorkspaceProps) {
 
       {tab==='timeline' && (
         <div className="space-y-4">
-          <div className="bg-gray-900 border border-gray-800 rounded-xl p-6">
+          <div className="card bg-base-100 border border-base-300 p-6">
             <h3 className="text-sm font-semibold text-white mb-6">Project Timeline — Gantt Chart</h3>
             <div className="overflow-x-auto pb-4">
               <div className="min-w-[800px]">
@@ -1259,7 +1262,7 @@ function ProjectWorkspace({ project, onBack, onEdit }: WorkspaceProps) {
 
       {tab==='milestones' && (
         <div className="space-y-4">
-          <div className="bg-gray-900 border border-gray-800 rounded-xl p-6">
+          <div className="card bg-base-100 border border-base-300 p-6">
             <h3 className="text-sm font-semibold text-white mb-6">Project Milestones</h3>
             <div className="space-y-0">
               {milestones.map((milestone, idx) => {
@@ -1318,13 +1321,13 @@ function ProjectWorkspace({ project, onBack, onEdit }: WorkspaceProps) {
               {label:'Remaining',    value:fmtM(budget-spent),      col:'text-green-400'},
               {label:'Total Invoiced',value:fmtM(totalInvoiced),    col:'text-blue-400'},
             ].map(({label,value,col})=>(
-              <div key={label} className="bg-gray-900 border border-gray-800 rounded-xl p-4">
+              <div key={label} className="card bg-base-100 border border-base-300 p-4">
                 <p className="text-gray-400 text-xs mb-1">{label}</p>
                 <p className={`text-xl font-bold ${col}`}>{value}</p>
               </div>
             ))}
           </div>
-          <div className="bg-gray-900 border border-gray-800 rounded-xl p-5">
+          <div className="card bg-base-100 border border-base-300 p-5">
             <h3 className="text-sm font-semibold text-white mb-4">Budget vs Spent</h3>
             <div className="mb-3">
               <div className="flex justify-between text-xs text-gray-400 mb-1"><span>Budget utilisation</span><span>{pct.toFixed(1)}%</span></div>
@@ -1345,7 +1348,7 @@ function ProjectWorkspace({ project, onBack, onEdit }: WorkspaceProps) {
               </BarChart>
             </ResponsiveContainer>
           </div>
-          <div className="bg-gray-900 border border-gray-800 rounded-xl overflow-hidden">
+          <div className="card bg-base-100 border border-base-300 overflow-hidden">
             <div className="px-5 py-4 border-b border-gray-800">
               <h3 className="text-sm font-semibold text-white">Invoices for this Project</h3>
             </div>
@@ -1378,7 +1381,7 @@ function ProjectWorkspace({ project, onBack, onEdit }: WorkspaceProps) {
               {label:'All Personnel',   value:String(teamAll.length),           col:'text-blue-400'},
               {label:'Phase',           value:String(project.phase??'—'),       col:'text-purple-400'},
             ].map(({label,value,col})=>(
-              <div key={label} className="bg-gray-900 border border-gray-800 rounded-xl p-4">
+              <div key={label} className="card bg-base-100 border border-base-300 p-4">
                 <p className="text-gray-400 text-xs mb-1">{label}</p>
                 <p className={`text-xl font-bold ${col}`}>{value}</p>
               </div>
@@ -1386,7 +1389,7 @@ function ProjectWorkspace({ project, onBack, onEdit }: WorkspaceProps) {
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
             {teamAll.map(m=>(
-              <div key={String(m.id)} className="bg-gray-900 border border-gray-800 rounded-xl p-4 flex items-center gap-3">
+              <div key={String(m.id)} className="card bg-base-100 border border-base-300 p-4 flex items-center gap-3">
                 <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-600 to-purple-600 flex items-center justify-center text-white font-bold text-sm flex-shrink-0">
                   {String(m.name??'?').split(' ').map((n:string)=>n[0]).join('').slice(0,2).toUpperCase()}
                 </div>
@@ -1406,7 +1409,7 @@ function ProjectWorkspace({ project, onBack, onEdit }: WorkspaceProps) {
 
       {tab==='rfis' && (
         <div className="space-y-4">
-          <div className="bg-gray-900 border border-gray-800 rounded-xl overflow-hidden">
+          <div className="card bg-base-100 border border-base-300 overflow-hidden">
             <div className="px-5 py-4 border-b border-gray-800 flex items-center justify-between">
               <h3 className="text-sm font-semibold text-white">RFIs ({rfis.length})</h3>
               <span className="text-xs text-orange-400">{openRFIs} open</span>
@@ -1428,7 +1431,7 @@ function ProjectWorkspace({ project, onBack, onEdit }: WorkspaceProps) {
               </table>
             )}
           </div>
-          <div className="bg-gray-900 border border-gray-800 rounded-xl overflow-hidden">
+          <div className="card bg-base-100 border border-base-300 overflow-hidden">
             <div className="px-5 py-4 border-b border-gray-800 flex items-center justify-between">
               <h3 className="text-sm font-semibold text-white">Change Orders ({cos.length})</h3>
               <span className="text-xs text-blue-400">+{fmtM(approvedCOVal)} approved</span>
@@ -1460,13 +1463,13 @@ function ProjectWorkspace({ project, onBack, onEdit }: WorkspaceProps) {
               {label:'Total Records',   value:String(safety.length),                  col:'text-white'},
               {label:'Near Misses',     value:String(safety.filter((s: AnyRow)=>s.type==='near-miss'||s.type==='near_miss').length), col:'text-orange-400'},
             ].map(({label,value,col})=>(
-              <div key={label} className="bg-gray-900 border border-gray-800 rounded-xl p-4">
+              <div key={label} className="card bg-base-100 border border-base-300 p-4">
                 <p className="text-gray-400 text-xs mb-1">{label}</p>
                 <p className={`text-xl font-bold ${col}`}>{value}</p>
               </div>
             ))}
           </div>
-          <div className="bg-gray-900 border border-gray-800 rounded-xl overflow-hidden">
+          <div className="card bg-base-100 border border-base-300 overflow-hidden">
             {safety.length===0 ? <p className="py-10 text-center text-gray-500">No safety records for this project</p> : (
               <table className="w-full text-sm">
                 <thead className="bg-gray-800/60"><tr>{['Title','Type','Severity','Status','Date'].map(h=><th key={h} className="px-4 py-3 text-left text-xs font-semibold text-gray-400 uppercase">{h}</th>)}</tr></thead>
@@ -1491,7 +1494,7 @@ function ProjectWorkspace({ project, onBack, onEdit }: WorkspaceProps) {
         <div className="space-y-3">
           {reports.length===0 ? <p className="py-10 text-center text-gray-500">No daily reports for this project</p> :
             reports.slice().sort((a,b)=>String(b.date??'').localeCompare(String(a.date??''))).map((rep: AnyRow)=>(
-              <div key={String(rep.id)} className="bg-gray-900 border border-gray-800 rounded-xl p-5">
+              <div key={String(rep.id)} className="card bg-base-100 border border-base-300 p-5">
                 <div className="flex items-center justify-between mb-3">
                   <div>
                     <p className="text-white font-semibold">{String(rep.date??'—')}</p>
@@ -1604,6 +1607,9 @@ export function Projects() {
 
   return (
     <div className="space-y-6">
+      {/* Breadcrumbs */}
+      <ModuleBreadcrumbs currentModule="projects" onNavigate={() => {}} />
+
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
@@ -1612,7 +1618,7 @@ export function Projects() {
         </div>
         <div className="flex items-center gap-2">
           <button type="button" onClick={()=>refetch()} className="p-2 text-gray-400 hover:text-white rounded-lg hover:bg-gray-800 transition-colors"><RefreshCw className="w-4 h-4"/></button>
-          <button type="button" onClick={openCreate} className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded-lg text-white font-medium transition-colors">
+          <button type="button" onClick={openCreate} className="flex items-center gap-2 px-4 py-2 btn btn-primary rounded-lg text-white font-medium transition-colors">
             <Plus className="w-4 h-4"/>New Project
           </button>
         </div>
@@ -1630,7 +1636,7 @@ export function Projects() {
           <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400"/>
             <input value={search} onChange={e=>setSearch(e.target.value)} placeholder="Search projects…"
-              className="w-full pl-9 pr-3 py-1.5 bg-gray-800 border border-gray-700 rounded-lg text-white text-sm focus:outline-none focus:border-blue-500"/>
+              className="w-full pl-9 pr-3 py-1.5 input input-bordered text-white text-sm focus:outline-none focus:border-blue-500"/>
           </div>
         </div>
       </div>
@@ -1736,69 +1742,69 @@ export function Projects() {
               <div className="grid grid-cols-2 gap-4">
                 <div className="col-span-2">
                   <label className="block text-xs font-medium text-gray-400 mb-1">Project Name *</label>
-                  <input value={form.name} onChange={e=>setForm(f=>({...f,name:e.target.value}))} placeholder="e.g. Canary Wharf Office Complex" className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-blue-500"/>
+                  <input value={form.name} onChange={e=>setForm(f=>({...f,name:e.target.value}))} placeholder="e.g. Canary Wharf Office Complex" className="w-full input input-bordered px-3 py-2 text-white text-sm focus:outline-none focus:border-blue-500"/>
                 </div>
                 <div>
                   <label className="block text-xs font-medium text-gray-400 mb-1">Client *</label>
-                  <input value={form.client} onChange={e=>setForm(f=>({...f,client:e.target.value}))} placeholder="Client name" className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-blue-500"/>
+                  <input value={form.client} onChange={e=>setForm(f=>({...f,client:e.target.value}))} placeholder="Client name" className="w-full input input-bordered px-3 py-2 text-white text-sm focus:outline-none focus:border-blue-500"/>
                 </div>
                 <div>
                   <label className="block text-xs font-medium text-gray-400 mb-1">Location</label>
-                  <input value={form.location} onChange={e=>setForm(f=>({...f,location:e.target.value}))} placeholder="City, Postcode" className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-blue-500"/>
+                  <input value={form.location} onChange={e=>setForm(f=>({...f,location:e.target.value}))} placeholder="City, Postcode" className="w-full input input-bordered px-3 py-2 text-white text-sm focus:outline-none focus:border-blue-500"/>
                 </div>
                 <div>
                   <label className="block text-xs font-medium text-gray-400 mb-1">Type</label>
-                  <select value={form.type} onChange={e=>setForm(f=>({...f,type:e.target.value}))} className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-blue-500">
+                  <select value={form.type} onChange={e=>setForm(f=>({...f,type:e.target.value}))} className="w-full input input-bordered px-3 py-2 text-white text-sm focus:outline-none focus:border-blue-500">
                     {PROJECT_TYPES.map(t=><option key={t} value={t}>{t}</option>)}
                   </select>
                 </div>
                 <div>
                   <label className="block text-xs font-medium text-gray-400 mb-1">Status</label>
-                  <select value={form.status} onChange={e=>setForm(f=>({...f,status:e.target.value}))} className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-blue-500">
+                  <select value={form.status} onChange={e=>setForm(f=>({...f,status:e.target.value}))} className="w-full input input-bordered px-3 py-2 text-white text-sm focus:outline-none focus:border-blue-500">
                     {['planning','active','on_hold','completed','archived'].map(s=><option key={s} value={s}>{s}</option>)}
                   </select>
                 </div>
                 <div>
                   <label className="block text-xs font-medium text-gray-400 mb-1">Phase</label>
-                  <select value={form.phase} onChange={e=>setForm(f=>({...f,phase:e.target.value}))} className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-blue-500">
+                  <select value={form.phase} onChange={e=>setForm(f=>({...f,phase:e.target.value}))} className="w-full input input-bordered px-3 py-2 text-white text-sm focus:outline-none focus:border-blue-500">
                     {PROJECT_PHASES.map(ph=><option key={ph} value={ph}>{ph}</option>)}
                   </select>
                 </div>
                 <div>
                   <label className="block text-xs font-medium text-gray-400 mb-1">Budget (£)</label>
-                  <input type="number" value={form.budget} onChange={e=>setForm(f=>({...f,budget:e.target.value}))} placeholder="0" className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-blue-500"/>
+                  <input type="number" value={form.budget} onChange={e=>setForm(f=>({...f,budget:e.target.value}))} placeholder="0" className="w-full input input-bordered px-3 py-2 text-white text-sm focus:outline-none focus:border-blue-500"/>
                 </div>
                 <div>
                   <label className="block text-xs font-medium text-gray-400 mb-1">Contract Value (£)</label>
-                  <input type="number" value={form.contract_value} onChange={e=>setForm(f=>({...f,contract_value:e.target.value}))} placeholder="0" className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-blue-500"/>
+                  <input type="number" value={form.contract_value} onChange={e=>setForm(f=>({...f,contract_value:e.target.value}))} placeholder="0" className="w-full input input-bordered px-3 py-2 text-white text-sm focus:outline-none focus:border-blue-500"/>
                 </div>
                 <div>
                   <label className="block text-xs font-medium text-gray-400 mb-1">Start Date</label>
-                  <input type="date" value={form.start_date} onChange={e=>setForm(f=>({...f,start_date:e.target.value}))} className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-blue-500"/>
+                  <input type="date" value={form.start_date} onChange={e=>setForm(f=>({...f,start_date:e.target.value}))} className="w-full input input-bordered px-3 py-2 text-white text-sm focus:outline-none focus:border-blue-500"/>
                 </div>
                 <div>
                   <label className="block text-xs font-medium text-gray-400 mb-1">End Date</label>
-                  <input type="date" value={form.end_date} onChange={e=>setForm(f=>({...f,end_date:e.target.value}))} className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-blue-500"/>
+                  <input type="date" value={form.end_date} onChange={e=>setForm(f=>({...f,end_date:e.target.value}))} className="w-full input input-bordered px-3 py-2 text-white text-sm focus:outline-none focus:border-blue-500"/>
                 </div>
                 <div>
                   <label className="block text-xs font-medium text-gray-400 mb-1">Project Manager</label>
-                  <input value={form.manager} onChange={e=>setForm(f=>({...f,manager:e.target.value}))} placeholder="Full name" className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-blue-500"/>
+                  <input value={form.manager} onChange={e=>setForm(f=>({...f,manager:e.target.value}))} placeholder="Full name" className="w-full input input-bordered px-3 py-2 text-white text-sm focus:outline-none focus:border-blue-500"/>
                 </div>
                 <div>
                   <label className="block text-xs font-medium text-gray-400 mb-1">Workers on Site</label>
-                  <input type="number" value={form.workers} onChange={e=>setForm(f=>({...f,workers:e.target.value}))} placeholder="0" className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-blue-500"/>
+                  <input type="number" value={form.workers} onChange={e=>setForm(f=>({...f,workers:e.target.value}))} placeholder="0" className="w-full input input-bordered px-3 py-2 text-white text-sm focus:outline-none focus:border-blue-500"/>
                 </div>
                 <div className="col-span-2">
                   <label className="block text-xs font-medium text-gray-400 mb-1">Description</label>
-                  <textarea value={form.description} onChange={e=>setForm(f=>({...f,description:e.target.value}))} rows={3} placeholder="Project description…" className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-white text-sm resize-none focus:outline-none focus:border-blue-500"/>
+                  <textarea value={form.description} onChange={e=>setForm(f=>({...f,description:e.target.value}))} rows={3} placeholder="Project description…" className="w-full input input-bordered px-3 py-2 text-white text-sm resize-none focus:outline-none focus:border-blue-500"/>
                 </div>
               </div>
             </div>
             <div className="flex gap-3 px-6 py-4 border-t border-gray-800 sticky bottom-0 bg-gray-900">
-              <button type="button" onClick={handleSave} className="flex-1 bg-blue-600 hover:bg-blue-700 text-white rounded-lg py-2 text-sm font-semibold transition-colors">
+              <button type="button" onClick={handleSave} className="flex-1 btn btn-primary rounded-lg py-2 text-sm font-semibold transition-colors">
                 {editMode?'Save Changes':'Create Project'}
               </button>
-              <button type="button" onClick={()=>setShowModal(false)} className="flex-1 bg-gray-800 hover:bg-gray-700 text-white rounded-lg py-2 text-sm font-semibold transition-colors">Cancel</button>
+              <button type="button" onClick={()=>setShowModal(false)} className="flex-1 btn btn-ghost rounded-lg py-2 text-sm font-semibold transition-colors">Cancel</button>
             </div>
           </div>
         </div>
@@ -1806,3 +1812,4 @@ export function Projects() {
     </div>
   );
 }
+export default Projects;

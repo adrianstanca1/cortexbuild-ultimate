@@ -465,7 +465,7 @@ export const financialReportsApi = {
 export const searchApi = {
   search: async (query: string, limit?: number) => {
     try {
-      return await apiFetch<{ results: Row; total: number; query: string }>(
+      return await apiFetch<{ results: Row; total: number; query: string; semanticResults: Row[]; searchMode: string }>(
         `/search?q=${encodeURIComponent(query)}&limit=${limit || 20}`
       );
     } catch {
@@ -490,8 +490,30 @@ export const searchApi = {
           String(t.name || '').toLowerCase().includes(q) || String(t.role || '').toLowerCase().includes(q)
         ),
       };
-      return { results };
+      return { results, semanticResults: [], searchMode: 'text' };
     }
+  },
+  /** Semantic search via RAG — returns ranked context chunks */
+  ragSearch: async (query: string, tables?: string[], limit = 5) => {
+    const params = new URLSearchParams({ q: query, limit: String(limit) });
+    if (tables?.length) params.set('tables', tables.join(','));
+    return apiFetch<{ results: { table: string; matches: { row_id: string; chunk_text: string; similarity: number }[] }[]; total: number; query: string }>(
+      `/rag/search?${params}`
+    );
+  },
+};
+
+/** RAG-augmented AI chat — streams tokens via fetch + ReadableStream */
+export const ragChatApi = {
+  stream: (question: string, history: { role: string; content: string }[] = [], tables: string[] = []) => {
+    return fetch(`${import.meta.env.VITE_API_BASE_URL}/api/rag-chat`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        ...(localStorage.getItem('token') ? { Authorization: `Bearer ${localStorage.getItem('token')}` } : {}),
+      },
+      body: JSON.stringify({ question, history, tables }),
+    });
   },
 };
 

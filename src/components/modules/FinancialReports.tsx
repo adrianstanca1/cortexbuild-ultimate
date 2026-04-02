@@ -7,6 +7,7 @@ import { TrendingUp, DollarSign, Download, RefreshCw, ArrowUpRight,
 import { BulkActionsBar, useBulkSelection } from '../../components/ui/BulkActions';
 import { financialReportsApi } from '../../services/api';
 import { toast } from 'sonner';
+import { exportToPDF, exportToCSV } from '../../lib/exportUtils';
 import clsx from 'clsx';
 import {
   AreaChart, Area, BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer,
@@ -451,7 +452,7 @@ export function FinancialReports() {
           <select
             value={dateRange}
             onChange={(e) => setDateRange(e.target.value)}
-            className="bg-gray-800 border border-gray-700 text-white text-sm rounded-lg px-4 py-2"
+            className="bg-gray-800 border border-gray-700 text-white text-sm btn"
           >
             <option value="this_month">This Month</option>
             <option value="last_month">Last Month</option>
@@ -486,3 +487,4 @@ export function FinancialReports() {
     </div>
   );
 }
+export default FinancialReports;

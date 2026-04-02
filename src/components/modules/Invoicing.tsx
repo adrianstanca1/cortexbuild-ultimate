@@ -5,8 +5,10 @@ import { useInvoices, useProjects } from '../../hooks/useData';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import clsx from 'clsx';
 import { toast } from 'sonner';
+import { exportToPDF, exportToCSV } from '../../lib/exportUtils';
 import { BulkActionsBar, useBulkSelection } from '../ui/BulkActions';
 import { EmptyState } from '../ui/EmptyState';
+import { ModuleBreadcrumbs } from '../ui/Breadcrumbs';
 
 const statusConfig: Record<string, { label: string; color: string; bg: string }> = {
   draft:    { label: 'Draft',    color: 'text-gray-400',   bg: 'bg-gray-700' },
@@ -282,6 +284,9 @@ export function Invoicing() {
 
   return (
     <div className="min-h-full">
+      {/* Breadcrumbs */}
+      <ModuleBreadcrumbs currentModule="invoicing" onNavigate={() => {}} />
+
       {/* Header */}
       <div className="mb-6 flex items-center justify-between">
         <div>
@@ -542,7 +547,7 @@ export function Invoicing() {
                     value={search}
                     onChange={e => setSearch(e.target.value)}
                     placeholder="Search invoices..."
-                    className="w-full bg-gray-800 border border-gray-700 rounded-xl pl-9 pr-3 py-2 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-orange-500"
+                    className="w-full card bg-base-200 pl-9 pr-3 py-2 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-orange-500"
                   />
                 </div>
                 {Object.keys(statusConfig).map(s => (
@@ -897,7 +902,7 @@ export function Invoicing() {
                   required
                   value={form.number}
                   onChange={e => setForm(p => ({ ...p, number: e.target.value }))}
-                  className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-emerald-500"
+                  className="w-full input input-bordered text-white text-sm focus:outline-none focus:border-emerald-500"
                 />
               </div>
               <div>
@@ -906,7 +911,7 @@ export function Invoicing() {
                   required
                   value={form.client}
                   onChange={e => setForm(p => ({ ...p, client: e.target.value }))}
-                  className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-emerald-500"
+                  className="w-full input input-bordered text-white text-sm focus:outline-none focus:border-emerald-500"
                 />
               </div>
               <div className="col-span-2">
@@ -914,7 +919,7 @@ export function Invoicing() {
                 <select
                   value={form.project}
                   onChange={e => setForm(p => ({ ...p, project: e.target.value }))}
-                  className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-emerald-500"
+                  className="w-full input input-bordered text-white text-sm focus:outline-none focus:border-emerald-500"
                 >
                   <option value="">— Select project —</option>
                   {(projects as Array<Record<string, unknown>>).map(p => (
@@ -930,7 +935,7 @@ export function Invoicing() {
                   required
                   value={form.description}
                   onChange={e => setForm(p => ({ ...p, description: e.target.value }))}
-                  className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-emerald-500"
+                  className="w-full input input-bordered text-white text-sm focus:outline-none focus:border-emerald-500"
                 />
               </div>
               {[
@@ -945,7 +950,7 @@ export function Invoicing() {
                     type={f.k !== 'payment_terms' ? 'number' : 'text'}
                     value={form[f.k as keyof FormData]}
                     onChange={e => setForm(p => ({ ...p, [f.k]: e.target.value }))}
-                    className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-emerald-500"
+                    className="w-full input input-bordered text-white text-sm focus:outline-none focus:border-emerald-500"
                   />
                 </div>
               ))}
@@ -954,7 +959,7 @@ export function Invoicing() {
                 <select
                   value={form.status}
                   onChange={e => setForm(p => ({ ...p, status: e.target.value }))}
-                  className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-emerald-500"
+                  className="w-full input input-bordered text-white text-sm focus:outline-none focus:border-emerald-500"
                 >
                   {Object.keys(statusConfig).map(s => (
                     <option key={s} value={s}>
@@ -969,7 +974,7 @@ export function Invoicing() {
                   type="date"
                   value={form.issue_date}
                   onChange={e => setForm(p => ({ ...p, issue_date: e.target.value }))}
-                  className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-emerald-500"
+                  className="w-full input input-bordered text-white text-sm focus:outline-none focus:border-emerald-500"
                 />
               </div>
               <div>
@@ -978,7 +983,7 @@ export function Invoicing() {
                   type="date"
                   value={form.due_date}
                   onChange={e => setForm(p => ({ ...p, due_date: e.target.value }))}
-                  className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-emerald-500"
+                  className="w-full input input-bordered text-white text-sm focus:outline-none focus:border-emerald-500"
                 />
               </div>
               <div className="col-span-2 flex gap-3 pt-2">
@@ -1035,7 +1040,7 @@ export function Invoicing() {
                   required
                   value={valuationForm.app_no}
                   onChange={e => setValuationForm(p => ({ ...p, app_no: e.target.value }))}
-                  className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-cyan-500"
+                  className="w-full input input-bordered text-white text-sm focus:outline-none focus:border-cyan-500"
                 />
               </div>
               <div>
@@ -1044,7 +1049,7 @@ export function Invoicing() {
                   required
                   value={valuationForm.project}
                   onChange={e => setValuationForm(p => ({ ...p, project: e.target.value }))}
-                  className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-cyan-500"
+                  className="w-full input input-bordered text-white text-sm focus:outline-none focus:border-cyan-500"
                 />
               </div>
               <div>
@@ -1055,7 +1060,7 @@ export function Invoicing() {
                   step="0.01"
                   value={valuationForm.gross_value}
                   onChange={e => setValuationForm(p => ({ ...p, gross_value: e.target.value }))}
-                  className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-cyan-500"
+                  className="w-full input input-bordered text-white text-sm focus:outline-none focus:border-cyan-500"
                 />
               </div>
               <div>
@@ -1066,7 +1071,7 @@ export function Invoicing() {
                   step="0.1"
                   value={valuationForm.retention_pct}
                   onChange={e => setValuationForm(p => ({ ...p, retention_pct: e.target.value }))}
-                  className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-cyan-500"
+                  className="w-full input input-bordered text-white text-sm focus:outline-none focus:border-cyan-500"
                 />
               </div>
               <div>
@@ -1077,7 +1082,7 @@ export function Invoicing() {
                   step="0.01"
                   value={valuationForm.materials_on_site}
                   onChange={e => setValuationForm(p => ({ ...p, materials_on_site: e.target.value }))}
-                  className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-cyan-500"
+                  className="w-full input input-bordered text-white text-sm focus:outline-none focus:border-cyan-500"
                 />
               </div>
               <div>
@@ -1088,7 +1093,7 @@ export function Invoicing() {
                   step="0.01"
                   value={valuationForm.previously_certified}
                   onChange={e => setValuationForm(p => ({ ...p, previously_certified: e.target.value }))}
-                  className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-cyan-500"
+                  className="w-full input input-bordered text-white text-sm focus:outline-none focus:border-cyan-500"
                 />
               </div>
               <div className="col-span-2">
@@ -1096,7 +1101,7 @@ export function Invoicing() {
                 <select
                   value={valuationForm.status}
                   onChange={e => setValuationForm(p => ({ ...p, status: e.target.value }))}
-                  className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-cyan-500"
+                  className="w-full input input-bordered text-white text-sm focus:outline-none focus:border-cyan-500"
                 >
                   {Object.keys(appStatusConfig).map(s => (
                     <option key={s} value={s}>
@@ -1272,3 +1277,4 @@ export function Invoicing() {
     </div>
   );
 }
+export default Invoicing;

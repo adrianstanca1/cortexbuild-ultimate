@@ -3,6 +3,8 @@ import { Clock, Plus, Search, DollarSign, Users, CheckCircle2, AlertTriangle, Ed
 import { BarChart, Bar, LineChart, Line, CartesianGrid, Tooltip, ResponsiveContainer, XAxis, YAxis } from 'recharts';
 import { useTimesheets } from '../../hooks/useData';
 import { BulkActionsBar, useBulkSelection } from '../ui/BulkActions';
+import { CardSkeleton } from '../ui/Skeleton';
+import { ModuleBreadcrumbs } from '../ui/Breadcrumbs';
 import { EmptyState } from '../ui/EmptyState';
 import { toast } from 'sonner';
 
@@ -255,7 +257,9 @@ export function Timesheets() {
   const formTotalPay = (formRegular * CITB_RATE) + (formOT * CITB_RATE * (Number(form.overtimeRate)||1.5)) + (formDaywork * (Number(form.dayworkRate)||0));
 
   return (
-    <div className="p-6 space-y-6 bg-gray-950 min-h-screen text-gray-100">
+    <>
+      <ModuleBreadcrumbs currentModule="timesheets" onNavigate={() => {}} />
+      <div className="p-6 space-y-6 bg-gray-950 min-h-screen text-gray-100">
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold text-white">Timesheets & Payroll</h1>
@@ -746,5 +750,7 @@ export function Timesheets() {
         </div>
       )}
     </div>
+    </>
   );
 }
+export default Timesheets;

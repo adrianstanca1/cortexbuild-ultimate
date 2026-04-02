@@ -1,6 +1,7 @@
 import { useState, useMemo, useEffect } from 'react';
 import { AlertTriangle, Plus, Search, AlertOctagon, Edit2, Trash2, X, ChevronDown, ChevronUp, TrendingUp, BarChart3, CheckCircle2, Clock, Users, Target, Calendar, CheckSquare, Square } from 'lucide-react';
 import { EmptyState } from '../ui/EmptyState';
+import { ModuleBreadcrumbs } from '../ui/Breadcrumbs';
 import { useRiskRegister } from '../../hooks/useData';
 import { riskRegisterApi } from '../../services/api';
 import { toast } from 'sonner';
@@ -143,7 +144,9 @@ export function RiskRegister() {
   const formLevel = riskLevel(formScore);
 
   return (
-    <div className="p-6 space-y-6 bg-gray-950 min-h-screen">
+    <>
+      <ModuleBreadcrumbs currentModule="risk-register" onNavigate={() => {}} />
+      <div className="p-6 space-y-6 bg-gray-950 min-h-screen">
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold text-white">Risk Register</h1>
@@ -171,7 +174,7 @@ export function RiskRegister() {
         ].map(kpi=>{
           const Icon = kpi.icon;
           return (
-            <div key={kpi.label} className="bg-gray-800 border border-gray-700 rounded-xl p-4 hover:border-gray-600 transition-colors">
+            <div key={kpi.label} className="card bg-base-200 p-4 hover:border-gray-600 transition-colors">
               <div className="flex items-start justify-between gap-2">
                 <div><p className="text-xs text-gray-400 mb-1">{kpi.label}</p><p className="text-2xl font-bold text-white">{kpi.value}</p></div>
                 <Icon size={20} className="text-gray-500 flex-shrink-0 mt-0.5"/>
@@ -365,7 +368,7 @@ export function RiskRegister() {
             ].map((kpi, idx) => {
               const Icon = kpi.icon;
               return (
-                <div key={idx} className="bg-gray-800 border border-gray-700 rounded-xl p-4">
+                <div key={idx} className="card bg-base-200 p-4">
                   <div className="flex items-center justify-between">
                     <div>
                       <p className="text-xs text-gray-400 mb-1">{kpi.label}</p>
@@ -378,7 +381,7 @@ export function RiskRegister() {
             })}
           </div>
 
-          <div className="bg-gray-800 border border-gray-700 rounded-xl p-6">
+          <div className="card bg-base-200 p-6">
             <h3 className="font-semibold text-white mb-4 flex items-center gap-2">
               <TrendingUp size={18} className="text-orange-400"/>
               Risk Count by Rating (6-Month Trend)
@@ -408,7 +411,7 @@ export function RiskRegister() {
             </ResponsiveContainer>
           </div>
 
-          <div className="bg-gray-800 border border-gray-700 rounded-xl p-6">
+          <div className="card bg-base-200 p-6">
             <h3 className="font-semibold text-white mb-4 flex items-center gap-2">
               <BarChart3 size={18} className="text-blue-400"/>
               Risks by Category
@@ -482,7 +485,7 @@ export function RiskRegister() {
                     const level = riskLevel(score);
                     const statusClass = statusColour[String(r.status??'Open')] || statusColour['Open'];
                     return (
-                      <div key={id} className="bg-gray-800 border border-gray-700 rounded-xl overflow-hidden hover:border-gray-600 transition-colors">
+                      <div key={id} className="card bg-base-200 overflow-hidden hover:border-gray-600 transition-colors">
                         <div className="p-4 cursor-pointer hover:bg-gray-750" onClick={()=>setExpanded(isExp?null:id)}>
                           <div className="flex items-start justify-between gap-3 mb-2">
                             <button type="button" onClick={e => { e.stopPropagation(); toggle(id); }} className="mt-1 flex-shrink-0">
@@ -651,6 +654,7 @@ export function RiskRegister() {
         </div>
       )}
     </div>
+    </>
   );
 }
 

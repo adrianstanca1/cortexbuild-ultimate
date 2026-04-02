@@ -6,6 +6,7 @@ import {
 } from 'lucide-react';
 import { useProjects, useDailyReports, useSafety, useSitePermits } from '../../hooks/useData';
 import { BulkActionsBar, useBulkSelection } from '../ui/BulkActions';
+import { ModuleBreadcrumbs } from '../ui/Breadcrumbs';
 import { EmptyState } from '../ui/EmptyState';
 import { toast } from 'sonner';
 
@@ -155,7 +156,9 @@ export function FieldView() {
   };
 
   return (
-    <div className="p-6 space-y-6 bg-gray-900 min-h-screen">
+    <>
+      <ModuleBreadcrumbs currentModule="field-view" onNavigate={() => {}} />
+      <div className="p-6 space-y-6 bg-gray-900 min-h-screen">
       {/* Header */}
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div>
@@ -323,7 +326,7 @@ export function FieldView() {
                   {openInc.length > 0 && (
                     <div className="px-5 pb-4 space-y-1">
                       {openInc.slice(0, 2).map(i => (
-                        <div key={String(i.id)} className="flex items-center gap-2 text-xs bg-red-500/10 border border-red-500/30 rounded-lg px-3 py-1.5">
+                        <div key={String(i.id)} className="flex items-center gap-2 text-xs bg-red-500/10 border border-red-500/30 btn btn-sm">
                           <AlertTriangle size={11} className="text-red-400 flex-shrink-0" />
                           <span className="text-gray-300 truncate">{String(i.title ?? i.description ?? 'Incident')}</span>
                           <span className="ml-auto text-red-400 font-medium">{String(i.severity ?? '')}</span>
@@ -672,5 +675,7 @@ export function FieldView() {
         onClearSelection={clearSelection}
       />
     </div>
+    </>
   );
 }
+export default FieldView;
