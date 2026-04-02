@@ -10,9 +10,16 @@ import {
   Layers,
   AlertTriangle,
   CheckCircle,
-  Box
+  Box,
+  X,
+  Loader2,
+  Trash2,
+  Edit,
+  Check,
 } from 'lucide-react';
 import { ModuleBreadcrumbs } from '../ui/Breadcrumbs';
+import { bimModelsApi } from '../../services/api';
+import { toast } from 'sonner';
 
 interface BIMModel {
   id: string;
@@ -38,61 +45,67 @@ interface ClashDetection {
 export const BIMViewer: React.FC = () => {
   const viewerRef = useRef<HTMLDivElement>(null);
   const [activeModel, setActiveModel] = useState<BIMModel | null>(null);
-  const [models] = useState<BIMModel[]>([
-    {
-      id: '1',
-      name: 'Main Building Structure',
-      format: 'IFC',
-      size: 25600000,
-      uploadDate: new Date('2026-03-25'),
-      status: 'ready',
-      version: 'v2.1',
-      elements: 12450
-    },
-    {
-      id: '2', 
-      name: 'HVAC System',
-      format: 'IFC',
-      size: 8900000,
-      uploadDate: new Date('2026-03-28'),
-      status: 'ready',
-      version: 'v1.3',
-      elements: 3240
-    },
-    {
-      id: '3',
-      name: 'Electrical Layout',
-      format: 'IFC', 
-      size: 4200000,
-      uploadDate: new Date('2026-03-30'),
-      status: 'processing',
-      version: 'v1.0',
-      elements: 1890
-    }
-  ]);
-
-  const [clashes] = useState<ClashDetection[]>([
-    {
-      id: 'clash-1',
-      type: 'hard',
-      severity: 'critical',
-      elements: ['HVAC_Duct_001', 'Structural_Beam_045'],
-      location: [125.5, 45.2, 12.8],
-      description: 'HVAC duct intersects with structural beam',
-      status: 'open'
-    },
-    {
-      id: 'clash-2',
-      type: 'clearance',
-      severity: 'major',
-      elements: ['Electrical_Conduit_023', 'HVAC_Duct_007'],
-      location: [89.1, 23.7, 8.4],
-      description: 'Insufficient clearance between conduit and ductwork',
-      status: 'open'
-    }
-  ]);
-
+  const [models, setModels] = useState<BIMModel[]>([]);
+  const [clashes, setClashes] = useState<ClashDetection[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [uploading, setUploading] = useState(false);
+  const [showUploadModal, setShowUploadModal] = useState(false);
   const [selectedLayers, setSelectedLayers] = useState<string[]>(['structure', 'hvac', 'electrical']);
+
+  // Load models from API
+  useEffect(() => {
+    loadModels();
+  }, []);
+
+  async function loadModels() {
+    try {
+      setLoading(true);
+      const data: any[] = await bimModelsApi.getAll();
+      const transformed = data.map((m: any) => ({
+        id: m.id,
+        name: m.name,
+        format: m.format as 'IFC' | 'OBJ' | 'GLTF' | 'FBX',
+        size: m.file_size || 0,
+        uploadDate: new Date(m.created_at),
+        status: m.status as 'processing' | 'ready' | 'error',
+        version: m.version || 'v1.0',
+        elements: m.elements_count || 0,
+      }));
+      setModels(transformed);
+      if (transformed.length > 0 && !activeModel) {
+        setActiveModel(transformed[0]);
+        loadClashes(transformed[0].id);
+      }
+    } catch (err) {
+      console.error('Failed to load BIM models', err);
+      toast.error('Failed to load BIM models');
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function loadClashes(modelId: string) {
+    try {
+      const data: any[] = await bimModelsApi.getClashes(modelId);
+      const transformed = data.map((c: any) => ({
+        id: c.id,
+        type: c.clash_type as 'hard' | 'soft' | 'clearance',
+        severity: c.severity as 'critical' | 'major' | 'minor',
+        elements: [c.element_a_name, c.element_b_name].filter(Boolean),
+        location: [c.location_x, c.location_y, c.location_z] as [number, number, number],
+        description: c.description,
+        status: c.status as 'open' | 'resolved' | 'ignored',
+      }));
+      setClashes(transformed);
+    } catch (err) {
+      console.error('Failed to load clashes', err);
+    }
+  }
+
+  async function handleModelSelect(model: BIMModel) {
+    setActiveModel(model);
+    await loadClashes(model.id);
+  }
 
   useEffect(() => {
     const currentViewerRef = viewerRef.current;

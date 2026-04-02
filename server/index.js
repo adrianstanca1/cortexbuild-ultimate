@@ -76,6 +76,7 @@ app.use('/api/auth', authRoutes);
 app.use('/api/auth', require('./routes/oauth')); // Google OAuth
 app.get('/api/health', (_req, res) => res.json({ status: 'ok', version: '1.0.0' }));
 app.use('/api/deploy', require('./routes/deploy'));
+app.use('/api/company', require('./routes/company'));
 
 // ─── JWT auth on all other /api routes ───────────────────────────────────────
   app.use('/api/metrics',       require('./routes/metrics'));
@@ -155,6 +156,9 @@ app.use('/api/report-templates', require('./routes/report-templates'));
 app.use('/api/permissions',    require('./routes/permissions'));
 app.use('/api/rag',           require('./routes/rag'));
 app.use('/api/rag-chat',      require('./routes/ai-rag'));
+app.use('/api/bim-models',    require('./routes/bim-models'));
+app.use('/api/cost-management', require('./routes/cost-management'));
+app.use('/api/submittals',    require('./routes/submittals'));
 
 // ─── 404 ──────────────────────────────────────────────────────────────────────
 app.use((_req, res) => res.status(404).json({ message: 'Route not found' }));

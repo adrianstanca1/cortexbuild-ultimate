@@ -381,9 +381,52 @@ export const aiConversationsApi = {
 };
 
 export const usersApi = {
-  getAll: () => apiFetch<Row[]>('/auth/users'),
-  create: (data: Row) => apiFetch<Row>('/auth/users', { method: 'POST', body: JSON.stringify(data) }),
-  delete: (id: string) => apiFetch<void>(`/auth/users/${id}`, { method: 'DELETE' }),
+  getAll: () => apiFetch<Row[]>('/company/users'),
+  create: (data: Row) => apiFetch<Row>('/company/users', { method: 'POST', body: JSON.stringify(data) }),
+  update: (id: string, data: Row) => apiFetch<Row>(`/company/users/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+  delete: (id: string) => apiFetch<void>(`/company/users/${id}`, { method: 'DELETE' }),
+};
+
+export const companyApi = {
+  get: () => apiFetch<Row>('/company'),
+  update: (data: Row) => apiFetch<Row>('/company', { method: 'PUT', body: JSON.stringify(data) }),
+};
+
+export const bimModelsApi = {
+  getAll: () => apiFetch<Row[]>('/bim-models'),
+  getById: (id: string) => apiFetch<Row>(`/bim-models/${id}`),
+  create: (data: FormData) => apiFetch<Row>('/bim-models', { method: 'POST', body: data }),
+  update: (id: string, data: Row) => apiFetch<Row>(`/bim-models/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+  delete: (id: string) => apiFetch<void>(`/bim-models/${id}`, { method: 'DELETE' }),
+  getClashes: (id: string) => apiFetch<Row[]>(`/bim-models/${id}/clashes`),
+  createClash: (id: string, data: Row) => apiFetch<Row>(`/bim-models/${id}/clashes`, { method: 'POST', body: JSON.stringify(data) }),
+  updateClash: (id: string, clashId: string, data: Row) => apiFetch<Row>(`/bim-models/${id}/clashes/${clashId}`, { method: 'PUT', body: JSON.stringify(data) }),
+  getLayers: (id: string) => apiFetch<Row[]>(`/bim-models/${id}/layers`),
+};
+
+export const costManagementApi = {
+  getBudget: (projectId?: string) => apiFetch<Row[]>(`/cost-management/budget${projectId ? `?projectId=${projectId}` : ''}`),
+  createBudget: (data: Row) => apiFetch<Row>('/cost-management/budget', { method: 'POST', body: JSON.stringify(data) }),
+  updateBudget: (id: string, data: Row) => apiFetch<Row>(`/cost-management/budget/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+  deleteBudget: (id: string) => apiFetch<void>(`/cost-management/budget/${id}`, { method: 'DELETE' }),
+  getForecast: (projectId?: string) => apiFetch<Row[]>(`/cost-management/forecast${projectId ? `?projectId=${projectId}` : ''}`),
+  createForecast: (data: Row) => apiFetch<Row>('/cost-management/forecast', { method: 'POST', body: JSON.stringify(data) }),
+  getSummary: () => apiFetch<Row>('/cost-management/summary'),
+  getCodes: () => apiFetch<Row[]>('/cost-management/codes'),
+  createCode: (data: Row) => apiFetch<Row>('/cost-management/codes', { method: 'POST', body: JSON.stringify(data) }),
+};
+
+export const submittalsApi = {
+  getAll: (params?: { status?: string; type?: string; projectId?: string }) => {
+    const qs = params ? `?${new URLSearchParams(params as Record<string, string>).toString()}` : '';
+    return apiFetch<Row[]>(`/submittals${qs}`);
+  },
+  getById: (id: string) => apiFetch<Row>(`/submittals/${id}`),
+  create: (data: FormData) => apiFetch<Row>('/submittals', { method: 'POST', body: data }),
+  update: (id: string, data: Row) => apiFetch<Row>(`/submittals/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+  delete: (id: string) => apiFetch<void>(`/submittals/${id}`, { method: 'DELETE' }),
+  addComment: (id: string, data: Row) => apiFetch<Row>(`/submittals/${id}/comments`, { method: 'POST', body: JSON.stringify(data) }),
+  getStats: () => apiFetch<Row>('/submittals/stats/summary'),
 };
 
 export interface AppSettings {

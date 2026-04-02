@@ -1,15 +1,16 @@
 // Module: Cost Management — CortexBuild Ultimate
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { ModuleBreadcrumbs } from '../ui/Breadcrumbs';
 import {
   TrendingUp, TrendingDown, DollarSign, Plus, FileText, Calculator, Target,
-  BarChart3, PieChart as PieChartIcon, Activity
+  BarChart3, PieChart as PieChartIcon, Activity, Loader2
 } from 'lucide-react';
 import {
   BarChart, Bar, LineChart, Line, AreaChart, Area, XAxis, YAxis,
   CartesianGrid, Tooltip, Legend, ResponsiveContainer, Pie, Cell, PieChart
 } from 'recharts';
 import { toast } from 'sonner';
+import { costManagementApi } from '../../services/api';
 
 interface BudgetItem {
   id: string;
@@ -36,22 +37,55 @@ const CHART_COLORS = ['#f59e0b', '#3b82f6', '#10b981', '#ef4444', '#8b5cf6', '#0
 export function CostManagement() {
   const [activeTab, setActiveTab] = useState<'budget' | 'forecast' | 'variance'>('budget');
   const [showAddItem, setShowAddItem] = useState(false);
+  const [loading, setLoading] = useState(true);
 
-  const [budgetItems] = useState<BudgetItem[]>([
-    { id: '1', category: 'Labour', description: 'Site workforce & subcontractors', budgeted: 1250000, spent: 875000, committed: 125000, remaining: 250000, variance: -125000, variancePercent: -10.0, status: 'at-risk' },
-    { id: '2', category: 'Materials', description: 'Concrete, steel, finishes', budgeted: 850000, spent: 620000, committed: 85000, remaining: 145000, variance: 145000, variancePercent: 17.1, status: 'on-track' },
-    { id: '3', category: 'Plant & Equipment', description: 'Crane hire, excavators, tools', budgeted: 320000, spent: 285000, committed: 45000, remaining: -10000, variance: -10000, variancePercent: -3.1, status: 'over-budget' },
-    { id: '4', category: 'Professional Services', description: 'Architects, engineers, consultants', budgeted: 180000, spent: 145000, committed: 20000, remaining: 15000, variance: 15000, variancePercent: 8.3, status: 'on-track' },
-  ]);
+  const [budgetItems, setBudgetItems] = useState<BudgetItem[]>([]);
+  const [forecast, setForecast] = useState<CostForecast[]>([]);
 
-  const [forecast] = useState<CostForecast[]>([
-    { month: 'Jan', projected: 450000, actual: 465000, cumulative: 465000 },
-    { month: 'Feb', projected: 380000, actual: 395000, cumulative: 860000 },
-    { month: 'Mar', projected: 520000, actual: 485000, cumulative: 1345000 },
-    { month: 'Apr', projected: 425000, cumulative: 1770000 },
-    { month: 'May', projected: 380000, cumulative: 2150000 },
-    { month: 'Jun', projected: 450000, cumulative: 2600000 },
-  ]);
+  // Load data from API
+  useEffect(() => {
+    loadCostData();
+  }, []);
+
+  async function loadCostData() {
+    try {
+      setLoading(true);
+      const [budgetData, forecastData] = await Promise.all([
+        costManagementApi.getBudget(),
+        costManagementApi.getForecast()
+      ]);
+      
+      // Transform budget data
+      const transformedBudget = budgetData.map((item: any) => ({
+        id: item.id,
+        category: item.cost_code_name || item.name,
+        description: item.description || '',
+        budgeted: parseFloat(item.budgeted) || 0,
+        spent: parseFloat(item.spent) || 0,
+        committed: parseFloat(item.committed) || 0,
+        remaining: parseFloat(item.remaining) || 0,
+        variance: parseFloat(item.variance) || 0,
+        variancePercent: parseFloat(item.variance_percent) || 0,
+        status: item.status || 'on-track',
+      }));
+      
+      // Transform forecast data
+      const transformedForecast = forecastData.map((f: any) => ({
+        month: new Date(f.period_start).toLocaleString('default', { month: 'short' }),
+        projected: parseFloat(f.projected_cost) || 0,
+        actual: f.actual_cost ? parseFloat(f.actual_cost) : undefined,
+        cumulative: parseFloat(f.cumulative_cost) || 0,
+      }));
+      
+      setBudgetItems(transformedBudget);
+      setForecast(transformedForecast);
+    } catch (err) {
+      console.error('Failed to load cost data', err);
+      toast.error('Failed to load cost data');
+    } finally {
+      setLoading(false);
+    }
+  }
 
   const totalBudget = budgetItems.reduce((sum, item) => sum + item.budgeted, 0);
   const totalSpent = budgetItems.reduce((sum, item) => sum + item.spent, 0);
@@ -83,9 +117,15 @@ export function CostManagement() {
   }));
 
   return (
-    <>
+    <div className="space-y-6 bg-gray-900 min-h-screen p-6">
       <ModuleBreadcrumbs currentModule="cost-management" onNavigate={() => {}} />
-      <div className="space-y-6 bg-gray-900 min-h-screen p-6">
+      {loading ? (
+        <div className="flex items-center justify-center h-64">
+          <Loader2 className="w-8 h-8 animate-spin text-orange-500" />
+          <span className="ml-3 text-gray-400">Loading cost data...</span>
+        </div>
+      ) : (
+        <>
       {/* Header */}
       <div className="flex justify-between items-center">
         <div>
@@ -385,8 +425,9 @@ export function CostManagement() {
           </div>
         </div>
       )}
-    </div>
     </>
+    )}
+    </div>
   );
 }
 
