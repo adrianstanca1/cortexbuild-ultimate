@@ -257,8 +257,8 @@ router.get('/microsoft', (req, res, next) => {
   })(req, res, next);
 });
 
-// Microsoft OAuth callback
-router.get('/microsoft/callback', (req, res, next) => {
+// Microsoft OAuth callback (rate limited)
+router.get('/microsoft/callback', oauthLimiter, (req, res, next) => {
   const { state } = req.query;
 
   // Validate state parameter (CSRF protection)
