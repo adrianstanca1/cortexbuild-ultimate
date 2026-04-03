@@ -33,14 +33,17 @@ export const ThemeSwitcher: React.FC<ThemeSwitcherProps> = ({
   ],
   className = '',
 }) => {
-  const [currentTheme, setCurrentTheme] = useState<string>('cortexbuild');
+  const [currentTheme, setCurrentTheme] = useState<string>(() => {
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem('theme') || 'cortexbuild';
+    }
+    return 'cortexbuild';
+  });
   const [isOpen, setIsOpen] = useState(false);
 
   useEffect(() => {
-    const saved = localStorage.getItem('theme') || 'cortexbuild';
-    setCurrentTheme(saved);
-    document.documentElement.setAttribute('data-theme', saved);
-  }, []);
+    document.documentElement.setAttribute('data-theme', currentTheme);
+  }, [currentTheme]);
 
   const handleThemeChange = (theme: string) => {
     setCurrentTheme(theme);
