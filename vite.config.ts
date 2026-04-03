@@ -17,6 +17,14 @@ export default defineConfig({
       '/uploads': { target: 'http://localhost:3001', changeOrigin: true },
     },
   },
+  define: {
+    'import.meta.env.VITE_API_BASE_URL': JSON.stringify(
+      process.env.VITE_API_BASE_URL ||
+      (process.env.NODE_ENV === 'production'
+        ? 'https://www.cortexbuildpro.com'
+        : 'http://localhost:3001')
+    ),
+  },
   build: {
     emptyOutDir: false,
     chunkSizeWarningLimit: 1000,
