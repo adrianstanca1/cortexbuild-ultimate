@@ -82,8 +82,6 @@ const MyDesktop           = lazy(() => import('./components/modules/MyDesktop'))
 const AdvancedAnalytics   = lazy(() => import('./components/modules/AdvancedAnalytics'));
 const ProjectCalendar     = lazy(() => import('./components/modules/ProjectCalendar'));
 const AdminDashboard      = lazy(() => import('./components/modules/AdminDashboard'));
-const NotificationCenter   = lazy(() => import('./components/modules/NotificationCenter'));
-
 const ModuleLoader = () => (
   <div className="flex items-center justify-center h-64">
     <div className="w-8 h-8 border-4 border-orange-500/30 border-t-orange-500 rounded-full animate-spin" />
