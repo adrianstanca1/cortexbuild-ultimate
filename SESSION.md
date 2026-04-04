@@ -278,3 +278,43 @@ docker exec -it cortexbuild-db psql -U cortexbuild -d cortexbuild
 - VPS Git: `04bafe7` (identical to HEAD)
 - Docker: 6/6 containers healthy
 - Security: 16/16 findings addressed
+
+---
+
+## 2026-04-04 — Full Codebase Review & All Critical Fixes
+
+### Code Review (4 parallel agents + verification)
+- **42 findings** across 4 dimensions (security, quality, performance, undirected)
+- **20 critical**, **14 suggestions**, **8 nice-to-have**
+
+### Critical Fixes Applied (commits d246eba → 9098ad5)
+
+**Security (10 fixes):**
+1. SQL injection in ai-rag.js → parameterized queries + table whitelist
+2. WebSocket JWT forgery → jwt.verify() instead of jwt.decode()
+3. Multi-tenancy: audit.js, email.js, notifications.js, permissions.js, search.js
+4. AI execute endpoints → added organization_id/company_id to all INSERTs
+5. RAG chat token mismatch → getToken() instead of localStorage 'token'
+6. project-tasks broken SQL → fixed dual-FROM syntax
+7. file-validation.js → added missing path import
+
+**Performance (2 fixes):**
+8. N+1 queries in files.js → single ANY() query instead of N queries
+9. Semantic search → added organization_id filter to embeddings query
+
+**Dead Code Removal (13 files, ~1000 lines):**
+10. Deleted: aiSearch.ts, workflowEngine.ts, integrations.ts, validation.ts
+11. Deleted: 7 standalone hook files (useProjects, useRFIs, useSubmittals, etc.)
+
+**QA:** 117/117 tests pass, 0 type errors, build 361ms
+
+### Remaining Findings (not blocking)
+- XSS middleware overly aggressive (Suggestion)
+- OAuth state store in-memory (Suggestion)
+- Deploy endpoint uses exec() (Suggestion)
+- Dashboard has zero React.memo (Suggestion)
+- 5 overlapping CI/CD workflows (Suggestion)
+- AdminDashboard 2053-line monolith (Suggestion)
+- Error messages leak internal details (Nice to have)
+- No CSRF for cookie auth (Nice to have)
+- JWT has no jti for revocation (Nice to have)
