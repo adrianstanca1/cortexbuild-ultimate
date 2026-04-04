@@ -115,8 +115,10 @@ router.get('/permissions', (req, res) => {
 
 router.get('/roles', async (req, res) => {
   try {
+    const orgId = req.user?.organization_id;
     const { rows: customRoles } = await pool.query(
-      'SELECT * FROM custom_roles ORDER BY created_at DESC'
+      'SELECT * FROM custom_roles WHERE organization_id = $1 ORDER BY created_at DESC',
+      [orgId]
     );
     const roles = [
       ...Object.entries(DEFAULT_ROLES).map(([key, val]) => ({
@@ -147,9 +149,10 @@ router.get('/roles/:id', async (req, res) => {
       return res.json({ id, ...DEFAULT_ROLES[id], isCustom: false });
     }
     const customId = id.replace('custom_', '');
+    const orgId = req.user?.organization_id;
     const { rows } = await pool.query(
-      'SELECT * FROM custom_roles WHERE id = $1',
-      [customId]
+      'SELECT * FROM custom_roles WHERE id = $1 AND organization_id = $2',
+      [customId, orgId]
     );
     if (!rows[0]) return res.status(404).json({ message: 'Role not found' });
     res.json({
@@ -171,10 +174,11 @@ router.post('/roles', async (req, res) => {
       return res.status(400).json({ message: 'name and permissions are required' });
     }
     const createdBy = req.user?.id || 'unknown';
+    const organizationId = req.user?.organization_id;
     const { rows } = await pool.query(
-      `INSERT INTO custom_roles (name, description, permissions, created_by)
-       VALUES ($1, $2, $3, $4) RETURNING *`,
-      [name, description || '', JSON.stringify(permissions), createdBy]
+      `INSERT INTO custom_roles (name, description, permissions, created_by, organization_id)
+       VALUES ($1, $2, $3, $4, $5) RETURNING *`,
+      [name, description || '', JSON.stringify(permissions), createdBy, organizationId]
     );
     res.status(201).json({
       id: `custom_${rows[0].id}`,
@@ -197,14 +201,15 @@ router.put('/roles/:id', async (req, res) => {
     }
     const customId = id.replace('custom_', '');
     const { name, description, permissions } = req.body;
+    const orgId = req.user?.organization_id;
     const { rows } = await pool.query(
       `UPDATE custom_roles
        SET name = COALESCE($1, name),
            description = COALESCE($2, description),
            permissions = COALESCE($3, permissions),
            updated_at = CURRENT_TIMESTAMP
-       WHERE id = $4 RETURNING *`,
-      [name, description, permissions ? JSON.stringify(permissions) : null, customId]
+       WHERE id = $4 AND organization_id = $5 RETURNING *`,
+      [name, description, permissions ? JSON.stringify(permissions) : null, customId, orgId]
     );
     if (!rows[0]) return res.status(404).json({ message: 'Role not found' });
     res.json({
@@ -226,9 +231,10 @@ router.delete('/roles/:id', async (req, res) => {
       return res.status(400).json({ message: 'Cannot delete system roles' });
     }
     const customId = id.replace('custom_', '');
+    const orgId = req.user?.organization_id;
     const { rowCount } = await pool.query(
-      'DELETE FROM custom_roles WHERE id = $1',
-      [customId]
+      'DELETE FROM custom_roles WHERE id = $1 AND organization_id = $2',
+      [customId, orgId]
     );
     if (!rowCount) return res.status(404).json({ message: 'Role not found' });
     res.json({ message: 'Role deleted' });

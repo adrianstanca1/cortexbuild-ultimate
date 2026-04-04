@@ -150,7 +150,9 @@ router.get('/', async (req, res) => {
             `SELECT de.chunk_text, de.embedding_id, de.document_id, d.name as file_name, d.type
              FROM document_embeddings de
              JOIN documents d ON d.id = de.document_id
-             LIMIT 200`
+             WHERE d.organization_id = $1
+             LIMIT 200`,
+            [orgId]
           );
           // Embedding IDs are stored as JSON arrays from Ollama
           const scored = chunks.map(row => {

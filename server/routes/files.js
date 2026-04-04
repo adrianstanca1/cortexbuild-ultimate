@@ -77,13 +77,22 @@ router.get('/', async (req, res) => {
     query += ' ORDER BY created_at DESC';
     const { rows } = await pool.query(query, params);
 
-    if (include_versions === 'true') {
-      const docsWithVersions = await Promise.all(rows.map(async (doc) => {
-        const { rows: versions } = await pool.query(
-          'SELECT * FROM document_versions WHERE document_id = $1 ORDER BY version DESC',
-          [doc.id]
-        );
-        return { ...doc, versions };
+    if (include_versions === 'true' && rows.length > 0) {
+      const docIds = rows.map(r => r.id);
+      const { rows: versions } = await pool.query(
+        'SELECT * FROM document_versions WHERE document_id = ANY($1) ORDER BY document_id, version DESC',
+        [docIds]
+      );
+
+      const versionMap = {};
+      versions.forEach(v => {
+        if (!versionMap[v.document_id]) versionMap[v.document_id] = [];
+        versionMap[v.document_id].push(v);
+      });
+
+      const docsWithVersions = rows.map(doc => ({
+        ...doc,
+        versions: versionMap[doc.id] || []
       }));
       return res.json({ data: docsWithVersions });
     }
@@ -100,15 +109,18 @@ router.get('/:id', async (req, res) => {
   try {
     const { id } = req.params;
     const org = orgFilter(req.user);
-    const { rows } = await pool.query(`SELECT * FROM documents WHERE id = $1${org.filter}`, [id, ...org.params]);
+    const { rows } = await pool.query(
+      `SELECT d.*, json_agg(dv.*) FILTER (WHERE dv.id IS NOT NULL) as versions
+       FROM documents d
+       LEFT JOIN document_versions dv ON dv.document_id = d.id
+       WHERE d.id = $1${org.filter}
+       GROUP BY d.id`,
+      [id, ...org.params]
+    );
     if (rows.length === 0) return res.status(404).json({ message: 'Document not found' });
 
-    const { rows: versions } = await pool.query(
-      'SELECT * FROM document_versions WHERE document_id = $1 ORDER BY version DESC',
-      [id]
-    );
-
-    res.json({ ...rows[0], versions });
+    const doc = { ...rows[0], versions: rows[0].versions || [] };
+    res.json(doc);
   } catch (err) {
     console.error('[GET /api/files/:id]', err.message);
     res.status(500).json({ message: err.message });

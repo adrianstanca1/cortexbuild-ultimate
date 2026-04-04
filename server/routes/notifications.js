@@ -15,12 +15,13 @@ router.get('/', async (req, res) => {
   try {
     const orgId = req.user?.organization_id;
     const companyId = req.user?.company_id;
+    const userId = req.user?.id;
     const { rows } = await pool.query(
-      `SELECT * FROM notifications 
-       WHERE (organization_id = $1 OR company_id = $2 OR organization_id IS NULL)
-       ORDER BY created_at DESC 
+      `SELECT * FROM notifications
+       WHERE (organization_id = $1 OR company_id = $2 OR user_id = $3)
+       ORDER BY created_at DESC
        LIMIT 100`,
-      [orgId, companyId]
+      [orgId, companyId, userId]
     );
     res.json(rows);
   } catch (err) {
@@ -34,10 +35,11 @@ router.get('/unread-count', async (req, res) => {
   try {
     const orgId = req.user?.organization_id;
     const companyId = req.user?.company_id;
+    const userId = req.user?.id;
     const { rows } = await pool.query(
-      `SELECT COUNT(*) as count FROM notifications 
-       WHERE (organization_id = $1 OR company_id = $2 OR organization_id IS NULL) AND read = false`,
-      [orgId, companyId]
+      `SELECT COUNT(*) as count FROM notifications
+       WHERE (organization_id = $1 OR company_id = $2 OR user_id = $3) AND read = false`,
+      [orgId, companyId, userId]
     );
     res.json({ count: parseInt(rows[0].count) });
   } catch (err) {
@@ -49,9 +51,14 @@ router.get('/unread-count', async (req, res) => {
 // Mark notification as read
 router.put('/:id/read', async (req, res) => {
   try {
+    const orgId = req.user?.organization_id;
+    const companyId = req.user?.company_id;
+    const userId = req.user?.id;
     const { rows } = await pool.query(
-      `UPDATE notifications SET read = true WHERE id = $1 RETURNING *`,
-      [req.params.id]
+      `UPDATE notifications SET read = true
+       WHERE id = $1 AND (organization_id = $2 OR company_id = $3 OR user_id = $4)
+       RETURNING *`,
+      [req.params.id, orgId, companyId, userId]
     );
     if (!rows[0]) return res.status(404).json({ message: 'Notification not found' });
     res.json(rows[0]);
@@ -79,9 +86,13 @@ router.put('/read-all', async (req, res) => {
 // Delete notification
 router.delete('/:id', async (req, res) => {
   try {
+    const orgId = req.user?.organization_id;
+    const companyId = req.user?.company_id;
+    const userId = req.user?.id;
     const { rowCount } = await pool.query(
-      `DELETE FROM notifications WHERE id = $1 AND user_id = $2`,
-      [req.params.id, req.user.id]
+      `DELETE FROM notifications
+       WHERE id = $1 AND (organization_id = $2 OR company_id = $3 OR user_id = $4)`,
+      [req.params.id, orgId, companyId, userId]
     );
     if (!rowCount) return res.status(404).json({ message: 'Notification not found' });
     res.json({ message: 'Notification deleted' });
@@ -139,11 +150,13 @@ router.post('/', async (req, res) => {
 // Generate system notifications (periodic checks)
 router.post('/generate-alerts', async (req, res) => {
   try {
+    const orgId = req.user?.organization_id;
     const alerts = [];
-    
+
     // Check for overdue invoices
     const { rows: overdueInvoices } = await pool.query(
-      `SELECT COUNT(*) as count FROM invoices WHERE status = 'overdue'`
+      `SELECT COUNT(*) as count FROM invoices WHERE status = 'overdue' AND organization_id = $1`,
+      [orgId]
     );
     if (parseInt(overdueInvoices[0].count) > 0) {
       alerts.push({
@@ -154,10 +167,11 @@ router.post('/generate-alerts', async (req, res) => {
         link: '/invoicing'
       });
     }
-    
+
     // Check for expiring RAMS
     const { rows: expiringRams } = await pool.query(
-      `SELECT COUNT(*) as count FROM rams WHERE review_date < NOW() + INTERVAL '30 days'`
+      `SELECT COUNT(*) as count FROM rams WHERE review_date < NOW() + INTERVAL '30 days' AND organization_id = $1`,
+      [orgId]
     );
     if (parseInt(expiringRams[0].count) > 0) {
       alerts.push({
@@ -168,10 +182,11 @@ router.post('/generate-alerts', async (req, res) => {
         link: '/rams'
       });
     }
-    
+
     // Check for open safety incidents
     const { rows: openIncidents } = await pool.query(
-      `SELECT COUNT(*) as count FROM safety_incidents WHERE status IN ('open', 'investigating')`
+      `SELECT COUNT(*) as count FROM safety_incidents WHERE status IN ('open', 'investigating') AND organization_id = $1`,
+      [orgId]
     );
     if (parseInt(openIncidents[0].count) > 0) {
       alerts.push({
@@ -182,16 +197,16 @@ router.post('/generate-alerts', async (req, res) => {
         link: '/safety'
       });
     }
-    
+
     // Save and broadcast alerts
     for (const alert of alerts) {
       await pool.query(
-        `INSERT INTO notifications (title, description, severity, type, link)
-         VALUES ($1, $2, $3, $4, $5)`,
-        [alert.title, alert.description, alert.severity, alert.type, alert.link]
+        `INSERT INTO notifications (title, description, severity, type, link, organization_id, company_id)
+         VALUES ($1, $2, $3, $4, $5, $6, $7)`,
+        [alert.title, alert.description, alert.severity, alert.type, alert.link, orgId, req.user?.company_id]
       );
     }
-    
+
     // Broadcast all alerts
     const { broadcast } = require('../lib/websocket');
     for (const alert of alerts) {
@@ -200,7 +215,7 @@ router.post('/generate-alerts', async (req, res) => {
         payload: { ...alert, timestamp: new Date().toISOString() }
       });
     }
-    
+
     res.json({ generated: alerts.length, alerts });
   } catch (err) {
     console.error('[POST /notifications/generate-alerts]', err.message);
