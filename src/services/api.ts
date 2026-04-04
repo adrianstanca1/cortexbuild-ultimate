@@ -5,7 +5,7 @@
 import { getToken, API_BASE } from '../lib/supabase';
 import { MOCK_DATA } from '../data/mockData';
 
-type Row = Record<string, unknown>;
+export type Row = Record<string, unknown>;
 
 const MOCK_MAP: Record<string, unknown[]> = {
   'projects': MOCK_DATA.projects,
@@ -118,7 +118,7 @@ async function uploadFile(file: File, category: string, project?: string, projec
 // ─── Entity APIs ──────────────────────────────────────────────────────────────
 
 export const projectsApi = {
-  getAll: () => fetchAll('projects'),
+  getAll: () => fetchAll<Row>('projects'),
   getById: (id: string) => apiFetch(`/projects/${id}`),
   create: (data: Row) => insertRow('projects', data),
   update: (id: string, data: Row) => updateRow('projects', id, data),
@@ -126,7 +126,7 @@ export const projectsApi = {
 };
 
 export const invoicesApi = {
-  getAll: () => fetchAll('invoices'),
+  getAll: () => fetchAll<Row>('invoices'),
   getById: (id: string) => apiFetch(`/invoices/${id}`),
   create: (data: Row) => insertRow('invoices', data),
   update: (id: string, data: Row) => updateRow('invoices', id, data),
@@ -134,7 +134,7 @@ export const invoicesApi = {
 };
 
 export const teamApi = {
-  getAll: () => fetchAll('team'),
+  getAll: () => fetchAll<Row>('team'),
   getById: (id: string) => apiFetch(`/team/${id}`),
   create: (data: Row) => insertRow('team', data),
   update: (id: string, data: Row) => updateRow('team', id, data),
@@ -166,23 +166,23 @@ export const teamApi = {
 };
 
 export const safetyApi = {
-  getAll: () => fetchAll('safety'),
+  getAll: () => fetchAll<Row>('safety'),
   getById: (id: string) => apiFetch(`/safety/${id}`),
   create: (data: Row) => insertRow('safety', data),
   update: (id: string, data: Row) => updateRow('safety', id, data),
   delete: (id: string) => deleteRow('safety', id),
-  getPermits: () => fetchAll('safety-permits'),
+  getPermits: () => fetchAll<Row>('safety-permits'),
   createPermit: (data: Row) => insertRow('safety-permits', data),
   updatePermit: (id: string, data: Row) => updateRow('safety-permits', id, data),
   deletePermit: (id: string) => deleteRow('safety-permits', id),
-  getTalks: () => fetchAll('toolbox-talks'),
+  getTalks: () => fetchAll<Row>('toolbox-talks'),
   createTalk: (data: Row) => insertRow('toolbox-talks', data),
   updateTalk: (id: string, data: Row) => updateRow('toolbox-talks', id, data),
   deleteTalk: (id: string) => deleteRow('toolbox-talks', id),
 };
 
 export const rfisApi = {
-  getAll: () => fetchAll('rfis'),
+  getAll: () => fetchAll<Row>('rfis'),
   getById: (id: string) => apiFetch(`/rfis/${id}`),
   create: (data: Row) => insertRow('rfis', data),
   update: (id: string, data: Row) => updateRow('rfis', id, data),
@@ -190,7 +190,7 @@ export const rfisApi = {
 };
 
 export const changeOrdersApi = {
-  getAll: () => fetchAll('change-orders'),
+  getAll: () => fetchAll<Row>('change-orders'),
   getById: (id: string) => apiFetch(`/change-orders/${id}`),
   create: (data: Row) => insertRow('change-orders', data),
   update: (id: string, data: Row) => updateRow('change-orders', id, data),
@@ -198,7 +198,7 @@ export const changeOrdersApi = {
 };
 
 export const ramsApi = {
-  getAll: () => fetchAll('rams'),
+  getAll: () => fetchAll<Row>('rams'),
   getById: (id: string) => apiFetch(`/rams/${id}`),
   create: (data: Row) => insertRow('rams', data),
   update: (id: string, data: Row) => updateRow('rams', id, data),
@@ -206,7 +206,7 @@ export const ramsApi = {
 };
 
 export const cisApi = {
-  getAll: () => fetchAll('cis'),
+  getAll: () => fetchAll<Row>('cis'),
   getById: (id: string) => apiFetch(`/cis/${id}`),
   create: (data: Row) => insertRow('cis', data),
   update: (id: string, data: Row) => updateRow('cis', id, data),
@@ -214,22 +214,22 @@ export const cisApi = {
 };
 
 export const equipmentApi = {
-  getAll: () => fetchAll('equipment'),
+  getAll: () => fetchAll<Row>('equipment'),
   getById: (id: string) => apiFetch(`/equipment/${id}`),
   create: (data: Row) => insertRow('equipment', data),
   update: (id: string, data: Row) => updateRow('equipment', id, data),
   delete: (id: string) => deleteRow('equipment', id),
-  getServiceLogs: () => fetchAll('equipment-service-logs'),
+  getServiceLogs: () => fetchAll<Row>('equipment-service-logs'),
   createServiceLog: (data: Row) => insertRow('equipment-service-logs', data),
   deleteServiceLog: (id: string) => deleteRow('equipment-service-logs', id),
-  getHireLogs: () => fetchAll('equipment-hire-logs'),
+  getHireLogs: () => fetchAll<Row>('equipment-hire-logs'),
   createHireLog: (data: Row) => insertRow('equipment-hire-logs', data),
   updateHireLog: (id: string, data: Row) => updateRow('equipment-hire-logs', id, data),
   deleteHireLog: (id: string) => deleteRow('equipment-hire-logs', id),
 };
 
 export const sitePermitsApi = {
-  getAll: () => fetchAll('site-permits'),
+  getAll: () => fetchAll<Row>('site-permits'),
   getById: (id: string) => apiFetch(`/site-permits/${id}`),
   create: (data: Row) => insertRow('site-permits', data),
   update: (id: string, data: Row) => updateRow('site-permits', id, data),
@@ -237,7 +237,7 @@ export const sitePermitsApi = {
 };
 
 export const subcontractorsApi = {
-  getAll: () => fetchAll('subcontractors'),
+  getAll: () => fetchAll<Row>('subcontractors'),
   getById: (id: string) => apiFetch(`/subcontractors/${id}`),
   create: (data: Row) => insertRow('subcontractors', data),
   update: (id: string, data: Row) => updateRow('subcontractors', id, data),
@@ -245,7 +245,7 @@ export const subcontractorsApi = {
 };
 
 export const timesheetsApi = {
-  getAll: () => fetchAll('timesheets'),
+  getAll: () => fetchAll<Row>('timesheets'),
   getById: (id: string) => apiFetch(`/timesheets/${id}`),
   create: (data: Row) => insertRow('timesheets', data),
   update: (id: string, data: Row) => updateRow('timesheets', id, data),
@@ -253,12 +253,12 @@ export const timesheetsApi = {
 };
 
 export const documentsApi = {
-  getAll: () => fetchAll('documents'),
+  getAll: () => fetchAll<Row>('documents'),
   getById: (id: string) => apiFetch(`/documents/${id}`),
   create: (data: Row) => insertRow('documents', data),
   update: (id: string, data: Row) => updateRow('documents', id, data),
   delete: (id: string) => deleteRow('documents', id),
-  getTransmittals: () => fetchAll('drawing-transmittals'),
+  getTransmittals: () => fetchAll<Row>('drawing-transmittals'),
   createTransmittal: (data: Row) => insertRow('drawing-transmittals', data),
   uploadFile: async (file: File, options?: { project?: string; projectId?: string; category?: string }): Promise<Row> => {
     const token = getToken();
@@ -278,7 +278,7 @@ export const documentsApi = {
 };
 
 export const tendersApi = {
-  getAll: () => fetchAll('tenders'),
+  getAll: () => fetchAll<Row>('tenders'),
   getById: (id: string) => apiFetch(`/tenders/${id}`),
   create: (data: Row) => insertRow('tenders', data),
   update: (id: string, data: Row) => updateRow('tenders', id, data),
@@ -286,7 +286,7 @@ export const tendersApi = {
 };
 
 export const dailyReportsApi = {
-  getAll: () => fetchAll('daily-reports'),
+  getAll: () => fetchAll<Row>('daily-reports'),
   getById: (id: string) => apiFetch(`/daily-reports/${id}`),
   create: (data: Row) => insertRow('daily-reports', data),
   update: (id: string, data: Row) => updateRow('daily-reports', id, data),
@@ -294,7 +294,7 @@ export const dailyReportsApi = {
 };
 
 export const meetingsApi = {
-  getAll: () => fetchAll('meetings'),
+  getAll: () => fetchAll<Row>('meetings'),
   getById: (id: string) => apiFetch(`/meetings/${id}`),
   create: (data: Row) => insertRow('meetings', data),
   update: (id: string, data: Row) => updateRow('meetings', id, data),
@@ -302,7 +302,7 @@ export const meetingsApi = {
 };
 
 export const materialsApi = {
-  getAll: () => fetchAll('materials'),
+  getAll: () => fetchAll<Row>('materials'),
   getById: (id: string) => apiFetch(`/materials/${id}`),
   create: (data: Row) => insertRow('materials', data),
   update: (id: string, data: Row) => updateRow('materials', id, data),
@@ -310,7 +310,7 @@ export const materialsApi = {
 };
 
 export const punchListApi = {
-  getAll: () => fetchAll('punch-list'),
+  getAll: () => fetchAll<Row>('punch-list'),
   getById: (id: string) => apiFetch(`/punch-list/${id}`),
   create: (data: Row) => insertRow('punch-list', data),
   update: (id: string, data: Row) => updateRow('punch-list', id, data),
@@ -318,7 +318,7 @@ export const punchListApi = {
 };
 
 export const inspectionsApi = {
-  getAll: () => fetchAll('inspections'),
+  getAll: () => fetchAll<Row>('inspections'),
   getById: (id: string) => apiFetch(`/inspections/${id}`),
   create: (data: Row) => insertRow('inspections', data),
   update: (id: string, data: Row) => updateRow('inspections', id, data),
@@ -326,7 +326,7 @@ export const inspectionsApi = {
 };
 
 export const contactsApi = {
-  getAll: () => fetchAll('contacts'),
+  getAll: () => fetchAll<Row>('contacts'),
   getById: (id: string) => apiFetch(`/contacts/${id}`),
   create: (data: Row) => insertRow('contacts', data),
   update: (id: string, data: Row) => updateRow('contacts', id, data),
@@ -337,16 +337,16 @@ export const contactsApi = {
 };
 
 export const riskRegisterApi = {
-  getAll: () => fetchAll('risk-register'),
+  getAll: () => fetchAll<Row>('risk-register'),
   getById: (id: string) => apiFetch(`/risk-register/${id}`),
   create: (data: Row) => insertRow('risk-register', data),
   update: (id: string, data: Row) => updateRow('risk-register', id, data),
   delete: (id: string) => deleteRow('risk-register', id),
-  getMitigationActions: () => fetchAll('risk-mitigation-actions'),
+  getMitigationActions: () => fetchAll<Row>('risk-mitigation-actions'),
 };
 
 export const purchaseOrdersApi = {
-  getAll: () => fetchAll('purchase-orders'),
+  getAll: () => fetchAll<Row>('purchase-orders'),
   getById: (id: string) => apiFetch(`/purchase-orders/${id}`),
   create: (data: Row) => insertRow('purchase-orders', data),
   update: (id: string, data: Row) => updateRow('purchase-orders', id, data),
@@ -667,7 +667,7 @@ export const permissionsApi = {
 };
 
 export const variationsApi = {
-  getAll: () => fetchAll('variations'),
+  getAll: () => fetchAll<Row>('variations'),
   getById: (id: string) => apiFetch(`/variations/${id}`),
   create: (data: Row) => insertRow('variations', data),
   update: (id: string, data: Row) => updateRow('variations', id, data),
@@ -675,7 +675,7 @@ export const variationsApi = {
 };
 
 export const defectsApi = {
-  getAll: () => fetchAll('defects'),
+  getAll: () => fetchAll<Row>('defects'),
   getById: (id: string) => apiFetch(`/defects/${id}`),
   create: (data: Row) => insertRow('defects', data),
   update: (id: string, data: Row) => updateRow('defects', id, data),
@@ -683,7 +683,7 @@ export const defectsApi = {
 };
 
 export const valuationsApi = {
-  getAll: () => fetchAll('valuations'),
+  getAll: () => fetchAll<Row>('valuations'),
   getById: (id: string) => apiFetch(`/valuations/${id}`),
   create: (data: Row) => insertRow('valuations', data),
   update: (id: string, data: Row) => updateRow('valuations', id, data),
@@ -691,7 +691,7 @@ export const valuationsApi = {
 };
 
 export const specificationsApi = {
-  getAll: () => fetchAll('specifications'),
+  getAll: () => fetchAll<Row>('specifications'),
   getById: (id: string) => apiFetch(`/specifications/${id}`),
   create: (data: Row) => insertRow('specifications', data),
   update: (id: string, data: Row) => updateRow('specifications', id, data),
@@ -699,7 +699,7 @@ export const specificationsApi = {
 };
 
 export const tempWorksApi = {
-  getAll: () => fetchAll('temp-works'),
+  getAll: () => fetchAll<Row>('temp-works'),
   getById: (id: string) => apiFetch(`/temp-works/${id}`),
   create: (data: Row) => insertRow('temp-works', data),
   update: (id: string, data: Row) => updateRow('temp-works', id, data),
@@ -707,7 +707,7 @@ export const tempWorksApi = {
 };
 
 export const signageApi = {
-  getAll: () => fetchAll('signage'),
+  getAll: () => fetchAll<Row>('signage'),
   getById: (id: string) => apiFetch(`/signage/${id}`),
   create: (data: Row) => insertRow('signage', data),
   update: (id: string, data: Row) => updateRow('signage', id, data),
@@ -715,7 +715,7 @@ export const signageApi = {
 };
 
 export const wasteManagementApi = {
-  getAll: () => fetchAll('waste-management'),
+  getAll: () => fetchAll<Row>('waste-management'),
   getById: (id: string) => apiFetch(`/waste-management/${id}`),
   create: (data: Row) => insertRow('waste-management', data),
   update: (id: string, data: Row) => updateRow('waste-management', id, data),
@@ -723,7 +723,7 @@ export const wasteManagementApi = {
 };
 
 export const sustainabilityApi = {
-  getAll: () => fetchAll('sustainability'),
+  getAll: () => fetchAll<Row>('sustainability'),
   getById: (id: string) => apiFetch(`/sustainability/${id}`),
   create: (data: Row) => insertRow('sustainability', data),
   update: (id: string, data: Row) => updateRow('sustainability', id, data),
@@ -731,7 +731,7 @@ export const sustainabilityApi = {
 };
 
 export const trainingApi = {
-  getAll: () => fetchAll('training'),
+  getAll: () => fetchAll<Row>('training'),
   getById: (id: string) => apiFetch(`/training/${id}`),
   create: (data: Row) => insertRow('training', data),
   update: (id: string, data: Row) => updateRow('training', id, data),
@@ -739,7 +739,7 @@ export const trainingApi = {
 };
 
 export const certificationsApi = {
-  getAll: () => fetchAll('certifications'),
+  getAll: () => fetchAll<Row>('certifications'),
   getById: (id: string) => apiFetch(`/certifications/${id}`),
   create: (data: Row) => insertRow('certifications', data),
   update: (id: string, data: Row) => updateRow('certifications', id, data),
@@ -747,7 +747,7 @@ export const certificationsApi = {
 };
 
 export const prequalificationApi = {
-  getAll: () => fetchAll('prequalification'),
+  getAll: () => fetchAll<Row>('prequalification'),
   getById: (id: string) => apiFetch(`/prequalification/${id}`),
   create: (data: Row) => insertRow('prequalification', data),
   update: (id: string, data: Row) => updateRow('prequalification', id, data),
@@ -755,7 +755,7 @@ export const prequalificationApi = {
 };
 
 export const lettingsApi = {
-  getAll: () => fetchAll('lettings'),
+  getAll: () => fetchAll<Row>('lettings'),
   getById: (id: string) => apiFetch(`/lettings/${id}`),
   create: (data: Row) => insertRow('lettings', data),
   update: (id: string, data: Row) => updateRow('lettings', id, data),
@@ -763,7 +763,7 @@ export const lettingsApi = {
 };
 
 export const measuringApi = {
-  getAll: () => fetchAll('measuring'),
+  getAll: () => fetchAll<Row>('measuring'),
   getById: (id: string) => apiFetch(`/measuring/${id}`),
   create: (data: Row) => insertRow('measuring', data),
   update: (id: string, data: Row) => updateRow('measuring', id, data),
@@ -864,7 +864,7 @@ export const weatherApi = {
 // ─── Project Images (Gallery) ──────────────────────────────────────────────────
 export const projectImagesApi = {
   getAll: (projectId?: string) =>
-    projectId ? fetchAll(`project-images?project_id=${projectId}`) : fetchAll('project-images'),
+    projectId ? fetchAll<Row>(`project-images?project_id=${projectId}`) : fetchAll<Row>('project-images'),
   create: (data: Row) => insertRow('project-images', data),
   update: (id: string, data: Row) => updateRow('project-images', id, data),
   delete: (id: string) => deleteRow('project-images', id),
@@ -897,7 +897,7 @@ export const projectTasksApi = {
     if (filters?.priority) params.append('priority', filters.priority);
     if (filters?.assigned_to) params.append('assigned_to', filters.assigned_to);
     const qs = params.toString();
-    return fetchAll(`project-tasks${qs ? `?${qs}` : ''}`);
+    return fetchAll<Row>(`project-tasks${qs ? `?${qs}` : ''}`);
   },
   getById: (id: string) => apiFetch(`/project-tasks/${id}`),
   create: (data: Row) => insertRow('project-tasks', data),
