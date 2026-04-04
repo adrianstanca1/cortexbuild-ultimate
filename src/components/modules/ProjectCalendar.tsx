@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { ChevronLeft, ChevronRight, Plus, Clock, MapPin, Users } from 'lucide-react';
+import { getToken, API_BASE } from '../../lib/supabase';
 
 interface CalendarEvent {
   id: string;
@@ -13,49 +14,41 @@ interface CalendarEvent {
   color?: string;
 }
 
+const TYPE_COLORS: Record<string, string> = {
+  meeting: '#3B82F6',
+  deadline: '#EF4444',
+  inspection: '#F59E0B',
+  delivery: '#10B981',
+  project: '#8B5CF6',
+  other: '#6B7280',
+};
+
 export function ProjectCalendar() {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [events, setEvents] = useState<CalendarEvent[]>([]);
   const [view, setView] = useState<'month' | 'week' | 'day'>('month');
 
   useEffect(() => {
-    // Load events
-    const mockEvents: CalendarEvent[] = [
-      {
-        id: '1',
-        title: 'Site Inspection',
-        type: 'inspection',
-        start: new Date(Date.now() + 86400000).toISOString(),
-        location: 'Site A',
-        attendees: ['James Miller', 'Sarah Chen'],
-        color: '#F59E0B',
-      },
-      {
-        id: '2',
-        title: 'Budget Review Meeting',
-        type: 'meeting',
-        start: new Date(Date.now() + 172800000).toISOString(),
-        end: new Date(Date.now() + 183600000).toISOString(),
-        attendees: ['Patricia Watson', 'Michael Brown'],
-        color: '#3B82F6',
-      },
-      {
-        id: '3',
-        title: 'Material Delivery',
-        type: 'delivery',
-        start: new Date(Date.now() + 259200000).toISOString(),
-        location: 'Site B',
-        color: '#10B981',
-      },
-      {
-        id: '4',
-        title: 'Project Deadline',
-        type: 'deadline',
-        start: new Date(Date.now() + 604800000).toISOString(),
-        color: '#EF4444',
-      },
-    ];
-    setEvents(mockEvents);
+    const token = getToken();
+    fetch(`${API_BASE}/calendar`, {
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
+    })
+      .then(r => r.json())
+      .then((data: Array<{ id: string; title: string; type: string; startDate: string; endDate?: string; project?: string }>) => {
+        if (!Array.isArray(data)) return;
+        setEvents(data.map(e => ({
+          id: e.id,
+          title: e.title,
+          type: (['meeting', 'deadline', 'inspection', 'delivery'].includes(e.type)
+            ? e.type
+            : 'other') as CalendarEvent['type'],
+          start: e.startDate,
+          end: e.endDate,
+          projectId: e.project,
+          color: TYPE_COLORS[e.type] ?? TYPE_COLORS.other,
+        })));
+      })
+      .catch(() => {});
   }, []);
 
   const getDaysInMonth = (date: Date) => {

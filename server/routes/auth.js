@@ -180,6 +180,32 @@ router.put('/password', authMiddleware, async (req, res) => {
   }
 });
 
+// GET /api/auth/preferences — get current user's notification preferences
+router.get('/preferences', authMiddleware, async (req, res) => {
+  try {
+    const { rows } = await pool.query(
+      'SELECT notification_preferences FROM users WHERE id = $1',
+      [req.user.id]
+    );
+    res.json(rows[0]?.notification_preferences ?? null);
+  } catch (err) {
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
+// PUT /api/auth/preferences — save current user's notification preferences
+router.put('/preferences', authMiddleware, async (req, res) => {
+  try {
+    const { rows } = await pool.query(
+      'UPDATE users SET notification_preferences = $1 WHERE id = $2 RETURNING notification_preferences',
+      [JSON.stringify(req.body), req.user.id]
+    );
+    res.json(rows[0].notification_preferences);
+  } catch (err) {
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
 // GET /api/auth/users — list all users (admin+ only)
 router.get('/users', authMiddleware, async (req, res) => {
   if (!['super_admin','company_owner','admin'].includes(req.user.role)) {

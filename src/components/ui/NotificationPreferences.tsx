@@ -3,6 +3,7 @@ import { X } from 'lucide-react';
 import { toast } from 'sonner';
 import { PreferenceRow } from './PreferenceRow';
 import { ChannelHeader } from './ChannelHeader';
+import { getToken, API_BASE } from '../../lib/supabase';
 
 export interface NotificationPreference {
   type: string;
@@ -13,61 +14,29 @@ export interface NotificationPreference {
   inApp: boolean;
 }
 
+const DEFAULT_PREFERENCES: NotificationPreference[] = [
+  { type: 'safety_alerts',    label: 'Safety Alerts',      email: true,  push: true,  sms: true,  inApp: true },
+  { type: 'project_updates',  label: 'Project Updates',    email: true,  push: true,  sms: false, inApp: true },
+  { type: 'budget_alerts',    label: 'Budget Alerts',      email: true,  push: true,  sms: false, inApp: true },
+  { type: 'task_assignments', label: 'Task Assignments',   email: false, push: true,  sms: false, inApp: true },
+  { type: 'document_changes', label: 'Document Changes',   email: false, push: false, sms: false, inApp: true },
+  { type: 'meeting_reminders',label: 'Meeting Reminders',  email: true,  push: true,  sms: true,  inApp: true },
+];
+
 export function NotificationPreferences({ onClose }: { onClose?: () => void }) {
-  const [preferences, setPreferences] = useState<NotificationPreference[]>([]);
+  const [preferences, setPreferences] = useState<NotificationPreference[]>(DEFAULT_PREFERENCES);
+  const [saving, setSaving] = useState(false);
 
   useEffect(() => {
-    const mockPreferences: NotificationPreference[] = [
-      {
-        type: 'safety_alerts',
-        label: 'Safety Alerts',
-        email: true,
-        push: true,
-        sms: true,
-        inApp: true,
-      },
-      {
-        type: 'project_updates',
-        label: 'Project Updates',
-        email: true,
-        push: true,
-        sms: false,
-        inApp: true,
-      },
-      {
-        type: 'budget_alerts',
-        label: 'Budget Alerts',
-        email: true,
-        push: true,
-        sms: false,
-        inApp: true,
-      },
-      {
-        type: 'task_assignments',
-        label: 'Task Assignments',
-        email: false,
-        push: true,
-        sms: false,
-        inApp: true,
-      },
-      {
-        type: 'document_changes',
-        label: 'Document Changes',
-        email: false,
-        push: false,
-        sms: false,
-        inApp: true,
-      },
-      {
-        type: 'meeting_reminders',
-        label: 'Meeting Reminders',
-        email: true,
-        push: true,
-        sms: true,
-        inApp: true,
-      },
-    ];
-    setPreferences(mockPreferences);
+    const token = getToken();
+    fetch(`${API_BASE}/auth/preferences`, {
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
+    })
+      .then(r => r.json())
+      .then((data: NotificationPreference[] | null) => {
+        if (Array.isArray(data) && data.length > 0) setPreferences(data);
+      })
+      .catch(() => {});
   }, []);
 
   const updatePreference = (type: string, channel: keyof Omit<NotificationPreference, 'type' | 'label'>, value: boolean) => {
@@ -76,9 +45,26 @@ export function NotificationPreferences({ onClose }: { onClose?: () => void }) {
     );
   };
 
-  const savePreferences = () => {
-    toast.success('Notification preferences saved');
-    onClose?.();
+  const savePreferences = async () => {
+    setSaving(true);
+    try {
+      const token = getToken();
+      const res = await fetch(`${API_BASE}/auth/preferences`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+        body: JSON.stringify(preferences),
+      });
+      if (!res.ok) throw new Error('Save failed');
+      toast.success('Notification preferences saved');
+      onClose?.();
+    } catch {
+      toast.error('Failed to save preferences');
+    } finally {
+      setSaving(false);
+    }
   };
 
   return (
@@ -138,8 +124,9 @@ export function NotificationPreferences({ onClose }: { onClose?: () => void }) {
             onClick={savePreferences}
             className="btn btn-primary"
             aria-label="Save notification preferences"
+            disabled={saving}
           >
-            Save Preferences
+            {saving ? 'Saving...' : 'Save Preferences'}
           </button>
         </div>
       </div>
