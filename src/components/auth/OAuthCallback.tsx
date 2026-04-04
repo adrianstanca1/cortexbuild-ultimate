@@ -9,7 +9,6 @@ export function OAuthCallback() {
   const [error, setError] = useState<string>('');
 
   useEffect(() => {
-    const token = searchParams.get('token');
     const errorParam = searchParams.get('error');
     const stateParam = searchParams.get('state');
 
@@ -32,32 +31,15 @@ export function OAuthCallback() {
       return;
     }
 
-    if (!token) {
-      setStatus('error');
-      setError('No authentication token received. Please try again.');
-      return;
-    }
+    // SECURITY: Token is now stored in httpOnly cookie by server
+    // No token in URL or localStorage - cookie is automatically sent by browser
+    // on subsequent API requests for authentication
 
-    try {
-      // SECURITY: Token is now stored in httpOnly cookie by server
-      // Do not store tokens in localStorage - vulnerable to XSS
-      // localStorage.setItem('auth_token', token); // REMOVED
+    setStatus('success');
 
-      const tokenParts = token.split('.');
-      if (tokenParts.length !== 3) {
-        throw new Error('Invalid token format');
-      }
-
-      setStatus('success');
-
-      setTimeout(() => {
-        navigate('/dashboard', { replace: true });
-      }, 1500);
-    } catch (err) {
-      console.error('OAuth callback error:', err);
-      setStatus('error');
-      setError('Failed to process authentication. Please try again.');
-    }
+    setTimeout(() => {
+      navigate('/dashboard', { replace: true });
+    }, 1500);
   }, [searchParams, navigate]);
 
   return (

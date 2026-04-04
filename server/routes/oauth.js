@@ -229,9 +229,15 @@ router.get('/google/callback', oauthLimiter, (req, res, next) => {
         { expiresIn: '7d' }
       );
 
-      // Redirect with token in URL fragment (never sent to server, more secure than query param)
+      // Set httpOnly cookie (not accessible by JavaScript, protects against XSS)
       const redirectUri = storedState.redirectUri;
-      res.redirect(`${redirectUri}#token=${token}`);
+      res.cookie('token', token, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'lax',
+        maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days
+      });
+      res.redirect(redirectUri);
     } catch (e) {
       console.error('[OAuth] Google callback error:', e);
       res.redirect(`${process.env.FRONTEND_URL || 'http://localhost:5173'}/login?error=google_auth_failed`);
@@ -294,9 +300,15 @@ router.get('/microsoft/callback', oauthLimiter, (req, res, next) => {
         { expiresIn: '7d' }
       );
 
-      // Redirect with token in URL fragment (never sent to server, more secure than query param)
+      // Set httpOnly cookie (not accessible by JavaScript, protects against XSS)
       const redirectUri = storedState.redirectUri;
-      res.redirect(`${redirectUri}#token=${token}`);
+      res.cookie('token', token, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'lax',
+        maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days
+      });
+      res.redirect(redirectUri);
     } catch (e) {
       console.error('[OAuth] Microsoft callback error:', e);
       res.redirect(`${process.env.FRONTEND_URL || 'http://localhost:5173'}/login?error=microsoft_auth_failed`);

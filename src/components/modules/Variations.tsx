@@ -570,7 +570,7 @@ export default function Variations() {
                   <input
                     type="text"
                     value={editItem.ref}
-                    onChange={e => setEditItem((f: any /* eslint-disable-line @typescript-eslint/no-explicit-any */) => ({ ...f, ref: e.target.value }))}
+                    onChange={e => setEditItem((f) => f ? ({ ...f, ref: e.target.value }) : null)}
                     className="w-full px-3 py-2 input input-bordered text-white placeholder-gray-500"
                   />
                 </div>
@@ -578,7 +578,7 @@ export default function Variations() {
                   <label className="block text-gray-400 text-xs mb-1">Status</label>
                   <select
                     value={editItem.status}
-                    onChange={e => setEditItem((f: any /* eslint-disable-line @typescript-eslint/no-explicit-any */) => ({ ...f, status: e.target.value }))}
+                    onChange={e => setEditItem((f) => f ? ({ ...f, status: e.target.value as EditFormState['status'] }) : null)}
                     className="w-full px-3 py-2 input input-bordered text-white"
                   >
                     <option value="draft">Draft</option>
@@ -589,22 +589,11 @@ export default function Variations() {
                     <option value="executed">Executed</option>
                   </select>
                 </div>
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-gray-400 text-xs mb-1">Project</label>
-                  <input
-                    type="text"
-                    value={editItem.project}
-                    onChange={e => setEditItem((f: any /* eslint-disable-line @typescript-eslint/no-explicit-any */) => ({ ...f, project: e.target.value }))}
-                    className="w-full px-3 py-2 input input-bordered text-white placeholder-gray-500"
-                  />
-                </div>
                 <div>
                   <label className="block text-gray-400 text-xs mb-1">Type</label>
                   <select
                     value={editItem.type}
-                    onChange={e => setEditItem((f: any /* eslint-disable-line @typescript-eslint/no-explicit-any */) => ({ ...f, type: e.target.value }))}
+                    onChange={e => setEditItem((f) => f ? ({ ...f, type: e.target.value as EditFormState['type'] }) : null)}
                     className="w-full px-3 py-2 input input-bordered text-white"
                   >
                     <option value="addition">Addition</option>
@@ -620,7 +609,7 @@ export default function Variations() {
                 <input
                   type="text"
                   value={editItem.title}
-                  onChange={e => setEditItem((f: any /* eslint-disable-line @typescript-eslint/no-explicit-any */) => ({ ...f, title: e.target.value }))}
+                  onChange={e => setEditItem((f) => f ? ({ ...f, title: e.target.value }) : null)}
                   className="w-full px-3 py-2 input input-bordered text-white placeholder-gray-500"
                 />
               </div>
@@ -629,7 +618,7 @@ export default function Variations() {
                 <textarea
                   rows={3}
                   value={editItem.description}
-                  onChange={e => setEditItem((f: any /* eslint-disable-line @typescript-eslint/no-explicit-any */) => ({ ...f, description: e.target.value }))}
+                  onChange={e => setEditItem((f) => f ? ({ ...f, description: e.target.value }) : null)}
                   className="w-full px-3 py-2 input input-bordered text-white placeholder-gray-500"
                 />
               </div>
@@ -639,7 +628,7 @@ export default function Variations() {
                   <input
                     type="number"
                     value={editItem.value}
-                    onChange={e => setEditItem((f: any /* eslint-disable-line @typescript-eslint/no-explicit-any */) => ({ ...f, value: e.target.value }))}
+                    onChange={e => setEditItem((f) => f ? ({ ...f, value: e.target.value }) : null)}
                     className="w-full px-3 py-2 input input-bordered text-white placeholder-gray-500"
                   />
                 </div>
@@ -648,7 +637,7 @@ export default function Variations() {
                   <input
                     type="number"
                     value={editItem.originalValue}
-                    onChange={e => setEditItem((f: any /* eslint-disable-line @typescript-eslint/no-explicit-any */) => ({ ...f, originalValue: e.target.value }))}
+                    onChange={e => setEditItem((f) => f ? ({ ...f, originalValue: e.target.value }) : null)}
                     className="w-full px-3 py-2 input input-bordered text-white placeholder-gray-500"
                   />
                 </div>
@@ -658,7 +647,7 @@ export default function Variations() {
                   <label className="block text-gray-400 text-xs mb-1">Reason</label>
                   <select
                     value={editItem.reason}
-                    onChange={e => setEditItem((f: any /* eslint-disable-line @typescript-eslint/no-explicit-any */) => ({ ...f, reason: e.target.value }))}
+                    onChange={e => setEditItem((f) => f ? ({ ...f, reason: e.target.value }) : null)}
                     className="w-full px-3 py-2 input input-bordered text-white"
                   >
                     <option value="">Select reason...</option>
@@ -673,7 +662,7 @@ export default function Variations() {
                   <label className="block text-gray-400 text-xs mb-1">Impact</label>
                   <select
                     value={editItem.impact}
-                    onChange={e => setEditItem((f: any /* eslint-disable-line @typescript-eslint/no-explicit-any */) => ({ ...f, impact: e.target.value }))}
+                    onChange={e => setEditItem((f) => f ? ({ ...f, impact: e.target.value as EditFormState['impact'] }) : null)}
                     className="w-full px-3 py-2 input input-bordered text-white"
                   >
                     <option value="increase">Increase</option>
@@ -688,7 +677,7 @@ export default function Variations() {
                   <input
                     type="text"
                     value={editItem.subcontractor}
-                    onChange={e => setEditItem((f: any /* eslint-disable-line @typescript-eslint/no-explicit-any */) => ({ ...f, subcontractor: e.target.value }))}
+                    onChange={e => setEditItem((f) => f ? ({ ...f, subcontractor: e.target.value }) : null)}
                     className="w-full px-3 py-2 input input-bordered text-white placeholder-gray-500"
                   />
                 </div>
@@ -697,7 +686,7 @@ export default function Variations() {
                   <input
                     type="date"
                     value={editItem.submittedDate}
-                    onChange={e => setEditItem((f: any /* eslint-disable-line @typescript-eslint/no-explicit-any */) => ({ ...f, submittedDate: e.target.value }))}
+                    onChange={e => setEditItem((f) => f ? ({ ...f, submittedDate: e.target.value }) : null)}
                     className="w-full px-3 py-2 input input-bordered text-white placeholder-gray-500"
                   />
                 </div>

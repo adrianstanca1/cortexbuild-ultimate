@@ -56,7 +56,7 @@ router.post('/register', registerLimiter, async (req, res) => {
       return res.status(409).json({ message: 'An account with that email already exists' });
     }
 
-    const hash = await bcrypt.hash(password, 10);
+    const hash = await bcrypt.hash(password, 12);
     const { rows } = await pool.query(
       `INSERT INTO users (name, email, password_hash, role, company, phone)
        VALUES ($1, $2, $3, 'company_owner', $4, $5)
@@ -146,7 +146,7 @@ router.put('/password', authMiddleware, async (req, res) => {
     const valid = await bcrypt.compare(currentPassword, user.password_hash);
     if (!valid) return res.status(400).json({ message: 'Current password is incorrect' });
 
-    const hash = await bcrypt.hash(newPassword, 10);
+    const hash = await bcrypt.hash(newPassword, 12);
     await pool.query('UPDATE users SET password_hash=$1 WHERE id=$2', [hash, req.user.id]);
     res.json({ message: 'Password updated successfully' });
   } catch (err) {
@@ -181,7 +181,7 @@ router.post('/users', authMiddleware, async (req, res) => {
   if (!VALID_ROLES.includes(role)) return res.status(400).json({ message: `Invalid role. Must be one of: ${VALID_ROLES.join(', ')}` });
 
   try {
-    const hash = await bcrypt.hash(password, 10);
+    const hash = await bcrypt.hash(password, 12);
     const { rows } = await pool.query(
       'INSERT INTO users (name,email,password_hash,role,company,phone,organization_id,company_id) VALUES ($1,$2,$3,$4,$5,$6,$7,$8) RETURNING id,name,email,role,company,phone,organization_id,company_id,created_at',
       [name, email.toLowerCase().trim(), hash, role, company || 'CortexBuild Ltd', phone || null, req.user.organization_id, req.user.company_id]

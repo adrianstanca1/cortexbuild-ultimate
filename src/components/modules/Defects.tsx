@@ -70,7 +70,7 @@ export default function Defects() {
   const [filterType, setFilterType] = useState<string>('all');
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [expandedCards, setExpandedCards] = useState<string[]>([]);
-  const [editItem, setEditItem] = useState<any | null /* eslint-disable-line @typescript-eslint/no-explicit-any */>(null);
+  const [editItem, setEditItem] = useState<Defect | null>(null);
   const [form, setForm] = useState({
     title: '', project: '', location: '', trade: '', priority: 'medium', status: 'identified',
     description: '', identifiedBy: '', assignedTo: '', targetDate: ''
@@ -571,11 +571,11 @@ export default function Defects() {
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-gray-400 text-xs mb-1">Project</label>
-                  <input type="text" value={editItem.project || ''} onChange={e => setEditItem((prev: any /* eslint-disable-line @typescript-eslint/no-explicit-any */) => ({ ...prev, project: e.target.value }))} className="w-full px-3 py-2 input input-bordered text-white" />
+                  <input type="text" value={editItem.project || ''} onChange={e => setEditItem((prev) => ({ ...prev!, project: e.target.value }))} className="w-full px-3 py-2 input input-bordered text-white" />
                 </div>
                 <div>
                   <label className="block text-gray-400 text-xs mb-1">Priority</label>
-                  <select value={editItem.priority || 'medium'} onChange={e => setEditItem((prev: any /* eslint-disable-line @typescript-eslint/no-explicit-any */) => ({ ...prev, priority: e.target.value }))} className="w-full px-3 py-2 input input-bordered text-white">
+                  <select value={editItem.priority || 'medium'} onChange={e => setEditItem((prev) => prev ? ({ ...prev, priority: e.target.value as Defect['priority'] }) : null)} className="w-full px-3 py-2 input input-bordered text-white">
                     <option value="critical">Critical</option>
                     <option value="high">High</option>
                     <option value="medium">Medium</option>
@@ -585,26 +585,26 @@ export default function Defects() {
               </div>
               <div>
                 <label className="block text-gray-400 text-xs mb-1">Title</label>
-                <input type="text" value={editItem.title || ''} onChange={e => setEditItem((prev: any /* eslint-disable-line @typescript-eslint/no-explicit-any */) => ({ ...prev, title: e.target.value }))} className="w-full px-3 py-2 input input-bordered text-white placeholder-gray-500" />
+                <input type="text" value={editItem.title || ''} onChange={e => setEditItem((prev) => ({ ...prev!, title: e.target.value }))} className="w-full px-3 py-2 input input-bordered text-white placeholder-gray-500" />
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-gray-400 text-xs mb-1">Location</label>
-                  <input type="text" value={editItem.location || ''} onChange={e => setEditItem((prev: any /* eslint-disable-line @typescript-eslint/no-explicit-any */) => ({ ...prev, location: e.target.value }))} className="w-full px-3 py-2 input input-bordered text-white placeholder-gray-500" />
+                  <input type="text" value={editItem.location || ''} onChange={e => setEditItem((prev) => ({ ...prev!, location: e.target.value }))} className="w-full px-3 py-2 input input-bordered text-white placeholder-gray-500" />
                 </div>
                 <div>
                   <label className="block text-gray-400 text-xs mb-1">Trade</label>
-                  <input type="text" value={editItem.trade || ''} onChange={e => setEditItem((prev: any /* eslint-disable-line @typescript-eslint/no-explicit-any */) => ({ ...prev, trade: e.target.value }))} className="w-full px-3 py-2 input input-bordered text-white placeholder-gray-500" />
+                  <input type="text" value={editItem.trade || ''} onChange={e => setEditItem((prev) => ({ ...prev!, trade: e.target.value }))} className="w-full px-3 py-2 input input-bordered text-white placeholder-gray-500" />
                 </div>
               </div>
               <div>
                 <label className="block text-gray-400 text-xs mb-1">Description</label>
-                <textarea rows={3} value={editItem.description || ''} onChange={e => setEditItem((prev: any /* eslint-disable-line @typescript-eslint/no-explicit-any */) => ({ ...prev, description: e.target.value }))} className="w-full px-3 py-2 input input-bordered text-white placeholder-gray-500" />
+                <textarea rows={3} value={editItem.description || ''} onChange={e => setEditItem((prev) => ({ ...prev!, description: e.target.value }))} className="w-full px-3 py-2 input input-bordered text-white placeholder-gray-500" />
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-gray-400 text-xs mb-1">Status</label>
-                  <select value={editItem.status || 'identified'} onChange={e => setEditItem((prev: any /* eslint-disable-line @typescript-eslint/no-explicit-any */) => ({ ...prev, status: e.target.value }))} className="w-full px-3 py-2 input input-bordered text-white">
+                  <select value={editItem.status || 'identified'} onChange={e => setEditItem((prev) => prev ? ({ ...prev, status: e.target.value as Defect['status'] }) : null)} className="w-full px-3 py-2 input input-bordered text-white">
                     <option value="identified">Identified</option>
                     <option value="assigned">Assigned</option>
                     <option value="in_progress">In Progress</option>
@@ -615,17 +615,17 @@ export default function Defects() {
                 </div>
                 <div>
                   <label className="block text-gray-400 text-xs mb-1">Identified By</label>
-                  <input type="text" value={editItem.identifiedBy || ''} onChange={e => setEditItem((prev: any /* eslint-disable-line @typescript-eslint/no-explicit-any */) => ({ ...prev, identifiedBy: e.target.value }))} className="w-full px-3 py-2 input input-bordered text-white placeholder-gray-500" />
+                  <input type="text" value={editItem.identifiedBy || ''} onChange={e => setEditItem((prev) => ({ ...prev!, identifiedBy: e.target.value }))} className="w-full px-3 py-2 input input-bordered text-white placeholder-gray-500" />
                 </div>
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-gray-400 text-xs mb-1">Assigned To</label>
-                  <input type="text" value={editItem.assignedTo || ''} onChange={e => setEditItem((prev: any /* eslint-disable-line @typescript-eslint/no-explicit-any */) => ({ ...prev, assignedTo: e.target.value }))} className="w-full px-3 py-2 input input-bordered text-white placeholder-gray-500" />
+                  <input type="text" value={editItem.assignedTo || ''} onChange={e => setEditItem((prev) => ({ ...prev!, assignedTo: e.target.value }))} className="w-full px-3 py-2 input input-bordered text-white placeholder-gray-500" />
                 </div>
                 <div>
                   <label className="block text-gray-400 text-xs mb-1">Target Date</label>
-                  <input type="date" value={editItem.targetDate || ''} onChange={e => setEditItem((prev: any /* eslint-disable-line @typescript-eslint/no-explicit-any */) => ({ ...prev, targetDate: e.target.value }))} className="w-full px-3 py-2 input input-bordered text-white" />
+                  <input type="date" value={editItem.targetDate || ''} onChange={e => setEditItem((prev) => ({ ...prev!, targetDate: e.target.value }))} className="w-full px-3 py-2 input input-bordered text-white" />
                 </div>
               </div>
             </div>
