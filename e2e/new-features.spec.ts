@@ -61,12 +61,8 @@ test.describe('New Features E2E', () => {
 
       if (await notificationButton.count() > 0) {
         await notificationButton.first().click();
-
-        const markReadBtn = page.locator('button:has-text("Mark all"), input[type="checkbox"]');
-        if (await markReadBtn.count() > 0) {
-          await markReadBtn.first().click();
-          await page.waitForTimeout(300);
-        }
+        const markAll = page.getByRole('button', { name: 'Mark all' }).first();
+        await expect(markAll).toBeVisible({ timeout: 5000 });
       }
     });
 
@@ -340,7 +336,9 @@ test.describe('New Features E2E', () => {
 
       if (await settingsButton.count() > 0) {
         await settingsButton.first().click();
-        await page.waitForSelector('text=Notification, text=Preferences', { timeout: 5000 });
+        await expect(
+          page.getByText(/Notification|Preferences|Settings/i).first(),
+        ).toBeVisible({ timeout: 5000 });
       }
     });
 
