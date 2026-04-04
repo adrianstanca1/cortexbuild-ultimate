@@ -164,7 +164,7 @@ function AppShell() {
       case 'marketplace':           return <Marketplace />;
       case 'settings':              return <Settings />;
       case 'insights':              return <Insights />;
-      case 'notifications':         return <NotificationCenter />;
+      case 'notifications':         return <NotificationsPanel authToken={null} onClose={() => setActiveModule('dashboard')} />;
       case 'executive-reports':     return <ExecutiveReports />;
       case 'predictive-analytics':  return <PredictiveAnalytics />;
       case 'calendar':              return <Calendar />;
