@@ -84,7 +84,7 @@ export default function BudgetChart({ projectId, months = 12, height = 300 }: Bu
           fontSize={12}
         />
         <Tooltip
-          formatter={(value: number) => formatCurrency(value)}
+          formatter={(value) => formatCurrency(value as number)}
           labelFormatter={(label) => format(new Date(label + '-01'), 'MMMM yyyy')}
           contentStyle={{
             backgroundColor: 'white',

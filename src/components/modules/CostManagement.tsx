@@ -242,7 +242,7 @@ export function CostManagement() {
                   <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
                   <XAxis dataKey="name" stroke="#9ca3af" fontSize={12} />
                   <YAxis stroke="#9ca3af" fontSize={12} tickFormatter={(v) => `£${v}K`} />
-                  <Tooltip contentStyle={{ backgroundColor: '#1f2937', border: '1px solid #374151', color: '#fff' }} formatter={(v: number) => `£${(v * 1000).toLocaleString()}`} />
+                  <Tooltip contentStyle={{ backgroundColor: '#1f2937', border: '1px solid #374151', color: '#fff' }} formatter={(v) => `£${((v as number) * 1000).toLocaleString()}`} />
                   <Legend />
                   <Bar dataKey="budgeted" name="Budgeted (£K)" fill="#3b82f6" radius={[4, 4, 0, 0]} />
                   <Bar dataKey="spent" name="Spent (£K)" fill="#ef4444" radius={[4, 4, 0, 0]} />
@@ -263,7 +263,7 @@ export function CostManagement() {
                       <Cell key={`cell-${index}`} fill={entry.color} />
                     ))}
                   </Pie>
-                  <Tooltip contentStyle={{ backgroundColor: '#1f2937', border: '1px solid #374151' }} formatter={(v: number) => fmt(v)} />
+                  <Tooltip contentStyle={{ backgroundColor: '#1f2937', border: '1px solid #374151' }} formatter={(v) => fmt(v as number)} />
                   <Legend />
                 </PieChart>
               </ResponsiveContainer>
@@ -284,7 +284,7 @@ export function CostManagement() {
                   <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
                   <XAxis dataKey="month" stroke="#9ca3af" />
                   <YAxis stroke="#9ca3af" tickFormatter={(v) => `£${(v / 1000).toFixed(0)}K`} />
-                  <Tooltip contentStyle={{ backgroundColor: '#1f2937', border: '1px solid #374151' }} formatter={(v: number) => fmt(v)} />
+                  <Tooltip contentStyle={{ backgroundColor: '#1f2937', border: '1px solid #374151' }} formatter={(v) => fmt(v as number)} />
                   <Legend />
                   <Area type="monotone" dataKey="projected" name="Projected" stroke="#3b82f6" fill="#3b82f6" fillOpacity={0.3} />
                   <Area type="monotone" dataKey="actual" name="Actual" stroke="#10b981" fill="#10b981" fillOpacity={0.3} />
@@ -377,7 +377,7 @@ export function CostManagement() {
                   <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
                   <XAxis dataKey="name" stroke="#9ca3af" fontSize={12} />
                   <YAxis stroke="#9ca3af" fontSize={12} tickFormatter={(v) => `£${v}K`} />
-                  <Tooltip contentStyle={{ backgroundColor: '#1f2937', border: '1px solid #374151' }} formatter={(v: number) => `£${(v * 1000).toLocaleString()}`} />
+                  <Tooltip contentStyle={{ backgroundColor: '#1f2937', border: '1px solid #374151' }} formatter={(v) => `£${((v as number) * 1000).toLocaleString()}`} />
                   <Bar dataKey="variance" name="Variance (£K)" fill="#8b5cf6" radius={[4, 4, 0, 0]} />
                 </BarChart>
               </ResponsiveContainer>

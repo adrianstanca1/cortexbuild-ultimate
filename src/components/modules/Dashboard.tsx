@@ -569,7 +569,7 @@ export function Dashboard() {
                     <YAxis tick={{ fontFamily:'JetBrains Mono', fontSize:9, fill:'#475569' }} axisLine={false} tickLine={false} tickFormatter={v => `£${(v/1000).toFixed(0)}K`} width={48} />
                     <Tooltip
                       contentStyle={{ background:'#0f172a', border:'1px solid #1e293b', borderRadius:8, fontFamily:'JetBrains Mono', fontSize:11 }}
-                      formatter={(v: number) => [`£${v.toLocaleString()}`, '']}
+                      formatter={(v) => [`£${(v as number).toLocaleString()}`, '']}
                     />
                     <Area type="monotone" dataKey="revenue" stroke="#10b981" strokeWidth={2} fill="url(#gRev)" dot={false} activeDot={{ r:4, fill:'#10b981' }} />
                     <Area type="monotone" dataKey="cost" stroke="#ef4444" strokeWidth={2} fill="url(#gCost)" dot={false} activeDot={{ r:4, fill:'#ef4444' }} strokeDasharray="4 2" />
@@ -911,7 +911,7 @@ export function Dashboard() {
                   <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" />
                   <XAxis dataKey="month" tick={{ fontFamily:'JetBrains Mono', fontSize:9, fill:'#475569' }} axisLine={false} tickLine={false} />
                   <YAxis tick={{ fontFamily:'JetBrains Mono', fontSize:9, fill:'#475569' }} axisLine={false} tickLine={false} tickFormatter={v => `£${(v/1000).toFixed(0)}K`} width={52} />
-                  <Tooltip contentStyle={{ background:'#0f172a', border:'1px solid #1e293b', borderRadius:8, fontFamily:'JetBrains Mono', fontSize:11 }} formatter={(v: number) => [`£${v.toLocaleString()}`, '']} />
+                  <Tooltip contentStyle={{ background:'#0f172a', border:'1px solid #1e293b', borderRadius:8, fontFamily:'JetBrains Mono', fontSize:11 }} formatter={(v) => [`£${(v as number).toLocaleString()}`, '']} />
                   <Bar dataKey="revenue" fill="#10b981" radius={[4,4,0,0]} />
                   <Bar dataKey="cost" fill="#ef4444" radius={[4,4,0,0]} opacity={0.7} />
                 </BarChart>

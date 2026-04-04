@@ -85,7 +85,7 @@ export function GlobalSearch({ onClose }: { onClose?: () => void }) {
     dateRange: 'all',
   });
   const inputRef = useRef<HTMLInputElement>(null);
-  const debounceRef = useRef<ReturnType<typeof setTimeout>>();
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     const saved = localStorage.getItem('cortexbuild_search_history');

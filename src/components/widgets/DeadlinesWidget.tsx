@@ -338,7 +338,7 @@ function DeadlineItem({
       <div className="flex items-center gap-3">
         {/* Type Icon */}
         <div className={`p-2 rounded-lg ${type.bg}`}>
-          {React.cloneElement(type.icon as React.ReactElement, { className: sizes.iconSize, class: type.color })}
+          {React.cloneElement(type.icon as React.ReactElement<{ className?: string }, any>, { className: `${sizes.iconSize} ${type.color}` })}
         </div>
 
         {/* Info */}

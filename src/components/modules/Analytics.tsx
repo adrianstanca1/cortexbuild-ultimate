@@ -374,7 +374,7 @@ export function Analytics() {
                     outerRadius={80} dataKey="value">
                     {REVENUE_BY_TYPE.map((entry,idx)=><Cell key={idx} fill={entry.color}/>)}
                   </Pie>
-                  <Tooltip formatter={(v:number)=>`£${(v/1000).toFixed(0)}K`}/>
+                  <Tooltip formatter={(v) => `£${((v as number) / 1000).toFixed(0)}K`}/>
                 </PieChart>
               </ResponsiveContainer>
             </div>
@@ -397,7 +397,7 @@ export function Analytics() {
                   <CartesianGrid strokeDasharray="3 3" stroke="#374151"/>
                   <XAxis dataKey="month" stroke="#9ca3af"/>
                   <YAxis stroke="#9ca3af"/>
-                  <Tooltip contentStyle={{backgroundColor:'#1f2937',border:'1px solid #374151',borderRadius:'8px'}} formatter={(v:number)=>`£${(v/1000000).toFixed(1)}M`}/>
+                  <Tooltip contentStyle={{backgroundColor:'#1f2937',border:'1px solid #374151',borderRadius:'8px'}} formatter={(v) => `£${((v as number) / 1000000).toFixed(1)}M`}/>
                   <Legend/>
                   <Area type="monotone" dataKey="cumInflow" name="Cumulative Inflow" stroke="#10b981" fill="url(#inflowGrad)"/>
                   <Area type="monotone" dataKey="cumOutflow" name="Cumulative Outflow" stroke="#ef4444" fill="url(#outflowGrad)"/>
@@ -432,7 +432,7 @@ export function Analytics() {
                   <CartesianGrid strokeDasharray="3 3" stroke="#374151"/>
                   <XAxis dataKey="month" stroke="#9ca3af"/>
                   <YAxis stroke="#9ca3af"/>
-                  <Tooltip contentStyle={{backgroundColor:'#1f2937',border:'1px solid #374151',borderRadius:'8px'}} formatter={(v:number)=>`${v.toFixed(1)}%`}/>
+                  <Tooltip contentStyle={{backgroundColor:'#1f2937',border:'1px solid #374151',borderRadius:'8px'}} formatter={(v) => `${(v as number).toFixed(1)}%`}/>
                   <Line type="monotone" dataKey="margin" name="Margin %" stroke="#10b981" strokeWidth={2} dot={{fill:'#10b981'}}/>
                 </LineChart>
               </ResponsiveContainer>
@@ -701,7 +701,7 @@ export function Analytics() {
                 <CartesianGrid strokeDasharray="3 3" stroke="#374151"/>
                 <XAxis dataKey="name" stroke="#9ca3af"/>
                 <YAxis stroke="#9ca3af"/>
-                <Tooltip contentStyle={{backgroundColor:'#1f2937',border:'1px solid #374151',borderRadius:'8px'}} formatter={(v:number)=>`£${v.toFixed(1)}M`}/>
+                <Tooltip contentStyle={{backgroundColor:'#1f2937',border:'1px solid #374151',borderRadius:'8px'}} formatter={(v) => `£${(v as number).toFixed(1)}M`}/>
                 <Legend/>
                 <Bar dataKey="budget" name="Budget (£M)" fill="#10b981"/>
                 <Bar dataKey="actual" name="Actual (£M)" fill="#f59e0b"/>
@@ -731,7 +731,7 @@ export function Analytics() {
                   <CartesianGrid strokeDasharray="3 3" stroke="#374151"/>
                   <XAxis dataKey="month" stroke="#9ca3af"/>
                   <YAxis stroke="#9ca3af"/>
-                  <Tooltip contentStyle={{backgroundColor:'#1f2937',border:'1px solid #374151',borderRadius:'8px'}} formatter={(v:number)=>`${v.toFixed(1)}%`}/>
+                  <Tooltip contentStyle={{backgroundColor:'#1f2937',border:'1px solid #374151',borderRadius:'8px'}} formatter={(v) => `${(v as number).toFixed(1)}%`}/>
                   <Line type="monotone" dataKey="overtime" name="Overtime %" stroke="#f59e0b" strokeWidth={2} dot={{fill:'#f59e0b'}}/>
                 </LineChart>
               </ResponsiveContainer>

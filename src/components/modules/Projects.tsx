@@ -1340,7 +1340,7 @@ function ProjectWorkspace({ project, onBack, onEdit }: WorkspaceProps) {
                 <CartesianGrid strokeDasharray="3 3" stroke="#374151"/>
                 <XAxis dataKey="name" stroke="#9ca3af"/>
                 <YAxis stroke="#9ca3af" tickFormatter={(v: number)=>`£${v}K`}/>
-                <Tooltip contentStyle={{backgroundColor:'#111827',border:'1px solid #374151'}} formatter={(v:number)=>`£${(v).toFixed(0)}K`}/>
+                <Tooltip contentStyle={{backgroundColor:'#111827',border:'1px solid #374151'}} formatter={(v) => `£${(v as number).toFixed(0)}K`}/>
                 <Legend/>
                 <Bar dataKey="budget"    name="Budget"    fill="#3b82f6" radius={[4,4,0,0]}/>
                 <Bar dataKey="spent"     name="Spent"     fill="#f59e0b" radius={[4,4,0,0]}/>

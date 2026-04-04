@@ -181,7 +181,7 @@ export function MobileBottomNav({
   }, [swipeStartX, activeModule, onModuleChange]);
 
   // ── Long press for context menu ──────────────────────────────────────────────
-  const longPressTimer = useRef<NodeJS.Timeout | null>(null);
+  const longPressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const handleLongPressStart = useCallback((e: React.TouchEvent | React.MouseEvent, module: Module) => {
     const target = e.currentTarget as HTMLElement;

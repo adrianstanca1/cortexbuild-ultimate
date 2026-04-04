@@ -474,7 +474,7 @@ export function Accounting() {
               <CartesianGrid strokeDasharray="3 3" stroke="#374151"/>
               <XAxis dataKey="month" stroke="#9ca3af"/>
               <YAxis stroke="#9ca3af" tickFormatter={(v:number)=>`£${(v/1000).toFixed(0)}K`}/>
-              <Tooltip contentStyle={{backgroundColor:'#1f2937',border:'1px solid #374151',borderRadius:8}} formatter={(v:number)=>`£${v.toLocaleString()}`}/>
+              <Tooltip contentStyle={{backgroundColor:'#1f2937',border:'1px solid #374151',borderRadius:8}} formatter={(v) => `£${(v as number).toLocaleString()}`}/>
               <Legend/>
               <Line type="monotone" dataKey="cashIn"  name="Cash In"       stroke="#10b981" strokeWidth={2} dot={false}/>
               <Line type="monotone" dataKey="cashOut" name="Cash Out"      stroke="#ef4444" strokeWidth={2} dot={false}/>
@@ -493,7 +493,7 @@ export function Accounting() {
                 <CartesianGrid strokeDasharray="3 3" stroke="#374151"/>
                 <XAxis dataKey="project" stroke="#9ca3af"/>
                 <YAxis stroke="#9ca3af" tickFormatter={(v:number)=>`£${(v/1000).toFixed(0)}K`}/>
-                <Tooltip contentStyle={{backgroundColor:'#1f2937',border:'1px solid #374151',borderRadius:8}} formatter={(v:number)=>`£${v.toLocaleString()}`}/>
+                <Tooltip contentStyle={{backgroundColor:'#1f2937',border:'1px solid #374151',borderRadius:8}} formatter={(v) => `£${(v as number).toLocaleString()}`}/>
                 <Legend/>
                 <Bar dataKey="budget" name="Budget" fill="#3b82f6" radius={[4,4,0,0]}/>
                 <Bar dataKey="spent" name="Spent" fill="#ef4444" radius={[4,4,0,0]}/>
