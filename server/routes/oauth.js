@@ -7,7 +7,7 @@ const crypto     = require('crypto');
 const rateLimit  = require('express-rate-limit');
 const redis      = require('redis');
 const db         = require('../db');
-const { attachNewTenantToUser } = require('../lib/bootstrap-tenant');
+const { createOAuthUserWithTenant } = require('../lib/bootstrap-tenant');
 const router     = express.Router();
 
 // Redis client for OAuth state storage (distributed, survives restarts)
@@ -67,20 +67,12 @@ if (process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET) {
       if (existingUser.rows.length > 0) {
         user = existingUser.rows[0];
       } else {
-        // Create new user
-        const result = await db.query(
-          `INSERT INTO users (email, name, avatar_url, email_verified)
-           VALUES ($1, $2, $3, true)
-           RETURNING *`,
-          [email.toLowerCase(), name, avatar]
+        // Org + user in one transaction (matches register flow — no orphaned users)
+        user = await createOAuthUserWithTenant(
+          db,
+          { email, name, avatarUrl: avatar ?? null },
+          { orgName: `${name}'s organization`, companyName: name }
         );
-        user = result.rows[0];
-        await attachNewTenantToUser(db, user.id, {
-          orgName: `${name}'s organization`,
-          companyName: name,
-        });
-        const refreshed = await db.query('SELECT * FROM users WHERE id = $1', [user.id]);
-        user = refreshed.rows[0];
       }
 
       // Link OAuth provider if not already linked
@@ -139,20 +131,11 @@ if (process.env.MICROSOFT_CLIENT_ID && process.env.MICROSOFT_CLIENT_SECRET) {
       if (existingUser.rows.length > 0) {
         user = existingUser.rows[0];
       } else {
-        // Create new user
-        const result = await db.query(
-          `INSERT INTO users (email, name, email_verified)
-           VALUES ($1, $2, true)
-           RETURNING *`,
-          [email.toLowerCase(), name]
+        user = await createOAuthUserWithTenant(
+          db,
+          { email, name, avatarUrl: null },
+          { orgName: `${name}'s organization`, companyName: name }
         );
-        user = result.rows[0];
-        await attachNewTenantToUser(db, user.id, {
-          orgName: `${name}'s organization`,
-          companyName: name,
-        });
-        const refreshed = await db.query('SELECT * FROM users WHERE id = $1', [user.id]);
-        user = refreshed.rows[0];
       }
 
       // Link OAuth provider if not already linked

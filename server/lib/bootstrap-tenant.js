@@ -54,4 +54,35 @@ async function attachNewTenantToUser(pool, userId, { orgName, companyName }) {
   }
 }
 
-module.exports = { insertOrgAndCompany, attachNewTenantToUser };
+/**
+ * Single transaction: org + company + OAuth user (never persist user without tenant).
+ * @param {import('pg').Pool} pool
+ * @param {{ email: string, name: string, avatarUrl?: string | null }} profile
+ * @param {{ orgName: string, companyName?: string }} tenantOpts
+ */
+async function createOAuthUserWithTenant(pool, { email, name, avatarUrl = null }, { orgName, companyName }) {
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+    const { organizationId, companyId } = await insertOrgAndCompany(client, {
+      orgName,
+      companyName,
+    });
+    const comp = (companyName || orgName).trim();
+    const { rows } = await client.query(
+      `INSERT INTO users (email, name, avatar_url, email_verified, organization_id, company_id, company)
+       VALUES ($1, $2, $3, true, $4, $5, $6)
+       RETURNING *`,
+      [email.toLowerCase(), name, avatarUrl, organizationId, companyId, comp]
+    );
+    await client.query('COMMIT');
+    return rows[0];
+  } catch (e) {
+    await client.query('ROLLBACK');
+    throw e;
+  } finally {
+    client.release();
+  }
+}
+
+module.exports = { insertOrgAndCompany, attachNewTenantToUser, createOAuthUserWithTenant };
