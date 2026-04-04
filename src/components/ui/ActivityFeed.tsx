@@ -57,15 +57,24 @@ const ACTION_TYPE_MAP: Record<string, Activity['type']> = {
   DELETE: 'alert',
 };
 
+const MOCK_ACTIVITIES: Activity[] = [
+  { id: '1', type: 'create', userId: 'u1', userName: 'Sarah Chen', action: 'created', target: 'new project milestone', timestamp: new Date(Date.now() - 5 * 60000).toISOString() },
+  { id: '2', type: 'complete', userId: 'u2', userName: 'James Miller', action: 'completed', target: 'safety inspection report', timestamp: new Date(Date.now() - 30 * 60000).toISOString() },
+  { id: '3', type: 'alert', userId: 'u4', userName: 'Patricia Watson', action: 'alerted', target: 'budget variance exceeded 10%', timestamp: new Date(Date.now() - 2 * 3600000).toISOString() },
+  { id: '4', type: 'update', userId: 'u5', userName: 'Michael Brown', action: 'updated', target: 'project timeline', timestamp: new Date(Date.now() - 5 * 3600000).toISOString() },
+  { id: '5', type: 'comment', userId: 'u6', userName: 'Emily Davis', action: 'commented on', target: 'RFI-2024-001', timestamp: new Date(Date.now() - 8 * 3600000).toISOString() },
+];
+
 export function ActivityFeed({ projectId, limit = 10 }: ActivityFeedProps) {
-  const [activities, setActivities] = useState<Activity[]>([]);
+  const [activities, setActivities] = useState<Activity[]>(MOCK_ACTIVITIES.slice(0, limit));
 
   useEffect(() => {
     const token = getToken();
+    if (!token) return; // Keep mock data when unauthenticated
     const params = new URLSearchParams({ limit: String(limit) });
     if (projectId) params.set('project_id', projectId);
     fetch(`${API_BASE}/audit?${params}`, {
-      headers: token ? { Authorization: `Bearer ${token}` } : {},
+      headers: { Authorization: `Bearer ${token}` },
     })
       .then(r => r.json())
       .then((rows: Array<{ id: number; action: string; table_name: string; record_id: string; user_id: string; created_at: string }>) => {
