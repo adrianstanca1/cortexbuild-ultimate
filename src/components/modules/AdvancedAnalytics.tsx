@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
 import { TrendingUp, TrendingDown, DollarSign, Users, AlertTriangle, CheckCircle } from 'lucide-react';
-import { BarChart, Bar, LineChart, Line, AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
+import { BarChart, Bar, AreaChart, Area, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 import { ModuleBreadcrumbs } from '../ui/Breadcrumbs';
+import { toast } from 'sonner';
 
 interface AnalyticsMetric {
   name: string;
@@ -15,16 +16,33 @@ const COLORS = ['#F59E0B', '#3B82F6', '#10B981', '#EF4444', '#8B5CF6'];
 export function AdvancedAnalytics() {
   const [metrics, setMetrics] = useState<AnalyticsMetric[]>([]);
   const [timeRange, setTimeRange] = useState<'7d' | '30d' | '90d'>('30d');
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    // Simulate loading metrics
-    const mockMetrics: AnalyticsMetric[] = [
-      { name: 'Total Revenue', value: 2450000, change: 12.5, trend: 'up' },
-      { name: 'Active Projects', value: 24, change: -2.3, trend: 'down' },
-      { name: 'Team Members', value: 156, change: 5.8, trend: 'up' },
-      { name: 'Safety Incidents', value: 3, change: -45.2, trend: 'up' },
-    ];
-    setMetrics(mockMetrics);
+    const fetchMetrics = async () => {
+      setLoading(true);
+      setError(null);
+      try {
+        const res = await fetch(`/api/analytics-data?range=${timeRange}`);
+        if (!res.ok) throw new Error('Failed to fetch analytics data');
+        const data = await res.json();
+        setMetrics(data.metrics ?? []);
+      } catch {
+        // Fallback to mock data on API failure
+        const mockMetrics: AnalyticsMetric[] = [
+          { name: 'Total Revenue', value: 2450000, change: 12.5, trend: 'up' },
+          { name: 'Active Projects', value: 24, change: -2.3, trend: 'down' },
+          { name: 'Team Members', value: 156, change: 5.8, trend: 'up' },
+          { name: 'Safety Incidents', value: 3, change: -45.2, trend: 'up' },
+        ];
+        setMetrics(mockMetrics);
+        setError('Using cached data — analytics API unavailable');
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchMetrics();
   }, [timeRange]);
 
   const revenueData = [
@@ -72,6 +90,21 @@ export function AdvancedAnalytics() {
         </select>
       </div>
 
+      {/* Error Banner */}
+      {error && (
+        <div className="alert alert-warning">
+          <AlertTriangle className="w-4 h-4" />
+          <span>{error}</span>
+        </div>
+      )}
+
+      {/* Loading State */}
+      {loading ? (
+        <div className="flex items-center justify-center py-20">
+          <span className="loading loading-spinner loading-lg text-primary" />
+        </div>
+      ) : (
+        <>
       {/* KPI Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         {metrics.map((metric, index) => (
@@ -198,6 +231,8 @@ export function AdvancedAnalytics() {
           </div>
         </div>
       </div>
+        </>
+      )}
     </div>
   );
 }

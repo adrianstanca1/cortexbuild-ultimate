@@ -25,8 +25,6 @@ import { useRFIs } from '../../hooks/useRFIs';
 import { useTasks } from '../../hooks/useTasks';
 import { useProjects } from '../../hooks/useProjects';
 import { ModuleBreadcrumbs } from '../ui/Breadcrumbs';
-import { type Module } from '../../types';
-import { KPICardSkeleton, ChartSkeleton } from '../ui/Skeleton';
 import { ActivityFeed } from '../ui/ActivityFeed';
 
 type AnyRow = Record<string, unknown>;
@@ -186,7 +184,6 @@ function ActivityItem({ user, action, module, time, accent, delay = 0 }: {
 
 // ─── Main Dashboard ───────────────────────────────────────────────────────
 export function Dashboard() {
-  const [isLoading, setIsLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<'overview' | 'projects' | 'finance' | 'safety' | 'activity'>('overview');
   const [dashboardKpi, setDashboardKpi] = useState<{
     activeProjects?: number; totalRevenue?: number; outstanding?: number;
@@ -198,7 +195,7 @@ export function Dashboard() {
   const [projects, setProjects] = useState<Project[]>([]);
   const [activityFeed, setActivityFeed] = useState<{id: string; user: string; action: string; module: string; time: string}[]>([]);
   const [alerts, setAlerts] = useState<{id: string; level: 'amber'|'red'; title: string; description: string}[]>([]);
-  const [mounted, setMounted] = useState(false);
+  const [mounted] = useState(false);
   const [showAIChat, setShowAIChat] = useState(false);
 
   // Live data hooks — real API data

@@ -223,7 +223,7 @@ const sizeClasses: Record<WeatherSize, {
 /**
  * Weather Icon Component
  */
-function WeatherIcon({
+function _WeatherIcon({
   condition,
   size,
   className = '',
@@ -424,7 +424,7 @@ function WeatherAlertItem({
  */
 export function WeatherWidget({
   location = 'London, UK',
-  siteId,
+  siteId: _siteId,
   onAlertClick,
   size = 'medium',
   showForecast = true,

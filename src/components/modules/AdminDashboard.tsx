@@ -8,15 +8,14 @@ import { useState, useEffect, useCallback } from 'react';
 import {
   Users, Building2, Settings2, BarChart3, FileText, Database,
   Search, Plus, Edit2, Trash2, Shield, ShieldAlert, ShieldCheck,
-  RefreshCw, Download, Upload, Cloud, CloudOff, CheckCircle2,
-  XCircle, Clock, AlertTriangle, Activity, TrendingUp, TrendingDown,
-  Eye, Key, Mail, Globe, ToggleLeft, ToggleRight, Lock, Unlock,
-  FileSpreadsheet, FileJson, Calendar, LogOut, UserCheck, UserX,
-  ChevronRight, Home, X, CheckSquare, Square, Loader2,
+  RefreshCw, Download, Upload, Cloud, CheckCircle2,
+  AlertTriangle, Activity, TrendingUp, TrendingDown,
+  Key, Mail, Globe, ToggleRight, Lock, UserCheck, UserX,
+  ChevronRight, X, CheckSquare, Square, Loader2,
   LayoutDashboard, FolderOpen, HardHat,
 } from 'lucide-react';
 import {
-  AreaChart, Area, BarChart, Bar, LineChart, Line, PieChart, Pie, Cell,
+  AreaChart, Area, BarChart, Bar, PieChart, Pie, Cell,
   XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer,
 } from 'recharts';
 import { usersApi, auditApi, backupApi, settingsApi, type AppSettings } from '../../services/api';
@@ -25,9 +24,7 @@ import { ModuleBreadcrumbs } from '../ui/Breadcrumbs';
 import { EmptyState } from '../ui/EmptyState';
 import { KPICardSkeleton, CardSkeleton, ChartSkeleton } from '../ui/Skeleton';
 import { BulkActionsBar, useBulkSelection, type BulkAction } from '../ui/BulkActions';
-import { exportData } from '../ui/DataImportExport';
 import { DeploymentDashboard } from '../dashboard/DeploymentDashboard';
-import { type Module } from '../../types';
 import { toast } from 'sonner';
 import clsx from 'clsx';
 
@@ -123,7 +120,7 @@ const TABS: { key: AdminTab; label: string; icon: React.ElementType }[] = [
 
 // ─── Utility Functions ────────────────────────────────────────────────────────
 
-const fmtCurrency = (n: number) => {
+const _fmtCurrency = (n: number) => {
   if (!n || isNaN(n)) return '£0';
   if (n >= 1_000_000) return `£${(n / 1_000_000).toFixed(1)}M`;
   if (n >= 1_000) return `£${(n / 1_000).toFixed(0)}K`;
@@ -514,9 +511,8 @@ function UsersTab({ users, loading, onRefresh }: UsersTabProps) {
   const [showEditModal, setShowEditModal] = useState(false);
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const [creating, setCreating] = useState(false);
-  const [updating, setUpdating] = useState(false);
 
-  const { selectedIds, isSelected, toggle, toggleAll, clearSelection, selectAll } = useBulkSelection();
+  const { selectedIds, isSelected, toggle, toggleAll, clearSelection } = useBulkSelection();
 
   const filteredUsers = users.filter(user => {
     if (searchQuery && !user.name.toLowerCase().includes(searchQuery.toLowerCase()) &&
@@ -1501,7 +1497,7 @@ function AnalyticsTab({ loading }: AnalyticsTabProps) {
         <div className="card p-5">
           <h3 className="text-lg font-bold text-white mb-4">Module Usage Statistics</h3>
           <div className="space-y-4">
-            {moduleUsageData.map((module, i) => (
+            {moduleUsageData.map((module) => (
               <div key={module.name}>
                 <div className="flex items-center justify-between mb-2">
                   <span className="text-sm text-gray-400">{module.name}</span>

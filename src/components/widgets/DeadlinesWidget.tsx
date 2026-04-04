@@ -6,11 +6,8 @@ import {
   Flag,
   CheckCircle,
   ChevronRight,
-  Filter,
   RefreshCw,
   Search,
-  MoreHorizontal,
-  ArrowRight,
   Timer,
   Target,
 } from 'lucide-react';
@@ -181,7 +178,7 @@ const priorityConfig: Record<Priority, {
   },
 };
 
-const statusConfig: Record<DeadlineStatus, {
+const _statusConfig: Record<DeadlineStatus, {
   label: string;
   color: string;
   bg: string;
@@ -292,9 +289,8 @@ function DaysRemaining({ dueDate, status, size }: { dueDate: string; status: Dea
 /**
  * PriorityBadge Component
  */
-function PriorityBadge({ priority, size }: { priority: Priority; size: DeadlinesSize }) {
+function PriorityBadge({ priority, size: _size }: { priority: Priority; size: DeadlinesSize }) {
   const config = priorityConfig[priority];
-  const sizes = sizeClasses[size];
 
   return (
     <span
@@ -338,7 +334,7 @@ function DeadlineItem({
       <div className="flex items-center gap-3">
         {/* Type Icon */}
         <div className={`p-2 rounded-lg ${type.bg}`}>
-          {React.cloneElement(type.icon as React.ReactElement<{ className?: string }, any>, { className: `${sizes.iconSize} ${type.color}` })}
+          {React.cloneElement(type.icon as React.ReactElement<{ className?: string }>, { className: `${sizes.iconSize} ${type.color}` })}
         </div>
 
         {/* Info */}

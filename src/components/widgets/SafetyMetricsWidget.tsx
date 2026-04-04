@@ -356,7 +356,7 @@ function InspectionItem({
  * SafetyMetricsWidget Component
  */
 export function SafetyMetricsWidget({
-  projectId,
+  projectId: _projectId,
   onInspectionClick,
   onIncidentClick,
   size = 'medium',

@@ -23,11 +23,11 @@ export const Modal: React.FC<ModalProps> = ({
 }) => {
   const modalRef = useRef<HTMLDialogElement>(null);
 
-  const open = useCallback(() => {
+  const _open = useCallback(() => {
     modalRef.current?.showModal();
   }, []);
 
-  const close = useCallback(() => {
+  const _close = useCallback(() => {
     modalRef.current?.close();
   }, []);
 

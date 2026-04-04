@@ -3,7 +3,7 @@
  * Comprehensive notification system types for real-time updates
  */
 
-import { User, UserRole, Priority } from './index';
+import { User, Priority } from './index';
 
 // Notification Types
 export type NotificationType =

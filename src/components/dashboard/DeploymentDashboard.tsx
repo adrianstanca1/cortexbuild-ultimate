@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import {
   Server, Database, Globe, Activity, GitBranch, Clock,
-  RefreshCw, CheckCircle2, XCircle, AlertTriangle, Play, Pause,
+  RefreshCw, CheckCircle2, XCircle, Play, Pause,
   ArrowUpCircle, Terminal, Container, Shield, Zap,
 } from 'lucide-react';
 
@@ -188,7 +188,7 @@ const MOCK_PIPELINE: PipelineRun[] = [
 export function DeploymentDashboard() {
   const [health, setHealth] = useState<HealthStatus | null>(null);
   const [healthLoading, setHealthLoading] = useState(true);
-  const [services, setServices] = useState<Service[]>(MOCK_SERVICES);
+  const [services] = useState<Service[]>(MOCK_SERVICES);
   const [pipelineRuns] = useState<PipelineRun[]>(MOCK_PIPELINE);
   const [commits] = useState<Commit[]>(MOCK_COMMITS);
   const [refreshing, setRefreshing] = useState(false);

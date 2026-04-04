@@ -151,7 +151,7 @@ const sizeClasses: Record<ProjectProgressSize, {
 /**
  * ProgressBar Component
  */
-function ProgressBar({
+function _ProgressBar({
   value,
   max = 100,
   color = 'blue',

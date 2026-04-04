@@ -48,7 +48,7 @@ describe('Utility Functions', () => {
       
       // Mock document methods
       const originalCreateElement = document.createElement;
-      document.createElement = vi.fn(() => mockAnchor as any);
+      document.createElement = vi.fn(() => mockAnchor as Record<string, unknown>);
       
       try {
         module.exportToCSV(data, 'test.csv');
@@ -76,7 +76,7 @@ describe('Utility Functions', () => {
       };
       
       const originalCreateElement = document.createElement;
-      document.createElement = vi.fn(() => mockAnchor as any);
+      document.createElement = vi.fn(() => mockAnchor as Record<string, unknown>);
       
       try {
         module.exportToCSV(data, 'test.csv');

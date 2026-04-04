@@ -89,11 +89,11 @@ class IntegrationManager {
     return true;
   }
 
-  private async validateIntegration(id: string, _config: Record<string, string>): Promise<boolean> {
+  private async validateIntegration(_id: string, _config: Record<string, string>): Promise<boolean> {
     return true;
   }
 
-  async syncData(integrationId: string, data: unknown) {
+  async syncData(integrationId: string, _data: unknown) {
     const integration = this.integrations.find(i => i.id === integrationId);
     if (!integration || !integration.enabled) {
       throw new Error('Integration not enabled');

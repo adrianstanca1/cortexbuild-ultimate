@@ -277,7 +277,7 @@ function TaskItem({
  * TaskSummaryWidget Component
  */
 export function TaskSummaryWidget({
-  projectId,
+  projectId: _projectId,
   onTaskClick,
   onAddTask,
   size = 'medium',

@@ -7,6 +7,8 @@ type EventMap = {
   'ws:message': { type: string; table?: string; action?: string; id?: string | number };
   'ws:connect': void;
   'ws:disconnect': void;
+  'workflow:notification': { id: string; type: string; title: string; message: string; role: string; timestamp: string };
+  'workflow:action': { action: string; context: Record<string, unknown>; timestamp: string };
 };
 
 type EventCallback<K extends keyof EventMap> = (data: EventMap[K]) => void;

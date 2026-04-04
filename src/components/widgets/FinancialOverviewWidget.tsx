@@ -485,7 +485,7 @@ function InvoiceItem({
  * FinancialOverviewWidget Component
  */
 export function FinancialOverviewWidget({
-  projectId,
+  projectId: _projectId,
   onInvoiceClick,
   size = 'medium',
   showRevenueChart = true,

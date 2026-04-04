@@ -94,7 +94,7 @@ interface AnnotationProps {
 }
 
 function FloatingAnnotation({ text, position, delay = 0 }: AnnotationProps) {
-  // eslint-disable-next-line
+   
   const randomDuration = React.useMemo(() => 45 + Math.random() * 20, []);
   return (
     <div

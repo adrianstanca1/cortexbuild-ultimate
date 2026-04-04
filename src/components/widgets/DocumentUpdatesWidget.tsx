@@ -4,20 +4,15 @@ import {
   File,
   FileImage,
   FileSpreadsheet,
-  FileCheck,
   Download,
-  Upload,
   Clock,
   CheckCircle,
   AlertCircle,
-  Eye,
   MoreHorizontal,
-  Filter,
   RefreshCw,
   Search,
   FolderOpen,
   Lock,
-  Unlock,
 } from 'lucide-react';
 
 /**
@@ -249,8 +244,8 @@ function DocumentItem({
   onDownload?: (document: Document) => void;
 }) {
   const sizes = sizeClasses[size];
-  const typeConfig = documentTypeConfig[document.type];
-  const status = statusConfig[document.status];
+  const _typeConfig = documentTypeConfig[document.type];
+  const _status = statusConfig[document.status];
 
   const getTimeAgo = (timestamp: string): string => {
     const minutes = Math.floor((Date.now() - new Date(timestamp).getTime()) / 60000);

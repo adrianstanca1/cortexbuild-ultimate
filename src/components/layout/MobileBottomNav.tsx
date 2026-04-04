@@ -16,7 +16,6 @@ import {
   X,
   Bell,
   Menu,
-  User,
   ChevronUp,
   type LucideIcon,
 } from 'lucide-react';
@@ -529,7 +528,7 @@ export function MobileBottomNav({
             paddingBottom: '8px',
           }}
         >
-          {NAV_ITEMS.map((item, index) => {
+          {NAV_ITEMS.map((item, _index) => {
             const Icon = item.icon;
             const isActive = activeModule === item.module;
             return (

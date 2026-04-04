@@ -1,5 +1,4 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { z } from 'zod';
 import {
   SeveritySchema,
   NotificationTypeSchema,

@@ -9,9 +9,7 @@ import {
   MapPin,
   Clock,
   Search,
-  Filter,
   RefreshCw,
-  MoreHorizontal,
   HardHat,
   ClipboardList,
   Building,
@@ -210,7 +208,6 @@ const sizeClasses: Record<TeamPresenceSize, {
  */
 function StatusBadge({ status, size }: { status: PresenceStatus; size: TeamPresenceSize }) {
   const config = statusConfig[status];
-  const sizes = sizeClasses[size];
 
   return (
     <span
@@ -256,7 +253,7 @@ function MemberCard({
   onContact?: (method: 'call' | 'message' | 'email') => void;
 }) {
   const sizes = sizeClasses[size];
-  const status = statusConfig[member.status];
+  const _status = statusConfig[member.status];
 
   const formatTime = (timeStr?: string): string => {
     if (!timeStr) return '';

@@ -15,15 +15,10 @@ interface BreadcrumbsProps {
 
 export const Breadcrumbs: React.FC<BreadcrumbsProps> = ({
   items,
-  separator = 'chevron',
+  separator: _separator = 'chevron',
   size = 'md',
   className = '',
 }) => {
-  const separatorClass = {
-    chevron: '',
-    slash: 'text-slash',
-    arrow: 'text-arrow',
-  }[separator];
 
   return (
     <div className={`text-sm breadcrumbs ${size === 'sm' ? 'text-xs' : ''} ${className}`}>

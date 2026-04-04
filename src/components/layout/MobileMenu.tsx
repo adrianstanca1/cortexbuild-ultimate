@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Menu, X, Home, Briefcase, FileText, Users, Settings, ChevronDown } from 'lucide-react';
+import { X, Home, Briefcase, FileText, Users, Settings, ChevronDown } from 'lucide-react';
 import { type Module } from '../../types';
 
 interface MobileMenuProps {

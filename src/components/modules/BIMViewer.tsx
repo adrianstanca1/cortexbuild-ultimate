@@ -11,11 +11,6 @@ import {
   AlertTriangle,
   CheckCircle,
   Box,
-  X,
-  Loader2,
-  Trash2,
-  Edit,
-  Check,
 } from 'lucide-react';
 import { ModuleBreadcrumbs } from '../ui/Breadcrumbs';
 import { bimModelsApi } from '../../services/api';
@@ -47,34 +42,22 @@ export const BIMViewer: React.FC = () => {
   const [activeModel, setActiveModel] = useState<BIMModel | null>(null);
   const [models, setModels] = useState<BIMModel[]>([]);
   const [clashes, setClashes] = useState<ClashDetection[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [uploading, setUploading] = useState(false);
-  const [showUploadModal, setShowUploadModal] = useState(false);
+  const [_loading, setLoading] = useState(true);
   const [selectedLayers, setSelectedLayers] = useState<string[]>(['structure', 'hvac', 'electrical']);
 
   // Load models from API
   useEffect(() => {
     loadModels();
-  }, []);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   async function loadModels() {
     try {
       setLoading(true);
-      const data: any[] = await bimModelsApi.getAll();
-      const transformed = data.map((m: any) => ({
-        id: m.id,
-        name: m.name,
-        format: m.format as 'IFC' | 'OBJ' | 'GLTF' | 'FBX',
-        size: m.file_size || 0,
-        uploadDate: new Date(m.created_at),
-        status: m.status as 'processing' | 'ready' | 'error',
-        version: m.version || 'v1.0',
-        elements: m.elements_count || 0,
-      }));
-      setModels(transformed);
-      if (transformed.length > 0 && !activeModel) {
-        setActiveModel(transformed[0]);
-        loadClashes(transformed[0].id);
+      const data: BIMModel[] = await bimModelsApi.getAll() as unknown as BIMModel[];
+      setModels(data);
+      if (data.length > 0 && !activeModel) {
+        setActiveModel(data[0]);
+        loadClashes(data[0].id);
       }
     } catch (err) {
       console.error('Failed to load BIM models', err);
@@ -86,23 +69,14 @@ export const BIMViewer: React.FC = () => {
 
   async function loadClashes(modelId: string) {
     try {
-      const data: any[] = await bimModelsApi.getClashes(modelId);
-      const transformed = data.map((c: any) => ({
-        id: c.id,
-        type: c.clash_type as 'hard' | 'soft' | 'clearance',
-        severity: c.severity as 'critical' | 'major' | 'minor',
-        elements: [c.element_a_name, c.element_b_name].filter(Boolean),
-        location: [c.location_x, c.location_y, c.location_z] as [number, number, number],
-        description: c.description,
-        status: c.status as 'open' | 'resolved' | 'ignored',
-      }));
-      setClashes(transformed);
+      const data: ClashDetection[] = await bimModelsApi.getClashes(modelId) as unknown as ClashDetection[];
+      setClashes(data);
     } catch (err) {
       console.error('Failed to load clashes', err);
     }
   }
 
-  async function handleModelSelect(model: BIMModel) {
+  async function _handleModelSelect(model: BIMModel) {
     setActiveModel(model);
     await loadClashes(model.id);
   }

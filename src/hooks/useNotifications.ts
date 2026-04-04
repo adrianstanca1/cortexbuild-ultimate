@@ -372,7 +372,7 @@ export function useRealtimeNotifications(
     } catch (err) {
       console.error('Failed to connect to WebSocket:', err);
     }
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  }, []);  
 
   useEffect(() => {
     connect();

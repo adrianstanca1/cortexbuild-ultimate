@@ -2,7 +2,6 @@ import { useState, useEffect, useRef } from 'react';
 import { Building2, Eye, EyeOff, Loader2, ArrowRight, CheckCircle, ShieldCheck, Zap, Users, TrendingUp, HardHat, type LucideIcon } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { OAuthButton } from './OAuthButtons';
-import * as UI from '../daisyui';
 
 // ─── Animated counter hook ─────────────────────────────────────────────────
 function useCounter(target: number, duration = 1800, startDelay = 0) {

@@ -1,11 +1,11 @@
 import React from 'react';
 
 interface TableProps {
-  data: any[];
+  data: Record<string, unknown>[];
   columns: Array<{
     key: string;
     title: string;
-    render?: (value: any, row: any, index: number) => React.ReactNode;
+    render?: (value: unknown, row: Record<string, unknown>, index: number) => React.ReactNode;
     className?: string;
   }>;
   striped?: boolean;
@@ -14,7 +14,7 @@ interface TableProps {
   pinCols?: boolean;
   size?: 'sm' | 'md' | 'lg';
   className?: string;
-  onRowClick?: (row: any, index: number) => void;
+  onRowClick?: (row: Record<string, unknown>, index: number) => void;
   emptyMessage?: string;
 }
 
@@ -70,7 +70,7 @@ export const Table: React.FC<TableProps> = ({
                 <td key={column.key} className={column.className}>
                   {column.render
                     ? column.render(row[column.key], row, rowIndex)
-                    : row[column.key]}
+                    : String(row[column.key] ?? '')}
                 </td>
               ))}
             </tr>

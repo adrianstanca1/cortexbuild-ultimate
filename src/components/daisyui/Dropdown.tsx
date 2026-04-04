@@ -19,7 +19,7 @@ export const Dropdown: React.FC<DropdownProps> = ({
   trigger,
   items,
   position = 'bottom-start',
-  variant = 'dropdown',
+  variant: _variant = 'dropdown',
   className = '',
 }) => {
   const [isOpen, setIsOpen] = useState(false);

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { toast } from 'sonner';
 import {
   CheckCircle2,
@@ -9,6 +9,7 @@ import {
   BookOpen,
   MessageCircle,
   Star,
+  AlertTriangle,
   CheckSquare,
   Square,
   Trash2,
@@ -146,7 +147,23 @@ export function Marketplace() {
   const [subTab, setSubTab] = useState<SubTab>('apps');
   const [installedApps, setInstalledApps] = useState(['safety-analyzer', 'rfi-responder', 'daily-reporter']);
   const [searchQuery, setSearchQuery] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const { selectedIds, toggle, clearSelection } = useBulkSelection();
+
+  useEffect(() => {
+    const fetchMetrics = async () => {
+      setLoading(true);
+      try {
+        await fetch('/api/metrics');
+      } catch {
+        setError('Marketplace metrics unavailable');
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchMetrics();
+  }, []);
 
   async function handleBulkDelete(ids: string[]) {
     if (!confirm(`Remove ${ids.length} app(s)?`)) return;
@@ -194,6 +211,13 @@ export function Marketplace() {
   return (
     <>
       <ModuleBreadcrumbs currentModule="marketplace" onNavigate={() => {}} />
+      {error && (
+        <div className="alert alert-warning">
+          <AlertTriangle className="w-4 h-4" />
+          <span>{error}</span>
+        </div>
+      )}
+      {loading && <div className="flex justify-center py-4"><span className="loading loading-spinner" /></div>}
       <div className="space-y-6">
       <h1 className="text-3xl font-bold text-white">CortexBuild Marketplace</h1>
 

@@ -44,14 +44,14 @@ export async function semanticSearch(query: string, limit = 10): Promise<AISearc
     const projectsRes = await fetch('/api/projects');
     const projects = await projectsRes.json();
     results.push(...projects
-      .filter((p: any) => 
-        searchTerms.some((term: any) => 
+      .filter((p: { name?: string; client?: string }) =>
+        searchTerms.some((term: string) =>
           p.name?.toLowerCase().includes(term.toLowerCase()) ||
           p.client?.toLowerCase().includes(term.toLowerCase())
         )
       )
       .slice(0, limit)
-      .map((p: any) => ({
+      .map((p: { id?: string; name?: string; client?: string; status?: string }) => ({
         id: p.id,
         type: 'project' as const,
         title: p.name,
@@ -66,11 +66,11 @@ export async function semanticSearch(query: string, limit = 10): Promise<AISearc
     const documents = await docsRes.json();
     results.push(...documents
       .slice(0, limit)
-      .map((d: any) => ({
+      .map((d: { id?: string; name?: string; type?: string; created_at?: string }) => ({
         id: d.id,
         type: 'document' as const,
         title: d.name,
-        description: `Type: ${d.type} | Uploaded: ${new Date(d.created_at).toLocaleDateString()}`,
+        description: `Type: ${d.type} | Uploaded: ${d.created_at ? new Date(d.created_at).toLocaleDateString() : 'Unknown'}`,
         relevance: 0.8,
         metadata: d,
       }))
@@ -87,7 +87,7 @@ export async function semanticSearch(query: string, limit = 10): Promise<AISearc
 // AI-powered suggestions
 export async function getAISuggestions(context: {
   module: string;
-  currentData?: any;
+  currentData?: unknown;
 }): Promise<{ type: string; message: string; action?: () => void }[]> {
   const suggestions = [];
 
