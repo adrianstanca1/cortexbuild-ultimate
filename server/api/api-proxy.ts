@@ -4,8 +4,8 @@ import fetch from 'node-fetch';
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY || process.env.API_KEY;
 const EXTERNAL_API_BASE_URL = 'https://generativelanguage.googleapis.com';
 
-// Allowed hosts for SSRF protection
-const ALLOWED_HOSTS = ['generativelanguage.googleapis.com'];
+// Allowed hosts for SSRF protection (used for validation)
+const ALLOWED_HOSTS_PATTERN = /^generativelanguage\.googleapis\.com$/;
 
 // Allowed origins for CORS (set via environment variable in production)
 const ALLOWED_ORIGINS = (process.env.ALLOWED_ORIGINS || 'https://cortexbuildpro.com,https://www.cortexbuildpro.com').split(',');
@@ -94,7 +94,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     outgoingHeaders['X-Goog-Api-Key'] = GEMINI_API_KEY;
 
-    const fetchOptions: any = {
+    const fetchOptions: Record<string, unknown> = {
       method: req.method,
       headers: outgoingHeaders,
       signal: AbortSignal.timeout(30000), // 30 second timeout
