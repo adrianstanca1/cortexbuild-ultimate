@@ -1,31 +1,104 @@
-name: Deploy API to VPS
-
-# Frontend is auto-deployed to Vercel on every push.
-# This workflow handles backend (server/) changes — restarts the API on VPS.
+name: Deploy to VPS
 
 on:
   push:
     branches: [main]
-    paths:
-      - 'server/**'
-      - 'nginx/**'
-      - 'docker-compose.yml'
   workflow_dispatch:
 
+concurrency:
+  group: deploy
+  cancel-in-progress: false
+
 jobs:
-  restart-api:
+  test:
+    name: Test & Build
     runs-on: ubuntu-latest
-    timeout-minutes: 5
-
     steps:
-      - name: Restart API + nginx via deploy webhook
-        run: |
-          echo "Triggering VPS restart..."
-          RESPONSE=$(curl -sf -X POST \
-            -H "Authorization: Bearer ${{ secrets.DEPLOY_SECRET }}" \
-            -H "Content-Type: application/json" \
-            --max-time 30 \
-            http://72.62.132.43/api/deploy || echo "webhook_not_reachable")
-          echo "Response: $RESPONSE"
-          echo "VPS restart triggered (or queued)"
+      - uses: actions/checkout@v4
 
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Type check
+        run: npx tsc --noEmit
+
+      - name: Run tests
+        run: npm test
+
+      - name: Build
+        run: npm run build
+
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: dist
+          path: dist/
+          retention-days: 1
+
+  deploy:
+    name: Deploy to VPS
+    needs: test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download build artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: dist
+          path: dist/
+
+      - name: Setup SSH key
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.VPS_SSH_KEY }}" > ~/.ssh/id_ed25519
+          chmod 600 ~/.ssh/id_ed25519
+          ssh-keyscan -H ${{ secrets.VPS_HOST }} >> ~/.ssh/known_hosts
+
+      - name: Sync to VPS
+        run: |
+          rsync -e "ssh -i ~/.ssh/id_ed25519 -o StrictHostKeyChecking=no" \
+            -avz --delete \
+            ./dist/ ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }}:${{ secrets.VPS_PATH }}/dist/
+
+      - name: Fix permissions
+        run: |
+          ssh -i ~/.ssh/id_ed25519 -o StrictHostKeyChecking=no \
+            ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }} \
+            "chmod -R 755 ${{ secrets.VPS_PATH }}/dist/"
+
+      - name: Update VPS git
+        run: |
+          ssh -i ~/.ssh/id_ed25519 -o StrictHostKeyChecking=no \
+            ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }} \
+            "cd ${{ secrets.VPS_PATH }} && git fetch origin && git reset --hard origin/main"
+
+      - name: Verify deployment
+        run: |
+          sleep 5
+          STATUS=$(curl -s -o /dev/null -w "%{http_code}" https://www.cortexbuildpro.com)
+          if [ "$STATUS" -eq 200 ]; then
+            echo "✅ Deployment verified - HTTP $STATUS"
+          else
+            echo "❌ Deployment verification failed - HTTP $STATUS"
+            exit 1
+          fi
+
+      - name: Notify on failure
+        if: failure()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            github.rest.repos.createCommitStatus({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              sha: context.sha,
+              state: 'failure',
+              context: 'VPS Deploy',
+              description: 'Deployment failed - check workflow logs'
+            })
