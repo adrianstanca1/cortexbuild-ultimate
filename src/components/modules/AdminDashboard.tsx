@@ -26,6 +26,7 @@ import { EmptyState } from '../ui/EmptyState';
 import { KPICardSkeleton, CardSkeleton, ChartSkeleton } from '../ui/Skeleton';
 import { BulkActionsBar, useBulkSelection, type BulkAction } from '../ui/BulkActions';
 import { exportData } from '../ui/DataImportExport';
+import { DeploymentDashboard } from '../dashboard/DeploymentDashboard';
 import { type Module } from '../../types';
 import { toast } from 'sonner';
 import clsx from 'clsx';
@@ -107,7 +108,7 @@ interface ChartDataPoint {
 
 // ─── Tab Definitions ──────────────────────────────────────────────────────────
 
-type AdminTab = 'overview' | 'users' | 'companies' | 'settings' | 'analytics' | 'audit' | 'backup';
+type AdminTab = 'overview' | 'users' | 'companies' | 'settings' | 'analytics' | 'audit' | 'backup' | 'deployment';
 
 const TABS: { key: AdminTab; label: string; icon: React.ElementType }[] = [
   { key: 'overview', label: 'Overview', icon: BarChart3 },
@@ -117,6 +118,7 @@ const TABS: { key: AdminTab; label: string; icon: React.ElementType }[] = [
   { key: 'analytics', label: 'Analytics', icon: TrendingUp },
   { key: 'audit', label: 'Audit Logs', icon: FileText },
   { key: 'backup', label: 'Backup & Export', icon: Database },
+  { key: 'deployment', label: 'Deployment', icon: Activity },
 ];
 
 // ─── Utility Functions ────────────────────────────────────────────────────────
@@ -1998,6 +2000,8 @@ export function AdminDashboard() {
         return <AuditTab entries={auditEntries} loading={loading} />;
       case 'backup':
         return <BackupTab loading={loading} />;
+      case 'deployment':
+        return <DeploymentDashboard />;
       default:
         return null;
     }
