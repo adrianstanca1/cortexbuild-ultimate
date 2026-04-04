@@ -326,9 +326,8 @@ function DocumentItem({
 /**
  * StatusBadge Component
  */
-function StatusBadge({ status, size }: { status: DocumentStatus; size: DocumentUpdatesSize }) {
+function StatusBadge({ status, size: _size }: { status: DocumentStatus; size: DocumentUpdatesSize }) {
   const config = statusConfig[status];
-  const sizes = sizeClasses[size];
 
   return (
     <span

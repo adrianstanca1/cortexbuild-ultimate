@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { Send, User, X } from 'lucide-react';
+import { Send, X } from 'lucide-react';
 import { toast } from 'sonner';
 
 /**
@@ -40,10 +40,10 @@ interface TeamChatProps {
   onClose?: () => void;
 }
 
-export function TeamChat({ projectId, onClose }: TeamChatProps) {
+export function TeamChat({ projectId: _projectId, onClose }: TeamChatProps) {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [newMessage, setNewMessage] = useState('');
-  const [isTyping, setIsTyping] = useState(false);
+  const [isTyping] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 

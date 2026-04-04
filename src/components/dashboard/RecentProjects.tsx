@@ -63,7 +63,10 @@ export function RecentProjects() {
           const name = String(project.name ?? 'Untitled');
           const status = String(project.status ?? 'PLANNING');
           const client = String(project.client ?? project.company ?? '');
-          const description = project.description != null ? String(project.description) : '';
+          const description =
+            project.description !== undefined && project.description !== null
+              ? String(project.description)
+              : '';
           const budgetRaw = project.budget;
           const budget = typeof budgetRaw === 'number' ? budgetRaw : Number(budgetRaw) || 0;
           const updatedAtRaw = project.updatedAt ?? project.updated_at;

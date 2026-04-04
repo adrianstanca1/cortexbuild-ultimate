@@ -18,14 +18,11 @@
 import React, { useState, useCallback, useMemo } from 'react';
 import {
   Bell,
-  BellRing,
   Check,
   CheckCheck,
   X,
   Settings,
   History,
-  Search,
-  Filter,
   Archive,
   Trash2,
   ChevronDown,
@@ -33,20 +30,10 @@ import {
   Eye,
   EyeOff,
   Clock,
-  AlertTriangle,
-  FileText,
-  Calendar,
-  MessageSquare,
-  Users,
-  Shield,
-  TrendingUp,
   CheckCircle,
   ExternalLink,
-  Download,
   Moon,
   Sun,
-  Volume2,
-  VolumeX,
   Wifi,
   WifiOff,
 } from 'lucide-react';
@@ -56,12 +43,7 @@ import { NotificationItem } from './NotificationItem';
 import { NotificationFilters } from './NotificationFilters';
 import { NotificationCenterSettings } from './NotificationCenterSettings';
 import { NotificationHistory } from './NotificationHistory';
-import type {
-  Notification,
-  NotificationFilter,
-  NotificationCategory,
-  ExportOptions,
-} from '@/types/notification';
+import type { NotificationFilter } from '@/types/notification';
 
 // View modes
 type ViewMode = 'notifications' | 'settings' | 'history';
@@ -74,47 +56,6 @@ interface NotificationCenterProps {
   variant?: 'panel' | 'modal' | 'dropdown';
   compact?: boolean;
 }
-
-// Notification type icons
-const TYPE_ICONS: Record<string, React.ElementType> = {
-  project_update: FileText,
-  task_assignment: CheckCircle,
-  rfi_response: MessageSquare,
-  safety_incident: Shield,
-  document_upload: FileText,
-  meeting_reminder: Calendar,
-  team_mention: Users,
-  system_alert: Bell,
-  approval_request: CheckCircle,
-  deadline_warning: Clock,
-  budget_alert: TrendingUp,
-  change_order: FileText,
-  inspection_scheduled: Calendar,
-  material_delivery: AlertTriangle,
-  timesheet_approval: Clock,
-  subcontractor_update: Users,
-};
-
-// Format relative time
-const formatRelativeTime = (dateString: string): string => {
-  const date = new Date(dateString);
-  const now = new Date();
-  const diffMs = now.getTime() - date.getTime();
-  const diffMins = Math.floor(diffMs / 60000);
-  const diffHours = Math.floor(diffMs / 3600000);
-  const diffDays = Math.floor(diffMs / 86400000);
-
-  if (diffMins < 1) return 'Just now';
-  if (diffMins < 60) return `${diffMins}m ago`;
-  if (diffHours < 24) return `${diffHours}h ago`;
-  if (diffDays < 7) return `${diffDays}d ago`;
-
-  return date.toLocaleDateString('en-GB', {
-    day: 'numeric',
-    month: 'short',
-    year: date.getFullYear() !== now.getFullYear() ? 'numeric' : undefined,
-  });
-};
 
 export function NotificationCenter({
   isOpen,
@@ -141,7 +82,6 @@ export function NotificationCenter({
     stats,
     settings,
     isLoading,
-    isConnecting,
     wsStatus,
     markAsRead,
     markAllAsRead,
@@ -151,7 +91,6 @@ export function NotificationCenter({
     archiveNotification,
     archiveRead,
     snoozeNotification,
-    unsnoozeNotification,
     updateSettings,
     toggleCategory,
     toggleQuietHours,
@@ -208,7 +147,7 @@ export function NotificationCenter({
   }, []);
 
   // Handle quick reply
-  const handleQuickReply = useCallback((notificationId: string, message: string) => {
+  const handleQuickReply = useCallback((_notificationId: string, _message: string) => {
     toast.success('Reply sent', {
       description: 'Your response has been sent',
     });

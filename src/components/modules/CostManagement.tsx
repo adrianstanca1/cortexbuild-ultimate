@@ -6,7 +6,7 @@ import {
   BarChart3, PieChart as PieChartIcon, Activity, Loader2
 } from 'lucide-react';
 import {
-  BarChart, Bar, LineChart, Line, AreaChart, Area, XAxis, YAxis,
+  BarChart, Bar, AreaChart, Area, XAxis, YAxis,
   CartesianGrid, Tooltip, Legend, ResponsiveContainer, Pie, Cell, PieChart
 } from 'recharts';
 import { toast } from 'sonner';
@@ -56,25 +56,28 @@ export function CostManagement() {
       ]);
       
       // Transform budget data
-      const transformedBudget = budgetData.map((item: any) => ({
-        id: item.id,
-        category: item.cost_code_name || item.name,
-        description: item.description || '',
-        budgeted: parseFloat(item.budgeted) || 0,
-        spent: parseFloat(item.spent) || 0,
-        committed: parseFloat(item.committed) || 0,
-        remaining: parseFloat(item.remaining) || 0,
-        variance: parseFloat(item.variance) || 0,
-        variancePercent: parseFloat(item.variance_percent) || 0,
-        status: item.status || 'on-track',
+      const transformedBudget = budgetData.map((item: Record<string, unknown>) => ({
+        id: String(item.id ?? ''),
+        category: String(item.cost_code_name ?? item.name ?? ''),
+        description: String(item.description ?? ''),
+        budgeted: parseFloat(String(item.budgeted ?? 0)) || 0,
+        spent: parseFloat(String(item.spent ?? 0)) || 0,
+        committed: parseFloat(String(item.committed ?? 0)) || 0,
+        remaining: parseFloat(String(item.remaining ?? 0)) || 0,
+        variance: parseFloat(String(item.variance ?? 0)) || 0,
+        variancePercent: parseFloat(String(item.variance_percent ?? 0)) || 0,
+        status: String(item.status ?? 'on-track') as BudgetItem['status'],
       }));
       
       // Transform forecast data
-      const transformedForecast = forecastData.map((f: any) => ({
-        month: new Date(f.period_start).toLocaleString('default', { month: 'short' }),
-        projected: parseFloat(f.projected_cost) || 0,
-        actual: f.actual_cost ? parseFloat(f.actual_cost) : undefined,
-        cumulative: parseFloat(f.cumulative_cost) || 0,
+      const transformedForecast = forecastData.map((f: Record<string, unknown>) => ({
+        month: new Date(String(f.period_start ?? '')).toLocaleString('default', { month: 'short' }),
+        projected: parseFloat(String(f.projected_cost ?? 0)) || 0,
+        actual:
+          f.actual_cost !== undefined && f.actual_cost !== null
+            ? parseFloat(String(f.actual_cost))
+            : undefined,
+        cumulative: parseFloat(String(f.cumulative_cost ?? 0)) || 0,
       }));
       
       setBudgetItems(transformedBudget);

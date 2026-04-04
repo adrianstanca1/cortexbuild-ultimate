@@ -50,7 +50,7 @@ interface KPICardProps {
   color?: string;
 }
 
-export const MemoizedKPICard = memo(function MemoizedKPICard({ title, value, change, icon, color = 'primary' }: KPICardProps) {
+export const MemoizedKPICard = memo(function MemoizedKPICard({ title, value, change, icon, color: _color = 'primary' }: KPICardProps) {
   return (
     <div className="card bg-base-100 shadow-sm border border-base-300">
       <div className="card-body p-4">
@@ -64,7 +64,7 @@ export const MemoizedKPICard = memo(function MemoizedKPICard({ title, value, cha
               </p>
             )}
           </div>
-          {icon && <div className="text-{color}">{icon}</div>}
+          {icon && <div className="text-amber-500">{icon}</div>}
         </div>
       </div>
     </div>

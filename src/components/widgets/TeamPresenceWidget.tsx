@@ -206,7 +206,7 @@ const sizeClasses: Record<TeamPresenceSize, {
 /**
  * StatusBadge Component
  */
-function StatusBadge({ status, size }: { status: PresenceStatus; size: TeamPresenceSize }) {
+function StatusBadge({ status, size: _size }: { status: PresenceStatus; size: TeamPresenceSize }) {
   const config = statusConfig[status];
 
   return (

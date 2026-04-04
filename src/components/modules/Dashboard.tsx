@@ -805,7 +805,7 @@ export function Dashboard() {
         </button>
       </div>
       {showAIChat && (
-        <AIAvatar projectId={liveProjects[0] != null ? String(liveProjects[0].id) : undefined} />
+        <AIAvatar projectId={liveProjects.length > 0 ? String(liveProjects[0].id) : undefined} />
       )}
 
       {/* ── PROJECTS TAB ────────────────────────────────────────────── */}
@@ -825,7 +825,9 @@ export function Dashboard() {
                     budget: proj.budget ? Number(proj.budget) : undefined,
                     startDate: proj.startDate ? String(proj.startDate) : undefined,
                     endDate: proj.endDate ? String(proj.endDate) : undefined,
-                    progress: Number(proj.progress) ?? 0,
+                    progress: Number.isFinite(Number(proj.progress))
+                      ? Number(proj.progress)
+                      : 0,
                     teamSize: proj.teamSize ? Number(proj.teamSize) : undefined,
                   }}
                 />

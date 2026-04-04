@@ -1,8 +1,7 @@
 import { useState, useEffect } from 'react';
 import { TrendingUp, TrendingDown, DollarSign, Users, AlertTriangle, CheckCircle } from 'lucide-react';
-import { BarChart, Bar, AreaChart, Area, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
+import { AreaChart, Area, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 import { ModuleBreadcrumbs } from '../ui/Breadcrumbs';
-import { toast } from 'sonner';
 
 interface AnalyticsMetric {
   name: string;

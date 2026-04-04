@@ -20,9 +20,7 @@ import {
   Clock,
   TrendingUp,
   FolderArchive,
-  Star,
   Eye,
-  EyeOff,
 } from 'lucide-react';
 import type { NotificationFilter, NotificationCategory, NotificationType, NotificationSeverity } from '@/types/notification';
 
@@ -135,8 +133,7 @@ export function NotificationFilters({
   unreadCount: unreadCountProp,
   total,
 }: NotificationFiltersProps) {
-  const [showFilters, setShowFilters] = React.useState(false);
-  const [showCategories, setShowCategories] = React.useState(false);
+  const [, setShowCategories] = React.useState(false);
   const unreadCount = unreadCountProp;
 
   const handleCategorySelect = (category: NotificationCategory) => {

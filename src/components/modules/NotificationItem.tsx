@@ -26,7 +26,7 @@ import {
   User,
   PauseCircle,
 } from 'lucide-react';
-import type { Notification, NotificationAction } from '@/types/notification';
+import type { Notification } from '@/types/notification';
 
 interface NotificationItemProps {
   notification: Notification;

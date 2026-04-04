@@ -3,7 +3,6 @@ import { Clock, Plus, Search, DollarSign, Users, CheckCircle2, AlertTriangle, Ed
 import { BarChart, Bar, LineChart, Line, CartesianGrid, Tooltip, ResponsiveContainer, XAxis, YAxis } from 'recharts';
 import { useTimesheets } from '../../hooks/useData';
 import { BulkActionsBar, useBulkSelection } from '../ui/BulkActions';
-import { CardSkeleton } from '../ui/Skeleton';
 import { ModuleBreadcrumbs } from '../ui/Breadcrumbs';
 import { EmptyState } from '../ui/EmptyState';
 import { toast } from 'sonner';

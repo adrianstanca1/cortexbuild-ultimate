@@ -43,7 +43,7 @@ interface CardStackProps {
   expandable?: boolean;
 }
 
-export function CardStack({ children, expandable = false }: CardStackProps) {
+export function CardStack({ children, expandable: _expandable = false }: CardStackProps) {
   return (
     <div className="flex flex-col gap-4 md:hidden">
       {children}

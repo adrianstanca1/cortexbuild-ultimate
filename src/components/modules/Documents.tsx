@@ -7,7 +7,6 @@ import {
 import { toast } from 'sonner';
 import clsx from 'clsx';
 import { EmptyState } from '../ui/EmptyState';
-import { CardSkeleton } from '../ui/Skeleton';
 import { ModuleBreadcrumbs } from '../ui/Breadcrumbs';
 
 interface DocumentVersion {

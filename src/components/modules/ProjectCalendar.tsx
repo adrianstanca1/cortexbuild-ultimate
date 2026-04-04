@@ -100,14 +100,6 @@ export function ProjectCalendar() {
   const monthNames = ['January', 'February', 'March', 'April', 'May', 'June',
     'July', 'August', 'September', 'October', 'November', 'December'];
 
-  const typeColors: Record<string, string> = {
-    meeting: 'bg-blue-500',
-    deadline: 'bg-red-500',
-    inspection: 'bg-yellow-500',
-    delivery: 'bg-green-500',
-    other: 'bg-gray-500',
-  };
-
   return (
     <div className="space-y-4">
       {/* Header */}

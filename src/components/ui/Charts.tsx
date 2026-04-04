@@ -96,7 +96,7 @@ export function DonutChart({
 
   return (
     <div className="flex items-center gap-6">
-      <ResponsiveContainer width={width as any} height={height}>
+      <ResponsiveContainer width={width as number | `${number}%`} height={height}>
         <PieChart>
           <Pie
             data={chartData}
@@ -251,7 +251,7 @@ export function Sparkline({
   const _range = max - min || 1;
 
   return (
-    <ResponsiveContainer width={width as any} height={height}>
+    <ResponsiveContainer width={width as number | `${number}%`} height={height}>
       <AreaChart data={chartData} margin={{ top: 2, right: 2, left: 2, bottom: 2 }}>
         <Area
           type="monotone"

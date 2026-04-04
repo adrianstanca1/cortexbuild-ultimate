@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Bell, Check, CheckCheck, X, Settings, Filter } from 'lucide-react';
+import { Bell, Check, CheckCheck, X, Settings } from 'lucide-react';
 import { toast } from 'sonner';
 
 /**
