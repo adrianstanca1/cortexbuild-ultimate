@@ -7,13 +7,13 @@
 **Branch**: `main`
 
 ## Current Phase
-**Phase Complete** — Full API Integration & Production Deployment
+**Phase Complete** — Complete codebase review, 16 security fixes delivered, full system sync
 
 ## Last Updated
-2026-04-02 07:45 GMT
+2026-04-04 01:30 GMT
 
 ## Last Commit
-`2e3d103` — "chore: Server configuration updates"
+`04bafe7` — "security: fix 3 additional review findings — notifications, backup, permissions"
 
 ## Site Status
 ✅ www.cortexbuildpro.com — returning 200 OK (HTTPS)
@@ -217,47 +217,57 @@ docker exec -it cortexbuild-db psql -U cortexbuild -d cortexbuild
 
 ---
 
-## 2026-04-04 — Full Codebase Sync & Workforce Delivery
+## 2026-04-04 — Complete Codebase Review & Full System Sync
 
-### Workforce Setup
-- Installed 37 new skills (55 -> 92 total)
-- Created 7 employee agents: Foreman, Builder, Researcher, Designer, Sentinel, QA, Deployer
-- Connected to Hermes gateway (8 Ollama models, 54GB total)
-- Wired 10 API keys, installed 16 dependencies
+### Workforce Delivery
+- Installed 37 new skills (55 → 92 total), 8 employee agents (Foreman, Builder, Researcher, Designer, Sentinel, QA, Deployer)
+- Connected to Hermes gateway (8 Ollama models, 54GB), wired 10 API keys, installed 16 dependencies
+- All credentials configured, all dependencies verified
 
-### Codebase Audit
-- Full audit: VPS vs GitHub vs Local
-- 68 modules mapped, 50+ API endpoints verified
-- 5 TODOs found in workflowEngine.ts, 171 ESLint warnings identified
-- Most modules were frontend-only shells without API connections
+### Full Codebase Review (4 parallel agents + 14 verification agents)
+- **7 critical findings** confirmed after independent verification
+- **3 additional findings** from undirected audit
+- **6 medium security findings** from Sentinel audit
 
-### Critical Fixes
-- workflowEngine.ts: Implemented sendNotification, requestApproval, performAction, evaluateCondition (was 3 TODO stubs)
-- AdvancedAnalytics: Connected to /api/analytics-data with loading/error states
-- Marketplace: Connected to /api/metrics with loading/error states
-- Fixed 95 ESLint warnings (55% reduction: 171 -> 76)
-- Fixed any types in Table.tsx, BIMViewer.tsx, aiSearch.ts
-- Added workflow events to EventMap in eventBus.ts
+### 10 Critical Security Fixes (commits 3f99558, 04bafe7)
+1. WebSocket path: `/api/ws/notifications` → `/ws` (4 client files) — restores real-time features
+2. OAuth JWT: `userId` → `id`, added `organization_id` + `company_id` — fixes OAuth users
+3. Global search: added `organization_id` to all 6 queries — prevents cross-tenant leakage
+4. Generic INSERT guard: reject if `organization_id` missing — prevents orphaned rows
+5. Privilege escalation: `ASSIGNABLE_ROLES` + self-guard on PUT `/users/:id`
+6. Report templates: migration + 6 CRUD handlers scoped to tenant
+7. Dead code: deleted `src/lib/agents/` (~1,550 lines, 4 files)
+8. Notification auth: users can only delete own notifications (removed `OR user_id IS NULL`)
+9. Backup endpoint: added `organization_id` filter to all export queries
+10. Permission enumeration: non-admin users can only check own permissions
 
-### Deployment Infrastructure
+### 6 Medium Security Fixes (commit 89fcfc7)
+- httpOnly cookies for OAuth tokens (was URL fragments)
+- XSS middleware enabled on all POST/PUT routes
+- bcrypt rounds 10 → 12
+- Deploy rate limiting (5 req/hour)
+- Uploads directory listing disabled
+- 21 `any` types properly typed (Defects.tsx, Variations.tsx)
+
+### CI/CD & Infrastructure
 - Deployed React 19 + recharts v3 + lucide v1 upgrade
-- Built DeploymentDashboard (696 lines) -- live in Admin -> Deployment tab
+- Built DeploymentDashboard (696 lines) — Admin → Deployment tab
 - Fixed CI/CD lint step (errors only, not warnings)
 - Archived stale repos: cortexbuild-pro, cortexbuildpro-ultimate
-- Squashed 5 trigger commits into clean history
 - Rotated VPS SSH key, added VPS_PATH secret
 
 ### System Consolidation
-- Archived 4 stale iCloud copies to _ARCHIVED/cortexbuild-old/
-- Pruned stale git worktree (security-fixes)
-- Deleted duplicate root SESSION.md
-- Verified: Local = GitHub = VPS = 75ffafe
+- Archived 4 stale iCloud copies (1.5GB freed)
+- Pruned stale git worktree, deleted duplicate root SESSION.md
+- Verified: Local = GitHub = VPS = `04bafe7`
 
 ### Final State
+- Commits delivered: `c1b9d2b` → `89fcfc7` → `3f99558` → `04bafe7`
 - Type check: 0 errors
 - Tests: 174/174 passing
-- Build: 363ms, ~698KB gzipped
-- Production: https://www.cortexbuildpro.com -- 200 OK
-- API: /api/health -- {"status":"ok","version":"1.0.0"}
-- Docker: All 6 containers healthy
-- Three-way sync: IDENTICAL
+- Build: 463ms
+- Production: https://www.cortexbuildpro.com — HTTP 200
+- API: `{"status":"ok","version":"1.0.0"}`
+- VPS Git: `04bafe7` (identical to HEAD)
+- Docker: 6/6 containers healthy
+- Security: 16/16 findings addressed
