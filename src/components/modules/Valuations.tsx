@@ -293,9 +293,9 @@ export default function Valuations() {
   };
 
   const filteredValuations = valuations.filter((v: Valuation) => {
-    const matchesSearch = v.ref.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      v.project.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      v.contractor.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesSearch = (v.ref || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (v.project || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (v.contractor || '').toLowerCase().includes(searchTerm.toLowerCase());
     const matchesStatus = filterStatus === 'all' || v.status === filterStatus;
     return matchesSearch && matchesStatus;
   });

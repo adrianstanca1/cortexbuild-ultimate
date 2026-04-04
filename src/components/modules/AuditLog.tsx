@@ -45,7 +45,7 @@ export function AuditLog() {
     if (filterAction !== 'all' && e.action !== filterAction) return false;
     if (filterTable !== 'all' && e.table_name !== filterTable) return false;
     if (filterUser !== 'all' && e.user_id !== filterUser) return false;
-    if (searchQuery && !e.table_name.includes(searchQuery) && !(e.user?.name ?? '').includes(searchQuery)) return false;
+    if (searchQuery && !(e.table_name || '').includes(searchQuery) && !(e.user?.name ?? '').includes(searchQuery)) return false;
     return true;
   });
 

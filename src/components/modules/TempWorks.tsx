@@ -214,7 +214,7 @@ export default function TempWorks() {
 
         <div className="space-y-3">
           {filtered.map((tw) => {
-            const status = statusConfig[tw.status];
+            const status = statusConfig[tw.status] || { label: 'Unknown', color: 'text-gray-400', bg: 'bg-gray-500/10' };
             return (
               <div key={tw.id} className="border border-gray-700 rounded-lg p-4 hover:border-orange-500/50">
                 <div className="flex items-start justify-between">

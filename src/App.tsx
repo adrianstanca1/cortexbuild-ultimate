@@ -82,6 +82,7 @@ const MyDesktop           = lazy(() => import('./components/modules/MyDesktop'))
 const AdvancedAnalytics   = lazy(() => import('./components/modules/AdvancedAnalytics'));
 const ProjectCalendar     = lazy(() => import('./components/modules/ProjectCalendar'));
 const AdminDashboard      = lazy(() => import('./components/modules/AdminDashboard'));
+const NotificationCenter   = lazy(() => import('./components/modules/NotificationCenter'));
 
 const ModuleLoader = () => (
   <div className="flex items-center justify-center h-64">
@@ -163,7 +164,7 @@ function AppShell() {
       case 'marketplace':           return <Marketplace />;
       case 'settings':              return <Settings />;
       case 'insights':              return <Insights />;
-      case 'notifications':         return <NotificationsPanel authToken="" onClose={() => {}} />;
+      case 'notifications':         return <NotificationCenter />;
       case 'executive-reports':     return <ExecutiveReports />;
       case 'predictive-analytics':  return <PredictiveAnalytics />;
       case 'calendar':              return <Calendar />;
@@ -200,8 +201,8 @@ function AppShell() {
     <>
       <div className="flex h-screen overflow-hidden" style={{ position:'relative' }}>
         <BlueprintBackground />
-        {/* Sidebar: hidden on mobile, shown on md+ */}
-        <div className="hidden md:block flex-shrink-0" style={{ position: 'relative', zIndex: 1 }}>
+        {/* Sidebar — always visible on desktop, mobile uses drawer */}
+        <div className="flex flex-shrink-0" style={{ position: 'relative', zIndex: 1 }}>
           <Sidebar
             activeModule={activeModule}
             setModule={setActiveModule}

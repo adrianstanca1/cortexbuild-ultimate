@@ -154,9 +154,9 @@ export default function Defects() {
   };
 
   const filteredDefects = typedDefects.filter((d: Defect) => {
-    const matchesSearch = d.ref.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      d.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      d.project.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesSearch = (d.ref || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (d.title || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (d.project || '').toLowerCase().includes(searchTerm.toLowerCase());
     const matchesStatus = filterStatus === 'all' || d.status === filterStatus;
     const matchesPriority = filterPriority === 'all' || d.priority === filterPriority;
     const matchesType = filterType === 'all' || d.defectType === filterType;
