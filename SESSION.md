@@ -311,10 +311,56 @@ docker exec -it cortexbuild-db psql -U cortexbuild -d cortexbuild
 ### Remaining Findings (not blocking)
 - XSS middleware overly aggressive (Suggestion)
 - OAuth state store in-memory (Suggestion)
-- Deploy endpoint uses exec() (Suggestion)
+- Deploy endpoint shell execution (Suggestion)
 - Dashboard has zero React.memo (Suggestion)
 - 5 overlapping CI/CD workflows (Suggestion)
 - AdminDashboard 2053-line monolith (Suggestion)
 - Error messages leak internal details (Nice to have)
 - No CSRF for cookie auth (Nice to have)
 - JWT has no jti for revocation (Nice to have)
+
+---
+
+## 2026-04-04 — Bug Fixes, Mock Data to Real API, Full Repo Sync
+
+### Bug Fixes
+
+**Critical: notifications.user_id type mismatch** (migration 029)
+- `notifications.user_id` was `integer` but `users.id` is `uuid`
+- Caused 10+ repeated 500 errors per page load on every notification fetch
+- Fixed: ALTER TABLE notifications ALTER COLUMN user_id TYPE uuid
+
+**Critical: health-check cron false DB DOWN alerts** (12+ hours of false alerts)
+- Script used hardcoded `cortexbuild-db` but container is `0ebd917a60e4_cortexbuild-db`
+- Fixed: `docker ps --filter "name=cortexbuild-db"` pattern match
+
+### Feature Completions
+
+**Notification Preferences persistence** (migration 030)
+- Added `notification_preferences JSONB` column to users table
+- Added GET/PUT `/api/auth/preferences` endpoints in auth.js
+- NotificationPreferences.tsx now loads/saves real user preferences
+
+**ProjectCalendar — real API** (`/api/calendar`)
+- Removed hardcoded mock events (4 static items)
+- Now fetches 17+ real events from DB (projects, meetings, inspections, deadlines)
+- Colour-coded by event type
+
+**ActivityFeed — real API** (`/api/audit`)
+- Removed hardcoded mock activities (static fake names)
+- Now reads from real audit_log table
+
+### Repo Sync (all 8 repos)
+- 0 uncommitted changes, 0 stashes, 0 conflicts across all repos
+- 2 stale stashes dropped from cortexbuild-work (changes already in main)
+- 6 stale stashes dropped from archive/hermes repos
+- /root VPS config: 154MB binary + cache untracked; AGENTS.md committed
+- /root/.openclaw/workspace: initial commit applied
+- 7 session report docs recovered from April 2 backup into docs/
+
+### Final State (2026-04-04 06:31 UTC)
+- HEAD: `6cf9db8` (working-repo = /var/www = GitHub origin/main)
+- DB: 75 tables, migrations 000-030 all applied
+- Services: 6/6 Docker containers + PM2 cortex-api online
+- Health cron: exit 0, no false alerts
+- Production: https://www.cortexbuildpro.com — HTTP 200 OK
