@@ -23,7 +23,9 @@ async function insertOrgAndCompany(client, { orgName, companyName }) {
 }
 
 /**
- * Attach a new org + company to an existing user (OAuth signup).
+ * Attach org + company to an **existing** user row (separate transaction).
+ * Do **not** use for OAuth first signup — if INSERT user happened first and this fails, the user is orphaned.
+ * Prefer `createOAuthUserWithTenant`. Keep this for one-off scripts / backfills only.
  * @param {import('pg').Pool} pool
  * @param {string} userId
  * @param {{ orgName: string, companyName?: string }} opts
