@@ -5,6 +5,7 @@
 import { useState } from 'react';
 import { type Module } from '../../types';
 import { AnimatedLogo } from './AnimatedLogo';
+import { useAuth } from '../../context/AuthContext';
 import {
   LayoutDashboard, FolderOpen, FileText, Calculator, ShoppingCart,
   ShieldCheck, Receipt, Hammer, Users, FileSearch, BarChart3,
@@ -16,7 +17,7 @@ import {
   PieChart, FileEdit, Coins, FileStack, Construction,
   Signpost, Trash2, Leaf, GraduationCap, Award, BadgeCheck,
   Building, Ruler, Eye, ChevronDown, Mail, Lock, FileEdit as FileTemplate,
-  Box, DollarSign, Upload,
+  Box, DollarSign, Upload, Activity,
 } from 'lucide-react';
 
 interface SidebarProps {
@@ -142,6 +143,22 @@ const NAV_GROUPS: { id: string; label: string; accent: string; items: NavItem[] 
       { id: 'ai-vision',      label: 'AI Vision',      icon: Eye,            badge: 'NEW' },
       { id: 'dev-sandbox',    label: 'Dev Sandbox',   icon: Bot,            badge: 'DEV' },
       { id: 'my-desktop',     label: 'My Desktop',    icon: LayoutDashboard, badge: 'BETA' },
+    ],
+  },
+  {
+    id: 'collaboration',
+    label: 'Collaboration',
+    accent: '#10b981', // green
+    items: [
+      { id: 'team-chat',      label: 'Team Chat',       icon: MessageSquare,  badge: 'NEW' },
+    ],
+  },
+  {
+    id: 'intelligence',
+    label: 'Intelligence',
+    accent: '#06b6d4', // cyan
+    items: [
+      { id: 'activity-feed',  label: 'Activity Feed',   icon: Activity,       badge: 'NEW' },
     ],
   },
 ];
@@ -377,6 +394,11 @@ function NavGroup({
 
 // ── Main Sidebar ───────────────────────────────────────────────────────────────
 export function Sidebar({ activeModule, setModule, collapsed, setCollapsed }: SidebarProps) {
+  const { user } = useAuth();
+  const displayName = user?.name || 'User';
+  const displayRole = user?.role || 'Team Member';
+  const initials = displayName.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
+  
   return (
     <aside
       style={{
@@ -613,7 +635,7 @@ export function Sidebar({ activeModule, setModule, collapsed, setCollapsed }: Si
                 boxShadow: '0 0 12px rgba(245,158,11,0.3)',
               }}
             >
-              AS
+              {initials}
             </div>
 
             {/* User info */}
@@ -629,7 +651,7 @@ export function Sidebar({ activeModule, setModule, collapsed, setCollapsed }: Si
                   whiteSpace: 'nowrap',
                 }}
               >
-                Adrian Stanca
+                {displayName}
               </div>
               <div
                 style={{
@@ -639,7 +661,7 @@ export function Sidebar({ activeModule, setModule, collapsed, setCollapsed }: Si
                   letterSpacing: '0.05em',
                 }}
               >
-                Company Owner
+                {displayRole}
               </div>
             </div>
 
@@ -659,7 +681,7 @@ export function Sidebar({ activeModule, setModule, collapsed, setCollapsed }: Si
         ) : (
           <div style={{ display: 'flex', justifyContent: 'center' }}>
             <div
-              title="Adrian Stanca — Online"
+              title={`${displayName} — Online`}
               style={{
                 width: '30px',
                 height: '30px',
@@ -675,7 +697,7 @@ export function Sidebar({ activeModule, setModule, collapsed, setCollapsed }: Si
                 boxShadow: '0 0 10px rgba(245,158,11,0.3)',
               }}
             >
-              AS
+              {initials}
             </div>
           </div>
         )}

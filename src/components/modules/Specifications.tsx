@@ -149,7 +149,7 @@ export default function Specifications() {
           </h2>
           <p className="text-gray-400 text-sm mt-1">Technical specifications management and versioning</p>
         </div>
-        <button type="button" className="flex items-center gap-2 px-4 py-2 bg-orange-500 hover:bg-orange-600 text-white rounded-lg font-semibold">
+        <button type="button" onClick={() => setShowCreateModal(true)} className="flex items-center gap-2 px-4 py-2 bg-orange-500 hover:bg-orange-600 text-white rounded-lg font-semibold">
           <Plus size={18} /> Add Specification
         </button>
       </div>

@@ -153,27 +153,30 @@ export const DevSandbox: React.FC = () => {
   };
 
   return (
-    <div className="p-6 space-y-6 bg-gray-50 min-h-screen">
+    <div className="p-6 space-y-6 bg-gray-950 min-h-screen">
       {/* Header */}
       <div className="flex justify-between items-center mb-8">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900 flex items-center gap-2">
-            <Terminal className="h-8 w-8 text-blue-600" />
-            Dev Sandbox
-          </h1>
-          <p className="text-gray-600 mt-1">AI Development & Testing Environment</p>
+          <div className="flex items-center gap-3">
+            <h1 className="text-3xl font-bold text-white flex items-center gap-2">
+              <Terminal className="h-8 w-8 text-blue-600" />
+              Dev Sandbox
+            </h1>
+            <span className="px-2 py-0.5 rounded text-xs font-medium bg-amber-500/20 text-amber-400 border border-amber-500/30">DEMO</span>
+          </div>
+          <p className="text-gray-400 mt-1">AI Development & Testing Environment — simulated responses</p>
         </div>
         <div className="flex items-center gap-3">
           <select
             value={environment}
             onChange={(e) => setEnvironment(e.target.value as typeof environment)}
-            className="px-3 py-2 border border-gray-300 rounded-lg bg-white text-sm"
+            className="px-3 py-2 border border-gray-700 rounded-lg bg-gray-800 text-white text-sm"
           >
             <option value="development">Development</option>
             <option value="staging">Staging</option>
             <option value="production">Production</option>
           </select>
-          <div className="flex items-center gap-2 px-3 py-2 bg-green-100 text-green-800 rounded-lg text-sm">
+          <div className="flex items-center gap-2 px-3 py-2 bg-green-900/30 text-green-400 rounded-lg text-sm border border-green-800/30">
             <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
             Online
           </div>
@@ -184,17 +187,17 @@ export const DevSandbox: React.FC = () => {
         {/* Main Testing Area */}
         <div className="xl:col-span-2 space-y-6">
           {/* Configuration Panel */}
-          <div className="card">
+          <div className="card bg-gray-900 border border-gray-800">
             <div className="card-header">
-              <h2 className="text-lg font-semibold flex items-center gap-2">
-                <Settings className="h-5 w-5 text-gray-600" />
+              <h2 className="text-lg font-semibold flex items-center gap-2 text-white">
+                <Settings className="h-5 w-5 text-gray-400" />
                 Model Configuration
               </h2>
             </div>
             <div className="card-content space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="block text-sm font-medium text-gray-300 mb-2">
                     Temperature: {temperature}
                   </label>
                   <input
@@ -204,11 +207,11 @@ export const DevSandbox: React.FC = () => {
                     step="0.1"
                     value={temperature}
                     onChange={(e) => setTemperature(parseFloat(e.target.value))}
-                    className="w-full"
+                    className="w-full accent-blue-500"
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="block text-sm font-medium text-gray-300 mb-2">
                     Top P: {topP}
                   </label>
                   <input
@@ -218,7 +221,7 @@ export const DevSandbox: React.FC = () => {
                     step="0.05"
                     value={topP}
                     onChange={(e) => setTopP(parseFloat(e.target.value))}
-                    className="w-full"
+                    className="w-full accent-blue-500"
                   />
                 </div>
                 <div className="flex items-center">
@@ -227,22 +230,22 @@ export const DevSandbox: React.FC = () => {
                       type="checkbox"
                       checked={jsonMode}
                       onChange={(e) => setJsonMode(e.target.checked)}
-                      className="w-4 h-4 text-blue-600 border-gray-300 rounded"
+                      className="w-4 h-4 text-blue-500 border-gray-600 rounded bg-gray-800"
                     />
-                    <span className="text-sm font-medium text-gray-700">JSON Mode</span>
+                    <span className="text-sm font-medium text-gray-300">JSON Mode</span>
                   </label>
                 </div>
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-sm font-medium text-gray-300 mb-2">
                   System Instruction (Optional)
                 </label>
                 <textarea
                   value={systemInstruction}
                   onChange={(e) => setSystemInstruction(e.target.value)}
                   placeholder="Enter system instruction to guide AI behavior..."
-                  className="w-full p-3 border border-gray-300 rounded-lg resize-none"
+                  className="w-full p-3 border border-gray-700 rounded-lg resize-none bg-gray-800 text-white placeholder-gray-500"
                   rows={2}
                 />
               </div>
@@ -250,46 +253,46 @@ export const DevSandbox: React.FC = () => {
           </div>
 
           {/* Prompt Testing */}
-          <div className="card">
+          <div className="card bg-gray-900 border border-gray-800">
             <div className="card-header">
-              <h2 className="text-lg font-semibold flex items-center gap-2">
-                <Code className="h-5 w-5 text-gray-600" />
+              <h2 className="text-lg font-semibold flex items-center gap-2 text-white">
+                <Code className="h-5 w-5 text-gray-400" />
                 Prompt Testing
               </h2>
             </div>
             <div className="card-content space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-sm font-medium text-gray-300 mb-2">
                   Test Prompt
                 </label>
                 <textarea
                   value={prompt}
                   onChange={(e) => setPrompt(e.target.value)}
                   placeholder="Enter your test prompt..."
-                  className="w-full p-3 border border-gray-300 rounded-lg resize-none"
+                  className="w-full p-3 border border-gray-700 rounded-lg resize-none bg-gray-800 text-white placeholder-gray-500"
                   rows={4}
                 />
               </div>
 
               {/* Image Upload */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-sm font-medium text-gray-300 mb-2">
                   Image Input (Optional)
                 </label>
                 <div className="flex items-center gap-4">
                   <button
                     onClick={() => fileInputRef.current?.click()}
-                    className="flex items-center gap-2 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors"
+                    className="flex items-center gap-2 px-4 py-2 bg-gray-800 border border-gray-700 text-gray-300 rounded-lg hover:bg-gray-700 transition-colors"
                   >
                     <Upload className="h-4 w-4" />
                     Upload Image
                   </button>
                   {selectedImage && (
                     <div className="flex items-center gap-2">
-                      <img src={selectedImage} alt="Preview" className="w-10 h-10 object-cover rounded" />
+                      <img src={selectedImage} alt="Preview" className="w-10 h-10 object-cover rounded border border-gray-700" />
                       <button
                         onClick={() => setSelectedImage(null)}
-                        className="text-red-500 hover:text-red-700"
+                        className="text-red-400 hover:text-red-300"
                       >
                         <X className="h-4 w-4" />
                       </button>
@@ -322,23 +325,23 @@ export const DevSandbox: React.FC = () => {
 
           {/* Response Display */}
           {response && (
-            <div className="card">
+            <div className="card bg-gray-900 border border-gray-800">
               <div className="card-header flex justify-between items-center">
-                <h2 className="text-lg font-semibold flex items-center gap-2">
-                  <FileText className="h-5 w-5 text-gray-600" />
+                <h2 className="text-lg font-semibold flex items-center gap-2 text-white">
+                  <FileText className="h-5 w-5 text-gray-400" />
                   Response
                 </h2>
                 <button
                   onClick={() => navigator.clipboard.writeText(response)}
-                  className="flex items-center gap-1 px-3 py-1 text-sm bg-gray-100 text-gray-700 rounded hover:bg-gray-200 transition-colors"
+                  className="flex items-center gap-1 px-3 py-1 text-sm bg-gray-800 text-gray-300 rounded hover:bg-gray-700 transition-colors"
                 >
                   <Copy className="h-3 w-3" />
                   Copy
                 </button>
               </div>
               <div className="card-content">
-                <div className="p-4 bg-gray-50 rounded-lg border">
-                  <pre className="whitespace-pre-wrap text-sm text-gray-800 font-mono">
+                <div className="p-4 bg-gray-800 rounded-lg border border-gray-700">
+                  <pre className="whitespace-pre-wrap text-sm text-gray-200 font-mono">
                     {response}
                   </pre>
                 </div>
@@ -350,51 +353,50 @@ export const DevSandbox: React.FC = () => {
         {/* Sidebar - Logs and System Info */}
         <div className="space-y-6">
           {/* System Status */}
-          <div className="card">
+          <div className="card bg-gray-900 border border-gray-800">
             <div className="card-header">
-              <h3 className="text-lg font-semibold flex items-center gap-2">
-                {/* Removed Monitor import and usage in JSX */}
+              <h3 className="text-lg font-semibold flex items-center gap-2 text-white">
                 System Status
               </h3>
             </div>
             <div className="card-content space-y-3">
               <div className="flex justify-between items-center">
-                <span className="text-sm text-gray-600">Environment:</span>
-                <span className="text-sm font-medium capitalize">{environment}</span>
+                <span className="text-sm text-gray-400">Environment:</span>
+                <span className="text-sm font-medium capitalize text-white">{environment}</span>
               </div>
               <div className="flex justify-between items-center">
-                <span className="text-sm text-gray-600">API Endpoint:</span>
-                <span className="text-sm font-mono text-green-600">Active</span>
+                <span className="text-sm text-gray-400">API Endpoint:</span>
+                <span className="text-sm font-mono text-green-400">Active</span>
               </div>
               <div className="flex justify-between items-center">
-                <span className="text-sm text-gray-600">Model:</span>
-                <span className="text-sm font-medium">GPT-4-Turbo</span>
+                <span className="text-sm text-gray-400">Model:</span>
+                <span className="text-sm font-medium text-white">GPT-4-Turbo</span>
               </div>
               <div className="flex justify-between items-center">
-                <span className="text-sm text-gray-600">Tokens Used:</span>
-                <span className="text-sm font-medium">1,247</span>
+                <span className="text-sm text-gray-400">Tokens Used:</span>
+                <span className="text-sm font-medium text-white">1,247</span>
               </div>
             </div>
           </div>
 
           {/* Activity Logs */}
-          <div className="card">
+          <div className="card bg-gray-900 border border-gray-800">
             <div className="card-header flex justify-between items-center">
-              <h3 className="text-lg font-semibold flex items-center gap-2">
-                <Activity className="h-5 w-5 text-gray-600" />
+              <h3 className="text-lg font-semibold flex items-center gap-2 text-white">
+                <Activity className="h-5 w-5 text-gray-400" />
                 Activity Logs
               </h3>
               <div className="flex gap-2">
                 <button
                   onClick={exportLogs}
-                  className="text-gray-500 hover:text-gray-700"
+                  className="text-gray-500 hover:text-gray-300"
                   title="Export Logs"
                 >
                   <Download className="h-4 w-4" />
                 </button>
                 <button
                   onClick={clearLogs}
-                  className="text-gray-500 hover:text-gray-700"
+                  className="text-gray-500 hover:text-gray-300"
                   title="Clear Logs"
                 >
                   <RefreshCw className="h-4 w-4" />
@@ -418,7 +420,7 @@ export const DevSandbox: React.FC = () => {
                             {log.level.toUpperCase()}
                           </span>
                         </div>
-                        <div className="text-gray-700 mt-1 break-words">
+                        <div className="text-gray-300 mt-1 break-words">
                           {log.message}
                         </div>
                       </div>

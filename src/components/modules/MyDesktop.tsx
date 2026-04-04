@@ -310,11 +310,16 @@ export const MyDesktop: React.FC = () => {
   };
 
   return (
-    <div 
+    <div
       ref={desktopRef}
       className="h-screen bg-gradient-to-br from-slate-800 via-slate-900 to-black relative overflow-hidden"
       onClick={() => setStartMenuOpen(false)}
     >
+      {/* Demo Banner */}
+      <div className="absolute top-0 left-0 right-0 z-50 bg-amber-500/20 border-b border-amber-500/30 px-4 py-1.5 flex items-center justify-center gap-2">
+        <span className="px-2 py-0.5 rounded text-xs font-medium bg-amber-500/30 text-amber-300 border border-amber-500/40">EXPERIMENTAL</span>
+        <span className="text-amber-300/80 text-xs">Window manager prototype — app contents are placeholders</span>
+      </div>
       {/* Desktop Background Pattern */}
       <div className="absolute inset-0 opacity-5">
         <div className="w-full h-full bg-repeat" 

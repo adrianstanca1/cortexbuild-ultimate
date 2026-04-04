@@ -70,7 +70,6 @@ const MODULE_LABELS: Record<Module, string> = {
   'permissions':        'Permissions & Roles',
   'report-templates':   'Report Templates',
   'bim-viewer':         'BIM 3D Model Viewer',
-  'bim':                'BIM Viewer',
   'cost-management':    'Cost Management & Budgets',
   'submittal-management': 'Submittal Management',
   'dev-sandbox':        'AI Development Sandbox',
@@ -79,6 +78,8 @@ const MODULE_LABELS: Record<Module, string> = {
   'advanced-analytics': 'Advanced Analytics',
   'project-calendar':   'Project Calendar',
   'admin-dashboard':    'Admin Dashboard',
+  'team-chat':          'Team Chat',
+  'activity-feed':      'Activity Feed',
 };
 
 // Module accent colors for the breadcrumb bar

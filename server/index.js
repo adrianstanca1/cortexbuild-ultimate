@@ -198,6 +198,8 @@ app.use('/api/rag-chat',      require('./routes/ai-rag'));
 app.use('/api/bim-models',    require('./routes/bim-models'));
 app.use('/api/cost-management', require('./routes/cost-management'));
 app.use('/api/submittals',    require('./routes/submittals'));
+app.use('/api/chat',          require('./routes/chat'));
+app.use('/api/activity-feed', require('./routes/activity-feed'));
 
 // ─── 404 ──────────────────────────────────────────────────────────────────────
 app.use((_req, res) => res.status(404).json({ message: 'Route not found' }));

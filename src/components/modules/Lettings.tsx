@@ -25,8 +25,12 @@ export default function Lettings() {
 
   async function handleBulkDelete(ids: string[]) {
     if (!confirm(`Delete ${ids.length} item(s)?`)) return;
-    await Promise.all(ids.map(id => deleteMutation.mutateAsync(id)));
-    toast.success(`Deleted ${ids.length} item(s)`);
+    try {
+      await Promise.all(ids.map(id => deleteMutation.mutateAsync(id)));
+      toast.success(`Deleted ${ids.length} item(s)`);
+    } catch (err) {
+      toast.error(`Failed to delete: ${err instanceof Error ? err.message : 'Unknown error'}`);
+    }
     clearSelection();
   }
 

@@ -47,7 +47,11 @@ export default function Measuring() {
 
   const handleDelete = async (id: string) => {
     if (!confirm('Delete this measurement?')) return;
-    deleteMutation.mutateAsync(id);
+    try {
+      await deleteMutation.mutateAsync(id);
+    } catch (err) {
+      toast.error(`Failed to delete: ${err instanceof Error ? err.message : 'Unknown error'}`);
+    }
   };
 
   const handleUpdate = async () => {

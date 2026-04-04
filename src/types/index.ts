@@ -91,7 +91,6 @@ export type Module =
   | 'permissions'
   | 'report-templates'
   | 'bim-viewer'
-  | 'bim'
   | 'cost-management'
   | 'submittal-management'
   | 'dev-sandbox'
@@ -99,7 +98,9 @@ export type Module =
   | 'my-desktop'
   | 'advanced-analytics'
   | 'project-calendar'
-  | 'admin-dashboard';
+  | 'admin-dashboard'
+  | 'team-chat'
+  | 'activity-feed';
 
 export type ProjectStatus = 'planning' | 'active' | 'on_hold' | 'completed' | 'archived';
 export type TaskStatus = 'todo' | 'in_progress' | 'review' | 'done' | 'blocked';
