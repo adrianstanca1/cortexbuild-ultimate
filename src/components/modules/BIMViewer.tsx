@@ -37,12 +37,67 @@ interface ClashDetection {
   status: 'open' | 'resolved' | 'ignored';
 }
 
+// Mock data fallback — shown when API is unavailable
+const MOCK_MODELS: BIMModel[] = [
+  {
+    id: 'mock-1',
+    name: 'Main Building Structure',
+    format: 'IFC',
+    size: 12800,
+    uploadDate: new Date('2026-03-28'),
+    status: 'ready',
+    version: 'v2.1',
+    elements: 17580,
+  },
+  {
+    id: 'mock-2',
+    name: 'MEP Coordination Model',
+    format: 'IFC',
+    size: 8200,
+    uploadDate: new Date('2026-03-30'),
+    status: 'ready',
+    version: 'v1.0',
+    elements: 9240,
+  },
+  {
+    id: 'mock-3',
+    name: 'Architectural Finish Model',
+    format: 'GLTF',
+    size: 4500,
+    uploadDate: new Date('2026-04-01'),
+    status: 'ready',
+    version: 'v1.2',
+    elements: 12100,
+  },
+];
+
+const MOCK_CLASHES: ClashDetection[] = [
+  {
+    id: 'clash-1',
+    type: 'hard',
+    severity: 'critical',
+    elements: ['Wall-A1', 'Column-C3'],
+    location: [5.2, 0, 3.1],
+    description: 'Structural wall intersects with structural column',
+    status: 'open',
+  },
+  {
+    id: 'clash-2',
+    type: 'clearance',
+    severity: 'minor',
+    elements: ['Duct-D1', 'Beam-B2'],
+    location: [2.1, 1.5, 0],
+    description: 'HVAC duct has insufficient clearance to beam',
+    status: 'open',
+  },
+];
+
 export const BIMViewer: React.FC = () => {
   const viewerRef = useRef<HTMLDivElement>(null);
   const [activeModel, setActiveModel] = useState<BIMModel | null>(null);
   const [models, setModels] = useState<BIMModel[]>([]);
   const [clashes, setClashes] = useState<ClashDetection[]>([]);
-  const [_loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(true);
   const [selectedLayers, setSelectedLayers] = useState<string[]>(['structure', 'hvac', 'electrical']);
 
   // Load models from API
@@ -54,14 +109,20 @@ export const BIMViewer: React.FC = () => {
     try {
       setLoading(true);
       const data: BIMModel[] = await bimModelsApi.getAll() as unknown as BIMModel[];
-      setModels(data);
-      if (data.length > 0 && !activeModel) {
+      if (data.length > 0) {
+        setModels(data);
         setActiveModel(data[0]);
         loadClashes(data[0].id);
+      } else {
+        // No models yet — use mock data for demo
+        setModels(MOCK_MODELS);
+        setClashes(MOCK_CLASHES);
+        toast.info('No BIM models found — showing sample data');
       }
-    } catch (err) {
-      console.error('Failed to load BIM models', err);
-      toast.error('Failed to load BIM models');
+    } catch {
+      toast.error('Failed to load BIM models — using offline data');
+      setModels(MOCK_MODELS);
+      setClashes(MOCK_CLASHES);
     } finally {
       setLoading(false);
     }
@@ -317,25 +378,31 @@ export const BIMViewer: React.FC = () => {
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <div className="card bg-base-200 border border-base-300 text-center">
           <div className="card-content">
-            <div className="text-2xl font-bold text-blue-400">3</div>
+            <div className="text-2xl font-bold text-blue-400">{models.length}</div>
             <div className="text-sm text-blue-300">Models Loaded</div>
           </div>
         </div>
         <div className="card bg-base-200 border border-base-300 text-center">
           <div className="card-content">
-            <div className="text-2xl font-bold text-green-400">17,580</div>
+            <div className="text-2xl font-bold text-green-400">
+              {models.reduce((sum, m) => sum + (m.elements || 0), 0).toLocaleString()}
+            </div>
             <div className="text-sm text-green-300">Total Elements</div>
           </div>
         </div>
         <div className="card bg-base-200 border border-base-300 text-center">
           <div className="card-content">
-            <div className="text-2xl font-bold text-orange-400">2</div>
+            <div className="text-2xl font-bold text-orange-400">
+              {clashes.filter(c => c.status === 'open').length}
+            </div>
             <div className="text-sm text-orange-300">Active Clashes</div>
           </div>
         </div>
         <div className="card bg-base-200 border border-base-300 text-center">
           <div className="card-content">
-            <div className="text-2xl font-bold text-purple-400">38.7</div>
+            <div className="text-2xl font-bold text-purple-400">
+              {(models.reduce((sum, m) => sum + m.size, 0) / 1024).toFixed(1)}
+            </div>
             <div className="text-sm text-purple-300">Total Size (MB)</div>
           </div>
         </div>

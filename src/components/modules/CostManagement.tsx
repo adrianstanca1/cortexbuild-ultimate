@@ -42,10 +42,34 @@ export function CostManagement() {
   const [budgetItems, setBudgetItems] = useState<BudgetItem[]>([]);
   const [forecast, setForecast] = useState<CostForecast[]>([]);
 
+  // Add item form state
+  const [newItem, setNewItem] = useState({ category: '', description: '', budgeted: '', committed: '' });
+
   // Load data from API
   useEffect(() => {
     loadCostData();
   }, []);
+
+  async function handleAddItem() {
+    if (!newItem.category || !newItem.budgeted) {
+      toast.error('Category and budgeted amount are required');
+      return;
+    }
+    try {
+      await costManagementApi.createBudget({
+        cost_code_name: newItem.category,
+        description: newItem.description,
+        budgeted: parseFloat(newItem.budgeted) || 0,
+        committed: parseFloat(newItem.committed) || 0,
+      });
+      toast.success('Budget item added');
+      setShowAddItem(false);
+      setNewItem({ category: '', description: '', budgeted: '', committed: '' });
+      loadCostData();
+    } catch {
+      toast.error('Failed to add budget item');
+    }
+  }
 
   async function loadCostData() {
     try {
@@ -139,7 +163,7 @@ export function CostManagement() {
           <p className="text-sm text-gray-400 mt-1">Budget tracking, forecasting & variance analysis</p>
         </div>
         <div className="flex gap-3">
-          <button onClick={() => { setShowAddItem(true); toast.info('Add budget item - coming soon'); }} className="flex items-center gap-2 px-4 py-2 bg-gray-800 hover:bg-gray-700 border border-gray-700 text-white rounded-lg transition-colors">
+          <button onClick={() => setShowAddItem(true)} className="flex items-center gap-2 px-4 py-2 bg-gray-800 hover:bg-gray-700 border border-gray-700 text-white rounded-lg transition-colors">
             <Plus className="h-4 w-4" />
             Add Budget Item
           </button>
@@ -400,25 +424,25 @@ export function CostManagement() {
             <div className="p-6 space-y-4">
               <div>
                 <label className="block text-xs font-medium text-gray-400 mb-1">Category</label>
-                <input placeholder="e.g., Materials" className="w-full bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-emerald-500" />
+                <input value={newItem.category} onChange={e => setNewItem(n => ({ ...n, category: e.target.value }))} placeholder="e.g., Materials" className="w-full bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-emerald-500" />
               </div>
               <div>
                 <label className="block text-xs font-medium text-gray-400 mb-1">Description</label>
-                <textarea placeholder="Item description" rows={2} className="w-full bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-white text-sm resize-none focus:outline-none focus:border-emerald-500" />
+                <textarea value={newItem.description} onChange={e => setNewItem(n => ({ ...n, description: e.target.value }))} placeholder="Item description" rows={2} className="w-full bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-white text-sm resize-none focus:outline-none focus:border-emerald-500" />
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-xs font-medium text-gray-400 mb-1">Budgeted (£)</label>
-                  <input type="number" placeholder="0.00" className="w-full bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-emerald-500" />
+                  <input type="number" value={newItem.budgeted} onChange={e => setNewItem(n => ({ ...n, budgeted: e.target.value }))} placeholder="0.00" className="w-full bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-emerald-500" />
                 </div>
                 <div>
                   <label className="block text-xs font-medium text-gray-400 mb-1">Committed (£)</label>
-                  <input type="number" placeholder="0.00" className="w-full bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-emerald-500" />
+                  <input type="number" value={newItem.committed} onChange={e => setNewItem(n => ({ ...n, committed: e.target.value }))} placeholder="0.00" className="w-full bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-emerald-500" />
                 </div>
               </div>
             </div>
             <div className="flex gap-3 px-6 py-4 border-t border-gray-700">
-              <button onClick={() => { toast.success('Budget item added'); setShowAddItem(false); }} className="flex-1 btn btn-primary rounded-lg py-2 text-sm font-semibold">
+              <button onClick={handleAddItem} className="flex-1 btn btn-primary rounded-lg py-2 text-sm font-semibold">
                 Add Item
               </button>
               <button onClick={() => setShowAddItem(false)} className="flex-1 btn btn-ghost rounded-lg py-2 text-sm font-semibold">

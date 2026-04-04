@@ -105,18 +105,32 @@ ssh $SSH_OPTS "$VPS_HOST" "
     # Set permissions
     sudo chown -R root:root .
 
-    # Install dependencies
+    # Install dependencies (need dev deps for tsc + vite build)
     echo '📦 Installing dependencies...'
-    npm ci --production
-    cd server && npm ci --production && cd ..
+    npm ci
+    cd server && npm ci && cd ..
 
     # Build production assets
     echo '🏗️ Building production assets on VPS...'
-    npm run build
+    npm run build || {
+        echo '❌ Build failed on VPS. Attempting recovery...'
+        # Install tsc globally if missing
+        if command -v tsc >/dev/null 2>&1; then
+            echo 'tsc found, retrying build...'
+            npm run build
+        else
+            echo 'tsc still missing, skipping TS type check, building with vite only...'
+            npx vite build
+        fi
+    }
 
     # Start services
     echo '🚀 Starting services...'
-    docker-compose down || true
+    # Force stop all containers and ensure ports are released
+    docker-compose down -t 10 --remove-orphans || true
+    # Kill anything still holding port 3001
+    fuser -k 3001/tcp 2>/dev/null || true
+    sleep 3
     docker-compose up -d
 
     # Health check

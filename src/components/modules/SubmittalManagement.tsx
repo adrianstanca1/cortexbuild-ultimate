@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Upload,
   FileText,
@@ -6,13 +6,13 @@ import {
   CheckCircle,
   XCircle,
   AlertCircle,
-
-
   Filter,
   Download,
   MessageSquare,
   Eye
 } from 'lucide-react';
+import { submittalsApi } from '../../services/api';
+import { toast } from 'sonner';
 
 interface Submittal {
   id: string;
@@ -32,100 +32,158 @@ interface Submittal {
   trade: string;
 }
 
+// API response shape maps to Submittal interface
+function mapApiToSubmittal(item: Record<string, unknown>): Submittal {
+  return {
+    id: String(item.id || ''),
+    number: String(item.submittal_number || item.number || ''),
+    title: String(item.title || ''),
+    type: (item.type as Submittal['type']) || 'Product Data',
+    submittedBy: String(item.submitted_by || item.submittedBy || ''),
+    submittedDate: new Date(typeof item.submitted_date === 'string' ? item.submitted_date : typeof item.submittedDate === 'string' ? item.submittedDate : Date.now()),
+    dueDate: new Date(typeof item.due_date === 'string' ? item.due_date : typeof item.dueDate === 'string' ? item.dueDate : Date.now()),
+    status: (item.status as Submittal['status']) || 'pending',
+    priority: (item.priority as Submittal['priority']) || 'medium',
+    reviewer: String(item.reviewer || ''),
+    description: String(item.description || ''),
+    files: Array.isArray(item.files) ? (item.files as string[]).map(String) : [],
+    comments: Number(item.comments || item.comment_count || 0),
+    revisionNumber: Number(item.revision_number || item.revisionNumber || 1),
+    trade: String(item.trade || ''),
+  };
+}
 
+// Mock data fallback for when API is unavailable
+const MOCK_SUBMITTALS: Submittal[] = [
+  {
+    id: '1',
+    number: 'SUB-001',
+    title: 'Structural Steel Shop Drawings',
+    type: 'Shop Drawing',
+    submittedBy: 'Steel Fabricators Ltd',
+    submittedDate: new Date('2026-03-28'),
+    dueDate: new Date('2026-04-05'),
+    status: 'under-review',
+    priority: 'high',
+    reviewer: 'James Wilson',
+    description: 'Shop drawings for main structural steel frame, Level 1-3',
+    files: ['steel-drawings-v2.pdf', 'connection-details.dwg'],
+    comments: 3,
+    revisionNumber: 2,
+    trade: 'Structural',
+  },
+  {
+    id: '2',
+    number: 'SUB-002',
+    title: 'HVAC Equipment Product Data',
+    type: 'Product Data',
+    submittedBy: 'Climate Systems Inc',
+    submittedDate: new Date('2026-03-25'),
+    dueDate: new Date('2026-04-02'),
+    status: 'approved-with-comments',
+    priority: 'medium',
+    reviewer: 'Sarah Mitchell',
+    description: 'Product data sheets for rooftop HVAC units and indoor air handlers',
+    files: ['hvac-product-data.pdf', 'performance-specs.xlsx'],
+    comments: 5,
+    revisionNumber: 1,
+    trade: 'HVAC',
+  },
+  {
+    id: '3',
+    number: 'SUB-003',
+    title: 'Curtain Wall System Sample',
+    type: 'Sample',
+    submittedBy: 'Glazing Solutions Ltd',
+    submittedDate: new Date('2026-03-30'),
+    dueDate: new Date('2026-04-10'),
+    status: 'pending',
+    priority: 'critical',
+    reviewer: 'Michael Chen',
+    description: 'Physical sample of curtain wall glazing system for facade',
+    files: ['sample-specs.pdf', 'installation-guide.pdf'],
+    comments: 0,
+    revisionNumber: 1,
+    trade: 'Exterior',
+  },
+  {
+    id: '4',
+    number: 'SUB-004',
+    title: 'Fire Safety Test Report',
+    type: 'Test Report',
+    submittedBy: 'Fire Protection Co',
+    submittedDate: new Date('2026-03-20'),
+    dueDate: new Date('2026-03-28'),
+    status: 'approved',
+    priority: 'high',
+    reviewer: 'Lisa Thompson',
+    description: 'Fire resistance testing report for structural steel assemblies',
+    files: ['fire-test-report.pdf', 'certification.pdf'],
+    comments: 2,
+    revisionNumber: 1,
+    trade: 'Fire Safety',
+  },
+  {
+    id: '5',
+    number: 'SUB-005',
+    title: 'Concrete Mix Design',
+    type: 'Certificate',
+    submittedBy: 'Premier Concrete Ltd',
+    submittedDate: new Date('2026-03-15'),
+    dueDate: new Date('2026-03-25'),
+    status: 'rejected',
+    priority: 'high',
+    reviewer: 'David Park',
+    description: 'Mix design certification for high-strength concrete foundation',
+    files: ['mix-design.pdf'],
+    comments: 7,
+    revisionNumber: 3,
+    trade: 'Concrete',
+  },
+];
 
 export const SubmittalManagement: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'all' | 'pending' | 'approved' | 'rejected'>('all');
   const [selectedSubmittal, setSelectedSubmittal] = useState<Submittal | null>(null);
   const [_showFilters, _setShowFilters] = useState(false);
+  const [submittals, setSubmittals] = useState<Submittal[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  const [submittals] = useState<Submittal[]>([
-    {
-      id: '1',
-      number: 'SUB-001',
-      title: 'Structural Steel Shop Drawings',
-      type: 'Shop Drawing',
-      submittedBy: 'Steel Fabricators Ltd',
-      submittedDate: new Date('2026-03-28'),
-      dueDate: new Date('2026-04-05'),
-      status: 'under-review',
-      priority: 'high',
-      reviewer: 'James Wilson',
-      description: 'Shop drawings for main structural steel frame, Level 1-3',
-      files: ['steel-drawings-v2.pdf', 'connection-details.dwg'],
-      comments: 3,
-      revisionNumber: 2,
-      trade: 'Structural'
-    },
-    {
-      id: '2',
-      number: 'SUB-002',
-      title: 'HVAC Equipment Product Data',
-      type: 'Product Data',
-      submittedBy: 'Climate Systems Inc',
-      submittedDate: new Date('2026-03-25'),
-      dueDate: new Date('2026-04-02'),
-      status: 'approved-with-comments',
-      priority: 'medium',
-      reviewer: 'Sarah Mitchell',
-      description: 'Product data sheets for rooftop HVAC units and indoor air handlers',
-      files: ['hvac-product-data.pdf', 'performance-specs.xlsx'],
-      comments: 5,
-      revisionNumber: 1,
-      trade: 'HVAC'
-    },
-    {
-      id: '3',
-      number: 'SUB-003',
-      title: 'Curtain Wall System Sample',
-      type: 'Sample',
-      submittedBy: 'Glazing Solutions Ltd',
-      submittedDate: new Date('2026-03-30'),
-      dueDate: new Date('2026-04-10'),
-      status: 'pending',
-      priority: 'critical',
-      reviewer: 'Michael Chen',
-      description: 'Physical sample of curtain wall glazing system for facade',
-      files: ['sample-specs.pdf', 'installation-guide.pdf'],
-      comments: 0,
-      revisionNumber: 1,
-      trade: 'Exterior'
-    },
-    {
-      id: '4',
-      number: 'SUB-004',
-      title: 'Fire Safety Test Report',
-      type: 'Test Report',
-      submittedBy: 'Fire Protection Co',
-      submittedDate: new Date('2026-03-20'),
-      dueDate: new Date('2026-03-28'),
-      status: 'approved',
-      priority: 'high',
-      reviewer: 'Lisa Thompson',
-      description: 'Fire resistance testing report for structural steel assemblies',
-      files: ['fire-test-report.pdf', 'certification.pdf'],
-      comments: 2,
-      revisionNumber: 1,
-      trade: 'Fire Safety'
-    },
-    {
-      id: '5',
-      number: 'SUB-005',
-      title: 'Concrete Mix Design',
-      type: 'Certificate',
-      submittedBy: 'Premier Concrete Ltd',
-      submittedDate: new Date('2026-03-15'),
-      dueDate: new Date('2026-03-25'),
-      status: 'rejected',
-      priority: 'high',
-      reviewer: 'David Park',
-      description: 'Mix design certification for high-strength concrete foundation',
-      files: ['mix-design.pdf'],
-      comments: 7,
-      revisionNumber: 3,
-      trade: 'Concrete'
+  useEffect(() => {
+    async function loadSubmittals() {
+      try {
+        setLoading(true);
+        const data = await submittalsApi.getAll();
+        const items: Record<string, unknown>[] = Array.isArray(data)
+          ? data
+          : Array.isArray((data as Record<string, unknown>).submittals)
+            ? (data as Record<string, unknown>).submittals as Record<string, unknown>[]
+            : [];
+        setSubmittals(items.map((item) => mapApiToSubmittal(item)));
+      } catch {
+        toast.error('Failed to load submittals — using offline data');
+        setSubmittals(MOCK_SUBMITTALS);
+      } finally {
+        setLoading(false);
+      }
     }
-  ]);
+    loadSubmittals();
+  }, []);
+
+  // Expose reload for create/update operations
+  const reloadSubmittals = async () => {
+    try {
+      const data = await submittalsApi.getAll();
+      const items: Record<string, unknown>[] = Array.isArray(data)
+        ? data
+        : Array.isArray((data as Record<string, unknown>).submittals)
+          ? (data as Record<string, unknown>).submittals as Record<string, unknown>[]
+          : [];
+      setSubmittals(items.map((item) => mapApiToSubmittal(item)));
+    } catch {
+      toast.error('Failed to refresh submittals');
+    }
+  };
 
   const getStatusIcon = (status: string) => {
     switch (status) {

@@ -533,7 +533,7 @@ function DashboardComponent() {
       {activeTab === 'overview' && (
         <div className="space-y-5">
           {/* Row 1: Revenue Chart + RAG Donut + Alerts */}
-          <div className="dashboard-overview-row" style={{ display: 'grid', gridTemplateColumns: '1fr 260px 300px', gap: '14px' }}>
+          <div className="dashboard-overview-row" style={{ display: 'grid', gridTemplateColumns: '1fr 260px 300px', gap: '14px', minWidth: 0 }}>
 
             {/* Revenue Area Chart */}
             <div style={{
@@ -559,8 +559,8 @@ function DashboardComponent() {
                   ))}
                 </div>
               </div>
-              <div style={{ height: '180px' }}>
-                <ResponsiveContainer width="100%" height="100%">
+              <div style={{ height: '180px', minWidth: 0 }}>
+                <ResponsiveContainer width="100%" height="100%" minHeight={180}>
                   <AreaChart data={revenueData}>
                     <defs>
                       <linearGradient id="gRev" x1="0" y1="0" x2="0" y2="1">
@@ -737,7 +737,7 @@ function DashboardComponent() {
       )}
 
       {/* ── LIVE INTEL ROW (always visible below tabs) ─────────────── */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '14px' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '14px', minWidth: 0 }}>
         <QuickStats />
         <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
           <RFITimeline
@@ -961,8 +961,8 @@ function DashboardComponent() {
             <h3 style={{ fontFamily: "'Syne', sans-serif", fontSize: '14px', fontWeight: 700, color: '#f1f5f9', marginBottom: '16px' }}>
               Monthly Cash Flow
             </h3>
-            <div style={{ height: '220px' }}>
-              <ResponsiveContainer width="100%" height="100%">
+            <div style={{ height: '220px', minWidth: 0 }}>
+              <ResponsiveContainer width="100%" height="100%" minHeight={220}>
                 <BarChart data={revenueData}>
                   <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" />
                   <XAxis dataKey="month" tick={{ fontFamily:'JetBrains Mono', fontSize:9, fill:'#475569' }} axisLine={false} tickLine={false} />
