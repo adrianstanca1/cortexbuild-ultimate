@@ -259,6 +259,25 @@ router.put('/users/:id', authMiddleware, async (req, res) => {
 
   const { role, is_active, jobTitle, phone } = req.body;
 
+  // SECURITY: Restrict assignable roles based on updater's role to prevent privilege escalation
+  const ASSIGNABLE_ROLES = {
+    super_admin: ['super_admin', 'company_owner', 'admin', 'project_manager', 'field_worker', 'viewer'],
+    company_owner: ['admin', 'project_manager', 'field_worker', 'viewer'],
+    admin: ['project_manager', 'field_worker', 'viewer']
+  };
+
+  // Self-escalation guard: users cannot change their own role
+  if (req.params.id === req.user.id.toString() && role) {
+    return res.status(403).json({ message: 'Cannot change your own role' });
+  }
+
+  const allowedRoles = ASSIGNABLE_ROLES[req.user.role] || ['field_worker', 'viewer'];
+  if (role && !allowedRoles.includes(role)) {
+    return res.status(403).json({
+      message: `Cannot assign role "${role}". Your role "${req.user.role}" can only assign: ${allowedRoles.join(', ')}`
+    });
+  }
+
   const VALID_ROLES = ['super_admin', 'company_owner', 'admin', 'project_manager', 'field_worker', 'viewer'];
   if (role && !VALID_ROLES.includes(role)) {
     return res.status(400).json({ message: `Invalid role. Must be one of: ${VALID_ROLES.join(', ')}` });

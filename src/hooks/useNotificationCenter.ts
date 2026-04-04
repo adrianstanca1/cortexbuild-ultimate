@@ -344,7 +344,7 @@ export function useNotificationCenter(
     try {
       const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
       const authToken = localStorage.getItem('authToken') || '';
-      const wsUrl = `${protocol}//${window.location.host}/api/ws/notifications${authToken ? `?token=${encodeURIComponent(authToken)}` : ''}`;
+      const wsUrl = `${protocol}//${window.location.host}/ws${authToken ? `?token=${encodeURIComponent(authToken)}` : ''}`;
 
       const ws = new WebSocket(wsUrl);
 

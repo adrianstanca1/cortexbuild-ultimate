@@ -112,7 +112,7 @@ export function useNotifications(
 
     try {
       const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-      const wsUrl = `${protocol}//${window.location.host}/api/ws/notifications?token=${encodeURIComponent(authToken)}`;
+      const wsUrl = `${protocol}//${window.location.host}/ws?token=${encodeURIComponent(authToken)}`;
 
       ws.current = new WebSocket(wsUrl);
 
@@ -315,7 +315,7 @@ export function useRealtimeNotifications(
 
     try {
       const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-      const wsUrl = `${protocol}//${window.location.host}/api/ws/notifications`;
+      const wsUrl = `${protocol}//${window.location.host}/ws`;
 
       const socket = new WebSocket(wsUrl);
 
@@ -331,7 +331,7 @@ export function useRealtimeNotifications(
             // Re-create WebSocket connection directly
             try {
               const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-              const wsUrl = `${protocol}//${window.location.host}/api/ws/notifications`;
+              const wsUrl = `${protocol}//${window.location.host}/ws`;
               const newSocket = new WebSocket(wsUrl);
               newSocket.onopen = () => setIsConnected(true);
               newSocket.onclose = () => setIsConnected(false);

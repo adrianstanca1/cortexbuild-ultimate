@@ -221,9 +221,11 @@ router.get('/google/callback', oauthLimiter, (req, res, next) => {
       // Generate JWT token
       const token = jwt.sign(
         {
-          userId: user.id,
+          id: user.id,
           email: user.email,
-          role: user.role || 'field_worker'
+          role: user.role || 'field_worker',
+          organization_id: user.organization_id || null,
+          company_id: user.company_id || null,
         },
         process.env.JWT_SECRET,
         { expiresIn: '7d' }
@@ -292,9 +294,11 @@ router.get('/microsoft/callback', oauthLimiter, (req, res, next) => {
       // Generate JWT token
       const token = jwt.sign(
         {
-          userId: user.id,
+          id: user.id,
           email: user.email,
-          role: user.role || 'field_worker'
+          role: user.role || 'field_worker',
+          organization_id: user.organization_id || null,
+          company_id: user.company_id || null,
         },
         process.env.JWT_SECRET,
         { expiresIn: '7d' }

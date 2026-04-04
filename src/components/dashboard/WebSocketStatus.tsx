@@ -7,7 +7,7 @@ interface WebSocketStatusProps {
   onStatusChange?: (status: ConnectionStatus) => void;
 }
 
-export function WebSocketStatus({ url = '/api/ws', onStatusChange }: WebSocketStatusProps) {
+export function WebSocketStatus({ url = '/ws', onStatusChange }: WebSocketStatusProps) {
   const [status, setStatus] = useState<ConnectionStatus>('disconnected');
 
   useEffect(() => {

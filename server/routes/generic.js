@@ -157,6 +157,13 @@ function makeRouter(tableName, orderCol = 'created_at') {
     const keys = filterKeys(body);
     if (!keys.length) return res.status(400).json({ message: 'No valid fields provided' });
 
+    // Guard: prevent inserts without tenant scoping (OAuth users without profile)
+    if (!req.user?.organization_id) {
+      return res.status(400).json({
+        message: 'User profile incomplete. Please complete your profile setup.'
+      });
+    }
+
     const cols         = keys.join(', ');
     const placeholders = keys.map((_, i) => `$${i + 1}`).join(', ');
     const values       = keys.map(k => body[k]);
