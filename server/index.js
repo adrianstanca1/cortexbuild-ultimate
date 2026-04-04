@@ -22,7 +22,10 @@ const server = http.createServer(app);
 const PORT = process.env.PORT || 3001;
 
 // Redis client for rate limiting and distributed state
-const redisClient = redis.createClient({ url: process.env.REDIS_URL || 'redis://localhost:6379' });
+const redisHost = process.env.REDIS_HOST || 'localhost';
+const redisClient = redis.createClient({
+  url: process.env.REDIS_URL || `redis://${redisHost}:6379`,
+});
 redisClient.connect().catch(err => console.error('[Redis]', err.message));
 
 // Initialize WebSocket server
