@@ -28,6 +28,7 @@ import { ModuleBreadcrumbs } from '../ui/Breadcrumbs';
 import { ActivityFeed } from '../ui/ActivityFeed';
 
 type AnyRow = Record<string, unknown>;
+type SafetyRow = AnyRow & { status?: string; severity?: string };
 
 interface Project {
   id: number;
@@ -199,10 +200,15 @@ export function Dashboard() {
   const [showAIChat, setShowAIChat] = useState(false);
 
   // Live data hooks — real API data
-  const { data: safetyIncidents = [] } = useSafety.useList();
-  const { data: rfis = [] } = useRFIData.useList();
-  const { data: tasks = [] } = useProjectTasks.useList();
-  const { data: liveProjects = [] } = useProjectsData.useList();
+  const { data: safetyRaw = [] } = useSafety.useList();
+  const safetyIncidents = safetyRaw as AnyRow[];
+  const safetyList = safetyIncidents as SafetyRow[];
+  const { data: rfisRaw = [] } = useRFIData.useList();
+  const rfis = rfisRaw as AnyRow[];
+  const { data: tasksRaw = [] } = useProjectTasks.useList();
+  const tasks = tasksRaw as AnyRow[];
+  const { data: liveProjectsRaw = [] } = useProjectsData.useList();
+  const liveProjects = liveProjectsRaw as AnyRow[];
 
   // Refetch dashboard data when WS sends a dashboard_update event
   useEffect(() => {
@@ -725,7 +731,26 @@ export function Dashboard() {
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '14px' }}>
         <QuickStats />
         <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
-          <RFITimeline rfis={rfis.slice(0, 5).map((r: AnyRow) => ({ id: r.id, number: String(r.number), title: r.title, status: (r.status === 'OVERDUE' ? 'OPEN' : r.status) as 'OPEN'|'ANSWERED'|'CLOSED', dueDate: r.dueDate ?? undefined, createdAt: r.createdAt }))} />
+          <RFITimeline
+            rfis={rfis.slice(0, 5).map((r) => {
+              const row = r as AnyRow;
+              const statusRaw = String(row.status ?? 'OPEN');
+              const status = statusRaw === 'OVERDUE' ? 'OPEN' : statusRaw;
+              const dueRaw = row.dueDate ?? row.due_date;
+              const dueDate =
+                dueRaw !== undefined && dueRaw !== null && (typeof dueRaw === 'string' || typeof dueRaw === 'number')
+                  ? String(dueRaw)
+                  : undefined;
+              return {
+                id: String(row.id ?? ''),
+                number: String(row.number ?? row.rfi_number ?? ''),
+                title: String(row.title ?? row.subject ?? ''),
+                status: status as 'OPEN' | 'ANSWERED' | 'CLOSED',
+                dueDate,
+                createdAt: String(row.createdAt ?? row.created_at ?? ''),
+              };
+            })}
+          />
           {/* Activity Feed */}
           <div className="card bg-base-100 border border-base-300">
             <div className="card-body p-4">
@@ -734,7 +759,34 @@ export function Dashboard() {
             </div>
           </div>
         </div>
-        <TaskList tasks={tasks.slice(0, 6).map((t: AnyRow) => ({ id: t.id, title: t.title, status: t.status as 'TODO'|'IN_PROGRESS'|'REVIEW'|'COMPLETE'|'BLOCKED', priority: t.priority as 'LOW'|'MEDIUM'|'HIGH'|'CRITICAL', dueDate: t.dueDate ?? undefined, assignee: t.assignee ? { name: t.assignee.name } : undefined }))} onViewAll={() => {}} />
+        <TaskList
+          tasks={tasks.slice(0, 6).map((t) => {
+            const row = t as AnyRow;
+            const assigneeRaw = row.assignee;
+            const assigneeObj =
+              assigneeRaw && typeof assigneeRaw === 'object' && assigneeRaw !== null
+                ? (assigneeRaw as Record<string, unknown>)
+                : undefined;
+            const assigneeName =
+              assigneeObj && typeof assigneeObj.name === 'string' ? assigneeObj.name : undefined;
+            const taskDueRaw = row.dueDate ?? row.due_date;
+            const dueDate =
+              taskDueRaw !== undefined &&
+              taskDueRaw !== null &&
+              (typeof taskDueRaw === 'string' || typeof taskDueRaw === 'number')
+                ? String(taskDueRaw)
+                : undefined;
+            return {
+              id: String(row.id ?? ''),
+              title: String(row.title ?? ''),
+              status: row.status as 'TODO' | 'IN_PROGRESS' | 'REVIEW' | 'COMPLETE' | 'BLOCKED',
+              priority: row.priority as 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL',
+              dueDate,
+              assignee: assigneeName ? { name: assigneeName } : undefined,
+            };
+          })}
+          onViewAll={() => {}}
+        />
       </div>
 
       {/* AI Chat toggle */}
@@ -753,7 +805,7 @@ export function Dashboard() {
         </button>
       </div>
       {showAIChat && (
-        <AIAvatar projectId={liveProjects[0]?.id} />
+        <AIAvatar projectId={liveProjects[0] != null ? String(liveProjects[0].id) : undefined} />
       )}
 
       {/* ── PROJECTS TAB ────────────────────────────────────────────── */}
@@ -764,17 +816,17 @@ export function Dashboard() {
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '14px' }}>
               {liveProjects.slice(0, 6).map((proj: AnyRow) => (
                 <ProjectCard
-                  key={proj.id}
+                  key={String(proj.id)}
                   project={{
-                    id: proj.id,
-                    name: proj.name,
+                    id: String(proj.id),
+                    name: String(proj.name),
                     status: (proj.status as 'PLANNING' | 'IN_PROGRESS' | 'ON_HOLD' | 'COMPLETED' | 'ARCHIVED') || 'PLANNING',
-                    location: proj.location ?? undefined,
-                    budget: proj.budget ?? undefined,
-                    startDate: proj.startDate ?? undefined,
-                    endDate: proj.endDate ?? undefined,
-                    progress: proj.progress ?? 0,
-                    teamSize: proj.teamSize ?? undefined,
+                    location: proj.location ? String(proj.location) : undefined,
+                    budget: proj.budget ? Number(proj.budget) : undefined,
+                    startDate: proj.startDate ? String(proj.startDate) : undefined,
+                    endDate: proj.endDate ? String(proj.endDate) : undefined,
+                    progress: Number(proj.progress) ?? 0,
+                    teamSize: proj.teamSize ? Number(proj.teamSize) : undefined,
                   }}
                 />
               ))}
@@ -946,9 +998,9 @@ export function Dashboard() {
         <div className="space-y-5">
           {/* Live safety stats from API */}
           <SafetyStats stats={{
-            totalIncidents: safetyIncidents.length,
-            openIncidents: safetyIncidents.filter((i: AnyRow) => i.status === 'REPORTED' || i.status === 'INVESTIGATING').length,
-            resolvedIncidents: safetyIncidents.filter((i: AnyRow) => i.status === 'RESOLVED' || i.status === 'CLOSED').length,
+            totalIncidents: safetyList.length,
+            openIncidents: safetyList.filter((i) => i.status === 'REPORTED' || i.status === 'INVESTIGATING').length,
+            resolvedIncidents: safetyList.filter((i) => i.status === 'RESOLVED' || i.status === 'CLOSED').length,
             daysSinceLastIncident: 187,
             safetyScore: 98,
             toolboxTalksCompleted: 34,
@@ -957,16 +1009,16 @@ export function Dashboard() {
             toolChecksTotal: 150,
             activeWorkers: 143,
             incidentsBySeverity: {
-              LOW: safetyIncidents.filter((i: AnyRow) => i.severity === 'LOW').length,
-              MEDIUM: safetyIncidents.filter((i: AnyRow) => i.severity === 'MEDIUM').length,
-              HIGH: safetyIncidents.filter((i: AnyRow) => i.severity === 'HIGH').length,
-              CRITICAL: safetyIncidents.filter((i: AnyRow) => i.severity === 'CRITICAL').length,
+              LOW: safetyList.filter((i) => i.severity === 'LOW').length,
+              MEDIUM: safetyList.filter((i) => i.severity === 'MEDIUM').length,
+              HIGH: safetyList.filter((i) => i.severity === 'HIGH').length,
+              CRITICAL: safetyList.filter((i) => i.severity === 'CRITICAL').length,
             },
           }} />
           {/* Existing detailed panel */}
           <SafetyStatsPanel
             data={{
-              daysSinceIncident: safetyIncidents.filter((i: AnyRow) => i.status === 'REPORTED').length === 0 ? 187 : 0,
+              daysSinceIncident: safetyList.filter((i) => i.status === 'REPORTED').length === 0 ? 187 : 0,
               activeRAMS: 34, openObservations: 12, nearMissReports: 8,
               ppeCompliance: 97, inspectionsPassed: 94, siteStatus: 'GREEN',
               lastCheck: new Date().toLocaleTimeString('en-GB', { timeZone: 'Europe/London', hour: '2-digit', minute: '2-digit' }) + ' GMT',
