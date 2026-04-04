@@ -5,8 +5,6 @@ import {
 import { toast } from 'sonner';
 import clsx from 'clsx';
 import { settingsApi, type AppSettings } from '../../services/api';
-import { CardSkeleton } from '../ui/Skeleton';
-
 interface SettingsTabProps {
   settings: AppSettings | null;
   loading: boolean;
