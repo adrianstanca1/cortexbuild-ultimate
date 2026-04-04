@@ -24,6 +24,10 @@ rsync -e "ssh $SSH_OPTS" \
   -avz --delete \
   ./dist/ "$VPS:$VPS_PATH/dist/"
 
+echo "=== Syncing server .env ==="
+rsync -e "ssh $SSH_OPTS" \
+  -avz ./.env "$VPS:$VPS_PATH/server/.env"
+
 echo "=== Fixing permissions (nginx container UID 101 needs read) ==="
 ssh $SSH_OPTS "$VPS" \
   "chmod -R 755 $VPS_PATH/dist/"
