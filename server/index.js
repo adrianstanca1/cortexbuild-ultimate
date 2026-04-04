@@ -12,7 +12,7 @@ const authRoutes     = require('./routes/auth');
 const rateLimiter    = require('./middleware/rateLimiter');
 const { initWebSocket } = require('./lib/websocket');
 const rateLimit = require('express-rate-limit');
-const RedisStore = require('rate-limit-redis');
+const { RedisStore } = require('rate-limit-redis');
 const cookieParser = require('cookie-parser');
 const redis = require('redis');
 
