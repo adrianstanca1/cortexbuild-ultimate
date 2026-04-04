@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { createRFI } from '../../hooks/useRFIs';
+import { rfisApi } from '../../services/api';
 import { X } from 'lucide-react';
 
 interface RFIFormProps {
@@ -72,12 +72,12 @@ export function RFIForm({ onClose, onSuccess, projectId }: RFIFormProps) {
 
     setIsSubmitting(true);
     try {
-      await createRFI({
+      await rfisApi.create({
         number: formData.number,
         title: formData.title,
         question: formData.question,
         answer: formData.answer || undefined,
-        status: formData.status as 'OPEN' | 'ANSWERED' | 'CLOSED' | 'OVERDUE',
+        status: formData.status,
         dueDate: formData.dueDate || undefined,
         assignedToId: formData.assignedToId || undefined,
         projectId: projectId || '',

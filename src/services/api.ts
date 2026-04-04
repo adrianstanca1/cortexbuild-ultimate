@@ -549,11 +549,12 @@ export const searchApi = {
 /** RAG-augmented AI chat — streams tokens via fetch + ReadableStream */
 export const ragChatApi = {
   stream: (question: string, history: { role: string; content: string }[] = [], tables: string[] = []) => {
+    const token = getToken();
     return fetch(`${import.meta.env.VITE_API_BASE_URL}/api/rag-chat`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        ...(localStorage.getItem('token') ? { Authorization: `Bearer ${localStorage.getItem('token')}` } : {}),
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
       },
       body: JSON.stringify({ question, history, tables }),
     });

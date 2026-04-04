@@ -48,6 +48,10 @@ function initWebSocket(server) {
     }
 
     const decoded = decodeToken(token);
+    if (!decoded) {
+      ws.close(4001, 'Invalid token');
+      return;
+    }
     const userId = decoded.id;
     const userRole = decoded.role;
     const userRooms = new Set();
@@ -144,7 +148,12 @@ function verifyToken(token) {
  * Decode JWT token
  */
 function decodeToken(token) {
-  return jwt.decode(token);
+  try {
+    return jwt.verify(token, JWT_SECRET);
+  } catch (err) {
+    console.error('[WS] Token decode error:', err.message);
+    return null;
+  }
 }
 
 /**

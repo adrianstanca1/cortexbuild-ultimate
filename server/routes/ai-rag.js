@@ -19,11 +19,19 @@ router.use(authMw);
 
 const SUPER_ADMIN_ROLES = new Set(['super_admin', 'company_owner']);
 
+const ALLOWED_TABLES = new Set([
+  'projects', 'invoices', 'rfis', 'contacts', 'documents',
+  'safety_incidents', 'change_orders', 'team_members',
+  'subcontractors', 'equipment', 'materials', 'meetings',
+  'timesheets', 'punch_list', 'inspections', 'rams',
+  'tenders', 'risk_register', 'purchase_orders', 'daily_reports'
+]);
+
 function tenantFilter(req) {
-  if (!req.user) return '';
-  if (SUPER_ADMIN_ROLES.has(req.user.role)) return '';
-  if (req.user.organization_id) return `organization_id = '${req.user.organization_id.replace(/'/g, "''")}'`;
-  return '';
+  if (!req.user) return { clause: '', params: [] };
+  if (SUPER_ADMIN_ROLES.has(req.user.role)) return { clause: '', params: [] };
+  if (req.user.organization_id) return { clause: ' AND organization_id = $1', params: [req.user.organization_id] };
+  return { clause: '', params: [] };
 }
 
 function buildContextPrompt(contextItems) {
@@ -71,26 +79,34 @@ async function retrieveContext(question, tables, orgFilter) {
   const embedding = await getEmbedding(question);
   if (!embedding) return [];
 
+  const { clause: filterClause, params: filterParams } = orgFilter;
   const context = [];
 
   for (const table of tables) {
-    const orgClause = orgFilter ? `AND ${orgFilter}` : '';
+    // Determine the starting index for $N placeholders in this table's queries
+    // rag_embeddings query: $1 = embedding, $2 = table_name, then filter params
+    const embeddingParam = JSON.stringify(embedding);
+    const ragParams = [embeddingParam, table, ...filterParams];
+    const filterWithAnd = filterClause ? filterClause.replace(/^ AND/, 'AND') : '';
 
     const { rows } = await pool.query(
       `SELECT row_id, (embedding <=> $1) AS similarity
        FROM rag_embeddings
-       WHERE table_name = $2 ${orgClause}
+       WHERE table_name = $2 ${filterWithAnd}
        ORDER BY embedding <=> $1
        LIMIT 5`,
-      [JSON.stringify(embedding), table]
+      ragParams
     ).catch(() => ({ rows: [] }));
 
     for (const r of rows.slice(0, 3)) {
       const similarity = 1 - parseFloat(r.similarity);
       if (similarity < 0.5) continue;
+
+      const safeTable = table;
+      const dataQueryParams = [r.row_id, ...filterParams];
       const { rows: dataRows } = await pool.query(
-        `SELECT * FROM ${table} WHERE id = $1 ${orgFilter} LIMIT 1`,
-        [r.row_id]
+        `SELECT * FROM ${safeTable} WHERE id = $1${filterClause} LIMIT 1`,
+        dataQueryParams
       ).catch(() => ({ rows: [] }));
       if (dataRows[0]) context.push({ table, row_id: r.row_id, data: dataRows[0] });
     }
@@ -106,10 +122,16 @@ router.post('/', async (req, res) => {
       return res.status(400).json({ message: 'question is required (min 2 chars)' });
     }
 
+    // Validate table names against whitelist
+    const safeTables = (tables || []).filter(t => ALLOWED_TABLES.has(t));
+    if (safeTables.length === 0 && tables.length > 0) {
+      return res.status(400).json({ message: 'No valid tables specified' });
+    }
+
     const orgFilterObj = tenantFilter(req);
 
-    const contextItems = tables.length
-      ? await retrieveContext(question, tables, orgFilterObj)
+    const contextItems = safeTables.length
+      ? await retrieveContext(question, safeTables, orgFilterObj)
       : [];
 
     const systemPrompt = `You are a helpful construction management AI assistant. Answer questions using ONLY the provided context data. If the context doesn't contain enough information to answer, say so clearly. Be specific and reference actual values from the data.`;

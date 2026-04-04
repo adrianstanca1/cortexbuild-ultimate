@@ -1,6 +1,6 @@
 import React from 'react';
 import { formatDistanceToNow } from 'date-fns';
-import { useProjects } from '../../hooks/useProjects';
+import { useProjects } from '../../hooks/useData';
 
 const statusColors: Record<string, string> = {
   PLANNING: 'bg-purple-100 text-purple-800',
@@ -12,9 +12,9 @@ const statusColors: Record<string, string> = {
 };
 
 export function RecentProjects() {
-  const result = useProjects({ pageSize: 5 });
+  const { data: projects, isLoading } = useProjects.useList();
 
-  if (result.loading) {
+  if (isLoading) {
     return (
       <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
         <div className="animate-pulse">
@@ -29,9 +29,9 @@ export function RecentProjects() {
     );
   }
 
-  const projects = result.projects || [];
+  const recentProjects = ((projects || []) as { id: string | number; name: string; description?: string | null; status: string; budget?: number | null; updatedAt: string }[]).slice(0, 5);
 
-  if (projects.length === 0) {
+  if (recentProjects.length === 0) {
     return (
       <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
         <h3 className="text-lg font-semibold text-gray-900 mb-4">Recent Projects</h3>
@@ -56,7 +56,7 @@ export function RecentProjects() {
       </div>
 
       <div className="space-y-3">
-        {projects.map((project: typeof projects[number]) => (
+        {recentProjects.map((project) => (
           <a
             key={project.id}
             href={`/dashboard/projects/${project.id}`}

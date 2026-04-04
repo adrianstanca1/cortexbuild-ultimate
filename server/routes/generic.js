@@ -60,16 +60,16 @@ const VALID_ORDER_COLS = new Set([
 const SUPER_ADMIN_ROLES = new Set(['super_admin', 'company_owner']);
 
 /**
- * Build WHERE clause for tenant-scoped queries.
- * Super admins see all data; others only see their org/company.
+ * @returns {'all'|'tenant'|'deny'}
+ * - all: super_admin / company_owner — no org filter
+ * - tenant: scoped to organization_id
+ * - deny: authenticated but missing organization_id — match no rows (never cross-tenant reads/writes)
  */
-function buildTenantFilter(req) {
-  if (!req.user) return '';
-  if (SUPER_ADMIN_ROLES.has(req.user.role)) return '';
-  if (req.user.organization_id) {
-    return ` WHERE organization_id = $1`;
-  }
-  return '';
+function getTenantScope(req) {
+  if (!req.user) return 'deny';
+  if (SUPER_ADMIN_ROLES.has(req.user.role)) return 'all';
+  if (req.user.organization_id) return 'tenant';
+  return 'deny';
 }
 
 /**
@@ -91,20 +91,29 @@ function makeRouter(tableName, orderCol = 'created_at') {
   }
 
   function buildFilterAndParams(req) {
-    if (!req.user) return { filter: '', params: [] };
-    if (SUPER_ADMIN_ROLES.has(req.user.role)) return { filter: '', params: [] };
-    if (req.user.organization_id) {
-      return { filter: ' WHERE organization_id = $1', params: [req.user.organization_id] };
-    }
-    return { filter: '', params: [] };
+    const scope = getTenantScope(req);
+    if (scope === 'all') return { filter: '', params: [] };
+    if (scope === 'deny') return { filter: ' WHERE 1=0', params: [] };
+    return { filter: ' WHERE organization_id = $1', params: [req.user.organization_id] };
   }
 
-  function buildFilterWithId(req, idParamIndex) {
-    const { filter, params } = buildFilterAndParams(req);
-    if (!filter) {
-      return { filter: ` WHERE id = $${idParamIndex}`, params: [req.params.id] };
+  /**
+   * @param {number} nextParamIndex - First $n for this WHERE (use keys.length + 1 on UPDATE so SET keeps $1..$n)
+   */
+  function buildFilterWithId(req, nextParamIndex) {
+    const scope = getTenantScope(req);
+    if (scope === 'all') {
+      return { filter: ` WHERE id = $${nextParamIndex}`, params: [req.params.id] };
     }
-    return { filter: `${filter} AND id = $${params.length + 1}`, params: [...params, req.params.id] };
+    if (scope === 'deny') {
+      return { filter: ' WHERE 1=0', params: [] };
+    }
+    const orgPl = nextParamIndex;
+    const idPl = nextParamIndex + 1;
+    return {
+      filter: ` WHERE organization_id = $${orgPl} AND id = $${idPl}`,
+      params: [req.user.organization_id, req.params.id],
+    };
   }
 
   // GET / — list all (paginated)

@@ -45,20 +45,18 @@ npm start                # Production (plain node)
 
 ### Database Migrations
 ```bash
-# Migrations are plain SQL files, not managed by Prisma
-psql -d cortexbuild -f server/migrations/001_add_audit_log.sql
+# Migrations are plain SQL files under server/migrations/ (not Prisma at runtime)
+# Apply new files on production after deploy, e.g.:
+psql "$DATABASE_URL" -f server/migrations/001_add_audit_log.sql
 ```
+The GitHub **frontend** deploy workflow syncs `dist/` only; the **API** image or server process must be updated separately. Running `server/migrations/*.sql` against production DB is a manual or scripted ops step unless you add automation.
 
 ## Architecture
 
-### Dual Frontend Architecture
+### Frontend
 
-The project has two coexisting frontend layers:
-
-- **Vite app** (`src/`) — the primary React + TypeScript frontend, built with Vite. Entry point: `src/main.tsx`. Import alias `@` → `src/`.
-- **Next.js app** (`app/`) — a newer layer with App Router API route handlers under `app/api/` (auth, projects, rfis, tasks). Config in `next.config.ts`.
-
-The Vite frontend is what Vercel currently serves. The `app/api/` routes are a partial migration; treat `src/` as the authoritative frontend source.
+- **Vite app** (`src/`) — the React + TypeScript UI. Entry: `src/main.tsx`. Import alias `@` → `src/`.
+- An `app/` tree may exist for experiments; **APIs are served by Express** under `server/`. Treat `src/` + `server/` as the runtime source of truth.
 
 ### Module System
 
@@ -92,12 +90,12 @@ Adding a new table route:
 | `routes/files.js` / `routes/upload.js` | Multer uploads → `server/uploads/` |
 | `routes/email.js` | Nodemailer + SendGrid (rate-limited) |
 | `routes/search.js` | Global cross-table search |
-| `routes/metrics.js` | Health metrics (no auth) |
-| `routes/deploy.js` | Deployment endpoint (no auth) |
+| `routes/metrics.js` | Health metrics (**JWT required** — mounted after `/api` auth) |
+| `routes/deploy.js` | Deploy webhook — **Bearer `DEPLOY_SECRET`** (no JWT; rate-limited; before auth middleware) |
 
 ### Authentication
 
-- **JWT**: Required on all `/api/*` except `/api/auth/*`, `/api/health`, `/api/deploy`, `/api/metrics`
+- **JWT**: Required on all `/api/*` except `/api/auth/*`, `/api/health`, `/api/deploy` (uses `DEPLOY_SECRET` instead)
 - **RBAC roles**: `super_admin`, `company_owner`, `admin`, `project_manager`, `field_worker`
 - **OAuth**: CSRF state parameter (10-min expiry), JWT in URL fragment (`#token=`)
 

@@ -47,7 +47,7 @@ services:
     container_name: cortexbuild-api
     restart: always
     environment:
-      DATABASE_URL: postgresql://cortexbuild:***@postgres:5432/cortexbuild?schema=public
+      # App uses DB_* via server/db.js (not DATABASE_URL). Keep password in sync with postgres service.
       DB_HOST: postgres
       DB_PORT: 5432
       DB_NAME: ${POSTGRES_DB:-cortexbuild}

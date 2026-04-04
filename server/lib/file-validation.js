@@ -3,6 +3,8 @@
  * Provides magic number validation to prevent extension spoofing attacks
  */
 
+const path = require('path');
+
 // Magic numbers for file type validation (prevents extension spoofing)
 const MAGIC_NUMBERS = {
   pdf: '25504446',

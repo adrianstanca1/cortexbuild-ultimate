@@ -5,6 +5,7 @@ const rateLimit = require('express-rate-limit');
 const pool    = require('../db');
 const authMiddleware = require('../middleware/auth');
 const { logAudit } = require('./audit-helper');
+const { insertOrgAndCompany } = require('../lib/bootstrap-tenant');
 
 const router = express.Router();
 // SECURITY: JWT_SECRET MUST be set in environment — no hardcoded fallback
@@ -57,13 +58,37 @@ router.post('/register', registerLimiter, async (req, res) => {
     }
 
     const hash = await bcrypt.hash(password, 12);
-    const { rows } = await pool.query(
-      `INSERT INTO users (name, email, password_hash, role, company, phone)
-       VALUES ($1, $2, $3, 'company_owner', $4, $5)
-       RETURNING id, name, email, role, company, phone, created_at`,
-      [name.trim(), email.toLowerCase().trim(), hash, company.trim(), phone || null]
-    );
-    const newUser = rows[0];
+    const companyName = company.trim();
+    const client = await pool.connect();
+    let newUser;
+    try {
+      await client.query('BEGIN');
+      const { organizationId, companyId } = await insertOrgAndCompany(client, {
+        orgName: companyName,
+        companyName: companyName,
+      });
+      const { rows } = await client.query(
+        `INSERT INTO users (name, email, password_hash, role, company, phone, organization_id, company_id)
+         VALUES ($1, $2, $3, 'company_owner', $4, $5, $6, $7)
+         RETURNING id, name, email, role, company, phone, organization_id, company_id, created_at`,
+        [
+          name.trim(),
+          email.toLowerCase().trim(),
+          hash,
+          companyName,
+          phone || null,
+          organizationId,
+          companyId,
+        ]
+      );
+      newUser = rows[0];
+      await client.query('COMMIT');
+    } catch (err) {
+      await client.query('ROLLBACK');
+      throw err;
+    } finally {
+      client.release();
+    }
     logAudit({ auth: { userId: newUser.id, organization_id: newUser.organization_id, company_id: newUser.company_id }, action: 'create', entityType: 'users', entityId: newUser.id, newData: { email: newUser.email, role: newUser.role, name: newUser.name } });
 
     const token = jwt.sign(

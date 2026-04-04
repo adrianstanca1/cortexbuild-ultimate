@@ -355,9 +355,9 @@ router.post('/execute', async (req, res) => {
         const { name, client, budget, status = 'active', type = 'construction', manager, location } = params;
         if (!name || !client) return res.status(400).json({ success: false, message: 'name and client are required' });
         const { rows } = await pool.query(
-          `INSERT INTO projects(name,client,budget,status,type,manager,location,progress,spent)
-           VALUES($1,$2,$3,$4,$5,$6,$7,0,0) RETURNING id,name,status`,
-          [name, client, Number(budget) || 0, status, type, manager || null, location || null]
+          `INSERT INTO projects(name,client,budget,status,type,manager,location,progress,spent,organization_id,company_id)
+           VALUES($1,$2,$3,$4,$5,$6,$7,0,0,$8,$9) RETURNING id,name,status`,
+          [name, client, Number(budget) || 0, status, type, manager || null, location || null, req.user.organization_id || null, req.user.company_id || null]
         );
         broadcastDashboardUpdate('create', 'projects', rows[0]);
         broadcastNotification('New Project Created', `"${name}" has been added to the project register.`, 'info', { projectId: rows[0].id, projectName: name });
@@ -383,8 +383,8 @@ router.post('/execute', async (req, res) => {
         const { invoice_id, status } = params;
         if (!invoice_id || !status) return res.status(400).json({ success: false, message: 'invoice_id and status are required' });
         const { rows } = await pool.query(
-          `UPDATE invoices SET status=$1, updated_at=NOW() WHERE id=$2 RETURNING id,number,status`,
-          [status, invoice_id]
+          `UPDATE invoices SET status=$1, updated_at=NOW() WHERE id=$2 AND organization_id = $3 RETURNING id,number,status`,
+          [status, invoice_id, req.user.organization_id]
         );
         if (!rows.length) return res.status(404).json({ success: false, message: 'Invoice not found' });
         broadcastDashboardUpdate('update', 'invoices', rows[0]);
@@ -396,8 +396,8 @@ router.post('/execute', async (req, res) => {
         const { project, subject, priority = 'medium', status: rfiStatus = 'open' } = params;
         if (!project || !subject) return res.status(400).json({ success: false, message: 'project and subject are required' });
         const { rows } = await pool.query(
-          `INSERT INTO rfis(project,subject,priority,status) VALUES($1,$2,$3,$4) RETURNING id,number,status`,
-          [project, subject, priority, rfiStatus]
+          `INSERT INTO rfis(project,subject,priority,status,organization_id,company_id) VALUES($1,$2,$3,$4,$5,$6) RETURNING id,number,status`,
+          [project, subject, priority, rfiStatus, req.user.organization_id || null, req.user.company_id || null]
         );
         broadcastDashboardUpdate('create', 'rfis', rows[0]);
         broadcastNotification('New RFI Raised', `${rows[0].number}: ${subject}`, 'info', { projectId: project });
@@ -409,9 +409,9 @@ router.post('/execute', async (req, res) => {
         const { project, title, type, severity = 'medium', status: incStatus = 'open' } = params;
         if (!project || !title) return res.status(400).json({ success: false, message: 'project and title are required' });
         const { rows } = await pool.query(
-          `INSERT INTO safety_incidents(project,title,type,severity,status,date)
-           VALUES($1,$2,$3,$4,$5,NOW()) RETURNING id,title,severity,status`,
-          [project, title, type || 'incident', severity, incStatus]
+          `INSERT INTO safety_incidents(project,title,type,severity,status,date,organization_id,company_id)
+           VALUES($1,$2,$3,$4,$5,NOW(),$6,$7) RETURNING id,title,severity,status`,
+          [project, title, type || 'incident', severity, incStatus, req.user.organization_id || null, req.user.company_id || null]
         );
         broadcastDashboardUpdate('create', 'safety_incidents', rows[0]);
         broadcastNotification('Safety Incident Recorded', `"${title}" — severity: ${severity}`, severity === 'critical' || severity === 'high' ? 'critical' : 'warning', { projectId: project });
@@ -423,8 +423,8 @@ router.post('/execute', async (req, res) => {
         const { name, role, trade, status: tmStatus = 'active' } = params;
         if (!name) return res.status(400).json({ success: false, message: 'name is required' });
         const { rows } = await pool.query(
-          `INSERT INTO team_members(name,role,trade,status) VALUES($1,$2,$3,$4) RETURNING id,name,role,status`,
-          [name, role || null, trade || null, tmStatus]
+          `INSERT INTO team_members(name,role,trade,status,organization_id,company_id) VALUES($1,$2,$3,$4,$5,$6) RETURNING id,name,role,status`,
+          [name, role || null, trade || null, tmStatus, req.user.organization_id || null, req.user.company_id || null]
         );
         broadcastDashboardUpdate('create', 'team_members', rows[0]);
         broadcastNotification('New Team Member Added', `${name} has joined the team as ${role || 'member'}.`, 'info', { memberId: rows[0].id });
@@ -448,8 +448,8 @@ router.post('/execute', async (req, res) => {
         const { name, company, email, role, type = 'client' } = params;
         if (!name) return res.status(400).json({ success: false, message: 'name is required' });
         const { rows } = await pool.query(
-          `INSERT INTO contacts(name,company,email,role,type,status) VALUES($1,$2,$3,$4,$5,'active') RETURNING id,name,company`,
-          [name, company || null, email || null, role || null, type]
+          `INSERT INTO contacts(name,company,email,role,type,status,organization_id,company_id) VALUES($1,$2,$3,$4,$5,'active',$6,$7) RETURNING id,name,company`,
+          [name, company || null, email || null, role || null, type, req.user.organization_id || null, req.user.company_id || null]
         );
         res.json({ success: true, message: `Contact "${name}" created.`, data: rows[0] });
         break;

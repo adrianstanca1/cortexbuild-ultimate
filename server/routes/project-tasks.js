@@ -142,7 +142,7 @@ router.put('/:id', async (req, res) => {
     for (const [key, value] of Object.entries(fields)) {
       if (value !== undefined) {
         paramCount++;
-        updates.push(`pt.${key} = $${paramCount}`);
+        updates.push(`${key} = $${paramCount}`);
         params.push(value);
       }
     }
@@ -151,10 +151,16 @@ router.put('/:id', async (req, res) => {
       return res.status(400).json({ message: 'No fields to update' });
     }
 
-    const { join, filter, baseParams } = await orgFilterTasks(req.user);
+    const { baseParams } = await orgFilterTasks(req.user);
+    // orgFilter returns params [orgId], so filter clause uses $N for orgId
+    const orgFilterLen = baseParams.length;
     params.push(id);
+    const orgParamIndex = orgFilterLen + 1 + params.length;
     const { rows } = await pool.query(
-      `UPDATE project_tasks pt SET ${updates.join(', ')} FROM projects p ${join} AND p.id = pt.project_id WHERE pt.id = $${params.length}${filter} RETURNING pt.*`,
+      `UPDATE project_tasks pt SET ${updates.join(', ')}
+       FROM projects p
+       WHERE p.id = pt.project_id AND p.organization_id = $${orgParamIndex} AND pt.id = $${params.length}
+       RETURNING pt.*`,
       [...baseParams, ...params]
     );
 
@@ -173,11 +179,14 @@ router.put('/:id', async (req, res) => {
 router.delete('/:id', async (req, res) => {
   try {
     const { id } = req.params;
-    const { join, filter, params } = await orgFilterTasks(req.user);
+    const { baseParams } = await orgFilterTasks(req.user);
+    const orgIdParamIndex = baseParams.length + 1;
 
     const { rows } = await pool.query(
-      `DELETE FROM project_tasks pt USING projects p ${join} AND p.id = pt.project_id WHERE pt.id = $${params.length + 1}${filter} RETURNING pt.id`,
-      [...params, id]
+      `DELETE FROM project_tasks pt USING projects p
+       WHERE p.id = pt.project_id AND p.organization_id = $${orgIdParamIndex} AND pt.id = $1
+       RETURNING pt.id`,
+      [...baseParams, id]
     );
     if (rows.length === 0) return res.status(404).json({ message: 'Task not found' });
 
@@ -198,10 +207,13 @@ router.post('/:id/comments', async (req, res) => {
     if (!comment) return res.status(400).json({ message: 'Comment is required' });
 
     // Verify task belongs to user's org
-    const { join, filter, params } = await orgFilterTasks(req.user);
+    const { baseParams } = await orgFilterTasks(req.user);
+    const orgIdParamIndex = baseParams.length + 1;
     const { rows: task } = await pool.query(
-      `SELECT pt.id FROM project_tasks pt JOIN projects p ${join} AND p.id = pt.project_id WHERE pt.id = $${params.length + 1}${filter}`,
-      [...params, id]
+      `SELECT pt.id FROM project_tasks pt
+       JOIN projects p ON p.id = pt.project_id
+       WHERE p.organization_id = $${orgIdParamIndex} AND pt.id = $1`,
+      [...baseParams, id]
     );
     if (task.length === 0) return res.status(404).json({ message: 'Task not found' });
 
@@ -229,11 +241,16 @@ router.put('/bulk-status', async (req, res) => {
     }
     if (!status) return res.status(400).json({ message: 'status is required' });
 
-    const { join, filter, params } = await orgFilterTasks(req.user);
-    const placeholders = ids.map((_, i) => `$${params.length + 1 + i}`).join(', ');
+    const { baseParams } = await orgFilterTasks(req.user);
+    const orgIdParamIndex = baseParams.length + ids.length + 1;
+    const statusParamIndex = baseParams.length + ids.length + 2;
+    const placeholders = ids.map((_, i) => `$${baseParams.length + 1 + i}`).join(', ');
     const { rows } = await pool.query(
-      `UPDATE project_tasks pt SET status = $${params.length + ids.length + 1} FROM projects p ${join} AND p.id = pt.project_id WHERE pt.id IN (${placeholders})${filter} RETURNING pt.*`,
-      [...params, ...ids, status]
+      `UPDATE project_tasks pt SET status = $${statusParamIndex}
+       FROM projects p
+       WHERE p.id = pt.project_id AND p.organization_id = $${orgIdParamIndex} AND pt.id IN (${placeholders})
+       RETURNING pt.*`,
+      [...baseParams, ...ids, status]
     );
 
     res.json({ updated: rows.length, data: rows });

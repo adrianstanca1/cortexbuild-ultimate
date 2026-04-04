@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { createProject } from '../../hooks/useProjects';
+import { projectsApi } from '../../services/api';
 import { X } from 'lucide-react';
 
 interface ProjectFormProps {
@@ -66,7 +66,7 @@ export function ProjectForm({ onClose, onSuccess }: ProjectFormProps) {
 
     setIsSubmitting(true);
     try {
-      await createProject({
+      await projectsApi.create({
         name: formData.name,
         description: formData.description || undefined,
         status: formData.status,

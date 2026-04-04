@@ -1,40 +1,39 @@
 # AGENTS.md - Development Guidelines for CortexBuild Ultimate
 
+> **Runtime stack for this repo:** Vite + React (`src/`), Express + raw SQL + `pg` (`server/`). The `prisma/` directory is **reference schema only** — see **`CLAUDE.md`** for accurate commands and architecture. Sections below that assume Next.js/Prisma describe patterns you may reuse conceptually, but default tooling here is Vite + Express.
+
 ## 🎯 Project Overview
-Enterprise construction intelligence SaaS platform with 40+ Prisma models, multi-tenant architecture, RBAC, local LLM (Ollama), and 10 AI agents.
+Enterprise construction intelligence SaaS platform with multi-tenant architecture, RBAC, local LLM (Ollama), and AI-assisted modules. Prisma models in `prisma/` document the domain; **production API uses SQL migrations in `server/migrations/`.**
 
 **Domain:** Construction project management (commercial, residential, industrial)
-**Deployment:** VPS (72.62.132.43, 36GB RAM, 8 cores, 400GB SSD) with Docker stack
-**AI Provider:** Ollama with Llama 3.1 8B (local, quantized)
+**Deployment:** VPS with Docker stack; static frontend (`dist/`) and API container may deploy via separate workflows — keep them in sync.
+**AI Provider:** Ollama (local)
 
 ---
 
 ## 🛠️ Build & Development Commands
 
-### Core Workflow
+### Core Workflow (this repository)
 ```bash
-# Install dependencies
+# Root: frontend
 npm install
+npm run dev              # Vite → http://localhost:5173 (proxies /api → :3001)
+npm run build            # tsc -b && vite build → dist/
+npm test
+npm run lint
 
-# Development server (web + API + worker)
-npm run dev
-
-# Production build
-npm run build          # Next.js + TypeScript compilation
-npm run build:api      # Server-side TypeScript only
-
-# Start production server
-npm start
+# Backend (separate package)
+cd server && npm install && npm run dev   # Express on :3001
 ```
 
-### Database Operations
+### Database Operations (Express + PostgreSQL)
 ```bash
-npx prisma generate    # Generate Prisma client (always run after schema changes)
-npx prisma migrate dev # Create + apply migration (development)
-npx prisma migrate deploy  # Apply pending migrations (production)
-npx prisma db seed     # Seed demo data (uses scripts/seed.ts)
-npx prisma db push     # Direct schema sync (skip migrations)
-npx prisma studio      # Open Prisma Studio GUI
+# Apply SQL migrations manually (example)
+psql -d cortexbuild -f server/migrations/001_add_audit_log.sql
+
+# Optional: Prisma for schema exploration / generate only (not runtime ORM here)
+npx prisma generate
+npx prisma studio
 ```
 
 ### Testing
@@ -67,12 +66,8 @@ npm run format:fix    # Auto-format
 
 ### Utility Scripts
 ```bash
-npm run prisma        # Direct Prisma CLI access
-npm run db:backup     # Backup database
-npm run db:restore    # Restore from backup
-npm run ai:agents     # Run AI agent orchestration
-npm run workflow:run  # Execute workflow engine
-npm run cleanup       # Cleanup utilities
+npx prisma studio     # Optional: browse DB against prisma/schema (reference)
+# See repo scripts/ and deploy/ for backups, VPS sync, and ops helpers
 ```
 
 ---

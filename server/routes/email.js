@@ -110,10 +110,12 @@ const EMAIL_TYPES = {
 
 router.get('/templates', async (req, res) => {
   try {
+    const orgId = req.user?.organization_id;
     // Return both system email types and user-created templates from DB
     const { rows: dbTemplates } = await pool.query(
       `SELECT id, name, subject, body, email_type as "emailType", description, variables, is_active as "isActive", created_at as "createdAt", updated_at as "updatedAt"
-       FROM email_templates WHERE is_active = TRUE ORDER BY created_at DESC`
+       FROM email_templates WHERE is_active = TRUE AND (organization_id = $1 OR organization_id IS NULL) ORDER BY created_at DESC`,
+      [orgId]
     );
     // Attach DB templates as overrides/extensions to system types
     const systemTypes = Object.entries(EMAIL_TYPES).map(([key, val]) => ({
@@ -135,11 +137,12 @@ router.post('/templates', async (req, res) => {
     if (!name || !subject || !email_type) {
       return res.status(400).json({ message: 'name, subject, and email_type are required' });
     }
+    const orgId = req.user?.organization_id;
     const { rows } = await pool.query(
-      `INSERT INTO email_templates (name, subject, body, email_type, description, variables, created_by)
-       VALUES ($1, $2, $3, $4, $5, $6, $7)
+      `INSERT INTO email_templates (name, subject, body, email_type, description, variables, created_by, organization_id)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
        RETURNING id, name, subject, body, email_type as "emailType", description, variables, is_active as "isActive", created_at as "createdAt", updated_at as "updatedAt"`,
-      [name, subject, body || '', email_type, description || '', JSON.stringify(variables || []), req.user?.id || 'system']
+      [name, subject, body || '', email_type, description || '', JSON.stringify(variables || []), req.user?.id || 'system', orgId]
     );
     res.status(201).json({ success: true, template: rows[0] });
   } catch (err) {
@@ -152,12 +155,13 @@ router.put('/templates/:id', async (req, res) => {
   try {
     const { id } = req.params;
     const { name, subject, body, description, variables, is_active } = req.body;
+    const orgId = req.user?.organization_id;
     const { rows } = await pool.query(
       `UPDATE email_templates SET name = COALESCE($1, name), subject = COALESCE($2, subject), body = COALESCE($3, body),
        description = COALESCE($4, description), variables = COALESCE($5, variables), is_active = COALESCE($6, is_active),
-       updated_at = CURRENT_TIMESTAMP WHERE id = $7
+       updated_at = CURRENT_TIMESTAMP WHERE id = $7 AND (organization_id = $8 OR organization_id IS NULL)
        RETURNING id, name, subject, body, email_type as "emailType", description, variables, is_active as "isActive", created_at as "createdAt", updated_at as "updatedAt"`,
-      [name, subject, body, description, variables ? JSON.stringify(variables) : null, is_active, id]
+      [name, subject, body, description, variables ? JSON.stringify(variables) : null, is_active, id, orgId]
     );
     if (!rows[0]) return res.status(404).json({ message: 'Template not found' });
     res.json({ success: true, template: rows[0] });
@@ -170,9 +174,10 @@ router.put('/templates/:id', async (req, res) => {
 router.delete('/templates/:id', async (req, res) => {
   try {
     const { id } = req.params;
+    const orgId = req.user?.organization_id;
     const { rows } = await pool.query(
-      `UPDATE email_templates SET is_active = FALSE, updated_at = CURRENT_TIMESTAMP WHERE id = $1 RETURNING id`,
-      [id]
+      `UPDATE email_templates SET is_active = FALSE, updated_at = CURRENT_TIMESTAMP WHERE id = $1 AND (organization_id = $2 OR organization_id IS NULL) RETURNING id`,
+      [id, orgId]
     );
     if (!rows[0]) return res.status(404).json({ message: 'Template not found' });
     res.json({ success: true });
@@ -185,11 +190,13 @@ router.delete('/templates/:id', async (req, res) => {
 router.get('/history', async (req, res) => {
   try {
     const { limit = '50', offset = '0' } = req.query;
+    const orgId = req.user?.organization_id;
+    const userId = req.user?.id;
     const { rows } = await pool.query(
-      `SELECT * FROM email_logs ORDER BY created_at DESC LIMIT $1 OFFSET $2`,
-      [parseInt(limit, 10), parseInt(offset, 10)]
+      `SELECT * FROM email_logs WHERE created_by = $1 OR organization_id = $2 ORDER BY created_at DESC LIMIT $3 OFFSET $4`,
+      [userId, orgId, parseInt(limit, 10), parseInt(offset, 10)]
     );
-    const { rows: count } = await pool.query('SELECT COUNT(*) FROM email_logs');
+    const { rows: count } = await pool.query('SELECT COUNT(*) FROM email_logs WHERE created_by = $1 OR organization_id = $2', [userId, orgId]);
     res.json({ emails: rows, total: parseInt(count[0].count, 10) });
   } catch (err) {
     console.error('[Email History]', err.message);

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { createSafetyIncident } from '../../hooks/useSafetyIncidents';
+import { safetyApi } from '../../services/api';
 import { X } from 'lucide-react';
 
 interface SafetyIncidentFormProps {
@@ -64,11 +64,11 @@ export function SafetyIncidentForm({ onClose, onSuccess, projectId }: SafetyInci
 
     setIsSubmitting(true);
     try {
-      await createSafetyIncident({
+      await safetyApi.create({
         title: formData.title,
         description: formData.description,
-        severity: formData.severity as 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL',
-        status: formData.status as 'REPORTED' | 'INVESTIGATING' | 'RESOLVED' | 'CLOSED',
+        severity: formData.severity,
+        status: formData.status,
         assignedToId: formData.assignedToId || undefined,
         projectId: projectId || '',
       });

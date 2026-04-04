@@ -6,6 +6,7 @@ const jwt        = require('jsonwebtoken');
 const crypto     = require('crypto');
 const rateLimit  = require('express-rate-limit');
 const db         = require('../db');
+const { attachNewTenantToUser } = require('../lib/bootstrap-tenant');
 const router     = express.Router();
 
 // Rate limiter for OAuth callbacks (prevent brute force attacks)
@@ -67,6 +68,12 @@ if (process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET) {
           [email.toLowerCase(), name, avatar]
         );
         user = result.rows[0];
+        await attachNewTenantToUser(db, user.id, {
+          orgName: `${name}'s organization`,
+          companyName: name,
+        });
+        const refreshed = await db.query('SELECT * FROM users WHERE id = $1', [user.id]);
+        user = refreshed.rows[0];
       }
 
       // Link OAuth provider if not already linked
@@ -133,6 +140,12 @@ if (process.env.MICROSOFT_CLIENT_ID && process.env.MICROSOFT_CLIENT_SECRET) {
           [email.toLowerCase(), name]
         );
         user = result.rows[0];
+        await attachNewTenantToUser(db, user.id, {
+          orgName: `${name}'s organization`,
+          companyName: name,
+        });
+        const refreshed = await db.query('SELECT * FROM users WHERE id = $1', [user.id]);
+        user = refreshed.rows[0];
       }
 
       // Link OAuth provider if not already linked

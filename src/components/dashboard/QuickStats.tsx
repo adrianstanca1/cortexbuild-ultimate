@@ -1,7 +1,6 @@
 import React from 'react';
 import { FolderOpen, Clock, CheckCircle, AlertTriangle } from 'lucide-react';
-import { useProjects } from '../../hooks/useProjects';
-import { useTasks } from '../../hooks/useTasks';
+import { useProjects, useProjectTasks } from '../../hooks/useData';
 
 interface StatCardProps {
   title: string;
@@ -40,17 +39,17 @@ function StatCard({ title, value, icon, trend, color }: StatCardProps) {
 }
 
 export function QuickStats() {
-  const projectsResult = useProjects({ pageSize: 100 });
-  const tasksResult = useTasks({ pageSize: 100 });
+  const { data: projects } = useProjects.useList();
+  const { data: tasks } = useProjectTasks.useList();
 
   // Compute stats directly from data (no need for useState/useEffect)
-  const projects = projectsResult.projects || [];
-  const tasks = tasksResult.tasks || [];
+  const projectList = (projects || []) as { status?: string }[];
+  const taskList = (tasks || []) as { status?: string; dueDate?: string }[];
 
-  const activeProjects = projects.filter((p: typeof projectsResult.projects[number]) => p.status === 'IN_PROGRESS' || p.status === 'ACTIVE').length;
-  const completedTasks = tasks.filter((t: typeof tasksResult.tasks[number]) => t.status === 'COMPLETED').length;
-  const pendingTasks = tasks.filter((t: typeof tasksResult.tasks[number]) => t.status === 'PENDING' || t.status === 'IN_PROGRESS').length;
-  const overdueTasks = tasks.filter((t: typeof tasksResult.tasks[number]) => {
+  const activeProjects = projectList.filter((p) => p.status === 'IN_PROGRESS' || p.status === 'ACTIVE').length;
+  const completedTasks = taskList.filter((t) => t.status === 'COMPLETED').length;
+  const pendingTasks = taskList.filter((t) => t.status === 'PENDING' || t.status === 'IN_PROGRESS').length;
+  const overdueTasks = taskList.filter((t) => {
     if (!t.dueDate || t.status === 'COMPLETED') return false;
     return new Date(t.dueDate) < new Date();
   }).length;
