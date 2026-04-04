@@ -32,3 +32,9 @@ test-results/
 .env*.local
 playwright-report/
 playwright-report/
+# macOS artifact files and runtime uploads
+._*
+uploads/
+server/uploads/
+
+server/.env
