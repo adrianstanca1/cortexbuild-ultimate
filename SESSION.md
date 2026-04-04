@@ -7,20 +7,42 @@
 **Branch**: `main`
 
 ## Current Phase
-**Active** — monitoring production, resolved DB_PASSWORD incident
+**Active** — repo sync repaired, Docker API deploy path corrected, production healthy
 
 ## Last Updated
-2026-04-04 03:00 GMT
+2026-04-04 18:40 BST
 
 ## Last Commit
-`9d31fe8` — "docs: update SESSION.md with incident report"
+`b659461` — "fix(deploy): rebuild api image and align uploads mount"
 
 ## Site Status
 ✅ www.cortexbuildpro.com — returning 200 OK (HTTPS)
 ✅ API health: https://www.cortexbuildpro.com/api/health — 200 OK
-✅ All services healthy (PM2 API, Nginx, DB, Redis, Ollama, Prometheus, Grafana)
+✅ Docker API healthy on VPS (`/var/www/cortexbuild-ultimate` @ `b659461`)
+✅ Local repos in sync: `cortexbuild-ultimate` = `cortexbuild-ultimate-1` = `b659461`
 
 ## Session Summary
+
+### 2026-04-04 — Repo Sync + Docker Deploy Repair
+- Synced `cortexbuild-ultimate-1` forward to match `cortexbuild-ultimate`
+- Found deploy drift on VPS: repo had ad-hoc Docker commits not present in local canonical repo
+- Root cause: Docker API compose config had split fixes across different copies
+  - local canonical repo had Redis-in-Docker fix but was missing compose `build:`
+  - VPS repo had compose `build:` but wrong uploads mount (`/app/server/uploads`)
+- Landed canonical fix in `b659461`
+  - `docker-compose.yml`: add `build: Dockerfile.api`
+  - `docker-compose.yml`: mount `./server/uploads -> /app/uploads`
+  - `deploy/vps-sync.sh`: force `docker-compose up -d --build`
+- Synced VPS repo to `b659461` via git bundle and redeployed API container
+- Verified after deploy:
+  - API container up on `127.0.0.1:3001`
+  - uploads bind mount = `/var/www/cortexbuild-ultimate/server/uploads -> /app/uploads`
+  - health endpoint returns `{"status":"ok","version":"1.0.0"}`
+- Verification on canonical repo:
+  - `npx tsc --noEmit` ✅
+  - `npx eslint src --ext .ts,.tsx --quiet` ✅
+  - `npm test` ✅ (116/116)
+  - `npm run build` ✅
 
 ### What Was Accomplished (2026-04-02)
 
