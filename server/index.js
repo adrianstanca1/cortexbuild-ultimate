@@ -15,7 +15,7 @@ const rateLimit = require('express-rate-limit');
 const { RedisStore: RateLimitRedisStore } = require('rate-limit-redis');
 const cookieParser = require('cookie-parser');
 const redis = require('redis');
-const { default: RedisSessionStore } = require('connect-redis');
+const { RedisStore: RedisSessionStore } = require('connect-redis');
 
 const app  = express();
 const server = http.createServer(app);
