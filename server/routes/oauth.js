@@ -176,6 +176,11 @@ passport.deserializeUser(async (id, done) => {
 
 // Initialize Google OAuth with CSRF-protected state
 router.get('/google', (req, res, next) => {
+  if (!process.env.GOOGLE_CLIENT_ID || !process.env.GOOGLE_CLIENT_SECRET) {
+    return res.status(503).json({
+      message: 'Google OAuth is not configured. Set GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET environment variables.'
+    });
+  }
   // Generate cryptographically random state for CSRF protection
   const state = crypto.randomBytes(16).toString('hex');
   const frontendRedirect = `${process.env.FRONTEND_URL || 'http://localhost:5173'}/dashboard`;
