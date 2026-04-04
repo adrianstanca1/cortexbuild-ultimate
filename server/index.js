@@ -12,9 +12,10 @@ const authRoutes     = require('./routes/auth');
 const rateLimiter    = require('./middleware/rateLimiter');
 const { initWebSocket } = require('./lib/websocket');
 const rateLimit = require('express-rate-limit');
-const { RedisStore } = require('rate-limit-redis');
+const { RedisStore: RateLimitRedisStore } = require('rate-limit-redis');
 const cookieParser = require('cookie-parser');
 const redis = require('redis');
+const { default: RedisSessionStore } = require('connect-redis');
 
 const app  = express();
 const server = http.createServer(app);
@@ -39,6 +40,7 @@ if (sessionSecret.length < 32) {
 }
 
 app.use(session({
+  store: new RedisSessionStore({ client: redisClient, prefix: 'sess:' }),
   secret: sessionSecret,
   resave: false,
   saveUninitialized: false,
@@ -100,7 +102,7 @@ app.get('/api/health', (_req, res) => res.json({ status: 'ok', version: '1.0.0' 
 
 // Rate-limited deploy route (5 requests per hour, Redis-backed)
 const deployLimiter = rateLimit({
-  store: new RedisStore({
+  store: new RateLimitRedisStore({
     sendCommand: (...args) => redisClient.sendCommand(args),
     prefix: 'rl:deploy:'
   }),
