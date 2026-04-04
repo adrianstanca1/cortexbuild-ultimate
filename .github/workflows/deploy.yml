@@ -56,32 +56,35 @@ jobs:
           name: dist
           path: dist/
 
-      - name: Setup SSH key
+      - name: Setup SSH (password auth)
         run: |
+          sudo apt-get install -y sshpass
           mkdir -p ~/.ssh
-          # Write key with proper newlines (handles both raw and escaped formats)
-          printf '%s' "${{ secrets.VPS_SSH_KEY }}" | sed 's/\\n/\n/g' > ~/.ssh/id_ed25519
-          chmod 600 ~/.ssh/id_ed25519
           ssh-keyscan -H ${{ secrets.SSH_HOST }} >> ~/.ssh/known_hosts
-          # Validate key loaded correctly
-          ssh-keygen -l -f ~/.ssh/id_ed25519 && echo "✅ SSH key valid" || (echo "❌ SSH key invalid" && exit 1)
+          echo "✅ SSH ready (password auth)"
 
       - name: Sync dist to VPS
+        env:
+          SSHPASS: ${{ secrets.VPS_PASSWORD }}
         run: |
-          rsync -e "ssh -i ~/.ssh/id_ed25519 -o StrictHostKeyChecking=yes -o UserKnownHostsFile=~/.ssh/known_hosts" \
+          sshpass -e rsync -e "ssh -o StrictHostKeyChecking=yes -o UserKnownHostsFile=~/.ssh/known_hosts" \
             -avz --delete \
-            ./dist/ ${{ secrets.SSH_USERNAME }}@${{ secrets.SSH_HOST }}:${{ secrets.VPS_PATH }}/dist/
+            ./dist/ ${{ secrets.VPS_USER }}@${{ secrets.SSH_HOST }}:${{ secrets.VPS_PATH }}/dist/
 
       - name: Fix permissions
+        env:
+          SSHPASS: ${{ secrets.VPS_PASSWORD }}
         run: |
-          ssh -i ~/.ssh/id_ed25519 -o StrictHostKeyChecking=yes -o UserKnownHostsFile=~/.ssh/known_hosts \
-            ${{ secrets.SSH_USERNAME }}@${{ secrets.SSH_HOST }} \
+          sshpass -e ssh -o StrictHostKeyChecking=yes -o UserKnownHostsFile=~/.ssh/known_hosts \
+            ${{ secrets.VPS_USER }}@${{ secrets.SSH_HOST }} \
             "chmod -R 755 ${{ secrets.VPS_PATH }}/dist/"
 
       - name: Update VPS git and restart services
+        env:
+          SSHPASS: ${{ secrets.VPS_PASSWORD }}
         run: |
-          ssh -i ~/.ssh/id_ed25519 -o StrictHostKeyChecking=yes -o UserKnownHostsFile=~/.ssh/known_hosts \
-            ${{ secrets.SSH_USERNAME }}@${{ secrets.SSH_HOST }} \
+          sshpass -e ssh -o StrictHostKeyChecking=yes -o UserKnownHostsFile=~/.ssh/known_hosts \
+            ${{ secrets.VPS_USER }}@${{ secrets.SSH_HOST }} \
             "cd ${{ secrets.VPS_PATH }} && git fetch origin && git reset --hard origin/main && \
              cd server && npm ci --omit=dev && cd .. && \
              (pm2 restart cortexbuild-api 2>/dev/null || true)"
