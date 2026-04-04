@@ -80,8 +80,8 @@ router.put('/read-all', async (req, res) => {
 router.delete('/:id', async (req, res) => {
   try {
     const { rowCount } = await pool.query(
-      `DELETE FROM notifications WHERE id = $1`,
-      [req.params.id]
+      `DELETE FROM notifications WHERE id = $1 AND user_id = $2`,
+      [req.params.id, req.user.id]
     );
     if (!rowCount) return res.status(404).json({ message: 'Notification not found' });
     res.json({ message: 'Notification deleted' });
@@ -96,7 +96,7 @@ router.delete('/', async (req, res) => {
   try {
     const userId = req.user?.id;
     await pool.query(
-      `DELETE FROM notifications WHERE user_id = $1 OR user_id IS NULL`,
+      `DELETE FROM notifications WHERE user_id = $1`,
       [userId]
     );
     res.json({ message: 'All notifications cleared' });
@@ -110,11 +110,11 @@ router.delete('/', async (req, res) => {
 router.post('/', async (req, res) => {
   try {
     const { title, description, severity, type, user_id, link } = req.body;
-    
+
     const { rows } = await pool.query(
-      `INSERT INTO notifications (title, description, severity, type, user_id, link)
-       VALUES ($1, $2, $3, $4, $5, $6) RETURNING *`,
-      [title, description, severity || 'info', type || 'notification', user_id, link]
+      `INSERT INTO notifications (title, description, severity, type, user_id, link, organization_id, company_id)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING *`,
+      [title, description, severity || 'info', type || 'notification', user_id, link, req.user.organization_id, req.user.company_id]
     );
     
     // Send real-time notification via WebSocket

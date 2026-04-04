@@ -279,9 +279,19 @@ router.get('/users/:userId/permissions', async (req, res) => {
 router.post('/check', async (req, res) => {
   try {
     const { module, action, userId } = req.body;
+
+    // Users can only check their own permissions, unless they're admin+
+    if (userId && userId !== req.user.id) {
+      const allowedRoles = ['super_admin', 'company_owner', 'admin'];
+      if (!allowedRoles.includes(req.user.role)) {
+        return res.status(403).json({ message: 'Insufficient permissions to check other users\' permissions' });
+      }
+    }
+
+    const targetUserId = userId || req.user.id;
     const { rows: userRows } = await pool.query(
       'SELECT role FROM users WHERE id = $1',
-      [userId]
+      [targetUserId]
     );
     if (!userRows[0]) return res.json({ allowed: false });
 

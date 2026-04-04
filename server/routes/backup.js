@@ -32,11 +32,16 @@ router.get('/export/:table', async (req, res) => {
     return res.status(403).json({ message: 'Table not allowed for export' });
   }
 
+  const orgId = req.user?.organization_id;
+  if (!orgId) {
+    return res.status(403).json({ message: 'Organization context missing' });
+  }
+
   const limitNum = Math.min(parseInt(limit, 10), 50000);
   try {
     const result = await pool.query(
-      `SELECT * FROM ${table} ORDER BY created_at DESC LIMIT $1`,
-      [limitNum]
+      `SELECT * FROM ${table} WHERE organization_id = $2 ORDER BY created_at DESC LIMIT $1`,
+      [limitNum, orgId]
     );
 
     if (format === 'csv') {
@@ -72,12 +77,17 @@ router.get('/export/:table', async (req, res) => {
 
 router.get('/export-all', async (req, res) => {
   const { format = 'json' } = req.query;
+  const orgId = req.user?.organization_id;
+  if (!orgId) {
+    return res.status(403).json({ message: 'Organization context missing' });
+  }
   try {
     const allData = {};
     for (const table of ALLOWED_TABLES) {
       try {
         const result = await pool.query(
-          `SELECT * FROM ${table} ORDER BY created_at DESC LIMIT 10000`
+          `SELECT * FROM ${table} WHERE organization_id = $1 ORDER BY created_at DESC LIMIT 10000`,
+          [orgId]
         );
         allData[table] = { count: result.rows.length, rows: result.rows };
       } catch {
