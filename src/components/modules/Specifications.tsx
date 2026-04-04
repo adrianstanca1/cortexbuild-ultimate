@@ -34,7 +34,8 @@ export default function Specifications() {
   const [editItem, setEditItem] = useState<Record<string, any> | null>(null);
 
   const { useList, useCreate, useUpdate, useDelete } = useSpecifications;
-  const { data: rawSpecs = [] } = (useList() as { data: Specification[] });
+  const { data: rawSpecs = [] } = useList();
+  const specs = rawSpecs as unknown as Specification[];
   const createMutation = useCreate();
   const updateMutation = useUpdate();
   const deleteMutation = useDelete();
@@ -105,7 +106,7 @@ export default function Specifications() {
     setUploading(specId);
     try {
       const result = await uploadFile(file, 'SPECS');
-      const spec = rawSpecs.find((s: any) => String(s.id) === String(specId));
+      const spec = specs.find((s: Specification) => String(s.id) === String(specId));
       if (spec) {
         await updateMutation.mutateAsync({
           id: String(specId),
@@ -122,7 +123,7 @@ export default function Specifications() {
     }
   };
 
-  const filtered = rawSpecs.filter((s: Specification) => {
+  const filtered = specs.filter((s: Specification) => {
     const matchesSearch = (s.ref || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
       (s.title || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
       (s.project || '').toLowerCase().includes(searchTerm.toLowerCase());

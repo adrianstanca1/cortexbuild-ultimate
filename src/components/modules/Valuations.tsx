@@ -194,7 +194,7 @@ export default function Valuations() {
   const _fileInputRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
   const { data: rawValuations = [], isLoading: _isLoading } = useValuations.useList();
-  const valuations = rawValuations as Valuation[];
+  const valuations = rawValuations as unknown as Valuation[];
   const createMutation = useValuations.useCreate();
   const updateMutation = useValuations.useUpdate();
   const deleteMutation = useValuations.useDelete();

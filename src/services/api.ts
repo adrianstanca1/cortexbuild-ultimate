@@ -81,12 +81,12 @@ async function fetchAll<T>(endpoint: string): Promise<T[]> {
   }
 }
 
-async function insertRow<T>(endpoint: string, row: Row): Promise<T> {
-  return apiFetch<T>(`/${endpoint}`, { method: 'POST', body: JSON.stringify(row) });
+async function insertRow(endpoint: string, row: Row): Promise<Row> {
+  return apiFetch<Row>(`/${endpoint}`, { method: 'POST', body: JSON.stringify(row) });
 }
 
-async function updateRow<T>(endpoint: string, id: string, data: Row): Promise<T> {
-  return apiFetch<T>(`/${endpoint}/${id}`, { method: 'PUT', body: JSON.stringify(data) });
+async function updateRow(endpoint: string, id: string, data: Row): Promise<Row> {
+  return apiFetch<Row>(`/${endpoint}/${id}`, { method: 'PUT', body: JSON.stringify(data) });
 }
 
 async function deleteRow(endpoint: string, id: string): Promise<void> {
@@ -604,7 +604,7 @@ export const emailApi = {
     apiFetch<{ success: boolean; scheduled: Row }>('/email/schedule', { method: 'POST', body: JSON.stringify(data) }),
 };
 
-export interface ReportTemplate {
+export interface ReportTemplate extends Row {
   id: number;
   name: string;
   type: string;

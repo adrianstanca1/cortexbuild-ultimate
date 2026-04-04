@@ -16,15 +16,14 @@ import {
   prequalificationApi, lettingsApi, measuringApi, valuationsApi,
   sitePermitsApi,
   reportTemplatesApi, auditApi, ReportTemplate,
+  type Row,
 } from '../services/api';
 import { eventBus } from '../lib/eventBus';
-
-type Row = Record<string, unknown>;
 
 
 // ─── Generic hook factory ─────────────────────────────────────────────────────
 
-function makeHooks<T>(key: string, tableName: string, api: {
+function makeHooks<T extends Row = Row>(key: string, tableName: string, api: {
   getAll: () => Promise<T[]>;
   create: (data: Row) => Promise<T | null>;
   update: (id: string, data: Row) => Promise<T | null>;
