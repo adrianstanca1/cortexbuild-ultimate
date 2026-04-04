@@ -30,3 +30,4 @@ nginx/ssl/*.key
 playwright-report/
 test-results/
 .env*.local
+playwright-report/
