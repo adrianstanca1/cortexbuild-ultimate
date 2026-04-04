@@ -1,6 +1,6 @@
 // Module: Analytics — CortexBuild Ultimate
 // Comprehensive analytics dashboard with 6 tabs: Overview, Financial, Projects, Safety, Labour
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   AreaChart, Area, BarChart, Bar, LineChart, Line, PieChart, Pie, Cell, ScatterChart, Scatter,
   XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer,
@@ -785,4 +785,4 @@ export function Analytics() {
     </>
   );
 }
-export default Analytics;
+export default React.memo(Analytics);

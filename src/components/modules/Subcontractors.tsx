@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import React, { useState } from 'react';
 import { HardHat, CheckCircle2, AlertTriangle, XCircle, Star, DollarSign, Plus, Search, Shield, FileText, BarChart3, X, Edit2, Trash2, Phone, Mail, Building2, CheckSquare, Square, Download } from 'lucide-react';
 import { DataImporter, ExportButton } from '../ui/DataImportExport';
 import { ModuleBreadcrumbs } from '../ui/Breadcrumbs';
@@ -954,4 +954,4 @@ export function Subcontractors() {
     </>
   );
 }
-export default Subcontractors;
+export default React.memo(Subcontractors);

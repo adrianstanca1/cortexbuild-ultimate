@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import React, { useState } from 'react';
 import { useMeetings } from '../../hooks/useData';
 import { toast } from 'sonner';
 import {
@@ -664,4 +664,4 @@ export function Calendar() {
     </>
   );
 }
-export default Calendar;
+export default React.memo(Calendar);

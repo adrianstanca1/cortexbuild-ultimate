@@ -11,13 +11,18 @@ const makeRouter     = require('./routes/generic');
 const authRoutes     = require('./routes/auth');
 const rateLimiter    = require('./middleware/rateLimiter');
 const { initWebSocket } = require('./lib/websocket');
-const { xssProtection } = require('./security');
 const rateLimit = require('express-rate-limit');
+const RedisStore = require('rate-limit-redis');
 const cookieParser = require('cookie-parser');
+const redis = require('redis');
 
 const app  = express();
 const server = http.createServer(app);
 const PORT = process.env.PORT || 3001;
+
+// Redis client for rate limiting and distributed state
+const redisClient = redis.createClient({ url: process.env.REDIS_URL || 'redis://localhost:6379' });
+redisClient.connect().catch(err => console.error('[Redis]', err.message));
 
 // Initialize WebSocket server
 initWebSocket(server);
@@ -93,8 +98,12 @@ app.use('/api/auth', authRoutes);
 app.use('/api/auth', require('./routes/oauth')); // Google OAuth
 app.get('/api/health', (_req, res) => res.json({ status: 'ok', version: '1.0.0' }));
 
-// Rate-limited deploy route (5 requests per hour)
+// Rate-limited deploy route (5 requests per hour, Redis-backed)
 const deployLimiter = rateLimit({
+  store: new RedisStore({
+    sendCommand: (...args) => redisClient.sendCommand(args),
+    prefix: 'rl:deploy:'
+  }),
   windowMs: 60 * 60 * 1000, // 1 hour
   max: 5,
   message: { error: 'Too many deploy attempts, try again later' }
@@ -103,9 +112,6 @@ app.use('/api/deploy', deployLimiter, require('./routes/deploy'));
 
 // ─── JWT auth on all other /api routes ───────────────────────────────────────
 app.use('/api', authMiddleware);
-
-// ─── XSS protection (after auth so it runs on all authenticated requests) ────
-app.use(xssProtection);
 
 // ─── Protected routes ────────────────────────────────────────────────────────
 app.use('/api/metrics', require('./routes/metrics'));

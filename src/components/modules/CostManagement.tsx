@@ -1,5 +1,5 @@
 // Module: Cost Management — CortexBuild Ultimate
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { ModuleBreadcrumbs } from '../ui/Breadcrumbs';
 import {
   TrendingUp, TrendingDown, DollarSign, Plus, FileText, Calculator, Target,
@@ -434,4 +434,4 @@ export function CostManagement() {
   );
 }
 
-export default CostManagement;
+export default React.memo(CostManagement);

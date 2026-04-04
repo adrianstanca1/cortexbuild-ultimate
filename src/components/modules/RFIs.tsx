@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import React, { useState } from 'react';
 import {
   MessageSquare, Plus, Search, Clock, CheckCircle, AlertTriangle, Edit2, Trash2, X,
   ChevronDown, ChevronUp, Send, Zap, User, Flame, TrendingUp,
@@ -760,4 +760,4 @@ export function RFIs() {
     </>
   );
 }
-export default RFIs;
+export default React.memo(RFIs);

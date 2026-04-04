@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import React, { useState, useMemo } from 'react';
 import {
   Calendar, Plus, Search, Clock, CheckCircle2, Users, Edit2, Trash2, X,
   ChevronDown, ChevronUp, Video, AlertCircle, FileText, MoreVertical, Building2, CheckSquare, Square
@@ -577,4 +577,4 @@ export function Meetings() {
     </>
   );
 }
-export default Meetings;
+export default React.memo(Meetings);

@@ -1,5 +1,5 @@
 // Module: Procurement — CortexBuild Ultimate
-import { useState, useMemo } from 'react';
+import React, { useState, useMemo } from 'react';
 import {
   Plus, Edit2, Trash2, X, Truck, CheckCircle2, AlertTriangle,
   Clock, Package, Search, BarChart3, Building2,
@@ -900,4 +900,4 @@ export function Procurement() {
     </>
   );
 }
-export default Procurement;
+export default React.memo(Procurement);

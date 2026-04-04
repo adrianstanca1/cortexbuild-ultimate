@@ -1,5 +1,5 @@
 // Module: Accounting — CortexBuild Ultimate
-import { useState } from 'react';
+import React, { useState } from 'react';
 import {
   BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid,
   Tooltip, Legend, ResponsiveContainer,
@@ -599,4 +599,4 @@ export function Accounting() {
     </>
   );
 }
-export default Accounting;
+export default React.memo(Accounting);

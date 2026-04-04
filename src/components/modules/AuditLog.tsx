@@ -524,4 +524,4 @@ export function AuditLog() {
     </>
   );
 }
-export default AuditLog;
+export default React.memo(AuditLog);

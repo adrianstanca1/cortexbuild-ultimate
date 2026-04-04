@@ -1,6 +1,6 @@
 // Module: Projects — CortexBuild Ultimate  (Enhanced with Gallery, Tasks, Documents)
 // ═══════════════════════════════════════════════════════════════════════════
-import { useState, useRef, useCallback } from 'react';
+import React, { useState, useRef, useCallback } from 'react';
 import {
   Plus, X, Trash2, Edit2, Search, ChevronRight, MapPin, Users, Calendar,
   PoundSterling, AlertTriangle, CheckCircle2, Clock,
@@ -1810,4 +1810,4 @@ export function Projects() {
     </div>
   );
 }
-export default Projects;
+export default React.memo(Projects);

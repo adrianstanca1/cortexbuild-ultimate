@@ -1,23 +1,12 @@
 import { test, expect } from '@playwright/test'
-import { LoginPage } from './pages/LoginPage'
 
 test.describe('RFIs Module', () => {
-  let loginPage: LoginPage
-
   test.beforeEach(async ({ page }) => {
-    loginPage = new LoginPage(page)
-    
-    // Login first
-    await loginPage.goto()
-    await loginPage.login(
-      process.env.TEST_USER_EMAIL || 'adrian.stanca1@gmail.com',
-      process.env.TEST_USER_PASSWORD || 'Lolozania1'
-    )
-    
-    // Wait for navigation to dashboard
-    await page.waitForURL(/\/?$/, { timeout: 10000 })
-    await page.waitForTimeout(2000)
-    
+    await page.goto('/')
+    await page.waitForLoadState('domcontentloaded')
+    await page.locator('#root').waitFor({ state: 'visible', timeout: 20000 })
+    await page.waitForTimeout(1000)
+
     // Navigate to RFIs module via sidebar
     const rfiLink = page.locator('a').filter({ hasText: /RFI|Rfis/i }).first()
     if (await rfiLink.isVisible()) {

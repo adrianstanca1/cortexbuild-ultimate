@@ -19,6 +19,9 @@ module.exports = function authMiddleware(req, res, next) {
 
   try {
     const payload = jwt.verify(token, process.env.JWT_SECRET);
+    if (!payload.jti) {
+      return res.status(401).json({ message: 'Invalid token: missing token ID' });
+    }
     req.user = payload;
     next();
   } catch {

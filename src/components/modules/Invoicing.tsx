@@ -1,5 +1,5 @@
 // Module: Invoicing — CortexBuild Ultimate (Enhanced)
-import { useState } from 'react';
+import React, { useState } from 'react';
 import { Plus, X, Loader2, FileText, Download, Send, Edit2, Trash2, RefreshCw, Search, CheckSquare, Square } from 'lucide-react';
 import { useInvoices, useProjects } from '../../hooks/useData';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
@@ -1276,4 +1276,4 @@ export function Invoicing() {
     </div>
   );
 }
-export default Invoicing;
+export default React.memo(Invoicing);

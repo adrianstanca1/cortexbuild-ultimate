@@ -385,4 +385,4 @@ export function Documents() {
     </>
   );
 }
-export default Documents;
+export default React.memo(Documents);

@@ -37,12 +37,29 @@ export default defineConfig({
     //   use: { ...devices['Desktop Safari'] },
     // },
   ],
+  // Optional: set E2E_START_API=1 to boot Express on :3001 for the same run (needs DATABASE_URL in server/.env).
   webServer: process.env.CI
     ? undefined
-    : {
-        command: 'npm run dev',
-        url: 'http://localhost:5173',
-        reuseExistingServer: !process.env.CI,
-        timeout: 120_000,
-      },
+    : process.env.E2E_START_API === '1'
+      ? [
+          {
+            command: 'node index.js',
+            cwd: resolve(__dirname, 'server'),
+            url: 'http://127.0.0.1:3001/api/health',
+            reuseExistingServer: true,
+            timeout: 120_000,
+          },
+          {
+            command: 'npm run dev',
+            url: 'http://127.0.0.1:5173',
+            reuseExistingServer: true,
+            timeout: 120_000,
+          },
+        ]
+      : {
+          command: 'npm run dev',
+          url: 'http://localhost:5173',
+          reuseExistingServer: true,
+          timeout: 120_000,
+        },
 })

@@ -1,5 +1,5 @@
 // Module: Settings — CortexBuild Ultimate (Full Subpages)
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Save, Bell, Shield, CreditCard, Users, Building2, Plug, Check,
   AlertTriangle, Trash2,
@@ -630,4 +630,4 @@ export function Settings() {
     </>
   );
 }
-export default Settings;
+export default React.memo(Settings);

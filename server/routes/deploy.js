@@ -6,7 +6,7 @@
  * Protected by DEPLOY_SECRET env var. No JWT auth needed.
  */
 const express = require('express');
-const { exec } = require('child_process');
+const { execFile } = require('child_process');
 const path = require('path');
 const router = express.Router();
 
@@ -40,7 +40,7 @@ router.post('/', (req, res) => {
   deploying = true;
   console.log('[deploy] Starting deploy at', new Date().toISOString());
 
-  exec(DEPLOY_SCRIPT, { timeout: 10 * 60 * 1000 }, (err, stdout, stderr) => {
+  execFile('bash', ['-c', DEPLOY_SCRIPT], { timeout: 10 * 60 * 1000, maxBuffer: 1024 * 1024 }, (err, stdout, stderr) => {
     deploying = false;
     if (err) {
       console.error('[deploy] FAILED:', err.message);

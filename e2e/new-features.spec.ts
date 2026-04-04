@@ -24,7 +24,9 @@ test.describe('New Features E2E', () => {
 
       if (await notificationButton.count() > 0) {
         await notificationButton.first().click();
-        await expect(page.locator('text=Notifications')).toBeVisible({ timeout: 5000 });
+        await expect(
+          page.getByRole('heading', { name: 'Notifications' }),
+        ).toBeVisible({ timeout: 5000 });
       }
     });
 
@@ -43,10 +45,10 @@ test.describe('New Features E2E', () => {
       if (await notificationButton.count() > 0) {
         await notificationButton.first().click();
 
-        // Look for filter tabs/buttons
-        const filterTabs = page.locator('[role="tab"], button:has-text("All"), button:has-text("Unread")');
-        if (await filterTabs.count() > 0) {
-          await filterTabs.first().click();
+        // Tabs only — avoid matching "Mark all notifications" (contains "All")
+        const filterTab = page.getByRole('tab', { name: /^(All|Unread)$/i }).first();
+        if (await filterTab.isVisible().catch(() => false)) {
+          await filterTab.click({ force: true });
           await page.waitForTimeout(500);
         }
       }

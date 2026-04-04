@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import {
   Truck, Plus, Search, Wrench, CheckCircle2, Trash2, X, Calendar, DollarSign, MapPin, Tag, BarChart3, CheckSquare, Square
 } from 'lucide-react';
@@ -1063,4 +1063,4 @@ export function PlantEquipment() {
     </>
   );
 }
-export default PlantEquipment;
+export default React.memo(PlantEquipment);

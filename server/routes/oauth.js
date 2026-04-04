@@ -5,9 +5,29 @@ const { Strategy: MicrosoftStrategy } = require('passport-microsoft');
 const jwt        = require('jsonwebtoken');
 const crypto     = require('crypto');
 const rateLimit  = require('express-rate-limit');
+const redis      = require('redis');
 const db         = require('../db');
 const { attachNewTenantToUser } = require('../lib/bootstrap-tenant');
 const router     = express.Router();
+
+// Redis client for OAuth state storage (distributed, survives restarts)
+const redisClient = redis.createClient({ url: process.env.REDIS_URL || 'redis://localhost:6379' });
+redisClient.connect().catch(err => console.error('[OAuth Redis]', err.message));
+
+const STATE_TTL = 600; // 10 minutes
+
+async function setOAuthState(state, data) {
+  await redisClient.setEx(`oauth:state:${state}`, STATE_TTL, JSON.stringify(data));
+}
+
+async function getOAuthState(state) {
+  const data = await redisClient.get(`oauth:state:${state}`);
+  return data ? JSON.parse(data) : null;
+}
+
+async function deleteOAuthState(state) {
+  await redisClient.del(`oauth:state:${state}`);
+}
 
 // Rate limiter for OAuth callbacks (prevent brute force attacks)
 const oauthLimiter = rateLimit({
@@ -17,19 +37,6 @@ const oauthLimiter = rateLimit({
   standardHeaders: true,
   legacyHeaders: false,
 });
-
-// OAuth state storage for CSRF protection (in-memory for now, use Redis in production)
-const oauthStateStore = new Map();
-
-// Clean up expired state entries after 10 minutes
-setInterval(() => {
-  const now = Date.now();
-  for (const [state, data] of oauthStateStore.entries()) {
-    if (now - data.createdAt > 10 * 60 * 1000) {
-      oauthStateStore.delete(state);
-    }
-  }
-}, 60 * 1000);
 
 // Configure Google OAuth strategy
 if (process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET) {
@@ -188,7 +195,7 @@ passport.deserializeUser(async (id, done) => {
 });
 
 // Initialize Google OAuth with CSRF-protected state
-router.get('/google', (req, res, next) => {
+router.get('/google', async (req, res, next) => {
   if (!process.env.GOOGLE_CLIENT_ID || !process.env.GOOGLE_CLIENT_SECRET) {
     return res.status(503).json({
       message: 'Google OAuth is not configured. Set GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET environment variables.'
@@ -199,7 +206,7 @@ router.get('/google', (req, res, next) => {
   const frontendRedirect = `${process.env.FRONTEND_URL || 'http://localhost:5173'}/dashboard`;
 
   // Store state with expiry (10 minutes) and intended redirect
-  oauthStateStore.set(state, {
+  await setOAuthState(state, {
     createdAt: Date.now(),
     redirectUri: frontendRedirect
   });
@@ -211,17 +218,22 @@ router.get('/google', (req, res, next) => {
 });
 
 // Google OAuth callback (rate limited)
-router.get('/google/callback', oauthLimiter, (req, res, next) => {
+router.get('/google/callback', oauthLimiter, async (req, res, next) => {
   const { state } = req.query;
 
   // Validate state parameter (CSRF protection)
-  if (!state || !oauthStateStore.has(state)) {
+  if (!state) {
     console.warn('[OAuth] Invalid or missing state parameter - possible CSRF attack');
     return res.redirect(`${process.env.FRONTEND_URL || 'http://localhost:5173'}/login?error=invalid_state`);
   }
 
-  const storedState = oauthStateStore.get(state);
-  oauthStateStore.delete(state); // One-time use
+  const storedState = await getOAuthState(state);
+  if (!storedState) {
+    console.warn('[OAuth] Invalid or missing state parameter - possible CSRF attack');
+    return res.redirect(`${process.env.FRONTEND_URL || 'http://localhost:5173'}/login?error=invalid_state`);
+  }
+
+  await deleteOAuthState(state); // One-time use
 
   // Check if state has expired (10 minute window)
   if (Date.now() - storedState.createdAt > 10 * 60 * 1000) {
@@ -240,6 +252,7 @@ router.get('/google/callback', oauthLimiter, (req, res, next) => {
       const token = jwt.sign(
         {
           id: user.id,
+          jti: crypto.randomUUID(),
           email: user.email,
           role: user.role || 'field_worker',
           organization_id: user.organization_id || null,
@@ -266,13 +279,13 @@ router.get('/google/callback', oauthLimiter, (req, res, next) => {
 });
 
 // Initialize Microsoft OAuth with CSRF-protected state
-router.get('/microsoft', (req, res, next) => {
+router.get('/microsoft', async (req, res, next) => {
   // Generate cryptographically random state for CSRF protection
   const state = crypto.randomBytes(16).toString('hex');
   const frontendRedirect = `${process.env.FRONTEND_URL || 'http://localhost:5173'}/dashboard`;
 
   // Store state with expiry (10 minutes) and intended redirect
-  oauthStateStore.set(state, {
+  await setOAuthState(state, {
     createdAt: Date.now(),
     redirectUri: frontendRedirect
   });
@@ -284,17 +297,22 @@ router.get('/microsoft', (req, res, next) => {
 });
 
 // Microsoft OAuth callback (rate limited)
-router.get('/microsoft/callback', oauthLimiter, (req, res, next) => {
+router.get('/microsoft/callback', oauthLimiter, async (req, res, next) => {
   const { state } = req.query;
 
   // Validate state parameter (CSRF protection)
-  if (!state || !oauthStateStore.has(state)) {
+  if (!state) {
     console.warn('[OAuth] Invalid or missing state parameter - possible CSRF attack');
     return res.redirect(`${process.env.FRONTEND_URL || 'http://localhost:5173'}/login?error=invalid_state`);
   }
 
-  const storedState = oauthStateStore.get(state);
-  oauthStateStore.delete(state); // One-time use
+  const storedState = await getOAuthState(state);
+  if (!storedState) {
+    console.warn('[OAuth] Invalid or missing state parameter - possible CSRF attack');
+    return res.redirect(`${process.env.FRONTEND_URL || 'http://localhost:5173'}/login?error=invalid_state`);
+  }
+
+  await deleteOAuthState(state); // One-time use
 
   // Check if state has expired (10 minute window)
   if (Date.now() - storedState.createdAt > 10 * 60 * 1000) {
@@ -313,6 +331,7 @@ router.get('/microsoft/callback', oauthLimiter, (req, res, next) => {
       const token = jwt.sign(
         {
           id: user.id,
+          jti: crypto.randomUUID(),
           email: user.email,
           role: user.role || 'field_worker',
           organization_id: user.organization_id || null,

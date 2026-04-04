@@ -40,31 +40,20 @@ const securityHeaders = helmet({
   },
 });
 
-// Input sanitization
+// XSS middleware removed — React auto-escapes on the frontend.
+// Stripping < and > from all strings destroyed legitimate content
+// (HTML emails, markdown, math expressions).
+// Kept sanitizeInput exported for explicit use cases only.
 function sanitizeInput(input) {
   if (typeof input !== 'string') return input;
   return input
-    .replace(/[<>]/g, '') // Remove HTML brackets
     .replace(/javascript:/gi, '') // Remove javascript: protocol
     .trim();
-}
-
-// XSS protection middleware
-function xssProtection(req, res, next) {
-  if (req.body) {
-    Object.keys(req.body).forEach(key => {
-      if (typeof req.body[key] === 'string') {
-        req.body[key] = sanitizeInput(req.body[key]);
-      }
-    });
-  }
-  next();
 }
 
 module.exports = {
   apiLimiter,
   authLimiter,
   securityHeaders,
-  xssProtection,
   sanitizeInput,
 };

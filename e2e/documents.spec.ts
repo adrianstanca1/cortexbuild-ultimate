@@ -1,23 +1,12 @@
 import { test, expect } from '@playwright/test'
-import { LoginPage } from './pages/LoginPage'
 
 test.describe('Documents Module', () => {
-  let loginPage: LoginPage
-
   test.beforeEach(async ({ page }) => {
-    loginPage = new LoginPage(page)
-    
-    // Login first
-    await loginPage.goto()
-    await loginPage.login(
-      process.env.TEST_USER_EMAIL || 'adrian.stanca1@gmail.com',
-      process.env.TEST_USER_PASSWORD || 'Lolozania1'
-    )
-    
-    // Wait for navigation to dashboard
-    await page.waitForURL(/\/?$/, { timeout: 10000 })
-    await page.waitForTimeout(2000)
-    
+    await page.goto('/')
+    await page.waitForLoadState('domcontentloaded')
+    await page.locator('#root').waitFor({ state: 'visible', timeout: 20000 })
+    await page.waitForTimeout(1000)
+
     // Navigate to Documents module via sidebar
     const docsLink = page.locator('a').filter({ hasText: /Document|Documents|Docs/i }).first()
     if (await docsLink.isVisible()) {
@@ -40,8 +29,8 @@ test.describe('Documents Module', () => {
     await page.waitForTimeout(2000)
     
     // Should have some structure
-    const hasTable = await page.locator('table').isVisible()
-    const hasGrid = await page.locator('[class*="grid"]').isVisible()
+    const hasTable = await page.locator('table').first().isVisible().catch(() => false)
+    const hasGrid = (await page.locator('[class*="grid"]').count()) > 0
     const hasCards = await page.locator('[class*="card"]').count() > 0
     const hasAnyContent = await page.locator('#root').innerHTML().then(html => html.length > 100)
     

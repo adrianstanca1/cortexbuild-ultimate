@@ -1,6 +1,7 @@
 const express = require('express');
 const bcrypt  = require('bcrypt');
 const jwt     = require('jsonwebtoken');
+const crypto  = require('crypto');
 const rateLimit = require('express-rate-limit');
 const pool    = require('../db');
 const authMiddleware = require('../middleware/auth');
@@ -92,7 +93,7 @@ router.post('/register', registerLimiter, async (req, res) => {
     logAudit({ auth: { userId: newUser.id, organization_id: newUser.organization_id, company_id: newUser.company_id }, action: 'create', entityType: 'users', entityId: newUser.id, newData: { email: newUser.email, role: newUser.role, name: newUser.name } });
 
     const token = jwt.sign(
-      { id: newUser.id, email: newUser.email, role: newUser.role, name: newUser.name, company: newUser.company, organization_id: newUser.organization_id, company_id: newUser.company_id },
+      { id: newUser.id, jti: crypto.randomUUID(), email: newUser.email, role: newUser.role, name: newUser.name, company: newUser.company, organization_id: newUser.organization_id, company_id: newUser.company_id },
       SECRET,
       { expiresIn: '7d' }
     );
@@ -118,7 +119,7 @@ router.post('/login', loginLimiter, async (req, res) => {
     if (!valid) return res.status(401).json({ message: 'Invalid email or password' });
 
     const token = jwt.sign(
-      { id: user.id, email: user.email, role: user.role, name: user.name, company: user.company, organization_id: user.organization_id, company_id: user.company_id },
+      { id: user.id, jti: crypto.randomUUID(), email: user.email, role: user.role, name: user.name, company: user.company, organization_id: user.organization_id, company_id: user.company_id },
       SECRET,
       { expiresIn: '7d' }
     );

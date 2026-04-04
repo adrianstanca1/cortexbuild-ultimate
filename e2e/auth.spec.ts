@@ -2,6 +2,8 @@ import { test, expect } from '@playwright/test'
 import { LoginPage } from './pages/LoginPage'
 
 test.describe('Authentication', () => {
+  // Unauthenticated flows — do not reuse JWT from global setup
+  test.use({ storageState: { cookies: [], origins: [] } })
   test('login page renders correctly', async ({ page }) => {
     const loginPage = new LoginPage(page)
     await loginPage.goto()

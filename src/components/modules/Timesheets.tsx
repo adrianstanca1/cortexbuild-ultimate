@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import React, { useState } from 'react';
 import { Clock, Plus, Search, DollarSign, Users, CheckCircle2, AlertTriangle, Edit2, Trash2, X, TrendingUp, Download, Briefcase, ChevronLeft, ChevronRight, Filter, CheckSquare, Square } from 'lucide-react';
 import { BarChart, Bar, LineChart, Line, CartesianGrid, Tooltip, ResponsiveContainer, XAxis, YAxis } from 'recharts';
 import { useTimesheets } from '../../hooks/useData';
@@ -752,4 +752,4 @@ export function Timesheets() {
     </>
   );
 }
-export default Timesheets;
+export default React.memo(Timesheets);

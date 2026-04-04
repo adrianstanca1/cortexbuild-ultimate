@@ -1,6 +1,6 @@
 // Module: Dashboard — CortexBuild Ultimate
 // Command Centre — live construction intelligence dashboard
-import { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import {
   TrendingUp, TrendingDown, Activity, DollarSign,
   Users, AlertTriangle, Download, FileText, RefreshCw, ShieldCheck, Briefcase,
@@ -53,9 +53,9 @@ const fmtCurrency = (n: number) => {
 const RAG_COLORS = { green: '#10b981', amber: '#f59e0b', red: '#ef4444' };
 
 // ─── Animated Counter ─────────────────────────────────────────────────────
-function AnimatedCounter({ value, prefix = '', suffix = '', duration = 1800 }: {
+const AnimatedCounter = React.memo(({ value, prefix = '', suffix = '', duration = 1800 }: {
   value: number; prefix?: string; suffix?: string; duration?: number;
-}) {
+}) => {
   const [display, setDisplay] = useState(0);
   const startRef = useRef<number | null>(null);
   const rafRef = useRef<number>(0);
@@ -76,10 +76,10 @@ function AnimatedCounter({ value, prefix = '', suffix = '', duration = 1800 }: {
   }, [value, duration]);
 
   return <span>{prefix}{display.toLocaleString()}{suffix}</span>;
-}
+});
 
 // ─── Animated RAG Donut ─────────────────────────────────────────────────────
-function RAGDonut({ data }: { data: { name: string; value: number; fill: string }[] }) {
+const RAGDonut = React.memo(({ data }: { data: { name: string; value: number; fill: string }[] }) => {
   const total = data.reduce((s, d) => s + d.value, 0);
   const [mounted, setMounted] = useState(false);
   useEffect(() => { setTimeout(() => setMounted(true), 200); }, []);
@@ -112,10 +112,10 @@ function RAGDonut({ data }: { data: { name: string; value: number; fill: string 
       </div>
     </div>
   );
-}
+});
 
 // ─── Progress Bar ─────────────────────────────────────────────────────────
-function ProgBar({ value, color, animated = true }: { value: number; color: string; animated?: boolean }) {
+const ProgBar = React.memo(({ value, color, animated = true }: { value: number; color: string; animated?: boolean }) => {
   const [w, setW] = useState(0);
   useEffect(() => {
     if (!animated) { setW(value); return; }
@@ -132,12 +132,12 @@ function ProgBar({ value, color, animated = true }: { value: number; color: stri
       }} />
     </div>
   );
-}
+});
 
 // ─── Live Activity Item ───────────────────────────────────────────────────
-function ActivityItem({ user, action, module, time, accent, delay = 0 }: {
+const ActivityItem = React.memo(({ user, action, module, time, accent, delay = 0 }: {
   user: string; action: string; module: string; time: string; accent: string; delay?: number;
-}) {
+}) => {
   const [visible, setVisible] = useState(false);
   useEffect(() => { const t = setTimeout(() => setVisible(true), delay); return () => clearTimeout(t); }, [delay]);
   return (
@@ -181,10 +181,10 @@ function ActivityItem({ user, action, module, time, accent, delay = 0 }: {
       </div>
     </div>
   );
-}
+});
 
 // ─── Main Dashboard ───────────────────────────────────────────────────────
-export function Dashboard() {
+function DashboardComponent() {
   const [activeTab, setActiveTab] = useState<'overview' | 'projects' | 'finance' | 'safety' | 'activity'>('overview');
   const [dashboardKpi, setDashboardKpi] = useState<{
     activeProjects?: number; totalRevenue?: number; outstanding?: number;
@@ -210,60 +210,69 @@ export function Dashboard() {
   const { data: liveProjectsRaw = [] } = useProjectsData.useList();
   const liveProjects = liveProjectsRaw as AnyRow[];
 
+  // Debounce ref for WS refresh
+  const refreshTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
   // Refetch dashboard data when WS sends a dashboard_update event
   useEffect(() => {
     const unsub = eventBus.on('ws:message', ({ type }) => {
       if (type === 'dashboard_update') {
-        // Refresh KPI overview
-        dashboardApi.getOverview().then(d => setDashboardKpi(d.kpi)).catch((err) => {
-          console.error('Dashboard: Failed to refresh KPI overview:', err);
-        });
-        // Refresh revenue data
-        dashboardApi.getRevenueData().then(d => setRevenueFromApi(d as {month: string; revenue: number; cost?: number}[])).catch((err) => {
-          console.error('Dashboard: Failed to refresh revenue data:', err);
-        });
-        // Refresh projects
-        projectsApi.getAll().then((data: unknown) => {
-          const rows = data as AnyRow[];
-          setProjects(rows.slice(0, 8).map((row, idx) => ({
-            id: Number(row.id) || idx + 1,
-            name: String(row.name || `Project ${idx + 1}`),
-            client: String(row.client || row.company || 'Unknown Client'),
-            value: Number(row.value) || 0,
-            progress: Number(row.progress) || 0,
-            budgetRAG: (row.budgetRAG as 'red'|'amber'|'green') || 'green',
-            programmeRAG: (row.programmeRAG as 'red'|'amber'|'green') || 'green',
-            qualityRAG: (row.qualityRAG as 'red'|'amber'|'green') || 'green',
-            daysToCompletion: Number(row.daysToCompletion || row.daysRemaining) || 0,
-            pmInitials: String(row.pmInitials || row.projectManagerInitials || 'PM'),
-          })));
-        }).catch((err) => {
-          console.error('Dashboard: Failed to refresh projects:', err);
-        });
-        // Refresh notifications / activity feed
-        notificationsApi.getAll().then((data: unknown) => {
-          const rows = data as AnyRow[];
-          setActivityFeed(rows.slice(0, 12).map((row, i) => ({
-            id: String(row.id || i),
-            user: String(row.userName || row.createdBy || row.actor || 'System'),
-            action: String(row.title || row.subject || row.message || 'Activity'),
-            module: String(row.module || row.category || row.type || 'General'),
-            time: String(row.createdAt ? (() => {
-              try { const d = new Date(String(row.createdAt)); const m = Math.floor((Date.now()-d.getTime())/60000); return m<1?'Just now':m<60?`${m}m ago`:`${Math.floor(m/60)}h ago`; } catch { return 'Recently'; }
-            })() : 'Recently'),
-          })));
-          const alertRows = rows.filter((r: AnyRow) => r.level==='amber'||r.level==='red'||r.type==='alert').slice(0,4).map((row: AnyRow) => ({
-            id: String(row.id), level: (row.level as 'amber'|'red')||'amber',
-            title: String(row.title||row.subject||'Notification'),
-            description: String(row.message||row.description||''),
-          }));
-          setAlerts(alertRows.length ? alertRows : [{ id:'1', level:'amber' as const, title:'No active alerts', description:'All systems nominal' }]);
-        }).catch((err) => {
-          console.error('Dashboard: Failed to refresh notifications:', err);
-        });
+        if (refreshTimerRef.current) clearTimeout(refreshTimerRef.current);
+        refreshTimerRef.current = setTimeout(() => {
+          // Refresh KPI overview
+          dashboardApi.getOverview().then(d => setDashboardKpi(d.kpi)).catch((err) => {
+            console.error('Dashboard: Failed to refresh KPI overview:', err);
+          });
+          // Refresh revenue data
+          dashboardApi.getRevenueData().then(d => setRevenueFromApi(d as {month: string; revenue: number; cost?: number}[])).catch((err) => {
+            console.error('Dashboard: Failed to refresh revenue data:', err);
+          });
+          // Refresh projects
+          projectsApi.getAll().then((data: unknown) => {
+            const rows = data as AnyRow[];
+            setProjects(rows.slice(0, 8).map((row, idx) => ({
+              id: Number(row.id) || idx + 1,
+              name: String(row.name || `Project ${idx + 1}`),
+              client: String(row.client || row.company || 'Unknown Client'),
+              value: Number(row.value) || 0,
+              progress: Number(row.progress) || 0,
+              budgetRAG: (row.budgetRAG as 'red'|'amber'|'green') || 'green',
+              programmeRAG: (row.programmeRAG as 'red'|'amber'|'green') || 'green',
+              qualityRAG: (row.qualityRAG as 'red'|'amber'|'green') || 'green',
+              daysToCompletion: Number(row.daysToCompletion || row.daysRemaining) || 0,
+              pmInitials: String(row.pmInitials || row.projectManagerInitials || 'PM'),
+            })));
+          }).catch((err) => {
+            console.error('Dashboard: Failed to refresh projects:', err);
+          });
+          // Refresh notifications / activity feed
+          notificationsApi.getAll().then((data: unknown) => {
+            const rows = data as AnyRow[];
+            setActivityFeed(rows.slice(0, 12).map((row, i) => ({
+              id: String(row.id || i),
+              user: String(row.userName || row.createdBy || row.actor || 'System'),
+              action: String(row.title || row.subject || row.message || 'Activity'),
+              module: String(row.module || row.category || row.type || 'General'),
+              time: String(row.createdAt ? (() => {
+                try { const d = new Date(String(row.createdAt)); const m = Math.floor((Date.now()-d.getTime())/60000); return m<1?'Just now':m<60?`${m}m ago`:`${Math.floor(m/60)}h ago`; } catch { return 'Recently'; }
+              })() : 'Recently'),
+            })));
+            const alertRows = rows.filter((r: AnyRow) => r.level==='amber'||r.level==='red'||r.type==='alert').slice(0,4).map((row: AnyRow) => ({
+              id: String(row.id), level: (row.level as 'amber'|'red')||'amber',
+              title: String(row.title||row.subject||'Notification'),
+              description: String(row.message||row.description||''),
+            }));
+            setAlerts(alertRows.length ? alertRows : [{ id:'1', level:'amber' as const, title:'No active alerts', description:'All systems nominal' }]);
+          }).catch((err) => {
+            console.error('Dashboard: Failed to refresh notifications:', err);
+          });
+        }, 2000);
       }
     });
-    return unsub;
+    return () => {
+      unsub();
+      if (refreshTimerRef.current) clearTimeout(refreshTimerRef.current);
+    };
   }, []);
 
   useEffect(() => {
@@ -336,14 +345,14 @@ export function Dashboard() {
     { month:'May', revenue:0 }, { month:'Jun', revenue:0 },
   ];
 
-  const kpis = [
+  const kpis = useMemo(() => [
     { label:'Active\nProjects',  value: dashboardKpi?.activeProjects ?? 12,  icon: Briefcase,    accent:'#10b981', bg:'rgba(16,185,129,0.08)', border:'rgba(16,185,129,0.2)',  trend:'+2' },
     { label:'Total\nRevenue',     value: dashboardKpi?.totalRevenue ?? 1890000, icon: DollarSign,  accent:'#3b82f6', bg:'rgba(59,130,246,0.08)', border:'rgba(59,130,246,0.2)',  trend:'+23%' },
     { label:'Outstanding\nDebt',  value: dashboardKpi?.outstanding ?? 342000,   icon: AlertTriangle,accent:'#f59e0b', bg:'rgba(245,158,11,0.08)', border:'rgba(245,158,11,0.2)', trend:'-8%' },
     { label:'Open\nRFIs',         value: dashboardKpi?.openRfis ?? 24,          icon: FileText,     accent:'#8b5cf6', bg:'rgba(139,92,246,0.08)', border:'rgba(139,92,246,0.2)', trend:'-5' },
     { label:'H&S\nScore',         value: dashboardKpi?.hsScore ?? 98,             icon: ShieldCheck,  accent:'#10b981', bg:'rgba(16,185,129,0.08)', border:'rgba(16,185,129,0.2)', trend:'+1.2%', suffix:'%' },
     { label:'Workforce\nToday',   value: dashboardKpi?.workforce ?? 143,           icon: Users,        accent:'#3b82f6', bg:'rgba(59,130,246,0.08)', border:'rgba(59,130,246,0.2)', trend:'+18' },
-  ];
+  ], [dashboardKpi]);
 
   const ragData = projectStatusData.length > 0 ? projectStatusData : [
     { name:'No Data', value:0, fill:'#334155' },
@@ -1099,4 +1108,5 @@ export function Dashboard() {
     </div>
   );
 }
+export const Dashboard = React.memo(DashboardComponent);
 export default Dashboard;

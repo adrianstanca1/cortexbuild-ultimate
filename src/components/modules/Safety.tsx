@@ -1,5 +1,5 @@
 // Module: Safety — CortexBuild Ultimate (Enhanced with RIDDOR, Permits, Toolbox Talks)
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Plus, X, Loader2, Shield, AlertTriangle, CheckCircle2, RefreshCw, Search, Edit2, Trash2, FileText, AlertCircle, TrendingUp, Upload, CheckSquare, Square, Download } from 'lucide-react';
 import { DataImporter, ExportButton } from '../ui/DataImportExport';
 import { useSafety } from '../../hooks/useData';
@@ -993,4 +993,4 @@ export function Safety() {
     </div>
   );
 }
-export default Safety;
+export default React.memo(Safety);

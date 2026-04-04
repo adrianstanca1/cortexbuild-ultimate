@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { UserCheck, Plus, Search, Phone, Mail, MapPin, Star, Edit2, Trash2, X, Building2, TrendingUp, Users, MessageSquare, PhoneCall, Calendar, CheckSquare, Square } from 'lucide-react';
 import { useContacts } from '../../hooks/useData';
 import { contactsApi } from '../../services/api';
@@ -663,4 +663,4 @@ export function CRM() {
     </>
   );
 }
-export default CRM;
+export default React.memo(CRM);

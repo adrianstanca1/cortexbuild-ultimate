@@ -142,7 +142,7 @@ function makeRouter(tableName, orderCol = 'created_at') {
       });
     } catch (err) {
       console.error(`[GET ${tableName}]`, err.message);
-      res.status(500).json({ message: err.message });
+      res.status(500).json({ message: 'Internal server error' });
     }
   });
 
@@ -154,7 +154,8 @@ function makeRouter(tableName, orderCol = 'created_at') {
       if (!rows[0]) return res.status(404).json({ message: 'Not found' });
       res.json(rows[0]);
     } catch (err) {
-      res.status(500).json({ message: err.message });
+      console.error(`[GET ${tableName}/:id]`, err.message);
+      res.status(500).json({ message: 'Internal server error' });
     }
   });
 
@@ -202,7 +203,7 @@ function makeRouter(tableName, orderCol = 'created_at') {
       res.status(201).json(rows[0]);
     } catch (err) {
       console.error(`[POST ${tableName}]`, err.message);
-      res.status(500).json({ message: err.message });
+      res.status(500).json({ message: 'Internal server error' });
     }
   });
 
@@ -228,7 +229,7 @@ function makeRouter(tableName, orderCol = 'created_at') {
       res.json(rows[0]);
     } catch (err) {
       console.error(`[PUT ${tableName}]`, err.message);
-      res.status(500).json({ message: err.message });
+      res.status(500).json({ message: 'Internal server error' });
     }
   });
 
@@ -243,7 +244,8 @@ function makeRouter(tableName, orderCol = 'created_at') {
       broadcastDashboardUpdate('delete', tableName, oldRows.rows[0]);
       res.json({ message: 'Deleted successfully' });
     } catch (err) {
-      res.status(500).json({ message: err.message });
+      console.error(`[DELETE ${tableName}]`, err.message);
+      res.status(500).json({ message: 'Internal server error' });
     }
   });
 

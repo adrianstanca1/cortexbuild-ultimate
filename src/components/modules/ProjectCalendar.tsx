@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { ChevronLeft, ChevronRight, Plus, Clock, MapPin, Users } from 'lucide-react';
 
 interface CalendarEvent {
@@ -233,4 +233,4 @@ export function ProjectCalendar() {
     </div>
   );
 }
-export default ProjectCalendar;
+export default React.memo(ProjectCalendar);
