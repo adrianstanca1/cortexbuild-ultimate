@@ -14,7 +14,13 @@ check_api() {
 }
 
 check_db() {
-    response=$(docker exec cortexbuild-db pg_isready -U cortexbuild 2>/dev/null)
+    # Resolve container by name pattern (handles hash-prefixed names like 0ebd917a60e4_cortexbuild-db)
+    DB_CONTAINER=$(docker ps --filter "name=cortexbuild-db" --format "{{.Names}}" 2>/dev/null | head -1)
+    if [ -z "$DB_CONTAINER" ]; then
+        echo "[$(date)] DB DOWN - container not found" >> $LOG_FILE
+        return 1
+    fi
+    docker exec "$DB_CONTAINER" pg_isready -U cortexbuild >/dev/null 2>&1
     if [ $? -ne 0 ]; then
         echo "[$(date)] DB DOWN" >> $LOG_FILE
         return 1
