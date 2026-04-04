@@ -261,6 +261,13 @@ docker exec -it cortexbuild-db psql -U cortexbuild -d cortexbuild
 - Pruned stale git worktree, deleted duplicate root SESSION.md
 - Verified: Local = GitHub = VPS = `04bafe7`
 
+### 2026-04-04 — Incident: Internal Server Error
+
+**Issue:** Brief 500 error on production during server restart.
+**Root cause:** `server/index.js` loads `.env` from `server/.env` (subdirectory), which was empty after restart. Root `.env` had `DB_PASSWORD` but server couldn't find it.
+**Fix:** Copied root `.env` to `server/.env` and restarted server.
+**Prevention:** Updated `deploy.sh` to sync `.env` to `server/.env` on every deploy (commit `a51c097`).
+
 ### Final State
 - Commits delivered: `c1b9d2b` → `89fcfc7` → `3f99558` → `04bafe7`
 - Type check: 0 errors
