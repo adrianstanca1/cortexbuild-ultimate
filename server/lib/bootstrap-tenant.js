@@ -57,12 +57,18 @@ async function attachNewTenantToUser(pool, userId, { orgName, companyName }) {
 }
 
 /**
- * Single transaction: org + company + OAuth user (never persist user without tenant).
+ * Single transaction: org + company + OAuth user (+ optional oauth_providers row).
  * @param {import('pg').Pool} pool
  * @param {{ email: string, name: string, avatarUrl?: string | null }} profile
  * @param {{ orgName: string, companyName?: string }} tenantOpts
+ * @param {null | { provider: string, providerUserId: string, accessToken: string, refreshToken: string | null, email: string }} oauthLink
  */
-async function createOAuthUserWithTenant(pool, { email, name, avatarUrl = null }, { orgName, companyName }) {
+async function createOAuthUserWithTenant(
+  pool,
+  { email, name, avatarUrl = null },
+  { orgName, companyName },
+  oauthLink = null
+) {
   const client = await pool.connect();
   try {
     await client.query('BEGIN');
@@ -77,8 +83,23 @@ async function createOAuthUserWithTenant(pool, { email, name, avatarUrl = null }
        RETURNING *`,
       [email.toLowerCase(), name, avatarUrl, organizationId, companyId, comp]
     );
+    const user = rows[0];
+    if (oauthLink) {
+      await client.query(
+        `INSERT INTO oauth_providers (user_id, provider, provider_user_id, access_token, refresh_token, email)
+         VALUES ($1, $2, $3, $4, $5, $6)`,
+        [
+          user.id,
+          oauthLink.provider,
+          oauthLink.providerUserId,
+          oauthLink.accessToken,
+          oauthLink.refreshToken,
+          oauthLink.email,
+        ]
+      );
+    }
     await client.query('COMMIT');
-    return rows[0];
+    return user;
   } catch (e) {
     await client.query('ROLLBACK');
     throw e;

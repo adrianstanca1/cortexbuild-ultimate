@@ -67,11 +67,17 @@ if (process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET) {
       if (existingUser.rows.length > 0) {
         user = existingUser.rows[0];
       } else {
-        // Org + user in one transaction (matches register flow — no orphaned users)
         user = await createOAuthUserWithTenant(
           db,
           { email, name, avatarUrl: avatar ?? null },
-          { orgName: `${name}'s organization`, companyName: name }
+          { orgName: `${name}'s organization`, companyName: name },
+          {
+            provider: 'google',
+            providerUserId: profile.id,
+            accessToken,
+            refreshToken,
+            email,
+          }
         );
       }
 
@@ -134,7 +140,14 @@ if (process.env.MICROSOFT_CLIENT_ID && process.env.MICROSOFT_CLIENT_SECRET) {
         user = await createOAuthUserWithTenant(
           db,
           { email, name, avatarUrl: null },
-          { orgName: `${name}'s organization`, companyName: name }
+          { orgName: `${name}'s organization`, companyName: name },
+          {
+            provider: 'microsoft',
+            providerUserId: profile.id,
+            accessToken,
+            refreshToken,
+            email,
+          }
         );
       }
 
