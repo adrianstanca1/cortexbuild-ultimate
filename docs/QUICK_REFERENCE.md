@@ -30,15 +30,15 @@ import { ActivityFeed } from './components/ui/ActivityFeed';
 ```tsx
 import { useOptimizedData } from './hooks/useOptimizedData';
 import { useCollaborativeEditor } from './hooks/useCollaborativeEditor';
-import { useIntegration } from './lib/integrations';
 ```
 
 ## New Utilities
+
+> **Note:** Legacy examples referencing `integrations`, `workflowEngine`, and `aiSearch` under `src/lib/` are removed. Use `src/services/api.ts`, `src/hooks/useData.ts`, and `src/lib/validations.ts` for current patterns.
+
 ```tsx
 import { exportToPDF, exportTableToCSV } from './lib/exportUtils';
 import { reportGenerator } from './lib/reportGenerator';
-import { workflowEngine } from './lib/workflowEngine';
-import { semanticSearch } from './lib/aiSearch';
 ```
 
 ## Export Examples
@@ -59,19 +59,4 @@ await reportGenerator.download({
   title: 'Monthly Report',
   sections: [...],
 }, 'monthly-report.pdf');
-```
-
-## Workflow Examples
-```tsx
-// Execute workflow
-await workflowEngine.executeWorkflow('invoice-approval', {
-  invoiceId: '123',
-  amount: 5000,
-});
-
-// Enable integration
-await integrationManager.enableIntegration('xero', {
-  apiKey: '...',
-  tenantId: '...',
-});
 ```
