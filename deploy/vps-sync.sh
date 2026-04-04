@@ -131,7 +131,7 @@ ssh $SSH_OPTS "$VPS_HOST" "
     # Kill anything still holding port 3001
     fuser -k 3001/tcp 2>/dev/null || true
     sleep 3
-    docker-compose up -d
+    docker-compose up -d --build
 
     # Health check
     echo '🏥 Waiting for services to start...'

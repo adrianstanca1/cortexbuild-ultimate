@@ -43,6 +43,9 @@ services:
       - cortexbuild
 
   api:
+    build:
+      context: .
+      dockerfile: Dockerfile.api
     image: cortexbuild-ultimate-api:latest
     container_name: cortexbuild-api
     restart: always
@@ -81,7 +84,7 @@ services:
       ollama:
         condition: service_started
     volumes:
-      - ./uploads:/app/uploads
+      - ./server/uploads:/app/uploads
 
   # Note: nginx container removed — host nginx handles SSL/proxy on ports 80/443
 
