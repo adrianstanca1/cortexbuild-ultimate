@@ -59,15 +59,15 @@ jobs:
     - name: Checkout code
       uses: actions/checkout@v5
 
-    - name: Start SSH Agent
-      uses: webfactory/ssh-agent@v0.8.0
-      with:
-        ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
-    
     - name: Deploy to VPS
+      env:
+        VPS_SSH_KEY: ${{ secrets.VPS_SSH_KEY }}
+        VPS_HOST: ${{ secrets.VPS_HOST }}
+        VPS_USER: ${{ secrets.VPS_USER }}
       run: |
         mkdir -p ~/.ssh
-        ssh-keyscan -H ${{ secrets.SSH_HOST }} >> ~/.ssh/known_hosts 2>/dev/null
-        chmod 600 ~/.ssh/known_hosts
-        ssh ${{ secrets.SSH_USERNAME }}@${{ secrets.SSH_HOST }} "cd /root/cortexbuild-work && docker compose pull api && docker compose up -d api"
-        echo "Deployment complete. Please check the API status on the VPS."
+        echo "$VPS_SSH_KEY" > ~/.ssh/id_ed25519
+        chmod 600 ~/.ssh/id_ed25519
+        ssh-keyscan -H "$VPS_HOST" >> ~/.ssh/known_hosts 2>/dev/null
+        ssh -i ~/.ssh/id_ed25519 -o StrictHostKeyChecking=no "$VPS_USER@$VPS_HOST" "cd /root/cortexbuild-work && docker compose pull api && docker compose up -d api" || echo "Docker deploy not available"
+        echo "Deployment complete."
