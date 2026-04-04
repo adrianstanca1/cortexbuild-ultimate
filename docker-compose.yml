@@ -54,10 +54,20 @@ services:
       DB_USER: ${POSTGRES_USER:-cortexbuild}
       DB_PASSWORD: ${POSTGRES_PASSWORD:-cortexbuild_dev_password}
       JWT_SECRET: ${JWT_SECRET:-cortexbuild_dev_jwt_secret_change_in_production}
+      SESSION_SECRET: ${SESSION_SECRET:-cortexbuild_dev_jwt_secret_change_in_production}
       PORT: ${PORT:-3001}
+      NODE_ENV: ${NODE_ENV:-production}
       OLLAMA_HOST: ${OLLAMA_HOST:-http://ollama:11434}
       OLLAMA_MODEL: ${OLLAMA_MODEL:-qwen3.5:latest}
       CORS_ORIGIN: ${CORS_ORIGIN:-https://cortexbuildpro.com,https://www.cortexbuildpro.com}
+      FRONTEND_URL: ${FRONTEND_URL:-https://www.cortexbuildpro.com}
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
+      GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET:-}
+      GOOGLE_CALLBACK_URL: ${GOOGLE_CALLBACK_URL:-https://www.cortexbuildpro.com/api/auth/google/callback}
+      MICROSOFT_CLIENT_ID: ${MICROSOFT_CLIENT_ID:-}
+      MICROSOFT_CLIENT_SECRET: ${MICROSOFT_CLIENT_SECRET:-}
+      MICROSOFT_TENANT: ${MICROSOFT_TENANT:-common}
+      MICROSOFT_CALLBACK_URL: ${MICROSOFT_CALLBACK_URL:-https://www.cortexbuildpro.com/api/auth/microsoft/callback}
     ports:
       - "127.0.0.1:3001:3001"
     networks:

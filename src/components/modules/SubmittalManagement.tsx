@@ -147,7 +147,7 @@ export const SubmittalManagement: React.FC = () => {
   const [selectedSubmittal, setSelectedSubmittal] = useState<Submittal | null>(null);
   const [_showFilters, _setShowFilters] = useState(false);
   const [submittals, setSubmittals] = useState<Submittal[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [_loading, setLoading] = useState(true);
 
   useEffect(() => {
     async function loadSubmittals() {
@@ -171,7 +171,7 @@ export const SubmittalManagement: React.FC = () => {
   }, []);
 
   // Expose reload for create/update operations
-  const reloadSubmittals = async () => {
+  const _reloadSubmittals = async () => {
     try {
       const data = await submittalsApi.getAll();
       const items: Record<string, unknown>[] = Array.isArray(data)

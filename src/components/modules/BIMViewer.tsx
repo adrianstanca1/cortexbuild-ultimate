@@ -97,7 +97,7 @@ export const BIMViewer: React.FC = () => {
   const [activeModel, setActiveModel] = useState<BIMModel | null>(null);
   const [models, setModels] = useState<BIMModel[]>([]);
   const [clashes, setClashes] = useState<ClashDetection[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [_loading, setLoading] = useState(true);
   const [selectedLayers, setSelectedLayers] = useState<string[]>(['structure', 'hvac', 'electrical']);
 
   // Load models from API
