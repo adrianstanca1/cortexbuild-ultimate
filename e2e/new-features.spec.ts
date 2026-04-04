@@ -14,8 +14,9 @@ test.describe('New Features E2E', () => {
   // Navigate to dashboard before each test
   test.beforeEach(async ({ page }) => {
     await page.goto('/');
-    await page.waitForLoadState('networkidle');
-    await page.waitForTimeout(2000); // Allow dashboard to fully load
+    await page.waitForLoadState('domcontentloaded');
+    await page.locator('#root').waitFor({ state: 'visible', timeout: 20000 });
+    await page.waitForTimeout(1500);
   });
 
   test.describe('NotificationCenter', () => {
@@ -24,9 +25,10 @@ test.describe('New Features E2E', () => {
 
       if (await notificationButton.count() > 0) {
         await notificationButton.first().click();
-        await expect(
-          page.getByRole('heading', { name: 'Notifications' }),
-        ).toBeVisible({ timeout: 5000 });
+        // Header is a styled span in NotificationsPanel, not a heading role
+        await expect(page.getByText('Notifications', { exact: true }).first()).toBeVisible({
+          timeout: 5000,
+        });
       }
     });
 
@@ -45,10 +47,10 @@ test.describe('New Features E2E', () => {
       if (await notificationButton.count() > 0) {
         await notificationButton.first().click();
 
-        // Tabs only — avoid matching "Mark all notifications" (contains "All")
-        const filterTab = page.getByRole('tab', { name: /^(All|Unread)$/i }).first();
-        if (await filterTab.isVisible().catch(() => false)) {
-          await filterTab.click({ force: true });
+        // NotificationsPanel uses plain buttons labeled all | unread | critical (see Header panel)
+        const filterBtn = page.getByRole('button', { name: 'unread', exact: true });
+        if (await filterBtn.isVisible().catch(() => false)) {
+          await filterBtn.click();
           await page.waitForTimeout(500);
         }
       }
@@ -60,8 +62,7 @@ test.describe('New Features E2E', () => {
       if (await notificationButton.count() > 0) {
         await notificationButton.first().click();
 
-        // Look for mark as read button or checkbox
-        const markReadBtn = page.locator('button:has-text("Mark as read"), input[type="checkbox"]');
+        const markReadBtn = page.locator('button:has-text("Mark all"), input[type="checkbox"]');
         if (await markReadBtn.count() > 0) {
           await markReadBtn.first().click();
           await page.waitForTimeout(300);
@@ -101,19 +102,21 @@ test.describe('New Features E2E', () => {
   test.describe('TeamChat', () => {
     test('opens team chat from Teams module', async ({ page }) => {
       await page.goto('/teams');
-      await page.waitForLoadState('networkidle');
+      await page.waitForLoadState('domcontentloaded');
+      await page.locator('#root').waitFor({ state: 'visible', timeout: 20000 });
 
       const chatButton = page.locator('button:has-text("Team Chat")');
 
       if (await chatButton.count() > 0) {
         await chatButton.click();
-        await expect(page.locator('text=Team Chat')).toBeVisible({ timeout: 5000 });
+        await expect(page.getByText('Team Chat').first()).toBeVisible({ timeout: 5000 });
       }
     });
 
     test('displays message input', async ({ page }) => {
       await page.goto('/teams');
-      await page.waitForLoadState('networkidle');
+      await page.waitForLoadState('domcontentloaded');
+      await page.locator('#root').waitFor({ state: 'visible', timeout: 20000 });
 
       const chatButton = page.locator('button:has-text("Team Chat")');
 
@@ -125,7 +128,8 @@ test.describe('New Features E2E', () => {
 
     test('sends a message in team chat', async ({ page }) => {
       await page.goto('/teams');
-      await page.waitForLoadState('networkidle');
+      await page.waitForLoadState('domcontentloaded');
+      await page.locator('#root').waitFor({ state: 'visible', timeout: 20000 });
 
       const chatButton = page.locator('button:has-text("Team Chat")');
 
@@ -147,7 +151,7 @@ test.describe('New Features E2E', () => {
 
     test('displays online members count', async ({ page }) => {
       await page.goto('/teams');
-      await page.waitForLoadState('networkidle');
+      await page.waitForLoadState('domcontentloaded');
 
       const chatButton = page.locator('button:has-text("Team Chat")');
 
@@ -164,7 +168,7 @@ test.describe('New Features E2E', () => {
 
     test('shows typing indicator', async ({ page }) => {
       await page.goto('/teams');
-      await page.waitForLoadState('networkidle');
+      await page.waitForLoadState('domcontentloaded');
 
       const chatButton = page.locator('button:has-text("Team Chat")');
 
@@ -191,7 +195,7 @@ test.describe('New Features E2E', () => {
   test.describe('ActivityFeed', () => {
     test('displays activity feed on dashboard', async ({ page }) => {
       await page.goto('/');
-      await page.waitForLoadState('networkidle');
+      await page.waitForLoadState('domcontentloaded');
 
       // Activity feed should be visible on dashboard
       const activityFeed = page.locator('text=Activity, text=Recent, text=Recent Activity');
@@ -202,7 +206,7 @@ test.describe('New Features E2E', () => {
 
     test('shows activity items', async ({ page }) => {
       await page.goto('/');
-      await page.waitForLoadState('networkidle');
+      await page.waitForLoadState('domcontentloaded');
 
       // Activity feed may require authentication - check for either activity content or login page
       const activityFeed = page.locator('[class*="activity"], [class*="Activity"]');
@@ -216,7 +220,7 @@ test.describe('New Features E2E', () => {
 
     test('displays activity timestamps', async ({ page }) => {
       await page.goto('/');
-      await page.waitForLoadState('networkidle');
+      await page.waitForLoadState('domcontentloaded');
 
       // Look for relative time format (e.g., "5m ago", "1h ago") or any time display
       const timeAgo = page.locator('text=/\\d+[mhd] ago/, text=/\\d+:\\d+ [AP]M/');
@@ -227,7 +231,7 @@ test.describe('New Features E2E', () => {
 
     test('filters activity by type', async ({ page }) => {
       await page.goto('/');
-      await page.waitForLoadState('networkidle');
+      await page.waitForLoadState('domcontentloaded');
 
       // Look for activity filter controls
       const filterSelect = page.locator('select[class*="activity"], select:has-text("All"), select:has-text("Filter")');
@@ -241,7 +245,7 @@ test.describe('New Features E2E', () => {
   test.describe('Charts and Analytics', () => {
     test('displays charts on dashboard', async ({ page }) => {
       await page.goto('/');
-      await page.waitForLoadState('networkidle');
+      await page.waitForLoadState('domcontentloaded');
 
       // Look for charts (SVG elements) on dashboard
       await page.waitForSelector('svg, [class*="chart"], [class*="Chart"]', { timeout: 5000 });
@@ -249,7 +253,7 @@ test.describe('New Features E2E', () => {
 
     test('displays KPI cards on dashboard', async ({ page }) => {
       await page.goto('/');
-      await page.waitForLoadState('networkidle');
+      await page.waitForLoadState('domcontentloaded');
 
       // Check if login page is shown (requires authentication)
       const loginHeading = page.getByRole('heading', { name: /Welcome/i });
@@ -271,7 +275,7 @@ test.describe('New Features E2E', () => {
 
     test('exports data from dashboard', async ({ page }) => {
       await page.goto('/');
-      await page.waitForLoadState('networkidle');
+      await page.waitForLoadState('domcontentloaded');
 
       // Look for export button anywhere on dashboard
       const exportBtn = page.locator('button:has-text("Export"), button:has-text("Download")');
@@ -283,7 +287,7 @@ test.describe('New Features E2E', () => {
 
     test('filters dashboard data', async ({ page }) => {
       await page.goto('/');
-      await page.waitForLoadState('networkidle');
+      await page.waitForLoadState('domcontentloaded');
 
       // Look for any filter controls
       const filterControl = page.locator('input[type="date"], [class*="filter"], [class*="Filter"], button:has-text("Filter"), select');
@@ -297,7 +301,7 @@ test.describe('New Features E2E', () => {
   test.describe('Calendar Features', () => {
     test('displays calendar component', async ({ page }) => {
       await page.goto('/');
-      await page.waitForLoadState('networkidle');
+      await page.waitForLoadState('domcontentloaded');
 
       // Look for any calendar component on dashboard
       const calendar = page.locator('text=Calendar, [class*="calendar"], [class*="Calendar"]');
@@ -308,7 +312,7 @@ test.describe('New Features E2E', () => {
 
     test('shows date navigation', async ({ page }) => {
       await page.goto('/');
-      await page.waitForLoadState('networkidle');
+      await page.waitForLoadState('domcontentloaded');
 
       // Look for date navigation buttons
       const navButtons = page.locator('button[aria-label*="previous"], button[aria-label*="next"], button:has-text("Previous"), button:has-text("Next")');
@@ -320,7 +324,7 @@ test.describe('New Features E2E', () => {
 
     test('displays scheduled items', async ({ page }) => {
       await page.goto('/');
-      await page.waitForLoadState('networkidle');
+      await page.waitForLoadState('domcontentloaded');
 
       // Look for any scheduled items or events
       const events = page.locator('text=Meeting, text=Milestone, text=Event, text=Deadline, text=Task, [class*="event"]');
@@ -342,7 +346,7 @@ test.describe('New Features E2E', () => {
 
     test('modules accessible from sidebar', async ({ page }) => {
       await page.goto('/');
-      await page.waitForLoadState('networkidle');
+      await page.waitForLoadState('domcontentloaded');
 
       const sidebar = page.locator('nav, [class*="sidebar" i]');
 
@@ -352,7 +356,7 @@ test.describe('New Features E2E', () => {
 
         if (await moduleLink.count() > 0) {
           await moduleLink.first().click();
-          await page.waitForLoadState('networkidle');
+          await page.waitForLoadState('domcontentloaded');
           await expect(page).not.toHaveURL('/');
         }
       }
@@ -360,7 +364,7 @@ test.describe('New Features E2E', () => {
 
     test('cross-module navigation works', async ({ page }) => {
       await page.goto('/');
-      await page.waitForLoadState('networkidle');
+      await page.waitForLoadState('domcontentloaded');
 
       const sidebar = page.locator('nav, [class*="sidebar" i]');
 
@@ -369,7 +373,7 @@ test.describe('New Features E2E', () => {
         const teamsLink = sidebar.locator('a:has-text("Teams")');
         if (await teamsLink.count() > 0) {
           await teamsLink.first().click();
-          await page.waitForLoadState('networkidle');
+          await page.waitForLoadState('domcontentloaded');
           await expect(page).toHaveURL(/.*teams.*/);
         }
       }
@@ -377,7 +381,7 @@ test.describe('New Features E2E', () => {
 
     test('real-time updates work across modules', async ({ page }) => {
       await page.goto('/');
-      await page.waitForLoadState('networkidle');
+      await page.waitForLoadState('domcontentloaded');
 
       // WebSocket should be connected after page load
       await page.waitForTimeout(1000);

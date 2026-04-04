@@ -65,12 +65,11 @@ test.describe('Documents Module', () => {
   })
 
   test('documents has drag-drop or file input', async ({ page }) => {
-    // Wait for content to load
     await page.waitForTimeout(2000)
-    
-    // Look for any input element (including file inputs)
-    const hasInput = await page.locator('input').count() > 0
-    expect(hasInput).toBeTruthy()
+
+    const fileInputs = await page.locator('input[type="file"]').count()
+    const dropZones = await page.locator('[class*="drop"], [class*="upload"], [class*="Upload"]').count()
+    expect(fileInputs > 0 || dropZones > 0).toBeTruthy()
   })
 
   test('bulk actions available when selecting items', async ({ page }) => {
