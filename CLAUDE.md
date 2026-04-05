@@ -160,7 +160,7 @@ Docker containers:
 - `cortexbuild-prometheus`
 - `cortexbuild-grafana`
 
-**Frontend** syncs via `./deploy.sh` (rsync dist/ to VPS)
+**Frontend** syncs via `./deploy/sync-code.sh` (rsync dist/ to VPS)
 
 **API** updates: rebuild Docker container on VPS or via `deploy/vps-sync.sh`
 
