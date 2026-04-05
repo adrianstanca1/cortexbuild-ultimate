@@ -58,7 +58,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         } catch (error) {
           console.error('Error validating token:', error);
           // Don't clear session on network error — token might still be valid
-          setUser(stored);
+          setUser(stored as unknown as Profile | null);
         }
       }
       setLoading(false);
