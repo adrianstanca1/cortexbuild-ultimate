@@ -1,24 +1,22 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
+// Mock jsPDF at module level for all tests
+vi.mock('jspdf', () => ({
+  default: class jsPDF {
+    constructor() {}
+    setFontSize() {}
+    setFont() {}
+    text() {}
+    output() { return new Blob(); }
+  },
+}));
+
 /**
  * Unit tests for utility functions
  * Tests export utilities, event bus, and other helper functions
  */
 describe('Utility Functions', () => {
   describe('exportUtils', () => {
-    beforeEach(() => {
-      // Mock jsPDF
-      vi.mock('jspdf', () => ({
-        default: class jsPDF {
-          constructor() {}
-          setFontSize() {}
-          setFont() {}
-          text() {}
-          output() { return new Blob(); }
-        },
-      }));
-    });
-
     it('exports exportToPDF function', async () => {
       const module = await import('../lib/exportUtils');
       expect(module.exportToPDF).toBeDefined();
