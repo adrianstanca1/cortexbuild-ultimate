@@ -80,9 +80,14 @@ Provide a helpful, concise response. Prefer direct answers over repeating menu-l
 
     const body = JSON.stringify({
       model: LLM_MODEL,
-      prompt: promptParts.join('\n\n'),
+      messages: [
+        { role: 'system', content: promptParts[0] },
+        ...promptParts.slice(1).map((content, i) => ({
+          role: i === promptParts.length - 2 ? 'user' : 'assistant',
+          content
+        }))
+      ],
       stream: false,
-      think: false,
       options: {
         temperature: 0.4,
         top_p: 0.9,
@@ -90,14 +95,14 @@ Provide a helpful, concise response. Prefer direct answers over repeating menu-l
       },
     });
 
-    const url = new URL(OLLAMA_HOST + '/api/generate');
+    const url = new URL(OLLAMA_HOST + '/api/chat');
     const isHttps = url.protocol === 'https:';
     const lib = isHttps ? https : http;
 
     const req = lib.request({
       hostname: url.hostname,
       port: url.port || (isHttps ? 443 : 11434),
-      path: '/api/generate',
+      path: '/api/chat',
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -115,7 +120,11 @@ Provide a helpful, concise response. Prefer direct answers over repeating menu-l
             return;
           }
           const parsed = JSON.parse(trimmed);
-          if (parsed.response) {
+          // /api/chat returns { message: { content: '...' } }
+          if (parsed.message?.content) {
+            resolve(parsed.message.content.trim());
+          } else if (parsed.response) {
+            // Fallback for /api/generate format
             resolve(parsed.response.trim());
           } else if (parsed.error) {
             reject(new Error(parsed.error));

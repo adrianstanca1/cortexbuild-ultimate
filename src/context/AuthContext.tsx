@@ -14,6 +14,7 @@ interface Profile {
 interface AuthContextValue {
   user: Profile | null;
   profile: Profile | null;
+  token: string | null;
   loading: boolean;
   isAuthenticated: boolean;
   signIn: (email: string, password: string) => Promise<void>;
@@ -27,34 +28,37 @@ const AuthContext = createContext<AuthContextValue | null>(null);
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser]       = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
+  const [token, setTokenState] = useState<string | null>(null);
 
   // On mount, restore session from localStorage
   useEffect(() => {
     const loadUser = async () => {
-      const token = getToken();
+      const storedToken = getToken();
       const stored = getStoredUser();
+      setTokenState(storedToken);
 
-      if (token && stored) {
+      if (storedToken && stored) {
         try {
           // Validate token with a backend call
           const res = await fetch(`${API_BASE}/auth/me`, {
             headers: {
-              'Authorization': `Bearer ${token}`
+              'Authorization': `Bearer ${storedToken}`
             }
           });
           if (res.ok) {
             const userData = await res.json();
             setUser(userData as Profile);
-            setStoredUser(userData); // Refresh stored user data
+            setStoredUser(userData);
           } else {
-            console.warn('Token validation failed, logging out.', res.status);
+            console.warn('Token validation failed, clearing session.', res.status);
             clearToken();
+            setTokenState(null);
             setUser(null);
           }
         } catch (error) {
           console.error('Error validating token:', error);
-          clearToken();
-          setUser(null);
+          // Don't clear session on network error — token might still be valid
+          setUser(stored);
         }
       }
       setLoading(false);
@@ -71,6 +75,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const data = await res.json();
     if (!res.ok) throw new Error(data.message || 'Login failed');
     setToken(data.token);
+    setTokenState(data.token);
     setStoredUser(data.user);
     setUser(data.user as Profile);
   };
@@ -84,21 +89,23 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const data = await res.json();
     if (!res.ok) throw new Error(data.message || 'Registration failed');
     setToken(data.token);
+    setTokenState(data.token);
     setStoredUser(data.user);
     setUser(data.user as Profile);
   };
 
   const signOut = async () => {
     clearToken();
+    setTokenState(null);
     setUser(null);
   };
 
   const updateProfile = async (updates: Partial<Profile>) => {
-    const token = getToken();
-    if (!token || !user) return;
+    const currentToken = getToken();
+    if (!currentToken || !user) return;
     const res = await fetch(`${API_BASE}/auth/profile`, {
       method: 'PUT',
-      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${currentToken}` },
       body: JSON.stringify(updates),
     });
     const data = await res.json();
@@ -112,6 +119,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     <AuthContext.Provider value={{
       user,
       profile: user,
+      token,
       loading,
       isAuthenticated: !!user,
       signIn,
