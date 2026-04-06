@@ -3,6 +3,25 @@ const authMiddleware = require('../middleware/auth');
 const router = express.Router();
 const pool = require('../db');
 
+// Whitelist of tables allowed for backup export
+const ALLOWED_BACKUP_TABLES = new Set([
+  'projects', 'invoices', 'safety_incidents', 'rfis', 'change_orders',
+  'team_members', 'equipment', 'subcontractors', 'documents', 'timesheets',
+  'meetings', 'materials', 'punch_list', 'inspections', 'rams',
+  'cis_returns', 'tenders', 'contacts', 'risk_register', 'purchase_orders',
+  'daily_reports', 'variations', 'defects', 'valuations', 'specifications',
+  'temp_works', 'signage', 'waste_management', 'sustainability', 'training',
+  'certifications', 'prequalification', 'lettings', 'measuring',
+  'site_permits', 'equipment_service_logs', 'equipment_hire_logs',
+  'risk_mitigation_actions', 'contact_interactions', 'safety_permits',
+  'toolbox_talks', 'drawing_transmittals', 'tasks', 'work_packages',
+  'bim_models', 'bim_clashes_detections', 'bim_model_layers',
+  'cost_codes', 'budget_items', 'cost_forecasts', 'submittals',
+  'submittal_attachments', 'submittal_comments', 'chat_channels',
+  'chat_messages', 'notifications', 'report_templates',
+  'users', 'companies', 'organizations',
+]);
+
 router.use(authMiddleware);
 
 const ALLOWED_TABLES = [

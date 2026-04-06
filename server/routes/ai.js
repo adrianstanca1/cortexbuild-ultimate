@@ -3,6 +3,9 @@ const pool    = require('../db');
 const https = require('https');
 const http = require('http');
 const auth   = require('../middleware/auth');
+const rateLimit = require('express-rate-limit');
+const { RedisStore: RateLimitRedisStore } = require('rate-limit-redis');
+const redis = require('../db');
 const { broadcastDashboardUpdate, broadcastNotification } = require('../lib/ws-broadcast');
 
 // Import modular intent handlers
@@ -32,6 +35,31 @@ const { getConversationHistory, truncateToTokenBudget, MAX_CONTEXT_MESSAGES, SUM
 const { getOllamaResponse, summarizeText, OLLAMA_HOST, LLM_MODEL } = require('./ai-intents/ollama-client');
 
 const router = express.Router();
+
+// Rate limiters for AI endpoints
+const aiChatLimiter = rateLimit({
+  windowMs: 60 * 1000, // 1 minute
+  max: 30, // 30 requests per minute
+  message: { message: 'Too many AI requests, please wait a moment before trying again.' },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
+const aiExecuteLimiter = rateLimit({
+  windowMs: 60 * 1000, // 1 minute
+  max: 15, // 15 execute requests per minute (write actions)
+  message: { message: 'Too many AI actions, please wait a moment before trying again.' },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
+const aiSummarizeLimiter = rateLimit({
+  windowMs: 60 * 1000, // 1 minute
+  max: 10, // 10 summarize requests per minute
+  message: { message: 'Too many summary requests, please wait a moment before trying again.' },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
 router.use(auth);
 
 // ─── Ollama health check ──────────────────────────────────────────────────────
@@ -149,7 +177,7 @@ function handleUnknown(message) {
 
 // ─── POST /chat ───────────────────────────────────────────────────────────────
 
-router.post('/chat', async (req, res) => {
+router.post('/chat', aiChatLimiter, async (req, res) => {
   const { message, context, sessionId } = req.body;
 
   if (!message || typeof message !== 'string' || !message.trim()) {
@@ -268,7 +296,7 @@ router.post('/chat', async (req, res) => {
 
 // ─── POST /summarize-project ─────────────────────────────────────────────────
 // Returns a concise AI summary of a specific project
-router.post('/summarize-project', async (req, res) => {
+router.post('/summarize-project', aiSummarizeLimiter, async (req, res) => {
   const { projectId } = req.body;
   if (!projectId) return res.status(400).json({ error: 'projectId is required' });
 
@@ -285,14 +313,15 @@ router.post('/summarize-project', async (req, res) => {
 
     const proj = projects[0];
 
-    // Gather related data in parallel
+    // Gather related data in parallel (scoped to project's organization)
+    const projOrgId = projects[0].organization_id || orgId;
     const [{ rows: invoices }, { rows: changeOrders }, { rows: defects }, { rows: rfis }, { rows: dailyReports }] =
       await Promise.all([
-        pool.query(`SELECT number, amount, status, due_date FROM invoices WHERE project_id = $1`, [projectId]),
-        pool.query(`SELECT number, title, amount, status FROM change_orders WHERE project_id = $1`, [projectId]),
-        pool.query(`SELECT reference, title, priority, status, due_date FROM defects WHERE project_id = $1`, [projectId]),
-        pool.query(`SELECT number, subject, priority, status FROM rfis WHERE project_id = $1`, [projectId]),
-        pool.query(`SELECT date, weather, workers_on_site, progress FROM daily_reports WHERE project_id = $1 ORDER BY date DESC LIMIT 7`, [projectId]),
+        pool.query(`SELECT number, amount, status, due_date FROM invoices WHERE project_id = $1 AND organization_id = $2`, [projectId, projOrgId]),
+        pool.query(`SELECT number, title, amount, status FROM change_orders WHERE project_id = $1 AND organization_id = $2`, [projectId, projOrgId]),
+        pool.query(`SELECT reference, title, priority, status, due_date FROM defects WHERE project_id = $1 AND organization_id = $2`, [projectId, projOrgId]),
+        pool.query(`SELECT number, subject, priority, status FROM rfis WHERE project_id = $1 AND organization_id = $2`, [projectId, projOrgId]),
+        pool.query(`SELECT date, weather, workers_on_site, progress FROM daily_reports WHERE project_id = $1 AND organization_id = $2 ORDER BY date DESC LIMIT 7`, [projectId, projOrgId]),
       ]);
 
     const totalInvoiced = invoices.reduce((s, i) => s + parseFloat(i.amount || 0), 0);
@@ -355,7 +384,7 @@ Daily Reports: ${dailyReports.length} recent | Avg workers on site: ${avgWorkers
 
 // ─── POST /execute ────────────────────────────────────────────────────────────
 // Action execution: { action, params } → { success, message, data }
-router.post('/execute', async (req, res) => {
+router.post('/execute', aiExecuteLimiter, async (req, res) => {
   const { action, params = {} } = req.body;
   if (!action) return res.status(400).json({ success: false, message: 'action is required' });
 

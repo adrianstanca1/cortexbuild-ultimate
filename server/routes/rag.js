@@ -9,6 +9,7 @@ const pool      = require('../db');
 const authMw    = require('../middleware/auth');
 const { getEmbedding } = require('../lib/ollama');
 const { manifest, SEARCHABLE_TABLES } = require('../lib/rag-manifest');
+const ALLOWED_RAG_TABLES = new Set(SEARCHABLE_TABLES);
 
 const router = express.Router();
 router.use(authMw);
@@ -62,6 +63,8 @@ router.get('/search', async (req, res) => {
 
     for (const tableName of tables) {
       if (!manifest[tableName] || manifest[tableName].skip) continue;
+      // Extra defense: validate against known manifest keys only
+      if (!(tableName in manifest)) continue;
 
       // Build per-table query
       const orgFilter = filter
@@ -147,7 +150,10 @@ router.get('/context', async (req, res) => {
       const [tableName, rowId] = pair.split(':');
       if (!tableName || !rowId) continue;
       if (!manifest[tableName] || manifest[tableName].skip) continue;
+      // Extra defense: validate against known manifest keys only
+      if (!(tableName in manifest)) continue;
 
+      if (!ALLOWED_RAG_TABLES.has(tableName)) continue;
       let query, params;
       if (filter) {
         query = `SELECT * FROM ${tableName} WHERE id = $1 AND organization_id = $2`;
