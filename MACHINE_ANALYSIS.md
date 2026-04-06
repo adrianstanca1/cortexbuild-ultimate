@@ -263,3 +263,44 @@ Skills located in `~/.hermes/skills/` covering:
 2. Add `WANDB_API_KEY` for RL training tool
 3. Consider upgrading Ollama server to match client (0.20.2)
 4. Set up Vercel deployment for CortexBuild previews
+
+---
+
+## 13. Setup Session Log (2026-04-06 — Continued)
+
+### Optimization Actions
+
+- ✅ **Ollama context window**: 8192 → 32768 (4x improvement for complex tasks)
+- ✅ **Ollama threads**: 8 → 18 (match M5 Pro physical cores)
+- ✅ **Hermes Gateway restarted** to pick up config changes
+- ✅ **VPS Docker cleanup**: Reclaimed 743.8MB from build cache
+- ✅ **ministral-3:14b** downloading (9.1GB, ~14 min ETA)
+
+### Final Configuration State
+
+| Setting              | Before         | After                        |
+| -------------------- | -------------- | ---------------------------- |
+| Ollama num_ctx       | 8192           | 32768                        |
+| Ollama num_thread    | 8              | 18                           |
+| VPS Docker waste     | 14.27GB images | 1.08GB active                |
+| Hermes Doctor issues | 4              | 2 (npm vuln + optional keys) |
+
+### Complete Setup Checklist
+
+| Component             | Status           | Notes                                    |
+| --------------------- | ---------------- | ---------------------------------------- |
+| **Hardware**          | ✅ Analyzed      | M5 Pro, 48GB, 926GB                      |
+| **Dev tools**         | ✅ Installed     | Node 24, Python 3.14, Go 1.26, Docker 28 |
+| **Hermes Gateway**    | ✅ Running       | :8644, config optimized                  |
+| **Hermes Agent**      | ✅ Running       | 22/24 tools active                       |
+| **Honcho Memory**     | ✅ Connected     | workspace=cortexbuild                    |
+| **tinker-atropos**    | ✅ Installed     | RL training backend                      |
+| **Ollama models**     | ⏳ 4/5           | ministral-3:14b downloading              |
+| **CortexBuild Local** | ✅ Running       | 8 containers, API :3001                  |
+| **CortexBuild VPS**   | ✅ Running       | 7 containers, API healthy                |
+| **Monitoring**        | ✅ Active        | Prometheus + Grafana                     |
+| **MCP Servers**       | ✅ 12 configured | All functional                           |
+| **Skills**            | ✅ 26 installed  | All loaded                               |
+| **Migration runner**  | ✅ Created       | server/scripts/run-migrations.sh         |
+| **VPS migrations**    | ✅ Applied       | 81→95 tables                             |
+| **Docker cleanup**    | ✅ Done          | 743.8MB reclaimed on VPS                 |
