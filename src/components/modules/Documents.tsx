@@ -2,7 +2,8 @@ import React from 'react';
 import { useState, useEffect, useCallback } from 'react';
 import {
   FileText, Search, Download, Eye, Edit2, Trash2, X, Upload, FileCheck, Image, FolderOpen,
-  BarChart3, Grid, List, FileIcon as FileIconDefault, History, UploadCloud
+  BarChart3, Grid, List, FileIcon as FileIconDefault, History, UploadCloud, Share2, Lock,
+  CheckCircle, AlertCircle, Archive, Send, Clock, Users
 } from 'lucide-react';
 import { toast } from 'sonner';
 import clsx from 'clsx';

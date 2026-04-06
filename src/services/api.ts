@@ -869,6 +869,31 @@ export const predictiveApi = {
     }),
 };
 
+// ─── Activity Feed ───────────────────────────────────────────────────────────
+export const activityFeedApi = {
+  getAll: (params?: { limit?: number; category?: string; offset?: number }) => {
+    const qs = new URLSearchParams();
+    if (params?.limit) qs.append('limit', String(params.limit));
+    if (params?.category) qs.append('category', params.category);
+    if (params?.offset) qs.append('offset', String(params.offset));
+    const q = qs.toString();
+    return fetchAll<Row>(`activity-feed${q ? `?${q}` : ''}`);
+  },
+  create: (data: Row) => apiFetch<Row>('/activity-feed', { method: 'POST', body: JSON.stringify(data) }),
+  markRead: (id: string) => apiFetch(`/activity-feed/${id}/read`, { method: 'PUT' }),
+  markAllRead: () => apiFetch('/activity-feed/mark-all-read', { method: 'PUT' }),
+};
+
+// ─── Work Packages ───────────────────────────────────────────────────────────
+export const workPackagesApi = {
+  getAll: (projectId?: string) =>
+    projectId ? fetchAll<Row>(`work-packages?project_id=${projectId}`) : fetchAll<Row>('work-packages'),
+  getById: (id: string) => apiFetch<Row>(`/work-packages/${id}`),
+  create: (data: Row) => apiFetch<Row>('/work-packages', { method: 'POST', body: JSON.stringify(data) }),
+  update: (id: string, data: Row) => apiFetch<Row>(`/work-packages/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
+  delete: (id: string) => apiFetch(`/work-packages/${id}`, { method: 'DELETE' }),
+};
+
 export const projectImagesApi = {
   getAll: (projectId?: string) =>
     projectId ? fetchAll<Row>(`project-images?project_id=${projectId}`) : fetchAll<Row>('project-images'),
