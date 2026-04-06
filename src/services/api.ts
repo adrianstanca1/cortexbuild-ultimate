@@ -403,6 +403,7 @@ export const bimModelsApi = {
   createClash: (id: string, data: Row) => apiFetch<Row>(`/bim-models/${id}/clashes`, { method: 'POST', body: JSON.stringify(data) }),
   updateClash: (id: string, clashId: string, data: Row) => apiFetch<Row>(`/bim-models/${id}/clashes/${clashId}`, { method: 'PUT', body: JSON.stringify(data) }),
   getLayers: (id: string) => apiFetch<Row[]>(`/bim-models/${id}/layers`),
+  runClashDetection: (id: string) => apiFetch<Row>(`/bim-models/${id}/detect-clashes`, { method: 'POST' }),
   download: (id: string) => `/api/bim-models/download/${id}`,
 };
 

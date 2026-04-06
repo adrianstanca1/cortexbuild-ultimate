@@ -211,6 +211,7 @@ router.post('/send', async (req, res) => {
     }
 
     const { to, cc, type, data, subject, body } = req.body;
+    const orgId = req.user?.organization_id;
 
     if (!to || !type) {
       return res.status(400).json({ message: 'to and type are required' });
@@ -226,17 +227,17 @@ router.post('/send', async (req, res) => {
         return res.status(400).json({ message: 'subject and body are required for custom emails' });
       }
       const { rows } = await pool.query(
-        `INSERT INTO email_logs (recipient, subject, body, email_type, status, created_by)
-         VALUES ($1, $2, $3, $4, $5, $6) RETURNING *`,
-        [to, subject, body, 'custom', 'queued', req.user?.id || 'system']
+        `INSERT INTO email_logs (recipient, subject, body, email_type, status, created_by, organization_id)
+         VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *`,
+        [to, subject, body, 'custom', 'queued', req.user?.id || 'system', orgId]
       );
       if (process.env.SMTP_HOST) {
         try {
           await sendEmailViaSMTP(to, subject, body);
-          const { rows } = await pool.query(
-      `UPDATE email_logs SET status = 'delivered' WHERE id = $1 AND (created_by = $2 OR organization_id = $3)`,
-      [rows[0].id, req.user?.id || 'system', orgId]
-    );
+          const { rows: updateRows } = await pool.query(
+            `UPDATE email_logs SET status = 'delivered' WHERE id = $1 AND (created_by = $2 OR organization_id = $3) RETURNING *`,
+            [rows[0].id, req.user?.id || 'system', orgId]
+          );
         } catch (smtpErr) {
           console.error('[SMTP Error]', 'SMTP delivery failed');
           await pool.query(`UPDATE email_logs SET status = 'failed', error = $1 WHERE id = $2 AND (created_by = $3 OR organization_id = $4)`, ['SMTP delivery failed', rows[0].id, req.user?.id || 'system', orgId]);
@@ -257,7 +258,6 @@ router.post('/send', async (req, res) => {
       emailSubject = emailSubject.replace(`{{${key}}}`, String(value));
     });
 
-    const orgId = req.user?.organization_id;
     const { rows } = await pool.query(
       `INSERT INTO email_logs (recipient, subject, body, email_type, status, created_by, organization_id)
        VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *`,

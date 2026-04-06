@@ -248,7 +248,6 @@ const GANTT_TASKS: GanttTask[] = [
 
 export function ProjectCalendar() {
   const [currentDate, setCurrentDate] = useState(new Date(2026, 3, 6));
-  const USE_MOCK = false;
   const [events, setEvents] = useState<CalendarEvent[]>([]);
   const [view, setView] = useState<'month' | 'week' | 'timeline'>('month');
   const [showAddModal, setShowAddModal] = useState(false);

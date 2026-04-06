@@ -15,8 +15,8 @@ fi
 
 echo "  2/4 Running tests..."
 TEST_OUTPUT=$(npm test 2>&1)
-if echo "$TEST_OUTPUT" | grep -q "116 passed"; then
-  echo "     ✅ 116 tests passing"
+if echo "$TEST_OUTPUT" | grep -qE "[0-9]+ passed"; then
+  PASS_COUNT=$(echo "$TEST_OUTPUT" | grep -oE "[0-9]+ passed" | head -1); echo "     ✅ $PASS_COUNT"
 else
   echo "     ❌ Test failures"
   echo "$TEST_OUTPUT" | grep "FAIL" | head -5

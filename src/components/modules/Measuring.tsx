@@ -64,10 +64,12 @@ export default function Measuring() {
   });
 
   const listResult = useMeasuring.useList();
-  const measurements = listResult.data || [];
   const createMutation = useMeasuring.useCreate();
   const updateMutation = useMeasuring.useUpdate();
   const deleteMutation = useMeasuring.useDelete();
+
+  // Memoize measurements to avoid dependency array changes
+  const measurements = useMemo(() => listResult.data || [], [listResult.data]);
 
   // Filter data
   const filtered = useMemo(() =>

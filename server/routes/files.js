@@ -161,7 +161,7 @@ router.post('/upload', upload.single('file'), async (req, res) => {
     res.status(201).json(rows[0]);
   } catch (err) {
     console.error('[POST /api/files/upload]', 'Internal server error');
-    if ('Internal server error' && 'Internal server error'.startsWith('File type not allowed')) {
+    if (err.message && err.message.startsWith('File type not allowed')) {
       return res.status(400).json({ message: 'Upload failed' });
     }
     res.status(500).json({ message: 'Internal server error' });

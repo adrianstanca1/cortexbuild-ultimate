@@ -7,7 +7,7 @@ async function logAudit({ auth, action, entityType, entityId, oldData, newData, 
       `INSERT INTO audit_log (user_id, action, table_name, record_id, changes, ip_address, organization_id, company_id)
        VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
       [
-        auth?.userId || null,
+        auth?.id || auth?.userId || null,
         action,
         entityType,
         entityId || null,

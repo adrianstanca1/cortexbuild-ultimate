@@ -9,12 +9,14 @@ const SUMMARY_THRESHOLD    = parseInt(process.env.SUMMARY_THRESHOLD    || '30', 
  * Returns { messages: [{role, content}], summary: string|null }
  */
 async function getConversationHistory(organizationId, sessionId, limit = 60) {
-  const orgKey = organizationId || 'anon';
+  if (!organizationId) {
+    return { messages: [], summary: null };
+  }
   const { rows } = await pool.query(
     `SELECT id, role, content, created_at FROM ai_conversations
-     WHERE (organization_id = $1 OR (organization_id IS NULL AND $1 = 'anon')) AND session_id = $2
+     WHERE organization_id = $1 AND session_id = $2
      ORDER BY created_at DESC LIMIT $3`,
-    [orgKey, sessionId, limit]
+    [organizationId, sessionId, limit]
   );
   if (!rows.length) return { messages: [], summary: null };
 

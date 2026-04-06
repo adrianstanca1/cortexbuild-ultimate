@@ -133,17 +133,17 @@ router.post('/', upload.single('file'), validateAfterUpload, async (req, res) =>
     const projectId = req.body.project_id || null;
 
     const { rows } = await pool.query(
-      `INSERT INTO documents (name, type, project_id, project, uploaded_by, version, size, status, category)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+      `INSERT INTO documents (name, type, project_id, project, uploaded_by, version, size, status, category, organization_id, company_id)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
        RETURNING *`,
-      [name, ext, projectId, project, uploadedBy, '1.0', fileSize, 'current', category]
+      [name, ext, projectId, project, uploadedBy, '1.0', fileSize, 'current', category, req.user.organization_id, req.user.company_id || null]
     );
 
     res.status(201).json(rows[0]);
   } catch (err) {
     console.error('[POST /api/upload]', 'Internal server error');
     // multer file-type error comes through here when fileFilter calls cb(err)
-    if ('Internal server error' && 'Internal server error'.startsWith('File type not allowed')) {
+    if (err.message && err.message.startsWith('File type not allowed')) {
       return res.status(400).json({ message: 'Upload failed' });
     }
     res.status(500).json({ message: 'Internal server error' });

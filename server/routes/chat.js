@@ -1,6 +1,7 @@
 const express = require('express');
 const pool = require('../db');
 const auth = require('../middleware/auth');
+const { sendToRoom } = require('../lib/websocket');
 
 const router = express.Router();
 router.use(auth);
@@ -56,6 +57,18 @@ router.post('/channels', async (req, res) => {
       `INSERT INTO chat_channel_members (channel_id, user_id) VALUES ($1, $2)`,
       [rows[0].id, userId]
     );
+
+    // Broadcast to organization room
+    sendToRoom(`org:${orgId}`, {
+      type: 'collaboration',
+      event: 'chat_channel_created',
+      payload: {
+        channelId: rows[0].id,
+        name: rows[0].name,
+        createdBy: userId,
+        timestamp: new Date().toISOString(),
+      },
+    });
 
     res.status(201).json(rows[0]);
   } catch (err) {
@@ -123,6 +136,21 @@ router.post('/channels/:channelId/messages', async (req, res) => {
        RETURNING *`,
       [channelId, userId, content.trim()]
     );
+
+    // Broadcast to channel room
+    sendToRoom(`chat:${channelId}`, {
+      type: 'collaboration',
+      event: 'message_sent',
+      payload: {
+        messageId: rows[0].id,
+        channelId,
+        userId,
+        content: rows[0].content,
+        createdAt: rows[0].created_at,
+        timestamp: new Date().toISOString(),
+      },
+    });
+
     res.status(201).json(rows[0]);
   } catch (err) {
     console.error('[Chat] Failed to send message:', err.message);
@@ -143,10 +171,22 @@ router.delete('/channels/:channelId/messages/:messageId', async (req, res) => {
     const { rows } = await pool.query(
       `DELETE FROM chat_messages
        WHERE id = $1 AND (user_id = $2 OR $3 = true)
-       RETURNING id`,
+       RETURNING id, channel_id`,
       [messageId, userId, isAdmin]
     );
     if (!rows.length) return res.status(404).json({ error: 'Message not found or unauthorized' });
+
+    // Broadcast to channel room
+    sendToRoom(`chat:${rows[0].channel_id}`, {
+      type: 'collaboration',
+      event: 'message_deleted',
+      payload: {
+        messageId,
+        channelId: rows[0].channel_id,
+        timestamp: new Date().toISOString(),
+      },
+    });
+
     res.json({ success: true });
   } catch (err) {
     console.error('[Chat] Failed to delete message:', err.message);
@@ -169,6 +209,18 @@ router.put('/channels/:channelId/messages/:messageId/pin', async (req, res) => {
       [messageId]
     );
     if (!rows.length) return res.status(404).json({ error: 'Message not found' });
+
+    // Broadcast to channel room
+    sendToRoom(`chat:${rows[0].channel_id}`, {
+      type: 'collaboration',
+      event: 'message_pinned',
+      payload: {
+        messageId,
+        channelId: rows[0].channel_id,
+        timestamp: new Date().toISOString(),
+      },
+    });
+
     res.json(rows[0]);
   } catch (err) {
     console.error('[Chat] Failed to pin message:', err.message);

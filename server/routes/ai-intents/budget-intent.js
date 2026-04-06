@@ -22,7 +22,7 @@ function pct(spent, budget) {
  */
 async function handleBudget(user) {
   const { rows } = await pool.query(
-    `SELECT name, client, budget, spent, status FROM projects ORDER BY created_at DESC`, [user?.organization_id]);
+    `SELECT name, client, budget, spent, status FROM projects WHERE organization_id = $1 ORDER BY created_at DESC`, [user?.organization_id]);
   if (!rows.length) {
     return {
       reply: 'No project budget data found.',

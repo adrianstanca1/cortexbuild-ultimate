@@ -1,9 +1,11 @@
 const express = require('express');
 const pool = require('../db');
 const authMiddleware = require('../middleware/auth');
+const { checkPermission } = require('../middleware/checkPermission');
 
 const router = express.Router();
 router.use(authMiddleware);
+router.use(checkPermission('financial-reports', 'read'));
 
 // Multi-tenancy: use org filter when org_id exists, otherwise return all (super_admin)
 function orgFilter(user) {

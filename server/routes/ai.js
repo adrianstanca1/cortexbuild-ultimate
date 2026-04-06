@@ -478,8 +478,8 @@ router.post('/execute', aiExecuteLimiter, async (req, res) => {
         const { rfi_id, status } = params;
         if (!rfi_id || !status) return res.status(400).json({ success: false, message: 'rfi_id and status are required' });
         const { rows } = await pool.query(
-          `UPDATE rfis SET status=$1, updated_at=NOW() WHERE id=$2 RETURNING id,number,status`,
-          [status, rfi_id]
+          `UPDATE rfis SET status=$1, updated_at=NOW() WHERE id=$2 AND organization_id=$3 RETURNING id,number,status`,
+          [status, rfi_id, req.user.organization_id]
         );
         if (!rows.length) return res.status(404).json({ success: false, message: 'RFI not found' });
         res.json({ success: true, message: `RFI "${rows[0].number}" status updated.`, data: rows[0] });

@@ -69,5 +69,34 @@ export function usePWA(): PWAState {
 }
 
 export function registerServiceWorker(): void {
-  // Service worker registration is handled by the build toolchain (vite-plugin-pwa)
+  if (!('serviceWorker' in navigator)) {
+    console.warn('Service Worker not supported in this browser');
+    return;
+  }
+
+  window.addEventListener('load', async () => {
+    try {
+      const registration = await navigator.serviceWorker.register('/sw.js', {
+        scope: '/',
+      });
+
+      console.log('Service Worker registered successfully:', registration.scope);
+
+      // Check for updates periodically
+      setInterval(() => {
+        registration.update();
+      }, 60 * 60 * 1000); // Check hourly
+
+      // Listen for controller change (new SW activated)
+      let refreshing = false;
+      navigator.serviceWorker.addEventListener('controllerchange', () => {
+        if (!refreshing) {
+          refreshing = true;
+          window.location.reload();
+        }
+      });
+    } catch (error) {
+      console.error('Service Worker registration failed:', error);
+    }
+  });
 }

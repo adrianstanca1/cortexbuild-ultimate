@@ -6,7 +6,7 @@ const pool = require('../../db');
  */
 async function handleRisk(user) {
   const { rows } = await pool.query(
-    `SELECT title, project, category, probability, impact, status, owner FROM risks ORDER BY created_at DESC`, [user?.organization_id]);
+    `SELECT title, project, category, likelihood, impact, status, owner FROM risk_register WHERE organization_id = $1 ORDER BY created_at DESC`, [user?.organization_id]);
   if (!rows.length) {
     return {
       reply: 'No risks registered — remember to maintain your risk register!',
@@ -17,8 +17,8 @@ async function handleRisk(user) {
   const open      = rows.filter(r => r.status === 'open' || r.status === 'active');
   const closed    = rows.filter(r => r.status === 'closed' || r.status === 'mitigated');
   const highRisk  = rows.filter(r =>
-    (r.probability >= 4 && r.impact >= 4) ||
-    r.probability === 'high' || r.probability === 'critical' ||
+    (r.likelihood >= 4 && r.impact >= 4) ||
+    r.likelihood === 'high' || r.likelihood === 'critical' ||
     r.impact === 'high' || r.impact === 'critical'
   );
 
@@ -26,7 +26,7 @@ async function handleRisk(user) {
   if (highRisk.length) {
     reply += 'High/Critical risks:\n';
     highRisk.slice(0, 5).forEach(r => {
-      reply += `• ${r.title} — ${r.project} (P: ${r.probability}, I: ${r.impact}), Owner: ${r.owner || 'Unassigned'}\n`;
+      reply += `• ${r.title} — ${r.project} (L: ${r.likelihood}, I: ${r.impact}), Owner: ${r.owner || 'Unassigned'}\n`;
     });
   }
 

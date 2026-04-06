@@ -1,9 +1,11 @@
 const express = require('express');
 const authMiddleware = require('../middleware/auth');
 const pool = require('../db');
+const { checkPermission } = require('../middleware/checkPermission');
 
 const router = express.Router();
 router.use(authMiddleware);
+router.use(checkPermission('executive-reports', 'read'));
 
 // Multi-tenancy: extract org/company context from auth
 function getTenantFilter(req) {

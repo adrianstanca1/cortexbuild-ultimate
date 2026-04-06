@@ -1,9 +1,11 @@
 const express = require('express');
 const pool = require('../db');
 const authMiddleware = require('../middleware/auth');
+const { checkPermission } = require('../middleware/checkPermission');
 
 const router = express.Router();
 router.use(authMiddleware);
+router.use(checkPermission('audit-log', 'read'));
 
 router.get('/', async (req, res) => {
   try {

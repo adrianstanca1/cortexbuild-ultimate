@@ -14,7 +14,7 @@ function fmt(n) {
  */
 async function handleValuations(user) {
   const { rows } = await pool.query(
-    `SELECT project, valuation_number, amount, status, date, certified_amount FROM valuations WHERE organization_id = $1 ORDER BY created_at DESC`
+    `SELECT project, valuation_number, amount, status, date, certified_amount FROM valuations WHERE organization_id = $1 ORDER BY created_at DESC`,
     [user?.organization_id]
   );
   if (!rows.length) {

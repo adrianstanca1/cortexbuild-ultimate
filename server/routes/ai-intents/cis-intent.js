@@ -6,7 +6,7 @@ const pool = require('../../db');
  */
 async function handleCIS(user) {
   const { rows } = await pool.query(
-    `SELECT name, company, ni_number, utr, cis_status, last_cis_return FROM cis_workers ORDER BY created_at DESC`, [user?.organization_id]);
+    `SELECT name, ni_number, utr_number as utr, cis_status FROM team_members WHERE organization_id = $1 AND cis_status IS NOT NULL ORDER BY created_at DESC`, [user?.organization_id]);
   if (!rows.length) {
     return {
       reply: 'No CIS worker records found.',
@@ -16,25 +16,23 @@ async function handleCIS(user) {
   }
   const verified  = rows.filter(r => r.cis_status === 'verified');
   const pending   = rows.filter(r => r.cis_status === 'pending' || r.cis_status === 'unverified');
-  const overdue   = rows.filter(r => r.last_cis_return && new Date(r.last_cis_return) < new Date(Date.now() - 30 * 24 * 60 * 60 * 1000));
 
-  let reply = `You have **${rows.length} CIS workers** — ${verified.length} verified, ${pending.length} pending/unverified.\n`;
-  if (overdue.length) {
-    reply += `⚠️ ${overdue.length} workers due for CIS return submission.\n\n`;
-    reply += 'Overdue CIS returns:\n';
-    overdue.slice(0, 5).forEach(w => {
-      reply += `• ${w.name} — ${w.company || 'No company'}, last return ${w.last_cis_return ? new Date(w.last_cis_return).toLocaleDateString('en-GB') : 'N/A'}\n`;
+  let reply = `You have **${rows.length} workers/contractors with CIS status** — ${verified.length} verified, ${pending.length} pending/unverified.\n`;
+  if (pending.length) {
+    reply += `\n⚠️ ${pending.length} awaiting CIS verification:\n`;
+    pending.slice(0, 5).forEach(w => {
+      reply += `• ${w.name || w.company} (UTR: ${w.utr || 'N/A'}) — Status: ${w.cis_status}\n`;
     });
   } else {
-    reply += '\nAll CIS returns are up to date.';
+    reply += '\nAll CIS-tracked workers are verified.';
   }
 
   return {
     reply,
-    data: { count: rows.length, verified: verified.length, pending: pending.length, overdue: overdue.length, workers: rows },
+    data: { count: rows.length, verified: verified.length, pending: pending.length, workers: rows },
     suggestions: [
       'Show me unverified workers',
-      'Submit CIS returns',
+      'Show me team members',
       'Show me subcontractors'
     ]
   };
