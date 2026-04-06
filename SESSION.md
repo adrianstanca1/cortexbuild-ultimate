@@ -808,3 +808,38 @@ d7f66dc feat: massively expand 13 modules + fix all TypeScript errors
 1. Pull VPS: `ssh root@72.62.132.43 "cd /var/www/cortexbuild-ultimate && git pull origin main && docker restart cortexbuild-api"`
 2. Sync WS-1: `cd ~/cortexbuild-ultimate-1 && git pull origin main`
 3. Next phase: [awaiting user direction]
+
+---
+
+## 2026-04-06 — Save/Commit/Push/Review Complete
+
+### Commits This Session
+
+| Commit    | Description                                                                 |
+| --------- | --------------------------------------------------------------------------- |
+| `b0a5612` | fix(migrations): add multi-tenancy, UUID, and type fixes for 9 tables       |
+| `c1d937f` | fix: clean prom-client metrics config + add teams/drawings tables migration |
+
+### Migration 0006 (129 lines) — Multi-Tenancy & Type Fixes
+
+- **work_packages**: Fix org FK (users→organizations), add company_id
+- **tasks**: Add org_id + company_id, convert to TIMESTAMPTZ
+- **equipment_service_logs**: SERIAL→UUID, multi-tenancy
+- **equipment_hire_logs**: SERIAL→UUID, multi-tenancy
+- **site_permits**: SERIAL→UUID, multi-tenancy
+
+### Migration 0007 (120 lines) — Email Tables
+
+- **email_logs**: UUID PK, org+company, TIMESTAMPTZ, 6 indexes
+- **scheduled_emails**: UUID PK, org+company, TIMESTAMPTZ
+- **email_preferences**: UUID PK, org+company, TIMESTAMPTZ
+
+### Final State
+
+- **HEAD**: `b0a5612`
+- **Local = WS-1 = VPS = GitHub**: ✅ All synced
+- **API**: `{"status":"ok","version":"1.0.0"}` ✅
+- **Lint**: 0 errors, 2 warnings
+- **Tests**: 13 passed
+- **Build**: ✅ OK
+- **Routes**: 40/40 valid
