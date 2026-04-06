@@ -2,7 +2,7 @@
   "name": "cortexbuild-ultimate",
   "private": true,
   "version": "3.0.0",
-  "description": "CortexBuild Ultimate \u2014 AI-Powered Unified Construction Management Platform for UK Contractors",
+  "description": "CortexBuild Ultimate — AI-Powered Unified Construction Management Platform for UK Contractors",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -72,6 +72,7 @@
     "eslint": "^9.39.4",
     "eslint-plugin-react-hooks": "^5.2.0",
     "happy-dom": "^20.8.9",
+    "husky": "^9.1.7",
     "jsdom": "^29.0.1",
     "postcss": "^8.4.38",
     "sharp": "^0.34.5",
