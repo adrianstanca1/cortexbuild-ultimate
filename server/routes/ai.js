@@ -361,13 +361,18 @@ router.post('/execute', async (req, res) => {
 
   try {
     switch (action) {
+      // Require organization_id for all write actions
+      if (!req.user?.organization_id) {
+        return res.status(400).json({ success: false, message: 'User profile incomplete — organization membership required.' });
+      }
+
       case 'create_project': {
         const { name, client, budget, status = 'active', type = 'construction', manager, location } = params;
         if (!name || !client) return res.status(400).json({ success: false, message: 'name and client are required' });
         const { rows } = await pool.query(
           `INSERT INTO projects(name,client,budget,status,type,manager,location,progress,spent,organization_id,company_id)
            VALUES($1,$2,$3,$4,$5,$6,$7,0,0,$8,$9) RETURNING id,name,status`,
-          [name, client, Number(budget) || 0, status, type, manager || null, location || null, req.user.organization_id || null, req.user.company_id || null]
+          [name, client, Number(budget) || 0, status, type, manager || null, location || null, req.user.organization_id, req.user.company_id || null]
         );
         broadcastDashboardUpdate('create', 'projects', rows[0]);
         broadcastNotification('New Project Created', `"${name}" has been added to the project register.`, 'info', { projectId: rows[0].id, projectName: name });
@@ -379,10 +384,10 @@ router.post('/execute', async (req, res) => {
         const { project_id, status } = params;
         if (!project_id || !status) return res.status(400).json({ success: false, message: 'project_id and status are required' });
         const { rows } = await pool.query(
-          `UPDATE projects SET status=$1, updated_at=NOW() WHERE id=$2 RETURNING id,name,status`,
-          [status, project_id]
+          `UPDATE projects SET status=$1, updated_at=NOW() WHERE id=$2 AND organization_id = $3 RETURNING id,name,status`,
+          [status, project_id, req.user.organization_id]
         );
-        if (!rows.length) return res.status(404).json({ success: false, message: 'Project not found' });
+        if (!rows.length) return res.status(404).json({ success: false, message: 'Project not found or access denied' });
         broadcastDashboardUpdate('update', 'projects', rows[0]);
         broadcastNotification('Project Status Updated', `Project "${rows[0].name}" status changed to ${status}.`, 'info', { projectId: project_id });
         res.json({ success: true, message: `Project status updated to "${status}".`, data: rows[0] });
@@ -407,7 +412,7 @@ router.post('/execute', async (req, res) => {
         if (!project || !subject) return res.status(400).json({ success: false, message: 'project and subject are required' });
         const { rows } = await pool.query(
           `INSERT INTO rfis(project,subject,priority,status,organization_id,company_id) VALUES($1,$2,$3,$4,$5,$6) RETURNING id,number,status`,
-          [project, subject, priority, rfiStatus, req.user.organization_id || null, req.user.company_id || null]
+          [project, subject, priority, rfiStatus, req.user.organization_id, req.user.company_id || null]
         );
         broadcastDashboardUpdate('create', 'rfis', rows[0]);
         broadcastNotification('New RFI Raised', `${rows[0].number}: ${subject}`, 'info', { projectId: project });
@@ -421,7 +426,7 @@ router.post('/execute', async (req, res) => {
         const { rows } = await pool.query(
           `INSERT INTO safety_incidents(project,title,type,severity,status,date,organization_id,company_id)
            VALUES($1,$2,$3,$4,$5,NOW(),$6,$7) RETURNING id,title,severity,status`,
-          [project, title, type || 'incident', severity, incStatus, req.user.organization_id || null, req.user.company_id || null]
+          [project, title, type || 'incident', severity, incStatus, req.user.organization_id, req.user.company_id || null]
         );
         broadcastDashboardUpdate('create', 'safety_incidents', rows[0]);
         broadcastNotification('Safety Incident Recorded', `"${title}" — severity: ${severity}`, severity === 'critical' || severity === 'high' ? 'critical' : 'warning', { projectId: project });
@@ -434,7 +439,7 @@ router.post('/execute', async (req, res) => {
         if (!name) return res.status(400).json({ success: false, message: 'name is required' });
         const { rows } = await pool.query(
           `INSERT INTO team_members(name,role,trade,status,organization_id,company_id) VALUES($1,$2,$3,$4,$5,$6) RETURNING id,name,role,status`,
-          [name, role || null, trade || null, tmStatus, req.user.organization_id || null, req.user.company_id || null]
+          [name, role || null, trade || null, tmStatus, req.user.organization_id, req.user.company_id || null]
         );
         broadcastDashboardUpdate('create', 'team_members', rows[0]);
         broadcastNotification('New Team Member Added', `${name} has joined the team as ${role || 'member'}.`, 'info', { memberId: rows[0].id });
@@ -459,7 +464,7 @@ router.post('/execute', async (req, res) => {
         if (!name) return res.status(400).json({ success: false, message: 'name is required' });
         const { rows } = await pool.query(
           `INSERT INTO contacts(name,company,email,role,type,status,organization_id,company_id) VALUES($1,$2,$3,$4,$5,'active',$6,$7) RETURNING id,name,company`,
-          [name, company || null, email || null, role || null, type, req.user.organization_id || null, req.user.company_id || null]
+          [name, company || null, email || null, role || null, type, req.user.organization_id, req.user.company_id || null]
         );
         res.json({ success: true, message: `Contact "${name}" created.`, data: rows[0] });
         break;

@@ -80,8 +80,8 @@ router.delete('/skills/:id', async (req, res) => {
 router.get('/members/:memberId/inductions', async (req, res) => {
   try {
     const { rows } = await pool.query(
-      'SELECT * FROM team_member_inductions WHERE member_id = $1 ORDER BY date DESC',
-      [req.params.memberId]
+      'SELECT i.* FROM team_member_inductions i JOIN team_members m ON i.member_id = m.id WHERE i.member_id = $1 AND m.company_id = $2 ORDER BY date DESC',
+      [req.params.memberId, req.user.company_id]
     );
     res.json(rows);
   } catch (err) {
@@ -131,7 +131,10 @@ router.put('/inductions/:id', async (req, res) => {
 
 router.delete('/inductions/:id', async (req, res) => {
   try {
-    const { rowCount } = await pool.query('DELETE FROM team_member_inductions WHERE id = $1', [req.params.id]);
+    const { rowCount } = await pool.query(
+      'DELETE FROM team_member_inductions i JOIN team_members m ON i.member_id = m.id WHERE i.id = $1 AND m.company_id = $2',
+      [req.params.id, req.user.company_id]
+    );
     if (!rowCount) return res.status(404).json({ message: 'Not found' });
     res.json({ message: 'Deleted' });
   } catch (err) {
@@ -145,8 +148,8 @@ router.delete('/inductions/:id', async (req, res) => {
 router.get('/members/:memberId/availability', async (req, res) => {
   try {
     const { rows } = await pool.query(
-      'SELECT * FROM team_member_availability WHERE member_id = $1 ORDER BY project',
-      [req.params.memberId]
+      'SELECT a.* FROM team_member_availability a JOIN team_members m ON a.member_id = m.id WHERE a.member_id = $1 AND m.company_id = $2 ORDER BY project',
+      [req.params.memberId, req.user.company_id]
     );
     res.json(rows);
   } catch (err) {
@@ -197,7 +200,10 @@ router.put('/availability/:id', async (req, res) => {
 
 router.delete('/availability/:id', async (req, res) => {
   try {
-    const { rowCount } = await pool.query('DELETE FROM team_member_availability WHERE id = $1', [req.params.id]);
+    const { rowCount } = await pool.query(
+      'DELETE FROM team_member_availability a JOIN team_members m ON a.member_id = m.id WHERE a.id = $1 AND m.company_id = $2',
+      [req.params.id, req.user.company_id]
+    );
     if (!rowCount) return res.status(404).json({ message: 'Not found' });
     res.json({ message: 'Deleted' });
   } catch (err) {

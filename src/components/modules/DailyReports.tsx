@@ -66,8 +66,8 @@ export function DailyReports() {
   const [search, setSearch] = useState('');
   const [projectFilter, setProjectFilter] = useState('all');
   const [weatherProjectFilter, setWeatherProjectFilter] = useState('');
-  const [_dateRangeStart, _setDateRangeStart] = useState('');
-  const [_dateRangeEnd, _setDateRangeEnd] = useState('');
+  // Date range filter - TODO: implement
+  
   const [showModal, setShowModal] = useState(false);
   const [editing, setEditing] = useState<AnyRow | null>(null);
   const [photoUploading, setPhotoUploading] = useState(false);
