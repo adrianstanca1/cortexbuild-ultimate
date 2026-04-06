@@ -1,4 +1,4 @@
-import { Search, Building2 } from 'lucide-react';
+import { Search, Building2, Trash2 } from 'lucide-react';
 import { EmptyState } from '../../ui/EmptyState';
 import type { Subcontractor } from './types';
 import { StatusBadge } from './shared';
@@ -8,6 +8,7 @@ interface ApplicationsTabProps {
   searchTerm: string;
   onSearchChange: (term: string) => void;
   onStartAssessment: (sub: Subcontractor) => void;
+  onDelete?: (id: string) => void;
 }
 
 export function ApplicationsTab({
@@ -15,6 +16,7 @@ export function ApplicationsTab({
   searchTerm,
   onSearchChange,
   onStartAssessment,
+  onDelete,
 }: ApplicationsTabProps) {
   return (
     <div className="space-y-4">
@@ -94,12 +96,23 @@ export function ApplicationsTab({
                       )}
                     </td>
                     <td className="px-4 py-3">
-                      <button
-                        onClick={() => onStartAssessment(sub)}
-                        className="text-amber-400 hover:text-amber-300 text-sm font-medium transition"
-                      >
-                        Assess
-                      </button>
+                      <div className="flex items-center gap-3">
+                        <button
+                          onClick={() => onStartAssessment(sub)}
+                          className="text-amber-400 hover:text-amber-300 text-sm font-medium transition"
+                        >
+                          Assess
+                        </button>
+                        {onDelete && (
+                          <button
+                            onClick={() => onDelete(sub.id)}
+                            className="text-red-400 hover:text-red-300 text-sm font-medium transition"
+                            title="Delete"
+                          >
+                            <Trash2 size={16} />
+                          </button>
+                        )}
+                      </div>
                     </td>
                   </tr>
                 ))

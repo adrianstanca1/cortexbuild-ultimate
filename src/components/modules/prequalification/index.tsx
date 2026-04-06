@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { useState, useMemo } from 'react';
-import { Plus } from 'lucide-react';
+import { Plus, Loader2 } from 'lucide-react';
 import { ModuleBreadcrumbs } from '../../ui/Breadcrumbs';
 import { usePrequalification } from '../../../hooks/useData';
 import type { Subcontractor, TabId, AppFormData, Stats } from './types';
@@ -11,143 +11,37 @@ import { AssessmentTab } from './AssessmentTab';
 import { ApprovedTab } from './ApprovedTab';
 import { ExpiringTab } from './ExpiringTab';
 import { ReportsTab } from './ReportsTab';
+import type { Row } from '../../../services/api';
 
-const MOCK_SUBCONTRACTORS: Subcontractor[] = [
-  {
-    id: '1',
-    company: 'Able Groundworks Ltd',
-    trade: 'Groundworks',
-    submissionDate: '2026-03-15',
-    status: 'approved',
-    score: 92,
-    overallScore: 92,
-    approvalDate: '2026-03-20',
-    expiryDate: '2027-03-20',
-    tier: 'gold',
-    contact: 'John Wilson',
-    location: 'Manchester',
-    insurance: '£10M',
-  },
-  {
-    id: '2',
-    company: 'Premier Electrical Services',
-    trade: 'Electrical Installation',
-    submissionDate: '2026-03-10',
-    status: 'approved',
-    score: 85,
-    overallScore: 85,
-    approvalDate: '2026-03-18',
-    expiryDate: '2027-03-18',
-    tier: 'silver',
-    contact: 'Sarah Ahmed',
-    location: 'London',
-    insurance: '£6M',
-  },
-  {
-    id: '3',
-    company: 'SafeBuild Scaffolding',
-    trade: 'Scaffolding',
-    submissionDate: '2026-03-20',
-    status: 'approved',
-    score: 88,
-    overallScore: 88,
-    approvalDate: '2026-03-25',
-    expiryDate: '2026-12-25',
-    tier: 'silver',
-    contact: 'David Clarke',
-    location: 'Birmingham',
-    insurance: '£5M',
-  },
-  {
-    id: '4',
-    company: 'TechBuild Mechanical',
-    trade: 'Mechanical Installation',
-    submissionDate: '2026-02-28',
-    status: 'under_review',
-    score: 0,
-    contact: 'Emma Harris',
-    location: 'Leeds',
-    insurance: '£8M',
-  },
-  {
-    id: '5',
-    company: 'Elite Concrete Solutions',
-    trade: 'Concrete Works',
-    submissionDate: '2026-02-01',
-    status: 'approved',
-    score: 78,
-    overallScore: 78,
-    approvalDate: '2026-02-15',
-    expiryDate: '2026-11-15',
-    tier: 'bronze',
-    contact: 'Michael Smith',
-    location: 'Bristol',
-    insurance: '£4M',
-  },
-  {
-    id: '6',
-    company: 'Precision Plumbing Ltd',
-    trade: 'Plumbing',
-    submissionDate: '2026-03-05',
+function mapApiToSubcontractor(row: Row): Subcontractor {
+  return {
+    id: String(row.id ?? ''),
+    company: String(row.company_name ?? row.company ?? ''),
+    trade: String(row.trade ?? ''),
+    submissionDate: String(row.submission_date ?? row.created_at ?? new Date().toISOString().split('T')[0]),
+    status: (row.status as Subcontractor['status']) ?? 'pending',
+    score: Number(row.score ?? 0),
+    overallScore: Number(row.overall_score ?? row.score ?? 0),
+    approvalDate: row.approval_date ? String(row.approval_date) : undefined,
+    expiryDate: row.expiry_date ? String(row.expiry_date) : undefined,
+    tier: (row.tier as Subcontractor['tier']) ?? undefined,
+    contact: row.contact_person ?? row.contact ? String(row.contact_person ?? row.contact) : undefined,
+    location: row.location ? String(row.location) : undefined,
+    insurance: row.insurance ? String(row.insurance) : undefined,
+  };
+}
+
+function mapToApiPayload(form: AppFormData): Row {
+  return {
+    company_name: form.company,
+    trade: form.trade,
+    contact: form.contact,
+    location: form.location,
+    insurance: form.insurance,
     status: 'pending',
     score: 0,
-    contact: 'Rachel Green',
-    location: 'Manchester',
-    insurance: '£3M',
-  },
-  {
-    id: '7',
-    company: 'BuildRight Carpentry',
-    trade: 'Carpentry',
-    submissionDate: '2026-01-20',
-    status: 'approved',
-    score: 81,
-    overallScore: 81,
-    approvalDate: '2026-02-01',
-    expiryDate: '2026-08-01',
-    tier: 'silver',
-    contact: 'Thomas Brown',
-    location: 'Edinburgh',
-    insurance: '£2M',
-  },
-  {
-    id: '8',
-    company: 'Advanced Roofing Systems',
-    trade: 'Roofing',
-    submissionDate: '2026-03-01',
-    status: 'approved',
-    score: 89,
-    overallScore: 89,
-    approvalDate: '2026-03-10',
-    expiryDate: '2027-03-10',
-    tier: 'silver',
-    contact: 'Kevin Davies',
-    location: 'Cardiff',
-    insurance: '£7M',
-  },
-  {
-    id: '9',
-    company: 'Quality Finishes Ltd',
-    trade: 'Interior Finishing',
-    submissionDate: '2026-02-15',
-    status: 'rejected',
-    score: 45,
-    contact: 'Laura White',
-    location: 'Southampton',
-    insurance: '£1M',
-  },
-  {
-    id: '10',
-    company: 'ProSecure Safety Equipment',
-    trade: 'Safety & PPE Supply',
-    submissionDate: '2026-03-22',
-    status: 'under_review',
-    score: 0,
-    contact: 'Robert Turner',
-    location: 'Glasgow',
-    insurance: '£2.5M',
-  },
-];
+  } as unknown as Row;
+}
 
 export default function Prequalification() {
   const [activeTab, setActiveTab] = useState<TabId>('applications');
@@ -156,10 +50,6 @@ export default function Prequalification() {
   const [showApplicationModal, setShowApplicationModal] = useState(false);
   const [selectedSubcontractor, setSelectedSubcontractor] = useState<Subcontractor | null>(null);
   const [showAssessmentModal, setShowAssessmentModal] = useState(false);
-  const USE_MOCK = import.meta.env.VITE_USE_MOCK_DATA === 'true';
-  const [subcontractors, setSubcontractors] = useState<Subcontractor[]>(
-    USE_MOCK ? MOCK_SUBCONTRACTORS : []
-  );
   const [scoringData, setScoringData] = useState<Record<string, number>>({});
   const [appForm, setAppForm] = useState<AppFormData>({
     company: '',
@@ -169,19 +59,19 @@ export default function Prequalification() {
     insurance: '',
   });
 
-  const { useList } = usePrequalification;
-  const { data: apiPrequal = [] } = useList() as { data: any[] };
+  const { useList, useCreate, useUpdate, useDelete } = usePrequalification;
+  const { data: apiData = [], isLoading } = useList() as { data: Row[]; isLoading: boolean };
+  const createMutation = useCreate();
+  const updateMutation = useUpdate();
+  const deleteMutation = useDelete();
 
-  // Merge API data with mock when mock is enabled and API is empty
+  // Map API rows to Subcontractor type
   const effectiveSubcontractors = useMemo(() => {
-    if (USE_MOCK && (!apiPrequal || apiPrequal.length === 0)) {
-      return subcontractors;
+    if (apiData && apiData.length > 0) {
+      return apiData.map(mapApiToSubcontractor);
     }
-    if (apiPrequal && apiPrequal.length > 0) {
-      return apiPrequal as Subcontractor[];
-    }
-    return subcontractors;
-  }, [apiPrequal, subcontractors, USE_MOCK]);
+    return [];
+  }, [apiData]);
 
   // Filter and search
   const filteredApplications = useMemo(
@@ -266,25 +156,18 @@ export default function Prequalification() {
 
   const handleAddApplication = () => {
     if (!appForm.company) return;
-    const newSubcontractor: Subcontractor = {
-      id: Math.random().toString(36).substr(2, 9),
-      company: appForm.company,
-      trade: appForm.trade,
-      submissionDate: new Date().toISOString().split('T')[0],
-      status: 'pending',
-      score: 0,
-      contact: appForm.contact,
-      location: appForm.location,
-      insurance: appForm.insurance,
-    };
-    setSubcontractors([...subcontractors, newSubcontractor]);
-    setShowApplicationModal(false);
-    setAppForm({
-      company: '',
-      trade: 'Groundworks',
-      contact: '',
-      location: '',
-      insurance: '',
+    const payload = mapToApiPayload(appForm);
+    createMutation.mutate(payload as unknown as Parameters<typeof createMutation.mutate>[0], {
+      onSuccess: () => {
+        setShowApplicationModal(false);
+        setAppForm({
+          company: '',
+          trade: 'Groundworks',
+          contact: '',
+          location: '',
+          insurance: '',
+        });
+      },
     });
   };
 
@@ -308,27 +191,25 @@ export default function Prequalification() {
   const handleSaveAssessment = () => {
     if (!selectedSubcontractor) return;
     const newScore = calculateWeightedScore();
-    const status: any =
+    const status =
       newScore >= 80 ? 'approved' : newScore >= 60 ? 'under_review' : 'rejected';
-    const updatedSubs = subcontractors.map((s) =>
-      s.id === selectedSubcontractor.id
-        ? {
-            ...s,
-            score: newScore,
-            status,
-            overallScore: newScore,
-            approvalDate:
-              status === 'approved' ? new Date().toISOString().split('T')[0] : undefined,
-            expiryDate:
-              status === 'approved'
-                ? new Date(new Date().getTime() + 365 * 24 * 60 * 60 * 1000)
-                    .toISOString()
-                    .split('T')[0]
-                : undefined,
-          }
-        : s
-    );
-    setSubcontractors(updatedSubs);
+    const now = new Date().toISOString().split('T')[0];
+    const expiryDate =
+      status === 'approved'
+        ? new Date(new Date().getTime() + 365 * 24 * 60 * 60 * 1000)
+            .toISOString()
+            .split('T')[0]
+        : null;
+
+    updateMutation.mutate({
+      id: selectedSubcontractor.id,
+      data: {
+        score: newScore,
+        status,
+        approval_date: status === 'approved' ? now : selectedSubcontractor.approvalDate || null,
+        expiry_date: expiryDate,
+      } as unknown as Row,
+    });
     setShowAssessmentModal(false);
     setSelectedSubcontractor(null);
   };
@@ -353,6 +234,11 @@ export default function Prequalification() {
     a.href = url;
     a.download = `prequalification-report-${new Date().toISOString().split('T')[0]}.csv`;
     a.click();
+  };
+
+  const handleDelete = (id: string) => {
+    if (!confirm('Are you sure you want to delete this application?')) return;
+    deleteMutation.mutate(id);
   };
 
   const _getDaysUntilExpiry = (expiryDate: string): number => {
@@ -392,11 +278,30 @@ export default function Prequalification() {
           <button
             type="button"
             onClick={() => setShowApplicationModal(true)}
-            className="flex items-center gap-2 px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white rounded-lg font-semibold transition"
+            disabled={createMutation.isPending}
+            className="flex items-center gap-2 px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white rounded-lg font-semibold transition disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            <Plus size={18} /> New Application
+            {createMutation.isPending ? (
+              <Loader2 size={18} className="animate-spin" />
+            ) : (
+              <Plus size={18} />
+            )}
+            New Application
           </button>
         </div>
+
+        {isLoading ? (
+          <div className="flex items-center justify-center py-20">
+            <Loader2 size={32} className="animate-spin text-amber-500" />
+            <span className="ml-3 text-gray-400">Loading prequalification data...</span>
+          </div>
+        ) : effectiveSubcontractors.length === 0 ? (
+          <div className="text-center py-20">
+            <p className="text-gray-500 text-lg">No prequalification applications yet.</p>
+            <p className="text-gray-600 text-sm mt-2">Click "New Application" to get started.</p>
+          </div>
+        ) : (
+          <>
 
         {/* Quick Stats */}
         <QuickStats stats={stats} expiringCount={expiringList.length} />
@@ -427,6 +332,7 @@ export default function Prequalification() {
               searchTerm={searchTerm}
               onSearchChange={setSearchTerm}
               onStartAssessment={handleStartAssessment}
+              onDelete={handleDelete}
             />
           )}
 
@@ -463,11 +369,13 @@ export default function Prequalification() {
             <ReportsTab
               stats={stats}
               approvedList={approvedList}
-              totalSubcontractors={subcontractors.length}
+              totalSubcontractors={effectiveSubcontractors.length}
               onExport={handleExportReport}
             />
           )}
         </div>
+          </>
+        )}
 
         {/* New Application Modal */}
         <ModalWrapper
@@ -554,10 +462,16 @@ export default function Prequalification() {
             </button>
             <button
               onClick={handleAddApplication}
-              disabled={!appForm.company}
-              className="px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white rounded-lg font-semibold disabled:opacity-50 transition"
+              disabled={!appForm.company || createMutation.isPending}
+              className="px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white rounded-lg font-semibold disabled:opacity-50 disabled:cursor-not-allowed transition"
             >
-              Add Application
+              {createMutation.isPending ? (
+                <span className="flex items-center gap-2">
+                  <Loader2 size={16} className="animate-spin" /> Adding...
+                </span>
+              ) : (
+                'Add Application'
+              )}
             </button>
           </div>
         </ModalWrapper>
@@ -631,9 +545,16 @@ export default function Prequalification() {
                 </button>
                 <button
                   onClick={handleSaveAssessment}
-                  className="px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white rounded-lg font-semibold transition"
+                  disabled={updateMutation.isPending}
+                  className="px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white rounded-lg font-semibold transition disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  Save Assessment
+                  {updateMutation.isPending ? (
+                    <span className="flex items-center gap-2">
+                      <Loader2 size={16} className="animate-spin" /> Saving...
+                    </span>
+                  ) : (
+                    'Save Assessment'
+                  )}
                 </button>
               </div>
             </>
