@@ -176,10 +176,12 @@ router.post('/chat', async (req, res) => {
 
     if (intents.length === 0 || (intents.length === 1 && intents[0] === 'unknown')) {
       result = handleUnknown(message.trim());
+    } else if (intents.length > 1) {
+      const { handleCrossModule } = require('./ai-intents/cross-module-intent');
+      result = await handleCrossModule(intents, message.trim());
     } else {
-      // Use the first matched intent as the primary driver for the rule-based result
-      const primaryIntent = intents[0];
-      switch (primaryIntent) {
+      const intent = intents[0];
+      switch (intent) {
         case 'projects':        result = await handleProjects();        break;
         case 'invoices':        result = await handleInvoices();        break;
         case 'overdue':         result = await handleOverdue();         break;

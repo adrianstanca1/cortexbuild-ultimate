@@ -15,6 +15,7 @@ import {
 import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader';
+import { IFCLoader } from 'web-ifc-three';
 import { ModuleBreadcrumbs } from '../ui/Breadcrumbs';
 import { bimModelsApi } from '../../services/api';
 import { toast } from 'sonner';
@@ -97,6 +98,7 @@ const MOCK_CLASHES: ClashDetection[] = [
 
 export const BIMViewer: React.FC = () => {
   const viewerRef = useRef<HTMLDivElement>(null);
+  const jumpToClashRef = useRef<(clash: ClashDetection) => void>(() => {});
   const [activeModel, setActiveModel] = useState<BIMModel | null>(null);
   const [models, setModels] = useState<BIMModel[]>([]);
   const [clashes, setClashes] = useState<ClashDetection[]>([]);
@@ -178,6 +180,24 @@ export const BIMViewer: React.FC = () => {
     // 5. Controls
     const controls = new OrbitControls(camera, renderer.domElement);
     controls.enableDamping = true;
+
+    function jumpToClash(clash: ClashDetection) {
+      const [x, y, z] = clash.location;
+      const targetPos = new THREE.Vector3(x, y, z);
+
+      // Offset camera position to be slightly above and behind the clash
+      const cameraOffset = new THREE.Vector3(5, 5, 5);
+      const newCameraPos = targetPos.clone().add(cameraOffset);
+
+      // Animate camera and controls target
+      camera.position.copy(newCameraPos);
+      controls.target.copy(targetPos);
+      controls.update();
+
+      toast.info(`Zoomed to clash: ${clash.description}`);
+    }
+
+    jumpToClashRef.current = jumpToClash;
 
     // 6. Model Loading Logic
     const loaderGroup = new THREE.Group();
@@ -418,7 +438,11 @@ export const BIMViewer: React.FC = () => {
             </div>
             <div className="card-content space-y-3">
               {clashes.map((clash) => (
-                <div key={clash.id} className="p-3 border border-base-300 rounded-lg">
+                <div
+                  key={clash.id}
+                  className="p-3 border border-base-300 rounded-lg cursor-pointer hover:bg-base-300 transition-colors"
+                  onClick={() => jumpToClashRef.current(clash)}
+                >
                   <div className="flex justify-between items-start mb-2">
                     <span className={`px-2 py-0.5 rounded text-xs font-medium ${getSeverityColor(clash.severity)}`}>
                       {clash.severity}
