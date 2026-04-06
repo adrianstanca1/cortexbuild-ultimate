@@ -12,6 +12,10 @@ import {
   CheckCircle,
   Box,
 } from 'lucide-react';
+import * as THREE from 'three';
+import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls';
+import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader';
+import { IFC } from 'web-ifc-three';
 import { ModuleBreadcrumbs } from '../ui/Breadcrumbs';
 import { bimModelsApi } from '../../services/api';
 import { toast } from 'sonner';
@@ -146,45 +150,122 @@ export const BIMViewer: React.FC = () => {
     const currentViewerRef = viewerRef.current;
     if (!currentViewerRef) return;
 
-    // Initialize Three.js BIM viewer placeholder
-    const canvas = document.createElement('canvas');
-    canvas.style.width = '100%';
-    canvas.style.height = '400px';
-    canvas.style.background = 'linear-gradient(to bottom, #1f2937, #111827)';
-    canvas.style.borderRadius = '8px';
-    canvas.style.border = '1px solid #374151';
+    // 1. Scene Setup
+    const scene = new THREE.Scene();
+    scene.background = new THREE.Color(0x111827); // matches bg-gray-900
 
-    const ctx = canvas.getContext('2d');
-    if (ctx) {
-      canvas.width = currentViewerRef.clientWidth;
-      canvas.height = 400;
+    // 2. Camera Setup
+    const camera = new THREE.PerspectiveCamera(
+      75,
+      currentViewerRef.clientWidth / 400,
+      0.1,
+      1000
+    );
+    camera.position.set(10, 10, 10);
 
-      // Draw placeholder BIM scene
-      ctx.fillStyle = '#1f2937';
-      ctx.fillRect(0, 0, canvas.width, canvas.height);
+    // 3. Renderer Setup
+    const renderer = new THREE.WebGLRenderer({ antialias: true });
+    renderer.setSize(currentViewerRef.clientWidth, 400);
+    renderer.setPixelRatio(window.devicePixelRatio);
+    currentViewerRef.appendChild(renderer.domElement);
 
-      // Draw building outline
-      ctx.strokeStyle = '#9ca3af';
-      ctx.lineWidth = 2;
-      ctx.strokeRect(50, 100, 300, 200);
+    // 4. Lighting
+    const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
+    scene.add(ambientLight);
+    const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
+    directionalLight.position.set(10, 20, 10);
+    scene.add(directionalLight);
 
-      // Draw floors
-      for (let i = 0; i < 5; i++) {
-        ctx.strokeRect(50, 100 + (i * 40), 300, 40);
+    // 5. Controls
+    const controls = new OrbitControls(camera, renderer.domElement);
+    controls.enableDamping = true;
+
+    // 6. Model Loading Logic
+    const loaderGroup = new THREE.Group();
+    scene.add(loaderGroup);
+
+    const ifcLoader = new IFC();
+    ifcLoader.settings.setWasmPath('https://cdn.jsdelivr.net/npm/web-ifc/wasm/');
+
+    async function loadModelFile(model: BIMModel) {
+      loaderGroup.clear();
+
+      try {
+        // In a real scenario, we would fetch the actual file URL from the API
+        // For this implementation, we assume the API provides a download link or we use a placeholder
+        // For the demo, we'll use a known GLTF/IFC sample if available, or stay with placeholders if not.
+
+        if (model.format === 'GLTF') {
+          const gltfLoader = new GLTFLoader();
+          gltfLoader.load(
+            `/api/bim-models/download/${model.id}`,
+            (gltf) => {
+              loaderGroup.add(gltf.scene);
+              toast.success(`Loaded ${model.name} (GLTF)`);
+            },
+            undefined,
+            (err) => {
+              console.error('GLTF Load Error:', err);
+              loadPlaceholderBuilding();
+            }
+          );
+        } else if (model.format === 'IFC') {
+          await ifcLoader.load(`/api/bim-models/download/${model.id}`, loaderGroup);
+          toast.success(`Loaded ${model.name} (IFC)`);
+        } else {
+          loadPlaceholderBuilding();
+        }
+      } catch (err) {
+        console.error('Model Load Error:', err);
+        loadPlaceholderBuilding();
       }
-
-      // Add labels
-      ctx.fillStyle = '#f3f4f6';
-      ctx.font = '14px system-ui';
-      ctx.fillText('3D BIM Model Viewer', canvas.width / 2 - 80, 30);
-      ctx.fillText('Interactive model will load here', canvas.width / 2 - 100, canvas.height - 20);
     }
 
-    currentViewerRef.appendChild(canvas);
-    
+    function loadPlaceholderBuilding() {
+      const boxGeo = new THREE.BoxGeometry(1, 1, 1);
+      for (let i = 0; i < 5; i++) {
+        for (let j = 0; j < 5; j++) {
+          const material = new THREE.MeshStandardMaterial({
+            color: Math.random() > 0.8 ? 0xef4444 : 0x3b82f6,
+            transparent: true,
+            opacity: 0.8
+          });
+          const cube = new THREE.Mesh(boxGeo, material);
+          cube.position.set(i * 2, 0, j * 2);
+          cube.scale.set(1.8, Math.random() * 5 + 2, 1.8);
+          cube.position.y = cube.scale.y / 2;
+          loaderGroup.add(cube);
+        }
+      }
+    }
+
+    if (activeModel) {
+      loadModelFile(activeModel);
+    }
+
+    // 7. Animation Loop
+    let animationFrameId: number;
+    const animate = () => {
+      controls.update();
+      renderer.render(scene, camera);
+      animationFrameId = requestAnimationFrame(animate);
+    };
+    animate();
+
+    // Handle resize
+    const handleResize = () => {
+      camera.aspect = currentViewerRef.clientWidth / 400;
+      camera.updateProjectionMatrix();
+      renderer.setSize(currentViewerRef.clientWidth, 400);
+    };
+    window.addEventListener('resize', handleResize);
+
     return () => {
-      if (currentViewerRef.contains(canvas)) {
-        currentViewerRef.removeChild(canvas);
+      window.removeEventListener('resize', handleResize);
+      cancelAnimationFrame(animationFrameId);
+      renderer.dispose();
+      if (currentViewerRef.contains(renderer.domElement)) {
+        currentViewerRef.removeChild(renderer.domElement);
       }
     };
   }, [activeModel]);

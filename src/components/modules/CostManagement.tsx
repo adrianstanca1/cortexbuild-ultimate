@@ -3,14 +3,14 @@ import React, { useState, useEffect } from 'react';
 import { ModuleBreadcrumbs } from '../ui/Breadcrumbs';
 import {
   TrendingUp, TrendingDown, DollarSign, Plus, FileText, Calculator, Target,
-  BarChart3, PieChart as PieChartIcon, Activity, Loader2
+  BarChart3, PieChart as PieChartIcon, Activity, Loader2, BrainCircuit, AlertTriangle
 } from 'lucide-react';
 import {
   BarChart, Bar, AreaChart, Area, XAxis, YAxis,
   CartesianGrid, Tooltip, Legend, ResponsiveContainer, Pie, Cell, PieChart
 } from 'recharts';
 import { toast } from 'sonner';
-import { costManagementApi } from '../../services/api';
+import { costManagementApi, predictiveApi } from '../../services/api';
 
 interface BudgetItem {
   id: string;
@@ -41,6 +41,8 @@ export function CostManagement() {
 
   const [budgetItems, setBudgetItems] = useState<BudgetItem[]>([]);
   const [forecast, setForecast] = useState<CostForecast[]>([]);
+  const [predictiveData, setPredictiveData] = useState<any>(null);
+  const [isAnalyzing, setIsAnalyzing] = useState(false);
 
   // Add item form state
   const [newItem, setNewItem] = useState({ category: '', description: '', budgeted: '', committed: '' });
@@ -78,7 +80,7 @@ export function CostManagement() {
         costManagementApi.getBudget(),
         costManagementApi.getForecast()
       ]);
-      
+
       // Transform budget data
       const transformedBudget = budgetData.map((item: Record<string, unknown>) => ({
         id: String(item.id ?? ''),
@@ -92,7 +94,7 @@ export function CostManagement() {
         variancePercent: parseFloat(String(item.variance_percent ?? 0)) || 0,
         status: String(item.status ?? 'on-track') as BudgetItem['status'],
       }));
-      
+
       // Transform forecast data
       const transformedForecast = forecastData.map((f: Record<string, unknown>) => ({
         month: new Date(String(f.period_start ?? '')).toLocaleString('default', { month: 'short' }),
@@ -103,7 +105,7 @@ export function CostManagement() {
             : undefined,
         cumulative: parseFloat(String(f.cumulative_cost ?? 0)) || 0,
       }));
-      
+
       setBudgetItems(transformedBudget);
       setForecast(transformedForecast);
     } catch (err) {
@@ -111,6 +113,22 @@ export function CostManagement() {
       toast.error('Failed to load cost data');
     } finally {
       setLoading(false);
+    }
+  }
+
+  async function runPredictiveAnalysis() {
+    // Use first project from budget items as reference if no specific project is selected
+    const projectId = budgetItems[0]?.id || 'default';
+    try {
+      setIsAnalyzing(true);
+      const result = await predictiveApi.getForecast(projectId);
+      setPredictiveData(result);
+      toast.success('AI Analysis complete');
+    } catch (err) {
+      console.error('Predictive analysis failed', err);
+      toast.error('AI Analysis failed to generate forecast');
+    } finally {
+      setIsAnalyzing(false);
     }
   }
 
@@ -321,7 +339,17 @@ export function CostManagement() {
 
             {/* Cumulative Stats */}
             <div className="card bg-base-200 p-6">
-              <h3 className="text-white font-semibold mb-4">Cumulative Projection</h3>
+              <div className="flex justify-between items-center mb-4">
+                <h3 className="text-white font-semibold">Cumulative Projection</h3>
+                <button
+                  onClick={runPredictiveAnalysis}
+                  disabled={isAnalyzing}
+                  className="flex items-center gap-2 px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 disabled:bg-gray-600 text-white rounded-lg text-xs font-medium transition-colors"
+                >
+                  {isAnalyzing ? <Loader2 className="w-3 h-3 animate-spin" /> : <BrainCircuit className="w-3 h-3" />}
+                  {isAnalyzing ? 'Analyzing...' : 'AI Insight'}
+                </button>
+              </div>
               <div className="bg-gray-900 rounded-lg p-6 text-center mb-6 border border-gray-700">
                 <p className="text-gray-400 text-sm mb-2">Project Completion Forecast</p>
                 <p className="text-4xl font-bold text-white">{fmt(2600000)}</p>
@@ -343,6 +371,52 @@ export function CostManagement() {
                 </div>
               </div>
             </div>
+
+            {predictiveData && (
+              <div className="card bg-base-200 p-6 border-l-4 border-emerald-500 animate-in fade-in slide-in-from-bottom-4 duration-500">
+                <div className="flex items-center gap-2 mb-4 text-emerald-400">
+                  <BrainCircuit className="w-5 h-5" />
+                  <h3 className="text-white font-semibold">AI Predictive Analysis</h3>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                  <div className="p-3 bg-gray-900 rounded-lg border border-gray-700">
+                    <p className="text-xs text-gray-500 uppercase font-bold mb-1">Risk Level</p>
+                    <div className={`flex items-center gap-2 font-bold ${
+                      predictiveData.riskLevel === 'HIGH' ? 'text-red-400' :
+                      predictiveData.riskLevel === 'MEDIUM' ? 'text-yellow-400' : 'text-emerald-400'
+                    }`}>
+                      <AlertTriangle className="w-4 h-4" />
+                      {predictiveData.riskLevel}
+                    </div>
+                  </div>
+                  <div className="p-3 bg-gray-900 rounded-lg border border-gray-700">
+                    <p className="text-xs text-gray-500 uppercase font-bold mb-1">Predicted Final Cost</p>
+                    <p className="text-lg font-bold text-white">{fmt(predictiveData.predictedFinalCost)}</p>
+                  </div>
+                  <div className="p-3 bg-gray-900 rounded-lg border border-gray-700">
+                    <p className="text-xs text-gray-500 uppercase font-bold mb-1">Confidence</p>
+                    <p className="text-lg font-bold text-white">{predictiveData.confidenceScore}%</p>
+                  </div>
+                </div>
+                <div className="space-y-4">
+                  <div>
+                    <p className="text-xs text-gray-500 uppercase font-bold mb-2">Analysis</p>
+                    <p className="text-sm text-gray-300 leading-relaxed italic">"{predictiveData.analysis}"</p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-gray-500 uppercase font-bold mb-2">Recommendations</p>
+                    <ul className="space-y-2">
+                      {predictiveData.recommendations.map((rec: string, i: number) => (
+                        <li key={i} className="flex items-start gap-2 text-sm text-gray-300">
+                          <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 mt-1.5 shrink-0" />
+                          {rec}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                </div>
+              </div>
+            )}
 
             {/* KPI Cards */}
             <div className="space-y-4">

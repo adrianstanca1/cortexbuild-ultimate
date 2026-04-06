@@ -133,6 +133,8 @@ app.use('/api/project-tasks',   require('./routes/project-tasks'));
 app.use('/api/ai', require('./routes/ai'));
 
 app.use('/api/ai-conversations', require('./routes/ai-conversations'));
+app.use('/api/ai-predictive', require('./routes/ai-predictive'));
+
 
 // ─── CRUD routes ─────────────────────────────────────────────────────────────
 app.use('/api/projects',        makeRouter('projects'));

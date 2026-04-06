@@ -861,7 +861,14 @@ export const weatherApi = {
   getForecast: () => apiFetch<WeatherForecastDay[]>('/weather-forecast'),
 };
 
-// ─── Project Images (Gallery) ──────────────────────────────────────────────────
+export const predictiveApi = {
+  getForecast: (projectId: string) =>
+    apiFetch<Row>('/ai-predictive/forecast', {
+      method: 'POST',
+      body: JSON.stringify({ projectId })
+    }),
+};
+
 export const projectImagesApi = {
   getAll: (projectId?: string) =>
     projectId ? fetchAll<Row>(`project-images?project_id=${projectId}`) : fetchAll<Row>('project-images'),
