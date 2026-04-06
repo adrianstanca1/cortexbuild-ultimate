@@ -7,17 +7,18 @@
 async function insertOrgAndCompany(client, { orgName, companyName }) {
   const name = orgName.trim();
   const comp = (companyName || name).trim();
+  const slug = name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
   const { rows: [org] } = await client.query(
-    `INSERT INTO organizations (id, name, description)
-     VALUES (gen_random_uuid(), $1, $2)
+    `INSERT INTO organizations (id, name, slug, industry, plan)
+     VALUES (gen_random_uuid(), $1, $2, 'Construction', 'ENTERPRISE')
      RETURNING id`,
-    [name, `Organization for ${name}`]
+    [name, slug]
   );
   const { rows: [company] } = await client.query(
-    `INSERT INTO companies (id, organization_id, name, description)
-     VALUES (gen_random_uuid(), $1, $2, $3)
+    `INSERT INTO companies (id, organization_id, name, country)
+     VALUES (gen_random_uuid(), $1, $2, 'UK')
      RETURNING id`,
-    [org.id, comp, null]
+    [org.id, comp]
   );
   return { organizationId: org.id, companyId: company.id };
 }
@@ -78,8 +79,8 @@ async function createOAuthUserWithTenant(
     });
     const comp = (companyName || orgName).trim();
     const { rows } = await client.query(
-      `INSERT INTO users (email, name, avatar_url, email_verified, organization_id, company_id, company)
-       VALUES ($1, $2, $3, true, $4, $5, $6)
+      `INSERT INTO users (email, name, avatar, role, organization_id, company_id, company)
+       VALUES ($1, $2, $3, 'company_owner', $4, $5, $6)
        RETURNING *`,
       [email.toLowerCase(), name, avatarUrl, organizationId, companyId, comp]
     );

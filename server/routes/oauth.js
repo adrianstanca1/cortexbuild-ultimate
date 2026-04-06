@@ -276,6 +276,10 @@ router.get('/google/callback', oauthLimiter, async (req, res, next) => {
 
 // Initialize Microsoft OAuth with CSRF-protected state
 router.get('/microsoft', async (req, res, next) => {
+  // Guard: Microsoft OAuth must be configured
+  if (!process.env.MICROSOFT_CLIENT_ID || !process.env.MICROSOFT_CLIENT_SECRET) {
+    return res.redirect(`${process.env.FRONTEND_URL || 'http://localhost:5173'}/login?error=microsoft_not_configured`);
+  }
   // Generate cryptographically random state for CSRF protection
   const state = crypto.randomBytes(16).toString('hex');
   const frontendRedirect = `${process.env.FRONTEND_URL || 'http://localhost:5173'}/dashboard`;
@@ -294,6 +298,10 @@ router.get('/microsoft', async (req, res, next) => {
 
 // Microsoft OAuth callback (rate limited)
 router.get('/microsoft/callback', oauthLimiter, async (req, res, next) => {
+  // Guard: Microsoft OAuth must be configured
+  if (!process.env.MICROSOFT_CLIENT_ID || !process.env.MICROSOFT_CLIENT_SECRET) {
+    return res.redirect(`${process.env.FRONTEND_URL || 'http://localhost:5173'}/login?error=microsoft_not_configured`);
+  }
   const { state } = req.query;
 
   // Validate state parameter (CSRF protection)
