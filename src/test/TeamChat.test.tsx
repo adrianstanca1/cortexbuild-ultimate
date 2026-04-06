@@ -7,6 +7,7 @@
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { TeamChat } from '../components/ui/TeamChat';
 import { toast } from 'sonner';
 
@@ -78,6 +79,7 @@ describe('TeamChat', () => {
   });
 
   it('sends a message when pressing Enter', async () => {
+    const user = userEvent.setup();
     render(<TeamChat onClose={mockOnClose} />);
 
     // Wait for messages to load first
@@ -87,8 +89,7 @@ describe('TeamChat', () => {
 
     // Type message and press Enter
     const input = screen.getByLabelText('Message input');
-    fireEvent.change(input, { target: { value: 'Press Enter to send' } });
-    fireEvent.keyPress(input, { key: 'Enter', code: 'Enter', charCode: 13 });
+    await user.type(input, 'Press Enter to send{enter}');
 
     expect(toast.success).toHaveBeenCalledWith('Message sent');
   });
