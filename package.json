@@ -2,7 +2,7 @@
   "name": "cortexbuild-ultimate",
   "private": true,
   "version": "3.0.0",
-  "description": "CortexBuild Ultimate — AI-Powered Unified Construction Management Platform for UK Contractors",
+  "description": "CortexBuild Ultimate \u2014 AI-Powered Unified Construction Management Platform for UK Contractors",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -15,7 +15,13 @@
     "test:coverage": "NODE_ENV=test vitest run --coverage",
     "test:e2e": "playwright test",
     "test:e2e:ui": "playwright test --ui",
-    "test:e2e:headed": "playwright test --headed"
+    "test:e2e:headed": "playwright test --headed",
+    "prepare": "husky",
+    "verify": "./scripts/pre-commit-check.sh",
+    "verify:routes": "./scripts/verify-server-routes.sh",
+    "verify:all": "./scripts/verify-server-routes.sh && ./scripts/pre-commit-check.sh",
+    "precommit": "./scripts/pre-commit-check.sh",
+    "check": "npx tsc --noEmit && npm run lint && npm test"
   },
   "dependencies": {
     "@dnd-kit/utilities": "^3.2.2",

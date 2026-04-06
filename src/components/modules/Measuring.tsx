@@ -118,8 +118,8 @@ export default function Measuring() {
   // Filter data
   const filtered = useMemo(() =>
     typedMeasurements.filter((m: Measurement) =>
-      (m.description || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
-      (m.item_no || '').toLowerCase().includes(searchTerm.toLowerCase())
+      (m.reference || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (m.location || '').toLowerCase().includes(searchTerm.toLowerCase())
     ),
     [typedMeasurements, searchTerm]
   );
@@ -137,12 +137,12 @@ export default function Measuring() {
 
   // Calculate totals from filtered data
   const totals = useMemo(() => {
-    const grandTotal = filtered.reduce((sum, m) => sum + ((m.quantity || 0) * (m.rate || 0)), 0);
-    const measuredItems = filtered.filter(m => m.quantity && m.quantity > 0).length;
+    const totalArea = filtered.reduce((sum, m) => sum + (m.total_area || 0), 0);
+    const measuredItems = filtered.filter(m => m.total_area && m.total_area > 0).length;
     const measurementPercentage = filtered.length > 0 ? Math.round((measuredItems / filtered.length) * 100) : 0;
-    const costPlanTotal = filtered.reduce((sum, m) => sum + (m.total || 0), 0);
+    const costPlanTotal = 0; // Not applicable for simple measuring
 
-    return { grandTotal, costPlanTotal, measuredItems, measurementPercentage, totalItems: filtered.length };
+    return { grandTotal: totalArea, costPlanTotal, measuredItems, measurementPercentage, totalItems: filtered.length };
   }, [filtered]);
 
   const handleCreate = async () => {
@@ -173,21 +173,22 @@ export default function Measuring() {
   };
 
   const handleUpdate = async () => {
-    if (!editItem || !editItem.description) {
-      toast.error('Description is required');
+    if (!editItem) {
+      toast.error('No item selected for update');
       return;
     }
     try {
       await updateMutation.mutateAsync({
         id: editItem.id,
         data: {
-          item_no: editItem.item_no,
-          description: editItem.description,
+          reference: editItem.reference,
+          survey_type: editItem.survey_type,
+          location: editItem.location,
+          surveyor: editItem.surveyor,
+          survey_date: editItem.survey_date,
+          total_area: editItem.total_area,
           unit: editItem.unit,
-          quantity: editItem.quantity,
-          rate: editItem.rate,
-          section: editItem.section,
-          total: (editItem.quantity || 0) * (editItem.rate || 0),
+          notes: editItem.notes,
         },
       });
       toast.success('Measurement updated successfully');
@@ -416,53 +417,44 @@ export default function Measuring() {
         {/* BILL OF QUANTITIES TAB */}
         {activeTab === 'bq' && (
           <div className="space-y-4">
-            {sections.map(section => {
-              const sectionTotal = section.items.reduce((sum, m) => sum + (m.total || 0), 0);
-              return (
-                <div key={section.name} className="card p-6">
-                  <h3 className="text-lg font-bold text-white mb-4">{section.name}</h3>
-                  <div className="overflow-x-auto mb-4">
-                    <table className="w-full text-sm">
-                      <thead>
-                        <tr className="border-b border-gray-700">
-                          <th className="text-left py-3 px-4 text-gray-400 font-medium">Item No</th>
-                          <th className="text-left py-3 px-4 text-gray-400 font-medium">Description</th>
-                          <th className="text-center py-3 px-4 text-gray-400 font-medium">Unit</th>
-                          <th className="text-right py-3 px-4 text-gray-400 font-medium">Quantity</th>
-                          <th className="text-right py-3 px-4 text-gray-400 font-medium">Rate (£)</th>
-                          <th className="text-right py-3 px-4 text-gray-400 font-medium">Total (£)</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {section.items.map((m: Measurement) => (
-                          <tr key={m.id} className="border-b border-gray-700 hover:bg-gray-800/50">
-                            <td className="py-3 px-4 text-gray-300 text-xs">{m.item_no}</td>
-                            <td className="py-3 px-4 text-gray-300">{m.description}</td>
-                            <td className="py-3 px-4 text-center text-gray-400">{m.unit}</td>
-                            <td className="py-3 px-4 text-right text-white">{(m.quantity || 0).toLocaleString()}</td>
-                            <td className="py-3 px-4 text-right text-gray-400">{(m.rate || 0).toFixed(2)}</td>
-                            <td className="py-3 px-4 text-right text-white font-bold">
-                              £{((m.quantity || 0) * (m.rate || 0)).toFixed(2)}
-                            </td>
-                          </tr>
-                        ))}
-                        <tr className="border-t border-gray-600 bg-gray-800/30">
-                          <td colSpan={5} className="py-3 px-4 text-right font-bold text-gray-300">
-                            {section.name} Total:
-                          </td>
-                          <td className="py-3 px-4 text-right font-bold text-amber-400">£{sectionTotal.toFixed(2)}</td>
-                        </tr>
-                      </tbody>
-                    </table>
-                  </div>
-                </div>
-              );
-            })}
+            <div className="card p-6">
+              <h3 className="text-lg font-bold text-white mb-4">Measurement Summary</h3>
+              <div className="overflow-x-auto mb-4">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="border-b border-gray-700">
+                      <th className="text-left py-3 px-4 text-gray-400 font-medium">Reference</th>
+                      <th className="text-left py-3 px-4 text-gray-400 font-medium">Location</th>
+                      <th className="text-center py-3 px-4 text-gray-400 font-medium">Unit</th>
+                      <th className="text-right py-3 px-4 text-gray-400 font-medium">Total Area</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {filtered.map((m: Measurement) => (
+                      <tr key={m.id} className="border-b border-gray-700 hover:bg-gray-800/50">
+                        <td className="py-3 px-4 text-gray-300 text-xs">{m.reference}</td>
+                        <td className="py-3 px-4 text-gray-300">{m.location}</td>
+                        <td className="py-3 px-4 text-center text-gray-400">{m.unit}</td>
+                        <td className="py-3 px-4 text-right text-white font-bold">
+                          {(m.total_area || 0).toLocaleString()}
+                        </td>
+                      </tr>
+                    ))}
+                    <tr className="border-t border-gray-600 bg-gray-800/30">
+                      <td colSpan={3} className="py-3 px-4 text-right font-bold text-gray-300">
+                        Grand Total Area:
+                      </td>
+                      <td className="py-3 px-4 text-right font-bold text-amber-400">{totals.grandTotal.toLocaleString()}</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
 
             <div className="card p-6 bg-gradient-to-r from-orange-500/10 to-amber-500/10 border border-orange-500/30">
               <div className="text-right">
-                <p className="text-gray-400 mb-2">Bill of Quantities Grand Total</p>
-                <p className="text-4xl font-bold text-orange-400">£{totals.costPlanTotal.toFixed(2)}</p>
+                <p className="text-gray-400 mb-2">Total Measured Area</p>
+                <p className="text-4xl font-bold text-orange-400">{totals.grandTotal.toLocaleString()} {typedMeasurements[0]?.unit || 'units'}</p>
               </div>
             </div>
           </div>
@@ -567,16 +559,16 @@ export default function Measuring() {
 
             {/* Measurement by Section */}
             <div className="card p-6">
-              <h3 className="text-lg font-bold text-white mb-4">Measurement by Section</h3>
+              <h3 className="text-lg font-bold text-white mb-4">Area Distribution</h3>
               <div className="space-y-4">
                 {sections.map(section => {
-                  const sectionTotal = section.items.reduce((sum, m) => sum + (m.total || 0), 0);
-                  const percentage = (sectionTotal / totals.costPlanTotal) * 100;
+                  const sectionTotal = section.items.reduce((sum, m) => sum + (m.total_area || 0), 0);
+                  const percentage = (sectionTotal / totals.grandTotal) * 100;
                   return (
                     <div key={section.name}>
                       <div className="flex items-center justify-between mb-2">
                         <span className="text-gray-300 font-medium">{section.name}</span>
-                        <span className="text-white font-bold">£{sectionTotal.toLocaleString()}</span>
+                        <span className="text-white font-bold">{sectionTotal.toLocaleString()}</span>
                       </div>
                       <div className="w-full h-2 bg-gray-700 rounded-full overflow-hidden">
                         <div
@@ -593,12 +585,12 @@ export default function Measuring() {
 
             {/* Cost Plan vs Take-Off Comparison */}
             <div className="card p-6">
-              <h3 className="text-lg font-bold text-white mb-4">Cost Plan vs Take-Off Comparison</h3>
+              <h3 className="text-lg font-bold text-white mb-4">Take-Off vs Target Comparison</h3>
               <div className="space-y-4">
                 <div>
                   <div className="flex items-center justify-between mb-2">
-                    <span className="text-gray-300">Bill of Quantities Total</span>
-                    <span className="text-white font-bold">£{totals.costPlanTotal.toLocaleString()}</span>
+                    <span className="text-gray-300">Target Area</span>
+                    <span className="text-white font-bold">{totals.costPlanTotal.toLocaleString()}</span>
                   </div>
                   <div className="w-full h-3 bg-gray-700 rounded-full overflow-hidden">
                     <div className="h-full bg-blue-500 transition-all" style={{ width: '100%' }} />
@@ -606,8 +598,8 @@ export default function Measuring() {
                 </div>
                 <div>
                   <div className="flex items-center justify-between mb-2">
-                    <span className="text-gray-300">Take-Off Total</span>
-                    <span className="text-white font-bold">£{totals.grandTotal.toLocaleString()}</span>
+                    <span className="text-gray-300">Measured Area</span>
+                    <span className="text-white font-bold">{totals.grandTotal.toLocaleString()}</span>
                   </div>
                   <div className="w-full h-3 bg-gray-700 rounded-full overflow-hidden">
                     <div
@@ -620,9 +612,9 @@ export default function Measuring() {
                 </div>
                 {totals.costPlanTotal !== totals.grandTotal && (
                   <div className={`p-3 rounded text-sm font-medium ${totals.grandTotal < totals.costPlanTotal ? 'bg-green-500/10 text-green-400' : 'bg-red-500/10 text-red-400'}`}>
-                    {totals.grandTotal < totals.costPlanTotal ? '✓' : '⚠'} Variance: £
-                    {Math.abs(totals.grandTotal - totals.costPlanTotal).toLocaleString()}{' '}
-                    {totals.grandTotal < totals.costPlanTotal ? 'under budget' : 'over budget'}
+                    {totals.grandTotal < totals.costPlanTotal ? '✓' : '⚠'} Variance:
+                    {Math.abs(totals.grandTotal - totals.costPlanTotal).toLocaleString()}
+                    {totals.grandTotal < totals.costPlanTotal ? ' under target' : ' over target'}
                   </div>
                 )}
               </div>
