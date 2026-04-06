@@ -4,9 +4,10 @@ const pool = require('../../db');
  * Handle RAMS (Risk Assessment Method Statements) intent - return RAMS summaries.
  * @returns {Promise<{reply: string, data: object, suggestions: string[]}>}
  */
-async function handleRams() {
+async function handleRams(user) {
   const { rows } = await pool.query(
-    `SELECT title, project, type, status, review_date FROM rams ORDER BY created_at DESC`
+    `SELECT title, project, type, status, review_date FROM rams WHERE organization_id = $1 ORDER BY created_at DESC`
+    [user?.organization_id]
   );
   if (!rows.length) {
     return {

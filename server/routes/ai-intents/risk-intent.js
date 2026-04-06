@@ -4,10 +4,9 @@ const pool = require('../../db');
  * Handle risk register intent - return risk summaries.
  * @returns {Promise<{reply: string, data: object, suggestions: string[]}>}
  */
-async function handleRisk() {
+async function handleRisk(user) {
   const { rows } = await pool.query(
-    `SELECT title, project, category, probability, impact, status, owner FROM risks ORDER BY created_at DESC`
-  );
+    `SELECT title, project, category, probability, impact, status, owner FROM risks ORDER BY created_at DESC`, [user?.organization_id]);
   if (!rows.length) {
     return {
       reply: 'No risks registered — remember to maintain your risk register!',

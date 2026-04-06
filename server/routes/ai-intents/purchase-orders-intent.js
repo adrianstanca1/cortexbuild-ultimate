@@ -12,9 +12,10 @@ function fmt(n) {
  * Handle purchase orders intent - return PO summaries.
  * @returns {Promise<{reply: string, data: object, suggestions: string[]}>}
  */
-async function handlePurchaseOrders() {
+async function handlePurchaseOrders(user) {
   const { rows } = await pool.query(
-    `SELECT number, supplier, project, amount, status, delivery_date FROM purchase_orders ORDER BY created_at DESC`
+    `SELECT number, supplier, project, amount, status, delivery_date FROM purchase_orders WHERE organization_id = $1 ORDER BY created_at DESC`
+    [user?.organization_id]
   );
   if (!rows.length) {
     return {

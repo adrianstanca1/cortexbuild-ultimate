@@ -4,10 +4,9 @@ const pool = require('../../db');
  * Handle CIS (Construction Industry Scheme) intent - return CIS compliance summaries.
  * @returns {Promise<{reply: string, data: object, suggestions: string[]}>}
  */
-async function handleCIS() {
+async function handleCIS(user) {
   const { rows } = await pool.query(
-    `SELECT name, company, ni_number, utr, cis_status, last_cis_return FROM cis_workers ORDER BY created_at DESC`
-  );
+    `SELECT name, company, ni_number, utr, cis_status, last_cis_return FROM cis_workers ORDER BY created_at DESC`, [user?.organization_id]);
   if (!rows.length) {
     return {
       reply: 'No CIS worker records found.',

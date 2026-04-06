@@ -12,9 +12,10 @@ function fmt(n) {
  * Handle invoices intent - return invoice summaries.
  * @returns {Promise<{reply: string, data: object, suggestions: string[]}>}
  */
-async function handleInvoices() {
+async function handleInvoices(user) {
   const { rows } = await pool.query(
-    `SELECT number, client, project, amount, status, due_date FROM invoices ORDER BY created_at DESC`
+    `SELECT number, client, project, amount, status, due_date FROM invoices WHERE organization_id = $1 ORDER BY created_at DESC`
+    [user?.organization_id]
   );
   if (!rows.length) {
     return {
@@ -53,9 +54,9 @@ async function handleInvoices() {
  * Handle overdue intent - return only overdue invoices.
  * @returns {Promise<{reply: string, data: object, suggestions: string[]}>}
  */
-async function handleOverdue() {
+async function handleOverdue(user) {
   const { rows } = await pool.query(
-    `SELECT number, client, project, amount, due_date FROM invoices WHERE status = 'overdue' ORDER BY due_date ASC`
+    `SELECT number, client, project, amount, due_date FROM invoices WHERE status = 'overdue' AND organization_id = $1 ORDER BY due_date ASC`, [user?.organization_id]
   );
   if (!rows.length) {
     return {

@@ -17,12 +17,17 @@ function pct(spent, budget) {
 }
 
 /**
- * Handle projects intent - return project summaries.
+ * Handle projects intent - return project summaries scoped to user's organization.
+ * @param {object} user - Authenticated user context
  * @returns {Promise<{reply: string, data: object, suggestions: string[]}>}
  */
-async function handleProjects() {
+async function handleProjects(user) {
+  const orgId = user?.organization_id;
+  const where = orgId ? `WHERE organization_id = $1` : '';
+  const params = orgId ? [orgId] : [];
   const { rows } = await pool.query(
-    `SELECT name, client, status, progress, budget, spent, manager, location FROM projects ORDER BY created_at DESC`
+    `SELECT name, client, status, progress, budget, spent, manager, location FROM projects ${where} ORDER BY created_at DESC`,
+    params
   );
   if (!rows.length) {
     return {

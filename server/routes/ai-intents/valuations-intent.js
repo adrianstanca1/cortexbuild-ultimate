@@ -12,9 +12,10 @@ function fmt(n) {
  * Handle valuations intent - return project valuation summaries.
  * @returns {Promise<{reply: string, data: object, suggestions: string[]}>}
  */
-async function handleValuations() {
+async function handleValuations(user) {
   const { rows } = await pool.query(
-    `SELECT project, valuation_number, amount, status, date, certified_amount FROM valuations ORDER BY created_at DESC`
+    `SELECT project, valuation_number, amount, status, date, certified_amount FROM valuations WHERE organization_id = $1 ORDER BY created_at DESC`
+    [user?.organization_id]
   );
   if (!rows.length) {
     return {

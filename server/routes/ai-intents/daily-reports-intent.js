@@ -4,9 +4,10 @@ const pool = require('../../db');
  * Handle daily reports intent - return daily site report summaries.
  * @returns {Promise<{reply: string, data: object, suggestions: string[]}>}
  */
-async function handleDailyReports() {
+async function handleDailyReports(user) {
   const { rows } = await pool.query(
-    `SELECT project, date, weather, workers_count, progress_notes FROM daily_reports ORDER BY created_at DESC`
+    `SELECT project, date, weather, workers_count, progress_notes FROM daily_reports WHERE organization_id = $1 ORDER BY created_at DESC`
+    [user?.organization_id]
   );
   if (!rows.length) {
     return {

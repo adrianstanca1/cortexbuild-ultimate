@@ -14,8 +14,8 @@ router.use(authMiddleware);
 router.get('/members/:memberId/skills', async (req, res) => {
   try {
     const { rows } = await pool.query(
-      'SELECT * FROM team_member_skills WHERE member_id = $1 ORDER BY skill_name',
-      [req.params.memberId]
+      'SELECT s.* FROM team_member_skills s JOIN team_members m ON s.member_id = m.id WHERE s.member_id = $1 AND m.company_id = $2 ORDER BY skill_name',
+      [req.params.memberId, req.user.company_id]
     );
     res.json(rows);
   } catch (err) {
@@ -63,7 +63,10 @@ router.put('/skills/:id', async (req, res) => {
 
 router.delete('/skills/:id', async (req, res) => {
   try {
-    const { rowCount } = await pool.query('DELETE FROM team_member_skills WHERE id = $1', [req.params.id]);
+    const { rowCount } = await pool.query(
+      'DELETE FROM team_member_skills s JOIN team_members m ON s.member_id = m.id WHERE s.id = $1 AND m.company_id = $2',
+      [req.params.id, req.user.company_id]
+    );
     if (!rowCount) return res.status(404).json({ message: 'Not found' });
     res.json({ message: 'Deleted' });
   } catch (err) {

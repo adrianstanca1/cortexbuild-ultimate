@@ -12,9 +12,10 @@ function fmt(n) {
  * Handle subcontractors intent - return subcontractor summaries.
  * @returns {Promise<{reply: string, data: object, suggestions: string[]}>}
  */
-async function handleSubcontractors() {
+async function handleSubcontractors(user) {
   const { rows } = await pool.query(
-    `SELECT name, trade, company, email, phone, status, cis_verified FROM subcontractors ORDER BY created_at DESC`
+    `SELECT name, trade, company, email, phone, status, cis_verified FROM subcontractors WHERE organization_id = $1 ORDER BY created_at DESC`
+    [user?.organization_id]
   );
   if (!rows.length) {
     return {

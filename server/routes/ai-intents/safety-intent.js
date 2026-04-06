@@ -4,9 +4,10 @@ const pool = require('../../db');
  * Handle safety intent - return safety incident summaries.
  * @returns {Promise<{reply: string, data: object, suggestions: string[]}>}
  */
-async function handleSafety() {
+async function handleSafety(user) {
   const { rows } = await pool.query(
-    `SELECT type, title, severity, status, project, date FROM safety_incidents ORDER BY created_at DESC`
+    `SELECT type, title, severity, status, project, date FROM safety_incidents WHERE organization_id = $1 ORDER BY created_at DESC`
+    [user?.organization_id]
   );
   if (!rows.length) {
     return {

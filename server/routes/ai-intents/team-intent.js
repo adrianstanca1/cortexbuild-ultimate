@@ -4,9 +4,10 @@ const pool = require('../../db');
  * Handle team intent - return team member summaries.
  * @returns {Promise<{reply: string, data: object, suggestions: string[]}>}
  */
-async function handleTeam() {
+async function handleTeam(user) {
   const { rows } = await pool.query(
-    `SELECT name, role, trade, status, cis_status, hours_this_week FROM team_members ORDER BY created_at DESC`
+    `SELECT name, role, trade, status, cis_status, hours_this_week FROM team_members WHERE organization_id = $1 ORDER BY created_at DESC`
+    [user?.organization_id]
   );
   if (!rows.length) {
     return {

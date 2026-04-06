@@ -4,9 +4,10 @@ const pool = require('../../db');
  * Handle tenders intent - return tender summaries.
  * @returns {Promise<{reply: string, data: object, suggestions: string[]}>}
  */
-async function handleTenders() {
+async function handleTenders(user) {
   const { rows } = await pool.query(
-    `SELECT title, client, value, status, submission_date, award_date FROM tenders ORDER BY created_at DESC`
+    `SELECT title, client, value, status, submission_date, award_date FROM tenders WHERE organization_id = $1 ORDER BY created_at DESC`
+    [user?.organization_id]
   );
   if (!rows.length) {
     return {

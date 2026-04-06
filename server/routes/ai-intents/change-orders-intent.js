@@ -12,9 +12,10 @@ function fmt(n) {
  * Handle change orders intent - return variation/CO summaries.
  * @returns {Promise<{reply: string, data: object, suggestions: string[]}>}
  */
-async function handleChangeOrders() {
+async function handleChangeOrders(user) {
   const { rows } = await pool.query(
-    `SELECT number, project, title, value, status, date FROM change_orders ORDER BY created_at DESC`
+    `SELECT number, project, title, value, status, date FROM change_orders WHERE organization_id = $1 ORDER BY created_at DESC`
+    [user?.organization_id]
   );
   if (!rows.length) {
     return {

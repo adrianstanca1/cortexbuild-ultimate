@@ -12,9 +12,10 @@ function fmt(n) {
  * Handle materials intent - return material order/inventory summaries.
  * @returns {Promise<{reply: string, data: object, suggestions: string[]}>}
  */
-async function handleMaterials() {
+async function handleMaterials(user) {
   const { rows } = await pool.query(
-    `SELECT name, category, quantity, unit, cost, status, supplier, delivery_date FROM materials ORDER BY created_at DESC`
+    `SELECT name, category, quantity, unit, cost, status, supplier, delivery_date FROM materials WHERE organization_id = $1 ORDER BY created_at DESC`
+    [user?.organization_id]
   );
   if (!rows.length) {
     return {

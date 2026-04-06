@@ -2,6 +2,8 @@
  * Cross-Module Intent Handler
  * Coordinates data gathering from multiple domain-specific handlers
  * to synthesize a comprehensive answer.
+ *
+ * SECURITY: All handlers receive user context for tenant scoping.
  */
 
 const { handleProjects } = require('./projects-intent');
@@ -53,15 +55,16 @@ const HANDLERS = {
  * Handle queries that match multiple intents.
  * @param {string[]} intents - Array of detected intents
  * @param {string} message - Original user message
+ * @param {object} user - Authenticated user context (for tenant scoping)
  * @returns {Promise<{reply: string, data: any, suggestions: string[]}>}
  */
-async function handleCrossModule(intents, message) {
+async function handleCrossModule(intents, message, user) {
   const results = {};
   const promises = intents.map(async (intent) => {
     const handler = HANDLERS[intent];
     if (handler) {
       try {
-        const res = await handler();
+        const res = await handler(user);
         results[intent] = res;
       } catch (e) {
         console.error(`[CrossModule] Error in handler ${intent}:`, e.message);
@@ -72,7 +75,6 @@ async function handleCrossModule(intents, message) {
   await Promise.all(promises);
 
   // Synthesis: Create a combined summary of the findings
-  // Note: The LLM (via server/routes/ai.js) will further refine this.
   const summaryParts = [];
   for (const [intent, res] of Object.entries(results)) {
     summaryParts.push(`--- ${intent.toUpperCase()} ---\n${res.reply}`);

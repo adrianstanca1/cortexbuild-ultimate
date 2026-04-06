@@ -20,10 +20,9 @@ function pct(spent, budget) {
  * Handle budget intent - return budget summaries across projects.
  * @returns {Promise<{reply: string, data: object, suggestions: string[]}>}
  */
-async function handleBudget() {
+async function handleBudget(user) {
   const { rows } = await pool.query(
-    `SELECT name, client, budget, spent, status FROM projects ORDER BY created_at DESC`
-  );
+    `SELECT name, client, budget, spent, status FROM projects ORDER BY created_at DESC`, [user?.organization_id]);
   if (!rows.length) {
     return {
       reply: 'No project budget data found.',

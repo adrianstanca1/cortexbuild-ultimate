@@ -4,9 +4,10 @@ const pool = require('../../db');
  * Handle equipment intent - return equipment/plant summaries.
  * @returns {Promise<{reply: string, data: object, suggestions: string[]}>}
  */
-async function handleEquipment() {
+async function handleEquipment(user) {
   const { rows } = await pool.query(
-    `SELECT name, type, status, location, project, last_service FROM equipment ORDER BY created_at DESC`
+    `SELECT name, type, status, location, project, last_service FROM equipment WHERE organization_id = $1 ORDER BY created_at DESC`
+    [user?.organization_id]
   );
   if (!rows.length) {
     return {
