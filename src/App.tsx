@@ -21,7 +21,7 @@ import { QuickActionsHUD } from './components/layout/QuickActionsHUD';
 
 // ── All modules now have default exports ──────────────────────────────────
 const Dashboard           = lazy(() => import('./components/modules/Dashboard'));
-const Projects            = lazy(() => import('./components/modules/Projects'));
+const Projects            = lazy(() => import('./components/modules/projects'));
 const Invoicing           = lazy(() => import('./components/modules/Invoicing'));
 const Accounting          = lazy(() => import('./components/modules/Accounting'));
 const FinancialReports    = lazy(() => import('./components/modules/FinancialReports'));
