@@ -403,7 +403,32 @@ DO $$
 BEGIN
     IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'temp_works') THEN
         INSERT INTO temp_works_new (organization_id, company_id, reference, title, project_id, project, description, type, status, location, design_by, approved_by, design_date, approval_date, erected_by, erected_date, inspected_by, inspected_date, load_capacity, notes, created_at, updated_at)
-        SELECT organization_id, company_id, reference, title, project_id, project, description, type, status, location, design_by, approved_by, design_date, approval_date, erected_by, erected_date, inspected_by, inspected_date, load_capacity, notes, created_at, updated_at
+        SELECT
+            organization_id,
+            company_id,
+            reference,
+            title,
+            CASE
+                WHEN project_id ~ '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$' THEN project_id::UUID
+                ELSE NULL
+            END AS project_id,
+            project,
+            description,
+            type,
+            status,
+            location,
+            design_by,
+            approved_by,
+            design_date,
+            approval_date,
+            erected_by,
+            erected_date,
+            inspected_by,
+            inspected_date,
+            load_capacity,
+            notes,
+            created_at,
+            updated_at
         FROM temp_works;
 
         DROP TABLE temp_works;
@@ -432,7 +457,17 @@ DO $$
 BEGIN
     IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'ai_vision_logs') THEN
         INSERT INTO ai_vision_logs_new (organization_id, company_id, project_id, image_url, analysis_result, confidence_score, processed_at)
-        SELECT organization_id, company_id, project_id, image_url, analysis_result, confidence_score, processed_at
+        SELECT
+            organization_id,
+            company_id,
+            CASE
+                WHEN project_id ~ '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$' THEN project_id::UUID
+                ELSE NULL
+            END AS project_id,
+            image_url,
+            analysis_result,
+            confidence_score,
+            processed_at
         FROM ai_vision_logs;
 
         DROP TABLE ai_vision_logs;

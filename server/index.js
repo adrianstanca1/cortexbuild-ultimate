@@ -117,10 +117,12 @@ const deployLimiter = rateLimit({
 app.use('/api/deploy', deployLimiter, require('./routes/deploy'));
 
 // ─── JWT auth on all other /api routes ───────────────────────────────────────
+
+// ─── Metrics endpoint (no auth required for Prometheus scraping) ─────────────
+app.use('/api/metrics', require('./routes/metrics').router);
 app.use('/api', authMiddleware);
 
 // ─── Protected routes ────────────────────────────────────────────────────────
-app.use('/api/metrics', require('./routes/metrics'));
 
 // ─── Routes requiring authentication ─────────────────────────────────────────
 app.use('/api/company', require('./routes/company'));

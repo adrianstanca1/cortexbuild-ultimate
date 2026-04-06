@@ -1,49 +1,43 @@
-/* Metrics: Tracks HTTP request/response times and sends structured metrics to Prometheus
-   This module adds a way to scrape performance metrics into Prometheus
-
-Author: Canary CI / CortexBuild Ultimate Infrastructure Team
-Date: 2026-04-06
+/* Metrics: HTTP request/response times exposed to Prometheus
+   Endpoint: GET /api/metrics
 */
 
+const express = require('express');
 const promClient = require('prom-client');
 
-const register = new promClient.Registry();
-register.add('http_request_duration_seconds', {
-  name: 'http_request_duration_seconds',
-  help: 'Duration of HTTP requests in seconds',
-  labelNames: ['method', 'method_name', 'endpoint', 'status_code'],
-});
+const router = express.Router();
 
+// Create a Registry
+const register = new promClient.Registry();
+
+// Enable collection of default metrics (heap, event loop, etc.)
+promClient.collectDefaultMetrics({ register });
+
+// Custom metric: HTTP request duration histogram
 const httpRequestDuration = new promClient.Histogram({
   name: 'http_request_duration_seconds',
   help: 'Duration of HTTP requests in seconds',
-  labelNames: ['method', 'method_name', 'endpoint', 'status_code'],
+  labelNames: ['method', 'route', 'status_code'],
+  registers: [register],
+  buckets: [0.01, 0.05, 0.1, 0.25, 0.5, 1, 2.5, 5, 10],
 });
 
-// Metrics configuration with Prometheus scrape config
-const metricsConfig = {
-  prometheus: {
-    endpoint: '/api/metrics',
-    schema: 'application/json',
-  },
-};
-
-const promServer = promServer(metricsConfig);
-
-const app = require('./index.js');
-
-// Initialize Prometheus metrics server
-promServer.init().catch(err => {
-    console.error('Unable to initialize Prometheus metrics server:', err);
+// Expose metrics endpoint for Prometheus scraping
+router.get('/', async (req, res) => {
+  res.set('Content-Type', register.contentType);
+  res.send(await register.metrics());
 });
 
-// Helper to get endpoint details
-const getEndpointDetails = (method, method_name, endpoint, status_code) => {
-  return {
-    method, method_name, endpoint, status_code,
-    url: `${method}_${method_name}_${endpoint || '/'}`,
-  };
-};
+// Middleware: observe request duration (must be mounted before routes)
+function observeRequest(req, res, next) {
+  const start = Date.now();
+  res.on('finish', () => {
+    const duration = (Date.now() - start) / 1000;
+    httpRequestDuration
+      .labels({ method: req.method, route: req.route?.path || req.path, status_code: res.statusCode })
+      .observe(duration);
+  });
+  next();
+}
 
-// Metrics export
-module.exports = { httpRequestDuration, promServer, getEndpointDetails, metricsConfig };
+module.exports = { router, observeRequest, httpRequestDuration, register };
