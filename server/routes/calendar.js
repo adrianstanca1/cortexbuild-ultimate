@@ -70,7 +70,6 @@ async function getEvents(req, res) {
       });
     });
 
-    const isSuper = ['super_admin', 'company_owner'].includes(req.user?.role);
     let coOrgFilter;
     let coParams;
     if (isSuper) {
