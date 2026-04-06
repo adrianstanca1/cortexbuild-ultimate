@@ -80,7 +80,7 @@ export function registerServiceWorker(): void {
         scope: '/',
       });
 
-      console.log('Service Worker registered successfully:', registration.scope);
+      // Service Worker registered:', registration.scope);
 
       // Check for updates periodically
       setInterval(() => {
