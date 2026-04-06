@@ -33,7 +33,7 @@ async function getEmbedding(text) {
       path: '/api/embeddings',
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'Content-Length': Buffer.byteLength(body) },
-      timeout: 30000,
+      timeout: 5000,
     }, (res) => {
       let data = '';
       res.on('data', chunk => data += chunk);

@@ -5,7 +5,7 @@ const authMiddleware = require('../middleware/auth');
 const router = express.Router();
 router.use(authMiddleware);
 
-router.get('/', async (req, res) => {
+async function getEvents(req, res) {
   try {
     const { start, end } = req.query;
     const events = [];
@@ -102,6 +102,9 @@ router.get('/', async (req, res) => {
     console.error('[Calendar Events]', err.message);
     res.status(500).json({ message: 'Internal server error' });
   }
-});
+}
+
+router.get('/', getEvents);
+router.get('/events', getEvents);
 
 module.exports = router;

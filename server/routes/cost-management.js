@@ -19,7 +19,7 @@ router.get('/budget', authMiddleware, async (req, res) => {
         b.start_date, b.end_date, b.created_at,
         c.code as cost_code, c.name as cost_code_name, c.category,
         p.name as project_name,
-        u.first_name || ' ' || u.last_name as created_by_name
+        u.name as created_by_name
       FROM budget_items b
       LEFT JOIN cost_codes c ON b.cost_code_id = c.id
       LEFT JOIN projects p ON b.project_id = p.id

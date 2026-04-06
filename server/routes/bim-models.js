@@ -125,7 +125,7 @@ router.get('/', authMiddleware, async (req, res) => {
         m.id, m.name, m.description, m.file_name, m.file_path, m.file_size,
         m.format, m.version, m.status, m.elements_count, m.floors_count,
         m.uploaded_by, m.created_at, m.updated_at, m.processed_at,
-        u.first_name, u.last_name,
+        u.name as uploaded_by_name,
         p.name as project_name
        FROM bim_models m
        LEFT JOIN users u ON m.uploaded_by = u.id
@@ -149,7 +149,7 @@ router.get('/:id', authMiddleware, async (req, res) => {
   try {
     const { rows } = await pool.query(
       `SELECT 
-        m.*, u.first_name, u.last_name, p.name as project_name
+        m.*, u.name as uploaded_by_name, p.name as project_name
        FROM bim_models m
        LEFT JOIN users u ON m.uploaded_by = u.id
        LEFT JOIN projects p ON m.project_id = p.id
@@ -440,10 +440,8 @@ router.get('/:id/clashes', authMiddleware, async (req, res) => {
     const { rows } = await pool.query(
       `SELECT
         c.*,
-        u1.first_name as assigned_to_first,
-        u1.last_name as assigned_to_last,
-        u2.first_name as resolved_by_first,
-        u2.last_name as resolved_by_last
+        u1.name as assigned_to_name,
+        u2.name as resolved_by_name
        FROM bim_clashes_detections c
        INNER JOIN bim_models m ON c.model_id = m.id
        LEFT JOIN users u1 ON c.assigned_to = u1.id

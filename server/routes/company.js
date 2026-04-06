@@ -107,8 +107,8 @@ router.get('/users', authMiddleware, async (req, res) => {
   try {
     const { rows } = await pool.query(
       `SELECT 
-        u.id, u.email, u.first_name, u.last_name, u.phone, u.job_title,
-        u.role, u.is_active, u.last_login_at, u.created_at,
+        u.id, u.email, u.name, u.phone,
+        u.role, u.avatar, u.created_at,
         c.name as company_name
        FROM users u
        LEFT JOIN companies c ON u.company_id = c.id
