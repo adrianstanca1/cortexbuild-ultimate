@@ -23,7 +23,7 @@ router.get('/overview', async (req, res) => {
       pool.query(`SELECT
         COUNT(*) as total_count,
         COALESCE(SUM(CASE WHEN status = 'paid' THEN amount ELSE 0 END), 0) as total_revenue,
-        COALESCE(SUM(CASE WHEN status IN ('pending','unpaid','sent','draft') THEN amount ELSE 0 END), 0) as outstanding
+        COALESCE(SUM(CASE WHEN status IN ('sent','draft','overdue') THEN amount ELSE 0 END), 0) as outstanding
         FROM invoices ${where}`, params),
       pool.query(`SELECT COUNT(*) as count FROM rfis WHERE status = 'open' ${where ? 'AND organization_id = $1' : ''}`, params),
       pool.query(`SELECT COUNT(*) as total,
@@ -106,7 +106,7 @@ router.get('/project-status', async (req, res) => {
     let params = [];
     let where = '';
     if (orgId && !isSuper) {
-      where = 'WHERE company_id = $1';
+      where = 'WHERE organization_id = $1';
       params.push(orgId);
     }
 
@@ -151,7 +151,7 @@ router.get('/safety-chart', async (req, res) => {
     let where = '';
     if (orgId && !isSuper) {
       join = 'JOIN projects p ON si.project_id = p.id';
-      where = 'WHERE p.company_id = $1';
+      where = 'WHERE p.organization_id = $1';
       params.push(orgId);
     }
 

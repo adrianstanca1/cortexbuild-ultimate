@@ -67,8 +67,7 @@ router.put('/', authMiddleware, async (req, res) => {
         cis_subcontractor = COALESCE($14, cis_subcontractor),
         logo_url = COALESCE($15, logo_url),
         insurance_expiry = COALESCE($16, insurance_expiry),
-        tax_reference = COALESCE($17, tax_reference),
-        updated_at = NOW()
+        tax_reference = COALESCE($17, tax_reference)
        WHERE id = $18
        RETURNING *`,
       [
@@ -170,17 +169,15 @@ router.post('/users', authMiddleware, async (req, res) => {
 
     const { rows } = await pool.query(
       `INSERT INTO users (
-        email, first_name, last_name, role, phone, job_title,
-        password_hash, company_id, organization_id, is_active
-       ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, true)
-       RETURNING id, email, first_name, last_name, role, phone, job_title, is_active, created_at`,
+        email, name, role, phone,
+        password_hash, company_id, organization_id
+       ) VALUES ($1, $2, $3, $4, $5, $6, $7)
+       RETURNING id, email, name, role, phone, created_at`,
       [
         email.toLowerCase().trim(),
-        firstName.trim(),
-        lastName.trim(),
+        `${firstName.trim()} ${lastName.trim()}`,
         targetRole,
         phone || null,
-        jobTitle || null,
         passwordHash,
         req.user.company_id,
         req.user.organization_id
@@ -287,13 +284,10 @@ router.put('/users/:id', authMiddleware, async (req, res) => {
     const { rows } = await pool.query(
       `UPDATE users SET
         role = COALESCE($1, role),
-        is_active = COALESCE($2, is_active),
-        job_title = COALESCE($3, job_title),
-        phone = COALESCE($4, phone),
-        updated_at = NOW()
-       WHERE id = $5 AND company_id = $6
-       RETURNING id, email, first_name, last_name, role, phone, job_title, is_active`,
-      [role, is_active, jobTitle, phone, req.params.id, req.user.company_id]
+        phone = COALESCE($2, phone)
+       WHERE id = $3 AND company_id = $4
+       RETURNING id, email, name, role, phone`,
+      [role, phone, req.params.id, req.user.company_id]
     );
 
     if (!rows.length) {

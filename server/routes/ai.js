@@ -411,7 +411,7 @@ router.post('/execute', aiExecuteLimiter, async (req, res) => {
         const { project_id, status } = params;
         if (!project_id || !status) return res.status(400).json({ success: false, message: 'project_id and status are required' });
         const { rows } = await pool.query(
-          `UPDATE projects SET status=$1, updated_at=NOW() WHERE id=$2 AND organization_id = $3 RETURNING id,name,status`,
+          `UPDATE projects SET status=$1 WHERE id=$2 AND organization_id = $3 RETURNING id,name,status`,
           [status, project_id, req.user.organization_id]
         );
         if (!rows.length) return res.status(404).json({ success: false, message: 'Project not found or access denied' });
@@ -425,7 +425,7 @@ router.post('/execute', aiExecuteLimiter, async (req, res) => {
         const { invoice_id, status } = params;
         if (!invoice_id || !status) return res.status(400).json({ success: false, message: 'invoice_id and status are required' });
         const { rows } = await pool.query(
-          `UPDATE invoices SET status=$1, updated_at=NOW() WHERE id=$2 AND organization_id = $3 RETURNING id,number,status`,
+          `UPDATE invoices SET status=$1 WHERE id=$2 AND organization_id = $3 RETURNING id,number,status`,
           [status, invoice_id, req.user.organization_id]
         );
         if (!rows.length) return res.status(404).json({ success: false, message: 'Invoice not found' });
@@ -478,7 +478,7 @@ router.post('/execute', aiExecuteLimiter, async (req, res) => {
         const { rfi_id, status } = params;
         if (!rfi_id || !status) return res.status(400).json({ success: false, message: 'rfi_id and status are required' });
         const { rows } = await pool.query(
-          `UPDATE rfis SET status=$1, updated_at=NOW() WHERE id=$2 AND organization_id=$3 RETURNING id,number,status`,
+          `UPDATE rfis SET status=$1 WHERE id=$2 AND organization_id=$3 RETURNING id,number,status`,
           [status, rfi_id, req.user.organization_id]
         );
         if (!rows.length) return res.status(404).json({ success: false, message: 'RFI not found' });

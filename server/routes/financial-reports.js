@@ -28,7 +28,7 @@ router.get('/summary', async (req, res) => {
     const totalBudget = projects.rows.reduce((sum, p) => sum + (parseFloat(p.budget) || 0), 0);
     const totalSpent = projects.rows.reduce((sum, p) => sum + (parseFloat(p.spent) || 0), 0);
     const paidInvoices = invoices.rows.filter(i => i.status === 'paid');
-    const pendingInvoices = invoices.rows.filter(i => i.status === 'pending' || i.status === 'sent');
+    const pendingInvoices = invoices.rows.filter(i => i.status === 'draft' || i.status === 'sent');
     const overdueInvoices = invoices.rows.filter(i => i.status === 'overdue');
     const totalRevenue = paidInvoices.reduce((sum, i) => sum + (parseFloat(i.amount) || 0), 0);
     const outstandingAmount = [...pendingInvoices, ...overdueInvoices].reduce((sum, i) => sum + (parseFloat(i.amount) || 0), 0);
@@ -153,7 +153,7 @@ router.get('/invoices/analysis', async (req, res) => {
     const analysis = {
       total: rows.reduce((sum, i) => sum + (parseFloat(i.amount) || 0), 0),
       paid: rows.filter(i => i.status === 'paid').reduce((sum, i) => sum + (parseFloat(i.amount) || 0), 0),
-      pending: rows.filter(i => i.status === 'pending' || i.status === 'sent').reduce((sum, i) => sum + (parseFloat(i.amount) || 0), 0),
+      pending: rows.filter(i => i.status === 'draft' || i.status === 'sent').reduce((sum, i) => sum + (parseFloat(i.amount) || 0), 0),
       overdue: rows.filter(i => i.status === 'overdue').reduce((sum, i) => sum + (parseFloat(i.amount) || 0), 0),
       invoices: rows.slice(0, 50),
     };

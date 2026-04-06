@@ -147,17 +147,17 @@ router.get('/', async (req, res) => {
         if (queryEmbedding) {
           // Try to fetch stored embeddings and compute cosine similarity
           const { rows: chunks } = await pool.query(
-            `SELECT de.chunk_text, de.embedding_id, de.document_id, d.name as file_name, d.type
+            `SELECT de.chunk_text, de.embedding_vector, de.file_id, d.name as file_name, d.type
              FROM document_embeddings de
-             JOIN documents d ON d.id = de.document_id
+             JOIN documents d ON d.id = de.file_id
              WHERE d.organization_id = $1
              LIMIT 200`,
             [orgId]
           );
-          // Embedding IDs are stored as JSON arrays from Ollama
+          // Embeddings are stored as JSON arrays from Ollama
           const scored = chunks.map(row => {
             let emb = null;
-            try { emb = JSON.parse(row.embedding_id); } catch { /* skip */ }
+            try { emb = JSON.parse(row.embedding_vector); } catch { /* skip */ }
             if (!emb || !Array.isArray(emb)) return null;
             return { ...row, score: cosineSimilarity(queryEmbedding, emb) };
           }).filter(Boolean);

@@ -179,12 +179,12 @@ router.put('/:id', async (req, res) => {
 router.delete('/:id', async (req, res) => {
   try {
     const { id } = req.params;
-    const { params: baseParams } = await orgFilterTasks(req.user);
-    const orgIdParamIndex = baseParams.length + 1;
+    const { filter, params: baseParams } = await orgFilterTasks(req.user);
+    const idParamIndex = baseParams.length + 1;
 
     const { rows } = await pool.query(
       `DELETE FROM project_tasks pt USING projects p
-       WHERE p.id = pt.project_id AND p.organization_id = $${orgIdParamIndex} AND pt.id = $1
+       WHERE p.id = pt.project_id ${filter} AND pt.id = $${idParamIndex}
        RETURNING pt.id`,
       [...baseParams, id]
     );
@@ -207,12 +207,12 @@ router.post('/:id/comments', async (req, res) => {
     if (!comment) return res.status(400).json({ message: 'Comment is required' });
 
     // Verify task belongs to user's org
-    const { params: baseParams } = await orgFilterTasks(req.user);
-    const orgIdParamIndex = baseParams.length + 1;
+    const { filter, params: baseParams } = await orgFilterTasks(req.user);
+    const idParamIndex = baseParams.length + 1;
     const { rows: task } = await pool.query(
       `SELECT pt.id FROM project_tasks pt
        JOIN projects p ON p.id = pt.project_id
-       WHERE p.organization_id = $${orgIdParamIndex} AND pt.id = $1`,
+       WHERE 1=1 ${filter} AND pt.id = $${idParamIndex}`,
       [...baseParams, id]
     );
     if (task.length === 0) return res.status(404).json({ message: 'Task not found' });
@@ -241,14 +241,13 @@ router.put('/bulk-status', async (req, res) => {
     }
     if (!status) return res.status(400).json({ message: 'status is required' });
 
-    const { params: baseParams } = await orgFilterTasks(req.user);
-    const orgIdParamIndex = baseParams.length + ids.length + 1;
-    const statusParamIndex = baseParams.length + ids.length + 2;
+    const { filter, params: baseParams } = await orgFilterTasks(req.user);
     const placeholders = ids.map((_, i) => `$${baseParams.length + 1 + i}`).join(', ');
+    const statusParamIndex = baseParams.length + ids.length + 1;
     const { rows } = await pool.query(
       `UPDATE project_tasks pt SET status = $${statusParamIndex}
        FROM projects p
-       WHERE p.id = pt.project_id AND p.organization_id = $${orgIdParamIndex} AND pt.id IN (${placeholders})
+       WHERE p.id = pt.project_id ${filter} AND pt.id IN (${placeholders})
        RETURNING pt.*`,
       [...baseParams, ...ids, status]
     );

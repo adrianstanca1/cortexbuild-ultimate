@@ -522,7 +522,7 @@ Be honest. Do not inflate scores.`;
 
     // ── 6. Optionally persist the overall score to DB ─────────────────────────
     try {
-      let updateQuery = 'UPDATE tenders SET ai_score = $1, updated_at = NOW() WHERE id = $2';
+      let updateQuery = 'UPDATE tenders SET ai_score = $1 WHERE id = $2';
       let updateParams = [overall, id];
       if (orgId && !isSuper) {
         updateQuery += ' AND organization_id = $3';
@@ -603,7 +603,7 @@ router.post('/batch/ai-score', async (req, res) => {
       }
 
       await pool.query(
-        `UPDATE tenders SET ai_score = $1, updated_at = NOW() WHERE id = $2 ${orgId && !isSuper ? 'AND organization_id = $3' : ''}`,
+        `UPDATE tenders SET ai_score = $1 WHERE id = $2 ${orgId && !isSuper ? 'AND organization_id = $3' : ''}`,
         orgId && !isSuper ? [overall, id, orgId] : [overall, id]
       );
 

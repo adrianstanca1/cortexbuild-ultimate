@@ -9,16 +9,15 @@ async function getEvents(req, res) {
   try {
     const { start, end } = req.query;
     const events = [];
-
-    const addDays = (dateStr, days) => {
-      const d = new Date(dateStr);
-      d.setDate(d.getDate() + days);
-      return d.toISOString().split('T')[0];
-    };
+    const orgId = req.user?.organization_id;
+    const isSuper = ['super_admin', 'company_owner'].includes(req.user?.role);
+    const orgFilter = orgId && !isSuper ? 'AND organization_id = $1' : '';
+    const params = orgId && !isSuper ? [orgId] : [];
 
     const { rows: projects } = await pool.query(
-      `SELECT id, name, client, status, start_date, end_date, type FROM projects 
-       WHERE start_date IS NOT NULL ORDER BY start_date`
+      `SELECT id, name, client, status, start_date, end_date, type FROM projects
+       WHERE start_date IS NOT NULL ${orgFilter} ORDER BY start_date`,
+      params
     );
     projects.forEach(p => {
       events.push({
@@ -35,8 +34,9 @@ async function getEvents(req, res) {
     });
 
     const { rows: meetings } = await pool.query(
-      `SELECT id, title, date, time, status, project FROM meetings 
-       WHERE date IS NOT NULL ORDER BY date`
+      `SELECT id, title, date, time, status, project FROM meetings
+       WHERE date IS NOT NULL ${orgFilter} ORDER BY date`,
+      params
     );
     meetings.forEach(m => {
       events.push({
@@ -53,8 +53,9 @@ async function getEvents(req, res) {
     });
 
     const { rows: inspections } = await pool.query(
-      `SELECT id, type as title, date, status, project FROM inspections 
-       WHERE date IS NOT NULL ORDER BY date`
+      `SELECT id, type as title, date, status, project FROM inspections
+       WHERE date IS NOT NULL ${orgFilter} ORDER BY date`,
+      params
     );
     inspections.forEach(i => {
       events.push({
@@ -70,11 +71,12 @@ async function getEvents(req, res) {
     });
 
     const { rows: deadlines } = await pool.query(
-      `SELECT id, subject as title, due_date as date, status, project FROM rfis 
-       WHERE due_date IS NOT NULL
+      `SELECT id, subject as title, due_date as date, status, project FROM rfis
+       WHERE due_date IS NOT NULL ${orgFilter}
        UNION ALL
-       SELECT id, title, submitted_date as date, status, project FROM change_orders 
-       WHERE submitted_date IS NOT NULL`
+       SELECT id, title, submitted_date as date, status, project FROM change_orders
+       WHERE submitted_date IS NOT NULL ${orgFilter}`,
+      params
     );
     deadlines.forEach(d => {
       events.push({

@@ -64,7 +64,7 @@ router.put('/skills/:id', async (req, res) => {
 router.delete('/skills/:id', async (req, res) => {
   try {
     const { rowCount } = await pool.query(
-      'DELETE FROM team_member_skills s JOIN team_members m ON s.member_id = m.id WHERE s.id = $1 AND m.company_id = $2',
+      'DELETE FROM team_member_skills WHERE id = $1 AND member_id IN (SELECT id FROM team_members WHERE company_id = $2)',
       [req.params.id, req.user.company_id]
     );
     if (!rowCount) return res.status(404).json({ message: 'Not found' });
@@ -132,7 +132,7 @@ router.put('/inductions/:id', async (req, res) => {
 router.delete('/inductions/:id', async (req, res) => {
   try {
     const { rowCount } = await pool.query(
-      'DELETE FROM team_member_inductions i JOIN team_members m ON i.member_id = m.id WHERE i.id = $1 AND m.company_id = $2',
+      'DELETE FROM team_member_inductions WHERE id = $1 AND member_id IN (SELECT id FROM team_members WHERE company_id = $2)',
       [req.params.id, req.user.company_id]
     );
     if (!rowCount) return res.status(404).json({ message: 'Not found' });
@@ -201,7 +201,7 @@ router.put('/availability/:id', async (req, res) => {
 router.delete('/availability/:id', async (req, res) => {
   try {
     const { rowCount } = await pool.query(
-      'DELETE FROM team_member_availability a JOIN team_members m ON a.member_id = m.id WHERE a.id = $1 AND m.company_id = $2',
+      'DELETE FROM team_member_availability WHERE id = $1 AND member_id IN (SELECT id FROM team_members WHERE company_id = $2)',
       [req.params.id, req.user.company_id]
     );
     if (!rowCount) return res.status(404).json({ message: 'Not found' });
