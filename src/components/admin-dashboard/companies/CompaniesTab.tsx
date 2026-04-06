@@ -1,16 +1,16 @@
 import { useState } from 'react';
 import { Search, ChevronRight, BarChart3, Database } from 'lucide-react';
-import { EmptyState } from '../ui/EmptyState';
-import { CardSkeleton } from '../ui/Skeleton';
-import { Modal, StatusBadge } from './shared';
-import { PLAN_COLORS, fmtDate, fmtBytes, type Company } from './types';
+import { EmptyState } from '../../ui/EmptyState';
+import { CardSkeleton } from '../../ui/Skeleton';
+import { Modal, StatusBadge } from '../shared';
+import { PLAN_COLORS, fmtDate, fmtBytes, type Company } from '../types';
 
 interface CompaniesTabProps {
-  companies: Company[];
-  loading: boolean;
+  companies?: Company[];
+  loading?: boolean;
 }
 
-export default function CompaniesTab({ companies, loading }: CompaniesTabProps) {
+export default function CompaniesTab({ companies = [], loading = false }: CompaniesTabProps) {
   const [searchQuery, setSearchQuery] = useState('');
   const [filterPlan, setFilterPlan] = useState('all');
   const [filterStatus, setFilterStatus] = useState('all');

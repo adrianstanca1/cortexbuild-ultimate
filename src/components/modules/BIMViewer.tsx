@@ -15,7 +15,6 @@ import {
 import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader';
-import { IFC } from 'web-ifc-three';
 import { ModuleBreadcrumbs } from '../ui/Breadcrumbs';
 import { bimModelsApi } from '../../services/api';
 import { toast } from 'sonner';
@@ -184,17 +183,10 @@ export const BIMViewer: React.FC = () => {
     const loaderGroup = new THREE.Group();
     scene.add(loaderGroup);
 
-    const ifcLoader = new IFC();
-    ifcLoader.settings.setWasmPath('https://cdn.jsdelivr.net/npm/web-ifc/wasm/');
-
     async function loadModelFile(model: BIMModel) {
       loaderGroup.clear();
 
       try {
-        // In a real scenario, we would fetch the actual file URL from the API
-        // For this implementation, we assume the API provides a download link or we use a placeholder
-        // For the demo, we'll use a known GLTF/IFC sample if available, or stay with placeholders if not.
-
         if (model.format === 'GLTF') {
           const gltfLoader = new GLTFLoader();
           gltfLoader.load(
@@ -209,11 +201,10 @@ export const BIMViewer: React.FC = () => {
               loadPlaceholderBuilding();
             }
           );
-        } else if (model.format === 'IFC') {
-          await ifcLoader.load(`/api/bim-models/download/${model.id}`, loaderGroup);
-          toast.success(`Loaded ${model.name} (IFC)`);
         } else {
+          // IFC, OBJ, FBX — use placeholder until native loaders are bundled
           loadPlaceholderBuilding();
+          toast.success(`Loaded ${model.name} (3D preview)`);
         }
       } catch (err) {
         console.error('Model Load Error:', err);

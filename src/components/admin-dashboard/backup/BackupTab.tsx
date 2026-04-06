@@ -2,8 +2,8 @@ import { useState } from 'react';
 import { Database, Download, Upload, Cloud, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import clsx from 'clsx';
-import { backupApi } from '../../services/api';
-import { CardSkeleton } from '../ui/Skeleton';
+import { backupApi } from '../../../services/api';
+import { CardSkeleton } from '../../ui/Skeleton';
 
 interface BackupTabProps {
   loading: boolean;

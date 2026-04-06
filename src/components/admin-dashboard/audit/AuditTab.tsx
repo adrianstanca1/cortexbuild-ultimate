@@ -1,14 +1,14 @@
 import { useState } from 'react';
 import { Search, Download } from 'lucide-react';
-import { EmptyState } from '../ui/EmptyState';
-import { fmtDateTime, type AuditEntry } from './types';
+import { EmptyState } from '../../ui/EmptyState';
+import { fmtDateTime, type AuditEntry } from '../types';
 
 interface AuditTabProps {
-  entries: AuditEntry[];
-  loading: boolean;
+  entries?: AuditEntry[];
+  loading?: boolean;
 }
 
-export default function AuditTab({ entries, loading }: AuditTabProps) {
+export default function AuditTab({ entries = [], loading = false }: AuditTabProps) {
   const [filterAction, setFilterAction] = useState('all');
   const [filterTable, setFilterTable] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');

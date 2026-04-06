@@ -2,23 +2,18 @@
 // Comprehensive administration panel for system management, user oversight,
 // company settings, analytics, audit logs, and backup operations.
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState } from 'react';
 import {
   Users, Building2, Settings2, BarChart3, FileText, Database,
-  RefreshCw, AlertTriangle, Activity, TrendingUp, Cloud,
-  UserCheck, FolderOpen,
+  RefreshCw, Activity, TrendingUp,
 } from 'lucide-react';
-import { usersApi, auditApi, settingsApi, type AppSettings } from '../../services/api';
-import { eventBus } from '../../lib/eventBus';
 import { ModuleBreadcrumbs } from '../ui/Breadcrumbs';
 import { DeploymentDashboard } from '../dashboard/DeploymentDashboard';
-import { toast } from 'sonner';
 import clsx from 'clsx';
 import {
   OverviewTab, UsersTab, CompaniesTab, SettingsTab,
   AnalyticsTab, AuditTab, BackupTab,
 } from '../admin-dashboard';
-import type { User, Company, SystemStats, AuditEntry, ActivityFeedItem, UserRole } from '../admin-dashboard/types';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -46,7 +41,6 @@ export function AdminDashboard() {
 
   const handleRefresh = () => {
     setRefreshing(true);
-    eventBus.emit('admin:refresh-all');
     setTimeout(() => setRefreshing(false), 1000);
   };
 

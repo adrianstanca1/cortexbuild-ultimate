@@ -1,6 +1,6 @@
 import { LayoutDashboard, FolderOpen, FileText, Shield, HardHat } from 'lucide-react';
 import { ResponsiveContainer, AreaChart, Area, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend } from 'recharts';
-import { ChartSkeleton } from '../ui/Skeleton';
+import { ChartSkeleton } from '../../ui/Skeleton';
 
 interface AnalyticsTabProps {
   loading: boolean;

@@ -4,14 +4,14 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import clsx from 'clsx';
-import { settingsApi, type AppSettings } from '../../services/api';
+import { settingsApi, type AppSettings } from '../../../services/api';
 interface SettingsTabProps {
-  settings: AppSettings | null;
-  loading: boolean;
-  onSave: (settings: AppSettings) => void;
+  settings?: AppSettings | null;
+  loading?: boolean;
+  onSave?: (settings: AppSettings) => void;
 }
 
-export default function SettingsTab({ settings, loading, onSave }: SettingsTabProps) {
+export default function SettingsTab({ settings = null, loading = false, onSave }: SettingsTabProps) {
   const [activeSection, setActiveSection] = useState('general');
   const [localSettings, setLocalSettings] = useState<AppSettings>({});
   const [saving, setSaving] = useState(false);
@@ -33,7 +33,7 @@ export default function SettingsTab({ settings, loading, onSave }: SettingsTabPr
     try {
       await settingsApi.updateSetting('theme', localSettings.theme || 'dark');
       toast.success('Settings saved successfully');
-      onSave(localSettings);
+      onSave?.(localSettings);
     } catch {
       toast.error('Failed to save settings');
     } finally {

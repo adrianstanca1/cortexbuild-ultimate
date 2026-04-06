@@ -1,19 +1,19 @@
 import { Users, Building2, BarChart3, Activity, Cloud, FileText, ShieldCheck, AlertTriangle, ShieldAlert } from 'lucide-react';
 import { ResponsiveContainer, AreaChart, Area, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend } from 'recharts';
-import { EmptyState } from '../ui/EmptyState';
-import { KPICardSkeleton, ChartSkeleton } from '../ui/Skeleton';
-import { KPICard, ActivityFeed } from './shared';
+import { EmptyState } from '../../ui/EmptyState';
+import { KPICardSkeleton, ChartSkeleton } from '../../ui/Skeleton';
+import { KPICard, ActivityFeed } from '../shared';
 import {
   fmtNumber, fmtBytes, type SystemStats, type ActivityFeedItem, type ChartDataPoint,
-} from './types';
+} from '../types';
 
 interface OverviewTabProps {
-  stats: SystemStats | null;
-  activities: ActivityFeedItem[];
-  loading: boolean;
+  stats?: SystemStats | null;
+  activities?: ActivityFeedItem[];
+  loading?: boolean;
 }
 
-export default function OverviewTab({ stats, activities, loading }: OverviewTabProps) {
+export default function OverviewTab({ stats = null, activities = [], loading = false }: OverviewTabProps) {
   if (loading) {
     return (
       <div className="space-y-6">

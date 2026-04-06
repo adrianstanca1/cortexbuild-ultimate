@@ -5,23 +5,23 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import clsx from 'clsx';
-import { usersApi } from '../../services/api';
-import { EmptyState } from '../ui/EmptyState';
-import { BulkActionsBar, useBulkSelection, type BulkAction } from '../ui/BulkActions';
-import { Modal, StatusBadge } from './shared';
+import { usersApi } from '../../../services/api';
+import { EmptyState } from '../../ui/EmptyState';
+import { BulkActionsBar, useBulkSelection, type BulkAction } from '../../ui/BulkActions';
+import { Modal, StatusBadge } from '../shared';
 import {
   ROLE_COLORS, ROLE_LABELS, fmtDateTime, type User, type UserRole,
-} from './types';
+} from '../types';
 
 type AnyRow = Record<string, unknown>;
 
 interface UsersTabProps {
-  users: User[];
-  loading: boolean;
-  onRefresh: () => void;
+  users?: User[];
+  loading?: boolean;
+  onRefresh?: () => void;
 }
 
-export default function UsersTab({ users, loading, onRefresh }: UsersTabProps) {
+export default function UsersTab({ users = [], loading = false, onRefresh }: UsersTabProps) {
   const [searchQuery, setSearchQuery] = useState('');
   const [filterRole, setFilterRole] = useState<string>('all');
   const [filterStatus, setFilterStatus] = useState<string>('all');
@@ -47,7 +47,7 @@ export default function UsersTab({ users, loading, onRefresh }: UsersTabProps) {
       try {
         await Promise.all(ids.map(id => usersApi.delete(id)));
         toast.success(`Deleted ${ids.length} users`);
-        onRefresh();
+        onRefresh?.();
         clearSelection();
       } catch {
         toast.error('Failed to delete users');
@@ -87,7 +87,7 @@ export default function UsersTab({ users, loading, onRefresh }: UsersTabProps) {
       toast.success('User created successfully');
       setShowCreateModal(false);
       setNewUser({ name: '', email: '', role: 'field_worker', status: 'active' });
-      onRefresh();
+      onRefresh?.();
     } catch {
       toast.error('Failed to create user');
     } finally {
