@@ -238,8 +238,8 @@ router.post('/send', async (req, res) => {
       [rows[0].id, req.user?.id || 'system', orgId]
     );
         } catch (smtpErr) {
-          console.error('[SMTP Error]', smtpErr.message);
-          await pool.query(`UPDATE email_logs SET status = 'failed', error = $1 WHERE id = $2 AND (created_by = $3 OR organization_id = $4)`, [smtpErr.message, rows[0].id, req.user?.id || 'system', orgId]);
+          console.error('[SMTP Error]', 'SMTP delivery failed');
+          await pool.query(`UPDATE email_logs SET status = 'failed', error = $1 WHERE id = $2 AND (created_by = $3 OR organization_id = $4)`, ['SMTP delivery failed', rows[0].id, req.user?.id || 'system', orgId]);
         }
       }
       return res.status(201).json({ success: true, email: rows[0] });
@@ -272,10 +272,10 @@ router.post('/send', async (req, res) => {
           [rows[0].id]
         );
       } catch (smtpErr) {
-        console.error('[SMTP Error]', smtpErr.message);
+        console.error('[SMTP Error]', 'SMTP delivery failed');
         await pool.query(
           `UPDATE email_logs SET status = 'failed', error = $1 WHERE id = $2`,
-          [smtpErr.message, rows[0].id]
+          ['SMTP delivery failed', rows[0].id]
         );
       }
     }
@@ -325,7 +325,7 @@ router.post('/bulk', async (req, res) => {
         );
         results.push({ recipient, success: true, id: rows[0].id });
       } catch (err) {
-        results.push({ recipient, success: false, error: err.message });
+        results.push({ recipient, success: false, error: 'Failed to send' });
       }
     }
 

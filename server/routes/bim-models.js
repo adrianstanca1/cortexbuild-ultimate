@@ -233,7 +233,7 @@ router.post('/', authMiddleware, upload.single('file'), async (req, res) => {
         console.error('[BIM Background Processing] Error:', err);
         await pool.query(
           `UPDATE bim_models SET status = 'error', error_message = $1 WHERE id = $2`,
-          [err.message, rows[0].id]
+          ['Processing failed', rows[0].id]
         );
       }
     });
@@ -326,11 +326,11 @@ async function processBIMModel(modelId) {
   } catch (err) {
     await pool.query(
       `UPDATE bim_models SET status = 'error', error_message = $1 WHERE id = $2`,
-      [err.message, modelId]
+      ['Processing failed', modelId]
     );
     await pool.query(
       `UPDATE bim_processing_queue SET status = 'failed', error_message = $1 WHERE model_id = $2`,
-      [err.message, modelId]
+      ['Processing failed', modelId]
     );
     throw err;
   }
