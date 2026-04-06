@@ -484,3 +484,74 @@ WHERE id = $1 AND organization_id = $2
 - API: `{"status":"ok","version":"1.0.0"}`
 - Docker: 6/6 containers healthy
 - DNS: www → cortexbuildpro.com → 72.62.132.43
+
+---
+
+## 2026-04-06 Continued — Cleanup & Module Extraction
+
+### Unused Import Cleanup (commit e6fec2e)
+- **109 unused imports removed** across 18 files
+- ESLint warnings: **111 → 9** (92% reduction)
+- Removed unused lucide-react icons, recharts imports, utility imports
+- Prefixed unused variables with `_` (setters, handlers, data)
+- Fixed useMemo dependency warnings
+
+### Projects Module Extraction (commit 0a39b36)
+- **Projects.tsx (1,813 lines)** extracted into 6 files (1,335 lines total):
+  - `index.tsx` (540 lines) — Main orchestrator, project list, 11-tab workspace
+  - `TasksTab.tsx` (240 lines) — Kanban board, create/edit, drag-drop
+  - `DocumentsTab.tsx` (245 lines) — Document management, upload, search
+  - `GalleryTab.tsx` (195 lines) — Project image gallery, lightbox
+  - `shared.tsx` (210 lines) — StatusBadge, PriorityBadge, TaskCard, KanbanColumn
+  - `types.ts` (105 lines) — Shared types, constants, utilities
+- Following same pattern as `prequalification/` extraction
+
+### Final Quality Metrics
+| Metric | Value |
+|--------|-------|
+| Type errors | 0 |
+| Lint errors | 0 |
+| Lint warnings | 9 (pre-existing, non-blocking) |
+| Tests | 116/116 |
+| Build | 354ms |
+| Production | ✅ https://www.cortexbuildpro.com |
+
+### Largest Remaining Modules
+| Module | Lines | Extraction Priority |
+|--------|-------|--------------------|
+| Invoicing | 1,279 | Medium |
+| DailyReports | 1,253 | Medium |
+| Tenders | 1,162 | Medium |
+| Teams | 1,160 | Medium |
+| Dashboard | 1,112 | Medium |
+| PlantEquipment | 1,066 | Low |
+| ProjectCalendar | 1,051 | Low |
+| Lettings | 1,004 | Low |
+| Safety | 996 | Low |
+
+### Extracted Module Pattern
+Both `prequalification/` and `projects/` follow:
+```
+src/components/modules/{module}/
+├── index.tsx      # Thin orchestrator (state, hooks, routing)
+├── types.ts       # Shared types, constants, utilities
+├── shared.tsx     # Reusable UI components
+└── *Tab.tsx       # Tab-specific components (pure presentational)
+```
+
+### Total Commits This Session: 13
+```
+0a39b36 refactor: extract Projects module (1,813 lines) into 6 sub-components
+e6fec2e chore: clean up 109 unused imports and variables across 18 files
+a063ae2 docs(session): record comprehensive code review and parameter binding fixes
+79a6a9b fix(backend): repair parameter binding bugs + fix notifications error leaks
+db739d5 fix(App): resolve React hook lint error
+f02a70f refactor: add domain types, fix as any casts, extract Prequalification module
+94bc40d fix(code-review-2): WebSocket auth, calendar fetch, hardcoded chart data
+24d6065 fix(code-review): 6 critical findings from code review
+d8ed13a docs(session): record 2026-04-06 test fixes and backend API work
+fe89b62 feat(backend): add tasks and work-packages API routes
+22c0a58 feat: add activity feed and work packages API clients
+0fa07f7 fix(test): resolve React 19 test compatibility with happy-dom migration
+d7f66dc feat: massively expand 13 modules + fix all TypeScript errors
+```
