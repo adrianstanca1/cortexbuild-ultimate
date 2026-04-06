@@ -2,11 +2,10 @@
 import { useState, useEffect } from 'react';
 import {
   Activity, Edit, CheckCircle, AlertTriangle,
-  MessageSquare, FileText, Users, Calendar, DollarSign,
-  TrendingUp, Clock, Filter, Search, Eye, Bell, BarChart3,
-  ChevronDown, ExternalLink, User, Building2
+  FileText, Users, Calendar, DollarSign,
+  TrendingUp, Clock, Search, Eye, Bell, BarChart3,
+  ExternalLink,
 } from 'lucide-react';
-import { getToken, API_BASE } from '../../lib/supabase';
 import { EmptyState } from '../ui/EmptyState';
 import { ModuleBreadcrumbs } from '../ui/Breadcrumbs';
 
@@ -81,13 +80,13 @@ const ACTION_COLORS: Record<string, string> = {
 };
 
 export default function ActivityFeed() {
-  const [activities, setActivities] = useState<ActivityItem[]>(MOCK_ACTIVITIES);
+  const [_activities, _setActivities] = useState<ActivityItem[]>(MOCK_ACTIVITIES);
   const [loading, setLoading] = useState(false);
   const [filter, setFilter] = useState<ActivityFilter>('all');
   const [searchQuery, setSearchQuery] = useState('');
-  const [showFilters, setShowFilters] = useState(false);
+  const [_showFilters, _setShowFilters] = useState(false);
   const [activeTab, setActiveTab] = useState<'feed' | 'analytics' | 'notifications'>('feed');
-  const [unreadCount, setUnreadCount] = useState(3);
+  const [_unreadCount, _setUnreadCount] = useState(3);
 
   const notifications: NotificationItem[] = [
     { id: '1', type: 'deadline', title: 'Project Deadline Approaching', description: 'Office Renovation Phase 2 due in 3 days', timestamp: '2026-04-06T14:00:00Z', read: false, severity: 'high' },
@@ -96,7 +95,7 @@ export default function ActivityFeed() {
     { id: '4', type: 'mention', title: 'You were mentioned', description: 'Sarah mentioned you in project comments', timestamp: '2026-04-05T16:00:00Z', read: true, severity: 'low' },
   ];
 
-  const filters: { key: ActivityFilter; label: string; icon: typeof Activity }[] = [
+  const _filters: { key: ActivityFilter; label: string; icon: typeof Activity }[] = [
     { key: 'all', label: 'All Activity', icon: Activity },
     { key: 'projects', label: 'Projects', icon: TrendingUp },
     { key: 'finance', label: 'Finance', icon: DollarSign },
@@ -148,7 +147,7 @@ export default function ActivityFeed() {
     return groups;
   }
 
-  const filteredActivities = (activities as any[])
+  const filteredActivities = (_activities as any[])
     .filter(a => {
       if (filter === 'all') return true;
       return a.category === filter;
@@ -162,19 +161,19 @@ export default function ActivityFeed() {
   const groupedActivities = groupByDate(filteredActivities);
 
   const stats = {
-    total: activities.length,
-    today: activities.filter(a => {
+    total: (_activities as any[]).length,
+    today: (_activities as any[]).filter((a: any) => {
       const d = new Date(a.created_at);
       const today = new Date();
       return d.toDateString() === today.toDateString();
     }).length,
-    thisWeek: activities.filter(a => {
+    thisWeek: (_activities as any[]).filter((a: any) => {
       const d = new Date(a.created_at);
       const weekAgo = new Date();
       weekAgo.setDate(weekAgo.getDate() - 7);
       return d >= weekAgo;
     }).length,
-    uniqueUsers: new Set(activities.map(a => a.user_name)).size,
+    uniqueUsers: new Set((_activities as any[]).map((a: any) => a.user_name)).size,
   };
 
   // Live Feed Tab
@@ -234,7 +233,7 @@ export default function ActivityFeed() {
                 const Icon = ENTITY_ICONS[activity.category] || ENTITY_ICONS.default;
                 const actionType = getActionType(activity.action);
                 const colorClass = ACTION_COLORS[actionType] || ACTION_COLORS.default;
-                const userInitial = activity.user_name.charAt(0).toUpperCase();
+                const _userInitial = activity.user_name.charAt(0).toUpperCase();
 
                 return (
                   <div
@@ -303,10 +302,10 @@ export default function ActivityFeed() {
         <div className="space-y-3">
           {(() => {
             const categories = new Map<string, number>();
-            activities.forEach(a => {
+            (_activities as any[]).forEach((a: any) => {
               categories.set(a.category, (categories.get(a.category) || 0) + 1);
             });
-            const total = activities.length;
+            const total = (_activities as any[]).length;
             return Array.from(categories.entries())
               .sort((a, b) => b[1] - a[1])
               .map(([cat, count]) => {
@@ -332,7 +331,7 @@ export default function ActivityFeed() {
         <div className="space-y-2">
           {(() => {
             const users = new Map<string, number>();
-            activities.forEach(a => {
+            (_activities as any[]).forEach((a: any) => {
               users.set(a.user_name, (users.get(a.user_name) || 0) + 1);
             });
             return Array.from(users.entries())
@@ -386,7 +385,7 @@ export default function ActivityFeed() {
       {(() => {
         const grouped = new Map<string, NotificationItem[]>();
         notifications.forEach(n => {
-          const date = new Date(n.timestamp).toLocaleDateString('en-GB', { month: 'short', day: 'numeric' });
+          const _date = new Date(n.timestamp).toLocaleDateString('en-GB', { month: 'short', day: 'numeric' });
           const key = new Date(n.timestamp).toDateString() === new Date().toDateString() ? 'Today' :
                       new Date(n.timestamp).getTime() > new Date().getTime() - 86400000 ? 'Yesterday' :
                       new Date(n.timestamp).getTime() > new Date().getTime() - 604800000 ? 'This Week' : 'Earlier';
@@ -433,8 +432,8 @@ export default function ActivityFeed() {
             <p className="text-gray-400 text-sm mt-1">Real-time activity across all modules</p>
           </div>
           <div className="flex items-center gap-2">
-            {activeTab === 'notifications' && unreadCount > 0 && (
-              <span className="px-3 py-1 bg-red-500 text-white text-xs rounded-full font-semibold">{unreadCount} new</span>
+            {activeTab === 'notifications' && _unreadCount > 0 && (
+              <span className="px-3 py-1 bg-red-500 text-white text-xs rounded-full font-semibold">{_unreadCount} new</span>
             )}
           </div>
         </div>
@@ -465,8 +464,8 @@ export default function ActivityFeed() {
               {tab === 'feed' && 'Live Feed'}
               {tab === 'analytics' && 'Analytics'}
               {tab === 'notifications' && 'Notifications'}
-              {tab === 'notifications' && unreadCount > 0 && (
-                <span className="ml-1 px-2 py-0.5 bg-red-500 text-white text-xs rounded-full font-semibold">{unreadCount}</span>
+              {tab === 'notifications' && _unreadCount > 0 && (
+                <span className="ml-1 px-2 py-0.5 bg-red-500 text-white text-xs rounded-full font-semibold">{_unreadCount}</span>
               )}
             </button>
           ))}

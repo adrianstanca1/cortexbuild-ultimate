@@ -7,10 +7,7 @@ import {
   MapPin,
   User,
   Flag,
-  Truck,
-  Eye,
   X,
-  AlertCircle,
 } from 'lucide-react';
 import { apiGet } from '../../lib/api';
 
@@ -426,7 +423,7 @@ export function ProjectCalendar() {
   const weekDays = getWeekDays(currentDate);
   const weekEvents = getEventsForWeek(currentDate);
 
-  const parseDate = (dateStr: string): { date: string; time: string } => {
+  const _parseDate = (dateStr: string): { date: string; time: string } => {
     const [date, time] = dateStr.split('T');
     return { date, time: time?.substring(0, 5) || '09:00' };
   };

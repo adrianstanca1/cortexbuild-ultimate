@@ -1,10 +1,9 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { useState, useMemo } from 'react';
-import { Plus, X } from 'lucide-react';
+import { Plus } from 'lucide-react';
 import { ModuleBreadcrumbs } from '../../ui/Breadcrumbs';
 import { usePrequalification } from '../../../hooks/useData';
-import { uploadFile } from '../../../services/api';
-import type { Subcontractor, TabId, AppFormData, Stats, TradeCount } from './types';
+import type { Subcontractor, TabId, AppFormData, Stats } from './types';
 import { SCORING_CRITERIA, TRADES } from './types';
 import { QuickStats, ModalWrapper } from './shared';
 import { ApplicationsTab } from './ApplicationsTab';
@@ -170,7 +169,7 @@ export default function Prequalification() {
     insurance: '',
   });
 
-  const { useList, useCreate } = usePrequalification;
+  const { useList } = usePrequalification;
   const { data: apiPrequal = [] } = useList() as { data: any[] };
 
   // Merge API data with mock when mock is enabled and API is empty
@@ -182,7 +181,7 @@ export default function Prequalification() {
       return apiPrequal as Subcontractor[];
     }
     return subcontractors;
-  }, [apiPrequal, subcontractors]);
+  }, [apiPrequal, subcontractors, USE_MOCK]);
 
   // Filter and search
   const filteredApplications = useMemo(
@@ -356,13 +355,13 @@ export default function Prequalification() {
     a.click();
   };
 
-  const getDaysUntilExpiry = (expiryDate: string): number => {
+  const _getDaysUntilExpiry = (expiryDate: string): number => {
     return Math.ceil(
       (new Date(expiryDate).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24)
     );
   };
 
-  const getExpiryColor = (days: number): string => {
+  const _getExpiryColor = (days: number): string => {
     if (days <= 30) return 'text-red-400 bg-red-500/10';
     if (days <= 60) return 'text-amber-400 bg-amber-500/10';
     return 'text-green-400 bg-green-500/10';

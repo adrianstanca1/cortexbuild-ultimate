@@ -1,4 +1,4 @@
-/* eslint-disable @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-argument */
+ 
 import { useState, useMemo } from 'react';
 import { Plus, Edit, Trash2, X, Upload, CheckSquare, Square, CheckCircle, AlertCircle, Clock, BarChart3, Calendar } from 'lucide-react';
 import { EmptyState } from '../ui/EmptyState';

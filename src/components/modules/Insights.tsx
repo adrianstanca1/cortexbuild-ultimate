@@ -3,7 +3,7 @@ import { useState } from 'react';
 import {
   TrendingUp, AlertTriangle, Lightbulb, Activity, Shield, PoundSterling,
   Users, FileText, ClipboardList, Target, RefreshCw,
-  CheckSquare, Square, Trash2, Brain, CheckCircle, XCircle, BarChart3, Zap, ArrowRight, Clock,
+  CheckSquare, Square, Trash2, Brain, CheckCircle, XCircle, BarChart3, Zap, Clock,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { insightsApi } from '../../services/api';

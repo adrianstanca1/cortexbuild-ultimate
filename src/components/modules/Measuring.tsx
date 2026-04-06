@@ -1,6 +1,6 @@
-/* eslint-disable @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-argument */
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { useState, useMemo } from 'react';
-import { Plus, Ruler, BarChart3, FileText, Trash2, X, Upload, Pencil, Layers, TrendingUp } from 'lucide-react';
+import { Plus, Ruler, BarChart3, FileText, Trash2, X, Pencil, Layers, TrendingUp } from 'lucide-react';
 import { EmptyState } from '../ui/EmptyState';
 import { ModuleBreadcrumbs } from '../ui/Breadcrumbs';
 import { uploadFile } from '../../services/api';
@@ -79,7 +79,7 @@ export default function Measuring() {
   const [activeTab, setActiveTab] = useState<'takeoff' | 'bq' | 'valuations' | 'reports'>('takeoff');
   const [searchTerm, setSearchTerm] = useState('');
   const [showCreateModal, setShowCreateModal] = useState(false);
-  const [uploading, setUploading] = useState<string | null>(null);
+  const [_uploading, setUploading] = useState<string | null>(null);
   const [editItem, setEditItem] = useState<Measurement | null>(null);
   const [form, setForm] = useState({
     item_no: '',
@@ -189,7 +189,7 @@ export default function Measuring() {
     }
   };
 
-  async function handleUploadDoc(id: string, file: File) {
+  async function _handleUploadDoc(id: string, file: File) {
     setUploading(id);
     try {
       await uploadFile(file, 'REPORTS');

@@ -3,10 +3,10 @@ import { useState } from 'react';
 import {
   FileText, Plus, Search, Download, Clock, Eye, Edit, X, Upload, Trash2,
   CheckSquare, Square, ChevronDown, ChevronRight, CheckCircle, AlertCircle,
-  BarChart3, FileCheck
+  FileCheck
 } from 'lucide-react';
 import {
-  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer
+  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer
 } from 'recharts';
 import { useSpecifications } from '../../hooks/useData';
 import { toast } from 'sonner';
@@ -75,9 +75,9 @@ export default function Specifications() {
   const [filterStatus, setFilterStatus] = useState<string>('all');
   const [uploading, setUploading] = useState<string | null>(null);
   const [showCreateModal, setShowCreateModal] = useState(false);
-  const [showDetailModal, setShowDetailModal] = useState<string | null>(null);
+  const [_showDetailModal, _setShowDetailModal] = useState<string | null>(null);
   const [expandedSection, setExpandedSection] = useState<string | null>(null);
-  const [includeNbs, setIncludeNbs] = useState<Set<string>>(new Set());
+  const [_includeNbs, _setIncludeNbs] = useState<Set<string>>(new Set());
   const [form, setForm] = useState({ title: '', project: '', section: '', discipline: '', description: '' });
   const [editItem, setEditItem] = useState<Record<string, any> | null>(null);
 

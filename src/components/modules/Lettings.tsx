@@ -1,6 +1,6 @@
-/* eslint-disable @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-argument */
+ 
 import { useState, useMemo } from 'react';
-import { Plus, FileText, Clock, CheckCircle, Trash2, X, Upload, Pencil, CheckSquare, Square, TrendingUp, DollarSign, Award } from 'lucide-react';
+import { Plus, FileText, Clock, CheckCircle, Trash2, X, Pencil, CheckSquare, Square, TrendingUp, Award } from 'lucide-react';
 import { EmptyState } from '../ui/EmptyState';
 import { ModuleBreadcrumbs } from '../ui/Breadcrumbs';
 import { BulkActionsBar, useBulkSelection } from '../ui/BulkActions';
@@ -177,7 +177,7 @@ export default function Lettings() {
   const [searchTerm, setSearchTerm] = useState('');
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showPackageDetail, setShowPackageDetail] = useState<Package | null>(null);
-  const [uploading, setUploading] = useState<string | null>(null);
+  const [_uploading, setUploading] = useState<string | null>(null);
   const [editItem, setEditItem] = useState<Package | null>(null);
   const [selectedPackageForAnalysis, setSelectedPackageForAnalysis] = useState<string>('2');
   const [form, setForm] = useState({
@@ -305,7 +305,7 @@ export default function Lettings() {
     }
   };
 
-  async function handleUploadDoc(id: string, file: File) {
+  async function _handleUploadDoc(id: string, file: File) {
     setUploading(id);
     try {
       await uploadFile(file, 'REPORTS');
@@ -331,7 +331,7 @@ export default function Lettings() {
     }
   };
 
-  const getPipelineStage = (status?: string | null) => {
+  const _getPipelineStage = (status?: string | null) => {
     switch (status) {
       case 'Draft':
         return 0;
@@ -710,7 +710,7 @@ export default function Lettings() {
         {/* PIPELINE TAB */}
         {activeTab === 'pipeline' && (
           <div className="space-y-4">
-            {pipelineStages.map((stage, idx) => {
+            {pipelineStages.map((stage, _idx) => {
               const packagesInStage = typedLettings.filter(p => p.status === stage);
               return (
                 <div key={stage} className="space-y-3">

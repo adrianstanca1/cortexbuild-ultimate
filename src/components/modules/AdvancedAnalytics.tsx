@@ -1,10 +1,10 @@
 import { useState } from 'react';
 import {
-  TrendingUp, TrendingDown, DollarSign, Users, AlertTriangle, CheckCircle,
-  BarChart3, PieChart, Grid3x3, Radar, FileText, Download, Eye, EyeOff,
+  TrendingUp, TrendingDown,
+  Grid3x3, Radar, FileText, Download,
 } from 'lucide-react';
 import {
-  AreaChart, Area, BarChart, Bar, ScatterChart, Scatter, LineChart, Line,
+  AreaChart, Area, BarChart, Bar, ScatterChart, Scatter,
   XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart as RechartsPie, Pie, Cell,
 } from 'recharts';
 import { ModuleBreadcrumbs } from '../ui/Breadcrumbs';
@@ -133,8 +133,8 @@ export function AdvancedAnalytics() {
     { department: 'Management', systemsDesign: 78, projectMgmt: 95, safetyCompliance: 91, bimModeling: 65 },
   ];
 
-  // Risk matrix data
-  const riskMatrixData: RiskData[] = [
+  // Risk matrix data (used for reference)
+  const _riskMatrixData: RiskData[] = [
     { risk: 'Material Supply', likelihood: 4, impact: 4 },
     { risk: 'Weather Delays', likelihood: 3, impact: 3 },
     { risk: 'Labour Shortage', likelihood: 3, impact: 4 },

@@ -1,14 +1,13 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { useState } from 'react';
 import {
-  Plus, Leaf, Cloud, Factory, Gauge, Trash2, X, Upload, Pencil, CheckSquare, Square,
-  Download, FileText, BarChart3, TrendingDown
+  Plus, Leaf, Cloud, Factory, Gauge, Trash2, X,
+  Download, FileText, TrendingDown
 } from 'lucide-react';
 import {
   BarChart, Bar, AreaChart, Area, PieChart, Pie, Cell, XAxis, YAxis,
   CartesianGrid, Tooltip, Legend, ResponsiveContainer
 } from 'recharts';
-import { EmptyState } from '../ui/EmptyState';
 import { ModuleBreadcrumbs } from '../ui/Breadcrumbs';
 import { BulkActionsBar, useBulkSelection } from '../ui/BulkActions';
 import { uploadFile } from '../../services/api';
@@ -61,8 +60,8 @@ const breemCreditsData = [
   { section: 'Health & Wellbeing', required: 15, achieved: 13 },
 ];
 
-const COLORS = ['#10b981', '#f97316', '#3b82f6', '#8b5cf6', '#ec4899'];
-const SCOPE_COLORS = { scope1: '#ef4444', scope2: '#f59e0b', scope3: '#06b6d4' };
+const _COLORS = ['#10b981', '#f97316', '#3b82f6', '#8b5cf6', '#ec4899'];
+const _SCOPE_COLORS = { scope1: '#ef4444', scope2: '#f59e0b', scope3: '#06b6d4' };
 
 export default function Sustainability() {
   const { data: metrics = [], isLoading } = useSustainability.useList();
@@ -71,13 +70,13 @@ export default function Sustainability() {
   const deleteMutation = useSustainability.useDelete();
 
   const [activeTab, setActiveTab] = useState('carbon');
-  const [searchTerm, setSearchTerm] = useState('');
+  const [_searchTerm, _setSearchTerm] = useState('');
   const [showCreateModal, setShowCreateModal] = useState(false);
-  const [uploading, setUploading] = useState<string | null>(null);
+  const [_uploading, setUploading] = useState<string | null>(null);
   const [form, setForm] = useState({ metricType: '', project: '', period: '', actual: '', target: '', unit: 'kgCO2' });
   const [editItem, setEditItem] = useState<Record<string, any> | null>(null);
 
-  const { selectedIds, toggle, clearSelection } = useBulkSelection();
+  const { selectedIds, clearSelection } = useBulkSelection();
 
   async function handleBulkDelete(ids: string[]) {
     if (!confirm(`Delete ${ids.length} metric(s)?`)) return;
@@ -90,12 +89,12 @@ export default function Sustainability() {
     }
   }
 
-  const filtered = metrics.filter((m: any) =>
-    (m.metric_type || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
-    (m.project || '').toLowerCase().includes(searchTerm.toLowerCase())
+  const _filtered = metrics.filter((m: any) =>
+    (m.metric_type || '').toLowerCase().includes(_searchTerm.toLowerCase()) ||
+    (m.project || '').toLowerCase().includes(_searchTerm.toLowerCase())
   );
 
-  const totalCarbon = metrics.filter((m: any) => m.metric_type?.toLowerCase().includes('carbon')).reduce((acc: number, m: any) => acc + Number(m.actual || 0), 0);
+  const _totalCarbon = metrics.filter((m: any) => m.metric_type?.toLowerCase().includes('carbon')).reduce((acc: number, m: any) => acc + Number(m.actual || 0), 0);
   const totalEnergy = metrics.filter((m: any) => m.metric_type?.toLowerCase().includes('energy')).reduce((acc: number, m: any) => acc + Number(m.actual || 0), 0);
 
   const handleCreate = async () => {
@@ -136,7 +135,7 @@ export default function Sustainability() {
     }
   };
 
-  const handleDelete = async (id: string) => {
+  const _handleDelete = async (id: string) => {
     if (!confirm('Delete this metric?')) return;
     try {
       await deleteMutation.mutateAsync(id);
@@ -145,7 +144,7 @@ export default function Sustainability() {
     }
   };
 
-  async function handleUploadDoc(id: string, file: File) {
+  async function _handleUploadDoc(id: string, file: File) {
     setUploading(id);
     try {
       await uploadFile(file, 'REPORTS');

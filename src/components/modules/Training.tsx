@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { useState, useRef } from 'react';
-import { Plus, GraduationCap, Award, Clock, AlertCircle, FileCheck, Trash2, X, Edit, CheckSquare, Square, Download, BarChart3, Calendar as CalendarIcon, TrendingUp } from 'lucide-react';
+import { Plus, GraduationCap, Award, AlertCircle, Trash2, X, Edit, Download } from 'lucide-react';
 import { EmptyState } from '../ui/EmptyState';
 import { ModuleBreadcrumbs } from '../ui/Breadcrumbs';
 import { DataImporter, ExportButton } from '../ui/DataImportExport';
@@ -37,15 +37,15 @@ interface TrainingRecord {
 }
 
 export default function Training() {
-  const { data: training = [], isLoading } = useTraining.useList();
+  const { data: training = [] } = useTraining.useList();
   const createMutation = useTraining.useCreate();
   const updateMutation = useTraining.useUpdate();
   const deleteMutation = useTraining.useDelete();
   const queryClient = useQueryClient();
 
   const [searchTerm, setSearchTerm] = useState('');
-  const [uploading, setUploading] = useState(false);
-  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [_uploading, setUploading] = useState(false);
+  const [_selectedId, setSelectedId] = useState<string | null>(null);
   const _fileInputRef = useRef<HTMLInputElement>(null);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [activeTab, setActiveTab] = useState<'register' | 'schedule' | 'matrix' | 'providers' | 'reports'>('register');
@@ -53,7 +53,7 @@ export default function Training() {
   const [editItem, setEditItem] = useState<TrainingRecord | null>(null);
   const [showBulkImport, setShowBulkImport] = useState(false);
 
-  const { selectedIds, toggle, clearSelection } = useBulkSelection();
+  const { selectedIds, clearSelection } = useBulkSelection();
 
   const trainingData = training.length > 0 ? training : MOCK_TRAINING;
 
@@ -137,7 +137,7 @@ export default function Training() {
     }
   };
 
-  const handleUploadCert = async (id: string, file: File) => {
+  const _handleUploadCert = async (id: string, file: File) => {
     setUploading(true);
     setSelectedId(id);
     try {

@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { useState } from 'react';
-import { Plus, Shield, FileCheck, Clock, AlertTriangle, FileText, Upload, Trash2, X, Edit, CheckSquare, Square, BarChart3, TrendingUp, Send, Bell } from 'lucide-react';
+import { Plus, Shield, FileCheck, Clock, AlertTriangle, Trash2, X, Edit, Send, Bell } from 'lucide-react';
 import { BulkActionsBar, useBulkSelection } from '../ui/BulkActions';
 import { ModuleBreadcrumbs } from '../ui/Breadcrumbs';
 import { EmptyState } from '../ui/EmptyState';
@@ -48,18 +48,18 @@ interface Alert {
 export default function Certifications() {
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState('all');
-  const [uploading, setUploading] = useState<string | null>(null);
+  const [_uploading, setUploading] = useState<string | null>(null);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [activeTab, setActiveTab] = useState<'all' | 'person' | 'expiring' | 'alerts' | 'reports'>('all');
   const [form, setForm] = useState({ certificationType: '', holder: '', company: '', body: '', accreditationNumber: '', grade: '', issueDate: '', expiryDate: '', status: 'valid' });
   const [editItem, setEditItem] = useState<Certification | null>(null);
 
   const { useList, useCreate, useUpdate, useDelete } = useCertifications;
-  const { data: certs = [], isLoading } = useList();
+  const { data: certs = [] } = useList();
   const createMutation = useCreate();
   const updateMutation = useUpdate();
   const deleteMutation = useDelete();
-  const { selectedIds, toggle, clearSelection } = useBulkSelection();
+  const { selectedIds, clearSelection } = useBulkSelection();
 
   // Only use mock data when VITE_USE_MOCK_DATA is true
   const USE_MOCK = import.meta.env.VITE_USE_MOCK_DATA === 'true';
@@ -178,7 +178,7 @@ export default function Certifications() {
     }
   };
 
-  const handleUpload = async (certId: string, file: File) => {
+  async function _handleUpload(certId: string, file: File) {
     setUploading(certId);
     try {
       const result = await uploadFile(file, 'REPORTS');

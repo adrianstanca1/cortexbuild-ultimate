@@ -19,9 +19,9 @@ import {
   type Row,
 } from '../services/api';
 import type {
-  SignRow, MeasurementRow, ValuationRow, LettingPackageRow, TenderRow,
+  SignRow, MeasurementRow, ValuationRow, LettingPackageRow,
   CertificationRow, PrequalificationRow, SustainabilityRow, WasteManagementRow,
-  TrainingRow, SpecificationRow, InsightRow, AnalyticsDataRow, ActivityFeedRow,
+  TrainingRow, SpecificationRow,
 } from '../types/domain';
 import { eventBus } from '../lib/eventBus';
 

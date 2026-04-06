@@ -17,7 +17,7 @@ import {
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
-type AnyRow = Record<string, unknown>;
+type _AnyRow = Record<string, unknown>;
 type AdminTab = 'overview' | 'users' | 'companies' | 'settings' | 'analytics' | 'audit' | 'backup' | 'deployment';
 
 // ─── Tab Definitions ──────────────────────────────────────────────────────────

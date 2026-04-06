@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { useState } from 'react';
 import {
-  Plus, Leaf, Recycle, Trash2, X, Upload, Edit, BarChart3, CheckCircle,
+  Plus, Leaf, Recycle, Trash2, X, Edit, BarChart3, CheckCircle,
   AlertCircle, FileText
 } from 'lucide-react';
 import {
@@ -62,7 +62,7 @@ export default function WasteManagement() {
   const [searchTerm, setSearchTerm] = useState('');
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showManifestModal, setShowManifestModal] = useState(false);
-  const [uploading, setUploading] = useState<string | null>(null);
+  const [_uploading, setUploading] = useState<string | null>(null);
   const [form, setForm] = useState({ wasteType: '', quantity: '', unit: 'tonnes', carrier: '', collectionDate: '', recyclingRate: '75', status: 'pending', disposalMethod: 'Recycling', cost: '' });
   const [manifestForm, setManifestForm] = useState({ wasteType: '', quantity: '', carrier: '', carrierLicense: '', consignee: '' });
   const [editItem, setEditItem] = useState<Record<string, any> | null>(null);
@@ -102,7 +102,7 @@ export default function WasteManagement() {
     }
   };
 
-  const handleUpdate = async () => {
+  const _handleUpdate = async () => {
     if (!editItem || !editItem.id) return;
     try {
       await updateMutation.mutateAsync({
@@ -124,7 +124,7 @@ export default function WasteManagement() {
     }
   };
 
-  const handleDelete = async (id: string) => {
+  const _handleDelete = async (id: string) => {
     if (!confirm('Delete this waste record?')) return;
     try {
       await deleteMutation.mutateAsync(id);
@@ -134,7 +134,7 @@ export default function WasteManagement() {
     }
   };
 
-  async function handleUploadDoc(id: string, file: File) {
+  async function _handleUploadDoc(id: string, file: File) {
     setUploading(id);
     try {
       await uploadFile(file, 'REPORTS');
