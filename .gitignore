@@ -41,3 +41,8 @@ server/.env
 .pids/
 logs/
 *.pid
+
+# Local session state
+.remember/
+.logs/
+*.pid
