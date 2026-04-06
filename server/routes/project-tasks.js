@@ -152,16 +152,35 @@ router.put('/:id', async (req, res) => {
     }
 
     const { baseParams } = await orgFilterTasks(req.user);
-    // orgFilter returns params [orgId], so filter clause uses $N for orgId
-    const orgFilterLen = baseParams.length;
-    params.push(id);
-    const orgParamIndex = orgFilterLen + 1 + params.length;
+    const queryParams = [...baseParams];
+    const updates = [];
+
+    const fields = {
+      title, description, status, priority, assigned_to,
+      due_date, category, estimated_hours, tags, progress
+    };
+
+    for (const [key, value] of Object.entries(fields)) {
+      if (value !== undefined) {
+        queryParams.push(value);
+        updates.push(`${key} = $${queryParams.length}`);
+      }
+    }
+
+    if (updates.length === 0) {
+      return res.status(400).json({ message: 'No fields to update' });
+    }
+
+    queryParams.push(id);
+    const idParamIndex = queryParams.length;
+    const orgParamIndex = 1; // baseParams is [orgId], so $1
+
     const { rows } = await pool.query(
       `UPDATE project_tasks pt SET ${updates.join(', ')}
        FROM projects p
-       WHERE p.id = pt.project_id AND p.organization_id = $${orgParamIndex} AND pt.id = $${params.length}
+       WHERE p.id = pt.project_id AND p.organization_id = $${orgParamIndex} AND pt.id = $${idParamIndex}
        RETURNING pt.*`,
-      [...baseParams, ...params]
+      queryParams
     );
 
     if (rows.length === 0) {
