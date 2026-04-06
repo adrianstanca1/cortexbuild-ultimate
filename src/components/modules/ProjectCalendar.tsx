@@ -12,7 +12,7 @@ import {
   X,
   AlertCircle,
 } from 'lucide-react';
-import { getToken, API_BASE } from '../../lib/supabase';
+import { apiGet } from '../../lib/api';
 
 interface CalendarEvent {
   id: string;
@@ -269,38 +269,29 @@ export function ProjectCalendar() {
   });
 
   useEffect(() => {
-    const token = getToken();
-    fetch(`${API_BASE}/calendar`, {
-      headers: token ? { Authorization: `Bearer ${token}` } : {},
-    })
-      .then((r) => r.json())
-      .then(
-        (data: Array<{
-          id: string;
-          title: string;
-          type: string;
-          startDate: string;
-          endDate?: string;
-          project?: string;
-        }>) => {
-          if (!Array.isArray(data)) return;
-          setEvents((prev) => [
-            ...prev,
-            ...data.map((e) => ({
-              id: e.id,
-              title: e.title,
-              type: (Object.keys(TYPE_COLORS).includes(e.type)
-                ? e.type
-                : 'meeting') as CalendarEvent['type'],
-              start: e.startDate,
-              end: e.endDate,
-              project: e.project,
-              color: TYPE_COLORS[e.type] ?? TYPE_COLORS.meeting,
-            })),
-          ]);
-        }
-      )
-      .catch(() => {});
+    apiGet<Array<{
+      id: string;
+      title: string;
+      type: string;
+      startDate: string;
+      endDate?: string;
+      project?: string;
+    }>>('/calendar')
+      .then((data) => {
+        if (!Array.isArray(data)) return;
+        setEvents(data.map((e) => ({
+          id: e.id,
+          title: e.title,
+          type: (Object.keys(TYPE_COLORS).includes(e.type)
+            ? e.type
+            : 'meeting') as CalendarEvent['type'],
+          start: e.startDate,
+          end: e.endDate,
+          project: e.project,
+          color: TYPE_COLORS[e.type] ?? TYPE_COLORS.meeting,
+        })));
+      })
+      .catch((err: Error) => console.error('Failed to load calendar events:', err));
   }, []);
 
   const getDaysInMonth = (date: Date) => {

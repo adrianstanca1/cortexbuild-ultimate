@@ -163,28 +163,26 @@ export function ActivityFeed({ activities }: ActivityFeedProps) {
 
 interface OverviewChartsProps {
   stats: { totalUsers: number; totalCompanies: number; totalProjects: number };
+  userGrowthData?: { name: string; users: number }[];
 }
 
-export function OverviewCharts({ stats }: OverviewChartsProps) {
+export function OverviewCharts({ stats, userGrowthData }: OverviewChartsProps) {
   const chartData: ChartDataPoint[] = [
     { name: 'Users', value: stats.totalUsers, fill: '#3b82f6' },
     { name: 'Companies', value: stats.totalCompanies, fill: '#10b981' },
     { name: 'Projects', value: stats.totalProjects, fill: '#f59e0b' },
   ];
 
+  const growthData = userGrowthData || [
+    { name: 'Oct', users: stats.totalUsers },
+  ];
+
   return (
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
       <div className="card p-5">
-        <h3 className="text-lg font-bold text-white mb-4">User Growth (Last 6 Months)</h3>
+        <h3 className="text-lg font-bold text-white mb-4">User Growth</h3>
         <ResponsiveContainer width="100%" height={250}>
-          <AreaChart data={[
-            { name: 'May', users: 120 },
-            { name: 'Jun', users: 145 },
-            { name: 'Jul', users: 178 },
-            { name: 'Aug', users: 210 },
-            { name: 'Sep', users: 245 },
-            { name: 'Oct', users: stats.totalUsers },
-          ]}>
+          <AreaChart data={growthData}>
             <defs>
               <linearGradient id="userGradient" x1="0" y1="0" x2="0" y2="1">
                 <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.3} />
