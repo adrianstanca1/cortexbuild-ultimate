@@ -392,9 +392,29 @@ export const companyApi = {
   update: (data: Row) => apiFetch<Row>('/company', { method: 'PUT', body: JSON.stringify(data) }),
 };
 
+export interface AiVisionAnalysis {
+  detections: Array<{
+    id: string;
+    timestamp: string;
+    severity: 'CRITICAL' | 'WARNING' | 'INFO' | 'PASS';
+    title: string;
+    description: string;
+    recommendation: string;
+    coordinates?: { x: number, y: number, w: number, h: number };
+    confidence: number;
+  }>;
+  summary: {
+    total: number;
+    critical: number;
+    warnings: number;
+    passed: number;
+  };
+  processedAt: string;
+}
+
 export const aiVisionApi = {
   analyze: (imageData: string, mode: string) =>
-    apiFetch(`/ai-vision/analyze`, { method: 'POST', body: JSON.stringify({ imageData, mode }) }),
+    apiFetch<AiVisionAnalysis>(`/ai-vision/analyze`, { method: 'POST', body: JSON.stringify({ imageData, mode }) }),
   getLogs: () => fetchAll<Row>('ai_vision_logs'),
 };
 

@@ -5,7 +5,8 @@ import {
   Target, Activity, Upload, Image as ImageIcon,
   X, ArrowRight, FileText
 } from 'lucide-react';
-import { ModuleBreadcrumbs } from '../ui/Breadcrumbs';
+import { aiVisionApi } from '../../services/api';
+
 
 type AnalysisMode = 'SAFETY' | 'QUALITY' | 'PROGRESS';
 
@@ -124,36 +125,25 @@ export const AIVision: React.FC = () => {
   }, []); 
 
   // Image Analysis
-  const analyzeImage = useCallback(async (_imageData: string) => { 
+  const analyzeImage = useCallback(async (imageData: string) => {
     setIsProcessing(true);
-    
+
     try {
-      const mockDetections = generateMockDetections(mode);
-      
-      const result: AnalysisResult = {
-        detections: mockDetections,
-        summary: {
-          total: mockDetections.length,
-          critical: mockDetections.filter(d => d.severity === 'CRITICAL').length,
-          warnings: mockDetections.filter(d => d.severity === 'WARNING').length,
-          passed: mockDetections.filter(d => d.severity === 'PASS').length,
-        },
-        processedAt: new Date().toISOString()
-      };
-      
+      const result = await aiVisionApi.analyze(imageData, mode);
       setAnalysisResults(prev => [result, ...prev.slice(0, 19)]); // Keep last 20 results
-      
+
     } catch (error) {
       console.error('Analysis failed:', error);
+      toast.error('AI Analysis failed');
     } finally {
       setIsProcessing(false);
     }
-  }, [mode, generateMockDetections, setAnalysisResults]);
+  }, [mode]);
 
   // Camera Capture and Analysis
   const captureAndAnalyze = useCallback(async () => {
     if (!videoRef.current || !canvasRef.current) return;
-    
+
     const canvas = canvasRef.current;
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
@@ -162,13 +152,13 @@ export const AIVision: React.FC = () => {
     canvas.width = videoRef.current.videoWidth;
     canvas.height = videoRef.current.videoHeight;
     ctx.drawImage(videoRef.current, 0, 0);
-    
+
     // Convert to base64
     const imageData = canvas.toDataURL('image/jpeg', 0.8);
-    
+
     // Analyze image
     await analyzeImage(imageData);
-  }, [analyzeImage]); 
+  }, [analyzeImage]);
 
   // File handling
   const _handleFileSelect = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {

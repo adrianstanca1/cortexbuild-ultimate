@@ -95,6 +95,8 @@ const MOCK_CLASHES: ClashDetection[] = [
 export const BIMViewer: React.FC = () => {
   const viewerRef = useRef<HTMLDivElement>(null);
   const jumpToClashRef = useRef<(clash: ClashDetection) => void>(() => {});
+  const animationFrameIdRef = useRef<number | null>(null);
+  const handleResizeRef = useRef<(() => void) | null>(null);
   const [activeModel, setActiveModel] = useState<BIMModel | null>(null);
   const [models, setModels] = useState<BIMModel[]>([]);
   const [clashes, setClashes] = useState<ClashDetection[]>([]);

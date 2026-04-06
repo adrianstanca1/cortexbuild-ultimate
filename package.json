@@ -80,5 +80,17 @@
     "typescript-eslint": "^8.58.0",
     "vite": "^8.0.1",
     "vitest": "^4.1.2"
+  },
+  "lint-staged": {
+    "*.{ts,tsx}": [
+      "eslint --fix",
+      "bash -c 'npx tsc --noEmit'"
+    ],
+    "*.{js,jsx}": [
+      "eslint --fix"
+    ],
+    "*.{json,css,md}": [
+      "prettier --write"
+    ]
   }
 }
