@@ -67,10 +67,10 @@ docker build -t cortexbuild-ultimate:latest .
 echo "📦 Creating deployment package..."
 TAR_FILE="/tmp/cortexbuild-deploy-$(date +%Y%m%d_%H%M%S).tar.gz"
 
+# Include the local 'dist' folder since we build locally to prevent VPS OOM
 tar -czf "$TAR_FILE" \
     --exclude='.git' \
     --exclude='node_modules' \
-    --exclude='dist' \
     --exclude='*.log' \
     --exclude='.env*' \
     -C "$PROJECT_ROOT" .
@@ -99,30 +99,18 @@ ssh $SSH_OPTS "$VPS_HOST" "
     sudo mkdir -p '$VPS_PATH'
     cd '$VPS_PATH'
 
-    # Extract new code
+    # Extract new code (includes local build dist/)
     sudo tar -xzf /tmp/cortexbuild-deploy.tar.gz
 
     # Set permissions
     sudo chown -R root:root .
 
-    # Install dependencies (need dev deps for tsc + vite build)
-    echo '📦 Installing dependencies...'
-    npm ci
+    # Install backend dependencies only
+    echo '📦 Installing backend dependencies...'
     cd server && npm ci && cd ..
 
-    # Build production assets
-    echo '🏗️ Building production assets on VPS...'
-    npm run build || {
-        echo '❌ Build failed on VPS. Attempting recovery...'
-        # Install tsc globally if missing
-        if command -v tsc >/dev/null 2>&1; then
-            echo 'tsc found, retrying build...'
-            npm run build
-        else
-            echo 'tsc still missing, skipping TS type check, building with vite only...'
-            npx vite build
-        fi
-    }
+    # Start services
+    echo '🚀 Starting services...'
 
     # Start services
     echo '🚀 Starting services...'

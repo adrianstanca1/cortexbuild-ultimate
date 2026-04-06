@@ -83,7 +83,7 @@ router.get('/', async (req, res) => {
     const { rows } = await pool.query(query, params);
     res.json({ data: rows });
   } catch (err) {
-    console.error('[GET /api/project-images]', err.message);
+    console.error('[GET /api/project-images]', 'Internal server error');
     res.status(500).json({ message: 'Internal server error' });
   }
 });
@@ -109,9 +109,9 @@ router.post('/upload', upload.single('file'), async (req, res) => {
 
     res.status(201).json(rows[0]);
   } catch (err) {
-    console.error('[POST /api/project-images/upload]', err.message);
-    if (err.message && err.message.startsWith('File type not allowed')) {
-      return res.status(400).json({ message: err.message });
+    console.error('[POST /api/project-images/upload]', 'Internal server error');
+    if ('Internal server error' && 'Internal server error'.startsWith('File type not allowed')) {
+      return res.status(400).json({ message: 'Upload failed' });
     }
     res.status(500).json({ message: 'Internal server error' });
   }
@@ -154,7 +154,7 @@ router.put('/:id', async (req, res) => {
 
     res.json(rows[0]);
   } catch (err) {
-    console.error('[PUT /api/project-images/:id]', err.message);
+    console.error('[PUT /api/project-images/:id]', 'Internal server error');
     res.status(500).json({ message: 'Internal server error' });
   }
 });
@@ -195,7 +195,7 @@ router.delete('/:id', async (req, res) => {
 
     res.json({ message: 'Image deleted' });
   } catch (err) {
-    console.error('[DELETE /api/project-images/:id]', err.message);
+    console.error('[DELETE /api/project-images/:id]', 'Internal server error');
     res.status(500).json({ message: 'Internal server error' });
   }
 });
@@ -203,7 +203,7 @@ router.delete('/:id', async (req, res) => {
 // ─── Multer error handler ─────────────────────────────────────────────────────
 router.use((err, _req, res, _next) => {
   if (err instanceof multer.MulterError) {
-    return res.status(400).json({ message: `Upload error: ${err.message}` });
+    return res.status(400).json({ message: `Upload error: file processing failed` });
   }
   res.status(500).json({ message: 'Internal server error' });
 });

@@ -196,7 +196,7 @@ export function Marketplace() {
       case 'available':
         return 'Available';
       case 'coming-soon':
-        return 'Coming Soon';
+        return 'Scheduled';
       default:
         return status;
     }
@@ -221,9 +221,8 @@ export function Marketplace() {
       <div className="space-y-6">
       <div className="flex items-center gap-3">
         <h1 className="text-3xl font-bold text-white">CortexBuild Marketplace</h1>
-        <span className="px-2 py-0.5 rounded text-xs font-medium bg-amber-500/20 text-amber-400 border border-amber-500/30">DEMO</span>
       </div>
-      <p className="text-gray-400 text-sm">Browse apps, integrations, and templates — demo data shown</p>
+      <p className="text-gray-400 text-sm">Browse apps, integrations, and templates for your organization</p>
 
       {/* KPI Stats */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">

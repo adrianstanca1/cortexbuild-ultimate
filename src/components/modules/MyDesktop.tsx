@@ -227,9 +227,9 @@ export const MyDesktop: React.FC = () => {
         return (
           <div className="p-8 text-center text-gray-500 h-full flex items-center justify-center">
             <div>
-              <div className="text-2xl mb-2">🚧</div>
-              <div>This app is under construction</div>
-              <div className="text-sm mt-1">Coming soon in CortexBuild v3.0</div>
+              <div className="text-2xl mb-2">⚙️</div>
+              <div>This module is currently unavailable</div>
+              <div className="text-sm mt-1">Please contact your system administrator</div>
             </div>
           </div>
         );

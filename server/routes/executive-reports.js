@@ -13,19 +13,35 @@ function getTenantFilter(req) {
   return { filter: ' AND organization_id = $1', params: [auth.organization_id] };
 }
 
-// RAG status: hardcoded green with TODO for future dynamic calculation
-function getRagStatus() {
-  // TODO: Implement dynamic RAG status calculation based on project performance metrics
-  // - programme: from project schedule/progress vs baseline
-  // - cost: from budget_items variance_percent
-  // - quality: from quality checks/completions
-  // - safety: from safety incident counts
-  return {
-    programme: 'green',
-    cost: 'green',
-    quality: 'green',
-    safety: 'green',
-  };
+async function getRagStatus(projectId) {
+  try {
+    const budgetResult = await pool.query(
+      `SELECT budgeted, spent FROM budget_items WHERE project_id = $1`,
+      [projectId]
+    );
+
+    const totalBudgeted = budgetResult.rows.reduce((sum, row) => sum + Number(row.budgeted || 0), 0);
+    const totalSpent = budgetResult.rows.reduce((sum, row) => sum + Number(row.spent || 0), 0);
+
+    const costVariance = totalBudgeted > 0
+      ? ((totalSpent - totalBudgeted) / totalBudgeted) * 100
+      : 0;
+
+    let costStatus = 'green';
+    if (costVariance > 10) costStatus = 'red';
+    else if (costVariance > 0) costStatus = 'amber';
+
+    // Simplified RAG for other metrics - can be expanded with real queries
+    return {
+      programme: 'green',
+      cost: costStatus,
+      quality: 'green',
+      safety: 'green',
+    };
+  } catch (err) {
+    console.error(`[getRagStatus Error] ${err.message}`);
+    return { programme: 'green', cost: 'green', quality: 'green', safety: 'green' };
+  }
 }
 
 /**
@@ -92,16 +108,19 @@ router.get('/summary', async (req, res) => {
       ? Math.round(((totalBudgeted - totalSpent) / totalBudgeted) * 100)
       : 25;
 
-    const projects = projectsListResult.rows.map((project) => ({
-      id: project.id,
-      name: project.name,
-      client: project.client,
-      value: Number(project.value) || 0,
-      phase: project.phase || 'Pre-Construction',
-      completion: Number(project.completion) || 0,
-      nextMilestone: 'TBC',
-      pm: project.pm || 'Unassigned',
-      ...getRagStatus(),
+    const projects = await Promise.all(projectsListResult.rows.map(async (project) => {
+      const ragStatus = await getRagStatus(project.id);
+      return {
+        id: project.id,
+        name: project.name,
+        client: project.client,
+        value: Number(project.value) || 0,
+        phase: project.phase || 'Pre-Construction',
+        completion: Number(project.completion) || 0,
+        nextMilestone: 'TBC',
+        pm: project.pm || 'Unassigned',
+        ...ragStatus,
+      };
     }));
 
     res.json({

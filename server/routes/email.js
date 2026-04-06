@@ -117,6 +117,12 @@ router.get('/templates', async (req, res) => {
        FROM email_templates WHERE is_active = TRUE AND (organization_id = $1 OR organization_id IS NULL) ORDER BY created_at DESC`,
       [orgId]
     );
+    // Return both system email types and user-created templates from DB
+    const { rows: dbTemplates } = await pool.query(
+      `SELECT id, name, subject, body, email_type as "emailType", description, variables, is_active as "isActive", created_at as "createdAt", updated_at as "updatedAt"
+       FROM email_templates WHERE is_active = TRUE AND (organization_id = $1 OR organization_id IS NULL) ORDER BY created_at DESC`,
+      [orgId]
+    );
     // Attach DB templates as overrides/extensions to system types
     const systemTypes = Object.entries(EMAIL_TYPES).map(([key, val]) => ({
       key,
@@ -126,9 +132,9 @@ router.get('/templates', async (req, res) => {
     res.json({ system: systemTypes, custom: dbTemplates });
   } catch (err) {
     console.error('[Email Templates]', err.message);
-    // Fallback to hardcoded on error
-    res.json({ system: EMAIL_TYPES, custom: [] });
+    res.status(500).json({ message: 'Error retrieving email templates' });
   }
+
 });
 
 router.post('/templates', async (req, res) => {

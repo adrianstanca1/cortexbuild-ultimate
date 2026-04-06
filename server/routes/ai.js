@@ -288,7 +288,7 @@ router.post('/chat', aiChatLimiter, async (req, res) => {
     });
   } catch (err) {
     console.error('[AI /chat]', err.message);
-    res.status(500).json({ message: 'AI assistant encountered an error: ' + err.message });
+    res.status(500).json({ message: 'AI assistant encountered an error' });
   }
 });
 
@@ -522,7 +522,7 @@ router.post('/execute', aiExecuteLimiter, async (req, res) => {
     }
   } catch (err) {
     console.error('[AI /execute]', err.message);
-    res.status(500).json({ success: false, message: 'Action failed: ' + err.message });
+    res.status(500).json({ success: false, message: 'Action failed' });
   }
 });
 

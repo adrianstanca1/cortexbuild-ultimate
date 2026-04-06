@@ -6,7 +6,7 @@ FROM base AS deps
 WORKDIR /app
 
 COPY package.json package-lock.json* ./
-RUN npm ci --legacy-peer-deps
+RUN npm ci --legacy-peer-deps --ignore-scripts
 
 # Development image
 FROM base AS development

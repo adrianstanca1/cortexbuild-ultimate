@@ -127,6 +127,7 @@ const NAV_GROUPS: { id: string; label: string; accent: string; items: NavItem[] 
       { id: 'email-history',      label: 'Email History',          icon: Mail,           badge: null },
       { id: 'permissions',        label: 'Permissions',            icon: Lock,           badge: null },
       { id: 'report-templates',   label: 'Report Templates',       icon: FileTemplate,   badge: null },
+      { id: 'admin-dashboard',    label: 'Admin Dashboard',        icon: ShieldCheck,    badge: 'ADMIN' },
       { id: 'settings',           label: 'Settings',               icon: Settings,       badge: null },
       { id: 'signage',            label: 'Signage',                icon: Signpost,       badge: null },
       { id: 'waste-management',    label: 'Waste Management',       icon: Trash2,         badge: null },

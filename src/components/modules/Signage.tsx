@@ -86,9 +86,7 @@ export default function Signage() {
 
   const { selectedIds, toggle, clearSelection } = useBulkSelection();
 
-  // Only use mock data when VITE_USE_MOCK_DATA is true
-  const USE_MOCK = false;
-  const displaySignage = signage.length > 0 ? signage : (USE_MOCK ? mockSigns : []);
+  const displaySignage = signage;
 
   const filtered = useMemo(() =>
     displaySignage.filter((s: Sign) =>

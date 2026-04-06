@@ -12,6 +12,8 @@ import {
   AlertTriangle,
   CheckCircle,
   Box,
+  X,
+  Trash2
 } from 'lucide-react';
 import { ModuleBreadcrumbs } from '../ui/Breadcrumbs';
 import { bimModelsApi } from '../../services/api';
@@ -47,6 +49,7 @@ export const BIMViewer: React.FC = () => {
   const [models, setModels] = useState<BIMModel[]>([]);
   const [clashes, setClashes] = useState<ClashDetection[]>([]);
   const [_loading, setLoading] = useState(true);
+  const [showModelsModal, setShowModelsModal] = useState(false);
   const [selectedLayers, setSelectedLayers] = useState<string[]>(['structure', 'hvac', 'electrical']);
 
   // Load models from API
@@ -380,7 +383,7 @@ export const BIMViewer: React.FC = () => {
             onChange={handleUploadModel}
           />
           <button
-            onClick={() => toast.info('Model Management system coming soon...')}
+            onClick={() => setShowModelsModal(true)}
             className="flex items-center gap-2 px-4 py-2 bg-amber-600 text-white rounded-lg hover:bg-amber-700 transition-colors"
           >
             <Layers className="h-4 w-4" />
@@ -531,7 +534,20 @@ export const BIMViewer: React.FC = () => {
               ))}
 
           <button
-            onClick={() => toast.info('Clash detection analysis starting...')}
+            onClick={async () => {
+              if (!activeModel) {
+                toast.error('Please select a model first');
+                return;
+              }
+              toast.info('Clash detection analysis starting...');
+              try {
+                await bimModelsApi.runClashDetection(activeModel.id);
+                await loadClashes(activeModel.id);
+                toast.success('Clash detection complete');
+              } catch (err) {
+                toast.error('Clash detection failed');
+              }
+            }}
             className="w-full mt-3 px-4 py-2 bg-base-200 border border-base-300 text-gray-300 rounded hover:bg-base-100 transition-colors"
           >
             Run Clash Detection
@@ -574,6 +590,81 @@ export const BIMViewer: React.FC = () => {
           </div>
         </div>
       </div>
+      {/* Model Management Modal */}
+      {showModelsModal && (
+        <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
+          <div className="bg-base-200 border border-base-300 rounded-xl w-full max-w-4xl max-h-[80vh] overflow-hidden flex flex-col">
+            <div className="p-6 border-b border-base-300 flex items-center justify-between">
+              <h3 className="text-xl font-bold text-white flex items-center gap-2">
+                <Layers className="h-5 w-5 text-amber-500" />
+                Model Management
+              </h3>
+              <button onClick={() => setShowModelsModal(false)} className="text-gray-400 hover:text-white transition">
+                <X className="h-6 w-6" />
+              </button>
+            </div>
+            <div className="p-6 overflow-y-auto flex-1 space-y-6">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div className="md:col-span-2 space-y-4">
+                  <h4 className="text-white font-semibold mb-2">Available Models</h4>
+                  <div className="space-y-2">
+                    {models.map(model => (
+                      <div key={model.id} className="p-3 bg-base-300 rounded-lg border border-base-300 flex justify-between items-center group">
+                        <div className="flex items-center gap-3">
+                          <Box className="h-4 w-4 text-amber-500" />
+                          <div>
+                            <p className="text-sm font-medium text-white">{model.name}</p>
+                            <p className="text-xs text-gray-400">{model.format} • {formatFileSize(model.size)} • v{model.version}</p>
+                          </div>
+                        </div>
+                        <div className="flex gap-2">
+                          <button
+                            onClick={() => { setActiveModel(model); setShowModelsModal(false); }}
+                            className="px-3 py-1 bg-amber-600 text-white text-xs rounded hover:bg-amber-700 transition"
+                          >
+                            Load
+                          </button>
+                          <button
+                            onClick={async () => {
+                              if (confirm(`Delete model ${model.name}?`)) {
+                                try {
+                                  await bimModelsApi.delete(model.id);
+                                  setModels(prev => prev.filter(m => m.id !== model.id));
+                                  toast.success('Model deleted');
+                                } catch (err) {
+                                  toast.error('Delete failed');
+                                }
+                              }
+                            }}
+                            className="p-1 text-red-400 hover:bg-red-900/20 rounded transition"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                    {models.length === 0 && <EmptyState title="No models found" description="Upload a model to begin." />}
+                  </div>
+                </div>
+                <div className="bg-base-300 p-4 rounded-lg border border-base-300 space-y-4">
+                  <h4 className="text-white font-semibold mb-2">Quick Upload</h4>
+                  <div className="space-y-3">
+                    <label className="block w-full p-4 border-2 border-dashed border-base-300 rounded-lg cursor-pointer hover:border-amber-500 transition-colors text-center">
+                      <input type="file" className="hidden" accept=".ifc,.gltf,.glb,.obj,.fbx" onChange={handleUploadModel} />
+                      <Upload className="h-8 w-8 text-gray-500 mx-auto mb-2" />
+                      <p className="text-xs text-gray-400">Click to upload new model</p>
+                    </label>
+                    <div className="text-[10px] text-gray-500 space-y-1">
+                      <p>Supported: IFC, GLTF, GLB, OBJ, FBX</p>
+                      <p>Max size: 500MB</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

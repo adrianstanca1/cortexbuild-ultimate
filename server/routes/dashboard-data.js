@@ -56,7 +56,7 @@ router.get('/overview', async (req, res) => {
     });
   } catch (err) {
     console.error('dashboard overview error:', err);
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ error: 'Internal server error' });
   }
 });
 
@@ -93,7 +93,7 @@ router.get('/revenue', async (req, res) => {
     res.json(revenueData);
   } catch (err) {
     console.error('dashboard revenue error:', err);
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ error: 'Internal server error' });
   }
 });
 
@@ -135,7 +135,7 @@ router.get('/project-status', async (req, res) => {
     res.json({ statuses });
   } catch (err) {
     console.error('dashboard project-status error:', err);
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ error: 'Internal server error' });
   }
 });
 
@@ -201,7 +201,7 @@ router.get('/safety-chart', async (req, res) => {
     res.json(data);
   } catch (err) {
     console.error('dashboard safety-chart error:', err);
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ error: 'Internal server error' });
   }
 });
 

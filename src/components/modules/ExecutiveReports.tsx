@@ -64,27 +64,11 @@ const FALLBACK_PROJECTS: Array<{
   cost: RAG;
   quality: RAG;
   safety: RAG;
-}> = [
-  { id: 'p1', name: 'Riverside Tower', client: 'AC Properties', value: 4200000, phase: 'Construction', completion: 68, nextMilestone: 'Structural complete', pm: 'SC', programme: 'green', cost: 'green', quality: 'green', safety: 'green' },
-  { id: 'p2', name: 'Tech Hub Phase 2', client: 'TechCorp', value: 2850000, phase: 'M&E', completion: 54, nextMilestone: 'HVAC commissioning', pm: 'JM', programme: 'amber', cost: 'amber', quality: 'green', safety: 'green' },
-  { id: 'p3', name: 'Retail Centre Fit-out', client: 'Developers Ltd', value: 1950000, phase: 'Fit-out', completion: 42, nextMilestone: 'FF&E installation', pm: 'PW', programme: 'red', cost: 'green', quality: 'amber', safety: 'green' },
-];
+}> = [];
 
-const FALLBACK_KPIS: Array<{ label: string; value: string; target: string; rag: RAG }> = [
-  { label: 'Portfolio Value', value: fmtCurrency(9000000), target: fmtCurrency(9500000), rag: 'green' },
-  { label: 'Projects Active', value: '3', target: '3', rag: 'green' },
-  { label: 'Revenue YTD', value: fmtCurrency(1850000), target: fmtCurrency(2000000), rag: 'amber' },
-  { label: 'Margin %', value: '25%', target: '26%', rag: 'green' },
-];
+const FALLBACK_KPIS: Array<{ label: string; value: string; target: string; rag: RAG }> = [];
 
-const FALLBACK_TRENDS = [
-  { month: 'Jan', revenue: 185000, margin: 23, headcount: 142 },
-  { month: 'Feb', revenue: 220000, margin: 25, headcount: 156 },
-  { month: 'Mar', revenue: 198000, margin: 25, headcount: 165 },
-  { month: 'Apr', revenue: 289000, margin: 24, headcount: 178 },
-  { month: 'May', revenue: 267000, margin: 25, headcount: 172 },
-  { month: 'Jun', revenue: 310000, margin: 25, headcount: 185 },
-];
+const FALLBACK_TRENDS: Array<Record<string, unknown>> = [];
 
 type ProjectData = {
   id: string;

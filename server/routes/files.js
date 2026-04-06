@@ -99,7 +99,7 @@ router.get('/', async (req, res) => {
 
     res.json({ data: rows });
   } catch (err) {
-    console.error('[GET /api/files]', err.message);
+    console.error('[GET /api/files]', 'Internal server error');
     res.status(500).json({ message: 'Internal server error' });
   }
 });
@@ -122,7 +122,7 @@ router.get('/:id', async (req, res) => {
     const doc = { ...rows[0], versions: rows[0].versions || [] };
     res.json(doc);
   } catch (err) {
-    console.error('[GET /api/files/:id]', err.message);
+    console.error('[GET /api/files/:id]', 'Internal server error');
     res.status(500).json({ message: 'Internal server error' });
   }
 });
@@ -160,9 +160,9 @@ router.post('/upload', upload.single('file'), async (req, res) => {
 
     res.status(201).json(rows[0]);
   } catch (err) {
-    console.error('[POST /api/files/upload]', err.message);
-    if (err.message && err.message.startsWith('File type not allowed')) {
-      return res.status(400).json({ message: err.message });
+    console.error('[POST /api/files/upload]', 'Internal server error');
+    if ('Internal server error' && 'Internal server error'.startsWith('File type not allowed')) {
+      return res.status(400).json({ message: 'Upload failed' });
     }
     res.status(500).json({ message: 'Internal server error' });
   }
@@ -227,7 +227,7 @@ router.put('/:id', async (req, res) => {
 
     res.json(rows[0]);
   } catch (err) {
-    console.error('[PUT /api/files/:id]', err.message);
+    console.error('[PUT /api/files/:id]', 'Internal server error');
     res.status(500).json({ message: 'Internal server error' });
   }
 });
@@ -269,7 +269,7 @@ router.post('/:id/upload-version', upload.single('file'), async (req, res) => {
     const { rows } = await pool.query(`SELECT * FROM documents WHERE id = $1${org.filter}`, [id, ...org.params]);
     res.json(rows[0]);
   } catch (err) {
-    console.error('[POST /api/files/:id/upload-version]', err.message);
+    console.error('[POST /api/files/:id/upload-version]', 'Internal server error');
     res.status(500).json({ message: 'Internal server error' });
   }
 });
@@ -297,7 +297,7 @@ router.get('/:id/download', async (req, res) => {
 
     res.download(fullPath, doc.name);
   } catch (err) {
-    console.error('[GET /api/files/:id/download]', err.message);
+    console.error('[GET /api/files/:id/download]', 'Internal server error');
     res.status(500).json({ message: 'Internal server error' });
   }
 });
@@ -340,7 +340,7 @@ router.get('/:id/preview', async (req, res) => {
     const fileStream = fs.createReadStream(fullPath);
     fileStream.pipe(res);
   } catch (err) {
-    console.error('[GET /api/files/:id/preview]', err.message);
+    console.error('[GET /api/files/:id/preview]', 'Internal server error');
     res.status(500).json({ message: 'Internal server error' });
   }
 });
@@ -349,7 +349,7 @@ router.get('/:id/preview', async (req, res) => {
 router.get('/folders/list', async (req, res) => {
   try {
     const { parent } = req.query;
-    let query = 'SELECT DISTINCT parent_folder FROM documents WHERE parent_folder IS NOT NULL';
+    let query = 'SELECT DISTINCT parent_folder FROM documents WHERE parent_folder IS NOT NULL AND organization_id = $1';
     const params = [];
 
     if (parent) {
@@ -360,7 +360,7 @@ router.get('/folders/list', async (req, res) => {
     const { rows } = await pool.query(query, params);
     res.json({ data: rows.map(r => r.parent_folder) });
   } catch (err) {
-    console.error('[GET /api/files/folders]', err.message);
+    console.error('[GET /api/files/folders]', 'Internal server error');
     res.status(500).json({ message: 'Internal server error' });
   }
 });
@@ -398,7 +398,7 @@ router.delete('/:id', async (req, res) => {
 
     res.json({ message: 'Document deleted' });
   } catch (err) {
-    console.error('[DELETE /api/files/:id]', err.message);
+    console.error('[DELETE /api/files/:id]', 'Internal server error');
     res.status(500).json({ message: 'Internal server error' });
   }
 });
@@ -406,7 +406,7 @@ router.delete('/:id', async (req, res) => {
 // ─── Multer error handler ─────────────────────────────────────────────────────
 router.use((err, _req, res, _next) => {
   if (err instanceof multer.MulterError) {
-    return res.status(400).json({ message: `Upload error: ${err.message}` });
+    return res.status(400).json({ message: `Upload error: file processing failed` });
   }
   res.status(500).json({ message: 'Internal server error' });
 });

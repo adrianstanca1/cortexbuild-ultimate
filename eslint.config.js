@@ -30,6 +30,7 @@ export default tseslint.config(
         destructuredArrayIgnorePattern: '^_',
         caughtErrorsIgnorePattern: '^_',
       }],
+      '@typescript-eslint/ban-ts-comment': 'off',
       '@typescript-eslint/no-explicit-any': 'warn',
       'no-console': ['warn', { allow: ['error', 'warn'] }],
       'prefer-const': 'warn',
