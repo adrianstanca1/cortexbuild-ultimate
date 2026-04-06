@@ -57,7 +57,7 @@ export default function Certifications() {
   const [editItem, setEditItem] = useState<Certification | null>(null);
 
   const { useList, useCreate, useUpdate, useDelete } = useCertifications;
-  const { data: certs = [], isLoading } = useList();
+  const { data: certs = [], isLoading: _isLoading } = useList();
   const createMutation = useCreate();
   const updateMutation = useUpdate();
   const deleteMutation = useDelete();

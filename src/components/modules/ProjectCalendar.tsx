@@ -52,7 +52,7 @@ const TYPE_LABELS: Record<string, string> = {
   site_visit: 'Site Visit',
 };
 
-const MOCK_EVENTS: CalendarEvent[] = [
+const _MOCK_EVENTS: CalendarEvent[] = [
   {
     id: '1',
     title: 'Foundation Inspection',

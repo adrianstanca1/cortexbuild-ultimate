@@ -43,7 +43,7 @@ interface Sign {
   notes?: string | null;
 }
 
-const mockSigns: Sign[] = [
+const _mockSigns: Sign[] = [
   { id: '1', sign_type: 'safety', location: 'Site Entrance', status: 'active', last_inspected: '2026-03-15', next_inspection: '2026-04-15', description: 'Hard Hat Area', installation_date: '2025-06-01', inspection_interval: 30, notes: 'Good condition' },
   { id: '2', sign_type: 'prohibition', location: 'Scaffolding Area', status: 'active', last_inspected: '2026-03-20', next_inspection: '2026-04-20', description: 'No Entry Without Harness', installation_date: '2025-07-10', inspection_interval: 30, notes: 'Visible and secure' },
   { id: '3', sign_type: 'mandatory', location: 'Site Office', status: 'active', last_inspected: '2026-03-10', next_inspection: '2026-04-10', description: 'Eye Protection Required', installation_date: '2025-05-20', inspection_interval: 30, notes: 'Recently cleaned' },

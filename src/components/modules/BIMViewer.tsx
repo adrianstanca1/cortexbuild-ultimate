@@ -43,8 +43,8 @@ interface ClashDetection {
 export const BIMViewer: React.FC = () => {
   const viewerRef = useRef<HTMLDivElement>(null);
   const jumpToClashRef = useRef<(clash: ClashDetection) => void>(() => {});
-  const animationFrameIdRef = useRef<number | null>(null);
-  const handleResizeRef = useRef<(() => void) | null>(null);
+  const _animationFrameIdRef = useRef<number | null>(null);
+  const _handleResizeRef = useRef<(() => void) | null>(null);
   const [activeModel, setActiveModel] = useState<BIMModel | null>(null);
   const [models, setModels] = useState<BIMModel[]>([]);
   const [clashes, setClashes] = useState<ClashDetection[]>([]);
@@ -70,7 +70,7 @@ export const BIMViewer: React.FC = () => {
         setClashes([]);
         toast.info('No BIM models found. Please upload a model to get started.');
       }
-    } catch (err) {
+    } catch (_err) {
       console.error('Failed to load BIM models:', err);
       toast.error('Failed to load BIM models from server');
       setModels([]);
@@ -93,7 +93,7 @@ export const BIMViewer: React.FC = () => {
       const newModel = await bimModelsApi.create(formData) as BIMModel;
       setModels(prev => [...prev, newModel]);
       toast.success('Model uploaded successfully');
-    } catch (err) {
+    } catch (_err) {
       console.error('Upload failed:', err);
       toast.error('Failed to upload BIM model');
     }
@@ -103,7 +103,7 @@ export const BIMViewer: React.FC = () => {
     try {
       const data: ClashDetection[] = await bimModelsApi.getClashes(modelId) as unknown as ClashDetection[];
       setClashes(data);
-    } catch (err) {
+    } catch (_err) {
       console.error('Failed to load clashes', err);
     }
   }
@@ -262,7 +262,7 @@ export const BIMViewer: React.FC = () => {
                 loadPlaceholderBuilding();
                 toast.success(`Loaded ${model.name} (3D preview)`);
               }
-            } catch (err) {
+            } catch (_err) {
               console.error('Model Load Error:', err);
               loadPlaceholderBuilding();
             }
@@ -314,7 +314,7 @@ export const BIMViewer: React.FC = () => {
               currentViewerRef.removeChild(renderer.domElement);
             }
           };
-        } catch (err) {
+        } catch (_err) {
           console.error('Three.js Init Error:', err);
           toast.error('Failed to initialize 3D viewer');
         }
@@ -544,7 +544,7 @@ export const BIMViewer: React.FC = () => {
                 await bimModelsApi.runClashDetection(activeModel.id);
                 await loadClashes(activeModel.id);
                 toast.success('Clash detection complete');
-              } catch (err) {
+              } catch (_err) {
                 toast.error('Clash detection failed');
               }
             }}
@@ -631,7 +631,7 @@ export const BIMViewer: React.FC = () => {
                                   await bimModelsApi.delete(model.id);
                                   setModels(prev => prev.filter(m => m.id !== model.id));
                                   toast.success('Model deleted');
-                                } catch (err) {
+                                } catch (_err) {
                                   toast.error('Delete failed');
                                 }
                               }

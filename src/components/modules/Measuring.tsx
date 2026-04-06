@@ -34,7 +34,7 @@ interface Section {
   items: Measurement[];
 }
 
-interface Valuation {
+interface _Valuation {
   period: string;
   amount_certified: number;
   cumulative_total: number;

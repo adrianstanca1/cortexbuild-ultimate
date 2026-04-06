@@ -43,7 +43,7 @@ interface Tender {
   missing_items?: string[];
 }
 
-const mockPackages: Package[] = [
+const _mockPackages: Package[] = [
   {
     id: '1',
     package_no: 'PKG-001',
@@ -191,7 +191,7 @@ export default function Lettings() {
 
   const listResult = useLettings.useList();
   const lettings = listResult.data || [];
-  const USE_MOCK = false;
+  const _USE_MOCK = false;
   const typedLettings = lettings as Package[];
   const createMutation = useLettings.useCreate();
   const updateMutation = useLettings.useUpdate();
