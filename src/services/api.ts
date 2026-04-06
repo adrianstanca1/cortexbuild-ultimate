@@ -392,6 +392,12 @@ export const companyApi = {
   update: (data: Row) => apiFetch<Row>('/company', { method: 'PUT', body: JSON.stringify(data) }),
 };
 
+export const aiVisionApi = {
+  analyze: (imageData: string, mode: string) =>
+    apiFetch(`/ai-vision/analyze`, { method: 'POST', body: JSON.stringify({ imageData, mode }) }),
+  getLogs: () => fetchAll<Row>('ai_vision_logs'),
+};
+
 export const bimModelsApi = {
   getAll: () => apiFetch<Row[]>('/bim-models'),
   getById: (id: string) => apiFetch<Row>(`/bim-models/${id}`),
@@ -402,6 +408,7 @@ export const bimModelsApi = {
   createClash: (id: string, data: Row) => apiFetch<Row>(`/bim-models/${id}/clashes`, { method: 'POST', body: JSON.stringify(data) }),
   updateClash: (id: string, clashId: string, data: Row) => apiFetch<Row>(`/bim-models/${id}/clashes/${clashId}`, { method: 'PUT', body: JSON.stringify(data) }),
   getLayers: (id: string) => apiFetch<Row[]>(`/bim-models/${id}/layers`),
+  download: (id: string) => `/api/bim-models/download/${id}`,
 };
 
 export const costManagementApi = {
