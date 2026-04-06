@@ -111,8 +111,8 @@ router.get('/', authMiddleware, async (req, res) => {
     let query = `
       SELECT 
         s.*,
-        u1.first_name || ' ' || u1.last_name as submitted_by_name,
-        u2.first_name || ' ' || u2.last_name as reviewer_full_name,
+        u1.name as submitted_by_name,
+        u2.name as reviewer_full_name,
         p.name as project_name,
         (SELECT COUNT(*) FROM submittal_comments WHERE submittal_id = s.id) as comment_count
       FROM submittals s
@@ -161,8 +161,8 @@ router.get('/:id', authMiddleware, async (req, res) => {
     const { rows } = await pool.query(
       `SELECT 
         s.*,
-        u1.first_name || ' ' || u1.last_name as submitted_by_name,
-        u2.first_name || ' ' || u2.last_name as reviewer_full_name,
+        u1.name as submitted_by_name,
+        u2.name as reviewer_full_name,
         p.name as project_name
        FROM submittals s
        LEFT JOIN users u1 ON s.submitted_by = u1.id
@@ -431,7 +431,7 @@ router.post('/:id/comments', authMiddleware, async (req, res) => {
       [
         req.params.id,
         req.user.id,
-        `${req.user.first_name || ''} ${req.user.last_name || ''}`.trim(),
+        req.user.name || '',
         comment,
         isReviewComment || false,
         requiresResponse || false

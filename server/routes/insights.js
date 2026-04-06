@@ -545,7 +545,7 @@ async function generateResourceInsights(orgFilter, params, insights) {
 // ─── Quarter-over-quarter trend insights ──────────────────────────────────────
 
 async function generateTrendInsights(orgFilter, params, insights) {
-  const whereClause = orgFilter ? `${orgFilter} AND` : 'WHERE';
+  const whereClause = orgFilter || '';
   const p = orgFilter ? [...params] : [];
 
   // Project spend trend: this quarter vs last quarter
@@ -553,7 +553,7 @@ async function generateTrendInsights(orgFilter, params, insights) {
     SELECT
       COALESCE(SUM(CASE WHEN created_at >= DATE_TRUNC('quarter', CURRENT_DATE)
         THEN spent ELSE 0 END), 0) AS spent_this_q,
-      COALESCE(SUM(CASE WHEN created_at >= DATE_TRUNC('quarter', CURRENT_DATE - INTERVAL '1 quarter')
+      COALESCE(SUM(CASE WHEN created_at >= DATE_TRUNC('quarter', CURRENT_DATE - INTERVAL '3 months')
                          AND created_at < DATE_TRUNC('quarter', CURRENT_DATE)
         THEN spent ELSE 0 END), 0) AS spent_last_q
     FROM projects
@@ -584,10 +584,10 @@ async function generateTrendInsights(orgFilter, params, insights) {
   const tenderResult = await pool.query(`
     SELECT
       COUNT(CASE WHEN created_at >= DATE_TRUNC('quarter', CURRENT_DATE) THEN 1 END) AS new_this_q,
-      COUNT(CASE WHEN created_at >= DATE_TRUNC('quarter', CURRENT_DATE - INTERVAL '1 quarter')
+      COUNT(CASE WHEN created_at >= DATE_TRUNC('quarter', CURRENT_DATE - INTERVAL '3 months')
                  AND created_at < DATE_TRUNC('quarter', CURRENT_DATE) THEN 1 END) AS new_last_q,
       COALESCE(SUM(CASE WHEN created_at >= DATE_TRUNC('quarter', CURRENT_DATE) THEN value ELSE 0 END), 0) AS value_this_q,
-      COALESCE(SUM(CASE WHEN created_at >= DATE_TRUNC('quarter', CURRENT_DATE - INTERVAL '1 quarter')
+      COALESCE(SUM(CASE WHEN created_at >= DATE_TRUNC('quarter', CURRENT_DATE - INTERVAL '3 months')
                         AND created_at < DATE_TRUNC('quarter', CURRENT_DATE) THEN value ELSE 0 END), 0) AS value_last_q
     FROM tenders
     ${whereClause}
@@ -635,7 +635,7 @@ async function generateTrendInsights(orgFilter, params, insights) {
   const defectResult = await pool.query(`
     SELECT
       COUNT(CASE WHEN created_at >= DATE_TRUNC('quarter', CURRENT_DATE) THEN 1 END) AS defects_this_q,
-      COUNT(CASE WHEN created_at >= DATE_TRUNC('quarter', CURRENT_DATE - INTERVAL '1 quarter')
+      COUNT(CASE WHEN created_at >= DATE_TRUNC('quarter', CURRENT_DATE - INTERVAL '3 months')
                  AND created_at < DATE_TRUNC('quarter', CURRENT_DATE) THEN 1 END) AS defects_last_q
     FROM defects
     ${whereClause}

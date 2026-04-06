@@ -89,11 +89,11 @@ router.get('/summary', async (req, res) => {
       ),
       pool.query(
         `SELECT
-          COALESCE(SUM(budgeted), 0) as total_budgeted,
-          COALESCE(SUM(spent), 0) as total_spent
+          COALESCE(SUM(bi.budgeted), 0) as total_budgeted,
+          COALESCE(SUM(bi.spent), 0) as total_spent
         FROM budget_items bi
         JOIN projects p ON p.id = bi.project_id
-        WHERE p.status = 'active'${tenantFilter}`,
+        WHERE p.status = 'active'${tenantFilter.replace('organization_id', 'p.organization_id')}`,
         tenantParams,
       ),
     ]);
@@ -167,11 +167,11 @@ router.get('/trends', async (req, res) => {
 
     const budgetQuery = `
       SELECT
-        COALESCE(SUM(budgeted), 0) as total_budgeted,
-        COALESCE(SUM(spent), 0) as total_spent
+        COALESCE(SUM(bi.budgeted), 0) as total_budgeted,
+        COALESCE(SUM(bi.spent), 0) as total_spent
       FROM budget_items bi
       JOIN projects p ON p.id = bi.project_id
-      WHERE p.status = 'active'${tenantFilter}
+      WHERE p.status = 'active'${tenantFilter.replace('organization_id', 'p.organization_id')}
     `;
 
     const [revenueResult, headcountResult, budgetData] = await Promise.all([

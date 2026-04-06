@@ -61,7 +61,7 @@ export function useDashboardData(): UseDashboardDataResult {
     setLoading(true);
     setError(null);
     try {
-      const result = await apiGet<DashboardDataResponse>('/dashboard-data');
+      const result = await apiGet<DashboardDataResponse>('/dashboard-data/overview');
       setData(result);
     } catch (err) {
       setError(
@@ -81,5 +81,5 @@ export function useDashboardData(): UseDashboardDataResult {
 
 // Standalone function for fetching dashboard data
 export async function fetchDashboardData(): Promise<DashboardDataResponse> {
-  return apiGet<DashboardDataResponse>('/dashboard-data');
+  return apiGet<DashboardDataResponse>('/dashboard-data/overview');
 }
