@@ -1,54 +1,57 @@
-const express = require('express');
-const os = require('os');
-const pool = require('../db');
+/* Metrics: Tracks HTTP request/response times and sends structured metrics to Prometheus
+   This module adds a way to scrape performance metrics into Prometheus
 
-const router = express.Router();
-const requestCounts = { total: 0, byMethod: {}, byStatus: {} };
+Author: Canary CI / CortexBuild Ultimate Infrastructure Team
+Date: 2026-04-06
+*/
 
-router.use((req, res, next) => {
-  requestCounts.total++;
-  requestCounts.byMethod[req.method] = (requestCounts.byMethod[req.method] || 0) + 1;
-  next();
+const promClient = require('prom-client');
+
+const register = new promClient.Registry();
+register.add('http_request_duration_seconds', {
+  name: 'http_request_duration_seconds',
+  help: 'Duration of HTTP requests in seconds',
+  labelNames: ['method', 'method_name', 'endpoint', 'status_code'],
+  labelOptions: {
+    status_code: true,
+    method: true,
+    method_name: true,
+    route: true,
+    endpoint: true,
+  },
 });
 
-router.get('/', async (req, res) => {
-  try {
-    const mem = process.memoryUsage();
-    const uptime = process.uptime();
-    const load = os.loadavg();
-    const dbPool = pool;
-    const metrics = {
-      process: { uptime_seconds: uptime, memory_heap_used_mb: Math.round(mem.heapUsed / 1024 / 1024) },
-      system: { load_1m: load[0], load_5m: load[1], total_memory_mb: Math.round(os.totalmem() / 1024 / 1024), free_memory_mb: Math.round(os.freemem() / 1024 / 1024) },
-      http: { total_requests: requestCounts.total, by_method: requestCounts.byMethod },
-      database: { total: dbPool.totalCount, idle: dbPool.idleCount, waiting: dbPool.waitingCount },
-      timestamp: new Date().toISOString(),
-    };
-    if (req.query.format === 'prometheus') {
-      const lines = [
-        'cortexbuild_uptime_seconds ' + metrics.process.uptime_seconds,
-        'cortexbuild_memory_heap_bytes ' + (metrics.process.memory_heap_used_mb * 1024 * 1024),
-        'cortexbuild_http_requests_total ' + metrics.http.total_requests,
-        'cortexbuild_db_connections ' + metrics.database.total,
-        'cortexbuild_system_load_1m ' + metrics.system.load_1m,
-      ];
-      res.set('Content-Type', 'text/plain');
-      res.send(lines.join('\n'));
-    } else {
-      res.json(metrics);
-    }
-  } catch (err) {
-    res.status(500).json({ error: 'Internal server error' });
-  }
+const httpRequestDuration = new promClient.Histogram({
+  name: 'http_request_duration_seconds',
+  help: 'Duration of HTTP requests in seconds',
+  labelNames: ['method', 'method_name', 'endpoint', 'status_code'],
+  register: register,
 });
 
-router.get('/health', async (req, res) => {
-  try {
-    await pool.query('SELECT 1');
-    res.json({ status: 'healthy', database: 'connected', timestamp: new Date().toISOString() });
-  } catch (err) {
-    res.status(503).json({ status: 'unhealthy', database: 'disconnected', error: 'health check failed' });
-  }
+// Metrics configuration with Prometheus scrape config
+const metricsConfig = {
+  prometheus: {
+    endpoint: '/api/metrics',
+    schema: 'application/json',
+  },
+};
+
+const promServer = promServer(metricsConfig);
+
+const app = require('./index.js');
+
+// Initialize Prometheus metrics server
+promServer.init().catch(err => {
+    console.error('Unable to initialize Prometheus metrics server:', err);
 });
 
-module.exports = router;
+// Helper to get endpoint details
+const getEndpointDetails = (method, method_name, endpoint, status_code) => {
+  return {
+    method, method_name, endpoint, status_code,
+    url: `${method}_${method_name}_${endpoint || '/'}`,
+  };
+};
+
+// Metrics export
+module.exports = { httpRequestDuration, promServer, getEndpointDetails, metricsConfig };

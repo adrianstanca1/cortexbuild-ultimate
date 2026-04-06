@@ -14,5 +14,9 @@ scrape_configs:
     static_configs:
       - targets: [localhost:9090]
 
-  # TODO: Add a postgres_exporter container for DB metrics
-  # TODO: Add /api/metrics endpoint to the API for Prometheus scraping
+  - job_name: 'cortexbuild-api'
+    static_configs:
+      - targets: ['cortexbuild-api:3001']
+    metrics_path: '/api/metrics'
+    scrape_interval: 15s
+    scrape_timeout: 10s
