@@ -308,6 +308,6 @@ Check: Prometheus/Grafana metrics, slow query log, connection pool status
 **Rollback Time:** 10-15 minutes  
 **Go/No-Go Decision:** Made by Engineering Lead
 
-Approve deployment: ********\_********  
-Date/Time: ********\_********  
-Deployed By: ********\_********
+Approve deployment: **\*\*\*\***\_**\*\*\*\***  
+Date/Time: **\*\*\*\***\_**\*\*\*\***  
+Deployed By: **\*\*\*\***\_**\*\*\*\***
