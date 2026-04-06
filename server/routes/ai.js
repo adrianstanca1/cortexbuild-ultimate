@@ -171,41 +171,48 @@ router.post('/chat', async (req, res) => {
       }
     }
 
-    const intent = classify(message.trim());
+    const intents = classify(message.trim());
     let result;
 
-    switch (intent) {
-      case 'projects':        result = await handleProjects();        break;
-      case 'invoices':        result = await handleInvoices();        break;
-      case 'overdue':         result = await handleOverdue();         break;
-      case 'safety':          result = await handleSafety();          break;
-      case 'team':            result = await handleTeam();            break;
-      case 'rfis':            result = await handleRfis();            break;
-      case 'tenders':         result = await handleTenders();         break;
-      case 'budget':          result = await handleBudget();          break;
-      case 'valuations':     result = await handleValuations();       break;
-      case 'defects':        result = await handleDefects();          break;
-      case 'materials':       result = await handleMaterials();       break;
-      case 'timesheets':      result = await handleTimesheets();      break;
-      case 'subcontractors':  result = await handleSubcontractors();  break;
-      case 'equipment':       result = await handleEquipment();       break;
-      case 'change_orders':   result = await handleChangeOrders();    break;
-      case 'purchase_orders': result = await handlePurchaseOrders();  break;
-      case 'contacts':        result = await handleContacts();        break;
-      case 'rams':            result = await handleRams();            break;
-      case 'cis':             result = await handleCIS();             break;
-      case 'daily_reports':   result = await handleDailyReports();    break;
-      case 'risk':            result = await handleRisk();            break;
-      case 'report':          result = await handleGenerateReport(message.trim()); break;
-      default:
-        result = handleUnknown(message.trim());
-        break;
+    if (intents.length === 0 || (intents.length === 1 && intents[0] === 'unknown')) {
+      result = handleUnknown(message.trim());
+    } else {
+      // Use the first matched intent as the primary driver for the rule-based result
+      const primaryIntent = intents[0];
+      switch (primaryIntent) {
+        case 'projects':        result = await handleProjects();        break;
+        case 'invoices':        result = await handleInvoices();        break;
+        case 'overdue':         result = await handleOverdue();         break;
+        case 'safety':          result = await handleSafety();          break;
+        case 'team':            result = await handleTeam();            break;
+        case 'rfis':            result = await handleRfis();            break;
+        case 'tenders':         result = await handleTenders();         break;
+        case 'budget':          result = await handleBudget();          break;
+        case 'valuations':     result = await handleValuations();       break;
+        case 'defects':        result = await handleDefects();          break;
+        case 'materials':       result = await handleMaterials();       break;
+        case 'timesheets':      result = await handleTimesheets();      break;
+        case 'subcontractors':  result = await handleSubcontractors();  break;
+        case 'equipment':       result = await handleEquipment();       break;
+        case 'change_orders':   result = await handleChangeOrders();    break;
+        case 'purchase_orders': result = await handlePurchaseOrders();  break;
+        case 'contacts':        result = await handleContacts();        break;
+        case 'rams':            result = await handleRams();            break;
+        case 'cis':             result = await handleCIS();             break;
+        case 'daily_reports':   result = await handleDailyReports();    break;
+        case 'risk':            result = await handleRisk();            break;
+        case 'report':          result = await handleGenerateReport(message.trim()); break;
+        default:
+          result = handleUnknown(message.trim());
+          break;
+      }
     }
 
     let reply = result.reply;
     let useLLM = false;
 
-    if (shouldUseOllama(message.trim(), intent)) {
+    if (shouldUseOllama(message.trim(), intents[0])) {
+
       try {
         reply = await getOllamaResponse(message.trim(), result.reply, convHistory, summary);
         useLLM = true;

@@ -10,29 +10,32 @@
  */
 function classify(message) {
   const m = message.toLowerCase();
-  if (/overdue/.test(m))                                                                        return 'overdue';
-  if (/budget/.test(m))                                                                         return 'budget';
-  if (/\brams\b|\bram\b|method statement|risk assessment/.test(m))                             return 'rams';
-  if (/\bcis\b|cis return|cis returns|construction industry scheme|deduction/.test(m))         return 'cis';
-  if (/daily report|daily reports|site diary|progress report/.test(m))                         return 'daily_reports';
-  if (/risk register|hazard register|\brisk\b|\brisks\b/.test(m))                              return 'risk';
-  if (/change order|change orders|variation|variations|\bco\b|\bvo\b/.test(m))                 return 'change_orders';
-  if (/purchase order|purchase orders|\bprocurement\b|supplier order/.test(m))                 return 'purchase_orders';
-  if (/\bpo\b/.test(m))                                                                         return 'purchase_orders';
-  if (/subcontractor|subcontractors|subbies|\bcontractor\b|sub-contractor/.test(m))            return 'subcontractors';
-  if (/\bequipment\b|\bplant\b|machinery|\bcrane\b|excavator|\bvehicle\b|\bhire\b/.test(m))    return 'equipment';
-  if (/\bmaterial\b|\bmaterials\b|\bsupplies\b|\bdelivery\b|\bstock\b/.test(m))                return 'materials';
-  if (/timesheet|timesheets|\bhours\b|\bpayroll\b|overtime/.test(m))                           return 'timesheets';
-  if (/\bcontact\b|\bcontacts\b|\bclient\b|\bclients\b|\bcrm\b|prospect/.test(m))              return 'contacts';
-  if (/project/.test(m))                                                                        return 'projects';
-  if (/invoice|invoices|payment|payments|cash/.test(m))                                        return 'invoices';
-  if (/safety|incident|hazard|near.?miss|accident/.test(m))                                    return 'safety';
-  if (/team|worker|staff|member|employee/.test(m))                                             return 'team';
-  if (/\brfi\b|rfis/.test(m))                                                                   return 'rfis';
-  if (/tender|bid|bidding|pipeline/.test(m))                                                   return 'tenders';
-  if (/valuation|valuations|payment application|interim certificate|prime cost|PC sums/.test(m)) return 'valuations';
-  if (/defect|defects|snag|snags|punch list|punchlist|items? list|closing/.test(m))             return 'defects';
-  return 'unknown';
+  const intents = [];
+
+  if (/overdue/.test(m))                                                                        intents.push('overdue');
+  if (/budget/.test(m))                                                                         intents.push('budget');
+  if (/\brams\b|\bram\b|method statement|risk assessment/.test(m))                             intents.push('rams');
+  if (/\bcis\b|cis return|cis returns|construction industry scheme|deduction/.test(m))         intents.push('cis');
+  if (/daily report|daily reports|site diary|progress report/.test(m))                         intents.push('daily_reports');
+  if (/risk register|hazard register|\brisk\b|\brisks\b/.test(m))                              intents.push('risk');
+  if (/change order|change orders|variation|variations|\bco\b|\bvo\b/.test(m))                 intents.push('change_orders');
+  if (/purchase order|purchase orders|\bprocurement\b|supplier order/.test(m))                 intents.push('purchase_orders');
+  if (/\bpo\b/.test(m))                                                                         intents.push('purchase_orders');
+  if (/subcontractor|subcontractors|subbies|\bcontractor\b|sub-contractor/.test(m))            intents.push('subcontractors');
+  if (/\bequipment\b|\bplant\b|machinery|\bcrane\b|excavator|\bvehicle\b|\bhire\b/.test(m))    intents.push('equipment');
+  if (/\bmaterial\b|\bmaterials\b|\bsupplies\b|\bdelivery\b|\bstock\b/.test(m))                intents.push('materials');
+  if (/timesheet|timesheets|\bhours\b|\bpayroll\b|overtime/.test(m))                           intents.push('timesheets');
+  if (/\bcontact\b|\bcontacts\b|\bclient\b|\bclients\b|\bcrm\b|prospect/.test(m))              intents.push('contacts');
+  if (/project/.test(m))                                                                        intents.push('projects');
+  if (/invoice|invoices|payment|payments|cash/.test(m))                                        intents.push('invoices');
+  if (/safety|incident|hazard|near.?miss|accident/.test(m))                                    intents.push('safety');
+  if (/team|worker|staff|member|employee/.test(m))                                             intents.push('team');
+  if (/\brfi\b|rfis/.test(m))                                                                   intents.push('rfis');
+  if (/tender|bid|bidding|pipeline/.test(m))                                                   intents.push('tenders');
+  if (/valuation|valuations|payment application|interim certificate|prime cost|PC sums/.test(m)) intents.push('valuations');
+  if (/defect|defects|snag|snags|punch list|punchlist|items? list|closing/.test(m))             intents.push('defects');
+
+  return intents.length > 0 ? intents : ['unknown'];
 }
 
 /**
