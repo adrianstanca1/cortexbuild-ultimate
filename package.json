@@ -16,12 +16,12 @@
     "test:e2e": "playwright test",
     "test:e2e:ui": "playwright test --ui",
     "test:e2e:headed": "playwright test --headed",
-    "prepare": "husky",
     "verify": "./scripts/pre-commit-check.sh",
     "verify:routes": "./scripts/verify-server-routes.sh",
     "verify:all": "./scripts/verify-server-routes.sh && ./scripts/pre-commit-check.sh",
     "precommit": "./scripts/pre-commit-check.sh",
-    "check": "npx tsc --noEmit && npm run lint && npm test"
+    "check": "npx tsc --noEmit && npm run lint && npm test",
+    "prepare": "husky"
   },
   "dependencies": {
     "@dnd-kit/utilities": "^3.2.2",
@@ -92,5 +92,10 @@
     "*.{json,css,md}": [
       "prettier --write"
     ]
+  },
+  "overrides": {
+    "web-ifc-three": {
+      "three": "^0.183.2"
+    }
   }
 }

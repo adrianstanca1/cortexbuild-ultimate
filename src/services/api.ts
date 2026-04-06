@@ -75,9 +75,9 @@ async function fetchAll<T>(endpoint: string): Promise<T[]> {
       return (res as { data: T[] }).data;
     }
     return res as T[];
-  } catch {
-    const key = endpoint.replace(/^\//, '');
-    return (MOCK_MAP[key] ?? []) as T[];
+  } catch (err) {
+    console.error(`API Error fetching /${endpoint}:`, err);
+    throw err;
   }
 }
 
@@ -534,34 +534,9 @@ export const financialReportsApi = {
 
 export const searchApi = {
   search: async (query: string, limit?: number) => {
-    try {
-      return await apiFetch<{ results: Row; total: number; query: string; semanticResults: Row[]; searchMode: string }>(
-        `/search?q=${encodeURIComponent(query)}&limit=${limit || 20}`
-      );
-    } catch {
-      const q = query.toLowerCase();
-      const results = {
-        projects: MOCK_DATA.projects.filter((p: Row) =>
-          String(p.name || '').toLowerCase().includes(q) || String(p.client || '').toLowerCase().includes(q)
-        ),
-        invoices: MOCK_DATA.invoices.filter((i: Row) =>
-          String(i.number || '').toLowerCase().includes(q) || String(i.client || '').toLowerCase().includes(q)
-        ),
-        contacts: MOCK_DATA.contacts.filter((c: Row) =>
-          String(c.name || '').toLowerCase().includes(q) || String(c.company || '').toLowerCase().includes(q)
-        ),
-        rfis: MOCK_DATA.rfis.filter((r: Row) =>
-          String(r.number || '').toLowerCase().includes(q) || String(r.subject || '').toLowerCase().includes(q)
-        ),
-        documents: MOCK_DATA.documents.filter((d: Row) =>
-          String(d.name || '').toLowerCase().includes(q)
-        ),
-        team: MOCK_DATA.team.filter((t: Row) =>
-          String(t.name || '').toLowerCase().includes(q) || String(t.role || '').toLowerCase().includes(q)
-        ),
-      };
-      return { results, semanticResults: [], searchMode: 'text' };
-    }
+    return await apiFetch<{ results: Row; total: number; query: string; semanticResults: Row[]; searchMode: string }>(
+      `/search?q=${encodeURIComponent(query)}&limit=${limit || 20}`
+    );
   },
   /** Semantic search via RAG — returns ranked context chunks */
   ragSearch: async (query: string, tables?: string[], limit = 5) => {

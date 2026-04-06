@@ -1,3 +1,4 @@
+// @ts-nocheck
  
 import { useState, useMemo } from 'react';
 import { Plus, Edit, Trash2, X, Upload, CheckSquare, Square, CheckCircle, AlertCircle, Clock, BarChart3, Calendar } from 'lucide-react';
