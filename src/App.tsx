@@ -91,6 +91,7 @@ const ModuleLoader = () => (
 );
 
 function AppShell() {
+  const { token } = useAuth();
   const [activeModule, setActiveModule] = useState<Module>('dashboard');
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -164,7 +165,7 @@ function AppShell() {
       case 'marketplace':           return <Marketplace />;
       case 'settings':              return <Settings />;
       case 'insights':              return <Insights />;
-      case 'notifications':         return <NotificationsPanel authToken={useAuth().token} onClose={() => setActiveModule('dashboard')} />;
+      case 'notifications':         return <NotificationsPanel authToken={token} onClose={() => setActiveModule('dashboard')} />;
       case 'executive-reports':     return <ExecutiveReports />;
       case 'predictive-analytics':  return <PredictiveAnalytics />;
       case 'calendar':              return <Calendar />;
