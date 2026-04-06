@@ -104,6 +104,7 @@ app.use('/api/auth', require('./routes/oauth')); // Google OAuth
 app.get('/api/health', (_req, res) => res.json({ status: 'ok', version: '1.0.0' }));
 
 // Rate-limited deploy route (5 requests per hour, Redis-backed)
+// Protected by DEPLOY_SECRET bearer token (see routes/deploy.js)
 const deployLimiter = rateLimit({
   store: new RateLimitRedisStore({
     sendCommand: (...args) => redisClient.sendCommand(args),
@@ -125,9 +126,12 @@ app.use('/api/metrics', require('./routes/metrics'));
 app.use('/api/company', require('./routes/company'));
 
 // ─── Upload route ─────────────────────────────────────────────────────────────
+app.use('/api/upload',          require('./routes/upload'));
 app.use('/api/files',           require('./routes/files'));
 app.use('/api/project-images',  require('./routes/project-images'));
 app.use('/api/project-tasks',   require('./routes/project-tasks'));
+app.use('/api/tasks',           require('./routes/tasks'));
+app.use('/api/work-packages',   require('./routes/work-packages'));
 
 // ─── AI routes ────────────────────────────────────────────────────────────────
 app.use('/api/ai', require('./routes/ai'));
