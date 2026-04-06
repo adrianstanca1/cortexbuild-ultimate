@@ -4,7 +4,7 @@ import React, { useState, useCallback } from 'react';
 import { Plus, X, Loader2 } from 'lucide-react';
 import { useProjectTasks } from '../../../hooks/useData';
 import { projectTasksApi } from '../../../services/api';
-import { TASK_STATUSES, TASK_STATUS_LABELS, TASK_STATUS_COLORS, PRIORITY_CFG, TASK_FORM_DEFAULTS } from './types';
+import { TASK_STATUSES, PRIORITY_CFG, TASK_FORM_DEFAULTS } from './types';
 import { KanbanColumn } from './shared';
 import type { AnyRow } from './types';
 import { toast } from 'sonner';

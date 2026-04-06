@@ -59,10 +59,14 @@ router.post('/', async (req, res) => {
       assigned_to, due_date, category, estimated_hours, tags
     } = req.body;
 
+    if (!req.user?.organization_id) {
+      return res.status(400).json({ message: 'User profile incomplete. Please complete your profile setup.' });
+    }
+
     if (!title) return res.status(400).json({ message: 'Title is required' });
 
     // Verify project belongs to user's org
-    if (project_id && req.user?.organization_id) {
+    if (project_id) {
       const { rows: proj } = await pool.query(
         'SELECT id FROM projects WHERE id = $1 AND organization_id = $2',
         [project_id, req.user.organization_id]

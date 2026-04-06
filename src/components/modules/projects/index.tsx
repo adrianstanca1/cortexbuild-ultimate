@@ -3,7 +3,7 @@
 import React, { useState } from 'react';
 import {
   Plus, X, Trash2, Edit2, Search, ChevronRight, MapPin, Users, Calendar,
-  PoundSterling, AlertTriangle, CheckCircle2, Clock,
+  PoundSterling, AlertTriangle, CheckCircle2,
   BarChart3, FileText, Shield, ClipboardList, ArrowLeft,
   Loader2, RefreshCw, MessageSquare, CheckSquare, Square, Circle,
 } from 'lucide-react';
@@ -22,10 +22,10 @@ import { DocumentsTab } from './DocumentsTab';
 import { TasksTab } from './TasksTab';
 import {
   STATUS_CFG, PROJECT_PHASES, PROJECT_TYPES, defaultForm,
-  fmtM, daysDiff, getBudgetHealth, formatDate,
+  fmtM, daysDiff, getBudgetHealth,
   generateProjectPhases, generateProjectMilestones,
 } from './types';
-import { BudgetHealthIndicator, KPICard } from './shared';
+import { BudgetHealthIndicator } from './shared';
 import type { AnyRow, FormData, WorkspaceProps, WorkspaceTab } from './types';
 import type { ProjectStatus } from '../../../types';
 import clsx from 'clsx';
@@ -65,7 +65,7 @@ function ProjectWorkspace({ project, onBack, onEdit }: WorkspaceProps) {
   const daysLeft = endDate ? daysDiff(endDate) : null;
   const statusCfg = STATUS_CFG[String(project.status ?? '')] ?? STATUS_CFG.planning;
   const budgetHealth = getBudgetHealth(spent, budget);
-  const budgetHealthCfg = {
+  const _budgetHealthCfg = {
     green: { bg: 'bg-green-500/20', text: 'text-green-400', label: 'Healthy' },
     amber: { bg: 'bg-yellow-500/20', text: 'text-yellow-400', label: 'At Risk' },
     red:   { bg: 'bg-red-500/20',    text: 'text-red-400',    label: 'Critical' },
