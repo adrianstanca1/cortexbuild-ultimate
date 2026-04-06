@@ -389,12 +389,12 @@ router.post('/execute', aiExecuteLimiter, async (req, res) => {
   if (!action) return res.status(400).json({ success: false, message: 'action is required' });
 
   try {
-    switch (action) {
-      // Require organization_id for all write actions
-      if (!req.user?.organization_id) {
-        return res.status(400).json({ success: false, message: 'User profile incomplete — organization membership required.' });
-      }
+    // Require organization_id for all write actions
+    if (!req.user?.organization_id) {
+      return res.status(400).json({ success: false, message: 'User profile incomplete — organization membership required.' });
+    }
 
+    switch (action) {
       case 'create_project': {
         const { name, client, budget, status = 'active', type = 'construction', manager, location } = params;
         if (!name || !client) return res.status(400).json({ success: false, message: 'name and client are required' });
