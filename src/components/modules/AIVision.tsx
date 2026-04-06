@@ -59,7 +59,7 @@ export const AIVision: React.FC = () => {
   // --- Helper Callbacks (defined before their usage in other callbacks) ---
 
   // Mock detection generator based on analysis mode
-  const generateMockDetections = useCallback((analysisMode: AnalysisMode): Detection[] => {
+  const _generateMockDetections = useCallback((analysisMode: AnalysisMode): Detection[] => {
     const baseDetections = {
       SAFETY: [
         {

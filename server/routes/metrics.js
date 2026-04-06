@@ -47,7 +47,7 @@ router.get('/health', async (req, res) => {
     await pool.query('SELECT 1');
     res.json({ status: 'healthy', database: 'connected', timestamp: new Date().toISOString() });
   } catch (err) {
-    res.status(503).json({ status: 'unhealthy', database: 'disconnected', error: err.message });
+    res.status(503).json({ status: 'unhealthy', database: 'disconnected', error: 'health check failed' });
   }
 });
 

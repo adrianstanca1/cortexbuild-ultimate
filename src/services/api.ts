@@ -3,33 +3,8 @@
  * All CRUD operations route to the local Express.js backend.
  */
 import { getToken, API_BASE } from '../lib/supabase';
-import { MOCK_DATA } from '../data/mockData';
 
 export type Row = Record<string, unknown>;
-
-const MOCK_MAP: Record<string, unknown[]> = {
-  'projects': MOCK_DATA.projects,
-  'invoices': MOCK_DATA.invoices,
-  'team': MOCK_DATA.team,
-  'safety': MOCK_DATA.safetyIncidents,
-  'rfis': MOCK_DATA.rfis,
-  'change-orders': MOCK_DATA.changeOrders,
-  'rams': MOCK_DATA.rams,
-  'cis': MOCK_DATA.cisReturns,
-  'equipment': MOCK_DATA.equipment,
-  'subcontractors': MOCK_DATA.subcontractors,
-  'timesheets': [],
-  'documents': MOCK_DATA.documents,
-  'tenders': MOCK_DATA.tenders,
-  'daily-reports': MOCK_DATA.dailyReports,
-  'meetings': MOCK_DATA.meetings,
-  'materials': MOCK_DATA.materials,
-  'punch-list': MOCK_DATA.punchList,
-  'inspections': MOCK_DATA.inspections,
-  'contacts': MOCK_DATA.contacts,
-  'risk-register': MOCK_DATA.riskRegister,
-  'purchase-orders': MOCK_DATA.purchaseOrders,
-};
 
 // ─── snake_case → camelCase normalizer ───────────────────────────────────────
 

@@ -191,8 +191,8 @@ export default function Lettings() {
 
   const listResult = useLettings.useList();
   const lettings = listResult.data || [];
-  const USE_MOCK = import.meta.env.VITE_USE_MOCK_DATA === 'true';
-  const typedLettings = (USE_MOCK && lettings.length === 0 ? mockPackages : lettings) as Package[];
+  const USE_MOCK = false;
+  const typedLettings = lettings as Package[];
   const createMutation = useLettings.useCreate();
   const updateMutation = useLettings.useUpdate();
   const deleteMutation = useLettings.useDelete();

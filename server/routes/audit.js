@@ -32,7 +32,7 @@ router.get('/', async (req, res) => {
     res.json(rows);
   } catch (err) {
     console.error('[Audit Log GET]', err.message);
-    res.status(500).json({ message: err.message });
+    res.status(500).json({ message: 'Internal server error' });
   }
 });
 
@@ -54,7 +54,7 @@ router.post('/', async (req, res) => {
     res.status(201).json(rows[0]);
   } catch (err) {
     console.error('[Audit Log POST]', err.message);
-    res.status(500).json({ message: err.message });
+    res.status(500).json({ message: 'Internal server error' });
   }
 });
 
@@ -88,7 +88,7 @@ router.get('/stats', async (req, res) => {
     });
   } catch (err) {
     console.error('[Audit Stats]', err.message);
-    res.status(500).json({ message: err.message });
+    res.status(500).json({ message: 'Internal server error' });
   }
 });
 

@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import { useState, useMemo } from 'react';
 import { Plus, Loader2 } from 'lucide-react';
 import { ModuleBreadcrumbs } from '../../ui/Breadcrumbs';

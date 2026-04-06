@@ -258,7 +258,7 @@ router.delete('/users/:id', authMiddleware, async (req, res) => {
   try {
     const oldRows = await pool.query('SELECT * FROM users WHERE id = $1', [req.params.id]);
     if (!oldRows.rowCount) return res.status(404).json({ message: 'User not found' });
-    const { rowCount } = await pool.query('DELETE FROM users WHERE id = $1', [req.params.id]);
+    const { rowCount } = await pool.query('DELETE FROM users WHERE id = $1 AND company_id = $2', [req.params.id, req.user.company_id]);
     logAudit({ auth: req.user, action: 'delete', entityType: 'users', entityId: req.params.id, oldData: oldRows.rows[0] });
     res.json({ message: 'User deleted' });
   } catch (err) {

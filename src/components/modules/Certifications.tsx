@@ -1,4 +1,4 @@
-const USE_MOCK = import.meta.env.VITE_USE_MOCK_DATA === 'true';
+const USE_MOCK = false;
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { useState } from 'react';

@@ -39,7 +39,7 @@ router.get('/tables', async (req, res) => {
   try {
     res.json({ tables: ALLOWED_TABLES });
   } catch (err) {
-    res.status(500).json({ message: err.message });
+    res.status(500).json({ message: 'Internal server error' });
   }
 });
 
@@ -90,7 +90,7 @@ router.get('/export/:table', async (req, res) => {
     res.setHeader('Content-Disposition', `attachment; filename="${table}-export.json"`);
     res.json({ table, count: result.rows.length, data: result.rows });
   } catch (err) {
-    res.status(500).json({ message: err.message });
+    res.status(500).json({ message: 'Internal server error' });
   }
 });
 
@@ -122,7 +122,7 @@ router.get('/export-all', async (req, res) => {
     res.setHeader('Content-Disposition', `attachment; filename="cortexbuild-backup-${Date.now()}.json"`);
     res.json(backup);
   } catch (err) {
-    res.status(500).json({ message: err.message });
+    res.status(500).json({ message: 'Internal server error' });
   }
 });
 

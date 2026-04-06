@@ -42,50 +42,6 @@ interface Valuation {
   net_payment: number;
 }
 
-const mockMeasurements: Measurement[] = [
-  { id: '1', item_no: 'PREL-001', description: 'Site Management & Supervision', unit: 'sum', quantity: 1, rate: 45000, section: 'Preliminaries', total: 45000 },
-  { id: '2', item_no: 'PREL-002', description: 'Site Insurances & Safety', unit: 'sum', quantity: 1, rate: 28000, section: 'Preliminaries', total: 28000 },
-  { id: '3', item_no: 'PREL-003', description: 'Temporary Works & Fencing', unit: 'sum', quantity: 1, rate: 15000, section: 'Preliminaries', total: 15000 },
-  { id: '4', item_no: 'SUBS-001', description: 'Excavation to Formation Level', unit: 'm³', quantity: 1250, rate: 28, section: 'Substructure', total: 35000 },
-  { id: '5', item_no: 'SUBS-002', description: 'Concrete Foundations Grade C30', unit: 'm³', quantity: 450, rate: 185, section: 'Substructure', total: 83250 },
-  { id: '6', item_no: 'SUBS-003', description: 'Reinforcement Steel', unit: 'tonne', quantity: 85, rate: 650, section: 'Substructure', total: 55250 },
-  { id: '7', item_no: 'FRAME-001', description: 'Structural Steel Frame', unit: 'tonne', quantity: 450, rate: 1500, section: 'Frame', total: 675000 },
-  { id: '8', item_no: 'FRAME-002', description: 'Composite Metal Decking', unit: 'm²', quantity: 8500, rate: 42, section: 'Frame', total: 357000 },
-  { id: '9', item_no: 'ENV-001', description: 'External Brick & Block Walls', unit: 'm²', quantity: 3200, rate: 95, section: 'Envelope', total: 304000 },
-  { id: '10', item_no: 'ENV-002', description: 'Curtain Walling System', unit: 'm²', quantity: 2100, rate: 320, section: 'Envelope', total: 672000 },
-  { id: '11', item_no: 'ENV-003', description: 'Roof Covering & Waterproofing', unit: 'm²', quantity: 2800, rate: 85, section: 'Envelope', total: 238000 },
-  { id: '12', item_no: 'ME-001', description: 'Heating System Installation', unit: 'sum', quantity: 1, rate: 125000, section: 'M&E', total: 125000 },
-  { id: '13', item_no: 'ME-002', description: 'Electrical Installation & Distribution', unit: 'sum', quantity: 1, rate: 245000, section: 'M&E', total: 245000 },
-  { id: '14', item_no: 'ME-003', description: 'Plumbing & Drainage Installation', unit: 'sum', quantity: 1, rate: 95000, section: 'M&E', total: 95000 },
-  { id: '15', item_no: 'FIT-001', description: 'Internal Partitioning & Doors', unit: 'm²', quantity: 6500, rate: 125, section: 'Fit-Out', total: 812500 },
-  { id: '16', item_no: 'FIT-002', description: 'Flooring & Skirting Boards', unit: 'm²', quantity: 8200, rate: 65, section: 'Fit-Out', total: 533000 },
-  { id: '17', item_no: 'FIT-003', description: 'Decoration & Finishes', unit: 'm²', quantity: 8200, rate: 35, section: 'Fit-Out', total: 287000 },
-];
-
-const mockValuations: Valuation[] = [
-  {
-    period: 'Feb 2026',
-    amount_certified: 250000,
-    cumulative_total: 250000,
-    retention_deducted: 12500,
-    net_payment: 237500,
-  },
-  {
-    period: 'Mar 2026',
-    amount_certified: 580000,
-    cumulative_total: 830000,
-    retention_deducted: 41500,
-    net_payment: 788500,
-  },
-  {
-    period: 'Apr 2026 (to date)',
-    amount_certified: 420000,
-    cumulative_total: 1250000,
-    retention_deducted: 62500,
-    net_payment: 1187500,
-  },
-];
-
 export default function Measuring() {
   const [activeTab, setActiveTab] = useState<'takeoff' | 'bq' | 'valuations' | 'reports'>('takeoff');
   const [searchTerm, setSearchTerm] = useState('');
@@ -109,20 +65,19 @@ export default function Measuring() {
 
   const listResult = useMeasuring.useList();
   const measurements = listResult.data || [];
-  const USE_MOCK = import.meta.env.VITE_USE_MOCK_DATA === 'true';
-  const typedMeasurements = (USE_MOCK && measurements.length === 0 ? mockMeasurements : measurements) as Measurement[];
   const createMutation = useMeasuring.useCreate();
   const updateMutation = useMeasuring.useUpdate();
   const deleteMutation = useMeasuring.useDelete();
 
   // Filter data
   const filtered = useMemo(() =>
-    typedMeasurements.filter((m: Measurement) =>
+    measurements.filter((m: Measurement) =>
       (m.reference || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
       (m.location || '').toLowerCase().includes(searchTerm.toLowerCase())
     ),
-    [typedMeasurements, searchTerm]
+    [measurements, searchTerm]
   );
+
 
   // Organize by section from filtered data
   const sections: Section[] = useMemo(() => {
@@ -222,7 +177,7 @@ export default function Measuring() {
 
   const exportToCSV = () => {
     const headers = ['Item No', 'Description', 'Unit', 'Quantity', 'Rate (£)', 'Total (£)', 'Section'];
-    const rows = typedMeasurements.map(m => [
+    const rows = measurements.map(m => [
       m.item_no || '',
       m.description || '',
       m.unit || '',
@@ -231,6 +186,7 @@ export default function Measuring() {
       (m.quantity || 0) * (m.rate || 0),
       m.section || '',
     ]);
+
 
     const csv = [
       headers.join(','),

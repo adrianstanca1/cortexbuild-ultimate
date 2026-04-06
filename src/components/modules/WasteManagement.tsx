@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import { useState } from 'react';
 import {
   Plus, Leaf, Recycle, Trash2, X, Edit, BarChart3, CheckCircle,
@@ -39,7 +38,7 @@ const recyclingTargetsData = [
   { material: 'Soil/Rock', target: 92, actual: 90 },
 ];
 
-const wasteLogsData = [
+const _wasteLogsData = [
   { id: 1, date: '2026-04-05', type: 'Concrete', volume: 12.5, method: 'Recycling', carrier: 'UK Waste Solutions', cost: 450 },
   { id: 2, date: '2026-04-04', type: 'Timber', volume: 8.2, method: 'Recycling', carrier: 'Green Disposal Ltd', cost: 280 },
   { id: 3, date: '2026-04-03', type: 'Metal', volume: 3.5, method: 'Recycling', carrier: 'Metal Recovery UK', cost: 320 },
