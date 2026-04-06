@@ -10,6 +10,7 @@ const authMiddleware = require('./middleware/auth');
 const makeRouter     = require('./routes/generic');
 const authRoutes     = require('./routes/auth');
 const rateLimiter    = require('./middleware/rateLimiter');
+const requestLogger = require('./middleware/requestLogger');
 const { initWebSocket } = require('./lib/websocket');
 const rateLimit = require('express-rate-limit');
 const { RedisStore: RateLimitRedisStore } = require('rate-limit-redis');
@@ -89,6 +90,7 @@ app.use(cors({
 }));
 app.set('trust proxy', 1);
 app.use(express.json({ limit: '10mb' }));
+app.use(requestLogger);  // Request logging with slow request detection
 app.use(cookieParser());
 app.use(rateLimiter);
 
