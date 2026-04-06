@@ -843,3 +843,44 @@ d7f66dc feat: massively expand 13 modules + fix all TypeScript errors
 - **Tests**: 13 passed
 - **Build**: ✅ OK
 - **Routes**: 40/40 valid
+
+---
+
+## 2026-04-06 — Comprehensive Debug & Commit Review
+
+### Critical Issue Found & Fixed: Duplicate Migration Numbers
+
+**8 migration files had duplicate sequence numbers** causing potential schema drift:
+
+- 0001/000 (both core platform tables)
+- 0002/002 (email tables vs new modules)
+- 0003/003 (report templates vs missing tables)
+- 004x2 (embeddings vs company_id fix)
+- 005x2 (permissions vs team member data)
+- 0006/006 (multi-tenancy fix vs equipment permits)
+- 0007/007 (email fix vs risk mitigation)
+- 0008/008 (report fix vs contact interactions)
+
+**Fix:** Renamed all to sequential 000-041 (42 files, zero duplicates)
+
+### Code Quality Fixes
+
+- usePWA.ts: Removed console.log (ESLint violation)
+- **0 lint warnings** (was 1)
+
+### Final Verified State
+
+| Check         | Result                      |
+| ------------- | --------------------------- |
+| Type errors   | 0                           |
+| Lint errors   | 0                           |
+| Lint warnings | 0                           |
+| Tests         | 116/116 passing             |
+| Build         | ✅ OK                       |
+| Routes        | 40/40 valid                 |
+| Migrations    | 42 files, 0 duplicates      |
+| Workspaces    | Local = WS-1 = VPS = GitHub |
+
+### Commit: `7bda7bf`
+
+fix(migrations): resolve all duplicate migration numbers — 000-041 sequential
