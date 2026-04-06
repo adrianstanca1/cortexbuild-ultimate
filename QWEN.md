@@ -2,9 +2,9 @@
 
 ## 🏗️ Project Overview
 
-**CortexBuild Ultimate** is an enterprise-grade, AI-powered construction management SaaS platform for UK contractors. It unifies 59+ construction modules with AI agents, real-time collaboration, and business intelligence.
+**CortexBuild Ultimate** is an enterprise-grade, AI-powered construction management SaaS platform for UK contractors. It unifies **70+ construction modules** with AI agents, real-time collaboration, and business intelligence into a single platform.
 
-**Production URL:** https://www.cortexbuildpro.com  
+**Production:** https://www.cortexbuildpro.com  
 **VPS:** 72.62.132.43 (Hostinger, 36GB RAM, 8 cores, 400GB SSD)  
 **Version:** 3.0.0  
 **Status:** ✅ Production Ready (100/100 Platform Health)
@@ -16,16 +16,17 @@
 ### Frontend
 | Technology | Version | Purpose |
 |------------|---------|---------|
-| React | 18.3.1 | UI framework |
-| TypeScript | 5.9.3 | Type safety |
+| React | 19.2 | UI framework |
+| TypeScript | 6.0.2 | Type safety |
 | Vite | 8.0.1 | Build tool |
-| Tailwind CSS | 3.4.3 | Styling |
+| Tailwind CSS | 4.2.2 | Styling |
 | daisyUI | 5.5.19 | Component library |
 | Zustand | 5.0.12 | State management |
 | React Query | 5.91.3 | Data fetching |
-| Recharts | 2.12.2 | Charts/visualizations |
+| Recharts | 3.8.1 | Charts/visualizations |
 | Zod | 4.3.6 | Runtime validation |
-| Sonner | 1.4.41 | Toast notifications |
+| Sonner | 2.0.7 | Toast notifications |
+| Three.js / web-ifc | 0.183 / 0.0.77 | 3D/BIM viewing |
 
 ### Backend
 | Technology | Purpose |
@@ -42,13 +43,14 @@
 | Technology | Purpose |
 |------------|---------|
 | Ollama | Local LLM inference |
-| Llama 3.1 8B | Primary model |
-| 10 AI Agents | Specialized tasks |
+| 24 AI intent classifiers | Specialized per-module NLP |
+| RAG pipeline | Retrieval-augmented generation |
+| Predictive analytics | ML-powered forecasting |
 
 ### Testing & Quality
 | Tool | Purpose |
 |------|---------|
-| Vitest | Unit testing (180 tests) |
+| Vitest | Unit testing (116 tests) |
 | Playwright | E2E testing (9 specs) |
 | ESLint | Code linting |
 | Lighthouse CI | Performance audits |
@@ -60,37 +62,37 @@
 ```
 cortexbuild-ultimate/
 ├── src/                          # Frontend source
-│   ├── components/               # React components (115+)
-│   │   ├── modules/             # 59 module components
-│   │   ├── widgets/             # 10 dashboard widgets
-│   │   ├── layout/              # Layout components
-│   │   └── ui/                  # Reusable UI components
-│   ├── context/                  # React context providers
-│   ├── hooks/                    # Custom React hooks
-│   ├── lib/                      # Utilities, validations, schemas
-│   ├── services/                 # API client services
-│   ├── test/                     # Unit tests (14 test files)
-│   ├── types/                    # TypeScript types
-│   ├── App.tsx                   # Main app component
-│   ├── main.tsx                  # Entry point
-│   └── index.css                 # Global styles
+│   ├── components/
+│   │   ├── modules/              # 70+ feature modules (see below)
+│   │   ├── ui/                   # 24 reusable UI primitives
+│   │   ├── widgets/              # 10 dashboard widgets
+│   │   ├── layout/               # 12 layout components
+│   │   ├── admin-dashboard/      # 7 admin tab sub-modules
+│   │   ├── prequalification/     # 8 extracted sub-components
+│   │   └── projects/             # 6 extracted sub-components
+│   ├── context/                  # AuthContext, ThemeContext
+│   ├── hooks/                    # 10 custom hooks (useData factory, etc.)
+│   ├── lib/                      # Utilities, validations, eventBus
+│   ├── services/                 # API clients (api.ts, ai.ts)
+│   ├── types/                    # TypeScript types + 14 domain types
+│   ├── test/                     # 15 unit test files
+│   ├── App.tsx                   # Main app (73 lazy-loaded modules)
+│   └── main.tsx                  # Entry point
 ├── server/                       # Backend source
-│   ├── routes/                   # API routes (31 files)
-│   │   ├── oauth.js             # Google/Microsoft OAuth
-│   │   ├── auth.js              # JWT auth
-│   │   ├── ai.js                # AI endpoints
-│   │   └── generic.js           # CRUD factory
-│   ├── middleware/               # Express middleware
-│   ├── lib/                      # Server utilities
-│   ├── migrations/               # SQL migrations (23 files)
-│   ├── db.js                     # Database connection
-│   └── index.js                  # Server entry
-├── e2e/                          # Playwright E2E tests
-├── app/                          # Next.js app router pages
-├── public/                       # Static assets
-├── dist/                         # Production build output
-├── docs/                         # Documentation (30+ files)
-└── [config files]                # TS, ESLint, Vite, etc.
+│   ├── routes/                   # 40 route files + 24 AI intents
+│   │   ├── generic.js            # CRUD factory (34 tables)
+│   │   ├── auth.js               # JWT login/register
+│   │   ├── oauth.js              # Google/Microsoft OAuth
+│   │   ├── ai.js                 # AI chat, summarize, execute
+│   │   └── ai-intents/           # 24 specialized intent classifiers
+│   ├── middleware/               # auth.js, rateLimiter.js
+│   ├── lib/                      # WebSocket, AI prompts, file validation
+│   └── migrations/               # 37 SQL migration files
+├── e2e/                          # 9 Playwright E2E specs
+├── docs/                         # 25 documentation files
+├── scripts/                      # 11 operational scripts
+├── deploy/                       # 13 deployment configs
+└── monitoring/                   # Prometheus/Grafana configs
 ```
 
 ---
@@ -98,9 +100,8 @@ cortexbuild-ultimate/
 ## 🚀 Quick Start
 
 ### Prerequisites
-- Node.js 20+
+- Node.js 24+
 - Docker + Docker Compose
-- pnpm or npm
 - Git
 
 ### 1. Install Dependencies
@@ -115,38 +116,26 @@ cp .env.example .env.local
 
 # Required variables:
 # VITE_API_BASE_URL=http://localhost:3001
-# DATABASE_URL=postgresql://...
+# DATABASE_URL=postgresql://cortexbuild:cortexbuild_dev_password@localhost:5432/cortexbuild
 # JWT_SECRET=your-secret-key
 ```
 
 ### 3. Start Database (Docker)
 ```bash
-docker-compose up -d postgres redis ollama
+docker-compose up -d postgres redis
 ```
 
-### 4. Initialize Database
+### 4. Start Backend
 ```bash
-cd server
-npm run db:reset:local
+cd server && npm install && npm run dev
+# Express on port 3001
 ```
 
-### 5. Start Backend
-```bash
-# Development (auto-reload)
-cd server && npm run dev
-
-# Production (PM2)
-pm2 start server/index.js --name cortexbuild-api
-```
-
-Backend runs on: `http://localhost:3001`
-
-### 6. Start Frontend
+### 5. Start Frontend
 ```bash
 npm run dev
+# Vite on http://localhost:5173 (proxies /api → :3001)
 ```
-
-Frontend runs on: `http://localhost:5173`
 
 ---
 
@@ -154,7 +143,7 @@ Frontend runs on: `http://localhost:5173`
 
 ### Unit Tests (Vitest)
 ```bash
-npm test                    # Run all tests
+npm test                    # Run all tests (116 tests)
 npm run test:watch          # Watch mode
 npm run test:coverage       # With coverage
 
@@ -165,36 +154,36 @@ npx vitest run src/test/NotificationCenter.test.tsx
 npx vitest run -t "notification"
 ```
 
-**Test Files (180 tests total):**
+**Test Files (116 tests, 13 files):**
 - `NotificationCenter.test.tsx` (14 tests)
 - `TeamChat.test.tsx` (10 tests)
-- `ActivityFeed.test.tsx` (8 tests)
+- `ActivityFeed.test.tsx` (7 tests)
 - `useOptimizedData.test.ts` (11 tests)
-- `validateNotification.test.ts` (15 tests)
+- `validateNotification.test.ts` (16 tests)
+- `hooks.test.ts` (24 tests)
 - Plus utilities, hooks, and component tests
 
 ### E2E Tests (Playwright)
 ```bash
-npm run test:e2e            # Run all E2E
-npm run test:e2e:ui         # Interactive UI
+npm run test:e2e            # Run all E2E (9 specs)
+npm run test:e2e:ui         # Interactive UI mode
 npm run test:e2e:headed     # Visible browser
 ```
-
-**E2E Specs (9 files):**
-- `auth.spec.ts`
-- `projects.spec.ts`
-- `documents.spec.ts`
-- `rfis.spec.ts`
-- `safety.spec.ts`
-- `teams.spec.ts`
-- `dashboard.spec.ts`
-- Plus module-specific tests
 
 ### Code Quality
 ```bash
 npm run lint                # ESLint check
-npm run lint:fix            # Auto-fix
-npm run lighthouse          # Lighthouse audit
+npm run lint:fix            # Auto-fix ESLint
+npx tsc --noEmit            # Type check
+```
+
+### Verification Scripts
+```bash
+npm run verify              # Full quality gate (types + tests + lint + build)
+npm run verify:routes       # Check all 40 server routes load
+npm run verify:all          # Both of the above
+npm run check               # Quick check (types + lint + tests)
+./scripts/pre-commit-check.sh   # Manual pre-commit validation
 ```
 
 ---
@@ -203,7 +192,7 @@ npm run lighthouse          # Lighthouse audit
 
 ### Production Build
 ```bash
-npm run build               # Build frontend to dist/
+npm run build               # Build frontend to dist/ (~400ms)
 ```
 
 ### Deploy to VPS
@@ -214,8 +203,9 @@ npm run build               # Build frontend to dist/
 **Deploy Script Does:**
 1. Builds production bundle
 2. Syncs to VPS via rsync
-3. Fixes permissions for nginx
-4. Verifies deployment (HTTP 200)
+3. Syncs `.env` to `server/.env`
+4. Fixes permissions for nginx
+5. Verifies deployment (HTTP 200)
 
 ### VPS Services (Docker)
 ```bash
@@ -230,11 +220,11 @@ docker logs -f cortexbuild-api
 ```
 
 **Services:**
-- `cortexbuild-nginx` (port 80/443)
 - `cortexbuild-api` (port 3001)
 - `cortexbuild-db` (PostgreSQL, port 5432)
 - `cortexbuild-redis` (port 6379)
 - `cortexbuild-ollama` (port 11434)
+- `cortexbuild-nginx` (port 80/443)
 - `cortexbuild-prometheus` (port 9090)
 - `cortexbuild-grafana` (port 3002)
 
@@ -257,15 +247,19 @@ Features:
 - Automatic audit logging
 - WebSocket broadcast on mutations
 
-**Specialized Routes:**
-- `auth.js` — JWT login/register
-- `oauth.js` — Google/Microsoft OAuth (Passport)
-- `ai.js` — Ollama AI integration
-- `files.js` — Multer uploads
-- `email.js` — Nodemailer + SendGrid
-- `search.js` — Cross-table search
-- `audit.js` — Audit log queries
-- `permissions.js` — RBAC
+**Multi-tenant Pattern** — All queries scoped by `organization_id`:
+```javascript
+const { params: baseParams } = await orgFilter(req.user);
+// Returns { join: 'JOIN ...', filter: ' AND organization_id = $1', params: [orgId] }
+```
+
+**Parameter Binding Pattern** — Correct order for UPDATE/DELETE:
+```javascript
+// WRONG: WHERE organization_id = $2 AND id = $1 with [...baseParams, id]
+// CORRECT: WHERE id = $1 AND organization_id = $2 with [id, ...baseParams]
+const queryParams = [id, ...baseParams];
+const orgIdParamIndex = queryParams.length;
+```
 
 ### Authentication
 
@@ -283,44 +277,29 @@ Features:
 - `project_manager`
 - `field_worker`
 
-**OAuth 2.0 Flow:**
-- Google + Microsoft strategies (Passport.js)
-- CSRF protection via `state` parameter
-- JWT returned in URL fragment (`#token=`)
-- OAuth tokens stored in `oauth_providers` table
-- Unique constraint: `(provider, provider_user_id)`
+**OAuth 2.0:** Google + Microsoft (Passport.js), CSRF-protected state, Redis-backed state store.
 
 ### Frontend Patterns
 
 **Module System:**
-- 59 lazy-loaded modules via `React.lazy()`
+- 73 lazy-loaded modules via `React.lazy()`
 - Sidebar navigation in `src/components/layout/`
 - Module components in `src/components/modules/`
+- Extracted sub-modules: `prequalification/` (8 files), `projects/` (6 files), `admin-dashboard/` (7 files)
 
 **State Management:**
 - Zustand stores in `src/lib/store/`
 - `useAuthStore` — JWT token + user
 - `useAppStore` — UI state
 
-**Real-time:**
-- WebSocket at `/ws` endpoint
-- Broadcast on dashboard changes
-- Notification center with live updates
-
-**Runtime Validation (Zod v4):**
+**Generic Hooks Factory** (`src/hooks/useData.ts`):
 ```typescript
-import { validateNotification } from '@/lib/validateNotification';
-
-const notification = validateNotification(rawData);
-if (!notification) {
-  // Handle invalid data
-}
+// Generic pattern — accepts domain type
+export const useProjects = makeHooks<ProjectRow>('projects', 'projects', projectsApi);
+// Returns { useList, useCreate, useUpdate, useDelete }
 ```
 
-Schemas in `src/lib/validations.ts`:
-- `notificationSchema`
-- `notificationsResponseSchema`
-- `notificationSettingsSchema`
+**Real-time:** WebSocket at `/ws` endpoint, broadcast on dashboard changes, notification center with live updates.
 
 ---
 
@@ -340,38 +319,43 @@ Schemas in `src/lib/validations.ts`:
 - **Semicolons:** Required
 - **Trailing commas:** ES5 (objects/arrays)
 
-### Import Order
-```typescript
-// 1. React
-import { useState } from 'react'
-
-// 2. Third-party
-import { z } from 'zod'
-
-// 3. Internal (aliased)
-import { Component } from '@/components'
-import { utils } from '@/lib'
-```
-
-### Component Structure
-```typescript
-// 1. Imports
-// 2. Types/interfaces
-// 3. Component function
-// 4. Export
-```
+### Security Patterns
+1. **SQL:** Always parameterize, never interpolate table names
+2. **Error responses:** Never expose `err.message` — use `'Internal server error'`
+3. **Multi-tenancy:** Scope ALL queries by `organization_id`
+4. **AI handlers:** Accept `user` param and scope all queries
+5. **Write actions:** Require `organization_id` guard before inserting
+6. **Table whitelists:** Validate against explicit Set before SQL interpolation
 
 ### Testing Practices
-- **Unit tests:** Co-located with source or in `src/test/`
+- **Unit tests:** Co-located in `src/test/`
 - **E2E tests:** In `e2e/` directory
 - **Test naming:** Descriptive, include expected behavior
 - **Mocks:** Use Vitest mocks for API calls
+- **Happy-dom** environment (React 19 compatible)
 
 ### Git Workflow
 - **Branch:** `main` (production-ready)
 - **Commits:** Conventional Commits format
+- **Pre-commit hook:** Verifies routes + types + tests + lint + build
 - **PRs:** Required for production changes
-- **Reviews:** At least 1 approval required
+
+---
+
+## 📊 Module Inventory
+
+| Category | Modules |
+|----------|---------|
+| **Core** | Dashboard, Projects, Invoicing, Accounting, Safety, Teams, RFIs, Documents |
+| **Commercial** | Tenders, Change Orders, Variations, Valuations, Cost Management, CIS Returns, Procurement |
+| **Site Ops** | Plant & Equipment, Materials, Subcontractors, Timesheets, Daily Reports, Site Operations, Field View |
+| **Quality** | Inspections, Punch List, Defects, Specifications, RAMS, Risk Register |
+| **Specialized** | BIM Viewer, Cost Management, Submittals, Drawings, Certifications, Prequalification |
+| **Compliance** | Signage, Waste Management, Sustainability, Training, Temp Works, Lettings, Measuring |
+| **AI/BI** | AI Assistant, AI Vision, Predictive Analytics, Advanced Analytics, Executive Reports |
+| **Business** | CRM, Calendar, Audit Log, Email History, Permissions, Report Templates, Marketplace |
+| **Collaboration** | Team Chat, Activity Feed, NotificationCenter |
+| **Admin** | Admin Dashboard (7 tabs: Overview, Users, Companies, Audit, Analytics, Backup, Settings) |
 
 ---
 
@@ -379,68 +363,21 @@ import { utils } from '@/lib'
 
 | File | Purpose |
 |------|---------|
-| `CLAUDE.md` | Claude Code guidance |
-| `AGENTS.md` | Development guidelines |
-| `package.json` | Dependencies & scripts |
-| `tsconfig.json` | TypeScript config |
-| `vite.config.ts` | Vite config |
-| `vitest.config.ts` | Vitest config |
-| `playwright.config.ts` | Playwright config |
-| `docker-compose.yml` | Docker services |
-| `deploy.sh` | Deployment script |
-| `server/index.js` | Backend entry |
-| `src/App.tsx` | Frontend entry |
-| `src/lib/validations.ts` | Zod schemas |
-
----
-
-## 📚 Documentation
-
-| Doc | Purpose |
-|-----|---------|
-| `docs/README.md` | Documentation index |
-| `docs/API_DOCUMENTATION.md` | API reference |
-| `docs/USER_GUIDE.md` | User manual |
-| `DEPLOYMENT_RUNBOOK.md` | Deployment guide |
-| `CONTRIBUTING.md` | Contribution guide |
-| `SECURITY.md` | Security policies |
-
----
-
-## 🎯 Current Platform Status
-
-### Modules: 59/59 Complete ✅
-All construction management modules implemented:
-- Projects, Safety, RFIs, Documents, Teams
-- Timesheets, Plant & Equipment, Materials
-- Meetings, Daily Reports, RAMS, CIS
-- Tenders, CRM, Inspections, Punch List
-- Risk Register, Drawings, Change Orders
-- Analytics, Calendar, Insights
-- Executive Reports, Predictive Analytics
-- Audit Log, Global Search, Variations
-- Defects, Valuations, Specifications
-- Temp Works, Signage, Waste Management
-- Sustainability, Training, Certifications
-- Prequalification, Lettings, Measuring
-- Email History, Permissions, Report Templates
-- BIM Viewer, Cost Management, Submittals
-- AI Vision, My Desktop, Advanced Analytics
-- Project Calendar, Site Operations, Field View
-- Procurement, Marketplace, Settings
-
-### New Features (v3.0.0)
-- **Notification Center** — Real-time WebSocket notifications
-- **Admin Dashboard** — System administration (7 tabs)
-- **Dashboard Widgets** — 10 reusable KPI widgets
-- **Mobile Bottom Navigation** — PWA mobile navigation
-- **OAuth/SSO** — Google + Microsoft sign-in
-
-### Quality Metrics
-- **Tests:** 180 passing (14 files)
-- **TypeScript:** 0 errors
-- **Lighthouse:** 100/100 performance
-- **Accessibility:** WCAG 2.1 AA (95/100)
+| `CLAUDE.md` | Claude Code guidance (architecture, commands, security) |
+| `AGENTS.md` | Development conventions, AI agent patterns |
+| `package.json` | Dependencies + scripts |
+| `tsconfig.json` | TypeScript config (ES2020, strict, paths) |
+| `vite.config.ts` | Vite bundler config |
+| `vitest.config.ts` | Vitest test config (happy-dom) |
+| `playwright.config.ts` | Playwright E2E config |
+| `docker-compose.yml` | Full stack orchestration |
+| `deploy.sh` | VPS deployment script |
+| `server/index.js` | Backend entry + route registration |
+| `server/routes/generic.js` | CRUD factory with column whitelist |
+| `src/App.tsx` | Frontend entry (73 lazy modules) |
+| `src/hooks/useData.ts` | `makeHooks<T>` factory for typed CRUD hooks |
+| `src/types/domain.ts` | 14 domain-level type definitions |
+| `src/lib/validations.ts` | Zod validation schemas |
 
 ---
 
@@ -478,11 +415,11 @@ npm run build
 npx tsc --noEmit
 ```
 
-### OAuth Not Working
-1. Check redirect URIs in Google/Azure console
-2. Verify `.env` has correct credentials
-3. Wait 5 minutes for propagation
-4. Clear browser cache
+### Pre-commit Hook Fails
+```bash
+# Run checks manually to see errors
+./scripts/pre-commit-check.sh
+```
 
 ---
 
@@ -491,10 +428,10 @@ npx tsc --noEmit
 - **GitHub:** https://github.com/adrianstanca1/cortexbuild-ultimate
 - **Production:** https://www.cortexbuildpro.com
 - **VPS:** 72.62.132.43
-- **Docs:** `docs/` directory
+- **Docs:** `docs/` directory (25 files)
 
 ---
 
-**Last Updated:** 2026-04-02  
+**Last Updated:** 2026-04-06  
 **Platform Version:** 3.0.0  
 **Status:** ✅ Production Ready
