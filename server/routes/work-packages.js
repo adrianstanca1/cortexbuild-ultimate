@@ -116,9 +116,10 @@ router.patch('/:id', async (req, res) => {
       start_date, end_date, budget, progress
     } = req.body;
 
+    const { params: baseParams } = orgFilter(req.user);
+    // Build query params: org first ($1), then update values, then id last
+    const queryParams = [...baseParams];
     const updates = [];
-    const params = [];
-    let paramCount = 0;
 
     const fields = {
       name, description, status, priority, assigned_to,
@@ -127,9 +128,8 @@ router.patch('/:id', async (req, res) => {
 
     for (const [key, value] of Object.entries(fields)) {
       if (value !== undefined) {
-        paramCount++;
-        updates.push(`${key} = $${paramCount}`);
-        params.push(value);
+        updates.push(`${key} = $${queryParams.length + 1}`);
+        queryParams.push(value);
       }
     }
 
@@ -137,16 +137,14 @@ router.patch('/:id', async (req, res) => {
       return res.status(400).json({ message: 'No fields to update' });
     }
 
-    const { params: baseParams } = orgFilter(req.user);
-    // id comes after all update params
-    params.push(id);
-    // org filter param comes last
-    const orgParamIndex = params.length + 1;
+    const idParamIndex = queryParams.length + 1;
+    queryParams.push(id);
+
     const { rows } = await pool.query(
       `UPDATE work_packages wp SET ${updates.join(', ')}
-       WHERE wp.organization_id = $${orgParamIndex} AND wp.id = $${params.length}
+       WHERE wp.organization_id = $1 AND wp.id = $${idParamIndex}
        RETURNING wp.*`,
-      [...baseParams, ...params]
+      queryParams
     );
 
     if (rows.length === 0) {
@@ -165,13 +163,16 @@ router.delete('/:id', async (req, res) => {
   try {
     const { id } = req.params;
     const { params: baseParams } = orgFilter(req.user);
-    const orgIdParamIndex = baseParams.length + 1;
+
+    // id goes first ($1), then org params follow
+    const queryParams = [id, ...baseParams];
+    const orgIdParamIndex = queryParams.length;
 
     const { rows } = await pool.query(
       `DELETE FROM work_packages wp
-       WHERE wp.organization_id = $${orgIdParamIndex} AND wp.id = $1
+       WHERE wp.id = $1 AND wp.organization_id = $${orgIdParamIndex}
        RETURNING wp.id`,
-      [...baseParams, id]
+      queryParams
     );
     if (rows.length === 0) return res.status(404).json({ message: 'Work package not found' });
 

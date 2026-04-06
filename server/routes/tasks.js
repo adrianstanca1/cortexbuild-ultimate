@@ -125,9 +125,10 @@ router.put('/:id', async (req, res) => {
       due_date, category, estimated_hours, tags, progress
     } = req.body;
 
+    const { params: baseParams } = await orgFilterTasks(req.user);
+    // Build query params: org first ($1), then update values, then id last
+    const queryParams = [...baseParams];
     const updates = [];
-    const params = [];
-    let paramCount = 0;
 
     const fields = {
       title, description, status, priority, assigned_to,
@@ -136,9 +137,8 @@ router.put('/:id', async (req, res) => {
 
     for (const [key, value] of Object.entries(fields)) {
       if (value !== undefined) {
-        paramCount++;
-        updates.push(`${key} = $${paramCount}`);
-        params.push(value);
+        updates.push(`${key} = $${queryParams.length + 1}`);
+        queryParams.push(value);
       }
     }
 
@@ -146,17 +146,15 @@ router.put('/:id', async (req, res) => {
       return res.status(400).json({ message: 'No fields to update' });
     }
 
-    const { params: baseParams } = await orgFilterTasks(req.user);
-    // id comes after all update params
-    params.push(id);
-    // org filter param comes last (after id)
-    const orgParamIndex = params.length + 1;
+    const idParamIndex = queryParams.length + 1;
+    queryParams.push(id);
+
     const { rows } = await pool.query(
       `UPDATE tasks t SET ${updates.join(', ')}
        FROM projects p
-       WHERE p.id = t.project_id AND p.organization_id = $${orgParamIndex} AND t.id = $${params.length}
+       WHERE p.id = t.project_id AND p.organization_id = $1 AND t.id = $${idParamIndex}
        RETURNING t.*`,
-      [...baseParams, ...params]
+      queryParams
     );
 
     if (rows.length === 0) {
@@ -175,13 +173,16 @@ router.delete('/:id', async (req, res) => {
   try {
     const { id } = req.params;
     const { params: baseParams } = await orgFilterTasks(req.user);
-    const orgIdParamIndex = baseParams.length + 1;
+
+    // id goes first ($1), then org params follow
+    const queryParams = [id, ...baseParams];
+    const orgIdParamIndex = queryParams.length;
 
     const { rows } = await pool.query(
       `DELETE FROM tasks t USING projects p
-       WHERE p.id = t.project_id AND p.organization_id = $${orgIdParamIndex} AND t.id = $1
+       WHERE p.id = t.project_id AND t.id = $1 AND p.organization_id = $${orgIdParamIndex}
        RETURNING t.id`,
-      [...baseParams, id]
+      queryParams
     );
     if (rows.length === 0) return res.status(404).json({ message: 'Task not found' });
 

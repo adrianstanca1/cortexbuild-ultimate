@@ -26,7 +26,7 @@ router.get('/', async (req, res) => {
     res.json(rows);
   } catch (err) {
     console.error('[GET /notifications]', err.message);
-    res.status(500).json({ message: err.message });
+    res.status(500).json({ message: 'Internal server error' });
   }
 });
 
@@ -44,7 +44,7 @@ router.get('/unread-count', async (req, res) => {
     res.json({ count: parseInt(rows[0].count, 10) });
   } catch (err) {
     console.error('[GET /notifications/unread-count]', err.message);
-    res.status(500).json({ message: err.message });
+    res.status(500).json({ message: 'Internal server error' });
   }
 });
 
@@ -63,7 +63,7 @@ router.put('/:id/read', async (req, res) => {
     res.json(rows[0]);
   } catch (err) {
     console.error('[PUT /notifications/:id/read]', err.message);
-    res.status(500).json({ message: err.message });
+    res.status(500).json({ message: 'Internal server error' });
   }
 });
 
@@ -81,7 +81,7 @@ router.put('/read-all', async (req, res) => {
     res.json({ message: 'All notifications marked as read' });
   } catch (err) {
     console.error('[PUT /notifications/read-all]', err.message);
-    res.status(500).json({ message: err.message });
+    res.status(500).json({ message: 'Internal server error' });
   }
 });
 
@@ -99,7 +99,7 @@ router.delete('/:id', async (req, res) => {
     res.json({ message: 'Notification deleted' });
   } catch (err) {
     console.error('[DELETE /notifications/:id]', err.message);
-    res.status(500).json({ message: err.message });
+    res.status(500).json({ message: 'Internal server error' });
   }
 });
 
@@ -146,7 +146,7 @@ router.post('/', async (req, res) => {
     res.status(201).json(rows[0]);
   } catch (err) {
     console.error('[POST /notifications]', err.message);
-    res.status(500).json({ message: err.message });
+    res.status(500).json({ message: 'Internal server error' });
   }
 });
 
@@ -221,7 +221,7 @@ router.post('/generate-alerts', async (req, res) => {
     res.json({ generated: alerts.length, alerts });
   } catch (err) {
     console.error('[POST /notifications/generate-alerts]', err.message);
-    res.status(500).json({ message: err.message });
+    res.status(500).json({ message: 'Internal server error' });
   }
 });
 
