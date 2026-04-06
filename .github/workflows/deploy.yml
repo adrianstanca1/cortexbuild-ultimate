@@ -85,9 +85,7 @@ jobs:
         run: |
           sshpass -e ssh -o StrictHostKeyChecking=yes -o UserKnownHostsFile=~/.ssh/known_hosts \
             ${{ secrets.VPS_USER }}@${{ secrets.SSH_HOST }} \
-            "cd ${{ secrets.VPS_PATH }} && git fetch origin && git reset --hard origin/main && \
-             cd server && npm ci --omit=dev && cd .. && \
-             (pm2 restart cortexbuild-api 2>/dev/null || true)"
+            "bash /root/deploy-api.sh"
 
       - name: Verify deployment
         run: |
