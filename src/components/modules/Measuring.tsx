@@ -92,36 +92,41 @@ export default function Measuring() {
 
   const listResult = useMeasuring.useList() as any;
   const measurements = listResult.data || [];
-  const typedMeasurements = (measurements.length > 0 ? measurements : mockMeasurements) as Measurement[];
+  const USE_MOCK = import.meta.env.VITE_USE_MOCK_DATA === 'true';
+  const typedMeasurements = (USE_MOCK && measurements.length === 0 ? mockMeasurements : measurements) as Measurement[];
   const createMutation = useMeasuring.useCreate() as any;
   const updateMutation = useMeasuring.useUpdate() as any;
   const deleteMutation = useMeasuring.useDelete() as any;
 
-  // Organize by section
+  // Filter data
+  const filtered = useMemo(() =>
+    typedMeasurements.filter((m: Measurement) =>
+      (m.description || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (m.item_no || '').toLowerCase().includes(searchTerm.toLowerCase())
+    ),
+    [typedMeasurements, searchTerm]
+  );
+
+  // Organize by section from filtered data
   const sections: Section[] = useMemo(() => {
     const grouped: Record<string, Measurement[]> = {};
-    typedMeasurements.forEach(m => {
+    filtered.forEach(m => {
       const section = m.section || 'Other';
       if (!grouped[section]) grouped[section] = [];
       grouped[section].push(m);
     });
     return Object.entries(grouped).map(([name, items]) => ({ name, items }));
-  }, [typedMeasurements]);
+  }, [filtered]);
 
-  // Calculate totals
+  // Calculate totals from filtered data
   const totals = useMemo(() => {
-    const grandTotal = typedMeasurements.reduce((sum, m) => sum + ((m.quantity || 0) * (m.rate || 0)), 0);
-    const measuredItems = typedMeasurements.filter(m => m.quantity && m.quantity > 0).length;
-    const measurementPercentage = typedMeasurements.length > 0 ? Math.round((measuredItems / typedMeasurements.length) * 100) : 0;
-    const costPlanTotal = typedMeasurements.reduce((sum, m) => sum + (m.total || 0), 0);
+    const grandTotal = filtered.reduce((sum, m) => sum + ((m.quantity || 0) * (m.rate || 0)), 0);
+    const measuredItems = filtered.filter(m => m.quantity && m.quantity > 0).length;
+    const measurementPercentage = filtered.length > 0 ? Math.round((measuredItems / filtered.length) * 100) : 0;
+    const costPlanTotal = filtered.reduce((sum, m) => sum + (m.total || 0), 0);
 
-    return { grandTotal, costPlanTotal, measuredItems, measurementPercentage, totalItems: typedMeasurements.length };
-  }, [typedMeasurements]);
-
-  const filtered = typedMeasurements.filter((m: Measurement) =>
-    (m.description || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
-    (m.item_no || '').toLowerCase().includes(searchTerm.toLowerCase())
-  );
+    return { grandTotal, costPlanTotal, measuredItems, measurementPercentage, totalItems: filtered.length };
+  }, [filtered]);
 
   const handleCreate = async () => {
     if (!form.description) {

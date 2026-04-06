@@ -76,31 +76,35 @@ export default function Signage() {
 
   const { selectedIds, toggle, clearSelection } = useBulkSelection();
 
-  // Use mock data if API returns empty
-  const displaySignage = signage.length > 0 ? signage : mockSigns;
+  // Only use mock data when VITE_USE_MOCK_DATA is true
+  const USE_MOCK = import.meta.env.VITE_USE_MOCK_DATA === 'true';
+  const displaySignage = signage.length > 0 ? signage : (USE_MOCK ? mockSigns : []);
 
-  const filtered = displaySignage.filter((s: Sign) =>
-    (s.description || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
-    (s.location || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
-    (s.sign_type || '').toLowerCase().includes(searchTerm.toLowerCase())
+  const filtered = useMemo(() =>
+    displaySignage.filter((s: Sign) =>
+      (s.description || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (s.location || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (s.sign_type || '').toLowerCase().includes(searchTerm.toLowerCase())
+    ),
+    [displaySignage, searchTerm]
   );
 
-  // Calculate compliance stats
+  // Calculate compliance stats from filtered data
   const complianceStats = useMemo(() => {
-    const total = displaySignage.length;
-    const compliant = displaySignage.filter((s: Sign) => s.status === 'active').length;
-    const overdue = displaySignage.filter((s: Sign) => {
+    const total = filtered.length;
+    const compliant = filtered.filter((s: Sign) => s.status === 'active').length;
+    const overdue = filtered.filter((s: Sign) => {
       if (!s.next_inspection) return false;
       return new Date(s.next_inspection) < new Date();
     }).length;
     return { total, compliant, overdue, percentage: total > 0 ? Math.round((compliant / total) * 100) : 0 };
-  }, [displaySignage]);
+  }, [filtered]);
 
-  // Get upcoming inspections (next 30 days)
+  // Get upcoming inspections (next 30 days) from filtered data
   const upcomingInspections = useMemo(() => {
     const now = new Date();
     const thirtyDaysLater = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000);
-    return displaySignage
+    return filtered
       .filter((s: Sign) => {
         if (!s.next_inspection) return false;
         const nextInspDate = new Date(s.next_inspection);
@@ -111,17 +115,17 @@ export default function Signage() {
         const dateB = b.next_inspection ? new Date(b.next_inspection).getTime() : 0;
         return dateA - dateB;
       });
-  }, [displaySignage]);
+  }, [filtered]);
 
-  // Sign type breakdown
+  // Sign type breakdown from filtered data
   const typeBreakdown = useMemo(() => {
     const breakdown: Record<string, number> = {};
-    displaySignage.forEach((s: Sign) => {
+    filtered.forEach((s: Sign) => {
       const type = SIGN_TYPES.find(t => t.value === s.sign_type)?.label || 'Other';
       breakdown[type] = (breakdown[type] || 0) + 1;
     });
     return breakdown;
-  }, [displaySignage]);
+  }, [filtered]);
 
   async function handleBulkDelete(ids: string[]) {
     if (!confirm(`Delete ${ids.length} signage item(s)?`)) return;

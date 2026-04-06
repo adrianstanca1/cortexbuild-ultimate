@@ -103,20 +103,19 @@ router.delete('/:id', async (req, res) => {
   }
 });
 
-// Clear all notifications for this user
+// Clear all notifications for this user (personal only — preserves org broadcasts)
 router.delete('/', async (req, res) => {
   try {
     const userId = req.user?.id;
-    const orgId = req.user?.organization_id;
     await pool.query(
       `DELETE FROM notifications
-       WHERE user_id = $1 OR organization_id = $2`,
-      [userId, orgId]
+       WHERE user_id = $1`,
+      [userId]
     );
     res.json({ message: 'All notifications cleared' });
   } catch (err) {
     console.error('[DELETE /notifications]', err.message);
-    res.status(500).json({ message: err.message });
+    res.status(500).json({ message: 'Internal server error' });
   }
 });
 

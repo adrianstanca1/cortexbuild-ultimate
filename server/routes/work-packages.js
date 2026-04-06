@@ -35,7 +35,7 @@ router.get('/', async (req, res) => {
     res.json({ data: rows });
   } catch (err) {
     console.error('[GET /api/work-packages]', err.message);
-    res.status(500).json({ message: err.message });
+    res.status(500).json({ message: 'Internal server error' });
   }
 });
 
@@ -55,7 +55,7 @@ router.get('/:id', async (req, res) => {
     res.json(rows[0]);
   } catch (err) {
     console.error('[GET /api/work-packages/:id]', err.message);
-    res.status(500).json({ message: err.message });
+    res.status(500).json({ message: 'Internal server error' });
   }
 });
 
@@ -103,7 +103,7 @@ router.post('/', async (req, res) => {
     res.status(201).json(rows[0]);
   } catch (err) {
     console.error('[POST /api/work-packages]', err.message);
-    res.status(500).json({ message: err.message });
+    res.status(500).json({ message: 'Internal server error' });
   }
 });
 
@@ -138,8 +138,10 @@ router.patch('/:id', async (req, res) => {
     }
 
     const { params: baseParams } = orgFilter(req.user);
+    // id comes after all update params
     params.push(id);
-    const orgParamIndex = baseParams.length + 1 + params.length;
+    // org filter param comes last
+    const orgParamIndex = params.length + 1;
     const { rows } = await pool.query(
       `UPDATE work_packages wp SET ${updates.join(', ')}
        WHERE wp.organization_id = $${orgParamIndex} AND wp.id = $${params.length}
@@ -154,7 +156,7 @@ router.patch('/:id', async (req, res) => {
     res.json(rows[0]);
   } catch (err) {
     console.error('[PATCH /api/work-packages/:id]', err.message);
-    res.status(500).json({ message: err.message });
+    res.status(500).json({ message: 'Internal server error' });
   }
 });
 
@@ -176,7 +178,7 @@ router.delete('/:id', async (req, res) => {
     res.json({ message: 'Work package deleted' });
   } catch (err) {
     console.error('[DELETE /api/work-packages/:id]', err.message);
-    res.status(500).json({ message: err.message });
+    res.status(500).json({ message: 'Internal server error' });
   }
 });
 

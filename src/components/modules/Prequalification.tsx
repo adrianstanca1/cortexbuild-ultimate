@@ -207,8 +207,9 @@ export default function Prequalification() {
   const [selectedSubcontractor, setSelectedSubcontractor] =
     useState<Subcontractor | null>(null);
   const [showAssessmentModal, setShowAssessmentModal] = useState(false);
+  const USE_MOCK = import.meta.env.VITE_USE_MOCK_DATA === 'true';
   const [subcontractors, setSubcontractors] =
-    useState<Subcontractor[]>(MOCK_SUBCONTRACTORS);
+    useState<Subcontractor[]>(USE_MOCK ? MOCK_SUBCONTRACTORS : []);
   const [scoringData, setScoringData] = useState<Record<string, number>>({});
   const [appForm, setAppForm] = useState({
     company: '',
@@ -221,63 +222,83 @@ export default function Prequalification() {
   const { useList, useCreate } = usePrequalification;
   const { data: apiPrequal = [] } = useList() as { data: any[] };
 
+  // Merge API data with mock when mock is enabled and API is empty
+  const effectiveSubcontractors = useMemo(() => {
+    if (USE_MOCK && (!apiPrequal || apiPrequal.length === 0)) {
+      return subcontractors;
+    }
+    if (apiPrequal && apiPrequal.length > 0) {
+      return apiPrequal as Subcontractor[];
+    }
+    return subcontractors;
+  }, [apiPrequal, subcontractors]);
+
   // Filter and search
-  const filteredApplications = subcontractors.filter((s) => {
-    const matchesSearch =
-      s.company.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      s.contact?.toLowerCase().includes(searchTerm.toLowerCase());
-    return matchesSearch;
-  });
-
-  const approvedList = subcontractors
-    .filter((s) => s.status === 'approved')
-    .filter((s) => !selectedTrade || s.trade === selectedTrade)
-    .filter(
-      (s) =>
+  const filteredApplications = useMemo(() =>
+    effectiveSubcontractors.filter((s) => {
+      const matchesSearch =
         s.company.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        s.contact?.toLowerCase().includes(searchTerm.toLowerCase())
-    );
+        s.contact?.toLowerCase().includes(searchTerm.toLowerCase());
+      return matchesSearch;
+    }),
+    [effectiveSubcontractors, searchTerm]
+  );
 
-  const expiringList = subcontractors
-    .filter((s) => s.status === 'approved' && s.expiryDate)
-    .filter((s) => {
-      const expiryDate = new Date(s.expiryDate!);
-      const daysUntilExpiry = Math.ceil(
-        (expiryDate.getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24)
-      );
-      return daysUntilExpiry <= 90 && daysUntilExpiry > 0;
-    })
-    .sort((a, b) => {
-      const aExpiry = new Date(a.expiryDate!).getTime();
-      const bExpiry = new Date(b.expiryDate!).getTime();
-      return aExpiry - bExpiry;
-    });
+  const approvedList = useMemo(() =>
+    effectiveSubcontractors
+      .filter((s) => s.status === 'approved')
+      .filter((s) => !selectedTrade || s.trade === selectedTrade)
+      .filter(
+        (s) =>
+          s.company.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          s.contact?.toLowerCase().includes(searchTerm.toLowerCase())
+      ),
+    [effectiveSubcontractors, searchTerm, selectedTrade]
+  );
+
+  const expiringList = useMemo(() =>
+    effectiveSubcontractors
+      .filter((s) => s.status === 'approved' && s.expiryDate)
+      .filter((s) => {
+        const expiryDate = new Date(s.expiryDate!);
+        const daysUntilExpiry = Math.ceil(
+          (expiryDate.getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24)
+        );
+        return daysUntilExpiry <= 90 && daysUntilExpiry > 0;
+      })
+      .sort((a, b) => {
+        const aExpiry = new Date(a.expiryDate!).getTime();
+        const bExpiry = new Date(b.expiryDate!).getTime();
+        return aExpiry - bExpiry;
+      }),
+    [effectiveSubcontractors]
+  );
 
   const stats = useMemo(() => {
-    const approved = subcontractors.filter((s) => s.status === 'approved').length;
+    const approved = effectiveSubcontractors.filter((s) => s.status === 'approved').length;
     const avgScore =
-      subcontractors
+      effectiveSubcontractors
         .filter((s) => s.status === 'approved' && s.score > 0)
         .reduce((sum, s) => sum + s.score, 0) /
-        (subcontractors.filter((s) => s.status === 'approved' && s.score > 0)
+        (effectiveSubcontractors.filter((s) => s.status === 'approved' && s.score > 0)
           .length || 1) || 0;
     const byTrade = TRADES.map((trade) => ({
       name: trade,
-      value: subcontractors.filter(
+      value: effectiveSubcontractors.filter(
         (s) => s.status === 'approved' && s.trade === trade
       ).length,
     })).filter((t) => t.value > 0);
 
     const statusCounts = {
-      pending: subcontractors.filter((s) => s.status === 'pending').length,
-      under_review: subcontractors.filter((s) => s.status === 'under_review')
+      pending: effectiveSubcontractors.filter((s) => s.status === 'pending').length,
+      under_review: effectiveSubcontractors.filter((s) => s.status === 'under_review')
         .length,
       approved: approved,
-      rejected: subcontractors.filter((s) => s.status === 'rejected').length,
+      rejected: effectiveSubcontractors.filter((s) => s.status === 'rejected').length,
     };
 
     return { approved, avgScore, byTrade, statusCounts };
-  }, [subcontractors]);
+  }, [effectiveSubcontractors]);
 
   const pieData = [
     { name: 'Pending', value: stats.statusCounts.pending },
@@ -470,7 +491,7 @@ export default function Prequalification() {
               <div>
                 <p className="text-gray-400 text-xs font-semibold">Total</p>
                 <p className="text-2xl font-bold text-purple-400">
-                  {subcontractors.length}
+                  {effectiveSubcontractors.length}
                 </p>
               </div>
             </div>

@@ -61,8 +61,9 @@ export default function Certifications() {
   const deleteMutation = useDelete();
   const { selectedIds, toggle, clearSelection } = useBulkSelection();
 
-  // Use mock data as fallback if API returns empty
-  const certificationData = certs.length > 0 ? certs : MOCK_CERTIFICATIONS;
+  // Only use mock data when VITE_USE_MOCK_DATA is true
+  const USE_MOCK = import.meta.env.VITE_USE_MOCK_DATA === 'true';
+  const certificationData = certs.length > 0 ? certs : (USE_MOCK ? MOCK_CERTIFICATIONS : []);
 
   const getDaysUntilExpiry = (expiryDate: string): number => {
     return Math.floor((new Date(expiryDate).getTime() - Date.now()) / (1000 * 60 * 60 * 24));

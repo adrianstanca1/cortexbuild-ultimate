@@ -47,7 +47,7 @@ router.get('/', async (req, res) => {
     res.json({ data: rows });
   } catch (err) {
     console.error('[GET /api/tasks]', err.message);
-    res.status(500).json({ message: err.message });
+    res.status(500).json({ message: 'Internal server error' });
   }
 });
 
@@ -94,7 +94,7 @@ router.post('/', async (req, res) => {
     res.status(201).json(rows[0]);
   } catch (err) {
     console.error('[POST /api/tasks]', err.message);
-    res.status(500).json({ message: err.message });
+    res.status(500).json({ message: 'Internal server error' });
   }
 });
 
@@ -112,7 +112,7 @@ router.get('/:id', async (req, res) => {
     res.json(rows[0]);
   } catch (err) {
     console.error('[GET /api/tasks/:id]', err.message);
-    res.status(500).json({ message: err.message });
+    res.status(500).json({ message: 'Internal server error' });
   }
 });
 
@@ -147,8 +147,10 @@ router.put('/:id', async (req, res) => {
     }
 
     const { params: baseParams } = await orgFilterTasks(req.user);
+    // id comes after all update params
     params.push(id);
-    const orgParamIndex = baseParams.length + 1 + params.length;
+    // org filter param comes last (after id)
+    const orgParamIndex = params.length + 1;
     const { rows } = await pool.query(
       `UPDATE tasks t SET ${updates.join(', ')}
        FROM projects p
@@ -164,7 +166,7 @@ router.put('/:id', async (req, res) => {
     res.json(rows[0]);
   } catch (err) {
     console.error('[PUT /api/tasks/:id]', err.message);
-    res.status(500).json({ message: err.message });
+    res.status(500).json({ message: 'Internal server error' });
   }
 });
 
@@ -186,7 +188,7 @@ router.delete('/:id', async (req, res) => {
     res.json({ message: 'Task deleted' });
   } catch (err) {
     console.error('[DELETE /api/tasks/:id]', err.message);
-    res.status(500).json({ message: err.message });
+    res.status(500).json({ message: 'Internal server error' });
   }
 });
 

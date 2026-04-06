@@ -192,29 +192,33 @@ export default function Lettings() {
 
   const listResult = useLettings.useList() as any;
   const lettings = listResult.data || [];
-  const typedLettings = (lettings.length > 0 ? lettings : mockPackages) as Package[];
+  const USE_MOCK = import.meta.env.VITE_USE_MOCK_DATA === 'true';
+  const typedLettings = (USE_MOCK && lettings.length === 0 ? mockPackages : lettings) as Package[];
   const createMutation = useLettings.useCreate() as any;
   const updateMutation = useLettings.useUpdate() as any;
   const deleteMutation = useLettings.useDelete() as any;
 
   const { selectedIds, toggle, clearSelection } = useBulkSelection();
 
-  // Calculate KPIs
-  const kpis = useMemo(() => {
-    const awarded = typedLettings.filter(p => p.status === 'Awarded');
-    const totalCommitted = awarded.reduce((sum, p) => sum + (p.contract_value || 0), 0);
-    const totalBudget = typedLettings.reduce((sum, p) => sum + (p.budget || 0), 0);
-    const savings = totalBudget - totalCommitted;
-    const packagesOutstanding = typedLettings.filter(p => p.status !== 'Awarded').length;
-
-    return { totalCommitted, savings, packagesOutstanding, awardedCount: awarded.length };
-  }, [typedLettings]);
-
-  const filtered = typedLettings.filter(p =>
-    (p.description || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
-    (p.trade || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
-    (p.package_no || '').toLowerCase().includes(searchTerm.toLowerCase())
+  // Calculate KPIs from filtered data
+  const filtered = useMemo(() =>
+    typedLettings.filter(p =>
+      (p.description || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (p.trade || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (p.package_no || '').toLowerCase().includes(searchTerm.toLowerCase())
+    ),
+    [typedLettings, searchTerm]
   );
+
+  const kpis = useMemo(() => {
+    const awarded = filtered.filter(p => p.status === 'Awarded');
+    const totalCommitted = awarded.reduce((sum, p) => sum + (p.contract_value || 0), 0);
+    const totalBudget = filtered.reduce((sum, p) => sum + (p.budget || 0), 0);
+    const savings = totalBudget - totalCommitted;
+    const packagesOutstanding = filtered.filter(p => p.status !== 'Awarded').length;
+
+    return { totalCommitted, savings, packagesOutstanding, awardedCount: awarded.length, totalPackages: filtered.length };
+  }, [filtered]);
 
   async function handleBulkDelete(ids: string[]) {
     if (!confirm(`Delete ${ids.length} package(s)?`)) return;
@@ -371,7 +375,7 @@ export default function Lettings() {
               </div>
               <div>
                 <p className="text-gray-400 text-xs">Total Packages</p>
-                <p className="text-2xl font-bold text-white">{typedLettings.length}</p>
+                <p className="text-2xl font-bold text-white">{kpis.totalPackages}</p>
               </div>
             </div>
           </div>
