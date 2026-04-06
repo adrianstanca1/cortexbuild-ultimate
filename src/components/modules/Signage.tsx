@@ -26,14 +26,19 @@ const SIGN_STATUSES = [
 
 interface Sign {
   id: string;
-  sign_type?: string | null;
-  location?: string | null;
-  status?: string | null;
-  last_inspected?: string | null;
-  next_inspection?: string | null;
+  reference?: string | null;
+  project_id?: string | null;
+  project?: string | null;
+  type?: string | null;
   description?: string | null;
-  installation_date?: string | null;
-  inspection_interval?: number | null;
+  location?: string | null;
+  size?: string | null;
+  material?: string | null;
+  quantity?: number | null;
+  status?: string | null;
+  required_date?: string | null;
+  installed_date?: string | null;
+  installed_by?: string | null;
   notes?: string | null;
 }
 
@@ -57,11 +62,15 @@ export default function Signage() {
   const [searchTerm, setSearchTerm] = useState('');
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [form, setForm] = useState({
-    sign_type: 'safety',
+    type: 'safety',
     location: '',
     description: '',
-    installation_date: '',
-    inspection_interval: '30',
+    size: '',
+    material: '',
+    quantity: '1',
+    required_date: '',
+    installed_date: '',
+    installed_by: '',
     notes: '',
   });
   const [uploading, setUploading] = useState<string | null>(null);
@@ -145,19 +154,21 @@ export default function Signage() {
     }
     try {
       await createMutation.mutateAsync({
-        sign_type: form.sign_type,
+        type: form.type,
         location: form.location,
         description: form.description || '',
-        installation_date: form.installation_date || null,
-        inspection_interval: parseInt(form.inspection_interval) || 30,
+        size: form.size || '',
+        material: form.material || '',
+        quantity: parseInt(form.quantity) || 1,
+        required_date: form.required_date || null,
+        installed_date: form.installed_date || null,
+        installed_by: form.installed_by || '',
         notes: form.notes || '',
         status: 'pending',
-        last_inspected: null,
-        next_inspection: new Date(Date.now() + parseInt(form.inspection_interval) * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
       });
       toast.success('Signage created successfully');
       setShowCreateModal(false);
-      setForm({ sign_type: 'safety', location: '', description: '', installation_date: '', inspection_interval: '30', notes: '' });
+      setForm({ type: 'safety', location: '', description: '', size: '', material: '', quantity: '1', required_date: '', installed_date: '', installed_by: '', notes: '' });
     } catch (err) {
       toast.error(`Failed to create: ${err instanceof Error ? err.message : 'Unknown error'}`);
     }
@@ -182,15 +193,17 @@ export default function Signage() {
       await updateMutation.mutateAsync({
         id: editItem.id,
         data: {
-          sign_type: editItem.sign_type,
+          type: editItem.type,
           location: editItem.location,
           description: editItem.description,
-          installation_date: editItem.installation_date,
-          inspection_interval: editItem.inspection_interval,
+          size: editItem.size,
+          material: editItem.material,
+          quantity: editItem.quantity,
+          required_date: editItem.required_date,
+          installed_date: editItem.installed_date,
+          installed_by: editItem.installed_by,
           notes: editItem.notes,
           status: editItem.status,
-          last_inspected: editItem.last_inspected,
-          next_inspection: editItem.next_inspection,
         },
       });
       toast.success('Signage updated successfully');

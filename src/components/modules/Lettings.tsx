@@ -22,17 +22,17 @@ const TRADES = [
 
 interface Package {
   id: string;
-  package_no?: string | null;
-  description?: string | null;
+  reference?: string | null;
+  project_id?: string | null;
+  project?: string | null;
+  package_name?: string | null;
   trade?: string | null;
-  budget?: number | null;
   status?: string | null;
-  tender_date?: string | null;
-  awarded_to?: string | null;
+  tender_closing_date?: string | null;
+  award_date?: string | null;
+  contractor?: string | null;
   contract_value?: number | null;
-  tender_count?: number | null;
   notes?: string | null;
-  created_at?: string | null;
 }
 
 interface Tender {
@@ -181,12 +181,10 @@ export default function Lettings() {
   const [editItem, setEditItem] = useState<Package | null>(null);
   const [selectedPackageForAnalysis, setSelectedPackageForAnalysis] = useState<string>('2');
   const [form, setForm] = useState({
-    package_no: '',
-    description: '',
+    package_name: '',
     trade: '',
-    budget: '',
     status: 'Draft',
-    tender_date: '',
+    tender_closing_date: '',
     notes: '',
   });
 
@@ -232,34 +230,27 @@ export default function Lettings() {
   }
 
   const handleCreate = async () => {
-    if (!form.description) {
-      toast.error('Description is required');
+    if (!form.package_name) {
+      toast.error('Package name is required');
       return;
     }
     try {
       await createMutation.mutateAsync({
         data: {
-          package_no: form.package_no || `PKG-${Date.now()}`,
-          description: form.description,
+          package_name: form.package_name,
           trade: form.trade || '',
-          budget: parseFloat(form.budget) || 0,
           status: form.status,
-          tender_date: form.tender_date || null,
-          awarded_to: null,
-          contract_value: 0,
-          tender_count: 0,
+          tender_closing_date: form.tender_closing_date || null,
           notes: form.notes || '',
         },
       });
       toast.success('Package created successfully');
       setShowCreateModal(false);
       setForm({
-        package_no: '',
-        description: '',
+        package_name: '',
         trade: '',
-        budget: '',
         status: 'Draft',
-        tender_date: '',
+        tender_closing_date: '',
         notes: '',
       });
     } catch (err) {
@@ -268,23 +259,21 @@ export default function Lettings() {
   };
 
   const handleUpdate = async () => {
-    if (!editItem || !editItem.description) {
-      toast.error('Description is required');
+    if (!editItem) {
+      toast.error('No item selected for update');
       return;
     }
     try {
       await updateMutation.mutateAsync({
         id: editItem.id,
         data: {
-          package_no: editItem.package_no,
-          description: editItem.description,
+          package_name: editItem.package_name,
           trade: editItem.trade,
-          budget: editItem.budget,
           status: editItem.status,
-          tender_date: editItem.tender_date,
-          awarded_to: editItem.awarded_to,
+          tender_closing_date: editItem.tender_closing_date,
+          award_date: editItem.award_date,
+          contractor: editItem.contractor,
           contract_value: editItem.contract_value,
-          tender_count: editItem.tender_count,
           notes: editItem.notes,
         },
       });

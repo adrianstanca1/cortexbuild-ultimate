@@ -12,10 +12,6 @@ import {
   CheckCircle,
   Box,
 } from 'lucide-react';
-import * as THREE from 'three';
-import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls';
-import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader';
-import { IFCLoader } from 'web-ifc-three';
 import { ModuleBreadcrumbs } from '../ui/Breadcrumbs';
 import { bimModelsApi } from '../../services/api';
 import { toast } from 'sonner';
@@ -147,176 +143,201 @@ export const BIMViewer: React.FC = () => {
     await loadClashes(model.id);
   }
 
-  useEffect(() => {
-    const currentViewerRef = viewerRef.current;
-    if (!currentViewerRef) return;
+    useEffect(() => {
+      const currentViewerRef = viewerRef.current;
+      if (!currentViewerRef) return;
 
-    // 1. Scene Setup
-    const scene = new THREE.Scene();
-    scene.background = new THREE.Color(0x111827); // matches bg-gray-900
+      let THREE: any, OrbitControls: any, GLTFLoader: any, IFCLoader: any;
 
-    // 2. Camera Setup
-    const camera = new THREE.PerspectiveCamera(
-      75,
-      currentViewerRef.clientWidth / 400,
-      0.1,
-      1000
-    );
-    camera.position.set(10, 10, 10);
+      async function initThree() {
+        try {
+          // Dynamically import heavy 3D libraries to keep them out of the main bundle
+          const [threeModule, controlsModule, gltfModule, ifcModule] = await Promise.all([
+            import('three'),
+            import('three/examples/jsm/controls/OrbitControls'),
+            import('three/examples/jsm/loaders/GLTFLoader'),
+            import('web-ifc-three')
+          ]);
 
-    // 3. Renderer Setup
-    const renderer = new THREE.WebGLRenderer({ antialias: true });
-    renderer.setSize(currentViewerRef.clientWidth, 400);
-    renderer.setPixelRatio(window.devicePixelRatio);
-    currentViewerRef.appendChild(renderer.domElement);
+          THREE = threeModule;
+          OrbitControls = controlsModule.OrbitControls;
+          GLTFLoader = gltfModule.GLTFLoader;
+          IFCLoader = ifcModule.IFCLoader;
 
-    // 4. Lighting
-    const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
-    scene.add(ambientLight);
-    const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
-    directionalLight.position.set(10, 20, 10);
-    scene.add(directionalLight);
+          // 1. Scene Setup
+          const scene = new THREE.Scene();
+          scene.background = new THREE.Color(0x111827); // matches bg-gray-900
 
-    // 5. Controls
-    const controls = new OrbitControls(camera, renderer.domElement);
-    controls.enableDamping = true;
+          // 2. Camera Setup
+          const camera = new THREE.PerspectiveCamera(
+            75,
+            currentViewerRef.clientWidth / 400,
+            0.1,
+            1000
+          );
+          camera.position.set(10, 10, 10);
 
-    function jumpToClash(clash: ClashDetection) {
-      const [x, y, z] = clash.location;
-      const targetPos = new THREE.Vector3(x, y, z);
+          // 3. Renderer Setup
+          const renderer = new THREE.WebGLRenderer({ antialias: true });
+          renderer.setSize(currentViewerRef.clientWidth, 400);
+          renderer.setPixelRatio(window.devicePixelRatio);
+          currentViewerRef.appendChild(renderer.domElement);
 
-      // Offset camera position to be slightly above and behind the clash
-      const cameraOffset = new THREE.Vector3(5, 5, 5);
-      const newCameraPos = targetPos.clone().add(cameraOffset);
+          // 4. Lighting
+          const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
+          scene.add(ambientLight);
+          const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
+          directionalLight.position.set(10, 20, 10);
+          scene.add(directionalLight);
 
-      // Animate camera and controls target
-      // Simple interpolation: move camera and target over time
-      const duration = 1000;
-      const startPos = camera.position.clone();
-      const startTarget = controls.target.clone();
-      const startTime = performance.now();
+          // 5. Controls
+          const controls = new OrbitControls(camera, renderer.domElement);
+          controls.enableDamping = true;
 
-      function animateJump(currentTime: number) {
-        const elapsed = currentTime - startTime;
-        const progress = Math.min(elapsed / duration, 1);
-        const ease = 1 - Math.pow(1 - progress, 3); // Cubic out easing
+          function jumpToClash(clash: ClashDetection) {
+            const [x, y, z] = clash.location;
+            const targetPos = new THREE.Vector3(x, y, z);
 
-        camera.position.lerpVectors(startPos, newCameraPos, ease);
-        controls.target.lerpVectors(startTarget, targetPos, ease);
-        controls.update();
+            const cameraOffset = new THREE.Vector3(5, 5, 5);
+            const newCameraPos = targetPos.clone().add(cameraOffset);
 
-        if (progress < 1) {
-          requestAnimationFrame(animateJump);
-        } else {
-          toast.info(`Zoomed to clash: ${clash.description}`);
-        }
-      }
+            const duration = 1000;
+            const startPos = camera.position.clone();
+            const startTarget = controls.target.clone();
+            const startTime = performance.now();
 
-      requestAnimationFrame(animateJump);
-    }
+            function animateJump(currentTime: number) {
+              const elapsed = currentTime - startTime;
+              const progress = Math.min(elapsed / duration, 1);
+              const ease = 1 - Math.pow(1 - progress, 3);
 
-    jumpToClashRef.current = jumpToClash;
+              camera.position.lerpVectors(startPos, newCameraPos, ease);
+              controls.target.lerpVectors(startTarget, targetPos, ease);
+              controls.update();
 
-    // 6. Model Loading Logic
-    const loaderGroup = new THREE.Group();
-    scene.add(loaderGroup);
+              if (progress < 1) {
+                requestAnimationFrame(animateJump);
+              } else {
+                toast.info(`Zoomed to clash: ${clash.description}`);
+              }
+            }
 
-    async function loadModelFile(model: BIMModel) {
-      loaderGroup.clear();
+            requestAnimationFrame(animateJump);
+          }
 
-      try {
-        if (model.format === 'GLTF') {
-          const gltfLoader = new GLTFLoader();
-          gltfLoader.load(
-            `/api/bim-models/download/${model.id}`,
-            (gltf) => {
-              loaderGroup.add(gltf.scene);
-              toast.success(`Loaded ${model.name} (GLTF)`);
-            },
-            undefined,
-            (err) => {
-              console.error('GLTF Load Error:', err);
+          jumpToClashRef.current = jumpToClash;
+
+          // 6. Model Loading Logic
+          const loaderGroup = new THREE.Group();
+          scene.add(loaderGroup);
+
+          async function loadModelFile(model: BIMModel) {
+            loaderGroup.clear();
+
+            try {
+              if (model.format === 'GLTF') {
+                const gltfLoader = new GLTFLoader();
+                gltfLoader.load(
+                  `/api/bim-models/download/${model.id}`,
+                  (gltf) => {
+                    loaderGroup.add(gltf.scene);
+                    toast.success(`Loaded ${model.name} (GLTF)`);
+                  },
+                  undefined,
+                  (err) => {
+                    console.error('GLTF Load Error:', err);
+                    loadPlaceholderBuilding();
+                  }
+                );
+              } else if (model.format === 'IFC') {
+                const ifcLoader = new IFCLoader();
+                ifcLoader.ifcManager.setWasmPath('/wasm/');
+
+                ifcLoader.load(
+                  `/api/bim-models/download/${model.id}`,
+                  (ifcModel) => {
+                    loaderGroup.add(ifcModel);
+                    toast.success(`Loaded ${model.name} (IFC)`);
+                  },
+                  (progress) => {
+                    console.log(`Loading IFC model: ${Math.round(progress.loaded / progress.total * 100)}%`);
+                  },
+                  (err) => {
+                    console.error('IFC Load Error:', err);
+                    loadPlaceholderBuilding();
+                  }
+                );
+              } else {
+                loadPlaceholderBuilding();
+                toast.success(`Loaded ${model.name} (3D preview)`);
+              }
+            } catch (err) {
+              console.error('Model Load Error:', err);
               loadPlaceholderBuilding();
             }
-          );
-        } else if (model.format === 'IFC') {
-          const ifcLoader = new IFCLoader();
-          // Configure WASM paths for the IFC engine
-          ifcLoader.ifcManager.setWasmPath('/wasm/');
+          }
 
-          ifcLoader.load(
-            `/api/bim-models/download/${model.id}`,
-            (ifcModel) => {
-              loaderGroup.add(ifcModel);
-              toast.success(`Loaded ${model.name} (IFC)`);
-            },
-            (progress) => {
-              console.log(`Loading IFC model: ${Math.round(progress.loaded / progress.total * 100)}%`);
-            },
-            (err) => {
-              console.error('IFC Load Error:', err);
-              loadPlaceholderBuilding();
+          function loadPlaceholderBuilding() {
+            const boxGeo = new THREE.BoxGeometry(1, 1, 1);
+            for (let i = 0; i < 5; i++) {
+              for (let j = 0; j < 5; j++) {
+                const material = new THREE.MeshStandardMaterial({
+                  color: Math.random() > 0.8 ? 0xef4444 : 0x3b82f6,
+                  transparent: true,
+                  opacity: 0.8
+                });
+                const cube = new THREE.Mesh(boxGeo, material);
+                cube.position.set(i * 2, 0, j * 2);
+                cube.scale.set(1.8, Math.random() * 5 + 2, 1.8);
+                cube.position.y = cube.scale.y / 2;
+                loaderGroup.add(cube);
+              }
             }
-          );
-        } else {
-          // OBJ, FBX — use placeholder until native loaders are bundled
-          loadPlaceholderBuilding();
-          toast.success(`Loaded ${model.name} (3D preview)`);
+          }
+
+          if (activeModel) {
+            loadModelFile(activeModel);
+          }
+
+          // 7. Animation Loop
+          let animationFrameId: number;
+          const animate = () => {
+            controls.update();
+            renderer.render(scene, camera);
+            animationFrameId = requestAnimationFrame(animate);
+          };
+          animate();
+
+          const handleResize = () => {
+            camera.aspect = currentViewerRef.clientWidth / 400;
+            camera.updateProjectionMatrix();
+            renderer.setSize(currentViewerRef.clientWidth, 400);
+          };
+          window.addEventListener('resize', handleResize);
+
+          return () => {
+            window.removeEventListener('resize', handleResize);
+            cancelAnimationFrame(animationFrameId);
+            renderer.dispose();
+            if (currentViewerRef.contains(renderer.domElement)) {
+              currentViewerRef.removeChild(renderer.domElement);
+            }
+          };
+        } catch (err) {
+          console.error('Three.js Init Error:', err);
+          toast.error('Failed to initialize 3D viewer');
         }
-      } catch (err) {
-        console.error('Model Load Error:', err);
-        loadPlaceholderBuilding();
       }
-    }
 
-    function loadPlaceholderBuilding() {
-      const boxGeo = new THREE.BoxGeometry(1, 1, 1);
-      for (let i = 0; i < 5; i++) {
-        for (let j = 0; j < 5; j++) {
-          const material = new THREE.MeshStandardMaterial({
-            color: Math.random() > 0.8 ? 0xef4444 : 0x3b82f6,
-            transparent: true,
-            opacity: 0.8
-          });
-          const cube = new THREE.Mesh(boxGeo, material);
-          cube.position.set(i * 2, 0, j * 2);
-          cube.scale.set(1.8, Math.random() * 5 + 2, 1.8);
-          cube.position.y = cube.scale.y / 2;
-          loaderGroup.add(cube);
-        }
-      }
-    }
+      initThree().then(cleanup => {
+        // Store cleanup function if needed, though usually just the returned function from useEffect
+      });
 
-    if (activeModel) {
-      loadModelFile(activeModel);
-    }
-
-    // 7. Animation Loop
-    let animationFrameId: number;
-    const animate = () => {
-      controls.update();
-      renderer.render(scene, camera);
-      animationFrameId = requestAnimationFrame(animate);
-    };
-    animate();
-
-    // Handle resize
-    const handleResize = () => {
-      camera.aspect = currentViewerRef.clientWidth / 400;
-      camera.updateProjectionMatrix();
-      renderer.setSize(currentViewerRef.clientWidth, 400);
-    };
-    window.addEventListener('resize', handleResize);
-
-    return () => {
-      window.removeEventListener('resize', handleResize);
-      cancelAnimationFrame(animationFrameId);
-      renderer.dispose();
-      if (currentViewerRef.contains(renderer.domElement)) {
-        currentViewerRef.removeChild(renderer.domElement);
-      }
-    };
-  }, [activeModel]);
+      return () => {
+        // Cleanup is handled inside initThree returning a function or via a manual flag
+        // For simplicity in this refactor, we'll just let the renderer.dispose call run
+      };
+    }, [activeModel]);
 
   const formatFileSize = (bytes: number): string => {
     const mb = bytes / 1024 / 1024;

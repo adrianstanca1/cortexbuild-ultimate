@@ -219,3 +219,5 @@ server.listen(PORT, () => {
   console.log(`   Health: http://localhost:${PORT}/api/health`);
   console.log(`   WebSocket: ws://localhost:${PORT}/ws\n`);
 });
+
+module.exports = app; // Export app for testing

@@ -9,18 +9,26 @@ import { toast } from 'sonner';
 import { uploadFile } from '../../services/api';
 import { ModuleBreadcrumbs } from '../ui/Breadcrumbs';
 
-interface _TempWork {
+interface TempWork {
   id: string;
-  ref: string;
-  title: string;
-  project: string;
-  type: string;
-  status: 'design' | 'approval' | 'installed' | 'in_use' | 'removed';
-  designer: string;
-  installer: string;
-  installedDate?: string;
-  removedDate?: string;
-  description: string;
+  reference?: string | null;
+  title?: string | null;
+  project_id?: string | null;
+  project?: string | null;
+  description?: string | null;
+  type?: string | null;
+  status?: string | null;
+  location?: string | null;
+  design_by?: string | null;
+  approved_by?: string | null;
+  design_date?: string | null;
+  approval_date?: string | null;
+  erected_by?: string | null;
+  erected_date?: string | null;
+  inspected_by?: string | null;
+  inspected_date?: string | null;
+  load_capacity?: string | null;
+  notes?: string | null;
 }
 
 const statusConfig: Record<string, { label: string; color: string; bg: string }> = {
@@ -37,7 +45,24 @@ export default function TempWorks() {
   const [uploading, setUploading] = useState<string | null>(null);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [editItem, setEditItem] = useState<Record<string, any> | null>(null);
-  const [form, setForm] = useState({ title: '', project: '', type: 'Structural Support', designer: '', installer: '', description: '', status: 'design' });
+  const [form, setForm] = useState({
+    title: '',
+    project: '',
+    type: 'Structural Support',
+    description: '',
+    location: '',
+    design_by: '',
+    design_date: '',
+    approved_by: '',
+    approval_date: '',
+    erected_by: '',
+    erected_date: '',
+    inspected_by: '',
+    inspected_date: '',
+    load_capacity: '',
+    notes: '',
+    status: 'design',
+  });
 
   const { useList, useCreate, useUpdate, useDelete } = useTempWorks;
   const { data: rawTempWorks = [] } = useList();
@@ -45,8 +70,8 @@ export default function TempWorks() {
   const updateMutation = useUpdate();
   const deleteMutation = useDelete();
 
-  const filtered = (rawTempWorks as unknown as _TempWork[]).filter((t: _TempWork) => {
-    const matchesSearch = (t.ref || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+  const filtered = (rawTempWorks as unknown as TempWork[]).filter((t: TempWork) => {
+    const matchesSearch = (t.reference || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
       (t.title || '').toLowerCase().includes(searchTerm.toLowerCase());
     const matchesStatus = filterStatus === 'all' || t.status === filterStatus;
     return matchesSearch && matchesStatus;
@@ -56,18 +81,27 @@ export default function TempWorks() {
     if (!form.title) return;
     try {
       await createMutation.mutateAsync({
-        ref: `TW-${String(Date.now()).slice(-6)}`,
+        reference: `TW-${String(Date.now()).slice(-6)}`,
         title: form.title,
         project: form.project || '',
         type: form.type,
-        designer: form.designer || '',
-        installer: form.installer || '',
         description: form.description || '',
+        location: form.location || '',
+        design_by: form.design_by || '',
+        design_date: form.design_date || null,
+        approved_by: form.approved_by || '',
+        approval_date: form.approval_date || null,
+        erected_by: form.erected_by || '',
+        erected_date: form.erected_date || null,
+        inspected_by: form.inspected_by || '',
+        inspected_date: form.inspected_date || null,
+        load_capacity: form.load_capacity || '',
+        notes: form.notes || '',
         status: form.status,
       });
       toast.success('Temporary work created');
       setShowCreateModal(false);
-      setForm({ title: '', project: '', type: 'Structural Support', designer: '', installer: '', description: '', status: 'design' });
+      setForm({ title: '', project: '', type: 'Structural Support', description: '', location: '', design_by: '', design_date: '', approved_by: '', approval_date: '', erected_by: '', erected_date: '', inspected_by: '', inspected_date: '', load_capacity: '', notes: '', status: 'design' });
     } catch {
       toast.error('Failed to create temporary work');
     }
@@ -82,29 +116,47 @@ export default function TempWorks() {
           title: form.title,
           project: form.project || '',
           type: form.type,
-          designer: form.designer || '',
-          installer: form.installer || '',
           description: form.description || '',
+          location: form.location || '',
+          design_by: form.design_by || '',
+          design_date: form.design_date || null,
+          approved_by: form.approved_by || '',
+          approval_date: form.approval_date || null,
+          erected_by: form.erected_by || '',
+          erected_date: form.erected_date || null,
+          inspected_by: form.inspected_by || '',
+          inspected_date: form.inspected_date || null,
+          load_capacity: form.load_capacity || '',
+          notes: form.notes || '',
           status: form.status,
         },
       });
       toast.success('Temporary work updated');
       setEditItem(null);
-      setForm({ title: '', project: '', type: 'Structural Support', designer: '', installer: '', description: '', status: 'design' });
+      setForm({ title: '', project: '', type: 'Structural Support', description: '', location: '', design_by: '', design_date: '', approved_by: '', approval_date: '', erected_by: '', erected_date: '', inspected_by: '', inspected_date: '', load_capacity: '', notes: '', status: 'design' });
     } catch {
       toast.error('Failed to update temporary work');
     }
   };
 
-  const openEditModal = (item: any) => {
+  const openEditModal = (item: TempWork) => {
     setEditItem(item);
     setForm({
       title: item.title || '',
       project: item.project || '',
       type: item.type || 'Structural Support',
-      designer: item.designer || '',
-      installer: item.installer || '',
       description: item.description || '',
+      location: item.location || '',
+      design_by: item.design_by || '',
+      design_date: item.design_date || '',
+      approved_by: item.approved_by || '',
+      approval_date: item.approval_date || '',
+      erected_by: item.erected_by || '',
+      erected_date: item.erected_date || '',
+      inspected_by: item.inspected_by || '',
+      inspected_date: item.inspected_date || '',
+      load_capacity: item.load_capacity || '',
+      notes: item.notes || '',
       status: item.status || 'design',
     });
   };
@@ -357,13 +409,15 @@ export default function TempWorks() {
               <button type="button" onClick={() => setEditItem(null)} className="text-gray-400 hover:text-white"><X size={20} /></button>
             </div>
             <div className="p-6 space-y-4">
-              <div>
-                <label htmlFor="twTitle" className="block text-gray-400 text-xs mb-1">Title *</label>
-                <input id="twTitle" type="text" value={form.title} onChange={e => setForm(f => ({ ...f, title: e.target.value }))} placeholder="e.g. Tower Crane Bases" className="w-full px-3 py-2 input input-bordered text-white placeholder-gray-500" />
-              </div>
-              <div>
-                <label htmlFor="twProject" className="block text-gray-400 text-xs mb-1">Project</label>
-                <input id="twProject" type="text" value={form.project} onChange={e => setForm(f => ({ ...f, project: e.target.value }))} placeholder="Project name" className="w-full px-3 py-2 input input-bordered text-white placeholder-gray-500" />
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label htmlFor="twTitle" className="block text-gray-400 text-xs mb-1">Title *</label>
+                  <input id="twTitle" type="text" value={form.title} onChange={e => setForm(f => ({ ...f, title: e.target.value }))} placeholder="e.g. Tower Crane Bases" className="w-full px-3 py-2 input input-bordered text-white placeholder-gray-500" />
+                </div>
+                <div>
+                  <label htmlFor="twProject" className="block text-gray-400 text-xs mb-1">Project</label>
+                  <input id="twProject" type="text" value={form.project} onChange={e => setForm(f => ({ ...f, project: e.target.value }))} placeholder="Project name" className="w-full px-3 py-2 input input-bordered text-white placeholder-gray-500" />
+                </div>
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
@@ -388,19 +442,63 @@ export default function TempWorks() {
                   </select>
                 </div>
               </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label htmlFor="twDesigner" className="block text-gray-400 text-xs mb-1">Designer</label>
-                  <input id="twDesigner" type="text" value={form.designer} onChange={e => setForm(f => ({ ...f, designer: e.target.value }))} placeholder="Designer name" className="w-full px-3 py-2 input input-bordered text-white placeholder-gray-500" />
-                </div>
-                <div>
-                  <label htmlFor="twInstaller" className="block text-gray-400 text-xs mb-1">Installer</label>
-                  <input id="twInstaller" type="text" value={form.installer} onChange={e => setForm(f => ({ ...f, installer: e.target.value }))} placeholder="Installer name" className="w-full px-3 py-2 input input-bordered text-white placeholder-gray-500" />
-                </div>
+              <div>
+                <label htmlFor="twLoc" className="block text-gray-400 text-xs mb-1">Location</label>
+                <input id="twLoc" type="text" value={form.location} onChange={e => setForm(f => ({ ...f, location: e.target.value }))} placeholder="e.g. Sector A, Level 2" className="w-full px-3 py-2 input input-bordered text-white placeholder-gray-500" />
               </div>
               <div>
                 <label htmlFor="twDesc" className="block text-gray-400 text-xs mb-1">Description</label>
-                <textarea id="twDesc" value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))} placeholder="Description..." rows={3} className="w-full px-3 py-2 input input-bordered text-white placeholder-gray-500" />
+                <textarea id="twDesc" value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))} placeholder="Description..." rows={2} className="w-full px-3 py-2 input input-bordered text-white placeholder-gray-500" />
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label htmlFor="twDesignBy" className="block text-gray-400 text-xs mb-1">Designed By</label>
+                  <input id="twDesignBy" type="text" value={form.design_by} onChange={e => setForm(f => ({ ...f, design_by: e.target.value }))} placeholder="Engineer name" className="w-full px-3 py-2 input input-bordered text-white placeholder-gray-500" />
+                </div>
+                <div>
+                  <label htmlFor="twDesignDate" className="block text-gray-400 text-xs mb-1">Design Date</label>
+                  <input id="twDesignDate" type="date" value={form.design_date} onChange={e => setForm(f => ({ ...f, design_date: e.target.value }))} className="w-full px-3 py-2 input input-bordered text-white" />
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label htmlFor="twAppBy" className="block text-gray-400 text-xs mb-1">Approved By</label>
+                  <input id="twAppBy" type="text" value={form.approved_by} onChange={e => setForm(f => ({ ...f, approved_by: e.target.value }))} placeholder="Approver name" className="w-full px-3 py-2 input input-bordered text-white placeholder-gray-500" />
+                </div>
+                <div>
+                  <label htmlFor="twAppDate" className="block text-gray-400 text-xs mb-1">Approval Date</label>
+                  <input id="twAppDate" type="date" value={form.approval_date} onChange={e => setForm(f => ({ ...f, approval_date: e.target.value }))} className="w-full px-3 py-2 input input-bordered text-white" />
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label htmlFor="twErectBy" className="block text-gray-400 text-xs mb-1">Erected By</label>
+                  <input id="twErectBy" type="text" value={form.erected_by} onChange={e => setForm(f => ({ ...f, erected_by: e.target.value }))} placeholder="Installer name" className="w-full px-3 py-2 input input-bordered text-white placeholder-gray-500" />
+                </div>
+                <div>
+                  <label htmlFor="twErectDate" className="block text-gray-400 text-xs mb-1">Erected Date</label>
+                  <input id="twErectDate" type="date" value={form.erected_date} onChange={e => setForm(f => ({ ...f, erected_date: e.target.value }))} className="w-full px-3 py-2 input input-bordered text-white" />
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label htmlFor="twInspBy" className="block text-gray-400 text-xs mb-1">Inspected By</label>
+                  <input id="twInspBy" type="text" value={form.inspected_by} onChange={e => setForm(f => ({ ...f, inspected_by: e.target.value }))} placeholder="Inspector name" className="w-full px-3 py-2 input input-bordered text-white placeholder-gray-500" />
+                </div>
+                <div>
+                  <label htmlFor="twInspDate" className="block text-gray-400 text-xs mb-1">Inspected Date</label>
+                  <input id="twInspDate" type="date" value={form.inspected_date} onChange={e => setForm(f => ({ ...f, inspected_date: e.target.value }))} className="w-full px-3 py-2 input input-bordered text-white" />
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label htmlFor="twLoad" className="block text-gray-400 text-xs mb-1">Load Capacity</label>
+                  <input id="twLoad" type="text" value={form.load_capacity} onChange={e => setForm(f => ({ ...f, load_capacity: e.target.value }))} placeholder="e.g. 5kN/m2" className="w-full px-3 py-2 input input-bordered text-white placeholder-gray-500" />
+                </div>
+                <div>
+                  <label htmlFor="twNotes" className="block text-gray-400 text-xs mb-1">Notes</label>
+                  <input id="twNotes" type="text" value={form.notes} onChange={e => setForm(f => ({ ...f, notes: e.target.value }))} placeholder="Additional info..." className="w-full px-3 py-2 input input-bordered text-white placeholder-gray-500" />
+                </div>
               </div>
             </div>
             <div className="p-6 border-t border-gray-700 flex justify-end gap-3">
