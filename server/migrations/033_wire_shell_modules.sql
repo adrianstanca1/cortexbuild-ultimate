@@ -6,7 +6,7 @@ BEGIN;
 -- 1. Sustainability
 CREATE TABLE IF NOT EXISTS sustainability (
     id SERIAL PRIMARY KEY,
-    project_id INTEGER REFERENCES projects(id),
+    project_id UUID REFERENCES projects(id),
     project TEXT,
     metric_type TEXT,
     target NUMERIC,
@@ -15,8 +15,8 @@ CREATE TABLE IF NOT EXISTS sustainability (
     period TEXT,
     status TEXT,
     notes TEXT,
-    organization_id TEXT,
-    company_id TEXT,
+    organization_id UUID,
+    company_id UUID,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
@@ -25,7 +25,7 @@ CREATE TABLE IF NOT EXISTS sustainability (
 CREATE TABLE IF NOT EXISTS waste_management (
     id SERIAL PRIMARY KEY,
     reference TEXT,
-    project_id INTEGER REFERENCES projects(id),
+    project_id UUID REFERENCES projects(id),
     project TEXT,
     waste_type TEXT,
     carrier TEXT,
@@ -39,8 +39,8 @@ CREATE TABLE IF NOT EXISTS waste_management (
     waste_code TEXT,
     status TEXT,
     notes TEXT,
-    organization_id TEXT,
-    company_id TEXT,
+    organization_id UUID,
+    company_id UUID,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
@@ -50,7 +50,7 @@ CREATE TABLE IF NOT EXISTS training (
     id SERIAL PRIMARY KEY,
     reference TEXT,
     title TEXT,
-    project_id INTEGER REFERENCES projects(id),
+    project_id UUID REFERENCES projects(id),
     project TEXT,
     type TEXT,
     provider TEXT,
@@ -63,8 +63,8 @@ CREATE TABLE IF NOT EXISTS training (
     certification TEXT,
     expiry_date DATE,
     notes TEXT,
-    organization_id TEXT,
-    company_id TEXT,
+    organization_id UUID,
+    company_id UUID,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
@@ -84,8 +84,8 @@ CREATE TABLE IF NOT EXISTS certifications (
     scope TEXT,
     accreditation_number TEXT,
     notes TEXT,
-    organization_id TEXT,
-    company_id TEXT,
+    organization_id UUID,
+    company_id UUID,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
@@ -94,7 +94,7 @@ CREATE TABLE IF NOT EXISTS certifications (
 CREATE TABLE IF NOT EXISTS lettings (
     id SERIAL PRIMARY KEY,
     reference TEXT,
-    project_id INTEGER REFERENCES projects(id),
+    project_id UUID REFERENCES projects(id),
     project TEXT,
     package_name TEXT,
     trade TEXT,
@@ -104,8 +104,8 @@ CREATE TABLE IF NOT EXISTS lettings (
     contractor TEXT,
     contract_value NUMERIC,
     notes TEXT,
-    organization_id TEXT,
-    company_id TEXT,
+    organization_id UUID,
+    company_id UUID,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
@@ -114,7 +114,7 @@ CREATE TABLE IF NOT EXISTS lettings (
 CREATE TABLE IF NOT EXISTS measuring (
     id SERIAL PRIMARY KEY,
     reference TEXT,
-    project_id INTEGER REFERENCES projects(id),
+    project_id UUID REFERENCES projects(id),
     project TEXT,
     survey_type TEXT,
     location TEXT,
@@ -126,8 +126,8 @@ CREATE TABLE IF NOT EXISTS measuring (
     total_area NUMERIC,
     unit TEXT,
     notes TEXT,
-    organization_id TEXT,
-    company_id TEXT,
+    organization_id UUID,
+    company_id UUID,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
@@ -136,7 +136,7 @@ CREATE TABLE IF NOT EXISTS measuring (
 CREATE TABLE IF NOT EXISTS signage (
     id SERIAL PRIMARY KEY,
     reference TEXT,
-    project_id INTEGER REFERENCES projects(id),
+    project_id UUID REFERENCES projects(id),
     project TEXT,
     type TEXT,
     description TEXT,
@@ -149,8 +149,8 @@ CREATE TABLE IF NOT EXISTS signage (
     installed_date DATE,
     installed_by TEXT,
     notes TEXT,
-    organization_id TEXT,
-    company_id TEXT,
+    organization_id UUID,
+    company_id UUID,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
@@ -160,7 +160,7 @@ CREATE TABLE IF NOT EXISTS temp_works (
     id SERIAL PRIMARY KEY,
     reference TEXT,
     title TEXT,
-    project_id INTEGER REFERENCES projects(id),
+    project_id UUID REFERENCES projects(id),
     project TEXT,
     description TEXT,
     type TEXT,
@@ -176,8 +176,8 @@ CREATE TABLE IF NOT EXISTS temp_works (
     inspected_date DATE,
     load_capacity TEXT,
     notes TEXT,
-    organization_id TEXT,
-    company_id TEXT,
+    organization_id UUID,
+    company_id UUID,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
@@ -185,13 +185,13 @@ CREATE TABLE IF NOT EXISTS temp_works (
 -- 9. AI Vision Logs (Supporting AIVision.tsx)
 CREATE TABLE IF NOT EXISTS ai_vision_logs (
     id SERIAL PRIMARY KEY,
-    project_id INTEGER REFERENCES projects(id),
+    project_id UUID REFERENCES projects(id),
     image_url TEXT,
     analysis_result JSONB,
     confidence_score NUMERIC,
     processed_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-    organization_id TEXT,
-    company_id TEXT
+    organization_id UUID,
+    company_id UUID
 );
 
 COMMIT;

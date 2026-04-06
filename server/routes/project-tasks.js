@@ -130,27 +130,6 @@ router.put('/:id', async (req, res) => {
       due_date, category, estimated_hours, tags, progress
     } = req.body;
 
-    const updates = [];
-    const params = [];
-    let paramCount = 0;
-
-    const fields = {
-      title, description, status, priority, assigned_to,
-      due_date, category, estimated_hours, tags, progress
-    };
-
-    for (const [key, value] of Object.entries(fields)) {
-      if (value !== undefined) {
-        paramCount++;
-        updates.push(`${key} = $${paramCount}`);
-        params.push(value);
-      }
-    }
-
-    if (updates.length === 0) {
-      return res.status(400).json({ message: 'No fields to update' });
-    }
-
     const { baseParams } = await orgFilterTasks(req.user);
     const queryParams = [...baseParams];
     const updates = [];
@@ -190,7 +169,7 @@ router.put('/:id', async (req, res) => {
     res.json(rows[0]);
   } catch (err) {
     console.error('[PUT /api/project-tasks/:id]', err.message);
-    res.status(500).json({ message: err.message });
+    res.status(500).json({ message: 'Internal server error' });
   }
 });
 
