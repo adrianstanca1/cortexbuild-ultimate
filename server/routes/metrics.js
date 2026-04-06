@@ -12,20 +12,12 @@ register.add('http_request_duration_seconds', {
   name: 'http_request_duration_seconds',
   help: 'Duration of HTTP requests in seconds',
   labelNames: ['method', 'method_name', 'endpoint', 'status_code'],
-  labelOptions: {
-    status_code: true,
-    method: true,
-    method_name: true,
-    route: true,
-    endpoint: true,
-  },
 });
 
 const httpRequestDuration = new promClient.Histogram({
   name: 'http_request_duration_seconds',
   help: 'Duration of HTTP requests in seconds',
   labelNames: ['method', 'method_name', 'endpoint', 'status_code'],
-  register: register,
 });
 
 // Metrics configuration with Prometheus scrape config
