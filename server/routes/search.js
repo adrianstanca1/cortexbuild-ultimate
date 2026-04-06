@@ -186,7 +186,7 @@ router.get('/', async (req, res) => {
     });
   } catch (err) {
     console.error('[Global Search]', err.message);
-    res.status(500).json({ message: err.message });
+    res.status(500).json({ message: 'Internal server error' });
   }
 });
 

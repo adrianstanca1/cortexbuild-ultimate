@@ -231,7 +231,7 @@ router.delete('/users/:id', authMiddleware, async (req, res) => {
 
     const oldData = userCheck.rows[0];
 
-    await pool.query('DELETE FROM users WHERE id = $1', [req.params.id]);
+    await pool.query('DELETE FROM users WHERE id = $1 AND company_id = $2', [req.params.id, req.user.company_id]);
 
     logAudit({
       auth: req.user,

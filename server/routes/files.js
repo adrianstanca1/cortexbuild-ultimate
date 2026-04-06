@@ -100,7 +100,7 @@ router.get('/', async (req, res) => {
     res.json({ data: rows });
   } catch (err) {
     console.error('[GET /api/files]', err.message);
-    res.status(500).json({ message: err.message });
+    res.status(500).json({ message: 'Internal server error' });
   }
 });
 
@@ -123,7 +123,7 @@ router.get('/:id', async (req, res) => {
     res.json(doc);
   } catch (err) {
     console.error('[GET /api/files/:id]', err.message);
-    res.status(500).json({ message: err.message });
+    res.status(500).json({ message: 'Internal server error' });
   }
 });
 
@@ -164,7 +164,7 @@ router.post('/upload', upload.single('file'), async (req, res) => {
     if (err.message && err.message.startsWith('File type not allowed')) {
       return res.status(400).json({ message: err.message });
     }
-    res.status(500).json({ message: err.message });
+    res.status(500).json({ message: 'Internal server error' });
   }
 });
 
@@ -228,7 +228,7 @@ router.put('/:id', async (req, res) => {
     res.json(rows[0]);
   } catch (err) {
     console.error('[PUT /api/files/:id]', err.message);
-    res.status(500).json({ message: err.message });
+    res.status(500).json({ message: 'Internal server error' });
   }
 });
 
@@ -270,7 +270,7 @@ router.post('/:id/upload-version', upload.single('file'), async (req, res) => {
     res.json(rows[0]);
   } catch (err) {
     console.error('[POST /api/files/:id/upload-version]', err.message);
-    res.status(500).json({ message: err.message });
+    res.status(500).json({ message: 'Internal server error' });
   }
 });
 
@@ -298,7 +298,7 @@ router.get('/:id/download', async (req, res) => {
     res.download(fullPath, doc.name);
   } catch (err) {
     console.error('[GET /api/files/:id/download]', err.message);
-    res.status(500).json({ message: err.message });
+    res.status(500).json({ message: 'Internal server error' });
   }
 });
 
@@ -341,7 +341,7 @@ router.get('/:id/preview', async (req, res) => {
     fileStream.pipe(res);
   } catch (err) {
     console.error('[GET /api/files/:id/preview]', err.message);
-    res.status(500).json({ message: err.message });
+    res.status(500).json({ message: 'Internal server error' });
   }
 });
 
@@ -361,7 +361,7 @@ router.get('/folders/list', async (req, res) => {
     res.json({ data: rows.map(r => r.parent_folder) });
   } catch (err) {
     console.error('[GET /api/files/folders]', err.message);
-    res.status(500).json({ message: err.message });
+    res.status(500).json({ message: 'Internal server error' });
   }
 });
 
@@ -379,7 +379,7 @@ router.delete('/:id', async (req, res) => {
     const filePath = rows[0].file_path;
 
     await pool.query('DELETE FROM document_versions WHERE document_id = $1', [id]);
-    await pool.query('DELETE FROM documents WHERE id = $1', [id]);
+    await pool.query(`DELETE FROM documents WHERE id = $1${org.filter}`, [id, ...org.params]);
 
     if (filePath) {
       // Resolve to absolute path and validate it's within uploads directory
@@ -399,7 +399,7 @@ router.delete('/:id', async (req, res) => {
     res.json({ message: 'Document deleted' });
   } catch (err) {
     console.error('[DELETE /api/files/:id]', err.message);
-    res.status(500).json({ message: err.message });
+    res.status(500).json({ message: 'Internal server error' });
   }
 });
 
@@ -408,7 +408,7 @@ router.use((err, _req, res, _next) => {
   if (err instanceof multer.MulterError) {
     return res.status(400).json({ message: `Upload error: ${err.message}` });
   }
-  res.status(500).json({ message: err.message });
+  res.status(500).json({ message: 'Internal server error' });
 });
 
 module.exports = router;

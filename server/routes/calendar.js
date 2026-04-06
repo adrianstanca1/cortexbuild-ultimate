@@ -100,7 +100,7 @@ router.get('/', async (req, res) => {
     res.json(filtered);
   } catch (err) {
     console.error('[Calendar Events]', err.message);
-    res.status(500).json({ message: err.message });
+    res.status(500).json({ message: 'Internal server error' });
   }
 });
 

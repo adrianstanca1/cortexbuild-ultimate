@@ -1,3 +1,5 @@
+const USE_MOCK = import.meta.env.VITE_USE_MOCK_DATA === 'true';
+
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { useState } from 'react';
 import { Plus, Shield, FileCheck, Clock, AlertTriangle, Trash2, X, Edit, Send, Bell } from 'lucide-react';
@@ -55,14 +57,13 @@ export default function Certifications() {
   const [editItem, setEditItem] = useState<Certification | null>(null);
 
   const { useList, useCreate, useUpdate, useDelete } = useCertifications;
-  const { data: certs = [] } = useList();
+  const { data: certs = [], isLoading } = useList();
   const createMutation = useCreate();
   const updateMutation = useUpdate();
   const deleteMutation = useDelete();
   const { selectedIds, clearSelection } = useBulkSelection();
 
-  // Only use mock data when VITE_USE_MOCK_DATA is true
-  const USE_MOCK = import.meta.env.VITE_USE_MOCK_DATA === 'true';
+  // Use real data if available, otherwise fall back to mock if enabled
   const certificationData = certs.length > 0 ? certs : (USE_MOCK ? MOCK_CERTIFICATIONS : []);
 
   const getDaysUntilExpiry = (expiryDate: string): number => {
@@ -106,7 +107,7 @@ export default function Certifications() {
     }
   }
 
-  const filtered = (certificationData as any[]).filter(c => {
+  const filtered = (certificationData as Certification[]).filter(c => {
     const matchesSearch = (c.certification_type || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
       (c.holder || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
       (c.company || '').toLowerCase().includes(searchTerm.toLowerCase());
@@ -118,9 +119,9 @@ export default function Certifications() {
     return matchesSearch;
   });
 
-  const validCount = (certificationData as any[]).filter(c => c.status === 'valid' || c.status === 'active').length;
-  const expiringCount = (certificationData as any[]).filter(c => c.status === 'expiring_soon').length;
-  const expiredCount = (certificationData as any[]).filter(c => c.status === 'expired' || c.status === 'suspended').length;
+  const validCount = (certificationData as Certification[]).filter(c => c.status === 'valid' || c.status === 'active').length;
+  const expiringCount = (certificationData as Certification[]).filter(c => c.status === 'expiring_soon').length;
+  const expiredCount = (certificationData as Certification[]).filter(c => c.status === 'expired' || c.status === 'suspended').length;
 
   const handleCreate = async () => {
     if (!form.certificationType) return;
@@ -182,7 +183,7 @@ export default function Certifications() {
     setUploading(certId);
     try {
       const result = await uploadFile(file, 'REPORTS');
-      const cert = (certificationData as any[]).find(c => String(c.id) === String(certId));
+      const cert = (certificationData as Certification[]).find(c => String(c.id) === String(certId));
       if (cert) {
         await updateMutation.mutateAsync({
           id: String(certId),
@@ -397,7 +398,7 @@ export default function Certifications() {
     <div className="space-y-6">
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <div className="card p-4"><div className="text-gray-400 text-xs mb-2">Total Certifications</div><div className="text-3xl font-bold text-white">{certificationData.length}</div></div>
-        <div className="card p-4"><div className="text-gray-400 text-xs mb-2">Valid %</div><div className="text-3xl font-bold text-green-400">{Math.round((validCount / certificationData.length) * 100)}%</div></div>
+        <div className="card p-4"><div className="text-gray-400 text-xs mb-2">Valid %</div><div className="text-3xl font-bold text-green-400">{certificationData.length > 0 ? Math.round((validCount / certificationData.length) * 100) : 0}%</div></div>
         <div className="card p-4"><div className="text-gray-400 text-xs mb-2">Expiring Soon</div><div className="text-3xl font-bold text-amber-400">{expiringCount}</div></div>
         <div className="card p-4"><div className="text-gray-400 text-xs mb-2">Expired</div><div className="text-3xl font-bold text-red-400">{expiredCount}</div></div>
       </div>
@@ -407,7 +408,7 @@ export default function Certifications() {
         <div className="space-y-3">
           {(() => {
             const types = new Map<string, number>();
-            (certificationData as any[]).forEach(c => {
+            (certificationData as Certification[]).forEach(c => {
               types.set(c.certification_type, (types.get(c.certification_type) || 0) + 1);
             });
 
@@ -415,7 +416,7 @@ export default function Certifications() {
             return Array.from(types.entries())
               .sort((a, b) => b[1] - a[1])
               .map(([type, count]) => {
-                const percentage = Math.round((count / total) * 100);
+                const percentage = total > 0 ? Math.round((count / total) * 100) : 0;
                 return (
                   <div key={type}>
                     <div className="flex justify-between items-center mb-1">
@@ -438,21 +439,21 @@ export default function Certifications() {
           <div className="flex items-center justify-between p-3 bg-gray-800/50 rounded">
             <span className="text-gray-300">Valid</span>
             <div className="flex items-center gap-3">
-              <div className="w-24 bg-gray-700 rounded h-2"><div className="bg-green-500 h-2 rounded" style={{ width: `${(validCount / certificationData.length) * 100}%` }}></div></div>
+              <div className="w-24 bg-gray-700 rounded h-2"><div className="bg-green-500 h-2 rounded" style={{ width: `${certificationData.length > 0 ? (validCount / certificationData.length) * 100 : 0}%` }}></div></div>
               <span className="text-green-400 font-semibold">{validCount}</span>
             </div>
           </div>
           <div className="flex items-center justify-between p-3 bg-gray-800/50 rounded">
             <span className="text-gray-300">Expiring Soon</span>
             <div className="flex items-center gap-3">
-              <div className="w-24 bg-gray-700 rounded h-2"><div className="bg-amber-500 h-2 rounded" style={{ width: `${(expiringCount / certificationData.length) * 100}%` }}></div></div>
+              <div className="w-24 bg-gray-700 rounded h-2"><div className="bg-amber-500 h-2 rounded" style={{ width: `${certificationData.length > 0 ? (expiringCount / certificationData.length) * 100 : 0}%` }}></div></div>
               <span className="text-amber-400 font-semibold">{expiringCount}</span>
             </div>
           </div>
           <div className="flex items-center justify-between p-3 bg-gray-800/50 rounded">
             <span className="text-gray-300">Expired</span>
             <div className="flex items-center gap-3">
-              <div className="w-24 bg-gray-700 rounded h-2"><div className="bg-red-500 h-2 rounded" style={{ width: `${(expiredCount / certificationData.length) * 100}%` }}></div></div>
+              <div className="w-24 bg-gray-700 rounded h-2"><div className="bg-red-500 h-2 rounded" style={{ width: `${certificationData.length > 0 ? (expiredCount / certificationData.length) * 100 : 0}%` }}></div></div>
               <span className="text-red-400 font-semibold">{expiredCount}</span>
             </div>
           </div>

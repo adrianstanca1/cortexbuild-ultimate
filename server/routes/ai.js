@@ -4,8 +4,6 @@ const https = require('https');
 const http = require('http');
 const auth   = require('../middleware/auth');
 const rateLimit = require('express-rate-limit');
-const { RedisStore: RateLimitRedisStore } = require('rate-limit-redis');
-const redis = require('../db');
 const { broadcastDashboardUpdate, broadcastNotification } = require('../lib/ws-broadcast');
 
 // Import modular intent handlers
@@ -378,7 +376,7 @@ Daily Reports: ${dailyReports.length} recent | Avg workers on site: ${avgWorkers
     }
   } catch (err) {
     console.error('[AI /summarize-project]', err.message);
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ error: 'Internal server error' });
   }
 });
 

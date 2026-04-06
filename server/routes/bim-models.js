@@ -272,20 +272,30 @@ async function processBIMModel(modelId) {
         const fileBuffer = fs.readFileSync(model.file_path);
         const modelIFC = ifcApi.OpenModel(fileBuffer);
 
-        // Count all elements in the model
+        // 1. Extract total elements
         elementsCount = ifcApi.GetCountAll();
 
-        // Simple floor estimation: look for IfcBuildingStorey entities
-        // Note: In a full implementation, we would iterate through storeys
-        // but for metadata extraction, counting the types of storeys is a good proxy.
+        // 2. Precise Floor Count: Count only unique IfcBuildingStorey entities
         const storeys = ifcApi.GetLineIds('IFCBUILDINGSTOREY');
         floorsCount = storeys.length;
 
+        // 3. Extract IFC Version from the file header
+        // IFC files start with ISO-10303-21; version is usually in the first few lines
+        const header = fileBuffer.toString('utf8', 0, 1000);
+        const versionMatch = header.match(/FILE_SCHEMA\((\w+)\)/);
+        const version = versionMatch ? versionMatch[1] : 'Unknown';
+
         ifcApi.CloseModel();
+
+        // Update model with extracted version if available
+        await pool.query(
+          `UPDATE bim_models SET version = $1 WHERE id = $2`,
+          [version, modelId]
+        );
       } catch (parseErr) {
         console.error(`[BIM Processing] IFC Parse Error for model ${modelId}:`, parseErr);
-        // Fallback to a basic count if a full parse fails
-        elementsCount = 1000;
+        elementsCount = 0;
+        floorsCount = 1;
       }
     } else {
       // For other formats (GLTF, etc.), we use a simpler approximation or

@@ -116,7 +116,7 @@ router.get('/summary', async (req, res) => {
     });
   } catch (err) {
     console.error('[Executive Summary]', err.message);
-    res.status(500).json({ message: err.message });
+    res.status(500).json({ message: 'Internal server error' });
   }
 });
 
@@ -189,7 +189,7 @@ router.get('/trends', async (req, res) => {
     res.json(months);
   } catch (err) {
     console.error('[Executive Trends]', err.message);
-    res.status(500).json({ message: err.message });
+    res.status(500).json({ message: 'Internal server error' });
   }
 });
 

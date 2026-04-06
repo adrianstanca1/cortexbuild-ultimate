@@ -550,7 +550,7 @@ Be honest. Do not inflate scores.`;
     });
   } catch (err) {
     console.error('[tender-ai] Scoring error:', err.message);
-    res.status(500).json({ error: 'Scoring failed: ' + err.message });
+    res.status(500).json({ error: 'Internal server error' });
   }
 });
 

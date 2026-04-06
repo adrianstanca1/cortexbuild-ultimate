@@ -138,7 +138,7 @@ router.get('/roles', async (req, res) => {
     res.json(roles);
   } catch (err) {
     console.error('[Get Roles]', err.message);
-    res.status(500).json({ message: err.message });
+    res.status(500).json({ message: 'Internal server error' });
   }
 });
 
@@ -163,7 +163,7 @@ router.get('/roles/:id', async (req, res) => {
       isCustom: true,
     });
   } catch (err) {
-    res.status(500).json({ message: err.message });
+    res.status(500).json({ message: 'Internal server error' });
   }
 });
 
@@ -189,7 +189,7 @@ router.post('/roles', async (req, res) => {
     });
   } catch (err) {
     console.error('[Create Role]', err.message);
-    res.status(500).json({ message: err.message });
+    res.status(500).json({ message: 'Internal server error' });
   }
 });
 
@@ -220,7 +220,7 @@ router.put('/roles/:id', async (req, res) => {
     });
   } catch (err) {
     console.error('[Update Role]', err.message);
-    res.status(500).json({ message: err.message });
+    res.status(500).json({ message: 'Internal server error' });
   }
 });
 
@@ -239,7 +239,7 @@ router.delete('/roles/:id', async (req, res) => {
     if (!rowCount) return res.status(404).json({ message: 'Role not found' });
     res.json({ message: 'Role deleted' });
   } catch (err) {
-    res.status(500).json({ message: err.message });
+    res.status(500).json({ message: 'Internal server error' });
   }
 });
 
@@ -278,7 +278,7 @@ router.get('/users/:userId/permissions', async (req, res) => {
     }
     res.json(role.permissions);
   } catch (err) {
-    res.status(500).json({ message: err.message });
+    res.status(500).json({ message: 'Internal server error' });
   }
 });
 
@@ -312,7 +312,7 @@ router.post('/check', async (req, res) => {
 
     res.json({ allowed: false });
   } catch (err) {
-    res.status(500).json({ message: err.message });
+    res.status(500).json({ message: 'Internal server error' });
   }
 });
 

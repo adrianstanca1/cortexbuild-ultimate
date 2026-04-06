@@ -47,7 +47,7 @@ router.get('/', async (req, res) => {
     res.json({ data: rows });
   } catch (err) {
     console.error('[GET /api/project-tasks]', err.message);
-    res.status(500).json({ message: err.message });
+    res.status(500).json({ message: 'Internal server error' });
   }
 });
 
@@ -94,7 +94,7 @@ router.post('/', async (req, res) => {
     res.status(201).json(rows[0]);
   } catch (err) {
     console.error('[POST /api/project-tasks]', err.message);
-    res.status(500).json({ message: err.message });
+    res.status(500).json({ message: 'Internal server error' });
   }
 });
 
@@ -110,14 +110,14 @@ router.get('/:id', async (req, res) => {
     if (rows.length === 0) return res.status(404).json({ message: 'Task not found' });
 
     const { rows: comments } = await pool.query(
-      'SELECT * FROM project_task_comments WHERE task_id = $1 ORDER BY created_at ASC',
-      [id]
+      'SELECT * FROM project_task_comments WHERE task_id = $1 AND organization_id = $2 ORDER BY created_at ASC',
+      [id, req.user.organization_id]
     );
 
     res.json({ ...rows[0], comments });
   } catch (err) {
     console.error('[GET /api/project-tasks/:id]', err.message);
-    res.status(500).json({ message: err.message });
+    res.status(500).json({ message: 'Internal server error' });
   }
 });
 
@@ -130,7 +130,7 @@ router.put('/:id', async (req, res) => {
       due_date, category, estimated_hours, tags, progress
     } = req.body;
 
-    const { baseParams } = await orgFilterTasks(req.user);
+    const { params: baseParams } = await orgFilterTasks(req.user);
     const queryParams = [...baseParams];
     const updates = [];
 
@@ -177,7 +177,7 @@ router.put('/:id', async (req, res) => {
 router.delete('/:id', async (req, res) => {
   try {
     const { id } = req.params;
-    const { baseParams } = await orgFilterTasks(req.user);
+    const { params: baseParams } = await orgFilterTasks(req.user);
     const orgIdParamIndex = baseParams.length + 1;
 
     const { rows } = await pool.query(
@@ -191,7 +191,7 @@ router.delete('/:id', async (req, res) => {
     res.json({ message: 'Task deleted' });
   } catch (err) {
     console.error('[DELETE /api/project-tasks/:id]', err.message);
-    res.status(500).json({ message: err.message });
+    res.status(500).json({ message: 'Internal server error' });
   }
 });
 
@@ -205,7 +205,7 @@ router.post('/:id/comments', async (req, res) => {
     if (!comment) return res.status(400).json({ message: 'Comment is required' });
 
     // Verify task belongs to user's org
-    const { baseParams } = await orgFilterTasks(req.user);
+    const { params: baseParams } = await orgFilterTasks(req.user);
     const orgIdParamIndex = baseParams.length + 1;
     const { rows: task } = await pool.query(
       `SELECT pt.id FROM project_tasks pt
@@ -216,16 +216,16 @@ router.post('/:id/comments', async (req, res) => {
     if (task.length === 0) return res.status(404).json({ message: 'Task not found' });
 
     const { rows } = await pool.query(
-      `INSERT INTO project_task_comments (task_id, comment, author)
-       VALUES ($1, $2, $3)
+      `INSERT INTO project_task_comments (task_id, comment, author, organization_id, company_id)
+       VALUES ($1, $2, $3, $4, $5)
        RETURNING *`,
-      [id, comment, author]
+      [id, comment, author, req.user.organization_id, req.user.company_id]
     );
 
     res.status(201).json(rows[0]);
   } catch (err) {
     console.error('[POST /api/project-tasks/:id/comments]', err.message);
-    res.status(500).json({ message: err.message });
+    res.status(500).json({ message: 'Internal server error' });
   }
 });
 
@@ -239,7 +239,7 @@ router.put('/bulk-status', async (req, res) => {
     }
     if (!status) return res.status(400).json({ message: 'status is required' });
 
-    const { baseParams } = await orgFilterTasks(req.user);
+    const { params: baseParams } = await orgFilterTasks(req.user);
     const orgIdParamIndex = baseParams.length + ids.length + 1;
     const statusParamIndex = baseParams.length + ids.length + 2;
     const placeholders = ids.map((_, i) => `$${baseParams.length + 1 + i}`).join(', ');
@@ -254,7 +254,7 @@ router.put('/bulk-status', async (req, res) => {
     res.json({ updated: rows.length, data: rows });
   } catch (err) {
     console.error('[PUT /api/project-tasks/bulk-status]', err.message);
-    res.status(500).json({ message: err.message });
+    res.status(500).json({ message: 'Internal server error' });
   }
 });
 

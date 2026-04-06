@@ -7,11 +7,28 @@ import {
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer
 } from 'recharts';
+import type { Row } from '../../services/api';
 import { uploadFile } from '../../services/api';
 import { toast } from 'sonner';
 import { EmptyState } from '../ui/EmptyState';
 import { ModuleBreadcrumbs } from '../ui/Breadcrumbs';
 import { useWasteManagement } from '../../hooks/useData';
+
+interface WasteLog {
+  id: string | number;
+  waste_type: string;
+  quantity: number;
+  unit: string;
+  carrier: string;
+  collection_date: string | null;
+  recycling_rate: number;
+  status: string;
+  cost: number;
+  disposal_method: string;
+  project?: string;
+  project_id?: string;
+  notes?: string;
+}
 
 // Mock data
 const recyclingTargetsData = [
@@ -53,7 +70,7 @@ const complianceData = [
 ];
 
 export default function WasteManagement() {
-  const { data: waste = [], isLoading } = useWasteManagement.useList();
+  const { data: waste = [], isLoading } = useWasteManagement.useList() as { data: WasteLog[], isLoading: boolean };
   const createMutation = useWasteManagement.useCreate();
   const updateMutation = useWasteManagement.useUpdate();
   const deleteMutation = useWasteManagement.useDelete();
@@ -65,21 +82,21 @@ export default function WasteManagement() {
   const [_uploading, setUploading] = useState<string | null>(null);
   const [form, setForm] = useState({ wasteType: '', quantity: '', unit: 'tonnes', carrier: '', collectionDate: '', recyclingRate: '75', status: 'pending', disposalMethod: 'Recycling', cost: '' });
   const [manifestForm, setManifestForm] = useState({ wasteType: '', quantity: '', carrier: '', carrierLicense: '', consignee: '' });
-  const [editItem, setEditItem] = useState<Record<string, any> | null>(null);
+  const [editItem, setEditItem] = useState<Row | null>(null);
 
-  const filtered = waste.filter((w: any) =>
+  const filtered = waste.filter((w) =>
     (w.waste_type || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
     (w.project || '').toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  const totalRecycling = waste.reduce((acc: number, w: any) => {
+  const totalRecycling = waste.reduce((acc: number, w) => {
     const qty = Number(w.quantity) || 0;
     const actualRecycled = Number(w.recycling_rate) || (w.status === 'collected' ? 75 : 0);
     return acc + (actualRecycled * qty / 100);
   }, 0);
-  const totalWaste = waste.reduce((acc: number, w: any) => acc + Number(w.quantity || 0), 0);
+  const totalWaste = waste.reduce((acc: number, w) => acc + Number(w.quantity || 0), 0);
   const recyclingRate = totalWaste > 0 ? Math.round(totalRecycling / totalWaste * 100) : 0;
-  const totalCost = wasteLogsData.reduce((acc, log) => acc + log.cost, 0);
+  const totalCost = waste.reduce((acc: number, w) => acc + (Number(w.cost) || 0), 0);
 
   const handleCreate = async () => {
     if (!form.wasteType) return;
@@ -93,6 +110,8 @@ export default function WasteManagement() {
         collection_date: form.collectionDate || null,
         recycling_rate: parseInt(form.recyclingRate) || 0,
         status: form.status,
+        cost: parseFloat(form.cost) || 0,
+        disposal_method: form.disposalMethod,
       });
       setShowCreateModal(false);
       setForm({ wasteType: '', quantity: '', unit: 'tonnes', carrier: '', collectionDate: '', recyclingRate: '75', status: 'pending', disposalMethod: 'Recycling', cost: '' });
@@ -106,16 +125,8 @@ export default function WasteManagement() {
     if (!editItem || !editItem.id) return;
     try {
       await updateMutation.mutateAsync({
-        id: editItem.id,
-        data: {
-          waste_type: editItem.wasteType,
-          quantity: parseFloat(editItem.quantity) || 0,
-          unit: editItem.unit,
-          carrier: editItem.carrier || '',
-          collection_date: editItem.collectionDate || null,
-          recycling_rate: parseInt(editItem.recyclingRate) || 0,
-          status: editItem.status,
-        },
+        id: String(editItem.id),
+        data: editItem as unknown as Record<string, unknown>,
       });
       setEditItem(null);
       toast.success('Waste record updated');
@@ -285,27 +296,27 @@ export default function WasteManagement() {
                       </tr>
                     </thead>
                     <tbody>
-                      {wasteLogsData.map((log) => (
+                      {filtered.map((log) => (
                         <tr key={log.id} className="border-b border-gray-700/50 hover:bg-gray-800/30">
-                          <td className="py-3 px-4 text-gray-300 font-medium">{log.date}</td>
-                          <td className="py-3 px-4 text-white">{log.type}</td>
-                          <td className="py-3 px-4 text-right text-gray-300 font-medium">{log.volume}</td>
+                          <td className="py-3 px-4 text-gray-300 font-medium">{String(log.collection_date)}</td>
+                          <td className="py-3 px-4 text-white">{log.waste_type}</td>
+                          <td className="py-3 px-4 text-right text-gray-300 font-medium">{log.quantity}</td>
                           <td className="py-3 px-4">
                             <span className={`px-2 py-1 rounded text-xs font-medium ${
-                              log.method === 'Recycling' ? 'bg-emerald-500/20 text-emerald-400' :
-                              log.method === 'Reuse' ? 'bg-blue-500/20 text-blue-400' :
-                              log.method === 'Special Handling' ? 'bg-purple-500/20 text-purple-400' :
+                              log.disposal_method === 'Recycling' ? 'bg-emerald-500/20 text-emerald-400' :
+                              log.disposal_method === 'Reuse' ? 'bg-blue-500/20 text-blue-400' :
+                              log.disposal_method === 'Special Handling' ? 'bg-purple-500/20 text-purple-400' :
                               'bg-amber-500/20 text-amber-400'
                             }`}>
-                              {log.method}
+                              {String(log.disposal_method)}
                             </span>
                           </td>
                           <td className="py-3 px-4 text-gray-300">{log.carrier}</td>
-                          <td className="py-3 px-4 text-right text-amber-400 font-medium">£{log.cost}</td>
+                          <td className="py-3 px-4 text-right text-amber-400 font-medium">£{Number(log.cost) || 0}</td>
                           <td className="py-3 px-4 text-right">
                             <div className="flex items-center gap-2 justify-end">
-                              <button className="p-1 hover:bg-blue-900/30 rounded" title="Edit"><Edit size={14} className="text-blue-400" /></button>
-                              <button className="p-1 hover:bg-red-900/30 rounded" title="Delete"><Trash2 size={14} className="text-red-400" /></button>
+                              <button className="p-1 hover:bg-blue-900/30 rounded" title="Edit" onClick={() => setEditItem(log as unknown as Row)}><Edit size={14} className="text-blue-400" /></button>
+                              <button className="p-1 hover:bg-red-900/30 rounded" title="Delete" onClick={() => _handleDelete(String(log.id))}><Trash2 size={14} className="text-red-400" /></button>
                             </div>
                           </td>
                         </tr>

@@ -54,7 +54,7 @@ router.get('/', async (req, res) => {
     res.json(insights);
   } catch (err) {
     console.error('insights error:', err);
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ error: 'Internal server error' });
   }
 });
 

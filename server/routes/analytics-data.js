@@ -40,7 +40,7 @@ router.get('/overtime', async (req, res) => {
     res.json(data);
   } catch (err) {
     console.error('overtime error:', err);
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ error: 'Internal server error' });
   }
 });
 
@@ -79,7 +79,7 @@ router.get('/vat', async (req, res) => {
     res.json(data);
   } catch (err) {
     console.error('vat error:', err);
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ error: 'Internal server error' });
   }
 });
 

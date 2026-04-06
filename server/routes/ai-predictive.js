@@ -117,7 +117,7 @@ router.post('/forecast', async (req, res) => {
 
   } catch (err) {
     console.error('[AI Predictive /forecast]', err);
-    res.status(500).json({ error: 'Predictive analysis failed: ' + err.message });
+    res.status(500).json({ error: 'Internal server error' });
   }
 });
 

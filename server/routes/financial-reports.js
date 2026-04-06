@@ -48,7 +48,7 @@ router.get('/summary', async (req, res) => {
     });
   } catch (err) {
     console.error('[Financial Summary]', err.message);
-    res.status(500).json({ message: err.message });
+    res.status(500).json({ message: 'Internal server error' });
   }
 });
 
@@ -108,7 +108,7 @@ router.get('/cashflow', async (req, res) => {
     res.json(cashFlow);
   } catch (err) {
     console.error('[CashFlow]', err.message);
-    res.status(500).json({ message: err.message });
+    res.status(500).json({ message: 'Internal server error' });
   }
 });
 
@@ -138,7 +138,7 @@ router.get('/projects', async (req, res) => {
     res.json(financials);
   } catch (err) {
     console.error('[Project Financials]', err.message);
-    res.status(500).json({ message: err.message });
+    res.status(500).json({ message: 'Internal server error' });
   }
 });
 
@@ -158,7 +158,7 @@ router.get('/invoices/analysis', async (req, res) => {
     res.json(analysis);
   } catch (err) {
     console.error('[Invoice Analysis]', err.message);
-    res.status(500).json({ message: err.message });
+    res.status(500).json({ message: 'Internal server error' });
   }
 });
 

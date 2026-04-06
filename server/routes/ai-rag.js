@@ -176,7 +176,7 @@ router.post('/', async (req, res) => {
     ollamaReq.end();
   } catch (err) {
     console.error('[ai-rag]', err.message);
-    if (!res.headersSent) res.status(500).json({ message: err.message });
+    if (!res.headersSent) res.status(500).json({ message: 'Internal server error' });
     else res.end();
   }
 });

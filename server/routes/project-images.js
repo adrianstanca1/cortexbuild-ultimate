@@ -84,7 +84,7 @@ router.get('/', async (req, res) => {
     res.json({ data: rows });
   } catch (err) {
     console.error('[GET /api/project-images]', err.message);
-    res.status(500).json({ message: err.message });
+    res.status(500).json({ message: 'Internal server error' });
   }
 });
 
@@ -113,7 +113,7 @@ router.post('/upload', upload.single('file'), async (req, res) => {
     if (err.message && err.message.startsWith('File type not allowed')) {
       return res.status(400).json({ message: err.message });
     }
-    res.status(500).json({ message: err.message });
+    res.status(500).json({ message: 'Internal server error' });
   }
 });
 
@@ -155,7 +155,7 @@ router.put('/:id', async (req, res) => {
     res.json(rows[0]);
   } catch (err) {
     console.error('[PUT /api/project-images/:id]', err.message);
-    res.status(500).json({ message: err.message });
+    res.status(500).json({ message: 'Internal server error' });
   }
 });
 
@@ -196,7 +196,7 @@ router.delete('/:id', async (req, res) => {
     res.json({ message: 'Image deleted' });
   } catch (err) {
     console.error('[DELETE /api/project-images/:id]', err.message);
-    res.status(500).json({ message: err.message });
+    res.status(500).json({ message: 'Internal server error' });
   }
 });
 
@@ -205,7 +205,7 @@ router.use((err, _req, res, _next) => {
   if (err instanceof multer.MulterError) {
     return res.status(400).json({ message: `Upload error: ${err.message}` });
   }
-  res.status(500).json({ message: err.message });
+  res.status(500).json({ message: 'Internal server error' });
 });
 
 module.exports = router;

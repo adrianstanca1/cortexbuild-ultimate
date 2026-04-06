@@ -136,6 +136,9 @@ export interface WasteManagementRow extends Row {
   cost?: number;
   status?: string;
   notes?: string;
+  carrier?: string;
+  collection_date?: string;
+  recycling_rate?: number;
   created_at?: string;
   updated_at?: string;
 }

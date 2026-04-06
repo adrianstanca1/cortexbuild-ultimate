@@ -68,7 +68,7 @@ router.get('/search', async (req, res) => {
 
       // Build per-table query
       const orgFilter = filter
-        ? `${filter} AND organization_id = $1`  // already parameterized
+        ? `WHERE ${filter.replace('WHERE', '')} AND organization_id = $1`
         : 'WHERE organization_id = $1';
 
       // Use <-> (Euclidean distance) or <=> (cosine distance) operator from pg_vector
@@ -126,7 +126,7 @@ router.get('/search', async (req, res) => {
     });
   } catch (err) {
     console.error('[rag/search]', err.message);
-    res.status(500).json({ message: err.message });
+    res.status(500).json({ message: 'Internal server error' });
   }
 });
 
@@ -180,7 +180,7 @@ router.get('/context', async (req, res) => {
     res.json({ context });
   } catch (err) {
     console.error('[rag/context]', err.message);
-    res.status(500).json({ message: err.message });
+    res.status(500).json({ message: 'Internal server error' });
   }
 });
 

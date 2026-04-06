@@ -146,7 +146,7 @@ router.post('/', upload.single('file'), validateAfterUpload, async (req, res) =>
     if (err.message && err.message.startsWith('File type not allowed')) {
       return res.status(400).json({ message: err.message });
     }
-    res.status(500).json({ message: err.message });
+    res.status(500).json({ message: 'Internal server error' });
   }
 });
 
@@ -155,7 +155,7 @@ router.use((err, _req, res, _next) => {
   if (err instanceof multer.MulterError) {
     return res.status(400).json({ message: `Upload error: ${err.message}` });
   }
-  res.status(500).json({ message: err.message });
+  res.status(500).json({ message: 'Internal server error' });
 });
 
 module.exports = router;

@@ -190,11 +190,29 @@ export const BIMViewer: React.FC = () => {
       const newCameraPos = targetPos.clone().add(cameraOffset);
 
       // Animate camera and controls target
-      camera.position.copy(newCameraPos);
-      controls.target.copy(targetPos);
-      controls.update();
+      // Simple interpolation: move camera and target over time
+      const duration = 1000;
+      const startPos = camera.position.clone();
+      const startTarget = controls.target.clone();
+      const startTime = performance.now();
 
-      toast.info(`Zoomed to clash: ${clash.description}`);
+      function animateJump(currentTime: number) {
+        const elapsed = currentTime - startTime;
+        const progress = Math.min(elapsed / duration, 1);
+        const ease = 1 - Math.pow(1 - progress, 3); // Cubic out easing
+
+        camera.position.lerpVectors(startPos, newCameraPos, ease);
+        controls.target.lerpVectors(startTarget, targetPos, ease);
+        controls.update();
+
+        if (progress < 1) {
+          requestAnimationFrame(animateJump);
+        } else {
+          toast.info(`Zoomed to clash: ${clash.description}`);
+        }
+      }
+
+      requestAnimationFrame(animateJump);
     }
 
     jumpToClashRef.current = jumpToClash;
@@ -221,8 +239,27 @@ export const BIMViewer: React.FC = () => {
               loadPlaceholderBuilding();
             }
           );
+        } else if (model.format === 'IFC') {
+          const ifcLoader = new IFCLoader();
+          // Configure WASM paths for the IFC engine
+          ifcLoader.ifcManager.setWasmPath('/wasm/');
+
+          ifcLoader.load(
+            `/api/bim-models/download/${model.id}`,
+            (ifcModel) => {
+              loaderGroup.add(ifcModel);
+              toast.success(`Loaded ${model.name} (IFC)`);
+            },
+            (progress) => {
+              console.log(`Loading IFC model: ${Math.round(progress.loaded / progress.total * 100)}%`);
+            },
+            (err) => {
+              console.error('IFC Load Error:', err);
+              loadPlaceholderBuilding();
+            }
+          );
         } else {
-          // IFC, OBJ, FBX — use placeholder until native loaders are bundled
+          // OBJ, FBX — use placeholder until native loaders are bundled
           loadPlaceholderBuilding();
           toast.success(`Loaded ${model.name} (3D preview)`);
         }

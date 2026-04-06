@@ -24,7 +24,7 @@ router.get('/', async (req, res) => {
     res.json(rows);
   } catch (err) {
     console.error('[Report Templates GET]', err.message);
-    res.status(500).json({ message: err.message });
+    res.status(500).json({ message: 'Internal server error' });
   }
 });
 
@@ -37,7 +37,7 @@ router.get('/:id', async (req, res) => {
     if (!rows[0]) return res.status(404).json({ message: 'Template not found' });
     res.json(rows[0]);
   } catch (err) {
-    res.status(500).json({ message: err.message });
+    res.status(500).json({ message: 'Internal server error' });
   }
 });
 
@@ -65,7 +65,7 @@ router.post('/', async (req, res) => {
     res.status(201).json(rows[0]);
   } catch (err) {
     console.error('[Report Templates POST]', err.message);
-    res.status(500).json({ message: err.message });
+    res.status(500).json({ message: 'Internal server error' });
   }
 });
 
@@ -101,7 +101,7 @@ router.put('/:id', async (req, res) => {
     res.json(rows[0]);
   } catch (err) {
     console.error('[Report Templates PUT]', err.message);
-    res.status(500).json({ message: err.message });
+    res.status(500).json({ message: 'Internal server error' });
   }
 });
 
@@ -114,7 +114,7 @@ router.delete('/:id', async (req, res) => {
     if (!rowCount) return res.status(404).json({ message: 'Template not found' });
     res.json({ message: 'Template deleted' });
   } catch (err) {
-    res.status(500).json({ message: err.message });
+    res.status(500).json({ message: 'Internal server error' });
   }
 });
 
@@ -141,7 +141,7 @@ router.post('/:id/duplicate', async (req, res) => {
     res.status(201).json(rows[0]);
   } catch (err) {
     console.error('[Duplicate Template]', err.message);
-    res.status(500).json({ message: err.message });
+    res.status(500).json({ message: 'Internal server error' });
   }
 });
 

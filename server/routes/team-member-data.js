@@ -20,7 +20,7 @@ router.get('/members/:memberId/skills', async (req, res) => {
     res.json(rows);
   } catch (err) {
     console.error('[GET skills]', err.message);
-    res.status(500).json({ message: err.message });
+    res.status(500).json({ message: 'Internal server error' });
   }
 });
 
@@ -35,7 +35,7 @@ router.post('/members/:memberId/skills', async (req, res) => {
     res.status(201).json(rows[0]);
   } catch (err) {
     console.error('[POST skills]', err.message);
-    res.status(500).json({ message: err.message });
+    res.status(500).json({ message: 'Internal server error' });
   }
 });
 
@@ -57,7 +57,7 @@ router.put('/skills/:id', async (req, res) => {
     res.json(rows[0]);
   } catch (err) {
     console.error('[PUT skills]', err.message);
-    res.status(500).json({ message: err.message });
+    res.status(500).json({ message: 'Internal server error' });
   }
 });
 
@@ -71,7 +71,7 @@ router.delete('/skills/:id', async (req, res) => {
     res.json({ message: 'Deleted' });
   } catch (err) {
     console.error('[DELETE skills]', err.message);
-    res.status(500).json({ message: err.message });
+    res.status(500).json({ message: 'Internal server error' });
   }
 });
 
@@ -86,7 +86,7 @@ router.get('/members/:memberId/inductions', async (req, res) => {
     res.json(rows);
   } catch (err) {
     console.error('[GET inductions]', err.message);
-    res.status(500).json({ message: err.message });
+    res.status(500).json({ message: 'Internal server error' });
   }
 });
 
@@ -101,7 +101,7 @@ router.post('/members/:memberId/inductions', async (req, res) => {
     res.status(201).json(rows[0]);
   } catch (err) {
     console.error('[POST inductions]', err.message);
-    res.status(500).json({ message: err.message });
+    res.status(500).json({ message: 'Internal server error' });
   }
 });
 
@@ -125,7 +125,7 @@ router.put('/inductions/:id', async (req, res) => {
     res.json(rows[0]);
   } catch (err) {
     console.error('[PUT inductions]', err.message);
-    res.status(500).json({ message: err.message });
+    res.status(500).json({ message: 'Internal server error' });
   }
 });
 
@@ -139,7 +139,7 @@ router.delete('/inductions/:id', async (req, res) => {
     res.json({ message: 'Deleted' });
   } catch (err) {
     console.error('[DELETE inductions]', err.message);
-    res.status(500).json({ message: err.message });
+    res.status(500).json({ message: 'Internal server error' });
   }
 });
 
@@ -154,7 +154,7 @@ router.get('/members/:memberId/availability', async (req, res) => {
     res.json(rows);
   } catch (err) {
     console.error('[GET availability]', err.message);
-    res.status(500).json({ message: err.message });
+    res.status(500).json({ message: 'Internal server error' });
   }
 });
 
@@ -172,7 +172,7 @@ router.post('/members/:memberId/availability', async (req, res) => {
     res.status(201).json(rows[0]);
   } catch (err) {
     console.error('[POST availability]', err.message);
-    res.status(500).json({ message: err.message });
+    res.status(500).json({ message: 'Internal server error' });
   }
 });
 
@@ -194,7 +194,7 @@ router.put('/availability/:id', async (req, res) => {
     res.json(rows[0]);
   } catch (err) {
     console.error('[PUT availability]', err.message);
-    res.status(500).json({ message: err.message });
+    res.status(500).json({ message: 'Internal server error' });
   }
 });
 
@@ -208,7 +208,7 @@ router.delete('/availability/:id', async (req, res) => {
     res.json({ message: 'Deleted' });
   } catch (err) {
     console.error('[DELETE availability]', err.message);
-    res.status(500).json({ message: err.message });
+    res.status(500).json({ message: 'Internal server error' });
   }
 });
 

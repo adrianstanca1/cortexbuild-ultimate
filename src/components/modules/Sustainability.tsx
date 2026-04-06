@@ -282,7 +282,7 @@ export default function Sustainability() {
               <div>
                 <h3 className="text-white font-bold mb-4">Monthly Emissions by Scope</h3>
                 <ResponsiveContainer width="100%" height={300}>
-                  <AreaChart data={dynamicMonthlyData}>
+                  <AreaChart data={monthlyEmissionsData}>
                     <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
                     <XAxis dataKey="month" stroke="#9ca3af" />
                     <YAxis stroke="#9ca3af" />

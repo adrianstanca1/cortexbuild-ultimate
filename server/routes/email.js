@@ -147,7 +147,7 @@ router.post('/templates', async (req, res) => {
     res.status(201).json({ success: true, template: rows[0] });
   } catch (err) {
     console.error('[Create Template]', err.message);
-    res.status(500).json({ message: err.message });
+    res.status(500).json({ message: 'Internal server error' });
   }
 });
 
@@ -167,7 +167,7 @@ router.put('/templates/:id', async (req, res) => {
     res.json({ success: true, template: rows[0] });
   } catch (err) {
     console.error('[Update Template]', err.message);
-    res.status(500).json({ message: err.message });
+    res.status(500).json({ message: 'Internal server error' });
   }
 });
 
@@ -183,7 +183,7 @@ router.delete('/templates/:id', async (req, res) => {
     res.json({ success: true });
   } catch (err) {
     console.error('[Delete Template]', err.message);
-    res.status(500).json({ message: err.message });
+    res.status(500).json({ message: 'Internal server error' });
   }
 });
 
@@ -200,7 +200,7 @@ router.get('/history', async (req, res) => {
     res.json({ emails: rows, total: parseInt(count[0].count, 10) });
   } catch (err) {
     console.error('[Email History]', err.message);
-    res.status(500).json({ message: err.message });
+    res.status(500).json({ message: 'Internal server error' });
   }
 });
 
@@ -233,10 +233,13 @@ router.post('/send', async (req, res) => {
       if (process.env.SMTP_HOST) {
         try {
           await sendEmailViaSMTP(to, subject, body);
-          await pool.query(`UPDATE email_logs SET status = 'delivered' WHERE id = $1`, [rows[0].id]);
+          const { rows } = await pool.query(
+      `UPDATE email_logs SET status = 'delivered' WHERE id = $1 AND (created_by = $2 OR organization_id = $3)`,
+      [rows[0].id, req.user?.id || 'system', orgId]
+    );
         } catch (smtpErr) {
           console.error('[SMTP Error]', smtpErr.message);
-          await pool.query(`UPDATE email_logs SET status = 'failed', error = $1 WHERE id = $2`, [smtpErr.message, rows[0].id]);
+          await pool.query(`UPDATE email_logs SET status = 'failed', error = $1 WHERE id = $2 AND (created_by = $3 OR organization_id = $4)`, [smtpErr.message, rows[0].id, req.user?.id || 'system', orgId]);
         }
       }
       return res.status(201).json({ success: true, email: rows[0] });
@@ -254,10 +257,11 @@ router.post('/send', async (req, res) => {
       emailSubject = emailSubject.replace(`{{${key}}}`, String(value));
     });
 
+    const orgId = req.user?.organization_id;
     const { rows } = await pool.query(
-      `INSERT INTO email_logs (recipient, subject, body, email_type, status, created_by)
-       VALUES ($1, $2, $3, $4, $5, $6) RETURNING *`,
-      [to, emailSubject, emailBody, type, 'sent', req.user?.id || 'system']
+      `INSERT INTO email_logs (recipient, subject, body, email_type, status, created_by, organization_id)
+       VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *`,
+      [to, emailSubject, emailBody, type, 'sent', req.user?.id || 'system', orgId]
     );
 
     if (process.env.SMTP_HOST) {
@@ -279,7 +283,7 @@ router.post('/send', async (req, res) => {
     res.status(201).json({ success: true, email: rows[0] });
   } catch (err) {
     console.error('[Send Email]', err.message);
-    res.status(500).json({ message: err.message });
+    res.status(500).json({ message: 'Internal server error' });
   }
 });
 
@@ -328,7 +332,7 @@ router.post('/bulk', async (req, res) => {
     res.status(201).json({ success: true, results });
   } catch (err) {
     console.error('[Bulk Email]', err.message);
-    res.status(500).json({ message: err.message });
+    res.status(500).json({ message: 'Internal server error' });
   }
 });
 
@@ -364,7 +368,7 @@ router.post('/schedule', async (req, res) => {
     res.status(201).json({ success: true, scheduled: rows[0] });
   } catch (err) {
     console.error('[Schedule Email]', err.message);
-    res.status(500).json({ message: err.message });
+    res.status(500).json({ message: 'Internal server error' });
   }
 });
 
