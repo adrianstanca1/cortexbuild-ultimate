@@ -429,3 +429,58 @@ docker exec -it cortexbuild-db psql -U cortexbuild -d cortexbuild
 - Build: 332ms, 0 errors
 - Type check: 0 errors
 - **Production needs update** — deploy required to bring VPS up to date
+
+---
+
+## 2026-04-06 — Comprehensive Code Review & Parameter Binding Fixes
+
+### Code Review Scope
+- **183 files** changed, +17,407 / -8,797 lines since commit 04bafe7
+- **4 parallel review agents**: Security/Correctness, Code Quality, Performance, Undirected Audit
+- **Independent verification** of all findings
+
+### Critical Fixes Applied (commit 79a6a9b)
+
+**BLOCKER: Parameter binding bugs in new route files**
+- `tasks.js` DELETE: `$1` and `$2` were swapped — `organization_id` got task UUID and vice versa. Delete always returned 404.
+- `tasks.js` PUT: `[...baseParams, ...params]` spread misaligned SQL placeholders. Org filter read from wrong position, enabling cross-org data corruption.
+- `work-packages.js` PATCH: Same pattern — `orgParamIndex = params.length + 1` calculated against wrong array.
+- `work-packages.js` DELETE: Same `$1`/`$2` swap as tasks.js.
+
+**Fix pattern applied consistently:**
+```js
+// BEFORE (broken):
+WHERE organization_id = $2 AND id = $1  // with [...baseParams, id]
+// $1 = org, $2 = id → SWAPPED!
+
+// AFTER (fixed):
+const queryParams = [id, ...baseParams];  // id=$1, org=$2
+WHERE id = $1 AND organization_id = $2
+```
+
+**CRITICAL: Error message leakage in notifications.js**
+- 8 endpoints returned `err.message` to clients, exposing PostgreSQL internals (column names, constraint violations, table structure)
+- Replaced all with generic `'Internal server error'`
+
+### Findings Summary
+| Agent | Critical | Suggestions | Nice to have |
+|-------|----------|-------------|--------------|
+| Security/Correctness | 3 BLOCKER (parameter binding), 2 CRITICAL (org guard, error leaks) | 3 | 0 |
+| Code Quality | 1 (1,207-line monolith) | 5 | 3 |
+| Performance | 0 | 2 | 2 |
+| Undirected Audit | 0 | 1 | 1 |
+
+### Resolved vs Deferred
+- ✅ **Resolved**: 3 BLOCKER parameter binding bugs, 8 error message leaks, React hook lint error, WebSocket auth key, calendar raw fetch, hardcoded chart data, `as any` casts (12 modules), 14 domain types, Prequalification extraction
+- ⏳ **Deferred**: Channel membership enforcement (design decision), OAuth unlink middleware (defense-in-depth), remaining module extractions (architectural, non-blocking)
+
+### Final State (2026-04-06 02:53 UTC)
+- HEAD: `79a6a9b` (Local = GitHub = VPS)
+- Tests: 116/116 passing
+- Build: 316ms
+- Type errors: 0
+- Lint errors: 0
+- Production: https://www.cortexbuildpro.com — HTTP 200
+- API: `{"status":"ok","version":"1.0.0"}`
+- Docker: 6/6 containers healthy
+- DNS: www → cortexbuildpro.com → 72.62.132.43
