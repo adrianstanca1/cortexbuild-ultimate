@@ -386,3 +386,46 @@ docker exec -it cortexbuild-db psql -U cortexbuild -d cortexbuild
 - Services: 6/6 Docker containers + PM2 cortex-api online
 - Health cron: exit 0, no false alerts
 - Production: https://www.cortexbuildpro.com — HTTP 200 OK
+
+---
+
+## 2026-04-06 — Test Fixes, Backend API Gaps, Module Audit
+
+### Critical Test Fixes (commit 0fa07f7)
+- **70+ test failures resolved** — "React.act is not a function" and jsdom ESM issues
+- Switched vitest from `jsdom` → `happy-dom` (React 19 compatible)
+- Added `NODE_ENV=test` to all test scripts to preserve `React.act`
+- Updated TeamChat Enter key test to use `userEvent` instead of deprecated `fireEvent.keyPress`
+- Upgraded vitest 4.1.0 → 4.1.2, added happy-dom 20.8.9
+- **Result: 116/116 tests passing** across 13 test files
+
+### Backend API Gap Fixes (commit fe89b62)
+- **Created `/api/tasks` route** — frontend expected it (ProjectTimeline.tsx), only `/api/project-tasks` existed
+  - Full CRUD: GET, POST, PUT, DELETE with multi-tenancy via `organization_id`
+  - Filters: projectId, status, priority, assigned_to
+- **Created `/api/work-packages` route** — frontend has `workPackagesApi` in api.ts but no backend existed
+  - Full CRUD: GET, POST, PATCH, DELETE with multi-tenancy
+  - Fields: name, description, status, priority, assigned_to, dates, budget, progress
+- **Registered dead `upload.js` route** — was 162 lines of unused code, now active at `/api/upload`
+  - Has auth middleware + upload rate limiting + file validation
+- **Created migration 032** — `work_packages` and `tasks` tables with indexes
+
+### Codebase Audit Findings
+- **116 tests passing** (fixed from 76 failures)
+- **Build: 332ms**, 0 type errors
+- **Backend: ~266+ API endpoints** across 34 generic CRUD + 22 custom routes
+- **Production behind HEAD** — last production commit was before `d7f66dc` (module expansion)
+- **Mock data fallback** — frontend `fetchAll()` falls back to mock data for 23 entities on API failure
+- **Deploy endpoint** — uses `DEPLOY_SECRET` bearer token (not JWT), rate-limited to 5/hour
+
+### Commits This Session
+- `0fa07f7` — fix(test): resolve React 19 test compatibility with happy-dom migration
+- `22c0a58` — feat: add activity feed and work packages API clients + expand Documents module icons
+- `fe89b62` — feat(backend): add tasks and work-packages API routes + register upload route
+
+### Current State (2026-04-06)
+- HEAD: `fe89b62` (GitHub origin/main)
+- Tests: 116/116 passing
+- Build: 332ms, 0 errors
+- Type check: 0 errors
+- **Production needs update** — deploy required to bring VPS up to date
