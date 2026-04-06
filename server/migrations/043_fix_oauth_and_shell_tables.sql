@@ -124,7 +124,23 @@ DO $$
 BEGIN
     IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'sustainability') THEN
         INSERT INTO sustainability_new (organization_id, company_id, project_id, project, metric_type, target, actual, unit, period, status, notes, created_at, updated_at)
-        SELECT organization_id, company_id, project_id, project, metric_type, target, actual, unit, period, status, notes, created_at, updated_at
+        SELECT
+            organization_id,
+            company_id,
+            CASE
+                WHEN project_id::TEXT ~ '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$' THEN project_id::UUID
+                ELSE NULL
+            END AS project_id,
+            project,
+            metric_type,
+            target,
+            actual,
+            unit,
+            period,
+            status,
+            notes,
+            created_at,
+            updated_at
         FROM sustainability;
 
         DROP TABLE sustainability;
@@ -165,7 +181,29 @@ DO $$
 BEGIN
     IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'waste_management') THEN
         INSERT INTO waste_management_new (organization_id, company_id, reference, project_id, project, waste_type, carrier, license_number, skip_number, collection_date, quantity, unit, cost, disposal_site, waste_code, status, notes, created_at, updated_at)
-        SELECT organization_id, company_id, reference, project_id, project, waste_type, carrier, license_number, skip_number, collection_date, quantity, unit, cost, disposal_site, waste_code, status, notes, created_at, updated_at
+        SELECT
+            organization_id,
+            company_id,
+            reference,
+            CASE
+                WHEN project_id::TEXT ~ '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$' THEN project_id::UUID
+                ELSE NULL
+            END AS project_id,
+            project,
+            waste_type,
+            carrier,
+            license_number,
+            skip_number,
+            collection_date,
+            quantity,
+            unit,
+            cost,
+            disposal_site,
+            waste_code,
+            status,
+            notes,
+            created_at,
+            updated_at
         FROM waste_management;
 
         DROP TABLE waste_management;
@@ -206,7 +244,29 @@ DO $$
 BEGIN
     IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'training') THEN
         INSERT INTO training_new (organization_id, company_id, reference, title, project_id, project, type, provider, duration, cost, attendees, status, scheduled_date, completed_date, certification, expiry_date, notes, created_at, updated_at)
-        SELECT organization_id, company_id, reference, title, project_id, project, type, provider, duration, cost, attendees, status, scheduled_date, completed_date, certification, expiry_date, notes, created_at, updated_at
+        SELECT
+            organization_id,
+            company_id,
+            reference,
+            title,
+            CASE
+                WHEN project_id::TEXT ~ '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$' THEN project_id::UUID
+                ELSE NULL
+            END AS project_id,
+            project,
+            type,
+            provider,
+            duration,
+            cost,
+            attendees,
+            status,
+            scheduled_date,
+            completed_date,
+            certification,
+            expiry_date,
+            notes,
+            created_at,
+            updated_at
         FROM training;
 
         DROP TABLE training;
@@ -280,7 +340,25 @@ DO $$
 BEGIN
     IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'lettings') THEN
         INSERT INTO lettings_new (organization_id, company_id, reference, project_id, project, package_name, trade, status, tender_closing_date, award_date, contractor, contract_value, notes, created_at, updated_at)
-        SELECT organization_id, company_id, reference, project_id, project, package_name, trade, status, tender_closing_date, award_date, contractor, contract_value, notes, created_at, updated_at
+        SELECT
+            organization_id,
+            company_id,
+            reference,
+            CASE
+                WHEN project_id::TEXT ~ '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$' THEN project_id::UUID
+                ELSE NULL
+            END AS project_id,
+            project,
+            package_name,
+            trade,
+            status,
+            tender_closing_date,
+            award_date,
+            contractor,
+            contract_value,
+            notes,
+            created_at,
+            updated_at
         FROM lettings;
 
         DROP TABLE lettings;
@@ -319,7 +397,27 @@ DO $$
 BEGIN
     IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'measuring') THEN
         INSERT INTO measuring_new (organization_id, company_id, reference, project_id, project, survey_type, location, status, surveyor, survey_date, completed_date, areas, total_area, unit, notes, created_at, updated_at)
-        SELECT organization_id, company_id, reference, project_id, project, survey_type, location, status, surveyor, survey_date, completed_date, areas, total_area, unit, notes, created_at, updated_at
+        SELECT
+            organization_id,
+            company_id,
+            reference,
+            CASE
+                WHEN project_id::TEXT ~ '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$' THEN project_id::UUID
+                ELSE NULL
+            END AS project_id,
+            project,
+            survey_type,
+            location,
+            status,
+            surveyor,
+            survey_date,
+            completed_date,
+            areas,
+            total_area,
+            unit,
+            notes,
+            created_at,
+            updated_at
         FROM measuring;
 
         DROP TABLE measuring;
@@ -359,7 +457,28 @@ DO $$
 BEGIN
     IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'signage') THEN
         INSERT INTO signage_new (organization_id, company_id, reference, project_id, project, type, description, location, size, material, quantity, status, required_date, installed_date, installed_by, notes, created_at, updated_at)
-        SELECT organization_id, company_id, reference, project_id, project, type, description, location, size, material, quantity, status, required_date, installed_date, installed_by, notes, created_at, updated_at
+        SELECT
+            organization_id,
+            company_id,
+            reference,
+            CASE
+                WHEN project_id::TEXT ~ '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$' THEN project_id::UUID
+                ELSE NULL
+            END AS project_id,
+            project,
+            type,
+            description,
+            location,
+            size,
+            material,
+            quantity,
+            status,
+            required_date,
+            installed_date,
+            installed_by,
+            notes,
+            created_at,
+            updated_at
         FROM signage;
 
         DROP TABLE signage;
@@ -409,7 +528,7 @@ BEGIN
             reference,
             title,
             CASE
-                WHEN project_id ~ '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$' THEN project_id::UUID
+                WHEN project_id::TEXT ~ '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$' THEN project_id::UUID
                 ELSE NULL
             END AS project_id,
             project,
@@ -461,7 +580,7 @@ BEGIN
             organization_id,
             company_id,
             CASE
-                WHEN project_id ~ '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$' THEN project_id::UUID
+                WHEN project_id::TEXT ~ '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$' THEN project_id::UUID
                 ELSE NULL
             END AS project_id,
             image_url,
