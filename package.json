@@ -21,7 +21,7 @@
     "verify:all": "./scripts/verify-server-routes.sh && ./scripts/pre-commit-check.sh",
     "precommit": "./scripts/pre-commit-check.sh",
     "check": "npx tsc --noEmit && npm run lint && npm test",
-    "prepare": "husky"
+    "prepare": "husky install"
   },
   "dependencies": {
     "@dnd-kit/utilities": "^3.2.2",
