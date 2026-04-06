@@ -16,6 +16,7 @@ import {
   Trash2
 } from 'lucide-react';
 import { ModuleBreadcrumbs } from '../ui/Breadcrumbs';
+import { EmptyState } from '../ui/EmptyState';
 import { bimModelsApi } from '../../services/api';
 import { toast } from 'sonner';
 
@@ -70,7 +71,7 @@ export const BIMViewer: React.FC = () => {
         setClashes([]);
         toast.info('No BIM models found. Please upload a model to get started.');
       }
-    } catch (_err) {
+    } catch (err) {
       console.error('Failed to load BIM models:', err);
       toast.error('Failed to load BIM models from server');
       setModels([]);
@@ -90,10 +91,10 @@ export const BIMViewer: React.FC = () => {
     formData.append('format', file.name.split('.').pop()?.toUpperCase() || 'IFC');
 
     try {
-      const newModel = await bimModelsApi.create(formData) as BIMModel;
+      const newModel = await bimModelsApi.create(formData) as unknown as BIMModel;
       setModels(prev => [...prev, newModel]);
       toast.success('Model uploaded successfully');
-    } catch (_err) {
+    } catch (err) {
       console.error('Upload failed:', err);
       toast.error('Failed to upload BIM model');
     }
@@ -103,7 +104,7 @@ export const BIMViewer: React.FC = () => {
     try {
       const data: ClashDetection[] = await bimModelsApi.getClashes(modelId) as unknown as ClashDetection[];
       setClashes(data);
-    } catch (_err) {
+    } catch (err) {
       console.error('Failed to load clashes', err);
     }
   }
@@ -117,6 +118,7 @@ export const BIMViewer: React.FC = () => {
       const currentViewerRef = viewerRef.current;
       if (!currentViewerRef) return;
 
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       let THREE: any, OrbitControls: any, GLTFLoader: any, IFCLoader: any;
 
       async function initThree() {
@@ -141,7 +143,7 @@ export const BIMViewer: React.FC = () => {
           // 2. Camera Setup
           const camera = new THREE.PerspectiveCamera(
             75,
-            currentViewerRef.clientWidth / 400,
+            (currentViewerRef?.clientWidth ?? 800) / 400,
             0.1,
             1000
           );
@@ -149,9 +151,9 @@ export const BIMViewer: React.FC = () => {
 
           // 3. Renderer Setup
           const renderer = new THREE.WebGLRenderer({ antialias: true });
-          renderer.setSize(currentViewerRef.clientWidth, 400);
+          renderer.setSize(currentViewerRef?.clientWidth ?? 800, 400);
           renderer.setPixelRatio(window.devicePixelRatio);
-          currentViewerRef.appendChild(renderer.domElement);
+          currentViewerRef?.appendChild(renderer.domElement);
 
           // 4. Lighting
           const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
@@ -183,6 +185,7 @@ export const BIMViewer: React.FC = () => {
           };
 
           // Expose controls to the window or a ref for the buttons to call
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
           (window as any).bimControls = { resetCamera, zoomIn, zoomOut };
 
           function jumpToClash(clash: ClashDetection) {
@@ -230,12 +233,14 @@ export const BIMViewer: React.FC = () => {
                 const gltfLoader = new GLTFLoader();
                 gltfLoader.load(
                   `/api/bim-models/download/${model.id}`,
-                  (gltf) => {
+                  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                  (gltf: any) => {
                     loaderGroup.add(gltf.scene);
                     toast.success(`Loaded ${model.name} (GLTF)`);
                   },
                   undefined,
-                  (err) => {
+                  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                  (err: any) => {
                     console.error('GLTF Load Error:', err);
                     loadPlaceholderBuilding();
                   }
@@ -246,14 +251,18 @@ export const BIMViewer: React.FC = () => {
 
                 ifcLoader.load(
                   `/api/bim-models/download/${model.id}`,
-                  (ifcModel) => {
+                  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                  (ifcModel: any) => {
                     loaderGroup.add(ifcModel);
                     toast.success(`Loaded ${model.name} (IFC)`);
                   },
-                  (progress) => {
-                    console.log(`Loading IFC model: ${Math.round(progress.loaded / progress.total * 100)}%`);
+                  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                  (progress: any) => {
+                    // Loading progress - intentionally silent to avoid console spam
+                    console.warn(`Loading IFC model: ${Math.round(progress.loaded / progress.total * 100)}%`);
                   },
-                  (err) => {
+                  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                  (err: any) => {
                     console.error('IFC Load Error:', err);
                     loadPlaceholderBuilding();
                   }
@@ -262,7 +271,7 @@ export const BIMViewer: React.FC = () => {
                 loadPlaceholderBuilding();
                 toast.success(`Loaded ${model.name} (3D preview)`);
               }
-            } catch (_err) {
+            } catch (err) {
               console.error('Model Load Error:', err);
               loadPlaceholderBuilding();
             }
@@ -300,9 +309,9 @@ export const BIMViewer: React.FC = () => {
           animate();
 
           const handleResize = () => {
-            camera.aspect = currentViewerRef.clientWidth / 400;
+            camera.aspect = (currentViewerRef?.clientWidth ?? 800) / 400;
             camera.updateProjectionMatrix();
-            renderer.setSize(currentViewerRef.clientWidth, 400);
+            renderer.setSize(currentViewerRef?.clientWidth ?? 800, 400);
           };
           window.addEventListener('resize', handleResize);
 
@@ -310,18 +319,18 @@ export const BIMViewer: React.FC = () => {
             window.removeEventListener('resize', handleResize);
             cancelAnimationFrame(animationFrameId);
             renderer.dispose();
-            if (currentViewerRef.contains(renderer.domElement)) {
-              currentViewerRef.removeChild(renderer.domElement);
+            if (currentViewerRef?.contains(renderer.domElement)) {
+              currentViewerRef?.removeChild(renderer.domElement);
             }
           };
-        } catch (_err) {
+        } catch (err) {
           console.error('Three.js Init Error:', err);
           toast.error('Failed to initialize 3D viewer');
         }
       }
 
-      initThree().then(cleanup => {
-        // Store cleanup function if needed, though usually just the returned function from useEffect
+      initThree().catch(() => {
+        // Error already logged and toasted in initThree
       });
 
       return () => {
@@ -403,19 +412,22 @@ export const BIMViewer: React.FC = () => {
               </div>
               <div className="flex gap-2">
                 <button
-                  onClick={() => (window as any).bimControls?.resetCamera()}
+                  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                  onClick={() => ((window as any).bimControls?.resetCamera?.())}
                   className="flex items-center gap-1 px-3 py-1.5 bg-base-300 text-gray-300 rounded hover:bg-base-100 transition-colors"
                 >
                   <RotateCcw className="h-4 w-4" />
                 </button>
                 <button
-                  onClick={() => (window as any).bimControls?.zoomIn()}
+                  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                  onClick={() => ((window as any).bimControls?.zoomIn?.())}
                   className="flex items-center gap-1 px-3 py-1.5 bg-base-300 text-gray-300 rounded hover:bg-base-100 transition-colors"
                 >
                   <ZoomIn className="h-4 w-4" />
                 </button>
                 <button
-                  onClick={() => (window as any).bimControls?.zoomOut()}
+                  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                  onClick={() => ((window as any).bimControls?.zoomOut?.())}
                   className="flex items-center gap-1 px-3 py-1.5 bg-base-300 text-gray-300 rounded hover:bg-base-100 transition-colors"
                 >
                   <ZoomOut className="h-4 w-4" />

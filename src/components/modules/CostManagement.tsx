@@ -41,7 +41,7 @@ export function CostManagement() {
 
   const [budgetItems, setBudgetItems] = useState<BudgetItem[]>([]);
   const [forecast, setForecast] = useState<CostForecast[]>([]);
-  const [predictiveData, setPredictiveData] = useState<any>(null);
+  const [predictiveData, setPredictiveData] = useState<Record<string, unknown> | null>(null);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
 
   // Add item form state
@@ -382,31 +382,31 @@ export function CostManagement() {
                   <div className="p-3 bg-gray-900 rounded-lg border border-gray-700">
                     <p className="text-xs text-gray-500 uppercase font-bold mb-1">Risk Level</p>
                     <div className={`flex items-center gap-2 font-bold ${
-                      predictiveData.riskLevel === 'HIGH' ? 'text-red-400' :
-                      predictiveData.riskLevel === 'MEDIUM' ? 'text-yellow-400' : 'text-emerald-400'
+                      (predictiveData as Record<string, unknown>).riskLevel === 'HIGH' ? 'text-red-400' :
+                      (predictiveData as Record<string, unknown>).riskLevel === 'MEDIUM' ? 'text-yellow-400' : 'text-emerald-400'
                     }`}>
                       <AlertTriangle className="w-4 h-4" />
-                      {predictiveData.riskLevel}
+                      {String((predictiveData as Record<string, unknown>).riskLevel)}
                     </div>
                   </div>
                   <div className="p-3 bg-gray-900 rounded-lg border border-gray-700">
                     <p className="text-xs text-gray-500 uppercase font-bold mb-1">Predicted Final Cost</p>
-                    <p className="text-lg font-bold text-white">{fmt(predictiveData.predictedFinalCost)}</p>
+                    <p className="text-lg font-bold text-white">{fmt((predictiveData as Record<string, unknown>).predictedFinalCost as number)}</p>
                   </div>
                   <div className="p-3 bg-gray-900 rounded-lg border border-gray-700">
                     <p className="text-xs text-gray-500 uppercase font-bold mb-1">Confidence</p>
-                    <p className="text-lg font-bold text-white">{predictiveData.confidenceScore}%</p>
+                    <p className="text-lg font-bold text-white">{String((predictiveData as Record<string, unknown>).confidenceScore)}%</p>
                   </div>
                 </div>
                 <div className="space-y-4">
                   <div>
                     <p className="text-xs text-gray-500 uppercase font-bold mb-2">Analysis</p>
-                    <p className="text-sm text-gray-300 leading-relaxed italic">"{predictiveData.analysis}"</p>
+                    <p className="text-sm text-gray-300 leading-relaxed italic">"{String((predictiveData as Record<string, unknown>).analysis)}"</p>
                   </div>
                   <div>
                     <p className="text-xs text-gray-500 uppercase font-bold mb-2">Recommendations</p>
                     <ul className="space-y-2">
-                      {predictiveData.recommendations.map((rec: string, i: number) => (
+                      {((predictiveData as Record<string, unknown>).recommendations as string[]).map((rec: string, i: number) => (
                         <li key={i} className="flex items-start gap-2 text-sm text-gray-300">
                           <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 mt-1.5 shrink-0" />
                           {rec}
