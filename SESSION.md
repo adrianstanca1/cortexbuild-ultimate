@@ -555,3 +555,30 @@ fe89b62 feat(backend): add tasks and work-packages API routes
 0fa07f7 fix(test): resolve React 19 test compatibility with happy-dom migration
 d7f66dc feat: massively expand 13 modules + fix all TypeScript errors
 ```
+
+---
+
+## 2026-04-06 — AI Cross-Module Intent Handler + Build Fixes
+
+### Critical Fix (BLOCKER)
+- **Restored deleted `server/middleware/auth.js`** — was accidentally emptied, which would have broken ALL API authentication on next deploy
+
+### AI Enhancement (commit ce09ad9)
+- **New cross-module-intent.js** — handles queries matching multiple intents by running all relevant domain handlers in parallel and synthesizing results
+- **22 domain handlers** aggregated: projects, invoices, overdue, safety, team, RFIs, tenders, budget, valuations, defects, materials, timesheets, subcontractors, equipment, change orders, purchase orders, contacts, RAMS, CIS, daily reports, risk
+- **Example query**: "show me overdue RFIs and safety incidents" → runs both handlers, combines results
+- **ai.js updated**: detects `intents.length > 1` and dispatches to cross-module handler
+
+### Build Fixes
+- **BIMViewer.tsx**: `IfcLoader` → `IFCLoader` (case-sensitive import fix)
+- **tsconfig.json**: added `ignoreDeprecations: "6.0"` for baseUrl deprecation
+- **Dependencies**: added @testing-library/dom, @types/react, @types/react-dom
+
+### Final State
+- HEAD: `ce09ad9` (Local = GitHub = VPS)
+- Tests: 116/116 passing
+- Build: 513ms
+- Type errors: 0
+- Production: ✅ https://www.cortexbuildpro.com — HTTP 200
+- API: `{"status":"ok","version":"1.0.0"}`
+- Docker: 6/6 containers healthy
