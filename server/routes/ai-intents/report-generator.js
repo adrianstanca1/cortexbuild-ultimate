@@ -42,7 +42,7 @@ function pct(spent, budget) {
  * @param {string} message - User request message
  * @returns {Promise<{reply: string, data: object, suggestions: string[]}>}
  */
-async function handleGenerateReport(message) {
+async function handleGenerateReport(message, req) {
   const m = message.toLowerCase();
   let reportType = 'daily';
   if (/safety|incident|hazard/.test(m)) reportType = 'safety';
@@ -54,15 +54,25 @@ async function handleGenerateReport(message) {
 
   const htmlSections = [];
   const sections = [];
+  const orgId = req?.user?.organization_id;
+  const isSuper = ['super_admin', 'company_owner'].includes(req?.user?.role);
+  let orgFilter = '';
+  let queryParams = [];
+  if (orgId && !isSuper) {
+    orgFilter = 'WHERE organization_id = $1';
+    queryParams = [orgId];
+  }
 
   if (reportType === 'daily' || reportType === 'executive') {
     const { rows: projects } = await pool.query(
       `SELECT name, client, status, progress, budget, spent, manager, location
-       FROM projects ORDER BY created_at DESC LIMIT 20`
+       FROM projects ${orgFilter} ORDER BY created_at DESC LIMIT 20`,
+      queryParams
     );
     const { rows: dailyReports } = await pool.query(
       `SELECT project, date, prepared_by, weather, workers_on_site, progress
-       FROM daily_reports ORDER BY date DESC LIMIT 14`
+       FROM daily_reports ${orgFilter} ORDER BY date DESC LIMIT 14`,
+      queryParams
     );
     const active = projects.filter(r => r.status === 'active' || r.status === 'in_progress');
     const totalBudget = projects.reduce((s, r) => s + parseFloat(r.budget || 0), 0);
@@ -87,7 +97,8 @@ ${projects.slice(0, 10).map(p => `<tr><td>${escapeHtml(p.name)}</td><td>${escape
 
   if (reportType === 'safety' || reportType === 'executive') {
     const { rows: incidents } = await pool.query(
-      `SELECT type, title, severity, status, project, date FROM safety_incidents ORDER BY created_at DESC`
+      `SELECT type, title, severity, status, project, date FROM safety_incidents ${orgFilter} ORDER BY created_at DESC`,
+      queryParams
     );
     const open = incidents.filter(r => r.status === 'open' || r.status === 'investigating');
     const high = incidents.filter(r => r.severity === 'high' || r.severity === 'critical');
@@ -109,7 +120,8 @@ ${open.slice(0, 8).map(i => `<tr><td>${escapeHtml(i.title)}</td><td>${escapeHtml
 
   if (reportType === 'financial' || reportType === 'executive') {
     const { rows: invoices } = await pool.query(
-      `SELECT number, client, project, amount, status, due_date FROM invoices ORDER BY created_at DESC`
+      `SELECT number, client, project, amount, status, due_date FROM invoices ${orgFilter} ORDER BY created_at DESC`,
+      queryParams
     );
     const overdue = invoices.filter(r => r.status === 'overdue');
     const paid    = invoices.filter(r => r.status === 'paid');
@@ -137,7 +149,8 @@ ${overdue.slice(0, 8).map(i => `<tr><td>${escapeHtml(i.number)}</td><td>${escape
   if (reportType === 'daily') {
     const { rows: dailyReports } = await pool.query(
       `SELECT project, date, prepared_by, weather, workers_on_site, progress
-       FROM daily_reports ORDER BY date DESC LIMIT 7`
+       FROM daily_reports ${orgFilter} ORDER BY date DESC LIMIT 7`,
+      queryParams
     );
     const avgWorkers = dailyReports.length
       ? (dailyReports.reduce((s, r) => s + parseFloat(r.workers_on_site || 0), 0) / dailyReports.length).toFixed(1)

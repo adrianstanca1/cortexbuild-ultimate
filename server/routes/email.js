@@ -315,21 +315,26 @@ router.post('/bulk', async (req, res) => {
       emailSubject = emailSubject.replace(`{{${key}}}`, String(value));
     });
 
+    const orgId = req.user?.organization_id;
     const results = [];
+    let hasFailure = false;
     for (const recipient of recipients) {
       try {
         const { rows } = await pool.query(
-          `INSERT INTO email_logs (recipient, subject, body, email_type, status, created_by)
-           VALUES ($1, $2, $3, $4, $5, $6) RETURNING *`,
-          [recipient, emailSubject, body || '', type || 'bulk', 'queued', req.user?.id || 'system']
+          `INSERT INTO email_logs (recipient, subject, body, email_type, status, created_by, organization_id)
+           VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *`,
+          [recipient, emailSubject, body || '', type || 'bulk', 'queued', req.user?.id || 'system', orgId]
         );
         results.push({ recipient, success: true, id: rows[0].id });
       } catch (err) {
+        hasFailure = true;
         results.push({ recipient, success: false, error: 'Failed to send' });
       }
     }
 
-    res.status(201).json({ success: true, results });
+    // If all inserts failed, return 500; otherwise 201 (partial success)
+    const allFailed = results.every(r => !r.success);
+    res.status(allFailed ? 500 : 201).json({ success: !allFailed, results });
   } catch (err) {
     console.error('[Bulk Email]', err.message);
     res.status(500).json({ message: 'Internal server error' });

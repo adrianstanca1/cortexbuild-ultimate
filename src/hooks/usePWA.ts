@@ -83,7 +83,7 @@ export function registerServiceWorker(): void {
       // Service Worker registered:', registration.scope);
 
       // Check for updates periodically
-      setInterval(() => {
+      const updateInterval = setInterval(() => {
         registration.update();
       }, 60 * 60 * 1000); // Check hourly
 
@@ -92,6 +92,7 @@ export function registerServiceWorker(): void {
       navigator.serviceWorker.addEventListener('controllerchange', () => {
         if (!refreshing) {
           refreshing = true;
+          clearInterval(updateInterval);
           window.location.reload();
         }
       });

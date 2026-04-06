@@ -42,13 +42,28 @@ interface _Valuation {
   net_payment: number;
 }
 
+interface MeasurementFormData {
+  reference: string;
+  survey_type: string;
+  location: string;
+  surveyor: string;
+  survey_date: string;
+  total_area: string;
+  unit: string;
+  section: string;
+  quantity: string;
+  rate: string;
+  description: string;
+  notes: string;
+}
+
 export default function Measuring() {
   const [activeTab, setActiveTab] = useState<'takeoff' | 'bq' | 'valuations' | 'reports'>('takeoff');
   const [searchTerm, setSearchTerm] = useState('');
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [_uploading, setUploading] = useState<string | null>(null);
   const [editItem, setEditItem] = useState<Measurement | null>(null);
-  const [form, setForm] = useState({
+  const [form, setForm] = useState<MeasurementFormData>({
     reference: '',
     survey_type: 'General',
     location: '',
@@ -666,7 +681,7 @@ export default function Measuring() {
                     id="quantity"
                     type="number"
                     step="0.01"
-                    value={editItem ? editItem.quantity || '' : (form as unknown as Record<string, unknown>).quantity}
+                    value={editItem ? editItem.quantity || '' : form.quantity}
                     onChange={(e) => {
                       if (editItem) {
                         setEditItem({ ...editItem, quantity: parseFloat(e.target.value) || 0 });
@@ -687,7 +702,7 @@ export default function Measuring() {
                     id="rate"
                     type="number"
                     step="0.01"
-                    value={editItem ? editItem.rate || '' : (form as unknown as Record<string, unknown>).rate}
+                    value={editItem ? editItem.rate || '' : form.rate}
                     onChange={(e) => {
                       if (editItem) {
                         setEditItem({ ...editItem, rate: parseFloat(e.target.value) || 0 });
@@ -726,14 +741,14 @@ export default function Measuring() {
                 </select>
               </div>
 
-              {(editItem || String((form as unknown as Record<string, unknown>).quantity)) && (
+              {(editItem || form.quantity) && (
                 <div className="p-3 bg-blue-500/10 border border-blue-500/30 rounded">
                   <p className="text-blue-400 text-sm font-medium">
                     Total: £
                     {(
-                      (editItem
-                        ? (Number((editItem as unknown as Record<string, unknown>).quantity) || 0) * (Number((editItem as unknown as Record<string, unknown>).rate) || 0)
-                        : (parseFloat(String((form as unknown as Record<string, unknown>).quantity)) || 0) * (parseFloat(String((form as unknown as Record<string, unknown>).rate)) || 0))
+                      editItem
+                        ? (Number(editItem?.quantity) || 0) * (Number(editItem?.rate) || 0)
+                        : (parseFloat(form.quantity) || 0) * (parseFloat(form.rate) || 0)
                     ).toFixed(2)}
                   </p>
                 </div>

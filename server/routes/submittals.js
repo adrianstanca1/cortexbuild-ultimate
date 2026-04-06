@@ -178,8 +178,10 @@ router.get('/:id', authMiddleware, async (req, res) => {
 
     // Get attachments
     const attachments = await pool.query(
-      'SELECT * FROM submittal_attachments WHERE submittal_id = $1',
-      [req.params.id]
+      `SELECT sa.* FROM submittal_attachments sa
+       JOIN submittals s ON sa.submittal_id = s.id
+       WHERE sa.submittal_id = $1 AND s.company_id = $2`,
+      [req.params.id, req.user.company_id]
     );
 
     // Get comments
@@ -424,6 +426,15 @@ router.post('/:id/comments', authMiddleware, async (req, res) => {
   }
 
   try {
+    // Verify submittal belongs to user's company before adding comment
+    const submittal = await pool.query(
+      `SELECT id FROM submittals WHERE id = $1 AND company_id = $2`,
+      [req.params.id, req.user.company_id]
+    );
+    if (!submittal.rows.length) {
+      return res.status(404).json({ message: 'Submittal not found' });
+    }
+
     const { rows } = await pool.query(
       `INSERT INTO submittal_comments (submittal_id, author_id, author_name, comment, is_review_comment, requires_response)
        VALUES ($1, $2, $3, $4, $5, $6)

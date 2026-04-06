@@ -31,8 +31,8 @@ router.post('/forecast', async (req, res) => {
     // 2. Gather Detailed Budget Item Variance
     const { rows: budgetItems } = await pool.query(
       `SELECT name, budgeted, spent, variance, variance_percent
-       FROM budget_items WHERE project_id = $1`,
-      [projectId]
+       FROM budget_items WHERE project_id = $1 AND organization_id = $2`,
+      [projectId, orgId]
     );
 
     // 3. Gather Historical Forecasts to see trend

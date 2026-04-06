@@ -18,9 +18,15 @@ router.get('/', async (req, res) => {
 
     let params = [];
     let where = '';
-    if (orgId && !isSuper) {
+    if (isSuper) {
+      where = '';
+      params = [];
+    } else if (orgId) {
       where = 'WHERE organization_id = $1';
-      params.push(orgId);
+      params = [orgId];
+    } else {
+      where = 'WHERE organization_id = $1';
+      params = [0];
     }
 
     // Fallback: generate a plausible 5-day forecast based on recent daily_reports weather

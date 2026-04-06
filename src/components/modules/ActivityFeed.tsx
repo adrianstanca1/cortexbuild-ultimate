@@ -9,6 +9,16 @@ import {
 import { EmptyState } from '../ui/EmptyState';
 import { ModuleBreadcrumbs } from '../ui/Breadcrumbs';
 
+interface Activity {
+  id?: string;
+  description?: string;
+  user_name?: string;
+  category?: string;
+  created_at?: string;
+  entity_name?: string;
+  [key: string]: unknown;
+}
+
 interface ActivityItem {
   id: string;
   action: string;
@@ -147,33 +157,33 @@ export default function ActivityFeed() {
     return groups;
   }
 
-  const filteredActivities = (_activities as any[])
+  const filteredActivities = (_activities as unknown as Activity[])
     .filter(a => {
       if (filter === 'all') return true;
-      return a.category === filter;
+      return a?.category === filter;
     })
     .filter(a =>
-      a.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      a.user_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      a.entity_name.toLowerCase().includes(searchQuery.toLowerCase())
+      a?.description?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      a?.user_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      a?.entity_name?.toLowerCase().includes(searchQuery.toLowerCase())
     );
 
-  const groupedActivities = groupByDate(filteredActivities);
+  const groupedActivities = groupByDate(filteredActivities as unknown as ActivityItem[]);
 
   const stats = {
-    total: (_activities as any[]).length,
-    today: (_activities as any[]).filter((a: any) => {
-      const d = new Date(a.created_at);
+    total: (_activities as unknown as Activity[]).length,
+    today: (_activities as unknown as Activity[]).filter((a: Activity) => {
+      const d = new Date(a?.created_at ?? '');
       const today = new Date();
       return d.toDateString() === today.toDateString();
     }).length,
-    thisWeek: (_activities as any[]).filter((a: any) => {
-      const d = new Date(a.created_at);
+    thisWeek: (_activities as unknown as Activity[]).filter((a: Activity) => {
+      const d = new Date(a?.created_at ?? '');
       const weekAgo = new Date();
       weekAgo.setDate(weekAgo.getDate() - 7);
       return d >= weekAgo;
     }).length,
-    uniqueUsers: new Set((_activities as any[]).map((a: any) => a.user_name)).size,
+    uniqueUsers: new Set((_activities as unknown as Activity[]).map((a: Activity) => a?.user_name)).size,
   };
 
   // Live Feed Tab
@@ -302,10 +312,10 @@ export default function ActivityFeed() {
         <div className="space-y-3">
           {(() => {
             const categories = new Map<string, number>();
-            (_activities as any[]).forEach((a: any) => {
-              categories.set(a.category, (categories.get(a.category) || 0) + 1);
+            (_activities as unknown as Activity[]).forEach((a: Activity) => {
+              categories.set(a?.category ?? 'unknown', (categories.get(a?.category ?? 'unknown') || 0) + 1);
             });
-            const total = (_activities as any[]).length;
+            const total = (_activities as unknown as Activity[]).length;
             return Array.from(categories.entries())
               .sort((a, b) => b[1] - a[1])
               .map(([cat, count]) => {
@@ -331,8 +341,8 @@ export default function ActivityFeed() {
         <div className="space-y-2">
           {(() => {
             const users = new Map<string, number>();
-            (_activities as any[]).forEach((a: any) => {
-              users.set(a.user_name, (users.get(a.user_name) || 0) + 1);
+            (_activities as unknown as Activity[]).forEach((a: Activity) => {
+              users.set(a?.user_name ?? 'unknown', (users.get(a?.user_name ?? 'unknown') || 0) + 1);
             });
             return Array.from(users.entries())
               .sort((a, b) => b[1] - a[1])

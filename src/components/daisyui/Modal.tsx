@@ -61,6 +61,7 @@ export const Modal: React.FC<ModalProps> = ({
       </dialog>
 
       {/* Expose open/close methods via custom events */}
+      {id && /^[\w-]+$/.test(id) ? (
       <script
         dangerouslySetInnerHTML={{
           __html: `
@@ -76,6 +77,7 @@ export const Modal: React.FC<ModalProps> = ({
           `,
         }}
       />
+      ) : null}
     </>
   );
 };

@@ -212,9 +212,20 @@ router.get('/users', authMiddleware, async (req, res) => {
     return res.status(403).json({ message: 'Insufficient permissions' });
   }
   try {
-    const { rows } = await pool.query(
-      'SELECT id,name,email,role,company,phone,avatar,organization_id,company_id,created_at FROM users ORDER BY created_at DESC'
-    );
+    const isSuper = req.user.role === 'super_admin';
+    const orgId = req.user.organization_id;
+    let query;
+    let params;
+    if (isSuper) {
+      // super_admin sees all users across orgs
+      query = 'SELECT id,name,email,role,company,phone,avatar,organization_id,company_id,created_at FROM users ORDER BY created_at DESC';
+      params = [];
+    } else {
+      // Regular admins see only their org's users
+      query = 'SELECT id,name,email,role,company,phone,avatar,organization_id,company_id,created_at FROM users WHERE organization_id = $1 ORDER BY created_at DESC';
+      params = [orgId];
+    }
+    const { rows } = await pool.query(query, params);
     res.json(rows);
   } catch (err) {
     res.status(500).json({ message: 'Server error' });

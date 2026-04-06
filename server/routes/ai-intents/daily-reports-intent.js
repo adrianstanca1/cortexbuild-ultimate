@@ -6,7 +6,7 @@ const pool = require('../../db');
  */
 async function handleDailyReports(user) {
   const { rows } = await pool.query(
-    `SELECT project, date, weather, workers_count, progress_notes FROM daily_reports WHERE organization_id = $1 ORDER BY created_at DESC`
+    `SELECT project, date, weather, workers_on_site, progress_notes FROM daily_reports WHERE organization_id = $1 ORDER BY created_at DESC`
     [user?.organization_id]
   );
   if (!rows.length) {
@@ -25,7 +25,7 @@ async function handleDailyReports(user) {
     return d >= weekAgo;
   });
   const avgWorkers = thisWeek.length > 0
-    ? (thisWeek.reduce((s, r) => s + (parseFloat(r.workers_count) || 0), 0) / thisWeek.length).toFixed(1)
+    ? (thisWeek.reduce((s, r) => s + (parseFloat(r.workers_on_site) || 0), 0) / thisWeek.length).toFixed(1)
     : '0';
 
   let reply = `You have **${rows.length} daily reports** — ${todayReports.length} today, ${thisWeek.length} this week.\n`;
@@ -33,7 +33,7 @@ async function handleDailyReports(user) {
   if (todayReports.length) {
     reply += "Today's reports:\n";
     todayReports.forEach(r => {
-      reply += `• ${r.project}: ${r.weather || 'No weather'}, ${r.workers_count || 0} workers\n`;
+      reply += `• ${r.project}: ${r.weather || 'No weather'}, ${r.workers_on_site || 0} workers\n`;
     });
   }
 
