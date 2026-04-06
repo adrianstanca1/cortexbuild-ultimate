@@ -18,15 +18,20 @@ import {
   reportTemplatesApi, auditApi, ReportTemplate,
   type Row,
 } from '../services/api';
+import type {
+  SignRow, MeasurementRow, ValuationRow, LettingPackageRow, TenderRow,
+  CertificationRow, PrequalificationRow, SustainabilityRow, WasteManagementRow,
+  TrainingRow, SpecificationRow, InsightRow, AnalyticsDataRow, ActivityFeedRow,
+} from '../types/domain';
 import { eventBus } from '../lib/eventBus';
 
 
 // ─── Generic hook factory ─────────────────────────────────────────────────────
 
 function makeHooks<T extends Row = Row>(key: string, tableName: string, api: {
-  getAll: () => Promise<T[]>;
-  create: (data: Row) => Promise<T | null>;
-  update: (id: string, data: Row) => Promise<T | null>;
+  getAll: () => Promise<Row[]>;
+  create: (data: Row) => Promise<Row | null>;
+  update: (id: string, data: Row) => Promise<Row | null>;
   delete: (id: string) => Promise<void>;
 }) {
   function useList() {
@@ -41,7 +46,7 @@ function makeHooks<T extends Row = Row>(key: string, tableName: string, api: {
     }, [qc]);
     return useQuery<T[]>({
       queryKey: [key],
-      queryFn: api.getAll,
+      queryFn: () => api.getAll() as Promise<T[]>,
       staleTime: 60_000, // Increased from 30s to 60s for better caching
       gcTime: 5 * 60_000, // Keep unused data in cache for 5 minutes
       retry: 2, // Retry failed requests up to 2 times
@@ -115,17 +120,17 @@ export const useProjectImages  = makeHooks('project-images',   'project_images',
 export const useProjectTasks    = makeHooks('project-tasks',    'project_tasks',   projectTasksApi);
 export const useVariations      = makeHooks('variations',       'variations',      variationsApi);
 export const useDefects         = makeHooks('defects',          'defects',         defectsApi);
-export const useSpecifications  = makeHooks('specifications',   'specifications',  specificationsApi);
+export const useSpecifications  = makeHooks<SpecificationRow>('specifications',   'specifications',  specificationsApi);
 export const useTempWorks       = makeHooks('temp-works',       'temp_works',      tempWorksApi);
-export const useSignage         = makeHooks('signage',          'signage',         signageApi);
-export const useWasteManagement = makeHooks('waste-management', 'waste_management', wasteManagementApi);
-export const useSustainability  = makeHooks('sustainability',   'sustainability',  sustainabilityApi);
-export const useTraining        = makeHooks('training',         'training',        trainingApi);
-export const useCertifications  = makeHooks('certifications',   'certifications',  certificationsApi);
-export const usePrequalification = makeHooks('prequalification', 'prequalification', prequalificationApi);
-export const useLettings        = makeHooks('lettings',         'lettings',        lettingsApi);
-export const useMeasuring       = makeHooks('measuring',        'measuring',       measuringApi);
-export const useValuations      = makeHooks('valuations',        'valuations',       valuationsApi);
+export const useSignage         = makeHooks<SignRow>('signage',          'signage',         signageApi);
+export const useWasteManagement = makeHooks<WasteManagementRow>('waste-management', 'waste_management', wasteManagementApi);
+export const useSustainability  = makeHooks<SustainabilityRow>('sustainability',   'sustainability',  sustainabilityApi);
+export const useTraining        = makeHooks<TrainingRow>('training',         'training',        trainingApi);
+export const useCertifications  = makeHooks<CertificationRow>('certifications',   'certifications',  certificationsApi);
+export const usePrequalification = makeHooks<PrequalificationRow>('prequalification', 'prequalification', prequalificationApi);
+export const useLettings        = makeHooks<LettingPackageRow>('lettings',         'lettings',        lettingsApi);
+export const useMeasuring       = makeHooks<MeasurementRow>('measuring',        'measuring',       measuringApi);
+export const useValuations      = makeHooks<ValuationRow>('valuations',        'valuations',       valuationsApi);
 export const useSitePermits     = makeHooks('site-permits',     'site-permits',    sitePermitsApi);
 export const useReportTemplates  = makeHooks<ReportTemplate>('report-templates', 'report_templates', {
   getAll: () => reportTemplatesApi.getAll(),

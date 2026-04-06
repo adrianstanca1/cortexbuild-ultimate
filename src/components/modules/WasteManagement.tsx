@@ -53,7 +53,7 @@ const complianceData = [
 ];
 
 export default function WasteManagement() {
-  const { data: waste = [] as any[], isLoading } = useWasteManagement.useList();
+  const { data: waste = [], isLoading } = useWasteManagement.useList();
   const createMutation = useWasteManagement.useCreate();
   const updateMutation = useWasteManagement.useUpdate();
   const deleteMutation = useWasteManagement.useDelete();

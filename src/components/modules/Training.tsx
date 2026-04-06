@@ -37,7 +37,7 @@ interface TrainingRecord {
 }
 
 export default function Training() {
-  const { data: training = [] as any[], isLoading } = useTraining.useList();
+  const { data: training = [], isLoading } = useTraining.useList();
   const createMutation = useTraining.useCreate();
   const updateMutation = useTraining.useUpdate();
   const deleteMutation = useTraining.useDelete();
@@ -227,7 +227,9 @@ export default function Training() {
         const grouped = new Map<string, any[]>();
 
         sorted.forEach(t => {
-          const date = new Date(t.scheduled_date || t.completed_date);
+          const dateStr = t.scheduled_date || t.completed_date || '';
+          if (!dateStr) return;
+          const date = new Date(dateStr);
           const weekStart = new Date(date);
           weekStart.setDate(weekStart.getDate() - weekStart.getDay());
           const weekKey = weekStart.toLocaleDateString('en-GB', { month: 'short', day: 'numeric', year: 'numeric' });
@@ -355,7 +357,8 @@ export default function Training() {
           {(() => {
             const types = new Map<string, number>();
             trainingData.forEach(t => {
-              types.set(t.type.replace(/_/g, ' '), (types.get(t.type.replace(/_/g, ' ')) || 0) + 1);
+              const typeKey = (t.type || 'unknown').replace(/_/g, ' ');
+              types.set(typeKey, (types.get(typeKey) || 0) + 1);
             });
             const total = trainingData.length;
             return Array.from(types.entries())

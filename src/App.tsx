@@ -67,7 +67,7 @@ const WasteManagement     = lazy(() => import('./components/modules/WasteManagem
 const Sustainability      = lazy(() => import('./components/modules/Sustainability'));
 const Training            = lazy(() => import('./components/modules/Training'));
 const Certifications      = lazy(() => import('./components/modules/Certifications'));
-const Prequalification    = lazy(() => import('./components/modules/Prequalification'));
+const Prequalification    = lazy(() => import('./components/modules/prequalification'));
 const Lettings            = lazy(() => import('./components/modules/Lettings'));
 const Measuring           = lazy(() => import('./components/modules/Measuring'));
 const EmailHistory        = lazy(() => import('./components/modules/EmailHistory'));

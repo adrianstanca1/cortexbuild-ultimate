@@ -90,13 +90,13 @@ export default function Measuring() {
     section: 'Fit-Out',
   });
 
-  const listResult = useMeasuring.useList() as any;
+  const listResult = useMeasuring.useList();
   const measurements = listResult.data || [];
   const USE_MOCK = import.meta.env.VITE_USE_MOCK_DATA === 'true';
   const typedMeasurements = (USE_MOCK && measurements.length === 0 ? mockMeasurements : measurements) as Measurement[];
-  const createMutation = useMeasuring.useCreate() as any;
-  const updateMutation = useMeasuring.useUpdate() as any;
-  const deleteMutation = useMeasuring.useDelete() as any;
+  const createMutation = useMeasuring.useCreate();
+  const updateMutation = useMeasuring.useUpdate();
+  const deleteMutation = useMeasuring.useDelete();
 
   // Filter data
   const filtered = useMemo(() =>

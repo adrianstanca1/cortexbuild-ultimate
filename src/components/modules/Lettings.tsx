@@ -190,13 +190,13 @@ export default function Lettings() {
     notes: '',
   });
 
-  const listResult = useLettings.useList() as any;
+  const listResult = useLettings.useList();
   const lettings = listResult.data || [];
   const USE_MOCK = import.meta.env.VITE_USE_MOCK_DATA === 'true';
   const typedLettings = (USE_MOCK && lettings.length === 0 ? mockPackages : lettings) as Package[];
-  const createMutation = useLettings.useCreate() as any;
-  const updateMutation = useLettings.useUpdate() as any;
-  const deleteMutation = useLettings.useDelete() as any;
+  const createMutation = useLettings.useCreate();
+  const updateMutation = useLettings.useUpdate();
+  const deleteMutation = useLettings.useDelete();
 
   const { selectedIds, toggle, clearSelection } = useBulkSelection();
 

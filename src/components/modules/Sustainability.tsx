@@ -65,7 +65,7 @@ const COLORS = ['#10b981', '#f97316', '#3b82f6', '#8b5cf6', '#ec4899'];
 const SCOPE_COLORS = { scope1: '#ef4444', scope2: '#f59e0b', scope3: '#06b6d4' };
 
 export default function Sustainability() {
-  const { data: metrics = [] as any[], isLoading } = useSustainability.useList();
+  const { data: metrics = [], isLoading } = useSustainability.useList();
   const createMutation = useSustainability.useCreate();
   const updateMutation = useSustainability.useUpdate();
   const deleteMutation = useSustainability.useDelete();

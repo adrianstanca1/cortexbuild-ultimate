@@ -68,11 +68,11 @@ export default function Signage() {
   const [editItem, setEditItem] = useState<Sign | null>(null);
 
   const { useList, useCreate, useUpdate, useDelete } = useSignage;
-  const listResult = useList() as any;
+  const listResult = useList();
   const { data: signage = [], isLoading } = { data: listResult.data || [], isLoading: listResult.isLoading };
-  const createMutation = useCreate() as any;
-  const updateMutation = useUpdate() as any;
-  const deleteMutation = useDelete() as any;
+  const createMutation = useCreate();
+  const updateMutation = useUpdate();
+  const deleteMutation = useDelete();
 
   const { selectedIds, toggle, clearSelection } = useBulkSelection();
 
