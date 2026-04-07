@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
 import { format } from 'date-fns';
+import { getToken } from '../../lib/supabase';
 
 interface SafetyTrendData {
   date: string;
@@ -32,7 +33,9 @@ export default function SafetyTrendChart({
     async function fetchData() {
       try {
         const url = `/api/analytics?action=safety-trends&days=${days}${projectId ? `&projectId=${projectId}` : ''}`;
-        const response = await fetch(url);
+        const response = await fetch(url, {
+          headers: { Authorization: `Bearer ${getToken() || ''}` },
+        });
         if (!response.ok) throw new Error('Failed to fetch safety trends');
         const result = await response.json();
         setData(result);

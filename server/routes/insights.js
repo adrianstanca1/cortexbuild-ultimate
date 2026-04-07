@@ -16,24 +16,29 @@ router.get('/', async (req, res) => {
     const auth = req.user || {};
     const orgId = auth.organization_id;
     const isSuper = auth.role === 'super_admin';
+    if (isSuper && !orgId) {
+      return res.status(400).json({ error: 'organization_id required for super_admin insights' });
+    }
 
     let orgFilter = '';
     let params = [];
-    if (orgId && !isSuper) {
+    if (orgId) {
       orgFilter = 'WHERE organization_id = $1';
       params.push(orgId);
     }
 
     const insights = [];
 
-    await generateFinancialInsights(orgFilter, params, insights);
-    await generateContractVsBudgetInsights(orgFilter, params, insights);
-    await generateInvoiceAgingInsights(orgFilter, params, insights);
-    await generateSubcontractorInsights(orgFilter, params, insights);
-    await generateSafetyInsights(orgFilter, params, insights);
-    await generateProgrammeInsights(orgFilter, params, insights);
-    await generateResourceInsights(orgFilter, params, insights);
-    await generateTrendInsights(orgFilter, params, insights);
+    await Promise.all([
+      generateFinancialInsights(orgFilter, params, insights),
+      generateContractVsBudgetInsights(orgFilter, params, insights),
+      generateInvoiceAgingInsights(orgFilter, params, insights),
+      generateSubcontractorInsights(orgFilter, params, insights),
+      generateSafetyInsights(orgFilter, params, insights),
+      generateProgrammeInsights(orgFilter, params, insights),
+      generateResourceInsights(orgFilter, params, insights),
+      generateTrendInsights(orgFilter, params, insights),
+    ]);
 
     // ── Broadcast real-time notifications for high/critical insights ─────────
     const notifiable = insights.filter(i => i.severity === 'critical' || i.severity === 'high');
@@ -61,8 +66,8 @@ router.get('/', async (req, res) => {
 // ─── Financial: overdue invoices ──────────────────────────────────────────────
 
 async function generateFinancialInsights(orgFilter, params, insights) {
-  const whereClause = orgFilter ? `${orgFilter} AND` : 'WHERE';
-  const p = orgFilter ? [...params] : [];
+  const whereClause = orgFilter ? `${orgFilter} AND` : 'WHERE 1=1 AND';
+  const p = params;
 
   const overdueResult = await pool.query(`
     SELECT
@@ -134,8 +139,8 @@ async function generateFinancialInsights(orgFilter, params, insights) {
 // ─── Financial: contract value vs budget variance ───────────────────────────────
 
 async function generateContractVsBudgetInsights(orgFilter, params, insights) {
-  const whereClause = orgFilter ? `${orgFilter} AND` : 'WHERE';
-  const p = orgFilter ? [...params] : [];
+  const whereClause = orgFilter ? `${orgFilter} AND` : 'WHERE 1=1 AND';
+  const p = params;
 
   // Projects where spent > budget (over budget)
   const overResult = await pool.query(`
@@ -197,8 +202,8 @@ async function generateContractVsBudgetInsights(orgFilter, params, insights) {
 // ─── Financial: invoice aging buckets ─────────────────────────────────────────
 
 async function generateInvoiceAgingInsights(orgFilter, params, insights) {
-  const whereClause = orgFilter ? `${orgFilter} AND` : 'WHERE';
-  const p = orgFilter ? [...params] : [];
+  const whereClause = orgFilter ? `${orgFilter} AND` : 'WHERE 1=1 AND';
+  const p = params;
 
   // Invoice aging: 30-60 days, 60-90 days, 90+ days overdue
   const agingResult = await pool.query(`
@@ -256,8 +261,8 @@ async function generateInvoiceAgingInsights(orgFilter, params, insights) {
 // ─── Subcontractor performance insights ───────────────────────────────────────
 
 async function generateSubcontractorInsights(orgFilter, params, insights) {
-  const whereClause = orgFilter ? `${orgFilter} AND` : 'WHERE';
-  const p = orgFilter ? [...params] : [];
+  const whereClause = orgFilter ? `${orgFilter} AND` : 'WHERE 1=1 AND';
+  const p = params;
 
   // Unverified CIS subcontractors who are active
   const unverifiedResult = await pool.query(`
@@ -342,8 +347,8 @@ async function generateSubcontractorInsights(orgFilter, params, insights) {
 // ─── Safety insights ──────────────────────────────────────────────────────────
 
 async function generateSafetyInsights(orgFilter, params, insights) {
-  const whereClause = orgFilter ? `${orgFilter} AND` : 'WHERE';
-  const p = orgFilter ? [...params] : [];
+  const whereClause = orgFilter ? `${orgFilter} AND` : 'WHERE 1=1 AND';
+  const p = params;
 
   const incidentResult = await pool.query(`
     SELECT
@@ -407,8 +412,8 @@ async function generateSafetyInsights(orgFilter, params, insights) {
 // ─── Programme insights ───────────────────────────────────────────────────────
 
 async function generateProgrammeInsights(orgFilter, params, insights) {
-  const whereClause = orgFilter ? `${orgFilter} AND` : 'WHERE';
-  const p = orgFilter ? [...params] : [];
+  const whereClause = orgFilter ? `${orgFilter} AND` : 'WHERE 1=1 AND';
+  const p = params;
 
   const openRfiResult = await pool.query(`
     SELECT COUNT(*) AS count
@@ -488,8 +493,8 @@ async function generateProgrammeInsights(orgFilter, params, insights) {
 // ─── Resource insights ────────────────────────────────────────────────────────
 
 async function generateResourceInsights(orgFilter, params, insights) {
-  const whereClause = orgFilter ? `${orgFilter} AND` : 'WHERE';
-  const p = orgFilter ? [...params] : [];
+  const whereClause = orgFilter ? `${orgFilter} AND` : 'WHERE 1=1 AND';
+  const p = params;
 
   const certResult = await pool.query(`
     SELECT COUNT(*) AS count
@@ -545,8 +550,8 @@ async function generateResourceInsights(orgFilter, params, insights) {
 // ─── Quarter-over-quarter trend insights ──────────────────────────────────────
 
 async function generateTrendInsights(orgFilter, params, insights) {
-  const whereClause = orgFilter || '';
-  const p = orgFilter ? [...params] : [];
+  const whereClause = orgFilter ? `${orgFilter} AND` : 'WHERE 1=1 AND';
+  const p = params;
 
   // Project spend trend: this quarter vs last quarter
   const quarterResult = await pool.query(`

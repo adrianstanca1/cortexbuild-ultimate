@@ -60,24 +60,6 @@ export const Modal: React.FC<ModalProps> = ({
         )}
       </dialog>
 
-      {/* Expose open/close methods via custom events */}
-      {id && /^[\w-]+$/.test(id) ? (
-      <script
-        dangerouslySetInnerHTML={{
-          __html: `
-            (function() {
-              const modal = document.getElementById('${id}');
-              if (modal) {
-                window['${id}'] = {
-                  open: () => modal.showModal(),
-                  close: () => modal.close()
-                };
-              }
-            })();
-          `,
-        }}
-      />
-      ) : null}
     </>
   );
 };

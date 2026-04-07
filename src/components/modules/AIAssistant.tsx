@@ -188,7 +188,7 @@ export function AIAssistant() {
       throw new Error('empty');
     }).catch(() => {
       try {
-        const saved = localStorage.getItem('cortex_ai_sessions');
+        const saved = sessionStorage.getItem('cortex_ai_sessions');
         if (saved) setChatSessions(JSON.parse(saved));
       } catch { /* ignore */ }
     });
@@ -196,7 +196,7 @@ export function AIAssistant() {
 
   // Save sessions to localStorage on change
   useEffect(() => {
-    try { localStorage.setItem('cortex_ai_sessions', JSON.stringify(chatSessions)); } catch (err) {
+    try { sessionStorage.setItem('cortex_ai_sessions', JSON.stringify(chatSessions)); } catch (err) {
       console.warn('Failed to save AI sessions to localStorage:', err);
     }
   }, [chatSessions]);
@@ -218,12 +218,12 @@ export function AIAssistant() {
         }));
         setMessages(adapted);
         // Mirror to localStorage as backup
-        try { localStorage.setItem(`cortex_ai_session_${sessionId}`, JSON.stringify(adapted)); } catch {}
+        try { sessionStorage.setItem(`cortex_ai_session_${sessionId}`, JSON.stringify(adapted)); } catch {}
       })
       .catch(() => {
         // Fallback to localStorage if server fails
         try {
-          const saved = localStorage.getItem(`cortex_ai_session_${sessionId}`);
+          const saved = sessionStorage.getItem(`cortex_ai_session_${sessionId}`);
           setMessages(saved ? JSON.parse(saved) : []);
         } catch { setMessages([]); }
       });

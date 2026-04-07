@@ -15,35 +15,30 @@ function getTenantFilter(req) {
   return { filter: ' AND organization_id = $1', params: [auth.organization_id] };
 }
 
-async function getRagStatus(projectId) {
-  try {
-    const budgetResult = await pool.query(
-      `SELECT budgeted, spent FROM budget_items WHERE project_id = $1`,
-      [projectId]
-    );
-
-    const totalBudgeted = budgetResult.rows.reduce((sum, row) => sum + Number(row.budgeted || 0), 0);
-    const totalSpent = budgetResult.rows.reduce((sum, row) => sum + Number(row.spent || 0), 0);
-
-    const costVariance = totalBudgeted > 0
-      ? ((totalSpent - totalBudgeted) / totalBudgeted) * 100
-      : 0;
-
+async function buildRagStatusMap(projectIds) {
+  if (projectIds.length === 0) return {};
+  const { rows } = await pool.query(`
+    SELECT project_id,
+      SUM(COALESCE(budgeted, 0)) AS total_budgeted,
+      SUM(COALESCE(spent, 0)) AS total_spent
+    FROM budget_items
+    WHERE project_id = ANY($1)
+    GROUP BY project_id
+  `, [projectIds]);
+  const map = {};
+  for (const row of rows) {
+    const totalBudgeted = Number(row.total_budgeted || 0);
+    const totalSpent = Number(row.total_spent || 0);
+    const costVariance = totalBudgeted > 0 ? ((totalSpent - totalBudgeted) / totalBudgeted) * 100 : 0;
     let costStatus = 'green';
     if (costVariance > 10) costStatus = 'red';
     else if (costVariance > 0) costStatus = 'amber';
-
-    // Simplified RAG for other metrics - can be expanded with real queries
-    return {
-      programme: 'green',
-      cost: costStatus,
-      quality: 'green',
-      safety: 'green',
-    };
-  } catch (err) {
-    console.error(`[getRagStatus Error] ${err.message}`);
-    return { programme: 'green', cost: 'green', quality: 'green', safety: 'green' };
+    map[row.project_id] = { programme: 'green', cost: costStatus, quality: 'green', safety: 'green' };
   }
+  for (const id of projectIds) {
+    if (!map[id]) map[id] = { programme: 'green', cost: 'green', quality: 'green', safety: 'green' };
+  }
+  return map;
 }
 
 /**
@@ -110,19 +105,18 @@ router.get('/summary', async (req, res) => {
       ? Math.round(((totalBudgeted - totalSpent) / totalBudgeted) * 100)
       : 25;
 
-    const projects = await Promise.all(projectsListResult.rows.map(async (project) => {
-      const ragStatus = await getRagStatus(project.id);
-      return {
-        id: project.id,
-        name: project.name,
-        client: project.client,
-        value: Number(project.value) || 0,
-        phase: project.phase || 'Pre-Construction',
-        completion: Number(project.completion) || 0,
-        nextMilestone: 'TBC',
-        pm: project.pm || 'Unassigned',
-        ...ragStatus,
-      };
+    const ragMap = await buildRagStatusMap(projectsListResult.rows.map(p => p.id));
+
+    const projects = projectsListResult.rows.map((project) => ({
+      id: project.id,
+      name: project.name,
+      client: project.client,
+      value: Number(project.value) || 0,
+      phase: project.phase || 'Pre-Construction',
+      completion: Number(project.completion) || 0,
+      nextMilestone: 'TBC',
+      pm: project.pm || 'Unassigned',
+      ...(ragMap[project.id] || { programme: 'green', cost: 'green', quality: 'green', safety: 'green' }),
     }));
 
     res.json({
