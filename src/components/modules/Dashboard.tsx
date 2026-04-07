@@ -247,7 +247,7 @@ function DashboardComponent() {
           });
           // Refresh notifications / activity feed
           notificationsApi.getAll().then((data: unknown) => {
-            const rows = data as AnyRow[];
+            const rows = (data as { notifications: AnyRow[] }).notifications || [];
             setActivityFeed(rows.slice(0, 12).map((row, i) => ({
               id: String(row.id || i),
               user: String(row.userName || row.createdBy || row.actor || 'System'),
@@ -306,7 +306,7 @@ function DashboardComponent() {
       console.error('Dashboard: Failed to fetch projects:', err);
     });
     notificationsApi.getAll().then((data: unknown) => {
-      const rows = data as AnyRow[];
+      const rows = (data as { notifications: AnyRow[] }).notifications || [];
       const notifs = rows.slice(0, 12).map((row, i) => ({
         id: String(row.id || i),
         user: String(row.userName || row.createdBy || row.actor || 'System'),
