@@ -5,10 +5,30 @@ const auth = require('../middleware/auth');
 const router = express.Router();
 router.use(auth);
 
+// Map table names to frontend category names
+const TABLE_CATEGORY = {
+  projects: 'projects',
+  invoices: 'finance',
+  cis_returns: 'finance',
+  purchase_orders: 'finance',
+  valuations: 'finance',
+  timesheets: 'finance',
+  safety_incidents: 'safety',
+  rams: 'safety',
+  inspections: 'safety',
+  risk_register: 'safety',
+  team_members: 'team',
+  documents: 'documents',
+  rfis: 'documents',
+  submittals: 'documents',
+  specifications: 'documents',
+  drawings: 'documents',
+  daily_reports: 'documents',
+};
+
 /**
  * GET /api/activity-feed
- * Get activity feed with optional filtering.
- * Query params: entity_type, time_range, limit, offset
+ * Query params: entity_type (category filter), time_range, limit, offset
  */
 router.get('/', async (req, res) => {
   const { entity_type, time_range, limit = '50', offset = '0' } = req.query;
@@ -16,8 +36,8 @@ router.get('/', async (req, res) => {
   const isSuper = ['super_admin', 'company_owner'].includes(req.user?.role);
 
   try {
-    let whereClauses = [];
-    let params = [];
+    const whereClauses = [];
+    const params = [];
     let paramIndex = 1;
 
     if (orgId && !isSuper) {
@@ -27,48 +47,80 @@ router.get('/', async (req, res) => {
     }
 
     if (entity_type && entity_type !== 'all') {
-      whereClauses.push(`a.entity_type = $${paramIndex}`);
-      params.push(entity_type);
-      paramIndex++;
+      // Filter by tables that map to the requested category
+      const tables = Object.entries(TABLE_CATEGORY)
+        .filter(([, cat]) => cat === entity_type)
+        .map(([tbl]) => tbl);
+      if (tables.length > 0) {
+        whereClauses.push(`a.table_name = ANY($${paramIndex}::text[])`);
+        params.push(tables);
+        paramIndex++;
+      }
     }
 
     if (time_range) {
       const now = new Date();
-      let dateFilter;
       switch (time_range) {
         case 'today':
-          dateFilter = now.toISOString().split('T')[0];
           whereClauses.push(`DATE(a.created_at) = $${paramIndex}`);
-          params.push(dateFilter);
+          params.push(now.toISOString().split('T')[0]);
+          paramIndex++;
           break;
-        case 'week':
+        case 'week': {
           const weekAgo = new Date(now);
           weekAgo.setDate(weekAgo.getDate() - 7);
           whereClauses.push(`a.created_at >= $${paramIndex}`);
           params.push(weekAgo.toISOString());
+          paramIndex++;
           break;
-        case 'month':
+        }
+        case 'month': {
           const monthAgo = new Date(now);
           monthAgo.setMonth(monthAgo.getMonth() - 1);
           whereClauses.push(`a.created_at >= $${paramIndex}`);
           params.push(monthAgo.toISOString());
+          paramIndex++;
           break;
+        }
       }
-      paramIndex++;
     }
 
     const whereSql = whereClauses.length > 0 ? `WHERE ${whereClauses.join(' AND ')}` : '';
 
     const { rows } = await pool.query(
-      `SELECT a.*, u.name as user_name, u.role as user_role
-       FROM activity_log a
-       LEFT JOIN users u ON u.id = a.user_id
+      `SELECT
+         a.id::text AS id,
+         a.action,
+         a.table_name AS entity_type,
+         a.record_id AS entity_id,
+         COALESCE(
+           a.changes->'new'->>'name',
+           a.changes->'new'->>'title',
+           a.changes->'old'->>'name',
+           a.changes->'old'->>'title',
+           a.table_name
+         ) AS entity_name,
+         COALESCE(u.name, 'System') AS user_name,
+         COALESCE(u.role, 'system') AS user_role,
+         a.action || ' ' || a.table_name AS description,
+         a.created_at,
+         a.changes AS metadata
+       FROM audit_log a
+       LEFT JOIN users u ON u.id::text = a.user_id
        ${whereSql}
        ORDER BY a.created_at DESC
        LIMIT $${paramIndex} OFFSET $${paramIndex + 1}`,
       [...params, parseInt(limit, 10), parseInt(offset, 10)]
     );
-    res.json(rows);
+
+    // Attach category to each row
+    const enriched = rows.map(r => ({
+      ...r,
+      module: r.entity_type,
+      category: TABLE_CATEGORY[r.entity_type] || 'documents',
+    }));
+
+    res.json(enriched);
   } catch (err) {
     console.error('[Activity Feed] Failed to load:', err.message);
     res.status(500).json({ error: 'Internal server error' });

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
   TrendingUp, TrendingDown,
   Grid3x3, Radar, FileText, Download,
@@ -8,6 +8,38 @@ import {
   XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart as RechartsPie, Pie, Cell,
 } from 'recharts';
 import { ModuleBreadcrumbs } from '../ui/Breadcrumbs';
+import { apiFetch } from '../../services/api';
+
+interface ProjectRow {
+  id: string;
+  name: string;
+  contract_value: number;
+  budget: number;
+  spent: number;
+  progress: number;
+  status: string;
+}
+
+interface RiskRow {
+  id: string;
+  title: string;
+  likelihood: number;
+  impact: number;
+  mitigation: string;
+  status: string;
+}
+
+function toLevel(n: number): 'high' | 'medium' | 'low' {
+  return n >= 4 ? 'high' : n >= 2 ? 'medium' : 'low';
+}
+
+function projectHealth(p: ProjectRow): 'critical' | 'warning' | 'good' | 'excellent' {
+  const ratio = p.budget > 0 ? p.spent / p.budget : 0;
+  if (p.status === 'on_hold' || ratio > 1.15) return 'critical';
+  if (p.progress < 40 || ratio > 1.05) return 'warning';
+  if (p.progress >= 80 && ratio <= 1.0) return 'excellent';
+  return 'good';
+}
 
 type TabType = 'portfolio' | 'financial' | 'resource' | 'risk' | 'reports';
 
@@ -69,9 +101,20 @@ export function AdvancedAnalytics() {
   const [activeTab, setActiveTab] = useState<TabType>('portfolio');
   const [selectedFormat, setSelectedFormat] = useState<'pdf' | 'excel' | 'csv'>('pdf');
   const [reportLoading, setReportLoading] = useState(false);
+  const [apiProjects, setApiProjects] = useState<ProjectRow[]>([]);
+  const [apiRisks, setApiRisks] = useState<RiskRow[]>([]);
 
-  // Portfolio data
-  const projectCards: ProjectCard[] = [
+  useEffect(() => {
+    apiFetch<{ data: ProjectRow[] }>('/projects?limit=50')
+      .then(res => { if (res?.data?.length) setApiProjects(res.data); })
+      .catch(() => {});
+    apiFetch<{ data: RiskRow[] }>('/risk-register?limit=10')
+      .then(res => { if (res?.data?.length) setApiRisks(res.data); })
+      .catch(() => {});
+  }, []);
+
+  // Portfolio data — real if available, fallback hardcoded
+  const FALLBACK_PROJECTS: ProjectCard[] = [
     { id: '1', name: 'Manchester Office Complex', value: '£2.8M', health: 'excellent', completion: 87 },
     { id: '2', name: 'Birmingham Retail Park', value: '£1.5M', health: 'good', completion: 72 },
     { id: '3', name: 'Leeds Residential Phase 2', value: '£4.2M', health: 'warning', completion: 64 },
@@ -80,10 +123,28 @@ export function AdvancedAnalytics() {
     { id: '6', name: 'London Hospitality Refurb', value: '£1.2M', health: 'excellent', completion: 95 },
   ];
 
+  const projectCards: ProjectCard[] = apiProjects.length > 0
+    ? apiProjects.map(p => ({
+        id: p.id,
+        name: p.name,
+        value: `£${(Number(p.contract_value) / 1_000_000).toFixed(1)}M`,
+        health: projectHealth(p),
+        completion: p.progress ?? 0,
+      }))
+    : FALLBACK_PROJECTS;
+
+  const totalValue = apiProjects.length > 0
+    ? apiProjects.reduce((s, p) => s + Number(p.contract_value), 0)
+    : 19_700_000;
+  const avgCompletion = projectCards.length > 0
+    ? Math.round(projectCards.reduce((s, p) => s + p.completion, 0) / projectCards.length)
+    : 73;
+  const atRisk = projectCards.filter(p => p.health === 'critical' || p.health === 'warning').length;
+
   const portfolioKPIs = [
-    { label: 'Total Portfolio Value', value: '£19.7M', change: '+8.2%', trend: 'up' },
-    { label: 'Avg. Completion', value: '73%', change: '+12.4%', trend: 'up' },
-    { label: 'Projects at Risk', value: '2', change: '-1', trend: 'up' },
+    { label: 'Total Portfolio Value', value: `£${(totalValue / 1_000_000).toFixed(1)}M`, change: '+8.2%', trend: 'up' },
+    { label: 'Avg. Completion', value: `${avgCompletion}%`, change: '+12.4%', trend: 'up' },
+    { label: 'Projects at Risk', value: String(atRisk), change: '-1', trend: 'up' },
     { label: 'On-Time Rate', value: '84%', change: '+3.1%', trend: 'up' },
   ];
 
@@ -153,14 +214,24 @@ export function AdvancedAnalytics() {
     { month: 'Jun', riskScore: 42, mitigated: 38 },
   ];
 
-  // Top 5 risks
-  const topRisks: RiskItem[] = [
+  const FALLBACK_RISKS: RiskItem[] = [
     { id: '1', title: 'Material supply chain disruption', likelihood: 'high', impact: 'high', mitigation: 'Dual sourcing implemented', status: 'in-progress' },
     { id: '2', title: 'Labour availability shortage', likelihood: 'high', impact: 'high', mitigation: 'Recruitment campaign active', status: 'in-progress' },
     { id: '3', title: 'Budget cost escalation', likelihood: 'medium', impact: 'high', mitigation: 'Value engineering review', status: 'mitigated' },
     { id: '4', title: 'Schedule delay on critical path', likelihood: 'medium', impact: 'medium', mitigation: 'Parallel activity acceleration', status: 'in-progress' },
     { id: '5', title: 'Quality defect rate increase', likelihood: 'medium', impact: 'medium', mitigation: 'Enhanced QA procedures', status: 'mitigated' },
   ];
+
+  const topRisks: RiskItem[] = apiRisks.length > 0
+    ? apiRisks.slice(0, 5).map(r => ({
+        id: r.id,
+        title: r.title,
+        likelihood: toLevel(r.likelihood),
+        impact: toLevel(r.impact),
+        mitigation: r.mitigation || '—',
+        status: r.status === 'mitigated' || r.status === 'closed' ? 'mitigated' : 'in-progress',
+      }))
+    : FALLBACK_RISKS;
 
   const handleGenerateReport = () => {
     setReportLoading(true);

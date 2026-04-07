@@ -7,6 +7,7 @@ import {
 } from 'lucide-react';
 import { EmptyState } from '../ui/EmptyState';
 import { ModuleBreadcrumbs } from '../ui/Breadcrumbs';
+import { apiFetch } from '../../services/api';
 
 interface Activity {
   id?: string;
@@ -89,8 +90,8 @@ const ACTION_COLORS: Record<string, string> = {
 };
 
 export default function ActivityFeed() {
-  const [_activities, _setActivities] = useState<ActivityItem[]>(MOCK_ACTIVITIES);
-  const [loading, setLoading] = useState(false);
+  const [activities, setActivities] = useState<ActivityItem[]>(MOCK_ACTIVITIES);
+  const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<ActivityFilter>('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [_showFilters, _setShowFilters] = useState(false);
@@ -115,8 +116,16 @@ export default function ActivityFeed() {
   ];
 
   useEffect(() => {
-    // Simulate loading activities
-    setLoading(false);
+    setLoading(true);
+    const params = new URLSearchParams({ limit: '50' });
+    if (filter !== 'all') params.set('entity_type', filter);
+    apiFetch<ActivityItem[]>(`/activity-feed?${params}`)
+      .then(data => {
+        if (Array.isArray(data) && data.length > 0) setActivities(data);
+        else setActivities(MOCK_ACTIVITIES);
+      })
+      .catch(() => setActivities(MOCK_ACTIVITIES))
+      .finally(() => setLoading(false));
   }, [filter]);
 
   function getActionType(action: string): string {
@@ -156,7 +165,7 @@ export default function ActivityFeed() {
     return groups;
   }
 
-  const filteredActivities = (_activities as unknown as Activity[])
+  const filteredActivities = (activities as unknown as Activity[])
     .filter(a => {
       if (filter === 'all') return true;
       return a?.category === filter;
@@ -170,19 +179,19 @@ export default function ActivityFeed() {
   const groupedActivities = groupByDate(filteredActivities as unknown as ActivityItem[]);
 
   const stats = {
-    total: (_activities as unknown as Activity[]).length,
-    today: (_activities as unknown as Activity[]).filter((a: Activity) => {
+    total: (activities as unknown as Activity[]).length,
+    today: (activities as unknown as Activity[]).filter((a: Activity) => {
       const d = new Date(a?.created_at ?? '');
       const today = new Date();
       return d.toDateString() === today.toDateString();
     }).length,
-    thisWeek: (_activities as unknown as Activity[]).filter((a: Activity) => {
+    thisWeek: (activities as unknown as Activity[]).filter((a: Activity) => {
       const d = new Date(a?.created_at ?? '');
       const weekAgo = new Date();
       weekAgo.setDate(weekAgo.getDate() - 7);
       return d >= weekAgo;
     }).length,
-    uniqueUsers: new Set((_activities as unknown as Activity[]).map((a: Activity) => a?.user_name)).size,
+    uniqueUsers: new Set((activities as unknown as Activity[]).map((a: Activity) => a?.user_name)).size,
   };
 
   // Live Feed Tab
@@ -311,10 +320,10 @@ export default function ActivityFeed() {
         <div className="space-y-3">
           {(() => {
             const categories = new Map<string, number>();
-            (_activities as unknown as Activity[]).forEach((a: Activity) => {
+            (activities as unknown as Activity[]).forEach((a: Activity) => {
               categories.set(a?.category ?? 'unknown', (categories.get(a?.category ?? 'unknown') || 0) + 1);
             });
-            const total = (_activities as unknown as Activity[]).length;
+            const total = (activities as unknown as Activity[]).length;
             return Array.from(categories.entries())
               .sort((a, b) => b[1] - a[1])
               .map(([cat, count]) => {
@@ -340,7 +349,7 @@ export default function ActivityFeed() {
         <div className="space-y-2">
           {(() => {
             const users = new Map<string, number>();
-            (_activities as unknown as Activity[]).forEach((a: Activity) => {
+            (activities as unknown as Activity[]).forEach((a: Activity) => {
               users.set(a?.user_name ?? 'unknown', (users.get(a?.user_name ?? 'unknown') || 0) + 1);
             });
             return Array.from(users.entries())
