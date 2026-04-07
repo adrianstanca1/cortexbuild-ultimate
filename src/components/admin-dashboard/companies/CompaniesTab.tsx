@@ -1,8 +1,9 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Search, ChevronRight, BarChart3, Database } from 'lucide-react';
 import { EmptyState } from '../../ui/EmptyState';
 import { CardSkeleton } from '../../ui/Skeleton';
 import { Modal, StatusBadge } from '../shared';
+import { apiFetch, type Row } from '../../../services/api';
 import { PLAN_COLORS, fmtDate, fmtBytes, type Company } from '../types';
 
 interface CompaniesTabProps {
@@ -10,7 +11,34 @@ interface CompaniesTabProps {
   loading?: boolean;
 }
 
-export default function CompaniesTab({ companies = [], loading = false }: CompaniesTabProps) {
+export default function CompaniesTab({ companies: propCompanies = [], loading: propLoading = false }: CompaniesTabProps) {
+  const [fetchedCompanies, setFetchedCompanies] = useState<Company[]>([]);
+  const [fetchLoading, setFetchLoading] = useState(true);
+
+  useEffect(() => {
+    if (propCompanies.length > 0) { setFetchLoading(false); return; }
+    apiFetch<Row[]>('/admin/stats/organizations')
+      .then(rows => {
+        if (!Array.isArray(rows)) return;
+        setFetchedCompanies(rows.map(r => ({
+          id: String(r.id ?? ''),
+          name: String(r.name ?? ''),
+          status: 'active' as const,
+          subscriptionPlan: 'professional' as const,
+          userCount: Number(r.user_count ?? 0),
+          userLimit: 100,
+          projectCount: Number(r.project_count ?? 0),
+          storageUsed: 0,
+          storageLimit: 10 * 1024 * 1024 * 1024,
+          createdAt: String(r.created_at ?? ''),
+        })));
+      })
+      .catch(() => {})
+      .finally(() => setFetchLoading(false));
+  }, []);
+
+  const companies = propCompanies.length > 0 ? propCompanies : fetchedCompanies;
+  const loading = propLoading || fetchLoading;
   const [searchQuery, setSearchQuery] = useState('');
   const [filterPlan, setFilterPlan] = useState('all');
   const [filterStatus, setFilterStatus] = useState('all');

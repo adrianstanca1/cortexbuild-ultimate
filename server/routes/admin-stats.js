@@ -62,4 +62,28 @@ router.get('/', async (req, res) => {
   }
 });
 
+// GET /api/admin/stats/organizations — list all orgs for super-admin
+router.get('/organizations', async (req, res) => {
+  const isSuperOrOwner = ['super_admin', 'company_owner'].includes(req.user?.role);
+  if (!isSuperOrOwner) return res.status(403).json({ error: 'Forbidden' });
+
+  try {
+    const { rows } = await pool.query(`
+      SELECT
+        o.id, o.name, o.created_at,
+        COUNT(DISTINCT u.id) AS user_count,
+        COUNT(DISTINCT p.id) AS project_count
+      FROM organizations o
+      LEFT JOIN users u ON u.organization_id = o.id
+      LEFT JOIN projects p ON p.organization_id = o.id
+      GROUP BY o.id, o.name, o.created_at
+      ORDER BY o.created_at DESC
+    `);
+    res.json(rows);
+  } catch (err) {
+    console.error('[Admin Orgs]', err.message);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
 module.exports = router;
