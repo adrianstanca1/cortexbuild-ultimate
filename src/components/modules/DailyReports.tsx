@@ -1207,7 +1207,7 @@ async function handleDailyReportPhotoUpload(files: File[], projectId: string) {
     const res = await fetch(`${window.location.origin}/api/files/upload`, {
       method: 'POST',
       body: formData,
-      headers: { Authorization: `Bearer ${localStorage.getItem('token') || ''}` },
+      headers: { Authorization: `Bearer ${getToken()}` },
     }) as Response;
     if (!res.ok) throw new Error('Upload failed');
     toast.success(`${files.length} photo(s) uploaded`);

@@ -26,7 +26,7 @@ async function handleInvoices(user) {
   }
   const overdue  = rows.filter(r => r.status === 'overdue');
   const paid     = rows.filter(r => r.status === 'paid');
-  const pending  = rows.filter(r => r.status === 'pending' || r.status === 'sent');
+  const pending  = rows.filter(r => r.status === 'draft' || r.status === 'sent');
   const totalAmt  = rows.reduce((s, r) => s + (parseFloat(r.amount) || 0), 0);
   const overdueAmt = overdue.reduce((s, r) => s + (parseFloat(r.amount) || 0), 0);
 

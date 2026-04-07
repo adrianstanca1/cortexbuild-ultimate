@@ -125,7 +125,7 @@ ${open.slice(0, 8).map(i => `<tr><td>${escapeHtml(i.title)}</td><td>${escapeHtml
     );
     const overdue = invoices.filter(r => r.status === 'overdue');
     const paid    = invoices.filter(r => r.status === 'paid');
-    const pending = invoices.filter(r => r.status === 'pending' || r.status === 'sent');
+    const pending = invoices.filter(r => r.status === 'draft' || r.status === 'sent');
     const totalAmt = invoices.reduce((s, r) => s + parseFloat(r.amount || 0), 0);
     const overdueAmt = overdue.reduce((s, r) => s + parseFloat(r.amount || 0), 0);
 
