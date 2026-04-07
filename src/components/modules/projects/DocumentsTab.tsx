@@ -8,6 +8,7 @@ import { getDocIcon } from './shared';
 import type { AnyRow } from './types';
 import { toast } from 'sonner';
 import { EmptyState } from '../../ui/EmptyState';
+import { getToken } from '../../../lib/supabase';
 
 interface DocumentsTabProps {
   projectId: string;
@@ -38,7 +39,6 @@ export function DocumentsTab({ projectId, projectName }: DocumentsTabProps) {
     if (!file) return;
     setUploading(true);
     try {
-      const { getToken } = await import('../../../lib/supabase');
       const token = getToken();
       const formData = new FormData();
       formData.append('file', file);
@@ -71,7 +71,6 @@ export function DocumentsTab({ projectId, projectName }: DocumentsTabProps) {
   const handleDelete = useCallback(async (id: string) => {
     if (!confirm('Delete this document?')) return;
     try {
-      const { getToken } = await import('../../../lib/supabase');
       const token = getToken();
       const res = await fetch(`/api/files/${id}`, {
         method: 'DELETE',
@@ -91,7 +90,6 @@ export function DocumentsTab({ projectId, projectName }: DocumentsTabProps) {
 
   const handleEdit = useCallback(async (id: string) => {
     try {
-      const { getToken } = await import('../../../lib/supabase');
       const token = getToken();
       const res = await fetch(`/api/files/${id}`, {
         method: 'PUT',

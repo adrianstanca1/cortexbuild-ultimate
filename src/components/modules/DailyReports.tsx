@@ -67,6 +67,8 @@ export function DailyReports() {
   const [search, setSearch] = useState('');
   const [projectFilter, setProjectFilter] = useState('all');
   const [weatherProjectFilter, setWeatherProjectFilter] = useState('');
+  const [dateFrom, setDateFrom] = useState('');
+  const [dateTo, setDateTo] = useState('');
   // Date range filter - TODO: implement
   
   const [showModal, setShowModal] = useState(false);
@@ -100,8 +102,10 @@ export function DailyReports() {
     const matchSearch = date.includes(search) || work.includes(search.toLowerCase());
     const matchProject = projectFilter === 'all' || projectId === projectFilter;
     const matchStatus = diarySubTab === 'drafts' ? r.status === 'Draft' : true;
+    const matchDateFrom = !dateFrom || date >= dateFrom;
+    const matchDateTo = !dateTo || date <= dateTo;
 
-    if (!matchSearch || !matchProject || !matchStatus) return false;
+    if (!matchSearch || !matchProject || !matchStatus || !matchDateFrom || !matchDateTo) return false;
 
     if (diarySubTab === 'today') return date === today;
     if (diarySubTab === 'week') {
@@ -333,6 +337,24 @@ export function DailyReports() {
                 </option>
               ))}
             </select>
+
+            <div className="flex items-center gap-2">
+              <input
+                type="date"
+                value={dateFrom}
+                onChange={e => setDateFrom(e.target.value)}
+                className="text-sm border border-gray-700 bg-gray-700 text-white rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-orange-500"
+                title="From date"
+              />
+              <span className="text-gray-500 text-xs">–</span>
+              <input
+                type="date"
+                value={dateTo}
+                onChange={e => setDateTo(e.target.value)}
+                className="text-sm border border-gray-700 bg-gray-700 text-white rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-orange-500"
+                title="To date"
+              />
+            </div>
 
             <span className="text-sm text-gray-400 ml-auto">{filtered.length} reports</span>
           </div>
