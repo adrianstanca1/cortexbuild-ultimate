@@ -233,7 +233,7 @@ router.post('/send', async (req, res) => {
       );
       if (process.env.SMTP_HOST) {
         try {
-          await sendEmailViaSMTP(to, subject, body);
+          await sendEmailViaSMTP(to, subject, body, cc, false);
           const { rows: updateRows } = await pool.query(
             `UPDATE email_logs SET status = 'delivered' WHERE id = $1 AND (created_by = $2 OR organization_id = $3) RETURNING *`,
             [rows[0].id, req.user?.id || 'system', orgId]
@@ -266,7 +266,7 @@ router.post('/send', async (req, res) => {
 
     if (process.env.SMTP_HOST) {
       try {
-        await sendEmailViaSMTP(to, emailSubject, emailBody);
+        await sendEmailViaSMTP(to, emailSubject, emailBody, null, true);
         await pool.query(
           `UPDATE email_logs SET status = 'delivered' WHERE id = $1`,
           [rows[0].id]
@@ -423,7 +423,7 @@ function generateEmailBody(type, data) {
   return templates[type] || `<p>${escapeHtml(JSON.stringify(data || {}))}</p>`;
 }
 
-async function sendEmailViaSMTP(to, subject, body) {
+async function sendEmailViaSMTP(to, subject, body, cc, wrapHtml = true) {
   const nodemailer = require('nodemailer');
 
   const transporter = nodemailer.createTransport({
@@ -436,39 +436,40 @@ async function sendEmailViaSMTP(to, subject, body) {
     },
   });
 
+  const htmlContent = wrapHtml ? `
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <style>
+        body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+        .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+        .header { background: linear-gradient(135deg, #f97316, #ea580c); color: white; padding: 20px; border-radius: 8px 8px 0 0; }
+        .content { background: #f9fafb; padding: 20px; border-radius: 0 0 8px 8px; }
+        .footer { margin-top: 20px; font-size: 12px; color: #666; }
+      </style>
+    </head>
+    <body>
+      <div class="container">
+        <div class="header">
+          <h1 style="margin: 0;">CortexBuild</h1>
+        </div>
+        <div class="content">
+          ${body}
+        </div>
+        <div class="footer">
+          <p>This email was sent by CortexBuild Ultimate.</p>
+        </div>
+      </div>
+    </body>
+    </html>
+  ` : body;
+
   await transporter.sendMail({
     from: process.env.EMAIL_FROM || 'noreply@cortexbuild.co.uk',
     to,
     cc: cc || undefined,
     subject,
-    html: `
-      <!DOCTYPE html>
-      <html>
-      <head>
-        <style>
-          body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
-          .container { max-width: 600px; margin: 0 auto; padding: 20px; }
-          .header { background: linear-gradient(135deg, #f97316, #ea580c); color: white; padding: 20px; border-radius: 8px 8px 0 0; }
-          .content { background: #f9fafb; padding: 20px; border-radius: 0 0 8px 8px; }
-          .footer { margin-top: 20px; font-size: 12px; color: #666; }
-        </style>
-      </head>
-      <body>
-        <div class="container">
-          <div class="header">
-            <h1 style="margin: 0;">🏗️ CortexBuild</h1>
-          </div>
-          <div class="content">
-            ${body}
-          </div>
-          <div class="footer">
-            <p>This email was sent by CortexBuild Ultimate.</p>
-            <p>© 2024 CortexBuild Ltd. All rights reserved.</p>
-          </div>
-        </div>
-      </body>
-      </html>
-    `,
+    html: htmlContent,
   });
 }
 
