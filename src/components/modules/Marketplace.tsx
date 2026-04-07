@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { toast } from 'sonner';
 import {
   CheckCircle2,
@@ -150,20 +150,6 @@ export function Marketplace() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const { selectedIds, toggle, clearSelection } = useBulkSelection();
-
-  useEffect(() => {
-    const fetchMetrics = async () => {
-      setLoading(true);
-      try {
-        await fetch('/api/metrics');
-      } catch {
-        setError('Marketplace metrics unavailable');
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchMetrics();
-  }, []);
 
   async function handleBulkDelete(ids: string[]) {
     if (!confirm(`Remove ${ids.length} app(s)?`)) return;

@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { X } from 'lucide-react';
+import { getToken } from '../../lib/supabase';
 
 interface TaskFormProps {
   onClose: () => void;
@@ -71,6 +72,7 @@ export function TaskForm({ onClose, onSuccess, projectId }: TaskFormProps) {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          Authorization: `Bearer ${getToken() || ''}`,
         },
         body: JSON.stringify({
           title: formData.title,

@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { X } from 'lucide-react';
+import { getToken } from '../../lib/supabase';
 
 interface DailyReportFormProps {
   onClose: () => void;
@@ -73,6 +74,7 @@ export function DailyReportForm({ onClose, onSuccess, projectId }: DailyReportFo
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          Authorization: `Bearer ${getToken() || ''}`,
         },
         body: JSON.stringify({
           date: formData.date,

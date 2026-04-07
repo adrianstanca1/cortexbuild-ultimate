@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { format, addDays, startOfWeek, isSameDay } from 'date-fns';
 import { Clock } from 'lucide-react';
+import { getToken } from '../../lib/supabase';
 
 interface CalendarEvent {
   id: string;
@@ -24,7 +25,9 @@ export function CalendarWidget() {
   useEffect(() => {
     async function fetchEvents() {
       try {
-        const response = await fetch('/api/calendar/events');
+        const response = await fetch('/api/calendar/events', {
+          headers: { Authorization: `Bearer ${getToken() || ''}` },
+        });
         if (!response.ok) throw new Error('Failed to fetch events');
         const data = await response.json();
         setEvents(Array.isArray(data) ? data : []);
