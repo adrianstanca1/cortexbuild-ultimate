@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Loader2, CheckCircle, XCircle } from 'lucide-react';
+import { setToken, setStoredUser } from '../../lib/supabase';
 
 export function OAuthCallback() {
   const [searchParams] = useSearchParams();
@@ -11,8 +12,35 @@ export function OAuthCallback() {
   useEffect(() => {
     const errorParam = searchParams.get('error');
     const stateParam = searchParams.get('state');
+    const oauthToken = searchParams.get('oauth_token');
 
-    // SECURITY: Validate OAuth state parameter to prevent CSRF attacks
+    // ── OAuth completed with token in URL ──────────────────────────────────────
+    if (oauthToken) {
+      try {
+        const payload = JSON.parse(atob(oauthToken.split('.')[1].replace(/-/g, '+').replace(/_/g, '/')));
+        const user = {
+          id: payload.id,
+          name: payload.name || payload.email,
+          email: payload.email,
+          role: payload.role || 'field_worker',
+          company: payload.company || '',
+          phone: null,
+          avatar: null,
+          organization_id: payload.organization_id,
+          company_id: payload.company_id,
+        };
+        setToken(oauthToken);
+        setStoredUser(user);
+        setStatus('success');
+        setTimeout(() => navigate('/dashboard', { replace: true }), 1500);
+      } catch {
+        setStatus('error');
+        setError('Failed to process authentication. Please try again.');
+      }
+      return;
+    }
+
+    // ── CSRF state validation ─────────────────────────────────────────────────
     if (stateParam) {
       const storedState = sessionStorage.getItem('oauth_state');
       if (!storedState || storedState !== stateParam) {
@@ -21,25 +49,36 @@ export function OAuthCallback() {
         console.error('[OAuth] State mismatch - possible CSRF attack');
         return;
       }
-      // Clear stored state after validation
       sessionStorage.removeItem('oauth_state');
     }
 
+    // ── OAuth provider returned an error ───────────────────────────────────────
     if (errorParam) {
       setStatus('error');
-      setError('OAuth authentication failed. Please try again.');
+      switch (errorParam) {
+        case 'invalid_state':
+          setError('OAuth state expired. Please try again.');
+          break;
+        case 'google_auth_failed':
+        case 'microsoft_auth_failed':
+          setError('Authentication failed. Please try again.');
+          break;
+        case 'google_not_configured':
+        case 'microsoft_not_configured':
+          setError('OAuth provider is not configured on this server.');
+          break;
+        case 'state_expired':
+          setError('OAuth session expired. Please try again.');
+          break;
+        default:
+          setError('OAuth authentication failed. Please try again.');
+      }
       return;
     }
 
-    // SECURITY: Token is now stored in httpOnly cookie by server
-    // No token in URL or localStorage - cookie is automatically sent by browser
-    // on subsequent API requests for authentication
-
-    setStatus('success');
-
-    setTimeout(() => {
-      navigate('/dashboard', { replace: true });
-    }, 1500);
+    // ── No token and no error ─────────────────────────────────────────────────
+    setStatus('error');
+    setError('Invalid authentication response.');
   }, [searchParams, navigate]);
 
   return (
@@ -63,13 +102,13 @@ export function OAuthCallback() {
       }}>
         {status === 'loading' && (
           <>
-            <Loader2 
-              size={48} 
-              style={{ 
+            <Loader2
+              size={48}
+              style={{
                 color: '#f59e0b',
                 animation: 'spin 1s linear infinite',
                 marginBottom: '20px',
-              }} 
+              }}
             />
             <h2 style={{
               fontFamily: "'Syne', sans-serif",
@@ -92,9 +131,9 @@ export function OAuthCallback() {
 
         {status === 'success' && (
           <>
-            <CheckCircle 
-              size={48} 
-              style={{ color: '#10b981', marginBottom: '20px' }} 
+            <CheckCircle
+              size={48}
+              style={{ color: '#10b981', marginBottom: '20px' }}
             />
             <h2 style={{
               fontFamily: "'Syne', sans-serif",
@@ -117,9 +156,9 @@ export function OAuthCallback() {
 
         {status === 'error' && (
           <>
-            <XCircle 
-              size={48} 
-              style={{ color: '#ef4444', marginBottom: '20px' }} 
+            <XCircle
+              size={48}
+              style={{ color: '#ef4444', marginBottom: '20px' }}
             />
             <h2 style={{
               fontFamily: "'Syne', sans-serif",

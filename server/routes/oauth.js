@@ -199,7 +199,7 @@ router.get('/google', async (req, res, next) => {
   }
   // Generate cryptographically random state for CSRF protection
   const state = crypto.randomBytes(16).toString('hex');
-  const frontendRedirect = `${process.env.FRONTEND_URL || 'http://localhost:5173'}/dashboard`;
+  const frontendRedirect = `${process.env.FRONTEND_URL || 'http://localhost:5173'}/auth/callback`;
 
   // Store state with expiry (10 minutes) and intended redirect
   await setOAuthState(state, {
@@ -244,12 +244,14 @@ router.get('/google/callback', oauthLimiter, async (req, res, next) => {
         return res.redirect(`${process.env.FRONTEND_URL || 'http://localhost:5173'}/login?error=google_auth_failed`);
       }
 
-      // Generate JWT token
+      // Generate JWT token — include name/company for consistency with regular login
       const token = jwt.sign(
         {
           id: user.id,
           jti: crypto.randomUUID(),
           email: user.email,
+          name: user.name || null,
+          company: user.company || null,
           role: user.role || 'field_worker',
           organization_id: user.organization_id || null,
           company_id: user.company_id || null,
@@ -258,15 +260,9 @@ router.get('/google/callback', oauthLimiter, async (req, res, next) => {
         { expiresIn: '7d' }
       );
 
-      // Set httpOnly cookie (not accessible by JavaScript, protects against XSS)
+      // Redirect to callback page with token in URL — frontend stores it in localStorage
       const redirectUri = storedState.redirectUri;
-      res.cookie('token', token, {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
-        sameSite: 'lax',
-        maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days
-      });
-      res.redirect(redirectUri);
+      res.redirect(`${redirectUri}?oauth_token=${token}`);
     } catch (e) {
       console.error('[OAuth] Google callback error:', e);
       res.redirect(`${process.env.FRONTEND_URL || 'http://localhost:5173'}/login?error=google_auth_failed`);
@@ -282,7 +278,7 @@ router.get('/microsoft', async (req, res, next) => {
   }
   // Generate cryptographically random state for CSRF protection
   const state = crypto.randomBytes(16).toString('hex');
-  const frontendRedirect = `${process.env.FRONTEND_URL || 'http://localhost:5173'}/dashboard`;
+  const frontendRedirect = `${process.env.FRONTEND_URL || 'http://localhost:5173'}/auth/callback`;
 
   // Store state with expiry (10 minutes) and intended redirect
   await setOAuthState(state, {
@@ -331,12 +327,14 @@ router.get('/microsoft/callback', oauthLimiter, async (req, res, next) => {
         return res.redirect(`${process.env.FRONTEND_URL || 'http://localhost:5173'}/login?error=microsoft_auth_failed`);
       }
 
-      // Generate JWT token
+      // Generate JWT token — include name/company for consistency with regular login
       const token = jwt.sign(
         {
           id: user.id,
           jti: crypto.randomUUID(),
           email: user.email,
+          name: user.name || null,
+          company: user.company || null,
           role: user.role || 'field_worker',
           organization_id: user.organization_id || null,
           company_id: user.company_id || null,
@@ -345,15 +343,9 @@ router.get('/microsoft/callback', oauthLimiter, async (req, res, next) => {
         { expiresIn: '7d' }
       );
 
-      // Set httpOnly cookie (not accessible by JavaScript, protects against XSS)
+      // Redirect to callback page with token in URL — frontend stores it in localStorage
       const redirectUri = storedState.redirectUri;
-      res.cookie('token', token, {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
-        sameSite: 'lax',
-        maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days
-      });
-      res.redirect(redirectUri);
+      res.redirect(`${redirectUri}?oauth_token=${token}`);
     } catch (e) {
       console.error('[OAuth] Microsoft callback error:', e);
       res.redirect(`${process.env.FRONTEND_URL || 'http://localhost:5173'}/login?error=microsoft_auth_failed`);
