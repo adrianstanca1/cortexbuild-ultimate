@@ -3,6 +3,7 @@ const authMiddleware = require('../middleware/auth');
 const pool    = require('../db');
 const { logAudit } = require('./audit-helper');
 const { broadcastDashboardUpdate } = require('../lib/ws-broadcast');
+const { validateRequiredFields } = require('./validation');
 
 // Per-table column whitelists — prevents column-name injection
 const ALLOWED_COLUMNS = {
@@ -166,6 +167,15 @@ function makeRouter(tableName, orderCol = 'created_at') {
     if ('aiScore' in body) { body.ai_score = body.aiScore; delete body.aiScore; }
     const keys = filterKeys(body);
     if (!keys.length) return res.status(400).json({ message: 'No valid fields provided' });
+
+    // Validate required fields
+    const { valid, missing } = validateRequiredFields(tableName, body);
+    if (!valid) {
+      return res.status(400).json({
+        message: `Missing required fields: ${missing.join(', ')}`,
+        code: 'MISSING_REQUIRED_FIELDS'
+      });
+    }
 
     // Guard: prevent inserts without tenant scoping (OAuth users without profile)
     if (!req.user?.organization_id) {

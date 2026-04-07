@@ -7,6 +7,7 @@ const pool    = require('../db');
 const authMiddleware = require('../middleware/auth');
 const { logAudit } = require('./audit-helper');
 const { insertOrgAndCompany } = require('../lib/bootstrap-tenant');
+const { blacklistToken, revokeAllUserTokens } = require('../lib/tokenBlacklist');
 
 const router = express.Router();
 // SECURITY: JWT_SECRET MUST be set in environment — no hardcoded fallback
@@ -330,6 +331,16 @@ router.put('/settings', authMiddleware, async (req, res) => {
   } catch (err) {
     res.status(500).json({ message: 'Server error' });
   }
+});
+
+// POST /api/auth/logout — revoke JWT and clear cookie
+router.post('/logout', authMiddleware, async (req, res) => {
+  const { jti, exp } = req.user;
+  const ttl = exp ? Math.max(exp - Math.floor(Date.now() / 1000), 1) : 3600;
+  await blacklistToken(jti, ttl);
+  await revokeAllUserTokens(req.user.id);
+  res.clearCookie('token');
+  res.json({ message: 'Logged out successfully' });
 });
 
 module.exports = router;

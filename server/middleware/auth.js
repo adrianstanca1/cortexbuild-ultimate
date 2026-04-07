@@ -1,6 +1,7 @@
 const jwt = require('jsonwebtoken');
+const { isTokenBlacklisted } = require('../lib/tokenBlacklist');
 
-module.exports = function authMiddleware(req, res, next) {
+module.exports = async function authMiddleware(req, res, next) {
   // Try Authorization header first
   let token = null;
   const header = req.headers['authorization'];
@@ -21,6 +22,9 @@ module.exports = function authMiddleware(req, res, next) {
     const payload = jwt.verify(token, process.env.JWT_SECRET);
     if (!payload.jti) {
       return res.status(401).json({ message: 'Invalid token: missing token ID' });
+    }
+    if (await isTokenBlacklisted(payload.jti)) {
+      return res.status(401).json({ message: 'Token has been revoked' });
     }
     req.user = payload;
     next();
