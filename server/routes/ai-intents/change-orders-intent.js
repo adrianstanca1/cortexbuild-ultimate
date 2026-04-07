@@ -14,7 +14,7 @@ function fmt(n) {
  */
 async function handleChangeOrders(user) {
   const { rows } = await pool.query(
-    `SELECT number, project, title, value, status, date FROM change_orders WHERE organization_id = $1 ORDER BY created_at DESC`
+    `SELECT number, project, title, value, status, date FROM change_orders WHERE organization_id = $1 ORDER BY created_at DESC`,
     [user?.organization_id]
   );
   if (!rows.length) {

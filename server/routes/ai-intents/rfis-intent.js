@@ -6,7 +6,7 @@ const pool = require('../../db');
  */
 async function handleRfis(user) {
   const { rows } = await pool.query(
-    `SELECT number, project, subject, priority, status, submitted_date, due_date FROM rfis WHERE organization_id = $1 ORDER BY created_at DESC`
+    `SELECT number, project, subject, priority, status, submitted_date, due_date FROM rfis WHERE organization_id = $1 ORDER BY created_at DESC`,
     [user?.organization_id]
   );
   if (!rows.length) {

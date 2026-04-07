@@ -158,13 +158,21 @@ export function RFIs() {
     const title = String(r.title??'').toLowerCase();
     const num = String(r.rfi_number??'').toLowerCase();
     const matchSearch = title.includes(search.toLowerCase()) || num.includes(search.toLowerCase());
-    const matchStatus = statusFilter === 'All' || r.status === statusFilter;
+    let matchStatus = statusFilter === 'All' || r.status === statusFilter;
+    if (statusFilter === 'Overdue') {
+      const due = r.due_date || r.dueDate;
+      matchStatus = !!due && new Date(String(due)) < new Date() && !['Answered','Closed'].includes(String(r.status??''));
+    }
     const matchPriority = priorityFilter === 'All' || r.priority === priorityFilter;
     return matchSearch && matchStatus && matchPriority;
   });
 
   const openCount = rfis.filter(r=>r.status==='Open').length;
-  const overdueCount = rfis.filter(r=>r.status==='Overdue').length;
+  const overdueCount = rfis.filter(r => {
+    const due = r.due_date || r.dueDate;
+    if (!due) return false;
+    return new Date(String(due)) < new Date() && !['Answered','Closed'].includes(String(r.status??''));
+  }).length;
   const answeredCount = rfis.filter(r=>['Answered','Closed'].includes(String(r.status??''))).length;
 
   function nextRFINumber() {

@@ -77,7 +77,7 @@ async function getEvents(req, res) {
        WHERE due_date IS NOT NULL ${orgFilter}
        UNION ALL
        SELECT id, title, submitted_date as date, status, project FROM change_orders
-       WHERE submitted_date IS NOT NULL ${coOrgFilter}`,
+       WHERE submitted_date IS NOT NULL ${orgFilter}`,
       [...rfisParams, ...coParams]
     );
     deadlines.forEach(d => {

@@ -6,7 +6,7 @@ const pool = require('../../db');
  */
 async function handleEquipment(user) {
   const { rows } = await pool.query(
-    `SELECT name, type, status, location, project, last_service FROM equipment WHERE organization_id = $1 ORDER BY created_at DESC`
+    `SELECT name, type, status, location, project, last_service FROM equipment WHERE organization_id = $1 ORDER BY created_at DESC`,
     [user?.organization_id]
   );
   if (!rows.length) {

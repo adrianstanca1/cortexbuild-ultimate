@@ -14,7 +14,7 @@ function fmtHrs(n) {
  */
 async function handleTimesheets(user) {
   const { rows } = await pool.query(
-    `SELECT member_name, project, hours, date, status, overtime_hours FROM timesheets WHERE organization_id = $1 ORDER BY created_at DESC`
+    `SELECT member_name, project, hours, date, status, overtime_hours FROM timesheets WHERE organization_id = $1 ORDER BY created_at DESC`,
     [user?.organization_id]
   );
   if (!rows.length) {

@@ -130,7 +130,7 @@ export function Analytics() {
   // Overview KPIs
   const ytdRevenue = totalRevenue;
   const grossProfitPct = Number(grossMargin);
-  const outstandingInvoices = invoices.filter(i => i.status === 'pending' || i.status === 'unpaid').reduce((s,i) => s + Number(i.amount??0), 0);
+  const outstandingInvoices = invoices.filter(i => i.status === 'sent' || i.status === 'draft' || i.status === 'overdue').reduce((s,i) => s + Number(i.amount??0), 0);
   const pipelineValue = projects.filter(p => p.status === 'quoted' || p.status === 'tendering').reduce((s,p) => s + Number(p.contractValue??p.contract_value??0), 0);
   const lastIncidentDate = safety.length > 0 ? new Date(String(safety[0].date??Date.now())) : null;
   const daysSinceLastIncident = lastIncidentDate ? Math.floor((Date.now() - lastIncidentDate.getTime()) / (1000 * 60 * 60 * 24)) : 0;
@@ -277,7 +277,7 @@ export function Analytics() {
             <div className="rounded-xl border border-gray-700 bg-gray-800 p-5 hover:border-orange-500 transition-colors">
               <p className="text-xs text-gray-400 font-semibold">OUTSTANDING INVOICES</p>
               <p className="mt-3 text-3xl font-bold text-orange-400">£{(outstandingInvoices/1000).toFixed(0)}K</p>
-              <p className="mt-1 text-xs text-gray-500">{invoices.filter(i => i.status === 'pending' || i.status === 'unpaid').length} invoices</p>
+              <p className="mt-1 text-xs text-gray-500">{invoices.filter(i => i.status === 'sent' || i.status === 'draft' || i.status === 'overdue').length} invoices</p>
             </div>
             <div className="rounded-xl border border-gray-700 bg-gray-800 p-5 hover:border-emerald-500 transition-colors">
               <p className="text-xs text-gray-400 font-semibold">DAYS SINCE LAST INCIDENT</p>

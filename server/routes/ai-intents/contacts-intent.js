@@ -6,7 +6,7 @@ const pool = require('../../db');
  */
 async function handleContacts(user) {
   const { rows } = await pool.query(
-    `SELECT name, company, email, phone, role, type FROM contacts WHERE organization_id = $1 ORDER BY created_at DESC`
+    `SELECT name, company, email, phone, role, type FROM contacts WHERE organization_id = $1 ORDER BY created_at DESC`,
     [user?.organization_id]
   );
   if (!rows.length) {

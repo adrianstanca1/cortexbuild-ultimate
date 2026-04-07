@@ -6,7 +6,7 @@ const pool = require('../../db');
  */
 async function handleTeam(user) {
   const { rows } = await pool.query(
-    `SELECT name, role, trade, status, cis_status, hours_this_week FROM team_members WHERE organization_id = $1 ORDER BY created_at DESC`
+    `SELECT name, role, trade, status, cis_status, hours_this_week FROM team_members WHERE organization_id = $1 ORDER BY created_at DESC`,
     [user?.organization_id]
   );
   if (!rows.length) {

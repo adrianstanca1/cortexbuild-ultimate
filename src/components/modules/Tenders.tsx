@@ -273,7 +273,7 @@ export function Tenders() {
     toast.loading('AI re-scoring all tenders...', { id: 'ai-rescore' });
     try {
       const ids = tenders.map(t => String(t.id));
-      const res = await fetch(`${API_BASE}/api/tenders/ai/batch/ai-score`, {
+      const res = await fetch(`${API_BASE}/tenders/ai/batch/ai-score`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -305,7 +305,7 @@ export function Tenders() {
     const id = String(tender.id);
     toast.loading('AI scoring...', { id: `ai-score-${id}` });
     try {
-      const res = await fetch(`${API_BASE}/api/tenders/ai/${id}/ai-score`, {
+      const res = await fetch(`${API_BASE}/tenders/ai/${id}/ai-score`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
