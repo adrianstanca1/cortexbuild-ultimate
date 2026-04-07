@@ -95,6 +95,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   const signOut = async () => {
+    const currentToken = getToken();
+    // Best-effort: tell the server to blacklist this JWT
+    if (currentToken) {
+      try {
+        await fetch(`${API_BASE}/auth/logout`, {
+          method: 'POST',
+          headers: { Authorization: `Bearer ${currentToken}` },
+        });
+      } catch {
+        // Network error — still clear local state
+      }
+    }
     clearToken();
     setTokenState(null);
     setUser(null);

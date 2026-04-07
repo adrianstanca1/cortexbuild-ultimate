@@ -12,6 +12,8 @@ import {
   LineChart, Line
 } from 'recharts';
 
+import { getToken } from '../../lib/supabase';
+
 const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001';
 
 type AnyRow = Record<string, unknown>;
@@ -275,7 +277,7 @@ export function Tenders() {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          Authorization: `Bearer ${localStorage.getItem('cortexbuild_token') || ''}`,
+          Authorization: `Bearer ${getToken() || ''}`,
         },
         body: JSON.stringify({ tenderIds: ids }),
       });
@@ -307,7 +309,7 @@ export function Tenders() {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          Authorization: `Bearer ${localStorage.getItem('cortexbuild_token') || ''}`,
+          Authorization: `Bearer ${getToken() || ''}`,
         },
         body: JSON.stringify({}),
       });
