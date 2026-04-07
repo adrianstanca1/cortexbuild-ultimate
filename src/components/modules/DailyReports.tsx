@@ -10,6 +10,7 @@ import { EmptyState } from '../ui/EmptyState';
 import { LineChart, Line, CartesianGrid, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
 import { useProjects, useDailyReports } from '../../hooks/useData';
 import { toast } from 'sonner';
+import { getToken } from '@/lib/supabase';
 
 type AnyRow = Record<string, unknown>;
 
@@ -744,7 +745,7 @@ export function DailyReports() {
                     if (!currentWeek.length) { toast.error('No reports this week'); return; }
                     toast.success('Generating AI summary…');
                     try {
-                      const token = localStorage.getItem('token') || '';
+                      const token = getToken();
                       const res = await fetch('/api/reports/summary', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
@@ -1219,7 +1220,7 @@ async function handleDailyReportPhotoUpload(files: File[], projectId: string) {
 async function exportWeeklyReportsPDF(reports: AnyRow[], projectName: string) {
   if (!reports.length) { toast.error('No reports to export'); return; }
   try {
-    const token = localStorage.getItem('token') || '';
+    const token = getToken();
     const res = await fetch('/api/reports/weekly-pdf', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },

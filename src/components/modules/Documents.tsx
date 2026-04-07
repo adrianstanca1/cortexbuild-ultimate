@@ -8,6 +8,7 @@ import { toast } from 'sonner';
 import clsx from 'clsx';
 import { EmptyState } from '../ui/EmptyState';
 import { ModuleBreadcrumbs } from '../ui/Breadcrumbs';
+import { getToken } from '@/lib/supabase';
 
 interface DocumentVersion {
   id: string;
@@ -89,7 +90,7 @@ export function Documents() {
 
   const fetchDocuments = useCallback(async () => {
     try {
-      const token = localStorage.getItem('token');
+      const token = getToken();
       const params = new URLSearchParams();
       if (categoryFilter !== 'ALL') params.append('category', categoryFilter);
       if (searchQuery) params.append('search', searchQuery);
@@ -110,7 +111,7 @@ export function Documents() {
   useEffect(() => { fetchDocuments(); }, [fetchDocuments]);
 
   const handleUpload = async (file: File, category: string, access: string) => {
-    const token = localStorage.getItem('token');
+    const token = getToken();
     const formData = new FormData();
     formData.append('file', file);
     formData.append('category', category);
@@ -130,7 +131,7 @@ export function Documents() {
   };
 
   const handleUploadVersion = async (docId: string, file: File, changes: string) => {
-    const token = localStorage.getItem('token');
+    const token = getToken();
     const formData = new FormData();
     formData.append('file', file);
     formData.append('changes', changes);
@@ -148,7 +149,7 @@ export function Documents() {
   };
 
   const handleDownload = async (doc: Document) => {
-    const token = localStorage.getItem('token');
+    const token = getToken();
     try {
       const res = await fetch(`/api/files/${doc.id}/download`, {
         headers: { Authorization: `Bearer ${token}` }
@@ -165,13 +166,13 @@ export function Documents() {
   };
 
   const handlePreview = (doc: Document) => {
-    const token = localStorage.getItem('token');
+    const token = getToken();
     const previewUrl = `/api/files/${doc.id}/preview?token=${token}`;
     setPreviewDoc({ ...doc, file_path: previewUrl });
   };
 
   const handleUpdate = async (docId: string, updates: Partial<Document>) => {
-    const token = localStorage.getItem('token');
+    const token = getToken();
     try {
       const res = await fetch(`/api/files/${docId}`, {
         method: 'PUT',
@@ -186,7 +187,7 @@ export function Documents() {
   };
 
   const handleDelete = async (docId: string) => {
-    const token = localStorage.getItem('token');
+    const token = getToken();
     try {
       const res = await fetch(`/api/files/${docId}`, {
         method: 'DELETE',

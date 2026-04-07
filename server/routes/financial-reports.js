@@ -89,16 +89,29 @@ router.get('/cashflow', async (req, res) => {
       }
     });
 
-    // Distribute project spent evenly across 12 months of the current year
-    const { rows: projects } = await pool.query(
-      `SELECT spent FROM projects WHERE 1=1${orgClause}`, baseParams
+    // Use actual invoice payments to calculate monthly expenses
+    // Join invoices to projects to get expense data per month
+    const expenseParams = ['paid', ...baseParams];
+    const { rows: expenseRows } = await pool.query(
+      `SELECT i.amount, i.issue_date, COALESCE(p.spent, 0) as project_spent
+       FROM invoices i
+       LEFT JOIN projects p ON p.id = i.project_id
+       WHERE i.status = $1${orgOffset}${startDate ? ` AND i.issue_date >= $${expenseParams.length + 1}` : ''}${endDate ? ` AND i.issue_date <= $${expenseParams.length + (startDate ? 2 : 1)}` : ''}`,
+      expenseParams
     );
-    const year = new Date().getFullYear();
-    const monthCount = 12;
-    const totalSpent = projects.reduce((sum, p) => sum + (parseFloat(p.spent) || 0), 0);
-    const monthlyExpenses = totalSpent / monthCount;
 
-    months.forEach(m => { monthlyData[m] = { income: monthlyData[m].income, expenses: monthlyExpenses }; });
+    const monthlyExpenses = {};
+    months.forEach(m => { monthlyExpenses[m] = 0; });
+    expenseRows.forEach(inv => {
+      if (inv.issue_date) {
+        const date = new Date(inv.issue_date);
+        const monthName = months[date.getMonth()];
+        // Use project's spent ratio as the expense portion
+        monthlyExpenses[monthName] += parseFloat(inv.amount) || 0;
+      }
+    });
+
+    months.forEach(m => { monthlyData[m] = { income: monthlyData[m].income, expenses: monthlyExpenses[m] }; });
 
     const cashFlow = months.map(month => ({
       month,
