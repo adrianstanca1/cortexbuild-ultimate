@@ -1,8 +1,10 @@
+import { useState, useEffect } from 'react';
 import { Users, Building2, BarChart3, Activity, Cloud, FileText, ShieldCheck, AlertTriangle, ShieldAlert } from 'lucide-react';
 import { ResponsiveContainer, AreaChart, Area, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend } from 'recharts';
-import { EmptyState } from '../../ui/EmptyState';
 import { KPICardSkeleton, ChartSkeleton } from '../../ui/Skeleton';
 import { KPICard, ActivityFeed } from '../shared';
+import { EmptyState } from '../../ui/EmptyState';
+import { apiFetch } from '../../../services/api';
 import {
   fmtNumber, fmtBytes, type SystemStats, type ActivityFeedItem, type ChartDataPoint,
 } from '../types';
@@ -13,7 +15,20 @@ interface OverviewTabProps {
   loading?: boolean;
 }
 
-export default function OverviewTab({ stats = null, activities = [], loading = false }: OverviewTabProps) {
+export default function OverviewTab({ stats: propStats = null, activities = [], loading: propLoading = false }: OverviewTabProps) {
+  const [fetchedStats, setFetchedStats] = useState<SystemStats | null>(null);
+  const [fetchLoading, setFetchLoading] = useState(true);
+
+  useEffect(() => {
+    if (propStats) { setFetchLoading(false); return; }
+    apiFetch<SystemStats>('/admin/stats')
+      .then(data => setFetchedStats(data))
+      .catch(() => {})
+      .finally(() => setFetchLoading(false));
+  }, []);
+
+  const stats = propStats ?? fetchedStats;
+  const loading = propLoading || fetchLoading;
   if (loading) {
     return (
       <div className="space-y-6">

@@ -213,6 +213,7 @@ app.use('/api/cost-management', require('./routes/cost-management'));
 app.use('/api/submittals',    require('./routes/submittals'));
 app.use('/api/chat',          require('./routes/chat'));
 app.use('/api/activity-feed', require('./routes/activity-feed'));
+app.use('/api/admin/stats',   require('./routes/admin-stats'));
 
 // ─── 404 ──────────────────────────────────────────────────────────────────────
 app.use((_req, res) => res.status(404).json({ message: 'Route not found' }));

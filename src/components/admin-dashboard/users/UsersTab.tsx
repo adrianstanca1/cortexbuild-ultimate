@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
   Search, Plus, Edit2, Trash2, Lock, UserCheck, UserX,
   CheckSquare, Square, Loader2,
@@ -21,7 +21,9 @@ interface UsersTabProps {
   onRefresh?: () => void;
 }
 
-export default function UsersTab({ users = [], loading = false, onRefresh }: UsersTabProps) {
+export default function UsersTab({ users: propUsers = [], loading: propLoading = false, onRefresh }: UsersTabProps) {
+  const [fetchedUsers, setFetchedUsers] = useState<User[]>([]);
+  const [fetchLoading, setFetchLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [filterRole, setFilterRole] = useState<string>('all');
   const [filterStatus, setFilterStatus] = useState<string>('all');
@@ -31,6 +33,32 @@ export default function UsersTab({ users = [], loading = false, onRefresh }: Use
   const [creating, setCreating] = useState(false);
 
   const { selectedIds, isSelected, toggle, toggleAll, clearSelection } = useBulkSelection();
+
+  const loadUsers = () => {
+    setFetchLoading(true);
+    usersApi.getAll()
+      .then(data => setFetchedUsers((data as AnyRow[]).map(u => ({
+        id: String(u.id ?? ''),
+        name: String(u.name ?? ''),
+        email: String(u.email ?? ''),
+        role: (u.role as UserRole) ?? 'field_worker',
+        company: u.company ? String(u.company) : undefined,
+        status: 'active' as const,
+        avatar: u.avatar ? String(u.avatar) : undefined,
+        phone: u.phone ? String(u.phone) : undefined,
+        createdAt: String(u.created_at ?? ''),
+      }))))
+      .catch(() => {})
+      .finally(() => setFetchLoading(false));
+  };
+
+  useEffect(() => {
+    if (propUsers.length === 0) loadUsers();
+    else setFetchLoading(false);
+  }, []);
+
+  const users = propUsers.length > 0 ? propUsers : fetchedUsers;
+  const loading = propLoading || fetchLoading;
 
   const filteredUsers = users.filter(user => {
     if (searchQuery && !user.name.toLowerCase().includes(searchQuery.toLowerCase()) &&
@@ -47,7 +75,7 @@ export default function UsersTab({ users = [], loading = false, onRefresh }: Use
       try {
         await Promise.all(ids.map(id => usersApi.delete(id)));
         toast.success(`Deleted ${ids.length} users`);
-        onRefresh?.();
+        onRefresh?.(); loadUsers();
         clearSelection();
       } catch {
         toast.error('Failed to delete users');
@@ -87,7 +115,7 @@ export default function UsersTab({ users = [], loading = false, onRefresh }: Use
       toast.success('User created successfully');
       setShowCreateModal(false);
       setNewUser({ name: '', email: '', role: 'field_worker', status: 'active' });
-      onRefresh?.();
+      onRefresh?.(); loadUsers();
     } catch {
       toast.error('Failed to create user');
     } finally {

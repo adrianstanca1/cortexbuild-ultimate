@@ -1,6 +1,7 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Search, Download } from 'lucide-react';
 import { EmptyState } from '../../ui/EmptyState';
+import { apiFetch } from '../../../services/api';
 import { fmtDateTime, type AuditEntry } from '../types';
 
 interface AuditTabProps {
@@ -8,10 +9,23 @@ interface AuditTabProps {
   loading?: boolean;
 }
 
-export default function AuditTab({ entries = [], loading = false }: AuditTabProps) {
+export default function AuditTab({ entries: propEntries = [], loading: propLoading = false }: AuditTabProps) {
+  const [fetchedEntries, setFetchedEntries] = useState<AuditEntry[]>([]);
+  const [fetchLoading, setFetchLoading] = useState(true);
   const [filterAction, setFilterAction] = useState('all');
   const [filterTable, setFilterTable] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
+
+  useEffect(() => {
+    if (propEntries.length > 0) { setFetchLoading(false); return; }
+    apiFetch<AuditEntry[]>('/audit?limit=100')
+      .then(data => setFetchedEntries(Array.isArray(data) ? data : []))
+      .catch(() => {})
+      .finally(() => setFetchLoading(false));
+  }, []);
+
+  const entries = propEntries.length > 0 ? propEntries : fetchedEntries;
+  const loading = propLoading || fetchLoading;
 
   const filteredEntries = entries.filter(entry => {
     if (filterAction !== 'all' && entry.action !== filterAction) return false;
