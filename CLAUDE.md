@@ -48,7 +48,7 @@ npm run check            # tsc --noEmit + lint + test
 - **Module lazy-loading** — `src/App.tsx` registers 50+ modules via `React.lazy()`. Routes are defined in the `PAGES` map.
 - **Auth** — `localStorage` stores JWT under `cortexbuild_token` key (NOT `'token'`). Use `getToken()` from `@/lib/supabase`. On login, user object stored under `cortexbuild_user`.
 - **API layer** — `src/services/api.ts` provides `apiFetch<T>()` which auto-converts snake_case DB columns to camelCase. **Critical**: responses from custom route handlers are returned as-is; only generic CRUD responses go through camelCase normalization.
-- **State** — Zustand stores in `src/lib/store/`. TanStack Query (`@tanstack/react-query`) used by `useData.ts` hooks for caching and background refresh.
+- **State** — React Context (`src/context/AuthContext.tsx`, `src/context/ThemeContext.tsx`). TanStack Query (`@tanstack/react-query`) used by `useData.ts` hooks for caching and background refresh.
 - **CRUD hooks** — `src/hooks/useData.ts` exposes `makeHooks(resource)` factory generating `useList`, `useOne`, `useCreate`, `useUpdate`, `useDelete` for each entity.
 
 ### Backend
@@ -80,7 +80,7 @@ npm run check            # tsc --noEmit + lint + test
 
 - **Local Ollama only** — `qwen3.5:latest` and `deepseek-r1:7b` via Docker container `cortexbuild-ollama` (port 11434).
 - **Intent classifiers** in `server/routes/ai-intents/` handle natural language: invoices, daily reports, projects, team, safety, budget.
-- **8 AI agents** with streaming UI — see `.agents/README.md`.
+- **8 AI agents** with streaming UI — see `server/routes/ai-intents/`.
 
 ### Database Schema
 
@@ -129,6 +129,7 @@ bash /root/deploy-frontend.sh
 ## Common Issues
 
 - **`ECONNREFUSED` on auth**: Inside Docker, `DB_HOST` must be `cortexbuild-db`, not `localhost`.
+- **`organization_id = NULL` crashes routes**: `company_owner` users have `organization_id = NULL`. Routes that filter `WHERE organization_id = $1` will crash (parameter position error or NULL comparison). Use `company_id` for company_owner, or handle NULL explicitly with `COALESCE(organization_id, company_id)`.
 - **Route returns object but frontend expects array**: `GET /notifications` returns `{ notifications: [...], total }` (object). `apiFetch` does NOT unwrap this — callers must destructure. Always verify the actual response shape of custom route handlers.
 - **Microsoft OAuth crashes**: Guard both `/microsoft` and `/microsoft/callback` routes — `MICROSOFT_CLIENT_ID` env var may be empty in dev.
 - **`vi.mock()` in Vitest**: Must be at module top level, not inside `beforeEach()`.

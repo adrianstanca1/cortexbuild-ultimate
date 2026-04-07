@@ -13,6 +13,7 @@ import { useIsMobile } from '../../hooks/useIsMobile';
 import { NotificationCenter } from '../ui/NotificationCenter';
 import { NotificationPreferences } from '../ui/NotificationPreferences';
 import { ThemeSwitcher } from '../daisyui/ThemeSwitcher';
+import { useAuth } from '../../context/AuthContext';
 
 const MODULE_LABELS: Record<Module, string> = {
   'dashboard':            'Dashboard',
@@ -480,79 +481,160 @@ function NotificationButton({ isOpen, onToggle }: { isOpen: boolean; onToggle: (
 }
 
 // ── Profile Button ──────────────────────────────────────────────────────────────
-function ProfileButton({ isOpen, isMobile, onToggle }: { isOpen: boolean; isMobile?: boolean; onToggle: () => void }) {
+function ProfileButton({ isOpen, isMobile, onToggle }: {
+  isOpen: boolean; isMobile?: boolean; onToggle: () => void;
+}) {
+  const { user, signOut } = useAuth();
+
+  const initials = user?.name
+    ? user.name.split(' ').map((n: string) => n[0]).join('').slice(0, 2).toUpperCase()
+    : '?';
+
   return (
-    <button
-      onClick={onToggle}
-      title="Profile"
-      style={{
-        display: 'flex',
-        alignItems: 'center',
-        gap: isMobile ? '0' : '8px',
-        padding: isMobile ? '0 6px' : '0 10px',
-        height: '34px',
-        borderRadius: '9px',
-        background: isOpen ? 'rgba(255,255,255,0.08)' : 'rgba(255,255,255,0.04)',
-        border: `1px solid ${isOpen ? 'rgba(245,158,11,0.35)' : 'rgba(255,255,255,0.08)'}`,
-        cursor: 'pointer',
-        color: isOpen ? '#f59e0b' : '#64748b',
-        transition: 'all 0.15s',
-      }}
-      onMouseEnter={e => {
-        if (!isOpen) {
-          e.currentTarget.style.background = 'rgba(255,255,255,0.07)';
-          e.currentTarget.style.color = '#e2e8f0';
-        }
-      }}
-      onMouseLeave={e => {
-        if (!isOpen) {
-          e.currentTarget.style.background = 'rgba(255,255,255,0.04)';
-          e.currentTarget.style.color = '#64748b';
-        }
-      }}
-    >
-      <div
+    <div style={{ position: 'relative' }}>
+      <button
+        onClick={onToggle}
+        title="Profile"
         style={{
-          width: '26px',
-          height: '26px',
-          borderRadius: '7px',
-          background: 'linear-gradient(135deg, #f59e0b, #d97706)',
           display: 'flex',
           alignItems: 'center',
-          justifyContent: 'center',
-          fontFamily: "'Syne', sans-serif",
-          fontSize: '9px',
-          fontWeight: 800,
-          color: '#1e1b16',
-          flexShrink: 0,
-          boxShadow: '0 0 8px rgba(245,158,11,0.3)',
+          gap: isMobile ? '0' : '8px',
+          padding: isMobile ? '0 6px' : '0 10px',
+          height: '34px',
+          borderRadius: '9px',
+          background: isOpen ? 'rgba(255,255,255,0.08)' : 'rgba(255,255,255,0.04)',
+          border: `1px solid ${isOpen ? 'rgba(245,158,11,0.35)' : 'rgba(255,255,255,0.08)'}`,
+          cursor: 'pointer',
+          color: isOpen ? '#f59e0b' : '#64748b',
+          transition: 'all 0.15s',
+        }}
+        onMouseEnter={e => {
+          if (!isOpen) {
+            e.currentTarget.style.background = 'rgba(255,255,255,0.07)';
+            e.currentTarget.style.color = '#e2e8f0';
+          }
+        }}
+        onMouseLeave={e => {
+          if (!isOpen) {
+            e.currentTarget.style.background = 'rgba(255,255,255,0.04)';
+            e.currentTarget.style.color = '#64748b';
+          }
         }}
       >
-        AS
-      </div>
-      {!isMobile && (
-        <>
-          <span
+        <div
+          style={{
+            width: '26px',
+            height: '26px',
+            borderRadius: '7px',
+            background: 'linear-gradient(135deg, #f59e0b, #d97706)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            fontFamily: "'Syne', sans-serif",
+            fontSize: '9px',
+            fontWeight: 800,
+            color: '#1e1b16',
+            flexShrink: 0,
+            boxShadow: '0 0 8px rgba(245,158,11,0.3)',
+          }}
+        >
+          {initials}
+        </div>
+        {!isMobile && (
+          <>
+            <span
+              style={{
+                fontFamily: "'DM Sans', sans-serif",
+                fontSize: '12px',
+                fontWeight: 500,
+                color: '#cbd5e1',
+              }}
+            >
+              {user?.name || 'User'}
+            </span>
+            <ChevronDown
+              style={{
+                width: '12px',
+                height: '12px',
+                color: '#475569',
+                transform: isOpen ? 'rotate(180deg)' : 'none',
+                transition: 'transform 0.2s',
+              }}
+            />
+          </>
+        )}
+      </button>
+
+      {isOpen && (
+        <div
+          style={{
+            position: 'absolute',
+            top: 'calc(100% + 8px)',
+            right: 0,
+            width: '240px',
+            background: '#1a1f2e',
+            border: '1px solid rgba(255,255,255,0.10)',
+            borderRadius: '12px',
+            padding: '8px',
+            zIndex: 200,
+            boxShadow: '0 8px 32px rgba(0,0,0,0.5)',
+          }}
+        >
+          <div style={{ padding: '8px 10px 12px', borderBottom: '1px solid rgba(255,255,255,0.06)', marginBottom: '4px' }}>
+            <div style={{ fontFamily: "'DM Sans', sans-serif", fontSize: '13px', fontWeight: 600, color: '#f1f5f9', marginBottom: '2px' }}>
+              {user?.name || 'User'}
+            </div>
+            <div style={{ fontFamily: "'DM Sans', sans-serif", fontSize: '11px', color: '#64748b', marginBottom: '3px' }}>
+              {user?.email || ''}
+            </div>
+            {user?.role && (
+              <div style={{
+                display: 'inline-block',
+                fontFamily: "'JetBrains Mono', monospace",
+                fontSize: '9px',
+                fontWeight: 600,
+                color: '#f59e0b',
+                background: 'rgba(245,158,11,0.1)',
+                border: '1px solid rgba(245,158,11,0.2)',
+                borderRadius: '4px',
+                padding: '1px 6px',
+                textTransform: 'uppercase',
+                letterSpacing: '0.05em',
+              }}>
+                {user.role}
+              </div>
+            )}
+          </div>
+
+          <button
+            onClick={async () => { await signOut(); }}
             style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px',
+              width: '100%',
+              padding: '8px 10px',
+              borderRadius: '8px',
+              background: 'transparent',
+              border: 'none',
+              cursor: 'pointer',
+              color: '#ef4444',
               fontFamily: "'DM Sans', sans-serif",
-              fontSize: '12px',
+              fontSize: '13px',
               fontWeight: 500,
-              color: '#cbd5e1',
+              transition: 'background 0.15s',
+              textAlign: 'left',
             }}
+            onMouseEnter={e => { e.currentTarget.style.background = 'rgba(239,68,68,0.1)'; }}
+            onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; }}
           >
-            Adrian
-          </span>
-          <ChevronDown
-            style={{
-              width: '12px',
-              height: '12px',
-              color: '#475569',
-              transform: isOpen ? 'rotate(180deg)' : 'none',
-              transition: 'transform 0.2s',
-            }}
-          />
-        </>
+            <svg style={{ width: '15px', height: '15px' }} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+            </svg>
+            Log out
+          </button>
+        </div>
       )}
-    </button>
+    </div>
   );
 }
