@@ -4,233 +4,126 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-CortexBuild Ultimate is an AI-Powered Unified Construction Management Platform for UK contractors. It is an enterprise SaaS platform combining 50+ construction modules with an AI agent system.
+CortexBuild Ultimate is an AI-Powered Unified Construction Management Platform for UK contractors. Enterprise SaaS combining 50+ construction modules with a local Ollama AI agent system.
 
-**Stack**: React 19 + TypeScript + Vite (frontend) / Express.js + PostgreSQL (backend, raw SQL via `pg` pool) / Zustand (state) / WebSocket (real-time)
-
-### Database Schema Statistics
-
-- **4,500+ lines** of schema
-- **85+ models** with full relations
-- **55+ enums** for type safety
-- **100+ indexes** for performance
-- Complete audit trail on all entities
-
-### v3.0.0 New Features
-
-- **NotificationCenter** — Real-time notifications with filtering
-- **NotificationPreferences** — Multi-channel notification settings
-- **TeamChat** — Real-time team messaging
-- **ActivityFeed** — Live activity stream
-- **AdvancedAnalytics** — Business intelligence dashboard
-- **ProjectCalendar** — Project scheduling with Month/Week/Day views
+**Stack**: React 19 + TypeScript + Vite (frontend) / Express.js + PostgreSQL + Redis (backend) / Zustand (state) / WebSocket (real-time)
 
 ## Commands
 
-### Frontend (Vite)
+### Frontend
 
 ```bash
 npm run dev              # Dev server on http://localhost:5173 (proxies /api → localhost:3001)
 npm run build            # Production build → dist/
-npm run lint             # ESLint check (errors only)
-npm run lint:fix         # Auto-fix ESLint issues
+npm run lint             # ESLint check
+npm run lint:fix         # Auto-fix ESLint
 npm test                 # Run Vitest tests (jsdom environment)
 npm run test:coverage    # Coverage report
+npx vitest run path/to/file.test.ts          # Single test file
+npx vitest run -t "pattern"                    # Tests matching name pattern
 ```
 
-Run a single test:
-
-```bash
-npx vitest run path/to/file.test.ts
-npx vitest run -t "test name pattern"
-```
-
-**E2E Tests (Playwright):**
-
-```bash
-npm run test:e2e         # Run all E2E tests
-npm run test:e2e:ui      # Interactive UI mode
-npm run test:e2e:headed  # Run in visible browser
-```
-
-### Backend (Express.js)
+### Backend
 
 ```bash
 cd server && npm install
 npm run dev              # nodemon auto-reload on port 3001
-npm start                # Production (plain node)
+npm start                # Production (plain node, not Docker)
 ```
 
-### Type Check
+The server requires `DB_PASSWORD` to be set — it exits with code 1 if missing.
+
+### Full Verification
 
 ```bash
-npx tsc --noEmit        # TypeScript validation
-```
-
-### Database Migrations
-
-Migrations are plain SQL files under `server/migrations/` (not Prisma at runtime).
-
-```bash
-psql "$DATABASE_URL" -f server/migrations/XXX_description.sql
-```
-
-**Auth**: `md5` encryption required — node-postgres is incompatible with `scram-sha-256`.
-After any `pg_hba.conf` edit:
-
-```bash
-chown postgres:postgres /etc/postgresql/16/main/pg_hba.conf
-systemctl reload postgresql
+npm run verify:all       # Runs: TypeScript check + tests + lint + build
+npm run check            # tsc --noEmit + lint + test
 ```
 
 ## Architecture
 
-### Frontend Structure
+### Frontend
 
-- **Vite app** (`src/`) — React + TypeScript UI. Entry: `src/main.tsx`. Import alias `@` → `src/`.
-- **Module system** — `src/App.tsx` lazy-loads 50+ modules via `React.lazy()`. Sidebar navigation maps to `src/components/`.
-- **State** — Zustand stores in `src/lib/store/` (`useAuthStore`, `useAppStore`).
-- **Real-time** — WebSocket at `/ws` via `server/lib/websocket.js`.
-- **BIM Viewer** — Native IFC visualization using `web-ifc-three` and `web-ifc`. Employs dynamic `import()` for 3D libraries to optimize LCP.
+- **Vite app** (`src/`) — React + TypeScript. Entry: `src/main.tsx`. Import alias `@` → `src/`.
+- **Module lazy-loading** — `src/App.tsx` registers 50+ modules via `React.lazy()`. Routes are defined in the `PAGES` map.
+- **Auth** — `localStorage` stores JWT under `cortexbuild_token` key (NOT `'token'`). Use `getToken()` from `@/lib/supabase`. On login, user object stored under `cortexbuild_user`.
+- **API layer** — `src/services/api.ts` provides `apiFetch<T>()` which auto-converts snake_case DB columns to camelCase. **Critical**: responses from custom route handlers are returned as-is; only generic CRUD responses go through camelCase normalization.
+- **State** — Zustand stores in `src/lib/store/`. TanStack Query (`@tanstack/react-query`) used by `useData.ts` hooks for caching and background refresh.
+- **CRUD hooks** — `src/hooks/useData.ts` exposes `makeHooks(resource)` factory generating `useList`, `useOne`, `useCreate`, `useUpdate`, `useDelete` for each entity.
 
-### Backend Structure
+### Backend
 
 **Generic CRUD Router** (`server/routes/generic.js`):
-- Factory `makeRouter(tableName)` for standard CRUD with SQL injection prevention (column whitelists), order-by validation, audit logging, and WebSocket broadcast.
-- Adding a new table route: add columns to `ALLOWED_COLUMNS`, register in `server/index.js`.
+- Factory `makeRouter(tableName)` for standard CRUD with column whitelists (`ALLOWED_COLUMNS`), order-by validation, audit logging, and WebSocket broadcast.
+- Adding a table: add columns to `ALLOWED_COLUMNS`, register in `server/index.js`.
+- Generic routes return paginated `{ data: Row[], pagination }` wrappers.
 
-**Specialized Routes**:
+**Specialized Routes** (`server/routes/`):
 
 | Route | Purpose |
 |-------|---------|
-| `routes/auth.js` | JWT login/register (bcrypt) |
-| `routes/oauth.js` | Google/Microsoft OAuth (Passport, CSRF-protected state) |
-| `routes/ai.js` | Ollama AI streaming |
-| `routes/files.js` / `routes/upload.js` | Multer uploads → `server/uploads/` |
-| `routes/rag.js` | Vector similarity search via `pg_vector` for context injection |
-| `routes/bim-models.js` | BIM file upload, metadata extraction (`IfcAPI`), clash detection |
+| `auth.js` | JWT login/register (bcrypt 12 rounds). Stores sessions in Redis. |
+| `oauth.js` | Google/Microsoft OAuth via Passport. CSRF state with 10-min expiry. |
+| `ai.js` | Ollama streaming chat, intent routing, AI execute actions |
+| `ai-intents/*.js` | Per-domain intent classifiers (invoices, daily-reports, etc.) |
+| `rag.js` | Vector similarity via `pg_vector` cosine distance on `rag_embeddings` |
+| `bim-models.js` | IFC upload, `IfcAPI` metadata extraction, clash detection |
+| `notifications.js` | CRUD + mark-read/snooze/archive. Returns `{ notifications: [...], total, unreadCount }` |
+| `files.js` / `upload.js` | Multer → `server/uploads/`, magic number validation |
+| `generic.js` | Per-table CRUD factory (40+ tables) |
 
-### Authentication & Multi-tenancy
+**API response normalization**: `apiFetch` in `src/services/api.ts` converts snake_case keys to camelCase recursively. However, custom route handlers (not generic CRUD) return raw JSON as-is — snake_case stays snake_case unless the handler explicitly camelizes.
 
-- **JWT**: Required on all `/api/*` except `/api/auth/*`, `/api/health`, `/api/deploy`.
-- **RBAC roles**: `super_admin`, `company_owner`, `admin`, `project_manager`, `field_worker`, `client`.
-- **Multi-tenancy**: Strict isolation using `organization_id` and `company_id` filters in all SQL queries.
+**Route registration order matters** in `server/index.js` — more specific paths must be registered before wildcard paths. e.g., `/api/tenders/ai` must come before `/api/tenders`.
 
-### AI Features
+### AI System
 
-- **Local Ollama only** — no external AI APIs. Intent classifiers in `server/routes/ai-intents/`.
-- **RAG**: Vector similarity via `rag_embeddings` table and cosine similarity.
+- **Local Ollama only** — `qwen3.5:latest` and `deepseek-r1:7b` via Docker container `cortexbuild-ollama` (port 11434).
+- **Intent classifiers** in `server/routes/ai-intents/` handle natural language: invoices, daily reports, projects, team, safety, budget.
+- **8 AI agents** with streaming UI — see `.agents/README.md`.
 
-### AI Agents System
+### Database Schema
 
-- **8 specialized agents** with streaming UI.
-- **Subagents** for domain-specific tasks (RFI analysis, Change Orders, etc.).
-- Agents located in `.agents/` directory. See `.agents/README.md`.
+**Users table** (authoritative columns): `id, name, email, password_hash, role, company, phone, avatar, created_at, organization_id, company_id, notification_preferences`
+**No**: `first_name`, `last_name`, `job_title`, `is_active`, `updated_at`
 
-## Key Files
+**Tables without `updated_at`**: `projects`, `invoices`, `rfis`, `tenders`, `companies`. Do NOT use `updated_at = NOW()` in UPDATE queries for these.
 
-| Path | Purpose |
-|------|---------|
-| `src/App.tsx` | Main router (50+ lazy modules) |
-| `src/hooks/useData.ts` | `makeHooks` factory for CRUD hooks |
-| `src/lib/store/` | Zustand stores (auth, app state) |
-| `src/lib/validations.ts` | Zod v4 schemas |
-| `server/routes/generic.js` | CRUD factory + column whitelist |
-| `server/db.js` | PostgreSQL pool |
-| `server/index.js` | Express app entry + route registration |
-| `server/middleware/auth.js` | JWT middleware |
-| `server/lib/websocket.js` | WebSocket server |
-| `server/lib/bootstrap-tenant.js` | Org/company/user creation for OAuth and self-registration |
-| `BIM_ARCHITECTURE.md` | Specification for 3D rendering and coordinate systems |
+**Invoice valid statuses**: `draft`, `sent`, `paid`, `overdue`, `disputed` — NOT `pending`, `unpaid`.
 
-## Keyboard Shortcuts
+## Infrastructure
 
-| Shortcut | Action          |
-| -------- | --------------- |
-| Ctrl+1   | Go to Dashboard |
-| Ctrl+2   | Go to Projects  |
-| Ctrl+3   | Go to Invoicing |
-| Ctrl+4   | Go to Safety    |
-| Ctrl+K   | Global Search   |
-| Ctrl+B   | Toggle Sidebar  |
-| Shift+?  | Show Shortcuts  |
+### Production (VPS: root@72.62.132.43)
 
-## Security
+All services run as Docker containers (managed with `docker run`, **never `docker-compose up`** — v1.29.2 is broken on this VPS):
+- `cortexbuild-api` — Express.js on port 3001 (Docker network, not exposed externally)
+- `cortexbuild-db` — PostgreSQL 16 + pgvector on port 5432
+- `cortexbuild-redis` — Redis 7 on port 6379
+- `cortexbuild-ollama` — Ollama with `qwen3.5:latest`, `deepseek-r1:7b`
+- `cortexbuild-prometheus` — Metrics (9090)
+- `cortexbuild-grafana` — Dashboards (3002)
+- Nginx — Host machine (not Docker), ports 80/443 as reverse proxy
 
-- **File uploads**: Path traversal prevention via `path.normalize()` + `startsWith(dir + path.sep)`; magic number validation.
-- **SQL injection**: Column whitelists (`ALLOWED_COLUMNS`) in generic CRUD routes.
-- **Multi-tenancy**: `organization_id` filtering on all operations.
-- **OAuth**: CSRF state with 10-min expiry; rate limiting on callback (10 req/15 min).
-- **XSS**: Middleware enabled on POST/PUT routes.
-- **bcrypt**: 12 rounds for password hashing.
-- **IDOR Prevention**: Unauthorized resource requests return `404 Not Found` instead of `403 Forbidden`.
-
-## Production Deployment
-
-**VPS**: `root@72.62.132.43`
-
-Docker containers (managed via `docker run`, not docker-compose):
-- `cortexbuild-api` (port 3001)
-- `cortexbuild-db` (PostgreSQL 5432)
-- `cortexbuild-redis` (6379)
-- `cortexbuild-ollama` (11434)
-- `cortexbuild-prometheus` (9090)
-- `cortexbuild-grafana` (3002)
-
-**⚠️ docker-compose v1.29.2 is broken on this VPS.** Never run `docker-compose up` — it takes down DB/Redis/Ollama containers. Use direct `docker run` commands.
-
-**Frontend** syncs via `./deploy/sync-code.sh` (rsync dist/ to VPS).
-
-**API updates** — safe restart workflow:
-
+**Safe API restart** (on VPS, after pulling):
 ```bash
-docker build -f Dockerfile.api -t cortexbuild-ultimate-api:latest .
-docker stop cortexbuild-api && docker rm cortexbuild-api
-docker run -d --name cortexbuild-api --restart always \
-  --network cortexbuild-ultimate_cortexbuild \
-  -p 127.0.0.1:3001:3001 \
-  -v /path/to/uploads:/app/uploads \
-  -e DB_HOST=cortexbuild-db \
-  -e DB_PORT=5432 \
-  -e DB_NAME=cortexbuild \
-  -e DB_USER=cortexbuild \
-  -e DB_PASSWORD=<password> \
-  -e JWT_SECRET=<secret> \
-  -e PORT=3001 \
-  -e NODE_ENV=production \
-  -e CORS_ORIGIN=https://www.cortexbuildpro.com \
-  -e FRONTEND_URL=https://www.cortexbuildpro.com \
-  -e OLLAMA_HOST=http://cortexbuild-ollama:11434 \
-  -e OLLAMA_MODEL=qwen3.5:latest \
-  -e GOOGLE_CLIENT_ID=<id> \
-  -e GOOGLE_CLIENT_SECRET=<secret> \
-  -e GOOGLE_CALLBACK_URL=https://www.cortexbuildpro.com/api/auth/google/callback \
-  -e REDIS_URL=redis://cortexbuild-redis:6379 \
-  cortexbuild-ultimate-api:latest
+bash /root/deploy-api.sh    # Full Docker rebuild + health check
 ```
+This script pulls from `/root/cortexbuild-work`, runs `npm ci --omit=dev`, builds the Docker image, replaces the container, and validates with `curl http://localhost:3001/api/health`.
 
-**Nginx** runs on the host machine (not Docker) and handles SSL on ports 80/443.
-
-If DB/Redis/Ollama containers go down:
-
+If Redis/Ollama/DB containers stop:
 ```bash
 docker start <container_id_or_name>
-docker start 0ebd917a60e4_cortexbuild-db 1686e7f94afe_cortexbuild-ollama
-docker start cortexbuild-redis
 ```
 
-## Observability
+### Frontend
 
-- **Grafana** — Metrics dashboards (port 3002)
-- **Prometheus** — Alerting and metrics collection (port 9090)
-- **Sentry** — Error tracking
-- OpenTelemetry for distributed tracing
+Auto-deployed to Vercel on push to `main` via GitHub Actions. No manual steps needed.
 
 ## Common Issues
 
-- **`ECONNREFUSED` on auth routes**: `DB_HOST=localhost` inside Docker — must be `cortexbuild-db`.
-- **`server/lib/bootstrap-tenant.js` INSERT failures**: Schema drift — INSERT columns must match actual DB schema (verify with `psql -c "\d organizations"` and `psql -c "\d companies"`).
-- **Microsoft OAuth crash**: `MICROSOFT_CLIENT_ID` is empty — both `/microsoft` and `/microsoft/callback` routes must be guarded.
-- **Mock hoisting**: `vi.mock()` calls in Vitest must be at module top level, not inside `beforeEach()`.
-- **Server is CommonJS**: `server/` uses `require()`/`module.exports`, not ESM `import`/`export`.
-- **ESM root**: Root package is ESM (`"type": "module"`).
+- **`ECONNREFUSED` on auth**: Inside Docker, `DB_HOST` must be `cortexbuild-db`, not `localhost`.
+- **Route returns object but frontend expects array**: `GET /notifications` returns `{ notifications: [...], total }` (object). `apiFetch` does NOT unwrap this — callers must destructure. Always verify the actual response shape of custom route handlers.
+- **Microsoft OAuth crashes**: Guard both `/microsoft` and `/microsoft/callback` routes — `MICROSOFT_CLIENT_ID` env var may be empty in dev.
+- **`vi.mock()` in Vitest**: Must be at module top level, not inside `beforeEach()`.
+- **Generic route ordering**: Register specific paths (`/tenders/ai`) before wildcard routes (`/tenders`) in `server/index.js`.
+- **Generic router pagination**: Generic CRUD returns `{ data, pagination }` — the frontend `fetchAll()` helper handles the unwrap.
