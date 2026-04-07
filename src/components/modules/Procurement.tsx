@@ -886,8 +886,8 @@ export function Procurement() {
               </div>
             </div>
             <div className="flex gap-3 px-6 py-4 border-t border-gray-800">
-              <button type="button" onClick={()=>{setShowSupplierModal(false);toast.success('Supplier added (static)');}} className="flex-1 btn btn-primary rounded-lg py-2 text-sm font-semibold transition-colors">
-                Add Supplier
+              <button type="button" onClick={()=>{setShowSupplierModal(false);toast.info('Add suppliers by creating purchase orders using "Raise PO".');}} className="flex-1 btn btn-primary rounded-lg py-2 text-sm font-semibold transition-colors">
+                Got it
               </button>
               <button type="button" onClick={()=>setShowSupplierModal(false)} className="flex-1 btn btn-ghost rounded-lg py-2 text-sm font-semibold transition-colors">
                 Cancel
