@@ -49,8 +49,9 @@ router.put('/skills/:id', async (req, res) => {
     if (skill_name) { updates.push(`skill_name = $${i++}`); values.push(skill_name); }
     if (status) { updates.push(`status = $${i++}`); values.push(status); }
     values.push(req.params.id);
+    values.push(req.user.company_id);
     const { rows } = await pool.query(
-      `UPDATE team_member_skills SET ${updates.join(', ')} WHERE id = $${i} RETURNING *`,
+      `UPDATE team_member_skills SET ${updates.join(', ')} WHERE id = $${i} AND member_id IN (SELECT id FROM team_members WHERE company_id = $${i + 1}) RETURNING *`,
       values
     );
     if (!rows[0]) return res.status(404).json({ message: 'Not found' });
@@ -117,8 +118,9 @@ router.put('/inductions/:id', async (req, res) => {
     if (status) { updates.push(`status = $${i++}`); values.push(status); }
     if (!updates.length) return res.status(400).json({ message: 'No fields to update' });
     values.push(req.params.id);
+    values.push(req.user.company_id);
     const { rows } = await pool.query(
-      `UPDATE team_member_inductions SET ${updates.join(', ')} WHERE id = $${i} RETURNING *`,
+      `UPDATE team_member_inductions SET ${updates.join(', ')} WHERE id = $${i} AND member_id IN (SELECT id FROM team_members WHERE company_id = $${i + 1}) RETURNING *`,
       values
     );
     if (!rows[0]) return res.status(404).json({ message: 'Not found' });

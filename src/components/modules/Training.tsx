@@ -10,16 +10,6 @@ import { toast } from 'sonner';
 import { useTraining } from '../../hooks/useData';
 import { useQueryClient } from '@tanstack/react-query';
 
-const MOCK_TRAINING = [
-  { id: '1', title: 'CSCS Health & Safety', type: 'toolbox_talk', provider: 'CortexBuild', scheduled_date: '2026-04-15', completed_date: '2026-04-15', status: 'completed', duration: 1, location: 'Site Office', attendees: ['John Smith', 'Sarah Johnson'], certification: 'yes', cert_name: 'CSCS Card' },
-  { id: '2', title: 'Manual Handling Course', type: 'formal_course', provider: 'CITB', scheduled_date: '2026-04-20', completed_date: null, status: 'scheduled', duration: 4, location: 'Training Centre', attendees: ['Mike Davis', 'Emma Wilson'], certification: 'yes', cert_name: 'Manual Handling' },
-  { id: '3', title: 'Site Induction - Project Alpha', type: 'on_the_job', provider: 'CortexBuild', scheduled_date: '2026-04-10', completed_date: '2026-04-10', status: 'completed', duration: 2, location: 'Site A', attendees: ['Robert Brown', 'Lisa Anderson'], certification: 'no', cert_name: null },
-  { id: '4', title: 'Confined Space Entry Training', type: 'formal_course', provider: 'HSE Approved', scheduled_date: '2026-05-01', completed_date: null, status: 'scheduled', duration: 8, location: 'Training Centre', attendees: ['James Martin', 'David Lee'], certification: 'yes', cert_name: 'Confined Space' },
-  { id: '5', title: 'Asbestos Awareness E-Learning', type: 'e_learning', provider: 'Online Academy', scheduled_date: '2026-04-22', completed_date: null, status: 'scheduled', duration: 1, location: 'Online', attendees: ['Susan White', 'Thomas Garcia'], certification: 'yes', cert_name: 'Asbestos Awareness' },
-  { id: '6', title: 'First Aid Refresher', type: 'formal_course', provider: 'Red Cross', scheduled_date: '2026-03-20', completed_date: '2026-03-20', status: 'completed', duration: 3, location: 'Training Centre', attendees: ['Anna Martinez', 'Paul Thompson'], certification: 'yes', cert_name: 'First Aid' },
-  { id: '7', title: 'IPAF 3a+3b Training', type: 'formal_course', provider: 'Worklift', scheduled_date: '2026-05-15', completed_date: null, status: 'scheduled', duration: 5, location: 'Training Centre', attendees: ['John Smith'], certification: 'yes', cert_name: 'IPAF 3a+3b' },
-  { id: '8', title: 'Weekly Toolbox Talk - Safety', type: 'toolbox_talk', provider: 'CortexBuild', scheduled_date: '2026-04-14', completed_date: '2026-04-14', status: 'completed', duration: 0.5, location: 'Site Office', attendees: ['All Team'], certification: 'no', cert_name: null },
-];
 
 interface TrainingRecord {
   id: string;
@@ -55,7 +45,7 @@ export default function Training() {
 
   const { selectedIds, clearSelection } = useBulkSelection();
 
-  const trainingData = training.length > 0 ? training : MOCK_TRAINING;
+  const trainingData = training as unknown as TrainingRecord[];
 
   async function handleBulkDelete(ids: string[]) {
     if (!confirm(`Delete ${ids.length} item(s)?`)) return;
@@ -414,7 +404,7 @@ export default function Training() {
             <button type="button" onClick={() => setShowBulkImport(true)} className="flex items-center gap-2 px-3 py-2 bg-gray-700 text-white rounded-lg hover:bg-gray-600 text-sm font-medium">
               <Download size={16}/><span>Import</span>
             </button>
-            <ExportButton data={trainingData} filename="training" />
+            <ExportButton data={trainingData as unknown as Record<string, unknown>[]} filename="training" />
             <button type="button" onClick={() => setShowCreateModal(true)} className="flex items-center gap-2 px-4 py-2 bg-orange-500 hover:bg-orange-600 text-white rounded-lg font-semibold">
               <Plus size={18} /> Add Training
             </button>

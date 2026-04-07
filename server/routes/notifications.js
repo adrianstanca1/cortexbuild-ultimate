@@ -20,11 +20,11 @@ router.get('/', async (req, res) => {
     const offset = (parseInt(page) - 1) * parseInt(pageSize);
 
     let whereClauses = [];
-    let params = [orgId];
-    let idx = 2;
+    let params = [userId, orgId];
+    let idx = 3;
 
     // Filter: own notifications OR org-wide (user_id IS NULL)
-    whereClauses.push(`(user_id = $1 OR (organization_id = $1 AND user_id IS NULL))`);
+    whereClauses.push(`(user_id = $1 OR (organization_id = $2 AND user_id IS NULL))`);
 
     if (status) {
       whereClauses.push(`status = $${idx++}`);

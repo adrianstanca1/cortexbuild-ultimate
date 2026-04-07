@@ -225,18 +225,46 @@ export function PlantEquipment() {
     setShowDetailModal(true);
   }
 
-  function handleServiceSubmit(ev: React.FormEvent) {
+  async function handleServiceSubmit(ev: React.FormEvent) {
     ev.preventDefault();
-    toast.success('Service logged successfully');
-    setShowServiceModal(false);
-    setServiceForm({ ...emptyServiceForm });
+    try {
+      const log = await equipmentApi.createServiceLog({
+        equipment_id: serviceForm.equipmentId || null,
+        date: serviceForm.serviceDate,
+        type: serviceForm.serviceType,
+        notes: serviceForm.notes,
+        next_due: serviceForm.nextDueDate || null,
+        technician: serviceForm.technician,
+      });
+      setServiceLogs(prev => [log as AnyRow, ...prev]);
+      toast.success('Service logged successfully');
+      setShowServiceModal(false);
+      setServiceForm({ ...emptyServiceForm });
+    } catch {
+      toast.error('Failed to log service');
+    }
   }
 
-  function handleHireSubmit(ev: React.FormEvent) {
+  async function handleHireSubmit(ev: React.FormEvent) {
     ev.preventDefault();
-    toast.success('Hire record added');
-    setShowHireModal(false);
-    setHireForm({ ...emptyHireForm });
+    const eqName = equipment.find(e => String(e.id) === hireForm.equipmentId)?.name ?? 'Hire Record';
+    try {
+      const log = await equipmentApi.createHireLog({
+        equipment_id: hireForm.equipmentId || null,
+        name: String(eqName),
+        company: hireForm.hireCompany,
+        daily_rate: parseFloat(hireForm.dailyRate) || 0,
+        start_date: hireForm.startDate || null,
+        end_date: hireForm.endDate || null,
+        project: hireForm.project,
+      });
+      setHireLogs(prev => [log as AnyRow, ...prev]);
+      toast.success('Hire record added');
+      setShowHireModal(false);
+      setHireForm({ ...emptyHireForm });
+    } catch {
+      toast.error('Failed to add hire record');
+    }
   }
 
   return (

@@ -67,12 +67,12 @@ async function generateFinancialInsights(orgFilter, params, insights) {
   const overdueResult = await pool.query(`
     SELECT
       COUNT(*) AS overdue_count,
-      COALESCE(SUM(CASE WHEN due_date < CURRENT_DATE AND status NOT IN ('paid', 'cancelled')
+      COALESCE(SUM(CASE WHEN due_date < CURRENT_DATE AND status NOT IN ('paid', 'disputed')
         THEN amount ELSE 0 END), 0) AS overdue_amount,
-      COALESCE(SUM(CASE WHEN status NOT IN ('paid', 'cancelled') THEN amount ELSE 0 END), 0) AS total_outstanding,
-      COUNT(CASE WHEN due_date < CURRENT_DATE AND status NOT IN ('paid', 'cancelled') THEN 1 END) AS overdue_invoice_count
+      COALESCE(SUM(CASE WHEN status NOT IN ('paid', 'disputed') THEN amount ELSE 0 END), 0) AS total_outstanding,
+      COUNT(CASE WHEN due_date < CURRENT_DATE AND status NOT IN ('paid', 'disputed') THEN 1 END) AS overdue_invoice_count
     FROM invoices
-    ${whereClause} status NOT IN ('paid', 'cancelled')
+    ${whereClause} status NOT IN ('paid', 'disputed')
   `, p);
 
   const row = overdueResult.rows[0];
@@ -143,7 +143,7 @@ async function generateContractVsBudgetInsights(orgFilter, params, insights) {
            COALESCE(spent - budget, 0) AS overspend,
            CASE WHEN budget > 0 THEN ROUND((spent / budget) * 100, 1) ELSE 0 END AS spend_pct
     FROM projects
-    ${whereClause} spent > budget AND status NOT IN ('completed', 'cancelled')
+    ${whereClause} spent > budget AND status NOT IN ('completed', 'archived')
     ORDER BY (spent - budget) DESC
     LIMIT 10
   `, p);
@@ -174,7 +174,7 @@ async function generateContractVsBudgetInsights(orgFilter, params, insights) {
   const noBudgetResult = await pool.query(`
     SELECT name, client, spent, status
     FROM projects
-    ${whereClause} (budget IS NULL OR budget = 0) AND status NOT IN ('completed', 'cancelled')
+    ${whereClause} (budget IS NULL OR budget = 0) AND status NOT IN ('completed', 'archived')
     LIMIT 10
   `, p);
 
@@ -210,7 +210,7 @@ async function generateInvoiceAgingInsights(orgFilter, params, insights) {
       COALESCE(SUM(CASE WHEN CURRENT_DATE - due_date BETWEEN 60 AND 89 THEN amount ELSE 0 END), 0) AS amount_60_90,
       COALESCE(SUM(CASE WHEN CURRENT_DATE - due_date >= 90 THEN amount ELSE 0 END), 0) AS amount_90_plus
     FROM invoices
-    ${whereClause} status NOT IN ('paid', 'cancelled') AND due_date < CURRENT_DATE
+    ${whereClause} status NOT IN ('paid', 'disputed') AND due_date < CURRENT_DATE
   `, p);
 
   const row = agingResult.rows[0];

@@ -2,9 +2,9 @@
 import { useState, useEffect } from 'react';
 import { toast } from 'sonner';
 import { AlertTriangle, PoundSterling, Calendar, RefreshCw, Brain, Cloud,
-  CheckSquare, Square, Trash2,
+  CheckSquare, Square,
 } from 'lucide-react';
-import { BulkActionsBar, useBulkSelection } from '../ui/BulkActions';
+import { useBulkSelection } from '../ui/BulkActions';
 import {
   LineChart, Line, Area, BarChart, Bar, RadarChart, Radar,
   XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer,
@@ -187,7 +187,7 @@ function deriveScheduleData(rows: CbRow[]): { week: string; planned: number; act
 export function PredictiveAnalytics() {
   const [activeTab, setActiveTab] = useState<'risk' | 'cost' | 'schedule' | 'weather' | 'models'>('risk');
 
-  const { selectedIds, toggle, clearSelection } = useBulkSelection();
+  const { selectedIds, toggle } = useBulkSelection();
 
   // ── Real API data ─────────────────────────────────────────────────────────────
   const [projects, setProjects] = useState<CbRow[]>([]);
@@ -232,18 +232,6 @@ export function PredictiveAnalytics() {
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeTab]);
-
-  async function handleBulkDelete(ids: string[]) {
-    if (!confirm(`Delete ${ids.length} item(s)?`)) return;
-    try {
-      toast.success(`Deleted ${ids.length} item(s)`);
-      clearSelection();
-    } catch {
-      toast.error('Bulk delete failed');
-    }
-  }
-
-  const _deleteMutation = { mutateAsync: async () => {} };
 
   const tabs = [
     { id: 'risk', label: 'Risk Forecast', icon: AlertTriangle },
@@ -646,14 +634,6 @@ export function PredictiveAnalytics() {
               );
             })}
           </div>
-
-          <BulkActionsBar
-            selectedIds={Array.from(selectedIds)}
-            actions={[
-              { id: 'delete', label: 'Delete Selected', icon: Trash2, variant: 'danger', onClick: handleBulkDelete, confirm: 'This action cannot be undone.' },
-            ]}
-            onClearSelection={clearSelection}
-          />
 
           <div className="card p-5">
             <h3 className="text-lg font-bold text-white mb-4">Model Performance: Precision vs Recall</h3>

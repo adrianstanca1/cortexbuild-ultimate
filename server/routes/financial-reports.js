@@ -92,13 +92,19 @@ router.get('/cashflow', async (req, res) => {
     // Use actual invoice payments to calculate monthly expenses
     // Join invoices to projects to get expense data per month
     const expenseParams = ['paid', ...baseParams];
-    const { rows: expenseRows } = await pool.query(
-      `SELECT i.amount, i.issue_date, COALESCE(p.spent, 0) as project_spent
+    let expenseQuery = `SELECT i.amount, i.issue_date, COALESCE(p.spent, 0) as project_spent
        FROM invoices i
        LEFT JOIN projects p ON p.id = i.project_id
-       WHERE i.status = $1${orgOffset}${startDate ? ` AND i.issue_date >= $${expenseParams.length + 1}` : ''}${endDate ? ` AND i.issue_date <= $${expenseParams.length + (startDate ? 2 : 1)}` : ''}`,
-      expenseParams
-    );
+       WHERE i.status = $1${orgOffset}`;
+    if (startDate) {
+      expenseParams.push(startDate);
+      expenseQuery += ` AND i.issue_date >= $${expenseParams.length}`;
+    }
+    if (endDate) {
+      expenseParams.push(endDate);
+      expenseQuery += ` AND i.issue_date <= $${expenseParams.length}`;
+    }
+    const { rows: expenseRows } = await pool.query(expenseQuery, expenseParams);
 
     const monthlyExpenses = {};
     months.forEach(m => { monthlyExpenses[m] = 0; });
