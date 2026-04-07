@@ -48,8 +48,14 @@ export default function BackupTab({ loading }: BackupTabProps) {
   const handleBackup = async () => {
     setBackupRunning(true);
     try {
-      await new Promise(resolve => setTimeout(resolve, 2000));
-      toast.success('Database backup created successfully');
+      const data = await backupApi.exportAll();
+      const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+      const link = document.createElement('a');
+      link.href = URL.createObjectURL(blob);
+      link.download = `cortexbuild_backup_${new Date().toISOString().slice(0, 19).replace(/:/g, '-')}.json`;
+      link.click();
+      URL.revokeObjectURL(link.href);
+      toast.success('Backup downloaded successfully');
     } catch {
       toast.error('Backup failed');
     } finally {
