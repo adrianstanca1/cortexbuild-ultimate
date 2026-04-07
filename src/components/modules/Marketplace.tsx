@@ -9,7 +9,6 @@ import {
   BookOpen,
   MessageCircle,
   Star,
-  AlertTriangle,
   CheckSquare,
   Square,
   Trash2,
@@ -147,8 +146,6 @@ export function Marketplace() {
   const [subTab, setSubTab] = useState<SubTab>('apps');
   const [installedApps, setInstalledApps] = useState(['safety-analyzer', 'rfi-responder', 'daily-reporter']);
   const [searchQuery, setSearchQuery] = useState('');
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
   const { selectedIds, toggle, clearSelection } = useBulkSelection();
 
   async function handleBulkDelete(ids: string[]) {
@@ -197,13 +194,6 @@ export function Marketplace() {
   return (
     <>
       <ModuleBreadcrumbs currentModule="marketplace" onNavigate={() => {}} />
-      {error && (
-        <div className="alert alert-warning">
-          <AlertTriangle className="w-4 h-4" />
-          <span>{error}</span>
-        </div>
-      )}
-      {loading && <div className="flex justify-center py-4"><span className="loading loading-spinner" /></div>}
       <div className="space-y-6">
       <div className="flex items-center gap-3">
         <h1 className="text-3xl font-bold text-white">CortexBuild Marketplace</h1>
