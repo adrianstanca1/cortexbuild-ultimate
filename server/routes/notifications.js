@@ -71,7 +71,7 @@ router.get('/unread-count', async (req, res) => {
     const { rows } = await pool.query(
       `SELECT COUNT(*) as count FROM notifications
        WHERE (user_id = $1 OR (organization_id = $2 AND user_id IS NULL))
-         AND read = false AND (status = 'active' OR status = 'unread')
+         AND read = false
          AND (snoozed_until IS NULL OR snoozed_until < NOW())`,
       [userId, orgId]
     );
@@ -328,9 +328,10 @@ router.put('/:id/unsnooze', async (req, res) => {
 router.delete('/all', async (req, res) => {
   try {
     const userId = req.user?.id;
+    const orgId = req.user?.organization_id;
     const { rows } = await pool.query(
-      `DELETE FROM notifications WHERE user_id = $1 RETURNING id`,
-      [userId]
+      `DELETE FROM notifications WHERE user_id = $1 AND organization_id = $2 RETURNING id`,
+      [userId, orgId]
     );
     res.json({ message: 'All notifications cleared', count: rows.length });
   } catch (err) {

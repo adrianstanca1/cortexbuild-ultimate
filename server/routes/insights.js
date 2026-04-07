@@ -414,7 +414,7 @@ async function generateProgrammeInsights(orgFilter, params, insights) {
     SELECT COUNT(*) AS count
     FROM rfis
     ${whereClause} status NOT IN ('closed', 'answered')
-      AND created_at < CURRENT_DATE - INTERVAL '30 days'
+      AND due_date < CURRENT_DATE - INTERVAL '30 days'
   `, p);
 
   const openRfiCount = parseInt(openRfiResult.rows[0]?.count ?? 0, 10);

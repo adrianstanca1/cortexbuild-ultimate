@@ -188,8 +188,11 @@ router.put('/availability/:id', async (req, res) => {
     if (status) { updates.push(`status = $${i++}`); values.push(status); }
     if (project) { updates.push(`project = $${i++}`); values.push(project); }
     values.push(req.params.id);
+    values.push(req.user.company_id);
     const { rows } = await pool.query(
-      `UPDATE team_member_availability SET ${updates.join(', ')}, updated_at = NOW() WHERE id = $${i} RETURNING *`,
+      `UPDATE team_member_availability a SET ${updates.join(', ')}, updated_at = NOW()
+       WHERE a.id = $${i++} AND a.member_id IN (SELECT id FROM team_members WHERE company_id = $${i})
+       RETURNING *`,
       values
     );
     if (!rows[0]) return res.status(404).json({ message: 'Not found' });

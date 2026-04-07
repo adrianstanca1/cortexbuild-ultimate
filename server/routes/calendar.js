@@ -70,26 +70,15 @@ async function getEvents(req, res) {
       });
     });
 
-    let coOrgFilter;
-    let coParams;
-    if (isSuper) {
-      coOrgFilter = '';
-      coParams = [];
-    } else if (orgId) {
-      coOrgFilter = 'AND organization_id = $1';
-      coParams = [orgId];
-    } else {
-      // No org context — restrict to nothing (will return empty)
-      coOrgFilter = 'AND organization_id = $1';
-      coParams = [0];
-    }
+    const rfisParams = isSuper ? [] : (orgId ? [orgId] : [0]);
+    const coParams = isSuper ? [] : (orgId ? [orgId] : [0]);
     const { rows: deadlines } = await pool.query(
       `SELECT id, subject as title, due_date as date, status, project FROM rfis
        WHERE due_date IS NOT NULL ${orgFilter}
        UNION ALL
        SELECT id, title, submitted_date as date, status, project FROM change_orders
        WHERE submitted_date IS NOT NULL ${coOrgFilter}`,
-      coParams
+      [...rfisParams, ...coParams]
     );
     deadlines.forEach(d => {
       events.push({

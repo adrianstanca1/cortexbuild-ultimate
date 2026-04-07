@@ -2,6 +2,7 @@
  * API utility for making authenticated requests to the backend
  * Handles auth headers and base path automatically
  */
+import { getToken, clearToken } from './supabase';
 
 export interface ApiErrorResponse {
   error: string;
@@ -15,10 +16,8 @@ export interface ApiResponse<T> {
   error?: ApiErrorResponse;
 }
 
-const TOKEN_KEY = 'cortexbuild_token';
-
 function getAuthHeaders(): Record<string, string> {
-  const authToken = localStorage.getItem(TOKEN_KEY) || '';
+  const authToken = getToken() ?? '';
   return {
     'Content-Type': 'application/json',
     ...(authToken ? { Authorization: `Bearer ${authToken}` } : {}),
@@ -50,8 +49,7 @@ export async function apiRequest<T>(
     if (!response.ok) {
       if (response.status === 401) {
         // Token expired or invalid — clear session and reload
-        localStorage.removeItem(TOKEN_KEY);
-        localStorage.removeItem('cortexbuild_user');
+        clearToken();
         window.location.reload();
       }
       const errorMessage = data?.error
