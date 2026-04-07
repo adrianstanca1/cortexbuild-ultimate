@@ -117,7 +117,14 @@ docker start <container_id_or_name>
 
 ### Frontend
 
-Auto-deployed to Vercel on push to `main` via GitHub Actions. No manual steps needed.
+Self-hosted on the VPS. GitHub Actions triggers `/root/deploy-frontend.sh` on push to `main`, which pulls the latest code, runs `npm ci --ignore-scripts && npm run build`, and syncs `dist/` to `/var/www/cortexbuild-ultimate/dist/`.
+
+Nginx already serves this directory and proxies `/api/` to the Docker API container.
+
+**Manual frontend deploy:**
+```bash
+bash /root/deploy-frontend.sh
+```
 
 ## Common Issues
 

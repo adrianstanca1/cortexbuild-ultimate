@@ -50,12 +50,6 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Download build artifact
-        uses: actions/download-artifact@v4
-        with:
-          name: dist
-          path: dist/
-
       - name: Setup SSH (password auth)
         run: |
           sudo apt-get install -y sshpass
@@ -63,23 +57,15 @@ jobs:
           ssh-keyscan -H ${{ secrets.SSH_HOST }} >> ~/.ssh/known_hosts
           echo "✅ SSH ready (password auth)"
 
-      - name: Sync dist to VPS
-        env:
-          SSHPASS: ${{ secrets.VPS_PASSWORD }}
-        run: |
-          sshpass -e rsync -e "ssh -o StrictHostKeyChecking=yes -o UserKnownHostsFile=~/.ssh/known_hosts" \
-            -avz --delete \
-            ./dist/ ${{ secrets.VPS_USER }}@${{ secrets.SSH_HOST }}:${{ secrets.VPS_PATH }}/dist/
-
-      - name: Fix permissions
+      - name: Build & deploy frontend on VPS
         env:
           SSHPASS: ${{ secrets.VPS_PASSWORD }}
         run: |
           sshpass -e ssh -o StrictHostKeyChecking=yes -o UserKnownHostsFile=~/.ssh/known_hosts \
             ${{ secrets.VPS_USER }}@${{ secrets.SSH_HOST }} \
-            "chmod -R 755 ${{ secrets.VPS_PATH }}/dist/"
+            "bash /root/deploy-frontend.sh"
 
-      - name: Update VPS git and restart services
+      - name: Restart API container
         env:
           SSHPASS: ${{ secrets.VPS_PASSWORD }}
         run: |
