@@ -83,6 +83,14 @@ jobs:
             CONTAINER_NAME="cortexbuild-api"
             IMAGE_NAME="cortexbuild-ultimate-api:latest"
             cd "$PROJECT_DIR"
+
+            # Source environment variables if .env exists
+            if [ -f "$PROJECT_DIR/.env" ]; then
+              set -a
+              source "$PROJECT_DIR/.env"
+              set +a
+            fi
+
             git pull origin main
             docker build -t "$IMAGE_NAME" -f Dockerfile.api .
             docker stop "$CONTAINER_NAME" 2>/dev/null || true
@@ -95,9 +103,9 @@ jobs:
               -e DB_PORT=5432 \
               -e DB_NAME=cortexbuild \
               -e DB_USER=cortexbuild \
-              -e DB_PASSWORD="$DB_PASSWORD" \
-              -e JWT_SECRET="$JWT_SECRET" \
-              -e SESSION_SECRET="$SESSION_SECRET" \
+              -e DB_PASSWORD \
+              -e JWT_SECRET \
+              -e SESSION_SECRET \
               -e REDIS_HOST=cortexbuild-redis \
               -e PORT=3001 \
               -e NODE_ENV=production \
