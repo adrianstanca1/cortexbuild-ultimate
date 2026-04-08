@@ -186,9 +186,9 @@ router.post('/chat', aiChatLimiter, async (req, res) => {
     // ── Fetch conversation history (summarization applied internally for long chats) ──────
     let convHistory = [];
     let summary      = null;
-    if (sessionId && req.user && req.user.organization_id) {
+    if (sessionId && req.user && (req.user.organization_id || req.user.company_id)) {
       try {
-        const orgId = req.user.organization_id || req.user.company_id || 'anon';
+        const orgId = req.user.organization_id || req.user.company_id;
         const hist = await getConversationHistory(orgId, sessionId);
         convHistory = hist.messages;
         summary     = hist.summary;

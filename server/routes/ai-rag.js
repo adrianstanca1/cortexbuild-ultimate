@@ -96,8 +96,8 @@ async function retrieveContext(question, tables, orgFilter) {
        WHERE table_name = $2 ${filterWithAnd}
        ORDER BY embedding <=> $1
        LIMIT 5`,
-      ragParams
-    .catch(err => { console.error('[RAG] retrieveContext: query failed for table "' + table + '":', err.message); return { rows: [] }; });
+      ragParams)
+    .catch(err => { console.error('[RAG] retrieveContext: embedding query failed for table "' + table + '":', err.message); return { rows: [] }; });
 
     for (const r of rows.slice(0, 3)) {
       const similarity = 1 - parseFloat(r.similarity);
@@ -107,8 +107,8 @@ async function retrieveContext(question, tables, orgFilter) {
       const dataQueryParams = [r.row_id, ...filterParams];
       const { rows: dataRows } = await pool.query(
         `SELECT * FROM ${safeTable} WHERE id = $1${filterClause} LIMIT 1`,
-        dataQueryParams
-      .catch(err => { console.error('[RAG] retrieveContext: query failed for table "' + table + '":', err.message); return { rows: [] }; });
+        dataQueryParams)
+      .catch(err => { console.error('[RAG] retrieveContext: data query failed for table "' + table + '":', err.message); return { rows: [] }; });
       if (dataRows[0]) context.push({ table, row_id: r.row_id, data: dataRows[0] });
     }
   }
