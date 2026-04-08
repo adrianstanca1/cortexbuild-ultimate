@@ -186,11 +186,12 @@ export function AIAssistant() {
         return;
       }
       throw new Error('empty');
-    }).catch(() => {
+    }).catch(err => {
+      console.warn('[AIAssistant] sessions fetch failed, using sessionStorage fallback:', err);
       try {
         const saved = sessionStorage.getItem('cortex_ai_sessions');
         if (saved) setChatSessions(JSON.parse(saved));
-      } catch { /* ignore */ }
+      } catch (_e) { /* ignore sessionStorage failure */ }
     });
   }, []);
 
@@ -220,8 +221,8 @@ export function AIAssistant() {
         // Mirror to localStorage as backup
         try { sessionStorage.setItem(`cortex_ai_session_${sessionId}`, JSON.stringify(adapted)); } catch (e) { console.warn('[AI] Failed to persist session to sessionStorage:', e); }
       })
-      .catch(() => {
-        // Fallback to localStorage if server fails
+      .catch(err => {
+        console.warn('[AIAssistant] messages fetch failed, falling back to sessionStorage:', err);
         try {
           const saved = sessionStorage.getItem(`cortex_ai_session_${sessionId}`);
           setMessages(saved ? JSON.parse(saved) : []);

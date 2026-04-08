@@ -138,7 +138,8 @@ export function FinancialReports() {
       setSummary(summaryData as FinancialSummary);
       setProjectFinancials(projData as unknown as ProjectFinancial[]);
       setCashFlow(cashFlowData as unknown as CashFlow[]);
-    }).catch(() => {
+    }).catch(err => {
+      console.warn('[FinancialReports] fetch failed, using zero defaults:', err);
       setSummary({
         totalRevenue: 0, totalCosts: 0, grossProfit: 0, netProfit: 0,
         outstandingInvoices: 0, overdueAmount: 0, monthlyBurn: 0,

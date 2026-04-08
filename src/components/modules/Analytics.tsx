@@ -149,13 +149,15 @@ export function Analytics() {
   })();
 
   useEffect(() => {
-    analyticsApi.getOvertimeData().then(data => setOvertimeByMonth(data as AnyRow[])).catch(() => {
+    analyticsApi.getOvertimeData().then(data => setOvertimeByMonth(data as AnyRow[])).catch(err => {
+      console.warn('[Analytics] overtime fetch failed, using fallback data:', err);
       setOvertimeByMonth([
         { month:'Sep', overtime:8.2 },{ month:'Oct', overtime:10.5 },{ month:'Nov', overtime:9.8 },
         { month:'Dec', overtime:6.3 },{ month:'Jan', overtime:11.2 },{ month:'Feb', overtime:12.1 },{ month:'Mar', overtime:13.5 },
       ]);
     });
-    analyticsApi.getVatData().then(data => setVatTracker(data as AnyRow[])).catch(() => {
+    analyticsApi.getVatData().then(data => setVatTracker(data as AnyRow[])).catch(err => {
+      console.warn('[Analytics] VAT fetch failed, using fallback data:', err);
       setVatTracker([
         { quarter:'Q1', liability:87500, paid:87500, status:'paid' },
         { quarter:'Q2', liability:92300, paid:0, status:'due' },
