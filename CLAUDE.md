@@ -6,7 +6,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 CortexBuild Ultimate is an AI-Powered Unified Construction Management Platform for UK contractors. Enterprise SaaS combining 50+ construction modules with a local Ollama AI agent system.
 
-**Stack**: React 19 + TypeScript + Vite (frontend) / Express.js + PostgreSQL + Redis (backend) / Zustand (state) / WebSocket (real-time)
+**Stack**: React 19 + TypeScript + Vite (frontend) / Express.js + PostgreSQL + Redis (backend) / React Context (state) / WebSocket (real-time)
 
 ## Commands
 
