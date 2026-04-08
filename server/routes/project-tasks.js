@@ -160,13 +160,12 @@ router.put('/:id', async (req, res) => {
     }
 
     queryParams.push(id);
-    const idParamIndex = queryParams.length;
-    const orgParamIndex = 1; // baseParams is [orgId], so $1
+    const idParamIndex = queryParams.length; // $N where id landed (1-indexed)
 
     const { rows } = await pool.query(
       `UPDATE project_tasks pt SET ${updates.join(', ')}
        FROM projects p
-       WHERE p.id = pt.project_id AND p.organization_id = $${orgParamIndex} AND pt.id = $${idParamIndex}
+       WHERE p.id = pt.project_id AND p.organization_id = $1 AND pt.id = $${idParamIndex}
        RETURNING pt.*`,
       queryParams
     );

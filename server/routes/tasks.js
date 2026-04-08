@@ -163,13 +163,12 @@ router.put('/:id', async (req, res) => {
       return res.status(400).json({ message: 'No fields to update' });
     }
 
-    const idParamIndex = queryParams.length + 1;
     queryParams.push(id);
 
     const { rows } = await pool.query(
       `UPDATE tasks t SET ${updates.join(', ')}
        FROM projects p
-       WHERE p.id = t.project_id AND p.organization_id = $1 AND t.id = $${idParamIndex}
+       WHERE p.id = t.project_id AND p.organization_id = $1 AND t.id = $${queryParams.length}
        RETURNING t.*`,
       queryParams
     );

@@ -152,12 +152,11 @@ router.patch('/:id', async (req, res) => {
       return res.status(400).json({ message: 'No fields to update' });
     }
 
-    const idParamIndex = queryParams.length + 1;
     queryParams.push(id);
 
     const { rows } = await pool.query(
       `UPDATE work_packages wp SET ${updates.join(', ')}
-       WHERE wp.organization_id = $1 AND wp.id = $${idParamIndex}
+       WHERE wp.organization_id = $1 AND wp.id = $${queryParams.length}
        RETURNING wp.*`,
       queryParams
     );
