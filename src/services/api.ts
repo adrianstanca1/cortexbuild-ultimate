@@ -452,6 +452,46 @@ export const settingsApi = {
     }),
 };
 
+export const adminApi = {
+  // Stats
+  getStats: () => apiFetch<{
+    totalUsers: number; activeUsers: number; totalCompanies: number;
+    activeCompanies: number; totalProjects: number; activeProjects: number;
+    newOrgsLast30Days: number; apiCallsToday: number;
+    storageUsed: number; storageTotal: number; systemHealth: string; uptimeSeconds: number;
+  }>('/admin/stats'),
+
+  // Organizations (CRUD)
+  getOrganizations: () => apiFetch<Row[]>('/admin/stats/organizations'),
+  createOrganization: (data: { name: string; description?: string }) =>
+    apiFetch<Row>('/admin/stats/organizations', { method: 'POST', body: JSON.stringify(data) }),
+  updateOrganization: (id: string, data: { name?: string; description?: string }) =>
+    apiFetch<Row>(`/admin/stats/organizations/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+  deleteOrganization: (id: string) =>
+    apiFetch<{ success: boolean; id: string }>(`/admin/stats/organizations/${id}`, { method: 'DELETE' }),
+
+  // Activity feed
+  getActivity: () => apiFetch<Row[]>('/admin/stats/activity'),
+
+  // Analytics time-series
+  getAnalytics: () => apiFetch<{
+    userGrowth: { month: string; new_users: number }[];
+    projectTrend: { week: string; new_projects: number }[];
+    moduleUsage: { table_name: string; operations: number }[];
+  }>('/admin/stats/analytics'),
+
+  // Audit
+  getAuditLogs: (params?: { table?: string; user_id?: string; limit?: string; start_date?: string; end_date?: string }) => {
+    const qs = params ? '?' + new URLSearchParams(params as Record<string, string>).toString() : '';
+    return apiFetch<Row[]>(`/audit${qs}`);
+  },
+  getAuditStats: () => apiFetch<{ byAction: { action: string; count: string }[]; byTable: { table_name: string; count: string }[]; last24Hours: number }>('/audit/stats'),
+  exportAuditCsv: (params?: { table?: string; action?: string; limit?: string }) => {
+    const qs = params ? '?' + new URLSearchParams(params as Record<string, string>).toString() : '';
+    return `${API_BASE}/audit/export${qs}`;
+  },
+};
+
 export const notificationsApi = {
   getAll: () => apiFetch<Row[]>('/notifications'),
   getUnreadCount: () => apiFetch<{ count: number }>('/notifications/unread-count'),
