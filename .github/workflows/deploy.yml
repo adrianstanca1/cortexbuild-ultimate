@@ -53,34 +53,77 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Setup SSH (key auth)
-        run: |
-          mkdir -p ~/.ssh
-          echo "${{ secrets.VPS_SSH_KEY }}" > ~/.ssh/id_ed25519
-          chmod 600 ~/.ssh/id_ed25519
-          ssh-keyscan -H ${{ secrets.SSH_HOST }} >> ~/.ssh/known_hosts
-          echo "✅ SSH ready (key auth)"
+      - name: Deploy to VPS
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USERNAME }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          known_hosts: ${{ secrets.SSH_HOST }} ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAACAQCqvXeMFeYnWQxDBxHcR7FyN3O/3pGfND6Vy9vpveXUQnczeQoDMdBjGGfces5A9BOZ2RMwqgy+l0juPsolxPatk8pzDi0F+AlG0vcxeQ3UkUsRkNKHmAs498/a46w0cwsHlpQ5TBjq6Cypmuc1to85rtJZPKDv75pR6utWVBNJEMm3aJTPMFWf8hbT2H+PzStYSBgYTEgfK7+r4LsnerjJtPY3lzUMdzh2va0Cn9CYs5MQPoQNN6KmzLgzUTDkoW+l/zszkkxcmNt/8fS6rfmhVlZNRH0w7vIElM9RaHTqShNn/MMQrsJHr8XzVqGJBv7FrKht0euNZLOa9o4n/wzhVtTi53sirZ8qVj03w7gLI0or5mBDr5aQFRFx+ek7yMO5dT9feTlSK51a1Wr+ohIklTNIEkuOMpkNk1mqOM+3tlss4Ppkv5O5g/70y0qP0pfQBTx8nRCzV9QWnld6jJ19zjQK6WDG63brUkIyp75xLP4abp9Cqye93Da9QG3eFQGkFrMoQrmvwjQBl+89qu5GhlMqjP5LL1XRop/q9D6R5ALbhrkCCgqa7/dPgNpGg4gbWiFhyInkVbtjiLIjnnf1WQhom+Q6zQyPcJbzzTcO4M87Qv/RaMD3aprr6wl1F/1Pa/zl3lX+x/aDAXupKV45qMCA34X/KtuTbZRthhYI2Q==
+          script: |
+            set -e
+            # Copy deploy scripts
+            mkdir -p /root
+            cat > /root/deploy-frontend.sh << 'DEPLOYEOF'
+            #!/bin/bash
+            set -euo pipefail
+            echo "=== CortexBuild Frontend Deploy ==="
+            PROJECT_DIR="/var/www/cortexbuild-ultimate"
+            cd "$PROJECT_DIR"
+            git pull origin main
+            npm ci --ignore-scripts
+            npm run build
+            chown -R www-data:www-data "$PROJECT_DIR/dist"
+            echo "=== Frontend Deploy Complete ==="
+            DEPLOYEOF
+            cat > /root/deploy-api.sh << 'DEPLOYEOF'
+            #!/bin/bash
+            set -euo pipefail
+            echo "=== CortexBuild API Deploy ==="
+            PROJECT_DIR="/var/www/cortexbuild-ultimate"
+            CONTAINER_NAME="cortexbuild-api"
+            IMAGE_NAME="cortexbuild-ultimate-api:latest"
+            cd "$PROJECT_DIR"
+            git pull origin main
+            docker build -t "$IMAGE_NAME" -f Dockerfile.api .
+            docker stop "$CONTAINER_NAME" 2>/dev/null || true
+            docker rm "$CONTAINER_NAME" 2>/dev/null || true
+            docker run -d \
+              --name "$CONTAINER_NAME" \
+              --restart always \
+              --network cortexbuild \
+              -e DB_HOST=cortexbuild-db \
+              -e DB_PORT=5432 \
+              -e DB_NAME=cortexbuild \
+              -e DB_USER=cortexbuild \
+              -e DB_PASSWORD="$DB_PASSWORD" \
+              -e JWT_SECRET="$JWT_SECRET" \
+              -e SESSION_SECRET="$SESSION_SECRET" \
+              -e REDIS_HOST=cortexbuild-redis \
+              -e PORT=3001 \
+              -e NODE_ENV=production \
+              -e OLLAMA_HOST=http://cortexbuild-ollama:11434 \
+              -e OLLAMA_MODEL=qwen3.5:latest \
+              -e CORS_ORIGIN=https://www.cortexbuildpro.com,https://cortexbuildpro.com \
+              -e FRONTEND_URL=https://www.cortexbuildpro.com \
+              "$IMAGE_NAME"
+            echo "Waiting for API health..."
+            for i in $(seq 1 30); do
+              if curl -sf http://localhost:3001/api/health >/dev/null 2>&1; then
+                echo "API healthy"
+                break
+              fi
+              sleep 2
+            done
+            echo "=== API Deploy Complete ==="
+            DEPLOYEOF
+            chmod +x /root/deploy-frontend.sh /root/deploy-api.sh
 
-      - name: Copy deploy scripts to VPS
-        run: |
-          scp -o StrictHostKeyChecking=accept-new -o UserKnownHostsFile=~/.ssh/known_hosts \
-            -i ~/.ssh/id_ed25519 \
-            deploy/deploy-frontend.sh deploy/deploy-api.sh \
-            ${{ secrets.VPS_USER }}@${{ secrets.SSH_HOST }}:/root/
+            # Run frontend deploy
+            bash /root/deploy-frontend.sh
 
-      - name: Build & deploy frontend on VPS
-        run: |
-          ssh -o StrictHostKeyChecking=accept-new -o UserKnownHostsFile=~/.ssh/known_hosts \
-            -i ~/.ssh/id_ed25519 \
-            ${{ secrets.VPS_USER }}@${{ secrets.SSH_HOST }} \
-            "bash /root/deploy-frontend.sh"
-
-      - name: Restart API container
-        run: |
-          ssh -o StrictHostKeyChecking=accept-new -o UserKnownHostsFile=~/.ssh/known_hosts \
-            -i ~/.ssh/id_ed25519 \
-            ${{ secrets.VPS_USER }}@${{ secrets.SSH_HOST }} \
-            "bash /root/deploy-api.sh"
+            # Run API deploy
+            bash /root/deploy-api.sh
 
       - name: Verify deployment
         run: |
