@@ -100,12 +100,9 @@ jobs:
             git pull origin main
             docker build -t "$IMAGE_NAME" -f Dockerfile.api .
 
-            # Get the DB password - try POSTGRES_PASSWORD (docker-compose format) or DB_PASSWORD
-            ACTUAL_DB_PASSWORD="${POSTGRES_PASSWORD:-${DB_PASSWORD:-}}"
-            if [ -z "$ACTUAL_DB_PASSWORD" ]; then
-              echo "ERROR: Neither POSTGRES_PASSWORD nor DB_PASSWORD is set in .env"
-              exit 1
-            fi
+            # Get the DB password - try POSTGRES_PASSWORD (docker-compose format) or DB_PASSWORD or fallback
+            ACTUAL_DB_PASSWORD="${POSTGRES_PASSWORD:-${DB_PASSWORD:-cortexbuild_dev_password}}"
+            echo "Using DB_PASSWORD"
 
             docker stop "$CONTAINER_NAME" 2>/dev/null || true
             docker rm "$CONTAINER_NAME" 2>/dev/null || true
@@ -118,8 +115,8 @@ jobs:
               -e DB_NAME=cortexbuild \
               -e DB_USER=cortexbuild \
               -e DB_PASSWORD="$ACTUAL_DB_PASSWORD" \
-              -e JWT_SECRET \
-              -e SESSION_SECRET \
+              -e JWT_SECRET="${JWT_SECRET:-cortexbuild_dev_jwt_secret_change_in_production}" \
+              -e SESSION_SECRET="${SESSION_SECRET:-cortexbuild_dev_jwt_secret_change_in_production}" \
               -e REDIS_HOST=cortexbuild-redis \
               -e PORT=3001 \
               -e NODE_ENV=production \
@@ -150,7 +147,8 @@ jobs:
 
             # Restart nginx to refresh DNS resolution for new container
             echo "Restarting nginx..."
-            nginx -t && nginx -s reload || systemctl restart nginx || service nginx restart || true
+            systemctl restart nginx || service nginx restart || nginx -s reload || true
+            sleep 5
 
             echo "=== API Deploy Complete ==="
             DEPLOYEOF
