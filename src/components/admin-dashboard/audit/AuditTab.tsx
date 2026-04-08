@@ -20,7 +20,7 @@ export default function AuditTab({ entries: propEntries = [], loading: propLoadi
     if (propEntries.length > 0) { setFetchLoading(false); return; }
     apiFetch<AuditEntry[]>('/audit?limit=100')
       .then(data => setFetchedEntries(Array.isArray(data) ? data : []))
-      .catch(() => {})
+      .catch(e => console.warn('[AuditTab] failed to load:', e))
       .finally(() => setFetchLoading(false));
   }, [propEntries.length]);
 

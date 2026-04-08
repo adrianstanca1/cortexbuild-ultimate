@@ -171,7 +171,7 @@ export function AIAssistant() {
         invoices: d.kpi?.invoiceCount ?? 0,
         incidents: d.kpi?.safetyIncidents ?? 0,
       });
-    }).catch(() => {});
+    }).catch(e => console.warn('[AIAssistant] dashboard fetch failed:', e));
   }, []);
 
   // Load sessions from backend on mount, fall back to localStorage

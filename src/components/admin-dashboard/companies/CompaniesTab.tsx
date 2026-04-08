@@ -33,7 +33,7 @@ export default function CompaniesTab({ companies: propCompanies = [], loading: p
           createdAt: String(r.created_at ?? ''),
         })));
       })
-      .catch(() => {})
+      .catch(e => console.warn('[CompaniesTab] failed to load:', e))
       .finally(() => setFetchLoading(false));
   }, [propCompanies.length]);
 

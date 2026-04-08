@@ -36,7 +36,7 @@ export function NotificationPreferences({ onClose }: { onClose?: () => void }) {
       .then((data: NotificationPreference[] | null) => {
         if (Array.isArray(data) && data.length > 0) setPreferences(data);
       })
-      .catch(() => {});
+      .catch(e => console.warn('[NotificationPreferences] failed to load:', e));
   }, []);
 
   const updatePreference = (type: string, channel: keyof Omit<NotificationPreference, 'type' | 'label'>, value: boolean) => {

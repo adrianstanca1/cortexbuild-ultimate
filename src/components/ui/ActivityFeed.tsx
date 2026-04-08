@@ -89,7 +89,7 @@ export function ActivityFeed({ projectId, limit = 10 }: ActivityFeedProps) {
           timestamp: row.created_at,
         })));
       })
-      .catch(() => {});
+      .catch(e => console.warn('[ActivityFeed] failed to load activities:', e));
   }, [projectId, limit]);
 
   const getTimeAgo = (timestamp: string) => {

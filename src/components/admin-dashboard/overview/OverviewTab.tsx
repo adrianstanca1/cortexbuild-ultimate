@@ -23,7 +23,7 @@ export default function OverviewTab({ stats: propStats = null, activities = [], 
     if (propStats) { setFetchLoading(false); return; }
     apiFetch<SystemStats>('/admin/stats')
       .then(data => setFetchedStats(data))
-      .catch(() => {})
+      .catch(e => console.warn('[OverviewTab] failed to load stats:', e))
       .finally(() => setFetchLoading(false));
   }, [propStats]);
 

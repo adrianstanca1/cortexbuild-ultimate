@@ -107,10 +107,10 @@ export function AdvancedAnalytics() {
   useEffect(() => {
     apiFetch<{ data: ProjectRow[] }>('/projects?limit=50')
       .then(res => { if (res?.data?.length) setApiProjects(res.data); })
-      .catch(() => {});
+      .catch(e => console.warn('[AdvancedAnalytics] failed to load projects:', e));
     apiFetch<{ data: RiskRow[] }>('/risk-register?limit=10')
       .then(res => { if (res?.data?.length) setApiRisks(res.data); })
-      .catch(() => {});
+      .catch(e => console.warn('[AdvancedAnalytics] failed to load risks:', e));
   }, []);
 
   // Portfolio data — real if available, fallback hardcoded
