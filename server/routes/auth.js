@@ -14,6 +14,7 @@ const router = express.Router();
 const SECRET = process.env.JWT_SECRET;
 if (!SECRET) {
   console.error('[SECURITY] JWT_SECRET environment variable is not set!');
+  process.exit(1);
 }
 
 // ─── Auth-specific rate limiters ───────────────────────────────────────────────
@@ -336,7 +337,7 @@ router.put('/settings', authMiddleware, async (req, res) => {
 // POST /api/auth/logout — revoke JWT and clear cookie
 router.post('/logout', authMiddleware, async (req, res) => {
   const { jti, exp } = req.user;
-  const ttl = exp ? Math.max(exp - Math.floor(Date.now() / 1000), 1) : 3600;
+  const ttl = exp ? Math.max(exp - Math.floor(Date.now() / 1000), 60) : 3600;
   await blacklistToken(jti, ttl);
   await revokeAllUserTokens(req.user.id);
   res.clearCookie('token');
