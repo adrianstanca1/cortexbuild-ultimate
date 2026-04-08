@@ -25,7 +25,7 @@ export default function OverviewTab({ stats: propStats = null, activities = [], 
       .then(data => setFetchedStats(data))
       .catch(() => {})
       .finally(() => setFetchLoading(false));
-  }, []);
+  }, [propStats]);
 
   const stats = propStats ?? fetchedStats;
   const loading = propLoading || fetchLoading;

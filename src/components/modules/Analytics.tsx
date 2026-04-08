@@ -59,7 +59,7 @@ const CASHFLOW_DATA = [
   { month:'Mar', cumInflow:4449000,  cumOutflow:3151000 },
 ];
 
-const PROFIT_MARGIN_DATA = [
+const _PROFIT_MARGIN_DATA = [
   { month:'Sep', margin:29.5 },
   { month:'Oct', margin:27.3 },
   { month:'Nov', margin:29.2 },
@@ -107,7 +107,7 @@ export function Analytics() {
   const [headcountData, setHeadcountData] = useState<AnyRow[]>(HEADCOUNT_TREND);
 
   // Build invoice aging from real invoice data
-  const invoiceAgingData = (() => {
+  const _invoiceAgingData = (() => {
     const now = Date.now();
     const dayMs = 86400000;
     const buckets = [

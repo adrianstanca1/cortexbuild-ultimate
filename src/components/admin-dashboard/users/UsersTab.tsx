@@ -5,7 +5,7 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import clsx from 'clsx';
-import { usersApi } from '../../../services/api';
+import { usersApi, apiFetch } from '../../../services/api';
 import { EmptyState } from '../../ui/EmptyState';
 import { BulkActionsBar, useBulkSelection, type BulkAction } from '../../ui/BulkActions';
 import { Modal, StatusBadge } from '../shared';
@@ -55,7 +55,7 @@ export default function UsersTab({ users: propUsers = [], loading: propLoading =
   useEffect(() => {
     if (propUsers.length === 0) loadUsers();
     else setFetchLoading(false);
-  }, []);
+  }, [propUsers.length]);
 
   const users = propUsers.length > 0 ? propUsers : fetchedUsers;
   const loading = propLoading || fetchLoading;
@@ -67,27 +67,6 @@ export default function UsersTab({ users: propUsers = [], loading: propLoading =
     if (filterStatus !== 'all' && user.status !== filterStatus) return false;
     return true;
   });
-
-  const handleBulkAction = async (action: string) => {
-    const ids = Array.from(selectedIds);
-    if (action === 'delete') {
-      if (!confirm(`Delete ${ids.length} users? This cannot be undone.`)) return;
-      try {
-        await Promise.all(ids.map(id => usersApi.delete(id)));
-        toast.success(`Deleted ${ids.length} users`);
-        onRefresh?.(); loadUsers();
-        clearSelection();
-      } catch {
-        toast.error('Failed to delete users');
-      }
-    } else if (action === 'activate') {
-      toast.success(`Activated ${ids.length} users`);
-      clearSelection();
-    } else if (action === 'deactivate') {
-      toast.success(`Deactivated ${ids.length} users`);
-      clearSelection();
-    }
-  };
 
   const bulkActions: BulkAction[] = [
     { id: 'activate', label: 'Activate', icon: UserCheck, variant: 'primary', onClick: () => handleBulkAction('activate') },
@@ -123,6 +102,62 @@ export default function UsersTab({ users: propUsers = [], loading: propLoading =
     }
   };
 
+  const [editingUser, setEditingUser] = useState<{ name: string; email: string; role: UserRole; status: string } | null>(null);
+  const [saving, setSaving] = useState(false);
+
+  const handleEditSave = async () => {
+    if (!selectedUser || !editingUser) return;
+    setSaving(true);
+    try {
+      await usersApi.update(selectedUser.id, {
+        name: editingUser.name,
+        email: editingUser.email,
+        role: editingUser.role,
+        status: editingUser.status,
+      });
+      toast.success('User updated successfully');
+      setShowEditModal(false);
+      setSelectedUser(null);
+      setEditingUser(null);
+      onRefresh?.(); loadUsers();
+    } catch (err) {
+      toast.error(`Failed to update user: ${(err as Error).message}`);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleResetPassword = async (user: User) => {
+    if (!confirm(`Reset password for ${user.name}?`)) return;
+    try {
+      await apiFetch(`/auth/reset-password/${user.id}`, { method: 'POST' });
+      toast.success(`Password reset email sent to ${user.email}`);
+    } catch (err) {
+      toast.error(`Failed to reset password: ${(err as Error).message}`);
+    }
+  };
+
+  const handleBulkAction = async (action: string) => {
+    const ids = Array.from(selectedIds);
+    if (action === 'delete') {
+      if (!confirm(`Delete ${ids.length} users? This cannot be undone.`)) return;
+      try {
+        await Promise.all(ids.map(id => usersApi.delete(id)));
+        toast.success(`Deleted ${ids.length} users`);
+        onRefresh?.(); loadUsers();
+        clearSelection();
+      } catch {
+        toast.error('Failed to delete users');
+      }
+    } else if (action === 'activate') {
+      toast.success(`Activated ${ids.length} users`);
+      clearSelection();
+    } else if (action === 'deactivate') {
+      toast.success(`Deactivated ${ids.length} users`);
+      clearSelection();
+    }
+  };
+
   const columns = [
     { key: 'user', header: 'User', width: '250px', render: (user: AnyRow) => (
       <div className="flex items-center gap-3">
@@ -155,14 +190,20 @@ export default function UsersTab({ users: propUsers = [], loading: propLoading =
     { key: 'actions', header: 'Actions', width: '120px', render: (user: AnyRow) => (
       <div className="flex items-center gap-2">
         <button
-          onClick={(e) => { e.stopPropagation(); setSelectedUser(user as unknown as User); setShowEditModal(true); }}
+          onClick={(e) => {
+            e.stopPropagation();
+            const u = user as unknown as User;
+            setSelectedUser(u);
+            setEditingUser({ name: u.name, email: u.email, role: u.role, status: u.status });
+            setShowEditModal(true);
+          }}
           className="p-1.5 text-gray-400 hover:text-blue-400 hover:bg-blue-500/10 rounded transition-colors"
           title="Edit user"
         >
           <Edit2 className="w-4 h-4" />
         </button>
         <button
-          onClick={(e) => { e.stopPropagation(); }}
+          onClick={(e) => { e.stopPropagation(); handleResetPassword(user as unknown as User); }}
           className="p-1.5 text-gray-400 hover:text-emerald-400 hover:bg-emerald-500/10 rounded transition-colors"
           title="Reset password"
         >
@@ -374,7 +415,8 @@ export default function UsersTab({ users: propUsers = [], loading: propLoading =
         footer={
           <div className="flex justify-end gap-3">
             <button onClick={() => { setShowEditModal(false); setSelectedUser(null); }} className="btn btn-secondary">Cancel</button>
-            <button onClick={() => { toast.success('User updated'); setShowEditModal(false); setSelectedUser(null); }} className="btn btn-primary">
+            <button onClick={handleEditSave} disabled={saving} className="btn btn-primary">
+              {saving ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
               Save Changes
             </button>
           </div>

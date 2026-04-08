@@ -35,7 +35,7 @@ export default function CompaniesTab({ companies: propCompanies = [], loading: p
       })
       .catch(() => {})
       .finally(() => setFetchLoading(false));
-  }, []);
+  }, [propCompanies.length]);
 
   const companies = propCompanies.length > 0 ? propCompanies : fetchedCompanies;
   const loading = propLoading || fetchLoading;

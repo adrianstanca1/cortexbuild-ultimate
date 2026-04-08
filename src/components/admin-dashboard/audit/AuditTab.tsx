@@ -22,7 +22,7 @@ export default function AuditTab({ entries: propEntries = [], loading: propLoadi
       .then(data => setFetchedEntries(Array.isArray(data) ? data : []))
       .catch(() => {})
       .finally(() => setFetchLoading(false));
-  }, []);
+  }, [propEntries.length]);
 
   const entries = propEntries.length > 0 ? propEntries : fetchedEntries;
   const loading = propLoading || fetchLoading;
