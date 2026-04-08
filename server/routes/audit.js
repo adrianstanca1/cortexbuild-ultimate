@@ -89,22 +89,20 @@ router.get('/stats', async (req, res) => {
   try {
     const isSuper = req.user?.role === 'super_admin';
     const orgId = req.user?.organization_id;
-    const orgCond = isSuper ? '' : 'WHERE organization_id = $1';
-    const params = isSuper ? [] : [orgId];
-
+    const dateCond = 'created_at > NOW() - INTERVAL \'7 days\'';
     const { rows: byAction } = await pool.query(
-      `SELECT action, COUNT(*) as count FROM audit_log ${orgCond}${isSuper ? 'WHERE' : 'AND'} created_at > NOW() - INTERVAL '7 days' GROUP BY action ORDER BY count DESC`,
-      params
+      `SELECT action, COUNT(*) as count FROM audit_log ${isSuper ? 'WHERE' : 'WHERE organization_id = $1 AND'} ${dateCond} GROUP BY action ORDER BY count DESC`,
+      isSuper ? [] : [orgId]
     );
 
     const { rows: byTable } = await pool.query(
-      `SELECT table_name, COUNT(*) as count FROM audit_log ${orgCond}${isSuper ? 'WHERE' : 'AND'} created_at > NOW() - INTERVAL '7 days' GROUP BY table_name ORDER BY count DESC LIMIT 10`,
-      params
+      `SELECT table_name, COUNT(*) as count FROM audit_log ${isSuper ? 'WHERE' : 'WHERE organization_id = $1 AND'} ${dateCond} GROUP BY table_name ORDER BY count DESC LIMIT 10`,
+      isSuper ? [] : [orgId]
     );
 
     const { rows: recent } = await pool.query(
-      `SELECT COUNT(*) as total FROM audit_log ${orgCond}${isSuper ? 'WHERE' : 'AND'} created_at > NOW() - INTERVAL '24 hours'`,
-      params
+      `SELECT COUNT(*) as total FROM audit_log ${isSuper ? 'WHERE' : 'WHERE organization_id = $1 AND'} created_at > NOW() - INTERVAL '24 hours'`,
+      isSuper ? [] : [orgId]
     );
 
     res.json({

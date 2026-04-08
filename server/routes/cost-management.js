@@ -227,8 +227,7 @@ router.post('/forecast', authMiddleware, async (req, res) => {
        DO UPDATE SET
         projected_cost = EXCLUDED.projected_cost,
         actual_cost = COALESCE(EXCLUDED.actual_cost, cost_forecasts.actual_cost),
-        notes = COALESCE(EXCLUDED.notes, cost_forecasts.notes),
-        updated_at = NOW()
+        notes = COALESCE(EXCLUDED.notes, cost_forecasts.notes)
        RETURNING *`,
       [
         req.user.organization_id,
