@@ -76,18 +76,28 @@ npm run check            # tsc --noEmit + lint + test
 
 **Route registration order matters** in `server/index.js` — more specific paths must be registered before wildcard paths. e.g., `/api/tenders/ai` must come before `/api/tenders`.
 
+### Authorization
+
+**Permission middleware** (`server/middleware/checkPermission.js`):
+- `checkPermission(module, action)` returns middleware enforcing role-based access per module.
+- Routes using only `authMiddleware` are accessible to any authenticated user in the org — add `checkPermission` to restrict write operations.
+- super_admin and company_owner have wildcard `'*': ['*']` access.
+- Examples: `checkPermission('report-templates', 'read')`, `checkPermission('email', 'send')`.
+
 ### AI System
 
 - **Local Ollama only** — `qwen3.5:latest` and `deepseek-r1:7b` via Docker container `cortexbuild-ollama` (port 11434).
 - **Intent classifiers** in `server/routes/ai-intents/` handle natural language: invoices, daily reports, projects, team, safety, budget.
 - **8 AI agents** with streaming UI — see `server/routes/ai-intents/`.
+- **Embedding model** — `EMBEDDING_MODEL` env var (default: `nomic-embed-text:latest`). This MUST be a dedicated embedding model — `qwen3.5` is an LLM and will produce null embeddings, breaking all vector similarity search (RAG).
+- **Company_owner intent queries** — AI intent routes use `WHERE organization_id = $1 OR (organization_id IS NULL AND company_id = $2)` to scope to the user's org or company.
 
 ### Database Schema
 
 **Users table** (authoritative columns): `id, name, email, password_hash, role, company, phone, avatar, created_at, organization_id, company_id, notification_preferences`
 **No**: `first_name`, `last_name`, `job_title`, `is_active`, `updated_at`
 
-**Tables without `updated_at`**: `projects`, `invoices`, `rfis`, `tenders`, `companies`. Do NOT use `updated_at = NOW()` in UPDATE queries for these.
+**Tables without `updated_at`**: `projects`, `invoices`, `rfis`, `tenders`, `companies`, `cost_forecasts`. Do NOT use `updated_at = NOW()` in UPDATE/upsert queries for these tables.
 
 **Invoice valid statuses**: `draft`, `sent`, `paid`, `overdue`, `disputed` — NOT `pending`, `unpaid`.
 
