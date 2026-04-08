@@ -68,7 +68,7 @@ async function handleCrossModule(intents, message, user) {
         const res = await handler(user);
         results[intent] = res;
       } catch (e) {
-        console.error(`[CrossModule] Error in handler ${intent}:`, e.message);
+        console.error(`[CrossModule] Error in handler "${intent}":`, e.stack || e);
         failedHandlers.push(intent);
       }
     }
@@ -85,6 +85,19 @@ async function handleCrossModule(intents, message, user) {
   const failedNote = failedHandlers.length > 0
     ? `\n\n_Some data areas were unavailable: ${failedHandlers.join(', ')}_`
     : '';
+
+  // If ALL handlers failed, return an explicit error
+  if (Object.keys(results).length === 0 && failedHandlers.length > 0) {
+    return {
+      reply: `I tried to gather information from multiple areas, but encountered errors retrieving data: ${failedHandlers.join(', ')}. Please try again or contact support if the issue persists.`,
+      data: { results: {}, failedHandlers },
+      suggestions: [
+        'Try asking about a specific area',
+        'Show me all projects',
+        'Show me open RFIs'
+      ]
+    };
+  }
 
   return {
     reply: summaryParts.length > 0

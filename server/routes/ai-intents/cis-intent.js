@@ -5,8 +5,12 @@ const pool = require('../../db');
  * @returns {Promise<{reply: string, data: object, suggestions: string[]}>}
  */
 async function handleCIS(user) {
+  const orgId = user?.organization_id;
+  const companyId = user?.company_id;
   const { rows } = await pool.query(
-    `SELECT name, ni_number, utr_number as utr, cis_status FROM team_members WHERE organization_id = $1 AND cis_status IS NOT NULL ORDER BY created_at DESC`, [user?.organization_id]);
+    `SELECT name, ni_number, utr_number as utr, cis_status FROM team_members WHERE organization_id = $1 OR (organization_id IS NULL AND company_id = $2) AND cis_status IS NOT NULL ORDER BY created_at DESC`,
+    [orgId, companyId]
+  );
   if (!rows.length) {
     return {
       reply: 'No CIS worker records found.',

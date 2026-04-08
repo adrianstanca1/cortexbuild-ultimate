@@ -31,6 +31,7 @@ function tenantFilter(req) {
   if (!req.user) return { clause: '', params: [] };
   if (SUPER_ADMIN_ROLES.has(req.user.role)) return { clause: '', params: [] };
   if (req.user.organization_id) return { clause: ' AND organization_id = $1', params: [req.user.organization_id] };
+  if (req.user.company_id) return { clause: ' AND company_id = $1', params: [req.user.company_id] };
   return { clause: '', params: [] };
 }
 
@@ -96,7 +97,7 @@ async function retrieveContext(question, tables, orgFilter) {
        ORDER BY embedding <=> $1
        LIMIT 5`,
       ragParams
-    ).catch(() => ({ rows: [] }));
+    .catch(err => { console.error('[RAG] retrieveContext: query failed for table "' + table + '":', err.message); return { rows: [] }; });
 
     for (const r of rows.slice(0, 3)) {
       const similarity = 1 - parseFloat(r.similarity);
@@ -107,7 +108,7 @@ async function retrieveContext(question, tables, orgFilter) {
       const { rows: dataRows } = await pool.query(
         `SELECT * FROM ${safeTable} WHERE id = $1${filterClause} LIMIT 1`,
         dataQueryParams
-      ).catch(() => ({ rows: [] }));
+      .catch(err => { console.error('[RAG] retrieveContext: query failed for table "' + table + '":', err.message); return { rows: [] }; });
       if (dataRows[0]) context.push({ table, row_id: r.row_id, data: dataRows[0] });
     }
   }

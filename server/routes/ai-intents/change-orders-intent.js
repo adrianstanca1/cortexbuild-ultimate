@@ -13,9 +13,11 @@ function fmt(n) {
  * @returns {Promise<{reply: string, data: object, suggestions: string[]}>}
  */
 async function handleChangeOrders(user) {
+  const orgId = user?.organization_id;
+  const companyId = user?.company_id;
   const { rows } = await pool.query(
-    `SELECT number, project, title, value, status, date FROM change_orders WHERE organization_id = $1 ORDER BY created_at DESC`,
-    [user?.organization_id]
+    `SELECT number, project, title, value, status, date FROM change_orders WHERE organization_id = $1 OR (organization_id IS NULL AND company_id = $2) ORDER BY created_at DESC`,
+    [orgId, companyId]
   );
   if (!rows.length) {
     return {

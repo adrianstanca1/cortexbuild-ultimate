@@ -15,9 +15,10 @@ router.get('/', async (req, res) => {
 
   try {
     const [
-      usersRow, activeProjectsRow, companiesRow, apiCallsRow, storageRow
+      usersRow, totalProjectsRow, activeProjectsRow, companiesRow, apiCallsRow, storageRow
     ] = await Promise.all([
       pool.query('SELECT COUNT(*) AS total FROM users'),
+      pool.query('SELECT COUNT(*) AS total FROM projects'),
       pool.query("SELECT COUNT(*) AS total FROM projects WHERE status = 'active'"),
       pool.query('SELECT COUNT(*) AS total FROM organizations'),
       pool.query("SELECT COUNT(*) AS total FROM audit_log WHERE created_at >= NOW() - INTERVAL '1 day'"),
@@ -25,7 +26,7 @@ router.get('/', async (req, res) => {
     ]);
 
     const totalUsers = parseInt(usersRow.rows[0].total, 10);
-    const totalProjects = parseInt((await pool.query('SELECT COUNT(*) AS total FROM projects')).rows[0].total, 10);
+    const totalProjects = parseInt(totalProjectsRow.rows[0].total, 10);
     const activeProjects = parseInt(activeProjectsRow.rows[0].total, 10);
     const totalCompanies = parseInt(companiesRow.rows[0].total, 10);
     const apiCallsToday = parseInt(apiCallsRow.rows[0].total, 10);

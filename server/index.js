@@ -218,6 +218,11 @@ app.use('/api/admin/stats',   require('./routes/admin-stats'));
 // ─── 404 ──────────────────────────────────────────────────────────────────────
 app.use((_req, res) => res.status(404).json({ message: 'Route not found' }));
 
+// ─── Unhandled rejection safety net ───────────────────────────────────────────
+process.on('unhandledRejection', (reason, promise) => {
+  console.error('[UnhandledRejection] Unhandled promise rejection at:', promise, 'reason:', reason);
+});
+
 // ─── Start ────────────────────────────────────────────────────────────────────
 server.listen(PORT, () => {
   console.log(`\n🏗  CortexBuild API running on port ${PORT}`);

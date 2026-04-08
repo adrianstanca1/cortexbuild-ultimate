@@ -13,9 +13,11 @@ function fmt(n) {
  * @returns {Promise<{reply: string, data: object, suggestions: string[]}>}
  */
 async function handleInvoices(user) {
+  const orgId = user?.organization_id;
+  const companyId = user?.company_id;
   const { rows } = await pool.query(
-    `SELECT number, client, project, amount, status, due_date FROM invoices WHERE organization_id = $1 ORDER BY created_at DESC`,
-    [user?.organization_id]
+    `SELECT number, client, project, amount, status, due_date FROM invoices WHERE organization_id = $1 OR (organization_id IS NULL AND company_id = $2) ORDER BY created_at DESC`,
+    [orgId, companyId]
   );
   if (!rows.length) {
     return {
@@ -55,8 +57,11 @@ async function handleInvoices(user) {
  * @returns {Promise<{reply: string, data: object, suggestions: string[]}>}
  */
 async function handleOverdue(user) {
+  const orgId = user?.organization_id;
+  const companyId = user?.company_id;
   const { rows } = await pool.query(
-    `SELECT number, client, project, amount, due_date FROM invoices WHERE status = 'overdue' AND organization_id = $1 ORDER BY due_date ASC`, [user?.organization_id]
+    `SELECT number, client, project, amount, due_date FROM invoices WHERE status = 'overdue' AND (organization_id = $1 OR (organization_id IS NULL AND company_id = $2)) ORDER BY due_date ASC`,
+    [orgId, companyId]
   );
   if (!rows.length) {
     return {

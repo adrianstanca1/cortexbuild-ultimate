@@ -6,7 +6,7 @@ const pool = require('../../db');
  */
 async function handleRams(user) {
   const { rows } = await pool.query(
-    `SELECT title, project, type, status, review_date FROM rams WHERE organization_id = $1 ORDER BY created_at DESC`
+    `SELECT title, project, type, status, review_date FROM rams WHERE organization_id = $1 ORDER BY created_at DESC`,
     [user?.organization_id]
   );
   if (!rows.length) {
