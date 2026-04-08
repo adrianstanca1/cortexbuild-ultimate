@@ -38,6 +38,24 @@ jobs:
       - name: Build frontend
         run: npm run build
 
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run tests
+        run: npm test
+
   lint:
     runs-on: ubuntu-latest
     steps:
@@ -53,7 +71,7 @@ jobs:
         run: npm ci
 
       - name: Run ESLint
-        run: npx eslint . --ext .ts,.tsx
+        run: npx eslint src --ext .ts,.tsx
 
       - name: Check for security vulnerabilities
         run: npm audit --audit-level=moderate
