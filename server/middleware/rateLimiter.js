@@ -57,7 +57,14 @@ module.exports = function rateLimiter(req, res, next) {
         }
       })
       .catch(() => {
-        // Redis failed - fall back to in-memory
+        // Redis failed — in production, fail closed (deny requests) since
+        // in-memory fallback is insecure in multi-instance deployments.
+        if (process.env.NODE_ENV === 'production') {
+          return res.status(503).json({
+            message: 'Service temporarily unavailable. Rate limiting service error.',
+          });
+        }
+        // Dev/staging: fall back to in-memory (single-instance only)
         fallbackRateLimiter(req, res, next);
       });
   }

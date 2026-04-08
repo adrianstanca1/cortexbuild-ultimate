@@ -23,7 +23,7 @@ const httpRequestDuration = new promClient.Histogram({
   buckets: [0.01, 0.05, 0.1, 0.25, 0.5, 1, 2.5, 5, 10],
 });
 
-// Expose metrics endpoint for Prometheus scraping
+// Expose metrics endpoint for Prometheus scraping (no auth — Prometheus is internal network only)
 router.get('/', authMw, async (req, res) => {
   try {
     res.set('Content-Type', register.contentType);

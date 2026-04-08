@@ -100,9 +100,23 @@ jobs:
             git pull origin main
             docker build -t "$IMAGE_NAME" -f Dockerfile.api .
 
-            # Get the DB password - try POSTGRES_PASSWORD (docker-compose format) or DB_PASSWORD or fallback
-            ACTUAL_DB_PASSWORD="${POSTGRES_PASSWORD:-${DB_PASSWORD:-cortexbuild_dev_password}}"
-            echo "Using DB_PASSWORD"
+            # Validate required secrets are set before deploying
+            if [ -z "$JWT_SECRET" ]; then
+              echo "FATAL: JWT_SECRET GitHub secret is not set"
+              exit 1
+            fi
+            if [ -z "$SESSION_SECRET" ]; then
+              echo "FATAL: SESSION_SECRET GitHub secret is not set"
+              exit 1
+            fi
+            if [ -z "$POSTGRES_PASSWORD" ] && [ -z "$DB_PASSWORD" ]; then
+              echo "FATAL: Neither POSTGRES_PASSWORD nor DB_PASSWORD GitHub secret is set"
+              exit 1
+            fi
+
+            # Get the DB password
+            ACTUAL_DB_PASSWORD="${POSTGRES_PASSWORD:-${DB_PASSWORD:-}}"
+            echo "Deploying with secure credentials"
 
             docker stop "$CONTAINER_NAME" 2>/dev/null || true
             docker rm "$CONTAINER_NAME" 2>/dev/null || true
@@ -116,8 +130,8 @@ jobs:
               -e DB_NAME=cortexbuild \
               -e DB_USER=cortexbuild \
               -e DB_PASSWORD="$ACTUAL_DB_PASSWORD" \
-              -e JWT_SECRET="${JWT_SECRET:-cortexbuild_dev_jwt_secret_change_in_production}" \
-              -e SESSION_SECRET="${SESSION_SECRET:-cortexbuild_dev_jwt_secret_change_in_production}" \
+              -e JWT_SECRET="$JWT_SECRET" \
+              -e SESSION_SECRET="$SESSION_SECRET" \
               -e REDIS_HOST=cortexbuild-redis \
               -e PORT=3001 \
               -e NODE_ENV=production \

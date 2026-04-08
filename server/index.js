@@ -103,7 +103,31 @@ app.use('/uploads', express.static(path.join(__dirname, 'uploads'), {
 // ─── Public routes ────────────────────────────────────────────────────────────
 app.use('/api/auth', authRoutes);
 app.use('/api/auth', require('./routes/oauth')); // Google OAuth
-app.get('/api/health', (_req, res) => res.json({ status: 'ok', version: '1.0.0' }));
+// ─── Health check — verifies PostgreSQL and Redis connectivity ──────────────────
+async function checkHealth() {
+  const checks = { postgres: false, redis: false, status: 'degraded' };
+  try {
+    const { pool } = require('./db');
+    await pool.query('SELECT 1');
+    checks.postgres = true;
+  } catch {
+    checks.postgres = false;
+  }
+  try {
+    await redisClient.ping();
+    checks.redis = true;
+  } catch {
+    checks.redis = false;
+  }
+  checks.status = checks.postgres && checks.redis ? 'ok' : 'degraded';
+  return checks;
+}
+
+app.get('/api/health', async (_req, res) => {
+  const checks = await checkHealth();
+  const statusCode = checks.status === 'ok' ? 200 : 503;
+  res.status(statusCode).json({ status: checks.status, version: '1.0.0', checks });
+});
 
 // Rate-limited deploy route (5 requests per hour, Redis-backed)
 // Protected by DEPLOY_SECRET bearer token (see routes/deploy.js)
@@ -222,6 +246,37 @@ app.use((_req, res) => res.status(404).json({ message: 'Route not found' }));
 process.on('unhandledRejection', (reason, promise) => {
   console.error('[UnhandledRejection] Unhandled promise rejection at:', promise, 'reason:', reason);
 });
+
+// ─── Graceful shutdown — drain connections before exiting ───────────────────────────
+function gracefulShutdown(signal) {
+  console.log(`\n[${signal}] Graceful shutdown initiated...`);
+  server.close(async () => {
+    console.log('[HTTP] Server closed');
+    try {
+      const { pool } = require('./db');
+      await pool.end();
+      console.log('[PostgreSQL] Pool closed');
+    } catch (e) {
+      console.error('[PostgreSQL] Error closing pool:', e.message);
+    }
+    try {
+      await redisClient.quit();
+      console.log('[Redis] Client closed');
+    } catch (e) {
+      console.error('[Redis] Error closing client:', e.message);
+    }
+    console.log('[Shutdown] Complete');
+    process.exit(0);
+  });
+  // Force exit after 10s if graceful shutdown hangs
+  setTimeout(() => {
+    console.error('[Shutdown] Timeout — forcing exit');
+    process.exit(1);
+  }, 10000);
+}
+
+process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
+process.on('SIGINT',  () => gracefulShutdown('SIGINT'));
 
 // ─── Start ────────────────────────────────────────────────────────────────────
 server.listen(PORT, () => {
