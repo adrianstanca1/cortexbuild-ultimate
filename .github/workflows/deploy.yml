@@ -59,7 +59,6 @@ jobs:
           host: ${{ secrets.SSH_HOST }}
           username: ${{ secrets.SSH_USERNAME }}
           key: ${{ secrets.VPS_SSH_KEY }}
-          known_hosts: ${{ secrets.SSH_HOST }} ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAACAQCqvXeMFeYnWQxDBxHcR7FyN3O/3pGfND6Vy9vpveXUQnczeQoDMdBjGGfces5A9BOZ2RMwqgy+l0juPsolxPatk8pzDi0F+AlG0vcxeQ3UkUsRkNKHmAs498/a46w0cwsHlpQ5TBjq6Cypmuc1to85rtJZPKDv75pR6utWVBNJEMm3aJTPMFWf8hbT2H+PzStYSBgYTEgfK7+r4LsnerjJtPY3lzUMdzh2va0Cn9CYs5MQPoQNN6KmzLgzUTDkoW+l/zszkkxcmNt/8fS6rfmhVlZNRH0w7vIElM9RaHTqShNn/MMQrsJHr8XzVqGJBv7FrKht0euNZLOa9o4n/wzhVtTi53sirZ8qVj03w7gLI0or5mBDr5aQFRFx+ek7yMO5dT9feTlSK51a1Wr+ohIklTNIEkuOMpkNk1mqOM+3tlss4Ppkv5O5g/70y0qP0pfQBTx8nRCzV9QWnld6jJ19zjQK6WDG63brUkIyp75xLP4abp9Cqye93Da9QG3eFQGkFrMoQrmvwjQBl+89qu5GhlMqjP5LL1XRop/q9D6R5ALbhrkCCgqa7/dPgNpGg4gbWiFhyInkVbtjiLIjnnf1WQhom+Q6zQyPcJbzzTcO4M87Qv/RaMD3aprr6wl1F/1Pa/zl3lX+x/aDAXupKV45qMCA34X/KtuTbZRthhYI2Q==
           script: |
             set -e
             # Copy deploy scripts
