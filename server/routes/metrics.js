@@ -4,6 +4,7 @@
 
 const express = require('express');
 const promClient = require('prom-client');
+const authMw = require('../middleware/auth');
 
 const router = express.Router();
 
@@ -23,7 +24,7 @@ const httpRequestDuration = new promClient.Histogram({
 });
 
 // Expose metrics endpoint for Prometheus scraping
-router.get('/', async (req, res) => {
+router.get('/', authMw, async (req, res) => {
   res.set('Content-Type', register.contentType);
   res.send(await register.metrics());
 });

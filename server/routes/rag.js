@@ -14,7 +14,7 @@ const ALLOWED_RAG_TABLES = new Set(SEARCHABLE_TABLES);
 const router = express.Router();
 router.use(authMw);
 
-const SUPER_ADMIN_ROLES = new Set(['super_admin', 'company_owner']);
+const SUPER_ADMIN_ROLES = new Set(['super_admin']);
 
 /** Determine tenant filter clause. */
 function tenantFilter(req) {
