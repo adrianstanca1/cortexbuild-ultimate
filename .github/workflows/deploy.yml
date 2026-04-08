@@ -133,22 +133,14 @@ jobs:
               fi
               sleep 2
             done
-            # Also verify from outside via docker exec
-            if docker exec "$CONTAINER_NAME" curl -sf http://localhost:3001/api/health >/dev/null 2>&1; then
-              echo "API healthy from inside container"
-            else
-              echo "Warning: API not reachable from inside container"
-              docker logs --tail 20 "$CONTAINER_NAME" 2>&1 || true
-            fi
-
-            # Check if nginx can reach the API
-            echo "Testing nginx -> API connectivity..."
-            curl -s http://localhost:3001/api/health >/dev/null 2>&1 && echo "API reachable from host via localhost:3001" || echo "Warning: API not reachable from host"
 
             # Restart nginx to refresh DNS resolution for new container
             echo "Restarting nginx..."
             systemctl restart nginx || service nginx restart || nginx -s reload || true
             sleep 5
+
+            # Final check
+            curl -s http://localhost:3001/api/health >/dev/null 2>&1 && echo "API OK after restart" || echo "API may need manual check"
 
             echo "=== API Deploy Complete ==="
             DEPLOYEOF
