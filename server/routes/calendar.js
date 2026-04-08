@@ -10,9 +10,18 @@ async function getEvents(req, res) {
     const { start, end } = req.query;
     const events = [];
     const orgId = req.user?.organization_id;
-    const isSuper = ['super_admin', 'company_owner'].includes(req.user?.role);
-    const orgFilter = orgId && !isSuper ? 'AND organization_id = $1' : '';
-    const params = orgId && !isSuper ? [orgId] : [];
+    const role = req.user?.role;
+    let orgFilter = '';
+    let params = [];
+    if (role === 'super_admin') {
+      // no filter
+    } else if (role === 'company_owner') {
+      orgFilter = 'AND company_id = $1';
+      params = [req.user.company_id];
+    } else {
+      orgFilter = 'AND organization_id = $1';
+      params = [orgId];
+    }
 
     const { rows: projects } = await pool.query(
       `SELECT id, name, client, status, start_date, end_date, type FROM projects
@@ -70,16 +79,24 @@ async function getEvents(req, res) {
       });
     });
 
-    // Note: each UNION part uses its own param ($1 for rfis, $2 for change_orders)
-    const rfisParams = isSuper ? [] : (orgId ? [orgId] : [0]);
-    const coParams = isSuper ? [] : (orgId ? [orgId] : [0]);
+    // UNION query: each part uses the same filter column; $1 for rfis, $2 for change_orders
+    let deadlineFilter = '';
+    let deadlineParams = [];
+    if (role === 'company_owner') {
+      deadlineFilter = 'AND company_id = $1';
+      deadlineParams = [req.user.company_id, req.user.company_id];
+    } else if (role !== 'super_admin') {
+      deadlineFilter = 'AND organization_id = $1';
+      deadlineParams = [orgId, orgId];
+    }
+    const deadlineFilterCO = deadlineFilter ? deadlineFilter.replace('$1', '$2') : '';
     const { rows: deadlines } = await pool.query(
       `SELECT id, subject as title, due_date as date, status, project FROM rfis
-       WHERE due_date IS NOT NULL ${orgId && !isSuper ? 'AND organization_id = $1' : ''}
+       WHERE due_date IS NOT NULL ${deadlineFilter}
        UNION ALL
        SELECT id, title, submitted_date as date, status, project FROM change_orders
-       WHERE submitted_date IS NOT NULL ${orgId && !isSuper ? 'AND organization_id = $2' : ''}`,
-      [...rfisParams, ...coParams]
+       WHERE submitted_date IS NOT NULL ${deadlineFilterCO}`,
+      deadlineParams
     );
     deadlines.forEach(d => {
       events.push({

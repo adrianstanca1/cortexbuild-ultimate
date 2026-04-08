@@ -9,11 +9,15 @@ router.get('/overview', async (req, res) => {
   try {
     const auth = req.user || {};
     const orgId = auth.organization_id;
-    const isSuper = ['super_admin', 'company_owner'].includes(auth.role);
 
     let params = [];
     let where = '';
-    if (orgId && !isSuper) {
+    if (auth.role === 'super_admin') {
+      // no filter — global admin
+    } else if (auth.role === 'company_owner') {
+      where = 'WHERE company_id = $1';
+      params.push(auth.company_id);
+    } else {
       where = 'WHERE organization_id = $1';
       params.push(orgId);
     }
@@ -64,11 +68,15 @@ router.get('/revenue', async (req, res) => {
   try {
     const auth = req.user || {};
     const orgId = auth.organization_id;
-    const isSuper = ['super_admin', 'company_owner'].includes(auth.role);
 
     let params = [];
     let where = '';
-    if (orgId && !isSuper) {
+    if (auth.role === 'super_admin') {
+      // no filter
+    } else if (auth.role === 'company_owner') {
+      where = 'WHERE company_id = $1';
+      params.push(auth.company_id);
+    } else {
       where = 'WHERE organization_id = $1';
       params.push(orgId);
     }
@@ -101,11 +109,15 @@ router.get('/project-status', async (req, res) => {
   try {
     const auth = req.user || {};
     const orgId = auth.organization_id;
-    const isSuper = ['super_admin', 'company_owner'].includes(auth.role);
 
     let params = [];
     let where = '';
-    if (orgId && !isSuper) {
+    if (auth.role === 'super_admin') {
+      // no filter
+    } else if (auth.role === 'company_owner') {
+      where = 'WHERE company_id = $1';
+      params.push(auth.company_id);
+    } else {
       where = 'WHERE organization_id = $1';
       params.push(orgId);
     }
@@ -143,13 +155,18 @@ router.get('/safety-chart', async (req, res) => {
   try {
     const auth = req.user || {};
     const orgId = auth.organization_id;
-    const isSuper = ['super_admin', 'company_owner'].includes(auth.role);
 
     // Build org join/filter for multi-tenancy
     let join = '';
     let params = [];
     let where = '';
-    if (orgId && !isSuper) {
+    if (auth.role === 'super_admin') {
+      // no filter
+    } else if (auth.role === 'company_owner') {
+      join = 'JOIN projects p ON si.project_id = p.id';
+      where = 'WHERE p.company_id = $1';
+      params.push(auth.company_id);
+    } else {
       join = 'JOIN projects p ON si.project_id = p.id';
       where = 'WHERE p.organization_id = $1';
       params.push(orgId);

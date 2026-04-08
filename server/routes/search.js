@@ -86,53 +86,55 @@ router.get('/', async (req, res) => {
     const searchTerm = `%${q.toLowerCase()}%`;
     const results = { projects: [], invoices: [], contacts: [], rfis: [], documents: [], team: [] };
     const limitNum = parseInt(limit, 10);
-    const orgId = req.user?.organization_id;
+    const role = req.user?.role;
+    const tenantCol = role === 'company_owner' ? 'company_id' : 'organization_id';
+    const tenantId = role === 'company_owner' ? req.user?.company_id : req.user?.organization_id;
 
     const projectResults = await pool.query(
       `SELECT id, name, client, status, type FROM projects
-       WHERE organization_id = $1 AND (LOWER(name) LIKE $2 OR LOWER(client) LIKE $2)
+       WHERE ${tenantCol} = $1 AND (LOWER(name) LIKE $2 OR LOWER(client) LIKE $2)
        ORDER BY created_at DESC LIMIT $3`,
-      [orgId, searchTerm, limitNum]
+      [tenantId, searchTerm, limitNum]
     );
     results.projects = projectResults.rows;
 
     const invoiceResults = await pool.query(
       `SELECT id, number, client, amount, status FROM invoices
-       WHERE organization_id = $1 AND (LOWER(number) LIKE $2 OR LOWER(client) LIKE $2)
+       WHERE ${tenantCol} = $1 AND (LOWER(number) LIKE $2 OR LOWER(client) LIKE $2)
        ORDER BY created_at DESC LIMIT $3`,
-      [orgId, searchTerm, limitNum]
+      [tenantId, searchTerm, limitNum]
     );
     results.invoices = invoiceResults.rows;
 
     const contactResults = await pool.query(
       `SELECT id, name, company, email, role FROM contacts
-       WHERE organization_id = $1 AND (LOWER(name) LIKE $2 OR LOWER(company) LIKE $2 OR LOWER(email) LIKE $2)
+       WHERE ${tenantCol} = $1 AND (LOWER(name) LIKE $2 OR LOWER(company) LIKE $2 OR LOWER(email) LIKE $2)
        ORDER BY created_at DESC LIMIT $3`,
-      [orgId, searchTerm, limitNum]
+      [tenantId, searchTerm, limitNum]
     );
     results.contacts = contactResults.rows;
 
     const rfiResults = await pool.query(
       `SELECT id, number, subject, status, project FROM rfis
-       WHERE organization_id = $1 AND (LOWER(number) LIKE $2 OR LOWER(subject) LIKE $2)
+       WHERE ${tenantCol} = $1 AND (LOWER(number) LIKE $2 OR LOWER(subject) LIKE $2)
        ORDER BY created_at DESC LIMIT $3`,
-      [orgId, searchTerm, limitNum]
+      [tenantId, searchTerm, limitNum]
     );
     results.rfis = rfiResults.rows;
 
     const docResults = await pool.query(
       `SELECT id, name, type, category, project FROM documents
-       WHERE organization_id = $1 AND (LOWER(name) LIKE $2 OR LOWER(category) LIKE $2)
+       WHERE ${tenantCol} = $1 AND (LOWER(name) LIKE $2 OR LOWER(category) LIKE $2)
        ORDER BY created_at DESC LIMIT $3`,
-      [orgId, searchTerm, limitNum]
+      [tenantId, searchTerm, limitNum]
     );
     results.documents = docResults.rows;
 
     const teamResults = await pool.query(
       `SELECT id, name, role, trade FROM team_members
-       WHERE organization_id = $1 AND (LOWER(name) LIKE $2 OR LOWER(role) LIKE $2 OR LOWER(trade) LIKE $2)
+       WHERE ${tenantCol} = $1 AND (LOWER(name) LIKE $2 OR LOWER(role) LIKE $2 OR LOWER(trade) LIKE $2)
        ORDER BY created_at DESC LIMIT $3`,
-      [orgId, searchTerm, limitNum]
+      [tenantId, searchTerm, limitNum]
     );
     results.team = teamResults.rows;
 

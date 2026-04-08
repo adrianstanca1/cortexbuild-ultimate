@@ -214,16 +214,20 @@ router.get('/users', authMiddleware, async (req, res) => {
     return res.status(403).json({ message: 'Insufficient permissions' });
   }
   try {
-    const isSuper = req.user.role === 'super_admin';
+    const role = req.user.role;
     const orgId = req.user.organization_id;
     let query;
     let params;
-    if (isSuper) {
+    if (role === 'super_admin') {
       // super_admin sees all users across orgs
       query = 'SELECT id,name,email,role,company,phone,avatar,organization_id,company_id,created_at FROM users ORDER BY created_at DESC';
       params = [];
+    } else if (role === 'company_owner') {
+      // company_owner scoped by company_id (organization_id is NULL for this role)
+      query = 'SELECT id,name,email,role,company,phone,avatar,organization_id,company_id,created_at FROM users WHERE company_id = $1 ORDER BY created_at DESC';
+      params = [req.user.company_id];
     } else {
-      // Regular admins see only their org's users
+      // admins see their org's users
       query = 'SELECT id,name,email,role,company,phone,avatar,organization_id,company_id,created_at FROM users WHERE organization_id = $1 ORDER BY created_at DESC';
       params = [orgId];
     }
@@ -269,9 +273,9 @@ router.delete('/users/:id', authMiddleware, async (req, res) => {
   if (String(req.params.id) === String(req.user.id)) return res.status(400).json({ message: 'Cannot delete your own account' });
 
   try {
-    const oldRows = await pool.query('SELECT * FROM users WHERE id = $1', [req.params.id]);
+    const oldRows = await pool.query('SELECT * FROM users WHERE id = $1 AND company_id = $2', [req.params.id, req.user.company_id]);
     if (!oldRows.rowCount) return res.status(404).json({ message: 'User not found' });
-    const { rowCount } = await pool.query('DELETE FROM users WHERE id = $1 AND company_id = $2', [req.params.id, req.user.company_id]);
+    await pool.query('DELETE FROM users WHERE id = $1 AND company_id = $2', [req.params.id, req.user.company_id]);
     logAudit({ auth: req.user, action: 'delete', entityType: 'users', entityId: req.params.id, oldData: oldRows.rows[0] });
     res.json({ message: 'User deleted' });
   } catch (err) {

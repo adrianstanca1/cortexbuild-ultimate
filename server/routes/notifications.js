@@ -58,9 +58,11 @@ router.get('/', async (req, res) => {
       `SELECT COUNT(*) FROM notifications ${where}`, params
     );
 
-    // Unread count uses same WHERE but no pagination
+    // Unread count uses only the base user/org filter — not status/type/severity filters
     const { rows: [{ count: unread }] } = await pool.query(
-      `SELECT COUNT(*) FROM notifications ${where} AND read = false`, params
+      `SELECT COUNT(*) FROM notifications
+       WHERE (user_id = $1 OR (organization_id = $2 AND user_id IS NULL)) AND read = false`,
+      [userId, orgId]
     );
 
     res.json({ notifications: rows, total: parseInt(total, 10), unreadCount: parseInt(unread, 10) });

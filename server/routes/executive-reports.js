@@ -7,11 +7,11 @@ const router = express.Router();
 router.use(authMiddleware);
 router.use(checkPermission('executive-reports', 'read'));
 
-// Multi-tenancy: extract org/company context from auth
+// Multi-tenancy: super_admin sees all; company_owner scoped by company_id; others by organization_id
 function getTenantFilter(req) {
   const auth = req.user || {};
-  if (!auth.organization_id) return { filter: '', params: [] };
-  // Append to existing WHERE clauses in this file.
+  if (!auth.role || auth.role === 'super_admin') return { filter: '', params: [] };
+  if (auth.role === 'company_owner') return { filter: ' AND company_id = $1', params: [auth.company_id] };
   return { filter: ' AND organization_id = $1', params: [auth.organization_id] };
 }
 

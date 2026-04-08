@@ -9,12 +9,15 @@ router.get('/overtime', async (req, res) => {
   try {
     const auth = req.user || {};
     const orgId = auth.organization_id;
-    const companyId = auth.company_id;
-    const isSuper = ['super_admin', 'company_owner'].includes(auth.role);
 
     let params = [];
     let where = '';
-    if (orgId && !isSuper) {
+    if (auth.role === 'super_admin') {
+      // no filter
+    } else if (auth.role === 'company_owner') {
+      where = 'WHERE t.company_id = $1';
+      params.push(auth.company_id);
+    } else {
       where = 'WHERE t.organization_id = $1';
       params.push(orgId);
     }
@@ -48,11 +51,15 @@ router.get('/vat', async (req, res) => {
   try {
     const auth = req.user || {};
     const orgId = auth.organization_id;
-    const isSuper = ['super_admin', 'company_owner'].includes(auth.role);
 
     let params = [];
     let where = '';
-    if (orgId && !isSuper) {
+    if (auth.role === 'super_admin') {
+      // no filter
+    } else if (auth.role === 'company_owner') {
+      where = 'WHERE company_id = $1';
+      params.push(auth.company_id);
+    } else {
       where = 'WHERE organization_id = $1';
       params.push(orgId);
     }

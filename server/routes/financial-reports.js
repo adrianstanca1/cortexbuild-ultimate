@@ -7,10 +7,10 @@ const router = express.Router();
 router.use(authMiddleware);
 router.use(checkPermission('financial-reports', 'read'));
 
-// Multi-tenancy: use org filter when org_id exists, otherwise return all (super_admin)
+// Multi-tenancy: super_admin sees all; company_owner scoped by company_id; others by organization_id
 function orgFilter(user) {
-  if (!user) return { filter: '', params: [] };
-  if (!user.organization_id) return { filter: '', params: [] };
+  if (!user || user.role === 'super_admin') return { filter: '', params: [] };
+  if (user.role === 'company_owner') return { filter: ' company_id = $1', params: [user.company_id] };
   return { filter: ' organization_id = $1', params: [user.organization_id] };
 }
 

@@ -132,10 +132,11 @@ router.post('/users', authMiddleware, async (req, res) => {
     return res.status(403).json({ message: 'Insufficient permissions' });
   }
 
-  const { email, firstName, lastName, role, phone, jobTitle, password } = req.body;
+  const { email, name, firstName, lastName, role, phone, password } = req.body;
+  const fullName = name || (firstName && lastName ? `${firstName.trim()} ${lastName.trim()}` : null);
 
-  if (!email || !firstName || !lastName) {
-    return res.status(400).json({ message: 'Email, first name, and last name are required' });
+  if (!email || !fullName) {
+    return res.status(400).json({ message: 'Email and name are required' });
   }
 
   // SECURITY: Restrict creatable roles based on creator's role to prevent privilege escalation
@@ -175,7 +176,7 @@ router.post('/users', authMiddleware, async (req, res) => {
        RETURNING id, email, name, role, phone, created_at`,
       [
         email.toLowerCase().trim(),
-        `${firstName.trim()} ${lastName.trim()}`,
+        fullName,
         targetRole,
         phone || null,
         passwordHash,
@@ -254,7 +255,7 @@ router.put('/users/:id', authMiddleware, async (req, res) => {
     return res.status(403).json({ message: 'Insufficient permissions' });
   }
 
-  const { role, is_active, jobTitle, phone } = req.body;
+  const { role, phone } = req.body;
 
   // SECURITY: Restrict assignable roles based on updater's role to prevent privilege escalation
   const ASSIGNABLE_ROLES = {
@@ -299,7 +300,7 @@ router.put('/users/:id', authMiddleware, async (req, res) => {
       action: 'update',
       entityType: 'users',
       entityId: req.params.id,
-      newData: { role, is_active }
+      newData: { role }
     });
 
     res.json(rows[0]);
