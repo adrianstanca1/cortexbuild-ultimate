@@ -99,18 +99,25 @@ jobs:
 
             git pull origin main
             docker build -t "$IMAGE_NAME" -f Dockerfile.api .
+
+            # Get the DB password - try POSTGRES_PASSWORD (docker-compose format) or DB_PASSWORD
+            ACTUAL_DB_PASSWORD="${POSTGRES_PASSWORD:-${DB_PASSWORD:-}}"
+            if [ -z "$ACTUAL_DB_PASSWORD" ]; then
+              echo "ERROR: Neither POSTGRES_PASSWORD nor DB_PASSWORD is set in .env"
+              exit 1
+            fi
+
             docker stop "$CONTAINER_NAME" 2>/dev/null || true
             docker rm "$CONTAINER_NAME" 2>/dev/null || true
             docker run -d \
               --name "$CONTAINER_NAME" \
               --restart always \
               --network cortexbuild \
-              -p 127.0.0.1:3001:3001 \
               -e DB_HOST=cortexbuild-db \
               -e DB_PORT=5432 \
               -e DB_NAME=cortexbuild \
               -e DB_USER=cortexbuild \
-              -e DB_PASSWORD \
+              -e DB_PASSWORD="$ACTUAL_DB_PASSWORD" \
               -e JWT_SECRET \
               -e SESSION_SECRET \
               -e REDIS_HOST=cortexbuild-redis \
