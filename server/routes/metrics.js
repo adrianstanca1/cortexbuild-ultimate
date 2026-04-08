@@ -25,8 +25,13 @@ const httpRequestDuration = new promClient.Histogram({
 
 // Expose metrics endpoint for Prometheus scraping
 router.get('/', authMw, async (req, res) => {
-  res.set('Content-Type', register.contentType);
-  res.send(await register.metrics());
+  try {
+    res.set('Content-Type', register.contentType);
+    res.send(await register.metrics());
+  } catch (err) {
+    console.error('[Metrics]', err);
+    res.status(500).send('Metrics error');
+  }
 });
 
 // Middleware: observe request duration (must be mounted before routes)

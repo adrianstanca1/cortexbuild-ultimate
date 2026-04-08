@@ -84,7 +84,7 @@ export function Settings() {
         }));
         setUsers(transformed as typeof users);
       }
-    }).catch(() => { /* use defaults */ })
+    }).catch(err => { console.warn('[Settings] users fetch failed:', err); /* use defaults */ })
       .finally(() => setLoadingUsers(false));
   }, []);
 

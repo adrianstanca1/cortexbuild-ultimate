@@ -154,7 +154,7 @@ router.get('/', async (req, res) => {
              JOIN documents d ON d.id = de.file_id
              WHERE d.organization_id = $1
              LIMIT 200`,
-            [orgId]
+            [tenantId]
           );
           // Embeddings are stored as JSON arrays from Ollama
           const scored = chunks.map(row => {
