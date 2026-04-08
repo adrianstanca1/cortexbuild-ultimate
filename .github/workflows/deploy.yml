@@ -84,13 +84,6 @@ jobs:
             IMAGE_NAME="cortexbuild-ultimate-api:latest"
             cd "$PROJECT_DIR"
 
-            # Source environment variables if .env exists
-            if [ -f "$PROJECT_DIR/.env" ]; then
-              set -a
-              source "$PROJECT_DIR/.env"
-              set +a
-            fi
-
             # Ensure Docker network exists
             if ! docker network inspect cortexbuild >/dev/null 2>&1; then
               echo "Creating cortexbuild network..."
@@ -98,25 +91,31 @@ jobs:
             fi
 
             git pull origin main
+
             docker build -t "$IMAGE_NAME" -f Dockerfile.api .
 
-            # Validate required secrets are set before deploying
+            # Source environment variables after git pull (env file is gitignored, not overwritten)
+            set -a
+            source "$PROJECT_DIR/.env" || true
+            set +a
+
+            # Validate required secrets are present
             if [ -z "$JWT_SECRET" ]; then
-              echo "FATAL: JWT_SECRET GitHub secret is not set"
+              echo "FATAL: JWT_SECRET not set in $PROJECT_DIR/.env"
               exit 1
             fi
             if [ -z "$SESSION_SECRET" ]; then
-              echo "FATAL: SESSION_SECRET GitHub secret is not set"
+              echo "FATAL: SESSION_SECRET not set in $PROJECT_DIR/.env"
               exit 1
             fi
             if [ -z "$POSTGRES_PASSWORD" ] && [ -z "$DB_PASSWORD" ]; then
-              echo "FATAL: Neither POSTGRES_PASSWORD nor DB_PASSWORD GitHub secret is set"
+              echo "FATAL: Neither POSTGRES_PASSWORD nor DB_PASSWORD set in $PROJECT_DIR/.env"
               exit 1
             fi
 
             # Get the DB password
             ACTUAL_DB_PASSWORD="${POSTGRES_PASSWORD:-${DB_PASSWORD:-}}"
-            echo "Deploying with secure credentials"
+            echo "Deploying with secure credentials from .env"
 
             docker stop "$CONTAINER_NAME" 2>/dev/null || true
             docker rm "$CONTAINER_NAME" 2>/dev/null || true
