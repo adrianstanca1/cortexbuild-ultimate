@@ -62,8 +62,7 @@ router.get('/cashflow', async (req, res) => {
     const baseParams = org.params;
 
     const params = ['paid', ...baseParams];
-    const orgOffset = baseParams.length > 0 ? ` AND organization_id = $2` : '';
-    let query = `SELECT * FROM invoices WHERE status = $1${orgOffset}`;
+    let query = `SELECT * FROM invoices WHERE status = $1${orgClause}`;
 
     if (startDate) {
       params.push(startDate);
@@ -95,7 +94,7 @@ router.get('/cashflow', async (req, res) => {
     let expenseQuery = `SELECT i.amount, i.issue_date, COALESCE(p.spent, 0) as project_spent
        FROM invoices i
        LEFT JOIN projects p ON p.id = i.project_id
-       WHERE i.status = $1${orgOffset}`;
+       WHERE i.status = $1${orgClause}`;
     if (startDate) {
       expenseParams.push(startDate);
       expenseQuery += ` AND i.issue_date >= $${expenseParams.length}`;
