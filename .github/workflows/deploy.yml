@@ -110,6 +110,7 @@ jobs:
               --name "$CONTAINER_NAME" \
               --restart always \
               --network cortexbuild \
+              -p 127.0.0.1:3001:3001 \
               -e DB_HOST=cortexbuild-db \
               -e DB_PORT=5432 \
               -e DB_NAME=cortexbuild \
