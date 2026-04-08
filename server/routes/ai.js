@@ -230,7 +230,7 @@ router.post('/chat', aiChatLimiter, async (req, res) => {
         case 'cis':             result = await handleCIS(user);         break;
         case 'daily_reports':   result = await handleDailyReports(user); break;
         case 'risk':            result = await handleRisk(user);        break;
-        case 'report':          result = await handleGenerateReport(message.trim()); break;
+        case 'report':          result = await handleGenerateReport(message.trim(), req.user); break;
         default:
           result = handleUnknown(message.trim());
           break;

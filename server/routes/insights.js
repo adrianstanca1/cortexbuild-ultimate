@@ -25,6 +25,15 @@ router.get('/', async (req, res) => {
     if (orgId) {
       orgFilter = 'WHERE organization_id = $1';
       params.push(orgId);
+    } else if (!isSuper) {
+      // Non-super_admin without organization_id — scope to company_id or deny all rows
+      if (auth.company_id) {
+        orgFilter = 'WHERE company_id = $1';
+        params = [auth.company_id];
+      } else {
+        orgFilter = 'WHERE 1=0'; // No tenant context — return nothing
+        params = [];
+      }
     }
 
     const insights = [];
