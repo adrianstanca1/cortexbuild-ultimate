@@ -29,10 +29,19 @@ router.post('/forecast', async (req, res) => {
     if (!project) return res.status(404).json({ error: 'Project not found' });
 
     // 2. Gather Detailed Budget Item Variance
-    const { rows: budgetItems } = await pool.query(
-      `SELECT name, budgeted, spent, variance, variance_percent
-       FROM budget_items WHERE project_id = $1 AND organization_id = $2`,
-      [projectId, orgId]
+    const { rows: budgetItems } = await (orgId
+      ? pool.query(
+          `SELECT name, budgeted, spent, variance, variance_percent
+           FROM budget_items WHERE project_id = $1 AND organization_id = $2`,
+          [projectId, orgId]
+        )
+      : req.user?.company_id
+        ? pool.query(
+            `SELECT name, budgeted, spent, variance, variance_percent
+             FROM budget_items WHERE project_id = $1 AND company_id = $2`,
+            [projectId, req.user.company_id]
+          )
+        : pool.query(`SELECT name, budgeted, spent, variance, variance_percent FROM budget_items WHERE 1=0`)
     );
 
     // 3. Gather Historical Forecasts to see trend

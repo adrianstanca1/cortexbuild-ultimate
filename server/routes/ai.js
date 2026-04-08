@@ -303,23 +303,36 @@ router.post('/summarize-project', aiSummarizeLimiter, async (req, res) => {
     const proj = projects[0];
 
     // Gather related data in a single query using UNION ALL (1 round trip vs 5)
-    const projOrgId = projects[0].organization_id || orgId;
+    // Handle company_owner: project rows may have NULL organization_id, fall back to company_id
+    const projOrgId = proj.organization_id || orgId;
+    const projCompanyId = proj.company_id || req.user?.company_id;
+    let tenantFilter, tenantParam;
+    if (projOrgId) {
+      tenantFilter = 'organization_id = $2';
+      tenantParam = projOrgId;
+    } else if (projCompanyId) {
+      tenantFilter = 'company_id = $2';
+      tenantParam = projCompanyId;
+    } else {
+      tenantFilter = '1=0';
+      tenantParam = null;
+    }
     const { rows: related } = await pool.query(
       `SELECT 'invoice' as type, id, number, amount, status, NULL as title, NULL as priority, NULL as due_date, NULL as reference, NULL as workers_on_site, NULL as progress, NULL as weather, NULL as date
-       FROM invoices WHERE project_id = $1 AND organization_id = $2
+       FROM invoices WHERE project_id = $1 AND ${tenantFilter}
        UNION ALL
        SELECT 'change_order', id, number, amount, status, title, NULL, NULL, NULL, NULL, NULL, NULL, NULL
-       FROM change_orders WHERE project_id = $1 AND organization_id = $2
+       FROM change_orders WHERE project_id = $1 AND ${tenantFilter}
        UNION ALL
        SELECT 'defect', id, reference, amount, status, title, priority, due_date, NULL, NULL, NULL, NULL, NULL
-       FROM defects WHERE project_id = $1 AND organization_id = $2
+       FROM defects WHERE project_id = $1 AND ${tenantFilter}
        UNION ALL
        SELECT 'rfi', id, number, NULL, status, subject, priority, due_date, NULL, NULL, NULL, NULL, NULL
-       FROM rfis WHERE project_id = $1 AND organization_id = $2
+       FROM rfis WHERE project_id = $1 AND ${tenantFilter}
        UNION ALL
        SELECT 'daily_report', id, NULL, NULL, status, NULL, NULL, NULL, date, workers_on_site, progress, weather, date
-       FROM daily_reports WHERE project_id = $1 AND organization_id = $2 ORDER BY date DESC LIMIT 50`,
-      [projectId, projOrgId]
+       FROM daily_reports WHERE project_id = $1 AND ${tenantFilter} ORDER BY date DESC LIMIT 50`,
+      [projectId, tenantParam]
     );
 
     const invoices = related.filter(r => r.type === 'invoice').map(r => ({ number: r.number, amount: r.amount, status: r.status }));
@@ -419,9 +432,15 @@ router.post('/execute', aiExecuteLimiter, async (req, res) => {
       case 'update_project_status': {
         const { project_id, status } = params;
         if (!project_id || !status) return res.status(400).json({ success: false, message: 'project_id and status are required' });
+        const companyId = req.user?.company_id;
+        const orgFilter = tenantId
+          ? 'organization_id = $3'
+          : companyId
+            ? 'company_id = $3'
+            : '1=0';
         const { rows } = await pool.query(
-          `UPDATE projects SET status=$1 WHERE id=$2 AND organization_id = $3 RETURNING id,name,status`,
-          [status, project_id, tenantId]
+          `UPDATE projects SET status=$1 WHERE id=$2 AND ${orgFilter} RETURNING id,name,status`,
+          [status, project_id, tenantId || companyId]
         );
         if (!rows.length) return res.status(404).json({ success: false, message: 'Project not found or access denied' });
         broadcastDashboardUpdate('update', 'projects', rows[0]);
@@ -433,9 +452,15 @@ router.post('/execute', aiExecuteLimiter, async (req, res) => {
       case 'update_invoice_status': {
         const { invoice_id, status } = params;
         if (!invoice_id || !status) return res.status(400).json({ success: false, message: 'invoice_id and status are required' });
+        const companyId = req.user?.company_id;
+        const orgFilter = tenantId
+          ? 'organization_id = $3'
+          : companyId
+            ? 'company_id = $3'
+            : '1=0';
         const { rows } = await pool.query(
-          `UPDATE invoices SET status=$1 WHERE id=$2 AND organization_id = $3 RETURNING id,number,status`,
-          [status, invoice_id, tenantId]
+          `UPDATE invoices SET status=$1 WHERE id=$2 AND ${orgFilter} RETURNING id,number,status`,
+          [status, invoice_id, tenantId || companyId]
         );
         if (!rows.length) return res.status(404).json({ success: false, message: 'Invoice not found' });
         broadcastDashboardUpdate('update', 'invoices', rows[0]);
@@ -486,9 +511,15 @@ router.post('/execute', aiExecuteLimiter, async (req, res) => {
       case 'update_rfi_status': {
         const { rfi_id, status } = params;
         if (!rfi_id || !status) return res.status(400).json({ success: false, message: 'rfi_id and status are required' });
+        const companyId = req.user?.company_id;
+        const orgFilter = tenantId
+          ? 'organization_id = $3'
+          : companyId
+            ? 'company_id = $3'
+            : '1=0';
         const { rows } = await pool.query(
-          `UPDATE rfis SET status=$1 WHERE id=$2 AND organization_id=$3 RETURNING id,number,status`,
-          [status, rfi_id, tenantId]
+          `UPDATE rfis SET status=$1 WHERE id=$2 AND ${orgFilter} RETURNING id,number,status`,
+          [status, rfi_id, tenantId || companyId]
         );
         if (!rows.length) return res.status(404).json({ success: false, message: 'RFI not found' });
         res.json({ success: true, message: `RFI "${rows[0].number}" status updated.`, data: rows[0] });

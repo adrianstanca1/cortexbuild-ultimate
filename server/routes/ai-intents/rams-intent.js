@@ -5,9 +5,11 @@ const pool = require('../../db');
  * @returns {Promise<{reply: string, data: object, suggestions: string[]}>}
  */
 async function handleRams(user) {
+  const orgId = user?.organization_id;
+  const companyId = user?.company_id;
   const { rows } = await pool.query(
-    `SELECT title, project, type, status, review_date FROM rams WHERE organization_id = $1 ORDER BY created_at DESC`,
-    [user?.organization_id]
+    `SELECT title, project, type, status, review_date FROM rams WHERE organization_id = $1 OR (organization_id IS NULL AND company_id = $2) ORDER BY created_at DESC`,
+    [orgId, companyId]
   );
   if (!rows.length) {
     return {

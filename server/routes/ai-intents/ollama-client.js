@@ -76,17 +76,33 @@ Provide a helpful, concise response. Prefer direct answers over repeating menu-l
       );
     }
 
-    promptParts.push(`User: ${userMessage}`, 'Assistant:');
+    // Build messages array with explicit roles — no index-based guessing
+    const messages = [{ role: 'system', content: systemPrompt }];
+
+    // Add context as a user message (provides DB data for the LLM to reason about)
+    if (context) {
+      messages.push({ role: 'user', content: `Database context:\n${context}` });
+    }
+
+    // Add summary as a user message (prior conversation context)
+    if (summary) {
+      messages.push({ role: 'user', content: `Previous conversation summary:\n${summary}` });
+    }
+
+    // Add conversation history with correct roles
+    if (truncatedHistory.length) {
+      const historyText = truncatedHistory
+        .map((m) => `${m.role === 'user' ? 'User' : 'Assistant'}: ${m.content}`)
+        .join('\n');
+      messages.push({ role: 'user', content: `Recent conversation:\n${historyText}` });
+    }
+
+    // Add the actual user message
+    messages.push({ role: 'user', content: userMessage });
 
     const body = JSON.stringify({
       model: LLM_MODEL,
-      messages: [
-        { role: 'system', content: promptParts[0] },
-        ...promptParts.slice(1).map((content, i) => ({
-          role: i === promptParts.length - 2 ? 'user' : 'assistant',
-          content
-        }))
-      ],
+      messages,
       stream: false,
       options: {
         temperature: 0.4,
