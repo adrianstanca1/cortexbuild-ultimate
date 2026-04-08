@@ -140,7 +140,7 @@ jobs:
 
       - name: Verify deployment
         run: |
-          sleep 5
+          sleep 30
           STATUS=$(curl -sL -o /dev/null -w "%{http_code}" https://www.cortexbuildpro.com/api/health)
           if [ "$STATUS" -eq 200 ]; then
             echo "✅ Deployment verified - HTTP $STATUS"
