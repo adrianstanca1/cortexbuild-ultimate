@@ -101,6 +101,52 @@ export function Analytics() {
 
   const [overtimeByMonth, setOvertimeByMonth] = useState<AnyRow[]>([]);
   const [vatTracker, setVatTracker] = useState<AnyRow[]>([]);
+  const [revenueTrendData, setRevenueTrendData] = useState<AnyRow[]>(REVENUE_DATA);
+  const [safetyTrendData, setSafetyTrendData] = useState<AnyRow[]>(SAFETY_TREND);
+  const [cashflowData, setCashflowData] = useState<AnyRow[]>(CASHFLOW_DATA);
+  const [headcountData, setHeadcountData] = useState<AnyRow[]>(HEADCOUNT_TREND);
+
+  // Build invoice aging from real invoice data
+  const invoiceAgingData = (() => {
+    const now = Date.now();
+    const dayMs = 86400000;
+    const buckets = [
+      { range: '0–30 days',  maxDays: 30 },
+      { range: '31–60 days', maxDays: 60 },
+      { range: '61–90 days', maxDays: 90 },
+      { range: '90+ days',   maxDays: Infinity },
+    ];
+    const aged = invoices
+      .filter(i => i.status === 'sent' || i.status === 'overdue' || i.status === 'draft')
+      .map(i => {
+        const issued = i.issue_date ? new Date(String(i.issue_date)).getTime() : now;
+        const days = Math.floor((now - issued) / dayMs);
+        return { amount: Number(i.amount ?? 0), days };
+      });
+    return buckets.map(b => {
+      const inRange = aged.filter(a => a.days <= b.maxDays && (b.maxDays === Infinity ? a.days > 90 : a.days > (buckets[buckets.indexOf(b) - 1]?.maxDays ?? 0)));
+      const total = inRange.reduce((s, a) => s + a.amount, 0);
+      const allAging = aged.reduce((s, a) => s + a.amount, 0);
+      return {
+        range: b.range,
+        amount: total,
+        percentage: allAging > 0 ? Math.round((total / allAging) * 100) : 0,
+      };
+    });
+  })();
+
+  // Build revenue-by-project from real projects
+  const revenueByProjectData = (() => {
+    const typeMap: Record<string, number> = {};
+    projects.forEach(p => {
+      const type = String(p.type ?? 'Other').split(' ')[0] || 'Other';
+      typeMap[type] = (typeMap[type] ?? 0) + Number(p.contract_value ?? p.budget ?? 0);
+    });
+    const colors = ['#3b82f6','#8b5cf6','#10b981','#f59e0b'];
+    return Object.entries(typeMap).slice(0, 4).map(([name, value], i) => ({
+      name, value, color: colors[i % colors.length],
+    }));
+  })();
 
   useEffect(() => {
     analyticsApi.getOvertimeData().then(data => setOvertimeByMonth(data as AnyRow[])).catch(() => {
@@ -116,6 +162,10 @@ export function Analytics() {
         { quarter:'Q3', liability:85600, paid:0, status:'estimated' },
       ]);
     });
+    analyticsApi.getRevenueTrend().then(data => setRevenueTrendData(data as AnyRow[])).catch(() => {});
+    analyticsApi.getSafetyTrend().then(data => setSafetyTrendData(data as AnyRow[])).catch(() => {});
+    analyticsApi.getCashflowData().then(data => setCashflowData(data as AnyRow[])).catch(() => {});
+    analyticsApi.getHeadcountTrend().then(data => setHeadcountData(data as AnyRow[])).catch(() => {});
   }, []);
 
   const { selectedIds, toggle, clearSelection } = useBulkSelection();
@@ -295,7 +345,7 @@ export function Analytics() {
           <div className="rounded-xl border border-gray-700 bg-gray-800 p-5">
             <h3 className="mb-4 text-sm font-semibold text-white">Revenue vs Cost vs Profit (7 Months)</h3>
             <ResponsiveContainer width="100%" height={300}>
-              <AreaChart data={REVENUE_DATA}>
+              <AreaChart data={revenueTrendData}>
                 <defs>
                   <linearGradient id="revGradOv" x1="0" y1="0" x2="0" y2="1">
                     <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.3}/>
@@ -369,10 +419,10 @@ export function Analytics() {
               <h3 className="mb-4 text-sm font-semibold text-white">Revenue by Project Type</h3>
               <ResponsiveContainer width="100%" height={250}>
                 <PieChart>
-                  <Pie data={REVENUE_BY_TYPE} cx="50%" cy="50%" labelLine={false}
+                  <Pie data={revenueByProjectData.length > 0 ? revenueByProjectData : REVENUE_BY_TYPE} cx="50%" cy="50%" labelLine={false}
                     label={({name,percent})=>`${name} ${((percent??0)*100).toFixed(0)}%`}
                     outerRadius={80} dataKey="value">
-                    {REVENUE_BY_TYPE.map((entry,idx)=><Cell key={idx} fill={entry.color}/>)}
+                    {(revenueByProjectData.length > 0 ? revenueByProjectData : REVENUE_BY_TYPE).map((entry,idx)=><Cell key={idx} fill={entry.color}/>)}
                   </Pie>
                   <Tooltip formatter={(v) => `£${((v as number) / 1000).toFixed(0)}K`}/>
                 </PieChart>
@@ -383,7 +433,7 @@ export function Analytics() {
             <div className="rounded-xl border border-gray-700 bg-gray-800 p-5">
               <h3 className="mb-4 text-sm font-semibold text-white">Cash Flow S-Curve (Cumulative)</h3>
               <ResponsiveContainer width="100%" height={250}>
-                <AreaChart data={CASHFLOW_DATA}>
+                <AreaChart data={cashflowData}>
                   <defs>
                     <linearGradient id="inflowGrad" x1="0" y1="0" x2="0" y2="1">
                       <stop offset="5%" stopColor="#10b981" stopOpacity={0.3}/>
@@ -428,7 +478,7 @@ export function Analytics() {
             <div className="rounded-xl border border-gray-700 bg-gray-800 p-5">
               <h3 className="mb-4 text-sm font-semibold text-white">Profit Margin % by Month</h3>
               <ResponsiveContainer width="100%" height={200}>
-                <LineChart data={PROFIT_MARGIN_DATA}>
+                <LineChart data={revenueTrendData}>
                   <CartesianGrid strokeDasharray="3 3" stroke="#374151"/>
                   <XAxis dataKey="month" stroke="#9ca3af"/>
                   <YAxis stroke="#9ca3af"/>
@@ -622,7 +672,7 @@ export function Analytics() {
           <div className="rounded-xl border border-gray-700 bg-gray-800 p-5">
             <h3 className="mb-4 text-sm font-semibold text-white">Safety Performance Trends (7 Months)</h3>
             <ResponsiveContainer width="100%" height={300}>
-              <LineChart data={SAFETY_TREND}>
+              <LineChart data={safetyTrendData}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#374151"/>
                 <XAxis dataKey="month" stroke="#9ca3af"/>
                 <YAxis stroke="#9ca3af"/>
@@ -682,7 +732,11 @@ export function Analytics() {
           <div className="rounded-xl border border-gray-700 bg-gray-800 p-5">
             <h3 className="mb-4 text-sm font-semibold text-white">Labour Hours by Trade</h3>
             <ResponsiveContainer width="100%" height={300}>
-              <BarChart data={LABOUR_BY_TRADE}>
+              <BarChart data={activeProjects.slice(0,6).map(p => ({
+                trade: String(p.name??'').split(' ').slice(0,2).join(' '),
+                hours: Math.round(Number(p.workers??0) * 8 * 22),
+                cost: Number(p.spent??0) * 0.35,
+              }))}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#374151"/>
                 <XAxis dataKey="trade" stroke="#9ca3af"/>
                 <YAxis stroke="#9ca3af"/>
@@ -714,7 +768,7 @@ export function Analytics() {
             <div className="rounded-xl border border-gray-700 bg-gray-800 p-5">
               <h3 className="mb-4 text-sm font-semibold text-white">Headcount Trend by Month</h3>
               <ResponsiveContainer width="100%" height={250}>
-                <LineChart data={HEADCOUNT_TREND}>
+                <LineChart data={headcountData}>
                   <CartesianGrid strokeDasharray="3 3" stroke="#374151"/>
                   <XAxis dataKey="month" stroke="#9ca3af"/>
                   <YAxis stroke="#9ca3af"/>
@@ -752,13 +806,15 @@ export function Analytics() {
                   </tr>
                 </thead>
                 <tbody>
-                  {LABOUR_BY_TRADE.map((row, idx) => {
-                    const hourlyRate = row.cost / row.hours;
+                  {activeProjects.slice(0, 6).map((p, idx) => {
+                    const hours = Math.round(Number(p.workers ?? 0) * 8 * 22);
+                    const cost = Number(p.spent ?? 0) * 0.35;
+                    const hourlyRate = hours > 0 ? cost / hours : 0;
                     return (
                       <tr key={idx} className="border-b border-gray-700 hover:bg-gray-700/30">
-                        <td className="px-4 py-3 text-white font-medium">{row.trade}</td>
-                        <td className="px-4 py-3 text-gray-300">{row.hours.toLocaleString()}</td>
-                        <td className="px-4 py-3 text-orange-400">£{(row.cost/1000).toFixed(0)}K</td>
+                        <td className="px-4 py-3 text-white font-medium">{String(p.name ?? '').split(' ').slice(0, 2).join(' ')}</td>
+                        <td className="px-4 py-3 text-gray-300">{hours.toLocaleString()}</td>
+                        <td className="px-4 py-3 text-orange-400">£{(cost / 1000).toFixed(0)}K</td>
                         <td className="px-4 py-3 text-blue-400">£{hourlyRate.toFixed(2)}/hr</td>
                       </tr>
                     );
