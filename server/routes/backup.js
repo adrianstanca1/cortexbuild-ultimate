@@ -52,15 +52,20 @@ router.get('/export/:table', async (req, res) => {
   }
 
   const orgId = req.user?.organization_id;
-  if (!orgId) {
+  const companyId = req.user?.company_id;
+  const isCompanyOwner = req.user?.role === 'company_owner';
+  if (!orgId && !companyId) {
     return res.status(403).json({ message: 'Organization context missing' });
   }
 
   const limitNum = Math.min(parseInt(limit, 10), 50000);
   try {
+    const tenantFilter = isCompanyOwner
+      ? `company_id = $2`
+      : `organization_id = $2`;
     const result = await pool.query(
-      `SELECT * FROM ${table} WHERE organization_id = $2 ORDER BY created_at DESC LIMIT $1`,
-      [limitNum, orgId]
+      `SELECT * FROM ${table} WHERE ${tenantFilter} ORDER BY created_at DESC LIMIT $1`,
+      [limitNum, isCompanyOwner ? companyId : orgId]
     );
 
     if (format === 'csv') {
@@ -97,16 +102,20 @@ router.get('/export/:table', async (req, res) => {
 router.get('/export-all', async (req, res) => {
   const { format = 'json' } = req.query;
   const orgId = req.user?.organization_id;
-  if (!orgId) {
+  const companyId = req.user?.company_id;
+  const isCompanyOwner = req.user?.role === 'company_owner';
+  if (!orgId && !companyId) {
     return res.status(403).json({ message: 'Organization context missing' });
   }
+  const tenantId = isCompanyOwner ? companyId : orgId;
+  const tenantFilter = isCompanyOwner ? 'company_id = $1' : 'organization_id = $1';
   try {
     const allData = {};
     for (const table of ALLOWED_TABLES) {
       try {
         const result = await pool.query(
-          `SELECT * FROM ${table} WHERE organization_id = $1 ORDER BY created_at DESC LIMIT 10000`,
-          [orgId]
+          `SELECT * FROM ${table} WHERE ${tenantFilter} ORDER BY created_at DESC LIMIT 10000`,
+          [tenantId]
         );
         allData[table] = { count: result.rows.length, rows: result.rows };
       } catch {

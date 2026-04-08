@@ -66,7 +66,7 @@ router.get('/', async (req, res) => {
     if (search) {
       paramCount++;
       query += ` AND name ILIKE $${paramCount}`;
-      params.push(`%${search}%`);
+      params.push(`%${search.replace(/[%_\\]/g, '\\$&')}%`);
     }
     if (type) {
       paramCount++;

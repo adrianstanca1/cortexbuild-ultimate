@@ -51,8 +51,8 @@ router.post('/forecast', async (req, res) => {
     // 3. Gather Historical Forecasts to see trend
     const { rows: forecasts } = await pool.query(
       `SELECT period_start, projected_cost, actual_cost
-       FROM cost_forecasts WHERE project_id = $1 ORDER BY period_start ASC`,
-      [projectId]
+       FROM cost_forecasts WHERE project_id = $1 AND company_id = $2 ORDER BY period_start ASC`,
+      [projectId, req.user.company_id]
     );
 
     // 4. Construct Analysis Context for AI

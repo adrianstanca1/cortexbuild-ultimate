@@ -13,18 +13,21 @@ router.use(auth);
  * List all chat channels for the organization.
  */
 router.get('/channels', async (req, res) => {
+  const isCompanyOwner = req.user?.role === 'company_owner';
   const orgId = req.user?.organization_id;
-  const isSuper = ['super_admin', 'company_owner'].includes(req.user?.role);
+  const companyId = req.user?.company_id;
+  const tenantFilter = isCompanyOwner ? 'c.company_id = $1' : 'c.organization_id = $1';
+  const tenantId = isCompanyOwner ? companyId : orgId;
 
   try {
     const { rows } = await pool.query(
       `SELECT c.*, COUNT(DISTINCT cm.user_id) as member_count
        FROM chat_channels c
        LEFT JOIN chat_channel_members cm ON cm.channel_id = c.id
-       WHERE c.organization_id = $1 OR $2 = true
+       WHERE ${tenantFilter}
        GROUP BY c.id
        ORDER BY c.name`,
-      [orgId, isSuper]
+      [tenantId]
     );
     res.json(rows);
   } catch (err) {
@@ -204,9 +207,14 @@ router.put('/channels/:channelId/messages/:messageId/pin', async (req, res) => {
   if (!isAdmin) return res.status(403).json({ error: 'Admin access required' });
 
   try {
+    const companyId = req.user?.company_id;
     const { rows } = await pool.query(
-      `UPDATE chat_messages SET pinned = true WHERE id = $1 RETURNING *`,
-      [messageId]
+      `UPDATE chat_messages cm
+       SET pinned = true
+       FROM chat_channels cc
+       WHERE cc.id = cm.channel_id AND cm.id = $1 AND cc.company_id = $2
+       RETURNING cm.*`,
+      [messageId, companyId]
     );
     if (!rows.length) return res.status(404).json({ error: 'Message not found' });
 
