@@ -29,7 +29,7 @@ router.get('/overview', async (req, res) => {
         COALESCE(SUM(CASE WHEN status = 'paid' THEN amount ELSE 0 END), 0) as total_revenue,
         COALESCE(SUM(CASE WHEN status IN ('sent','draft','overdue') THEN amount ELSE 0 END), 0) as outstanding
         FROM invoices ${where}`, params),
-      pool.query(`SELECT COUNT(*) as count FROM rfis WHERE status = 'open' ${where ? 'AND organization_id = $1' : ''}`, params),
+      pool.query(`SELECT COUNT(*) as count FROM rfis WHERE status = 'open' ${where}`, params),
       pool.query(`SELECT COUNT(*) as total,
         COALESCE(SUM(CASE WHEN status = 'closed' THEN 1 ELSE 0 END), 0) as closed
         FROM safety_incidents ${where}`, params),
