@@ -23,6 +23,9 @@ function tenantFilter(req) {
   if (req.user.organization_id) {
     return { filter: 'WHERE organization_id = $1', params: [req.user.organization_id] };
   }
+  if (req.user.company_id) {
+    return { filter: 'WHERE company_id = $1', params: [req.user.company_id] };
+  }
   return { filter: '', params: [] };
 }
 

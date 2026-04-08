@@ -3,25 +3,37 @@ const router = express.Router();
 const pool = require('../db');
 const auth = require('../middleware/auth');
 
+// ai_conversations only has organization_id (no company_id).
+// For company_owner (organization_id=NULL), scope by user_id alone — safe since
+// each user only ever sees their own sessions anyway.
+function buildOrgFilter(user) {
+  const orgId = user.organization_id || user.organizationId;
+  if (orgId) return { clause: 'AND organization_id = $1', params: [orgId], hasOrg: true };
+  return { clause: '', params: [], hasOrg: false };
+}
+
 // GET /api/ai-conversations - List distinct sessions for the user
 router.get('/', auth, async (req, res) => {
   try {
-    const orgId = req.user.organization_id || req.user.organizationId;
     const userId = req.user.id || req.user.userId;
+    const { clause, params, hasOrg } = buildOrgFilter(req.user);
+    const userParam = hasOrg ? '$2' : '$1';
+    const allParams = hasOrg ? [...params, userId] : [userId];
+
     const { rows } = await pool.query(
       `SELECT
          session_id as id,
          MAX(created_at) as updated_at,
          COUNT(*) as message_count,
          (SELECT content FROM ai_conversations c2
-          WHERE c2.session_id = c1.session_id AND c2.organization_id = $1 AND c2.role = 'user'
+          WHERE c2.session_id = c1.session_id ${clause} AND c2.role = 'user'
           ORDER BY c2.created_at ASC LIMIT 1) as first_user_message
        FROM ai_conversations c1
-       WHERE organization_id = $1 AND user_id = $2
+       WHERE user_id = ${userParam} ${clause}
        GROUP BY session_id
        ORDER BY MAX(created_at) DESC
        LIMIT 50`,
-      [orgId, userId]
+      allParams
     );
     res.json({ sessions: rows });
   } catch (err) {
@@ -34,11 +46,17 @@ router.get('/', auth, async (req, res) => {
 router.get('/:sessionId', auth, async (req, res) => {
   try {
     const { sessionId } = req.params;
+    const userId = req.user.id || req.user.userId;
+    const { clause, params, hasOrg } = buildOrgFilter(req.user);
+    const sidParam = '$1';
+    const userParam = hasOrg ? '$3' : '$2';
+    const allParams = hasOrg ? [sessionId, ...params, userId] : [sessionId, userId];
+
     const { rows } = await pool.query(
       `SELECT id, role, content, model, created_at FROM ai_conversations
-       WHERE session_id = $1 AND organization_id = $2
+       WHERE session_id = ${sidParam} ${clause} AND user_id = ${userParam}
        ORDER BY created_at ASC`,
-      [sessionId, req.user.organization_id]
+      allParams
     );
     res.json({ messages: rows });
   } catch (err) {
@@ -55,7 +73,7 @@ router.post('/', auth, async (req, res) => {
       return res.status(400).json({ message: 'sessionId, role, and content are required' });
     }
 
-    const orgId = req.user.organization_id || req.user.organizationId;
+    const orgId = req.user.organization_id || req.user.organizationId || null;
     const userId = req.user.id || req.user.userId;
     const { rows } = await pool.query(
       `INSERT INTO ai_conversations (organization_id, user_id, session_id, role, content, model)
@@ -74,10 +92,15 @@ router.post('/', auth, async (req, res) => {
 router.delete('/:sessionId', auth, async (req, res) => {
   try {
     const { sessionId } = req.params;
-    const orgId = req.user.organization_id || req.user.organizationId;
+    const userId = req.user.id || req.user.userId;
+    const { clause, params, hasOrg } = buildOrgFilter(req.user);
+    const sidParam = '$1';
+    const userParam = hasOrg ? '$3' : '$2';
+    const allParams = hasOrg ? [sessionId, ...params, userId] : [sessionId, userId];
+
     await pool.query(
-      `DELETE FROM ai_conversations WHERE session_id = $1 AND organization_id = $2`,
-      [sessionId, orgId]
+      `DELETE FROM ai_conversations WHERE session_id = ${sidParam} ${clause} AND user_id = ${userParam}`,
+      allParams
     );
     res.json({ success: true });
   } catch (err) {

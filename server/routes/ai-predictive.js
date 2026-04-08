@@ -16,14 +16,18 @@ router.post('/forecast', async (req, res) => {
   if (!projectId) return res.status(400).json({ error: 'projectId is required' });
 
   const orgId = req.user?.organization_id;
-  const isSuper = ['super_admin', 'company_owner'].includes(req.user?.role);
+  const isCompanyOwner = req.user?.role === 'company_owner';
+  const isSuper = req.user?.role === 'super_admin';
 
   try {
     // 1. Gather Project Financial Baseline
+    let projWhere = 'WHERE id = $1';
+    let projParams = [projectId];
+    if (isCompanyOwner) { projWhere += ' AND company_id = $2'; projParams.push(req.user.company_id); }
+    else if (!isSuper && orgId) { projWhere += ' AND organization_id = $2'; projParams.push(orgId); }
     const { rows: [project] } = await pool.query(
-      `SELECT name, budget, spent, progress, start_date, end_date
-       FROM projects WHERE id = $1 ${orgId && !isSuper ? 'AND organization_id = $2' : ''}`,
-      orgId && !isSuper ? [projectId, orgId] : [projectId]
+      `SELECT name, budget, spent, progress, start_date, end_date FROM projects ${projWhere}`,
+      projParams
     );
 
     if (!project) return res.status(404).json({ error: 'Project not found' });

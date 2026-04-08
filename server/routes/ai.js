@@ -289,13 +289,18 @@ router.post('/summarize-project', aiSummarizeLimiter, async (req, res) => {
   if (!projectId) return res.status(400).json({ error: 'projectId is required' });
 
   const orgId  = req.user?.organization_id;
-  const isSuper = ['super_admin', 'company_owner'].includes(req.user?.role);
+  const isCompanyOwner = req.user?.role === 'company_owner';
+  const isSuper = req.user?.role === 'super_admin';
 
   try {
+    let projWhere = 'WHERE id = $1';
+    let projParams = [projectId];
+    if (isCompanyOwner) { projWhere += ' AND company_id = $2'; projParams.push(req.user.company_id); }
+    else if (!isSuper && orgId) { projWhere += ' AND organization_id = $2'; projParams.push(orgId); }
     const { rows: projects } = await pool.query(
       `SELECT name, client, status, progress, budget, spent, manager, location, type, description, start_date, end_date
-       FROM projects WHERE id = $1 ${orgId && !isSuper ? 'AND organization_id = $2' : ''} LIMIT 1`,
-      orgId && !isSuper ? [projectId, orgId] : [projectId]
+       FROM projects ${projWhere} LIMIT 1`,
+      projParams
     );
     if (!projects.length) return res.status(404).json({ error: 'Project not found' });
 
@@ -540,11 +545,16 @@ router.post('/execute', aiExecuteLimiter, async (req, res) => {
         const { projectId } = params;
         if (!projectId) return res.status(400).json({ success: false, message: 'projectId is required' });
         const orgId  = req.user?.organization_id;
-        const isSuper = ['super_admin', 'company_owner'].includes(req.user?.role);
+        const isCoOwner = req.user?.role === 'company_owner';
+        const isSuperAdmin = req.user?.role === 'super_admin';
+        let exWhere = 'WHERE id = $1';
+        let exParams = [projectId];
+        if (isCoOwner) { exWhere += ' AND company_id = $2'; exParams.push(req.user.company_id); }
+        else if (!isSuperAdmin && orgId) { exWhere += ' AND organization_id = $2'; exParams.push(orgId); }
         const { rows } = await pool.query(
           `SELECT name, client, status, progress, budget, spent, manager, description
-           FROM projects WHERE id = $1 ${orgId && !isSuper ? 'AND organization_id = $2' : ''} LIMIT 1`,
-          orgId && !isSuper ? [projectId, orgId] : [projectId]
+           FROM projects ${exWhere} LIMIT 1`,
+          exParams
         );
         if (!rows.length) return res.status(404).json({ success: false, message: 'Project not found' });
         const p = rows[0];
