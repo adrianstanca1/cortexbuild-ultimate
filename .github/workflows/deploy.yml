@@ -91,6 +91,12 @@ jobs:
               set +a
             fi
 
+            # Ensure Docker network exists
+            if ! docker network inspect cortexbuild >/dev/null 2>&1; then
+              echo "Creating cortexbuild network..."
+              docker network create cortexbuild
+            fi
+
             git pull origin main
             docker build -t "$IMAGE_NAME" -f Dockerfile.api .
             docker stop "$CONTAINER_NAME" 2>/dev/null || true
