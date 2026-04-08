@@ -248,9 +248,9 @@ export function Teams() {
     const memberId = members[0]?.id;
     if (!memberId) return;
     Promise.all([
-      teamApi.getMemberSkills(String(memberId)).catch(() => []),
-      teamApi.getMemberInductions(String(memberId)).catch(() => []),
-      teamApi.getMemberAvailability(String(memberId)).catch(() => []),
+      teamApi.getMemberSkills(String(memberId)).catch(err => { console.warn('[Teams] skills fetch failed:', err); return []; }),
+      teamApi.getMemberInductions(String(memberId)).catch(err => { console.warn('[Teams] inductions fetch failed:', err); return []; }),
+      teamApi.getMemberAvailability(String(memberId)).catch(err => { console.warn('[Teams] availability fetch failed:', err); return []; }),
     ]).then(([skills, inductions, availability]) => {
       setMemberSkills({ [String(memberId)]: skills as Skill[] });
       setMemberInductions({ [String(memberId)]: inductions as Induction[] });

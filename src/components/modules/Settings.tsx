@@ -65,7 +65,7 @@ export function Settings() {
   useEffect(() => {
     companyApi.get().then(data => {
       if (data) setCompany(prev => ({ ...prev, ...data as Record<string, string | boolean> }));
-    }).catch(() => { /* use defaults */ });
+    }).catch(err => { console.warn('[Settings] company fetch failed:', err); /* use defaults */ });
   }, []);
 
   // ── Load users on mount ───────────────────────────────────────────────────

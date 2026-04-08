@@ -124,7 +124,7 @@ export default function ActivityFeed() {
         if (Array.isArray(data) && data.length > 0) setActivities(data);
         else setActivities(MOCK_ACTIVITIES);
       })
-      .catch(() => setActivities(MOCK_ACTIVITIES))
+      .catch(err => { console.warn('[ActivityFeed] fetch failed:', err); setActivities(MOCK_ACTIVITIES); })
       .finally(() => setLoading(false));
   }, [filter]);
 

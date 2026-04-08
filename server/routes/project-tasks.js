@@ -142,13 +142,14 @@ router.put('/:id', async (req, res) => {
     const queryParams = [...baseParams];
     const updates = [];
 
+    const ALLOWED_FIELDS = ['title', 'description', 'status', 'priority', 'assigned_to', 'due_date', 'category', 'estimated_hours', 'tags', 'progress'];
     const fields = {
       title, description, status, priority, assigned_to,
       due_date, category, estimated_hours, tags, progress
     };
 
     for (const [key, value] of Object.entries(fields)) {
-      if (value !== undefined) {
+      if (value !== undefined && ALLOWED_FIELDS.includes(key)) {
         queryParams.push(value);
         updates.push(`${key} = $${queryParams.length}`);
       }

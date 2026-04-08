@@ -83,7 +83,7 @@ router.get('/', async (req, res) => {
       });
     }
 
-    const searchTerm = `%${q.toLowerCase()}%`;
+    const searchTerm = `%${q.toLowerCase().replace(/[%_\\]/g, '\\$&')}%`;
     const results = { projects: [], invoices: [], contacts: [], rfis: [], documents: [], team: [] };
     const limitNum = parseInt(limit, 10);
     const role = req.user?.role;
