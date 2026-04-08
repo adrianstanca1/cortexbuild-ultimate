@@ -6,7 +6,7 @@ const https = require('https');
 const http  = require('http');
 
 const OLLAMA_HOST    = process.env.OLLAMA_HOST    || 'http://localhost:11434';
-const EMBEDDING_MODEL = process.env.EMBEDDING_MODEL || 'qwen3.5:latest';
+const EMBEDDING_MODEL = process.env.EMBEDDING_MODEL || 'nomic-embed-text:latest';
 const LLM_MODEL      = process.env.LLM_MODEL      || process.env.OLLAMA_MODEL || 'qwen3.5:latest';
 
 function buildRequest(path, body, timeout = 30000) {

@@ -1,6 +1,7 @@
 const express = require('express');
 const pool = require('../db');
 const authMiddleware = require('../middleware/auth');
+const { checkPermission } = require('../middleware/checkPermission');
 const router = express.Router();
 
 router.use(authMiddleware);
@@ -350,7 +351,7 @@ router.post('/bulk', async (req, res) => {
   }
 });
 
-router.post('/schedule', async (req, res) => {
+router.post('/schedule', checkPermission('email', 'send'), async (req, res) => {
   try {
     if (!checkRateLimit(req.user?.id)) {
       return res.status(429).json({ message: 'Rate limit exceeded. Try again later.' });

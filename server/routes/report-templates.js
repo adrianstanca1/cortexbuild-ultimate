@@ -1,10 +1,11 @@
 const express = require('express');
 const pool = require('../db');
 const authMiddleware = require('../middleware/auth');
+const { checkPermission } = require('../middleware/checkPermission');
 const router = express.Router();
 router.use(authMiddleware);
 
-router.get('/', async (req, res) => {
+router.get('/', checkPermission('report-templates', 'read'), async (req, res) => {
   try {
     const { type, is_default } = req.query;
     let query = 'SELECT * FROM report_templates WHERE company_id = $1';
@@ -28,7 +29,7 @@ router.get('/', async (req, res) => {
   }
 });
 
-router.get('/:id', async (req, res) => {
+router.get('/:id', checkPermission('report-templates', 'read'), async (req, res) => {
   try {
     const { rows } = await pool.query(
       'SELECT * FROM report_templates WHERE id = $1 AND company_id = $2',
@@ -41,7 +42,7 @@ router.get('/:id', async (req, res) => {
   }
 });
 
-router.post('/', async (req, res) => {
+router.post('/', checkPermission('report-templates', 'write'), async (req, res) => {
   try {
     const { name, type, description, config, is_default, created_by } = req.body;
 
@@ -69,7 +70,7 @@ router.post('/', async (req, res) => {
   }
 });
 
-router.put('/:id', async (req, res) => {
+router.put('/:id', checkPermission('report-templates', 'write'), async (req, res) => {
   try {
     const { name, description, config, is_default } = req.body;
     const templateId = req.params.id;
@@ -105,7 +106,7 @@ router.put('/:id', async (req, res) => {
   }
 });
 
-router.delete('/:id', async (req, res) => {
+router.delete('/:id', checkPermission('report-templates', 'write'), async (req, res) => {
   try {
     const { rowCount } = await pool.query(
       'DELETE FROM report_templates WHERE id = $1 AND company_id = $2',
