@@ -56,7 +56,12 @@ router.get('/', async (req, res) => {
       `SELECT COUNT(*) FROM notifications ${where}`, params
     );
 
-    res.json({ notifications: rows, total: parseInt(total), unreadCount: 0 });
+    // Unread count uses same WHERE but no pagination
+    const { rows: [{ count: unread }] } = await pool.query(
+      `SELECT COUNT(*) FROM notifications ${where} AND read = false`, params
+    );
+
+    res.json({ notifications: rows, total: parseInt(total, 10), unreadCount: parseInt(unread, 10) });
   } catch (err) {
     console.error('[GET /notifications]', err.message);
     res.status(500).json({ message: 'Internal server error' });

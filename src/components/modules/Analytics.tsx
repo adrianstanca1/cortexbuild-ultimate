@@ -162,10 +162,10 @@ export function Analytics() {
         { quarter:'Q3', liability:85600, paid:0, status:'estimated' },
       ]);
     });
-    analyticsApi.getRevenueTrend().then(data => setRevenueTrendData(data as AnyRow[])).catch(() => {});
-    analyticsApi.getSafetyTrend().then(data => setSafetyTrendData(data as AnyRow[])).catch(() => {});
-    analyticsApi.getCashflowData().then(data => setCashflowData(data as AnyRow[])).catch(() => {});
-    analyticsApi.getHeadcountTrend().then(data => setHeadcountData(data as AnyRow[])).catch(() => {});
+    analyticsApi.getRevenueTrend().then(data => setRevenueTrendData(data as AnyRow[])).catch((e) => console.warn('[Analytics] getRevenueTrend failed:', e));
+    analyticsApi.getSafetyTrend().then(data => setSafetyTrendData(data as AnyRow[])).catch((e) => console.warn('[Analytics] getSafetyTrend failed:', e));
+    analyticsApi.getCashflowData().then(data => setCashflowData(data as AnyRow[])).catch((e) => console.warn('[Analytics] getCashflowData failed:', e));
+    analyticsApi.getHeadcountTrend().then(data => setHeadcountData(data as AnyRow[])).catch((e) => console.warn('[Analytics] getHeadcountTrend failed:', e));
   }, []);
 
   const { selectedIds, toggle, clearSelection } = useBulkSelection();

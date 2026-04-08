@@ -16,7 +16,6 @@ import {
 } from 'recharts';
 import { useQuery } from '@tanstack/react-query';
 
-type _AnyRow = Record<string, unknown>;
 type SeverityLevel = 'critical' | 'high' | 'medium' | 'low' | 'info';
 type CategoryType = 'all' | 'financial' | 'safety' | 'programme' | 'resource' | 'quality' | 'risk';
 type TabType = 'overview' | 'alerts' | 'recommendations' | 'benchmarks' | 'actions' | 'trends';
@@ -161,17 +160,7 @@ export function Insights() {
     { metric: 'RFI Resolution', cortex: 2.1, industry: 4.5 },
   ];
 
-  // Mock trend data (kept for chart structure compatibility)
-  const trendData: TrendData[] = [
-    { month: 'Oct', riskScore: 72, costEfficiency: 68, teamProductivity: 75 },
-    { month: 'Nov', riskScore: 68, costEfficiency: 71, teamProductivity: 78 },
-    { month: 'Dec', riskScore: 65, costEfficiency: 74, teamProductivity: 82 },
-    { month: 'Jan', riskScore: 62, costEfficiency: 76, teamProductivity: 85 },
-    { month: 'Feb', riskScore: 58, costEfficiency: 78, teamProductivity: 84 },
-    { month: 'Mar', riskScore: 52, costEfficiency: 81, teamProductivity: 87 },
-  ];
-
-    // Dismiss an insight (local state only — backend generates fresh)
+  // Dismiss an insight (local state only — backend generates fresh)
   const _dismissInsight = (id: string) => {
     setDismissed(prev => new Set([...prev, id]));
   };
@@ -220,10 +209,12 @@ export function Insights() {
     { name: '<80%', value: 0, color: '#ef4444' },
   ];
 
-  // Calculate health score
-  const healthScore = Math.round(
-    (avgConfidence * 0.3 + (100 - ((criticalCount / (filteredInsights.length || 1)) * 100)) * 0.4 + (highCount > 3 ? 50 : 90) * 0.3)
-  );
+  // Calculate health score (guarded against empty insights list)
+  const healthScore = filteredInsights.length > 0
+    ? Math.round(
+        (avgConfidence * 0.3 + (100 - ((criticalCount / filteredInsights.length) * 100)) * 0.4 + (highCount > 3 ? 50 : 90) * 0.3)
+      )
+    : 100;
 
   // Calculate KPIs
   const insightsGenerated = filteredInsights.length;

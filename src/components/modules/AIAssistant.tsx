@@ -218,21 +218,21 @@ export function AIAssistant() {
         }));
         setMessages(adapted);
         // Mirror to localStorage as backup
-        try { sessionStorage.setItem(`cortex_ai_session_${sessionId}`, JSON.stringify(adapted)); } catch {}
+        try { sessionStorage.setItem(`cortex_ai_session_${sessionId}`, JSON.stringify(adapted)); } catch (e) { console.warn('[AI] Failed to persist session to sessionStorage:', e); }
       })
       .catch(() => {
         // Fallback to localStorage if server fails
         try {
           const saved = sessionStorage.getItem(`cortex_ai_session_${sessionId}`);
           setMessages(saved ? JSON.parse(saved) : []);
-        } catch { setMessages([]); }
+        } catch (e) { console.warn('[AI] Failed to load session from sessionStorage:', e); setMessages([]); }
       });
   };
 
   // Persist current session messages to localStorage as backup
   useEffect(() => {
     if (!currentSessionId) return;
-    try { localStorage.setItem(`cortex_ai_session_${currentSessionId}`, JSON.stringify(messages)); } catch {}
+    try { localStorage.setItem(`cortex_ai_session_${currentSessionId}`, JSON.stringify(messages)); } catch (e) { console.warn('[AI] Failed to persist chat to localStorage:', e); }
   }, [messages, currentSessionId]);
   const { selectedIds, toggle, clearSelection } = useBulkSelection();
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -244,12 +244,13 @@ export function AIAssistant() {
       await Promise.allSettled(
         ids.map(id => aiConversationsApi.deleteSession(id).catch(() => {}))
       );
-      ids.forEach(id => { try { localStorage.removeItem(`cortex_ai_session_${id}`); } catch {} });
+      ids.forEach(id => { try { localStorage.removeItem(`cortex_ai_session_${id}`); } catch (e) { console.warn('[AI] Failed to remove session from localStorage:', e); } });
       setChatSessions(prev => prev.filter(s => !ids.includes(s.id)));
       if (ids.includes(currentSessionId || '')) { setCurrentSessionId(null); setMessages([]); }
       toast.success(`Deleted ${ids.length} session(s)`);
       clearSelection();
-    } catch {
+    } catch (err) {
+      console.error('[AI] Bulk delete failed:', err);
       toast.error('Bulk delete failed');
     }
   }
@@ -492,7 +493,7 @@ export function AIAssistant() {
         <button
           onClick={() => {
             if (currentSessionId) {
-              try { localStorage.setItem(`cortex_ai_session_${currentSessionId}`, JSON.stringify(messages)); } catch {}
+              try { localStorage.setItem(`cortex_ai_session_${currentSessionId}`, JSON.stringify(messages)); } catch (e) { console.warn('[AI] Failed to persist chat to localStorage:', e); }
             }
             setMessages([]);
             setInput('');
@@ -516,7 +517,7 @@ export function AIAssistant() {
                     key={session.id}
                     onClick={() => {
                       if (currentSessionId) {
-                        try { localStorage.setItem(`cortex_ai_session_${currentSessionId}`, JSON.stringify(messages)); } catch {}
+                        try { localStorage.setItem(`cortex_ai_session_${currentSessionId}`, JSON.stringify(messages)); } catch (e) { console.warn('[AI] Failed to persist chat to localStorage:', e); }
                       }
                       setCurrentSessionId(session.id);
                       loadSession(session.id);

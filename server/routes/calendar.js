@@ -70,14 +70,15 @@ async function getEvents(req, res) {
       });
     });
 
+    // Note: each UNION part uses its own param ($1 for rfis, $2 for change_orders)
     const rfisParams = isSuper ? [] : (orgId ? [orgId] : [0]);
     const coParams = isSuper ? [] : (orgId ? [orgId] : [0]);
     const { rows: deadlines } = await pool.query(
       `SELECT id, subject as title, due_date as date, status, project FROM rfis
-       WHERE due_date IS NOT NULL ${orgFilter}
+       WHERE due_date IS NOT NULL ${orgId && !isSuper ? 'AND organization_id = $1' : ''}
        UNION ALL
        SELECT id, title, submitted_date as date, status, project FROM change_orders
-       WHERE submitted_date IS NOT NULL ${orgFilter}`,
+       WHERE submitted_date IS NOT NULL ${orgId && !isSuper ? 'AND organization_id = $2' : ''}`,
       [...rfisParams, ...coParams]
     );
     deadlines.forEach(d => {

@@ -29,7 +29,7 @@ const { handleDailyReports } = require('./ai-intents/daily-reports-intent');
 const { handleRisk } = require('./ai-intents/risk-intent');
 const { handleGenerateReport } = require('./ai-intents/report-generator');
 const { classify, shouldUseOllama } = require('./ai-intents/ai-intent-classifier');
-const { getConversationHistory, truncateToTokenBudget, MAX_CONTEXT_MESSAGES, SUMMARY_THRESHOLD, MAX_TOKENS_BUDGET } = require('./ai-intents/conversation-history');
+const { getConversationHistory, truncateToTokenBudget, MAX_CONTEXT_MESSAGES, SUMMARY_THRESHOLD } = require('./ai-intents/conversation-history');
 const { getOllamaResponse, summarizeText, OLLAMA_HOST, LLM_MODEL } = require('./ai-intents/ollama-client');
 
 const router = express.Router();
@@ -183,7 +183,7 @@ router.post('/chat', aiChatLimiter, async (req, res) => {
   }
 
   try {
-    // ── Fetch conversation history (with summarization for long chats) ──────
+    // ── Fetch conversation history (summarization applied internally for long chats) ──────
     let convHistory = [];
     let summary      = null;
     if (sessionId && req.user && req.user.organization_id) {
