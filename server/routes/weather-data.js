@@ -14,13 +14,14 @@ router.get('/', async (req, res) => {
   try {
     const auth = req.user || {};
     const orgId = auth.organization_id;
-    const isSuper = ['super_admin', 'company_owner'].includes(auth.role);
 
     let params = [];
     let where = '';
-    if (isSuper) {
-      where = '';
-      params = [];
+    if (auth.role === 'super_admin') {
+      // no filter
+    } else if (auth.role === 'company_owner') {
+      where = 'WHERE company_id = $1';
+      params = [auth.company_id];
     } else if (orgId) {
       where = 'WHERE organization_id = $1';
       params = [orgId];

@@ -339,7 +339,8 @@ function ruleBasedScores(tender) {
 router.post('/:id/ai-score', async (req, res) => {
   const { id } = req.params;
   const orgId  = req.user?.organization_id;
-  const isSuper = ['super_admin', 'company_owner'].includes(req.user?.role);
+  const isSuper = req.user?.role === 'super_admin';
+  const isCompanyOwner = req.user?.role === 'company_owner';
 
   try {
     // ── 1. Resolve tender record ────────────────────────────────────────────
@@ -347,7 +348,10 @@ router.post('/:id/ai-score', async (req, res) => {
     if (!tender || Object.keys(tender).length === 0) {
       let whereClause = 'WHERE id = $1';
       let params = [id];
-      if (orgId && !isSuper) {
+      if (isCompanyOwner) {
+        whereClause += ' AND company_id = $2';
+        params.push(req.user.company_id);
+      } else if (!isSuper && orgId) {
         whereClause += ' AND organization_id = $2';
         params.push(orgId);
       }
@@ -524,7 +528,10 @@ Be honest. Do not inflate scores.`;
     try {
       let updateQuery = 'UPDATE tenders SET ai_score = $1 WHERE id = $2';
       let updateParams = [overall, id];
-      if (orgId && !isSuper) {
+      if (isCompanyOwner) {
+        updateQuery += ' AND company_id = $3';
+        updateParams.push(req.user.company_id);
+      } else if (!isSuper && orgId) {
         updateQuery += ' AND organization_id = $3';
         updateParams.push(orgId);
       }
@@ -566,15 +573,20 @@ router.post('/batch/ai-score', async (req, res) => {
   }
 
   const orgId  = req.user?.organization_id;
-  const isSuper = ['super_admin', 'company_owner'].includes(req.user?.role);
+  const isSuper = req.user?.role === 'super_admin';
+  const isCompanyOwner = req.user?.role === 'company_owner';
   const results = [];
 
   for (const id of tenderIds) {
     try {
+      let batchWhere = 'WHERE id = $1';
+      let batchParams = [id];
+      if (isCompanyOwner) { batchWhere += ' AND company_id = $2'; batchParams.push(req.user.company_id); }
+      else if (!isSuper && orgId) { batchWhere += ' AND organization_id = $2'; batchParams.push(orgId); }
       const { rows } = await pool.query(
         `SELECT title, client, value, deadline, status, probability, type, location, notes
-         FROM tenders WHERE id = $1 ${orgId && !isSuper ? 'AND organization_id = $2' : ''} LIMIT 1`,
-        orgId && !isSuper ? [id, orgId] : [id]
+         FROM tenders ${batchWhere} LIMIT 1`,
+        batchParams
       );
       if (!rows.length) { results.push({ id, error: 'Not found' }); continue; }
 

@@ -33,14 +33,20 @@ const TABLE_CATEGORY = {
 router.get('/', async (req, res) => {
   const { entity_type, time_range, limit = '50', offset = '0' } = req.query;
   const orgId = req.user?.organization_id;
-  const isSuper = ['super_admin', 'company_owner'].includes(req.user?.role);
+  const role = req.user?.role;
 
   try {
     const whereClauses = [];
     const params = [];
     let paramIndex = 1;
 
-    if (orgId && !isSuper) {
+    if (role === 'super_admin') {
+      // no tenant filter — sees everything
+    } else if (role === 'company_owner') {
+      whereClauses.push(`a.company_id = $${paramIndex}`);
+      params.push(req.user.company_id);
+      paramIndex++;
+    } else if (orgId) {
       whereClauses.push(`a.organization_id = $${paramIndex}`);
       params.push(orgId);
       paramIndex++;

@@ -67,13 +67,15 @@ router.get('/', async (req, res) => {
   }
 });
 
-// GET /api/admin/stats/organizations — list all orgs with counts
+// GET /api/admin/stats/organizations — list orgs (super_admin sees all; company_owner sees their own)
 router.get('/organizations', async (req, res) => {
   if (!['super_admin', 'company_owner'].includes(req.user?.role)) {
     return res.status(403).json({ error: 'Forbidden' });
   }
 
   try {
+    const isSuper = req.user.role === 'super_admin';
+    const params = isSuper ? [] : [req.user.company_id];
     const { rows } = await pool.query(`
       SELECT
         o.id, o.name, o.description, o.created_at,
@@ -82,9 +84,10 @@ router.get('/organizations', async (req, res) => {
       FROM organizations o
       LEFT JOIN users u ON u.organization_id = o.id
       LEFT JOIN projects p ON p.organization_id = o.id
+      ${isSuper ? '' : 'WHERE o.company_id = $1'}
       GROUP BY o.id, o.name, o.description, o.created_at
       ORDER BY o.created_at DESC
-    `);
+    `, params);
     res.json(rows);
   } catch (err) {
     console.error('[Admin Orgs]', err.message);

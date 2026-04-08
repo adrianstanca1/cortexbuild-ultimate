@@ -5,8 +5,13 @@ const authMiddleware = require('../middleware/auth');
 const router = express.Router();
 router.use(authMiddleware);
 
-// Multi-tenancy: work_packages have organization_id directly
+// Multi-tenancy: super_admin sees all; company_owner by company_id; others by organization_id
 function orgFilter(user) {
+  if (user?.role === 'super_admin') return { filter: '', params: [] };
+  if (user?.role === 'company_owner') return {
+    filter: ' AND wp.company_id = $1',
+    params: [user.company_id],
+  };
   if (!user?.organization_id) return { filter: '', params: [] };
   return {
     filter: ' AND wp.organization_id = $1',
@@ -67,17 +72,21 @@ router.post('/', async (req, res) => {
       assigned_to, start_date, end_date, budget, progress
     } = req.body;
 
-    if (!req.user?.organization_id) {
+    const isCompanyOwner = req.user?.role === 'company_owner';
+    const tenantCol = isCompanyOwner ? 'company_id' : 'organization_id';
+    const tenantId = isCompanyOwner ? req.user.company_id : req.user.organization_id;
+
+    if (!tenantId) {
       return res.status(400).json({ message: 'User profile incomplete. Please complete your profile setup.' });
     }
 
     if (!name) return res.status(400).json({ message: 'Name is required' });
 
-    // Verify project belongs to user's org
+    // Verify project belongs to user's tenant
     if (project_id) {
       const { rows: proj } = await pool.query(
-        'SELECT id FROM projects WHERE id = $1 AND organization_id = $2',
-        [project_id, req.user.organization_id]
+        `SELECT id FROM projects WHERE id = $1 AND ${tenantCol} = $2`,
+        [project_id, tenantId]
       );
       if (proj.length === 0) {
         return res.status(403).json({ message: 'Project not found or access denied' });
@@ -86,11 +95,12 @@ router.post('/', async (req, res) => {
 
     const { rows } = await pool.query(
       `INSERT INTO work_packages
-        (organization_id, project_id, name, description, status, priority, assigned_to, start_date, end_date, budget, progress)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+        (organization_id, company_id, project_id, name, description, status, priority, assigned_to, start_date, end_date, budget, progress)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
        RETURNING *`,
       [
-        req.user.organization_id,
+        isCompanyOwner ? null : req.user.organization_id,
+        req.user.company_id,
         project_id || null,
         name,
         description || '',

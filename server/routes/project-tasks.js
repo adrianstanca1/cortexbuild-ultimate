@@ -5,8 +5,14 @@ const authMiddleware = require('../middleware/auth');
 const router = express.Router();
 router.use(authMiddleware);
 
-// Multi-tenancy: filter through project join since project_tasks.project_id → projects.id → projects.organization_id
+// Multi-tenancy: super_admin sees all; company_owner by company_id; others by organization_id
 async function orgFilterTasks(user, extraJoinConditions = '') {
+  if (user?.role === 'super_admin') return { join: '', filter: '', params: [] };
+  if (user?.role === 'company_owner') return {
+    join: `JOIN projects p ON pt.project_id = p.id${extraJoinConditions}`,
+    filter: ' AND p.company_id = $1',
+    params: [user.company_id],
+  };
   if (!user?.organization_id) return { join: '', filter: '', params: [] };
   return {
     join: `JOIN projects p ON pt.project_id = p.id${extraJoinConditions}`,
@@ -112,8 +118,8 @@ router.get('/:id', async (req, res) => {
     if (rows.length === 0) return res.status(404).json({ message: 'Task not found' });
 
     const { rows: comments } = await pool.query(
-      'SELECT * FROM project_task_comments WHERE task_id = $1 AND organization_id = $2 ORDER BY created_at ASC',
-      [id, req.user.organization_id]
+      `SELECT * FROM project_task_comments WHERE task_id = $1 AND ${req.user.role === 'company_owner' ? 'company_id' : 'organization_id'} = $2 ORDER BY created_at ASC`,
+      [id, req.user.role === 'company_owner' ? req.user.company_id : req.user.organization_id]
     );
 
     res.json({ ...rows[0], comments });

@@ -17,10 +17,15 @@ router.get('/', async (req, res) => {
     let conditions = [];
 
     if (!isSuper) {
-      // Non-super_admin users must have an organization_id
-      if (!orgId) return res.status(403).json({ message: 'No organization context' });
-      conditions.push(`organization_id = $${params.length + 1}`);
-      params.push(orgId);
+      if (req.user?.role === 'company_owner') {
+        conditions.push(`company_id = $${params.length + 1}`);
+        params.push(req.user.company_id);
+      } else if (!orgId) {
+        return res.status(403).json({ message: 'No organization context' });
+      } else {
+        conditions.push(`organization_id = $${params.length + 1}`);
+        params.push(orgId);
+      }
     }
     // super_admin: no organization filter — sees everything
 
@@ -90,19 +95,23 @@ router.get('/stats', async (req, res) => {
     const isSuper = req.user?.role === 'super_admin';
     const orgId = req.user?.organization_id;
     const dateCond = 'created_at > NOW() - INTERVAL \'7 days\'';
+    const isCompanyOwner = req.user?.role === 'company_owner';
+    const tenantClause = isSuper ? '' : (isCompanyOwner ? 'company_id = $1 AND' : 'organization_id = $1 AND');
+    const tenantParams = isSuper ? [] : [isCompanyOwner ? req.user.company_id : orgId];
+
     const { rows: byAction } = await pool.query(
-      `SELECT action, COUNT(*) as count FROM audit_log ${isSuper ? 'WHERE' : 'WHERE organization_id = $1 AND'} ${dateCond} GROUP BY action ORDER BY count DESC`,
-      isSuper ? [] : [orgId]
+      `SELECT action, COUNT(*) as count FROM audit_log WHERE ${tenantClause} ${dateCond} GROUP BY action ORDER BY count DESC`,
+      tenantParams
     );
 
     const { rows: byTable } = await pool.query(
-      `SELECT table_name, COUNT(*) as count FROM audit_log ${isSuper ? 'WHERE' : 'WHERE organization_id = $1 AND'} ${dateCond} GROUP BY table_name ORDER BY count DESC LIMIT 10`,
-      isSuper ? [] : [orgId]
+      `SELECT table_name, COUNT(*) as count FROM audit_log WHERE ${tenantClause} ${dateCond} GROUP BY table_name ORDER BY count DESC LIMIT 10`,
+      tenantParams
     );
 
     const { rows: recent } = await pool.query(
-      `SELECT COUNT(*) as total FROM audit_log ${isSuper ? 'WHERE' : 'WHERE organization_id = $1 AND'} created_at > NOW() - INTERVAL '24 hours'`,
-      isSuper ? [] : [orgId]
+      `SELECT COUNT(*) as total FROM audit_log WHERE ${tenantClause} created_at > NOW() - INTERVAL '24 hours'`,
+      tenantParams
     );
 
     res.json({
@@ -126,9 +135,15 @@ router.get('/export', async (req, res) => {
     let conditions = [];
 
     if (!isSuper) {
-      if (!orgId) return res.status(403).json({ message: 'No organization context' });
-      conditions.push(`organization_id = $${params.length + 1}`);
-      params.push(orgId);
+      if (req.user?.role === 'company_owner') {
+        conditions.push(`company_id = $${params.length + 1}`);
+        params.push(req.user.company_id);
+      } else if (!orgId) {
+        return res.status(403).json({ message: 'No organization context' });
+      } else {
+        conditions.push(`organization_id = $${params.length + 1}`);
+        params.push(orgId);
+      }
     }
     if (table) {
       params.push(table);

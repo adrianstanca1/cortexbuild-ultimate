@@ -349,11 +349,13 @@ router.get('/:id/preview', async (req, res) => {
 router.get('/folders/list', async (req, res) => {
   try {
     const { parent } = req.query;
-    let query = 'SELECT DISTINCT parent_folder FROM documents WHERE parent_folder IS NOT NULL AND organization_id = $1';
-    const params = [];
+    const tenantCol = req.user?.role === 'company_owner' ? 'company_id' : 'organization_id';
+    const tenantId = req.user?.role === 'company_owner' ? req.user.company_id : req.user?.organization_id;
+    const params = [tenantId];
+    let query = `SELECT DISTINCT parent_folder FROM documents WHERE parent_folder IS NOT NULL AND ${tenantCol} = $1`;
 
     if (parent) {
-      query += ' AND parent_folder = $1';
+      query += ' AND parent_folder = $2';
       params.push(parent);
     }
 

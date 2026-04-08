@@ -8,6 +8,12 @@ router.use(authMiddleware);
 // /api/tasks is an alias for /api/project-tasks with projectId query param
 // Multi-tenancy: filter through project join
 async function orgFilterTasks(user) {
+  if (user?.role === 'super_admin') return { join: '', filter: '', params: [] };
+  if (user?.role === 'company_owner') return {
+    join: 'JOIN projects p ON t.project_id = p.id',
+    filter: ' AND p.company_id = $1',
+    params: [user.company_id],
+  };
   if (!user?.organization_id) return { join: '', filter: '', params: [] };
   return {
     join: 'JOIN projects p ON t.project_id = p.id',
@@ -59,17 +65,21 @@ router.post('/', async (req, res) => {
       assigned_to, due_date, category, estimated_hours, tags
     } = req.body;
 
-    if (!req.user?.organization_id) {
+    const isCompanyOwner = req.user?.role === 'company_owner';
+    const tenantCol = isCompanyOwner ? 'company_id' : 'organization_id';
+    const tenantId = isCompanyOwner ? req.user.company_id : req.user.organization_id;
+
+    if (!tenantId) {
       return res.status(400).json({ message: 'User profile incomplete. Please complete your profile setup.' });
     }
 
     if (!title) return res.status(400).json({ message: 'Title is required' });
 
-    // Verify project belongs to user's org
+    // Verify project belongs to user's tenant
     if (project_id) {
       const { rows: proj } = await pool.query(
-        'SELECT id FROM projects WHERE id = $1 AND organization_id = $2',
-        [project_id, req.user.organization_id]
+        `SELECT id FROM projects WHERE id = $1 AND ${tenantCol} = $2`,
+        [project_id, tenantId]
       );
       if (proj.length === 0) {
         return res.status(403).json({ message: 'Project not found or access denied' });
@@ -78,8 +88,8 @@ router.post('/', async (req, res) => {
 
     const { rows } = await pool.query(
       `INSERT INTO tasks
-        (project_id, title, description, status, priority, assigned_to, due_date, category, estimated_hours, tags, organization_id)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+        (project_id, title, description, status, priority, assigned_to, due_date, category, estimated_hours, tags, organization_id, company_id)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
        RETURNING *`,
       [
         project_id || null,
@@ -92,7 +102,8 @@ router.post('/', async (req, res) => {
         category || 'general',
         estimated_hours || null,
         tags || '',
-        req.user.organization_id
+        isCompanyOwner ? null : req.user.organization_id,
+        req.user.company_id
       ]
     );
 

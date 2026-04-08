@@ -119,7 +119,7 @@ router.delete('/:id', checkPermission('report-templates', 'write'), async (req, 
   }
 });
 
-router.post('/:id/duplicate', async (req, res) => {
+router.post('/:id/duplicate', checkPermission('report-templates', 'write'), async (req, res) => {
   try {
     const { rows: original } = await pool.query(
       'SELECT * FROM report_templates WHERE id = $1 AND company_id = $2',
