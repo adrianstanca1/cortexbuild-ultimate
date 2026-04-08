@@ -528,15 +528,20 @@ router.put('/:id/clashes/:clashId', authMiddleware, async (req, res) => {
   }
 
   try {
+    const isCompanyOwner = req.user?.role === 'company_owner';
+    const tenantCol = isCompanyOwner ? 'company_id' : 'organization_id';
+    const tenantId = isCompanyOwner ? req.user?.company_id : req.user?.organization_id;
+
     const { rows } = await pool.query(
-      `UPDATE bim_clashes_detections SET
-        status = $1,
+      `UPDATE bim_clashes_detections c
+       SET status = $1,
         resolved_by = CASE WHEN $1 = 'resolved' THEN $2 ELSE resolved_by END,
         resolved_at = CASE WHEN $1 = 'resolved' THEN NOW() ELSE resolved_at END,
         updated_at = NOW()
-       WHERE id = $3 AND organization_id = $4
-       RETURNING *`,
-      [status, req.user.id, req.params.clashId, req.user.organization_id]
+       FROM bim_models m
+       WHERE c.id = $3 AND m.id = c.model_id AND m.${tenantCol} = $4
+       RETURNING c.*`,
+      [status, req.user.id, req.params.clashId, tenantId]
     );
 
     if (!rows.length) {

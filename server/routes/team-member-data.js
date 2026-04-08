@@ -29,9 +29,13 @@ router.post('/members/:memberId/skills', async (req, res) => {
   if (!skill_name) return res.status(400).json({ message: 'skill_name required' });
   try {
     const { rows } = await pool.query(
-      'INSERT INTO team_member_skills (member_id, skill_name, status) VALUES ($1, $2, $3) RETURNING *',
-      [req.params.memberId, skill_name, status]
+      `INSERT INTO team_member_skills (member_id, skill_name, status)
+       SELECT $1, $2, $3
+       WHERE EXISTS (SELECT 1 FROM team_members WHERE id = $1 AND company_id = $4)
+       RETURNING *`,
+      [req.params.memberId, skill_name, status, req.user.company_id]
     );
+    if (!rows.length) return res.status(404).json({ message: 'Member not found or not in your company' });
     res.status(201).json(rows[0]);
   } catch (err) {
     console.error('[POST skills]', err.message);
@@ -96,9 +100,13 @@ router.post('/members/:memberId/inductions', async (req, res) => {
   if (!project || !date) return res.status(400).json({ message: 'project and date required' });
   try {
     const { rows } = await pool.query(
-      'INSERT INTO team_member_inductions (member_id, project, date, next_due, status) VALUES ($1, $2, $3, $4, $5) RETURNING *',
-      [req.params.memberId, project, date, next_due || null, status]
+      `INSERT INTO team_member_inductions (member_id, project, date, next_due, status)
+       SELECT $1, $2, $3, $4, $5
+       WHERE EXISTS (SELECT 1 FROM team_members WHERE id = $1 AND company_id = $6)
+       RETURNING *`,
+      [req.params.memberId, project, date, next_due || null, status, req.user.company_id]
     );
+    if (!rows.length) return res.status(404).json({ message: 'Member not found or not in your company' });
     res.status(201).json(rows[0]);
   } catch (err) {
     console.error('[POST inductions]', err.message);
@@ -166,12 +174,13 @@ router.post('/members/:memberId/availability', async (req, res) => {
   try {
     const { rows } = await pool.query(
       `INSERT INTO team_member_availability (member_id, project, status)
-       VALUES ($1, $2, $3)
+       SELECT $1, $2, $3
+       WHERE EXISTS (SELECT 1 FROM team_members WHERE id = $1 AND company_id = $4)
        ON CONFLICT (member_id, project) DO UPDATE SET status = $3, updated_at = NOW()
        RETURNING *`,
-      [req.params.memberId, project, status]
+      [req.params.memberId, project, status, req.user.company_id]
     );
-    res.status(201).json(rows[0]);
+    if (!rows.length) return res.status(404).json({ message: 'Member not found or not in your company' });
   } catch (err) {
     console.error('[POST availability]', err.message);
     res.status(500).json({ message: 'Internal server error' });
