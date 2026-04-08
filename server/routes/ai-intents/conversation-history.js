@@ -8,15 +8,18 @@ const SUMMARY_THRESHOLD    = parseInt(process.env.SUMMARY_THRESHOLD    || '30', 
  * Fetch conversation history for a session, newest-first, with oldest summarized.
  * Returns { messages: [{role, content}], summary: string|null }
  */
-async function getConversationHistory(organizationId, sessionId, limit = 60) {
-  if (!organizationId) {
+async function getConversationHistory(organizationId, companyId, sessionId, limit = 60) {
+  // Determine the tenant column to query — prefer organization_id, fall back to company_id
+  const tenantId = organizationId || companyId;
+  if (!tenantId) {
     return { messages: [], summary: null };
   }
+  const colName = organizationId ? 'organization_id' : 'company_id';
   const { rows } = await pool.query(
     `SELECT id, role, content, created_at FROM ai_conversations
-     WHERE organization_id = $1 AND session_id = $2
+     WHERE ${colName} = $1 AND session_id = $2
      ORDER BY created_at DESC LIMIT $3`,
-    [organizationId, sessionId, limit]
+    [tenantId, sessionId, limit]
   );
   if (!rows.length) return { messages: [], summary: null };
 

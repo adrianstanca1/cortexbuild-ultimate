@@ -55,12 +55,18 @@ async function handleGenerateReport(message, req) {
   const htmlSections = [];
   const sections = [];
   const orgId = req?.user?.organization_id;
-  const isSuper = ['super_admin', 'company_owner'].includes(req?.user?.role);
+  const companyId = req?.user?.company_id;
+  const isSuperAdmin = req?.user?.role === 'super_admin';
   let orgFilter = '';
   let queryParams = [];
-  if (orgId && !isSuper) {
-    orgFilter = 'WHERE organization_id = $1';
-    queryParams = [orgId];
+  if (!isSuperAdmin) {
+    if (orgId) {
+      orgFilter = 'WHERE organization_id = $1';
+      queryParams = [orgId];
+    } else if (companyId) {
+      orgFilter = 'WHERE company_id = $1';
+      queryParams = [companyId];
+    }
   }
 
   if (reportType === 'daily' || reportType === 'executive') {

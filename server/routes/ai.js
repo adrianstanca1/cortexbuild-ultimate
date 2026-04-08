@@ -188,8 +188,7 @@ router.post('/chat', aiChatLimiter, async (req, res) => {
     let summary      = null;
     if (sessionId && req.user && (req.user.organization_id || req.user.company_id)) {
       try {
-        const orgId = req.user.organization_id || req.user.company_id;
-        const hist = await getConversationHistory(orgId, sessionId);
+        const hist = await getConversationHistory(req.user.organization_id, req.user.company_id, sessionId);
         convHistory = hist.messages;
         summary     = hist.summary;
       } catch (e) {
