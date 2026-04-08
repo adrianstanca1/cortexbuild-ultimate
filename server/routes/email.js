@@ -332,9 +332,18 @@ router.post('/bulk', async (req, res) => {
       }
     }
 
-    // If all inserts failed, return 500; otherwise 201 (partial success)
-    const allFailed = results.every(r => !r.success);
-    res.status(allFailed ? 500 : 201).json({ success: !allFailed, results });
+    // If all inserts failed, return 500; if some failed, return 207 (Multi-Status); otherwise 201
+    const successCount = results.filter(r => r.success).length;
+    const failureCount = results.filter(r => !r.success).length;
+    const allFailed = failureCount === results.length;
+    const partialFailure = !allFailed && failureCount > 0;
+    res.status(allFailed ? 500 : (partialFailure ? 207 : 201)).json({
+      success: !allFailed,
+      results,
+      summary: partialFailure
+        ? `${successCount} sent, ${failureCount} failed`
+        : `${successCount} sent`
+    });
   } catch (err) {
     console.error('[Bulk Email]', err.message);
     res.status(500).json({ message: 'Internal server error' });

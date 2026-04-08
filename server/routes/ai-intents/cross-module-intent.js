@@ -60,6 +60,7 @@ const HANDLERS = {
  */
 async function handleCrossModule(intents, message, user) {
   const results = {};
+  const failedHandlers = [];
   const promises = intents.map(async (intent) => {
     const handler = HANDLERS[intent];
     if (handler) {
@@ -68,6 +69,7 @@ async function handleCrossModule(intents, message, user) {
         results[intent] = res;
       } catch (e) {
         console.error(`[CrossModule] Error in handler ${intent}:`, e.message);
+        failedHandlers.push(intent);
       }
     }
   });
@@ -80,9 +82,13 @@ async function handleCrossModule(intents, message, user) {
     summaryParts.push(`--- ${intent.toUpperCase()} ---\n${res.reply}`);
   }
 
+  const failedNote = failedHandlers.length > 0
+    ? `\n\n_Some data areas were unavailable: ${failedHandlers.join(', ')}_`
+    : '';
+
   return {
     reply: summaryParts.length > 0
-      ? `I've gathered information from multiple areas:\n\n${summaryParts.join('\n\n')}`
+      ? `I've gathered information from multiple areas:${failedNote}\n\n${summaryParts.join('\n\n')}`
       : `I found multiple related areas, but couldn't retrieve specific data for them.`,
     data: results,
     suggestions: [

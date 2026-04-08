@@ -188,7 +188,7 @@ router.post('/chat', aiChatLimiter, async (req, res) => {
     let summary      = null;
     if (sessionId && req.user && req.user.organization_id) {
       try {
-        const orgId = req.user.organization_id || 'anon';
+        const orgId = req.user.organization_id || req.user.company_id || 'anon';
         const hist = await getConversationHistory(orgId, sessionId);
         convHistory = hist.messages;
         summary     = hist.summary;
@@ -254,27 +254,18 @@ router.post('/chat', aiChatLimiter, async (req, res) => {
       }
     }
 
-    // ── Save conversation to DB ─────────────────────────────────────────────
+    // ── Save conversation to DB (atomic — both messages or neither) ────────────
     if (sessionId && req.user) {
-      const orgId = req.user.organization_id || 'anon';
+      const orgId = req.user.organization_id || req.user.company_id || 'anon';
       const uid = req.user.id || null;
       try {
         await pool.query(
           `INSERT INTO ai_conversations (organization_id, user_id, session_id, role, content, model)
-           VALUES ($1, $2, $3, 'user', $4, $5)`,
-          [orgId, uid, sessionId, message.trim(), LLM_MODEL]
+           VALUES ($1, $2, $3, 'user', $4, $5), ($1, $2, $3, 'assistant', $6, $7)`,
+          [orgId, uid, sessionId, message.trim(), LLM_MODEL, reply, LLM_MODEL]
         );
       } catch (e) {
-        console.warn('[AI] Could not save user message:', e.message);
-      }
-      try {
-        await pool.query(
-          `INSERT INTO ai_conversations (organization_id, user_id, session_id, role, content, model)
-           VALUES ($1, $2, $3, 'assistant', $4, $5)`,
-          [orgId, uid, sessionId, reply, LLM_MODEL]
-        );
-      } catch (e) {
-        console.warn('[AI] Could not save assistant message:', e.message);
+        console.warn('[AI] Could not save conversation:', e.message);
       }
     }
 
@@ -311,16 +302,31 @@ router.post('/summarize-project', aiSummarizeLimiter, async (req, res) => {
 
     const proj = projects[0];
 
-    // Gather related data in parallel (scoped to project's organization)
+    // Gather related data in a single query using UNION ALL (1 round trip vs 5)
     const projOrgId = projects[0].organization_id || orgId;
-    const [{ rows: invoices }, { rows: changeOrders }, { rows: defects }, { rows: rfis }, { rows: dailyReports }] =
-      await Promise.all([
-        pool.query(`SELECT number, amount, status, due_date FROM invoices WHERE project_id = $1 AND organization_id = $2`, [projectId, projOrgId]),
-        pool.query(`SELECT number, title, amount, status FROM change_orders WHERE project_id = $1 AND organization_id = $2`, [projectId, projOrgId]),
-        pool.query(`SELECT reference, title, priority, status, due_date FROM defects WHERE project_id = $1 AND organization_id = $2`, [projectId, projOrgId]),
-        pool.query(`SELECT number, subject, priority, status FROM rfis WHERE project_id = $1 AND organization_id = $2`, [projectId, projOrgId]),
-        pool.query(`SELECT date, weather, workers_on_site, progress FROM daily_reports WHERE project_id = $1 AND organization_id = $2 ORDER BY date DESC LIMIT 7`, [projectId, projOrgId]),
-      ]);
+    const { rows: related } = await pool.query(
+      `SELECT 'invoice' as type, id, number, amount, status, NULL as title, NULL as priority, NULL as due_date, NULL as reference, NULL as workers_on_site, NULL as progress, NULL as weather, NULL as date
+       FROM invoices WHERE project_id = $1 AND organization_id = $2
+       UNION ALL
+       SELECT 'change_order', id, number, amount, status, title, NULL, NULL, NULL, NULL, NULL, NULL, NULL
+       FROM change_orders WHERE project_id = $1 AND organization_id = $2
+       UNION ALL
+       SELECT 'defect', id, reference, amount, status, title, priority, due_date, NULL, NULL, NULL, NULL, NULL
+       FROM defects WHERE project_id = $1 AND organization_id = $2
+       UNION ALL
+       SELECT 'rfi', id, number, NULL, status, subject, priority, due_date, NULL, NULL, NULL, NULL, NULL
+       FROM rfis WHERE project_id = $1 AND organization_id = $2
+       UNION ALL
+       SELECT 'daily_report', id, NULL, NULL, status, NULL, NULL, NULL, date, workers_on_site, progress, weather, date
+       FROM daily_reports WHERE project_id = $1 AND organization_id = $2 ORDER BY date DESC LIMIT 50`,
+      [projectId, projOrgId]
+    );
+
+    const invoices = related.filter(r => r.type === 'invoice').map(r => ({ number: r.number, amount: r.amount, status: r.status }));
+    const changeOrders = related.filter(r => r.type === 'change_order').map(r => ({ number: r.number, title: r.title, amount: r.amount, status: r.status }));
+    const defects = related.filter(r => r.type === 'defect').map(r => ({ reference: r.reference, title: r.title, priority: r.priority, status: r.status, due_date: r.due_date }));
+    const rfis = related.filter(r => r.type === 'rfi').map(r => ({ number: r.number, subject: r.title, priority: r.priority, status: r.status, due_date: r.due_date }));
+    const dailyReports = related.filter(r => r.type === 'daily_report').map(r => ({ date: r.date, weather: r.weather, workers_on_site: r.workers_on_site, progress: r.progress })).slice(-7);
 
     const totalInvoiced = invoices.reduce((s, i) => s + parseFloat(i.amount || 0), 0);
     const paidInvoices  = invoices.filter(i => i.status === 'paid').length;

@@ -39,8 +39,10 @@ router.get('/', async (req, res) => {
       params.push(severity);
     }
     if (projectId) {
+      // Escape special LIKE characters to prevent broad matching
+      const escaped = projectId.replace(/[%_\\]/g, '\\$&');
       whereClauses.push(`link LIKE $${idx++}`);
-      params.push(`%${projectId}%`);
+      params.push(`%${escaped}%`);
     }
 
     const where = whereClauses.length > 0 ? `WHERE ${whereClauses.join(' AND ')}` : '';
