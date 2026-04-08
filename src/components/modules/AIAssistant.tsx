@@ -242,7 +242,7 @@ export function AIAssistant() {
     try {
       // Delete from server (async, non-blocking) and localStorage
       await Promise.allSettled(
-        ids.map(id => aiConversationsApi.deleteSession(id).catch(() => {}))
+        ids.map(id => aiConversationsApi.deleteSession(id).catch(e => console.warn('[AI] Failed to delete session:', id, e)))
       );
       ids.forEach(id => { try { localStorage.removeItem(`cortex_ai_session_${id}`); } catch (e) { console.warn('[AI] Failed to remove session from localStorage:', e); } });
       setChatSessions(prev => prev.filter(s => !ids.includes(s.id)));
@@ -410,7 +410,7 @@ export function AIAssistant() {
 
     // Persist user message to server (async, non-blocking) and localStorage backup
     if (sessionIdForSave) {
-      aiConversationsApi.saveMessage({ sessionId: sessionIdForSave, role: 'user', content: messageText }).catch(() => {});
+      aiConversationsApi.saveMessage({ sessionId: sessionIdForSave, role: 'user', content: messageText }).catch(e => console.warn('[AI] Failed to persist user message:', e));
     }
 
     if (isNewSession) {
@@ -468,7 +468,7 @@ export function AIAssistant() {
             setIsTyping(false);
             // Persist assistant message to server (async, non-blocking)
             if (finalSessionId) {
-              aiConversationsApi.saveMessage({ sessionId: finalSessionId, role: 'assistant', content: response.reply }).catch(() => {});
+              aiConversationsApi.saveMessage({ sessionId: finalSessionId, role: 'assistant', content: response.reply }).catch(e => console.warn('[AI] Failed to persist assistant message:', e));
             }
           }
         }, Math.random() * 20 + 40);
