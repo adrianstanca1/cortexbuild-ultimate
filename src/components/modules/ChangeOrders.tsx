@@ -1,14 +1,18 @@
 import { useState } from 'react';
 import {
   GitBranch, Plus, Search, CheckCircle2, Clock, Edit2, Trash2, X, TrendingUp, AlertTriangle,
-  BarChart3, Activity, CheckSquare, Square, FileEdit, DollarSign, Calendar
+  BarChart3, Activity, CheckSquare, Square, FileEdit, DollarSign, Calendar, PenLine
 } from 'lucide-react';
 import { BulkActionsBar, useBulkSelection } from '../ui/BulkActions';
 import { ModuleBreadcrumbs } from '../ui/Breadcrumbs';
 import { EmptyState } from '../ui/EmptyState';
 import { useChangeOrders } from '../../hooks/useData';
+import { signaturesApi } from '../../services/api';
+import { SignatureCapture, SignatureDisplay } from '../ui/SignatureCapture';
 import { toast } from 'sonner';
 import { z } from 'zod';
+import { useAuth } from '../../context/AuthContext';
+import type { Signature } from '../../services/api';
 import {
   BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer
 } from 'recharts';
@@ -188,6 +192,11 @@ export function ChangeOrders() {
   const [selectedForApproval, setSelectedForApproval] = useState<Set<string>>(new Set());
   const [editing, setEditing] = useState<AnyRow | null>(null);
   const [form, setForm] = useState({ ...emptyForm });
+  const [showSignModal, setShowSignModal] = useState(false);
+  const [signingCo, setSigningCo] = useState<AnyRow | null>(null);
+  const [existingSignatures, setExistingSignatures] = useState<Signature[]>([]);
+
+  const { user } = useAuth();
 
   const { selectedIds, toggle, clearSelection } = useBulkSelection();
 
@@ -296,6 +305,36 @@ export function ChangeOrders() {
     if (!confirm('Delete this change order?')) return;
     await deleteMutation.mutateAsync(id);
     toast.success('Change order deleted');
+  }
+
+  async function openSignModal(o: AnyRow) {
+    setSigningCo(o);
+    setShowSignModal(true);
+    try {
+      const res = await signaturesApi.getByDocument('change_order', String(o.id));
+      setExistingSignatures(Array.isArray(res.data) ? res.data : []);
+    } catch {
+      setExistingSignatures([]);
+    }
+  }
+
+  async function handleSignature(signatureData: string) {
+    if (!signingCo || !user) return;
+    try {
+      await signaturesApi.create({
+        document_type: 'change_order',
+        document_id: String(signingCo.id),
+        signer_name: user.name || user.email || 'Unknown',
+        signer_role: user.role || 'Approver',
+        signer_email: user.email,
+        signature_data: signatureData,
+      });
+      toast.success('Change order signed successfully');
+      setShowSignModal(false);
+      setSigningCo(null);
+    } catch {
+      toast.error('Failed to save signature');
+    }
   }
 
   async function approve(o: AnyRow) {
@@ -527,6 +566,16 @@ export function ChangeOrders() {
                                 <CheckCircle2 size={14} />
                               </button>
                             )}
+                            <button
+                              onClick={e => {
+                                e.stopPropagation();
+                                openSignModal(o);
+                              }}
+                              className="p-1.5 text-gray-500 hover:text-blue-400 hover:bg-blue-900/30 rounded"
+                              title="Sign change order"
+                            >
+                              <PenLine size={14} />
+                            </button>
                             <button
                               onClick={e => {
                                 e.stopPropagation();
@@ -895,6 +944,33 @@ export function ChangeOrders() {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {showSignModal && signingCo && (
+        <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
+          <div className="bg-gray-900 rounded-2xl shadow-2xl w-full max-w-lg border border-gray-700">
+            <div className="flex items-center justify-between p-6 border-b border-gray-800">
+              <div>
+                <h2 className="text-lg font-semibold text-white">Sign Change Order</h2>
+                <p className="text-sm text-gray-400 mt-0.5">{String(signingCo.title ?? '')}</p>
+              </div>
+              <button type="button" onClick={() => { setShowSignModal(false); setSigningCo(null); }} className="p-2 hover:bg-gray-800 rounded-lg text-gray-400"><X size={18} /></button>
+            </div>
+            <div className="p-6 space-y-4">
+              <SignatureCapture
+                onSign={handleSignature}
+                onCancel={() => { setShowSignModal(false); setSigningCo(null); }}
+                signerName={user?.name || user?.email}
+              />
+              {existingSignatures.length > 0 && (
+                <div className="space-y-2">
+                  <p className="text-sm font-medium text-gray-400">Existing signatures</p>
+                  {existingSignatures.map(sig => <SignatureDisplay key={sig.id} signature={sig} compact />)}
+                </div>
+              )}
+            </div>
           </div>
         </div>
       )}
