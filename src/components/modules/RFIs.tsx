@@ -2,11 +2,12 @@ import React, { useState } from 'react';
 import {
   MessageSquare, Plus, Search, Clock, CheckCircle, AlertTriangle, Edit2, Trash2, X,
   ChevronDown, ChevronUp, Send, Zap, User, Flame, TrendingUp,
-  Loader2, CheckSquare, Square,
+  Loader2, CheckSquare, Square, Brain
 } from 'lucide-react';
 import { EmptyState } from '../ui/EmptyState';
 import { ModuleBreadcrumbs } from '../ui/Breadcrumbs';
 import { useRFIs } from '../../hooks/useData';
+import { aiSummarizeApi } from '../../services/api';
 import { toast } from 'sonner';
 import { z } from 'zod';
 import { BulkActionsBar, useBulkSelection } from '../ui/BulkActions';
@@ -130,6 +131,10 @@ export function RFIs() {
   const [editing, setEditing] = useState<AnyRow | null>(null);
   const [form, setForm] = useState({ ...emptyForm });
   const [panelOpen, setPanelOpen] = useState<string | null>(null);
+  const [aiSummary, setAiSummary] = useState<string | null>(null);
+  const [aiSummaryStats, setAiSummaryStats] = useState<{count: number; open: number; overdue: number; critical: number} | null>(null);
+  const [aiLoading, setAiLoading] = useState(false);
+  const [summaryExpanded, setSummaryExpanded] = useState(false);
 
   const { selectedIds, toggle, clearSelection } = useBulkSelection();
 
@@ -151,6 +156,21 @@ export function RFIs() {
       clearSelection();
     } catch {
       toast.error('Bulk close failed');
+    }
+  }
+
+  async function handleSummarizeRfi() {
+    setAiLoading(true);
+    setSummaryExpanded(true);
+    try {
+      const res = await aiSummarizeApi.summarizeRfiThread();
+      setAiSummary(res.summary);
+      setAiSummaryStats({ count: res.count, open: res.open, overdue: res.overdue, critical: res.critical });
+      toast.success('RFI summary generated');
+    } catch {
+      toast.error('Failed to generate AI summary');
+    } finally {
+      setAiLoading(false);
     }
   }
 
@@ -351,8 +371,43 @@ export function RFIs() {
         >
           {['All',...PRIORITY_OPTIONS].map(p=><option key={p}>{p}</option>)}
         </select>
+        <button
+          type="button"
+          onClick={handleSummarizeRfi}
+          disabled={aiLoading}
+          className="flex items-center gap-2 px-3 py-2 bg-purple-600/30 hover:bg-purple-600/50 text-purple-300 rounded-lg text-sm transition-colors disabled:opacity-50"
+        >
+          {aiLoading ? <Loader2 size={14} className="animate-spin" /> : <Brain size={14} />}
+          AI Summary
+        </button>
         <span className="text-sm text-gray-400 ml-auto">{filtered.length} RFIs</span>
       </div>
+
+      {/* AI Summary Panel */}
+      {summaryExpanded && (
+        <div className="bg-purple-900/10 border border-purple-500/30 rounded-xl overflow-hidden">
+          <button
+            onClick={() => setSummaryExpanded(false)}
+            className="w-full flex items-center justify-between p-4 hover:bg-purple-900/20 transition-colors"
+          >
+            <div className="flex items-center gap-2">
+              <Brain size={16} className="text-purple-400" />
+              <span className="text-sm font-medium text-purple-300">AI RFI Summary</span>
+              {aiSummaryStats && (
+                <span className="text-xs bg-purple-500/20 text-purple-300 px-2 py-0.5 rounded-full">
+                  {aiSummaryStats.count} total · {aiSummaryStats.open} open · {aiSummaryStats.overdue} overdue
+                </span>
+              )}
+            </div>
+            <ChevronUp size={14} className="text-purple-400" />
+          </button>
+          {aiSummary && (
+            <div className="px-4 pb-4">
+              <p className="text-sm text-gray-300 whitespace-pre-wrap leading-relaxed">{aiSummary}</p>
+            </div>
+          )}
+        </div>
+      )}
 
       {/* RFI List */}
       {isLoading ? (
