@@ -403,6 +403,223 @@ Daily Reports: ${dailyReports.length} recent | Avg workers on site: ${avgWorkers
   }
 });
 
+// ─── POST /summarize-rfi-thread ───────────────────────────────────────────────
+// Returns an AI-generated summary of all RFIs for a project or all open RFIs
+router.post('/summarize-rfi-thread', aiSummarizeLimiter, async (req, res) => {
+  const { projectId } = req.body;
+
+  try {
+    let rfis, placeholders, params;
+
+    if (projectId) {
+      // Summarize RFIs for a specific project
+      const orgId = req.user?.organization_id;
+      const companyId = req.user?.company_id;
+      const isSuper = req.user?.role === 'super_admin';
+
+      let tenantFilter;
+      if (isSuper) {
+        tenantFilter = '';
+        params = [projectId];
+      } else if (orgId) {
+        tenantFilter = ' AND (organization_id = $2 OR (organization_id IS NULL AND company_id = $3))';
+        params = [projectId, orgId, companyId];
+      } else {
+        tenantFilter = ' AND company_id = $2';
+        params = [projectId, companyId];
+      }
+
+      const { rows } = await pool.query(
+        `SELECT number, subject, priority, status, due_date, assigned_to, submitted_date, resolution_date, project
+         FROM rfis WHERE id = $1 ${tenantFilter}`,
+        params
+      );
+      rfis = rows;
+    } else {
+      // Summarize all open/overdue RFIs for the user's org
+      const orgId = req.user?.organization_id;
+      const companyId = req.user?.company_id;
+      const { rows } = await pool.query(
+        `SELECT number, subject, priority, status, due_date, assigned_to, submitted_date, project
+         FROM rfis
+         WHERE (organization_id = $1 OR (organization_id IS NULL AND company_id = $2))
+           AND status IN ('open', 'pending', 'overdue')
+         ORDER BY
+           CASE WHEN priority = 'critical' THEN 0 WHEN priority = 'high' THEN 1 ELSE 2 END,
+           due_date ASC NULLS LAST
+         LIMIT 50`,
+        [orgId, companyId]
+      );
+      rfis = rows;
+    }
+
+    if (!rfis.length) {
+      return res.json({ summary: 'No open RFIs found.', count: 0, source: 'rule-based' });
+    }
+
+    const open = rfis.filter(r => r.status === 'open' || r.status === 'pending');
+    const overdue = rfis.filter(r => r.status === 'overdue');
+    const critical = rfis.filter(r => r.priority === 'critical');
+    const high = rfis.filter(r => r.priority === 'high');
+
+    // Build context for LLM
+    const context = rfis.map(r =>
+      `[${r.number}] ${r.project || ''} — ${r.subject} | Priority: ${r.priority} | Status: ${r.status} | Due: ${r.due_date || 'N/A'} | Assigned: ${r.assigned_to || 'Unassigned'}`
+    ).join('\n');
+
+    const prompt = `You are a construction project manager summarising RFIs (Requests for Information).
+
+Summarise the following ${rfis.length} RFIs in a concise executive summary:
+- ${open.length} open, ${overdue.length} overdue, ${critical.length} critical, ${high.length} high priority
+${critical.length > 0 ? `\nCritical RFIs that need immediate attention:\n${rfis.filter(r => r.priority === 'critical').map(r => `• ${r.number}: ${r.subject}`).join('\n')}` : ''}
+${overdue.length > 0 ? `\nOverdue RFIs:\n${rfis.filter(r => r.status === 'overdue').map(r => `• ${r.number}: ${r.subject} (due ${r.due_date})`).join('\n')}` : ''}
+
+RFI Details:
+${context}
+
+Provide a 3-4 sentence executive summary followed by recommended actions. Format in Markdown.`;
+
+    try {
+      const summary = await summarizeText(prompt);
+      res.json({ summary, count: rfis.length, open: open.length, overdue: overdue.length, critical: critical.length, source: 'ai' });
+    } catch (ollamaErr) {
+      // Fallback to rule-based summary
+      const byProject = rfis.reduce((acc, r) => {
+        const p = r.project || 'Unassigned';
+        if (!acc[p]) acc[p] = [];
+        acc[p].push(r);
+        return acc;
+      }, {});
+
+      let summary = `You have **${rfis.length} open RFIs** — ${overdue.length} overdue, ${critical.length} critical, ${high.length} high priority.\n\n`;
+      if (critical.length > 0) summary += `**Critical:** ${critical.map(r => `${r.number}: ${r.subject}`).join(', ')}\n\n`;
+      if (overdue.length > 0) summary += `**Overdue:** ${overdue.map(r => `${r.number}: ${r.subject}`).join(', ')}\n\n`;
+      summary += `RFIs by project: ${Object.entries(byProject).map(([p, arr]) => `${p}: ${arr.length}`).join(', ')}.\n\n`;
+      summary += 'Recommendation: Review critical and overdue RFIs first, assign unassigned items, and update stakeholders.';
+      res.json({ summary, count: rfis.length, open: open.length, overdue: overdue.length, critical: critical.length, source: 'rule-based' });
+    }
+  } catch (err) {
+    console.error('[AI /summarize-rfi-thread]', err.message);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// ─── POST /summarize-daily-reports ───────────────────────────────────────────
+// Returns an AI-generated summary of daily site reports
+router.post('/summarize-daily-reports', aiSummarizeLimiter, async (req, res) => {
+  const { projectId, days = 7 } = req.body;
+
+  try {
+    const orgId = req.user?.organization_id;
+    const companyId = req.user?.company_id;
+    const isSuper = req.user?.role === 'super_admin';
+    const daysNum = Math.min(30, Math.max(1, parseInt(days, 10) || 7));
+
+    let query, params;
+    if (projectId) {
+      let tenantFilter;
+      if (isSuper) {
+        tenantFilter = '';
+        params = [projectId];
+      } else if (orgId) {
+        tenantFilter = ' AND (organization_id = $2 OR (organization_id IS NULL AND company_id = $3))';
+        params = [projectId, orgId, companyId];
+      } else {
+        tenantFilter = ' AND company_id = $2';
+        params = [projectId, companyId];
+      }
+      query = `SELECT project, date, weather, workers_on_site, progress_notes, delays, notes, equipment_on_site
+               FROM daily_reports WHERE id = $1 ${tenantFilter}
+               ORDER BY date DESC LIMIT $${params.length + 1}`;
+      params.push(daysNum);
+      query = `SELECT project, date, weather, workers_on_site, progress_notes, delays, notes, equipment_on_site
+               FROM daily_reports WHERE id = $1 ${tenantFilter}
+               ORDER BY date DESC LIMIT $${params.length + 1}`;
+    } else {
+      params = [orgId, companyId, daysNum];
+      query = `SELECT project, date, weather, workers_on_site, progress_notes, delays, notes, equipment_on_site
+               FROM daily_reports
+               WHERE (organization_id = $1 OR (organization_id IS NULL AND company_id = $2))
+                 AND date >= CURRENT_DATE - INTERVAL '${daysNum} days'
+               ORDER BY date DESC`;
+    }
+
+    const { rows: reports } = await pool.query(query, params);
+
+    if (!reports.length) {
+      return res.json({ summary: 'No daily reports found for this period.', count: 0, source: 'rule-based' });
+    }
+
+    // Calculate aggregate stats
+    const workers = reports.map(r => parseFloat(r.workers_on_site) || 0);
+    const avgWorkers = workers.length > 0 ? (workers.reduce((a, b) => a + b, 0) / workers.length).toFixed(1) : '0';
+    const totalReports = reports.length;
+    const projects = [...new Set(reports.map(r => r.project).filter(Boolean))];
+
+    // Build context
+    const weatherCounts = reports.reduce((acc, r) => {
+      const w = r.weather || 'Unknown';
+      acc[w] = (acc[w] || 0) + 1;
+      return acc;
+    }, {});
+    const weatherSummary = Object.entries(weatherCounts).map(([w, c]) => `${w} (${c} day${c > 1 ? 's' : ''})`).join(', ');
+
+    const context = reports.map(r =>
+      `${r.date} | ${r.project || 'N/A'} | ${r.weather || 'N/A'} | ${r.workers_on_site || 0} workers | ${r.progress_notes || 'No notes'} | Delays: ${r.delays || 'None'}`
+    ).join('\n');
+
+    const prompt = `You are a construction site manager summarising daily site reports.
+
+Summary: ${totalReports} daily reports across ${projects.length} project(s) over ${daysNum} days.
+Average workers on site: ${avgWorkers} per day.
+Weather: ${weatherSummary}
+
+Detailed reports:
+${context}
+
+Provide a 3-4 sentence executive summary covering:
+1. Overall site activity and productivity trends
+2. Weather impact on operations
+3. Any delays or issues noted
+4. Recommended follow-up actions
+
+Format in Markdown.`;
+
+    try {
+      const summary = await summarizeText(prompt);
+      res.json({
+        summary,
+        count: totalReports,
+        avgWorkers: parseFloat(avgWorkers),
+        projects: projects.length,
+        weatherSummary,
+        source: 'ai'
+      });
+    } catch (ollamaErr) {
+      // Fallback to rule-based summary
+      const latest = reports[0];
+      let summary = `${totalReports} daily reports submitted over the past ${daysNum} days across ${projects.length} project(s).\n\n`;
+      summary += `Average workforce: ${avgWorkers} workers/day.\n`;
+      summary += `Weather breakdown: ${weatherSummary}.\n\n`;
+      if (latest) {
+        summary += `Most recent report (${latest.date}) for ${latest.project || 'N/A'}: ${latest.progress_notes || 'No notes'} ` +
+          `— ${latest.workers_on_site || 0} workers on site${latest.delays ? `, delays: ${latest.delays}` : ''}.`;
+      }
+      res.json({
+        summary,
+        count: totalReports,
+        avgWorkers: parseFloat(avgWorkers),
+        projects: projects.length,
+        weatherSummary,
+        source: 'rule-based'
+      });
+    }
+  } catch (err) {
+    console.error('[AI /summarize-daily-reports]', err.message);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
 // ─── POST /execute ────────────────────────────────────────────────────────────
 // Action execution: { action, params } → { success, message, data }
 router.post('/execute', aiExecuteLimiter, async (req, res) => {

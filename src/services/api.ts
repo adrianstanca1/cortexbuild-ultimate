@@ -1016,3 +1016,37 @@ export const projectTasksApi = {
   bulkUpdateStatus: (ids: string[], status: string) =>
     apiFetch(`/project-tasks/bulk-status`, { method: 'PUT', body: JSON.stringify({ ids, status }) }),
 };
+
+// ─── Webhooks ────────────────────────────────────────────────────────────────
+export const webhooksApi = {
+  getAll: () => apiFetch<{ data: Row[] }>('/webhooks'),
+  getById: (id: string) => apiFetch<{ data: Row }>(`/webhooks/${id}`),
+  create: (data: { name: string; url: string; secret?: string; events: string[]; headers?: Record<string, string>; active?: boolean }) =>
+    apiFetch<{ data: Row }>('/webhooks', { method: 'POST', body: JSON.stringify(data) }),
+  update: (id: string, data: Partial<{ name: string; url: string; secret?: string; events: string[]; headers: Record<string, string>; active: boolean }>) =>
+    apiFetch<{ data: Row }>(`/webhooks/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+  delete: (id: string) => apiFetch(`/webhooks/${id}`, { method: 'DELETE' }),
+  getDeliveries: (id: string, limit = 20) =>
+    apiFetch<{ data: Row[] }>(`/webhooks/${id}/deliveries?limit=${limit}`),
+  sendTest: (webhookId: string) =>
+    apiFetch('/webhooks/test', { method: 'POST', body: JSON.stringify({ webhookId }) }),
+};
+
+// ─── AI Summarization ───────────────────────────────────────────────────────
+export const aiSummarizeApi = {
+  summarizeProject: (projectId: string) =>
+    apiFetch<{ summary: string; projectId: string; projectName: string; source: string }>('/ai/summarize-project', {
+      method: 'POST',
+      body: JSON.stringify({ projectId }),
+    }),
+  summarizeRfiThread: (projectId?: string) =>
+    apiFetch<{ summary: string; count: number; open: number; overdue: number; critical: number; source: string }>('/ai/summarize-rfi-thread', {
+      method: 'POST',
+      body: JSON.stringify({ projectId }),
+    }),
+  summarizeDailyReports: (projectId?: string, days = 7) =>
+    apiFetch<{ summary: string; count: number; avgWorkers: number; projects: number; weatherSummary: string; source: string }>('/ai/summarize-daily-reports', {
+      method: 'POST',
+      body: JSON.stringify({ projectId, days }),
+    }),
+};

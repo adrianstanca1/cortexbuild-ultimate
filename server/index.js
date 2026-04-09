@@ -101,6 +101,7 @@ app.use('/uploads', express.static(path.join(__dirname, 'uploads'), {
 }));
 
 // ─── Public routes ────────────────────────────────────────────────────────────
+app.use(require('./routes/metrics').observeRequest); // Prometheus HTTP request timing
 app.use('/api/auth', authRoutes);
 app.use('/api/auth', require('./routes/oauth')); // Google OAuth
 // ─── Health check — verifies PostgreSQL and Redis connectivity ──────────────────
@@ -235,6 +236,7 @@ app.use('/api/rag-chat',      require('./routes/ai-rag'));
 app.use('/api/bim-models',    require('./routes/bim-models'));
 app.use('/api/cost-management', require('./routes/cost-management'));
 app.use('/api/submittals',    require('./routes/submittals'));
+app.use('/api/webhooks',      require('./routes/webhooks').router);
 app.use('/api/chat',          require('./routes/chat'));
 app.use('/api/activity-feed', require('./routes/activity-feed'));
 app.use('/api/admin/stats',   require('./routes/admin-stats'));
