@@ -5,6 +5,48 @@ const { logAudit } = require('./audit-helper');
 const { broadcastDashboardUpdate } = require('../lib/ws-broadcast');
 const { validateRequiredFields } = require('./validation');
 
+// Map table name → webhook event name
+const WEBHOOK_EVENT_MAP = {
+  projects:         { create: 'project.created',  update: 'project.updated',  delete: 'project.deleted'  },
+  invoices:         { create: 'invoice.created',  update: 'invoice.updated',  delete: 'invoice.deleted',
+                       statusMap: { paid: 'invoice.paid', overdue: 'invoice.overdue' } },
+  safety_incidents: { create: 'safety.incident',  update: 'safety.updated'                               },
+  rfis:             { create: 'rfi.created',      update: 'rfi.updated',
+                       statusMap: { overdue: 'rfi.overdue' } },
+  daily_reports:    { create: 'daily_report.created'                                             },
+  tenders:          { create: 'tender.created',    update: 'tender.updated'                            },
+  documents:        { create: 'document.uploaded'                                                   },
+  team_members:     { create: 'team.member_added'                                                   },
+  subcontractors:   { create: 'subcontractor.created', update: 'subcontractor.updated'               },
+};
+
+/**
+ * Emit a webhook event asynchronously (fire-and-forget).
+ * Non-blocking: does not affect the HTTP response.
+ */
+function emitWebhookEvent(orgId, companyId, tableName, action, record) {
+  try {
+    const tableMap = WEBHOOK_EVENT_MAP[tableName];
+    if (!tableMap) return;
+
+    let event = tableMap[action];
+    if (!event) return;
+
+    // Check for status-based event mapping (e.g. invoice.paid, rfi.overdue)
+    if (action === 'update' && tableMap.statusMap && record?.status) {
+      const statusEvent = tableMap.statusMap[record.status];
+      if (statusEvent) event = statusEvent;
+    }
+
+    // Async import to avoid circular dependency at module load time
+    import('./webhooks.js').then(({ emitEvent }) => {
+      emitEvent(orgId, companyId, event, { table: tableName, action, record }).catch(() => {});
+    }).catch(() => {});
+  } catch (_) {
+    // Never let webhook emission affect HTTP response
+  }
+}
+
 // Per-table column whitelists — prevents column-name injection
 const ALLOWED_COLUMNS = {
   projects:         ['name','client','status','progress','budget','spent','start_date','end_date','manager','location','type','phase','workers','contract_value','description'],
@@ -210,6 +252,10 @@ function makeRouter(tableName, orderCol = 'created_at') {
       );
       logAudit({ auth: req.user, action: 'create', entityType: tableName, entityId: rows[0]?.id, newData: rows[0] });
       broadcastDashboardUpdate('create', tableName, rows[0]);
+      // Emit webhook asynchronously (non-blocking)
+      const orgId = req.user?.organization_id;
+      const companyId = req.user?.company_id;
+      setImmediate(() => emitWebhookEvent(orgId, companyId, tableName, 'create', rows[0]));
       res.status(201).json(rows[0]);
     } catch (err) {
       console.error(`[POST ${tableName}]`, err.message);
@@ -236,6 +282,10 @@ function makeRouter(tableName, orderCol = 'created_at') {
       if (!rows[0]) return res.status(404).json({ message: 'Not found' });
       logAudit({ auth: req.user, action: 'update', entityType: tableName, entityId: rows[0]?.id, newData: rows[0] });
       broadcastDashboardUpdate('update', tableName, rows[0]);
+      // Emit webhook asynchronously (non-blocking)
+      const orgId = req.user?.organization_id;
+      const companyId = req.user?.company_id;
+      setImmediate(() => emitWebhookEvent(orgId, companyId, tableName, 'update', rows[0]));
       res.json(rows[0]);
     } catch (err) {
       console.error(`[PUT ${tableName}]`, err.message);
