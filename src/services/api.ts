@@ -1084,3 +1084,99 @@ export const signaturesApi = {
     return apiFetch<{ data: Signature[] }>(`/signatures${qs ? `?${qs}` : ''}`);
   },
 };
+
+// ─── Carbon Estimating ─────────────────────────────────────────────────────
+export interface CarbonMaterial {
+  category: string;
+  quantity: number;
+  unit: string;
+}
+export interface CarbonTransport {
+  transport_mode: string;
+  distance_km: number;
+  weight_tonnes: number;
+}
+export interface CarbonEstimate {
+  project_id?: string;
+  area_m2: number;
+  programme_months: number;
+  epc_rating: string;
+  phases: Record<string, { kgCO2e: number; desc: string; annual_kwh?: number }>;
+  summary: {
+    embodied_kgCO2e: number;
+    operational_annual_kgCO2e: number;
+    operational_60yr_kgCO2e: number;
+    total_lifetime_kgCO2e: number;
+    embodied_pct: number;
+    operational_pct: number;
+    kgCO2e_per_m2: number;
+    rating: string;
+  };
+  material_breakdown: Array<{ category: string; quantity: number; unit: string; factor: number; kgCO2e: number; desc: string }>;
+  transport_breakdown: Array<{ transport_mode: string; distance_km: number; weight_tonnes: number; factor: number; kgCO2e: number }>;
+}
+
+export const carbonApi = {
+  estimate: (data: {
+    project_id?: string;
+    area_m2: number;
+    occupancy_hours?: number;
+    epc_rating?: string;
+    programme_months?: number;
+    materials?: CarbonMaterial[];
+    transport?: CarbonTransport[];
+  }) => apiFetch<CarbonEstimate>('/carbon/estimate', { method: 'POST', body: JSON.stringify(data) }),
+  materials: (materials: CarbonMaterial[]) =>
+    apiFetch<{ total_kgCO2e: number; breakdown: CarbonEstimate['material_breakdown'] }>('/carbon/materials', { method: 'POST', body: JSON.stringify({ materials }) }),
+  getProjectEstimates: (projectId: string) =>
+    apiFetch<{ data: CarbonEstimate[] }>(`/carbon/projects/${projectId}`),
+  getFactors: () =>
+    apiFetch<{ materials: Record<string, unknown>; transport: Record<string, number>; grid_electricity: number }>('/carbon/factors'),
+};
+
+// ─── Drone / Reality Capture ────────────────────────────────────────────────
+export interface DroneCapture {
+  id: string;
+  project_id: string;
+  capture_type: 'aerial_photo' | 'orthomosaic' | 'point_cloud' | 'video' | 'thermal' | 'inspection' | 'progress';
+  capture_date: string;
+  location_name?: string;
+  altitude_m?: number;
+  resolution_mpix?: number;
+  file_url?: string;
+  thumbnail_url?: string;
+  status: string;
+  analysis_status: 'pending' | 'processing' | 'completed' | 'failed';
+  analysis_summary?: string;
+  inspector?: string;
+  notes?: string;
+}
+
+export const droneApi = {
+  getProjectCaptures: (projectId: string, options?: { type?: string; from_date?: string; to_date?: string; limit?: number }) => {
+    const params = new URLSearchParams();
+    if (options?.type) params.append('type', options.type);
+    if (options?.from_date) params.append('from_date', options.from_date);
+    if (options?.to_date) params.append('to_date', options.to_date);
+    if (options?.limit) params.append('limit', String(options.limit));
+    const qs = params.toString();
+    return apiFetch<{ data: DroneCapture[]; total: number }>(`/drone/projects/${projectId}/captures${qs ? `?${qs}` : ''}`);
+  },
+  create: (data: {
+    project_id: string;
+    capture_type: string;
+    capture_date?: string;
+    location_name?: string;
+    altitude_m?: number;
+    resolution_mpix?: number;
+    file_url?: string;
+    thumbnail_url?: string;
+    inspector?: string;
+    notes?: string;
+  }) => apiFetch<{ data: DroneCapture }>('/drone/captures', { method: 'POST', body: JSON.stringify(data) }),
+  getById: (id: string) => apiFetch<{ data: DroneCapture }>(`/drone/captures/${id}`),
+  update: (id: string, data: Partial<DroneCapture>) =>
+    apiFetch<{ data: DroneCapture }>(`/drone/captures/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+  analyse: (id: string) =>
+    apiFetch<{ message: string; capture_id: string; status: string }>(`/drone/captures/${id}/analyse`, { method: 'POST' }),
+};
