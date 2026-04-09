@@ -2,13 +2,17 @@ import React from 'react';
 import { useState, useEffect, useCallback } from 'react';
 import {
   FileText, Search, Download, Eye, Edit2, Trash2, X, Upload, FileCheck, Image, FolderOpen,
-  BarChart3, Grid, List, FileIcon as FileIconDefault, History, UploadCloud
+  BarChart3, Grid, List, FileIcon as FileIconDefault, History, UploadCloud, PenLine
 } from 'lucide-react';
 import { toast } from 'sonner';
 import clsx from 'clsx';
 import { EmptyState } from '../ui/EmptyState';
 import { ModuleBreadcrumbs } from '../ui/Breadcrumbs';
 import { getToken } from '@/lib/supabase';
+import { signaturesApi } from '../../services/api';
+import { SignatureCapture, SignatureDisplay } from '../ui/SignatureCapture';
+import { useAuth } from '../../context/AuthContext';
+import type { Signature } from '../../services/api';
 
 interface DocumentVersion {
   id: string;
@@ -87,6 +91,10 @@ export function Documents() {
   const [selectedCategory, setSelectedCategory] = useState<string>('REPORTS');
   const [selectedAccess, setSelectedAccess] = useState<string>('public');
   const [dragOver, setDragOver] = useState(false);
+  const [showSignModal, setShowSignModal] = useState(false);
+  const [existingSignatures, setExistingSignatures] = useState<Signature[]>([]);
+
+  const { user } = useAuth();
 
   const fetchDocuments = useCallback(async () => {
     try {
@@ -200,6 +208,35 @@ export function Documents() {
     } catch { toast.error('Delete failed'); }
   };
 
+  async function openSignModal() {
+    if (!selectedDoc) return;
+    setShowSignModal(true);
+    try {
+      const res = await signaturesApi.getByDocument('document', String(selectedDoc.id));
+      setExistingSignatures(Array.isArray(res.data) ? res.data : []);
+    } catch {
+      setExistingSignatures([]);
+    }
+  }
+
+  async function handleDocSignature(signatureData: string) {
+    if (!selectedDoc || !user) return;
+    try {
+      await signaturesApi.create({
+        document_type: 'document',
+        document_id: String(selectedDoc.id),
+        signer_name: user.name || user.email || 'Unknown',
+        signer_role: user.role || 'Document Approver',
+        signer_email: user.email,
+        signature_data: signatureData,
+      });
+      toast.success('Document signed successfully');
+      setShowSignModal(false);
+    } catch {
+      toast.error('Failed to save signature');
+    }
+  }
+
   const filteredDocs = documents.filter(doc => doc.name.toLowerCase().includes(searchQuery.toLowerCase()));
   const isImage = (type: string) => ['JPG', 'JPEG', 'PNG', 'GIF', 'WEBP'].includes(type.toUpperCase());
   const isPdf = (type: string) => type.toUpperCase() === 'PDF';
@@ -304,6 +341,7 @@ export function Documents() {
                 <button onClick={() => handleDownload(selectedDoc)} className="btn-secondary flex-1"><Download className="w-4 h-4 mr-1" /> Download</button>
               </div>
               <div className="border-t border-slate-800 pt-4"><button onClick={() => setShowVersionHistory(true)} className="w-full btn-secondary"><History className="w-4 h-4 mr-1" /> Version History</button></div>
+              <div className="border-t border-slate-800 pt-4"><button onClick={() => openSignModal()} className="w-full btn-secondary"><PenLine className="w-4 h-4 mr-1" /> Sign Document</button></div>
               <div className="border-t border-slate-800 pt-4"><button onClick={() => setEditingDoc(selectedDoc)} className="w-full btn-secondary"><Edit2 className="w-4 h-4 mr-1" /> Edit Details</button></div>
               <div className="border-t border-slate-800 pt-4"><button onClick={() => handleDelete(selectedDoc.id)} className="w-full btn-secondary text-red-400 hover:bg-red-500/20"><Trash2 className="w-4 h-4 mr-1" /> Delete</button></div>
             </div>
@@ -379,6 +417,34 @@ export function Documents() {
             {isImage(previewDoc.type) ? <img src={previewDoc.file_path} alt={previewDoc.name} className="max-w-full max-h-[85vh] object-contain rounded-lg" /> :
              isPdf(previewDoc.type) ? <iframe src={previewDoc.file_path} className="w-[80vw] h-[85vh] rounded-lg" /> :
              <div className="text-center p-8"><FileIconDefault className="w-24 h-24 mx-auto mb-4 text-slate-600" /><p className="text-slate-400 mb-4">Preview not available</p><button onClick={() => handleDownload(previewDoc)} className="btn-primary">Download to View</button></div>}
+          </div>
+        </div>
+      )}
+
+      {showSignModal && selectedDoc && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-black/80" onClick={() => setShowSignModal(false)} />
+          <div className="relative z-10 bg-gray-900 rounded-2xl shadow-2xl w-full max-w-lg border border-gray-700">
+            <div className="flex items-center justify-between p-6 border-b border-gray-800">
+              <div>
+                <h2 className="text-lg font-semibold text-white">Sign Document</h2>
+                <p className="text-sm text-gray-400 mt-0.5">{selectedDoc.name}</p>
+              </div>
+              <button onClick={() => setShowSignModal(false)} className="p-2 hover:bg-gray-800 rounded-lg text-gray-400"><X className="w-5 h-5" /></button>
+            </div>
+            <div className="p-6 space-y-4">
+              <SignatureCapture
+                onSign={handleDocSignature}
+                onCancel={() => setShowSignModal(false)}
+                signerName={user?.name || user?.email}
+              />
+              {existingSignatures.length > 0 && (
+                <div className="space-y-2">
+                  <p className="text-sm font-medium text-gray-400">Existing signatures</p>
+                  {existingSignatures.map(sig => <SignatureDisplay key={sig.id} signature={sig} compact />)}
+                </div>
+              )}
+            </div>
           </div>
         </div>
       )}
