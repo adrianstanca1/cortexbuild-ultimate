@@ -37,6 +37,7 @@ const ALL_EVENTS = new Set([
   'document.uploaded',
   'team.member_added',
   'subcontractor.created', 'subcontractor.updated',
+  'drone_captures.created',
 ]);
 
 // ─── HMAC signature helper ────────────────────────────────────────────────────

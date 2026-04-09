@@ -228,7 +228,7 @@ router.get('/projects/:id/daily-reports', async (req, res) => {
       `SELECT report_date, weather, workers_on_site, progress, delays, safety_observations, notes
        FROM daily_reports
        WHERE project_id = $1 AND organization_id = $2
-         AND report_date >= CURRENT_DATE - INTERVAL '${parseInt(days, 10)} days'
+         AND report_date >= CURRENT_DATE - INTERVAL '1' * $3
        ORDER BY report_date DESC
        LIMIT $3`,
       [id, orgId, Math.min(90, parseInt(limit, 10))]
@@ -308,7 +308,7 @@ router.get('/projects/:id/incidents', async (req, res) => {
       `SELECT type, title, date, severity, status, outcome
        FROM safety_incidents
        WHERE project_id = $1 AND organization_id = $2
-         AND date >= CURRENT_DATE - INTERVAL '${parseInt(days, 10)} days'
+         AND date >= CURRENT_DATE - INTERVAL '1' * $3
        ORDER BY date DESC`,
       [id, orgId]
     );
