@@ -1050,3 +1050,37 @@ export const aiSummarizeApi = {
       body: JSON.stringify({ projectId, days }),
     }),
 };
+
+// ─── Electronic Signatures ─────────────────────────────────────────────────
+export interface Signature {
+  id: string;
+  document_type: string;
+  document_id: string;
+  signer_name: string;
+  signer_role?: string;
+  signer_email?: string;
+  signed_at: string;
+  ip_address?: string;
+  created_at: string;
+}
+
+export const signaturesApi = {
+  create: (data: {
+    document_type: string;
+    document_id: string;
+    signer_name: string;
+    signer_role?: string;
+    signer_email?: string;
+    signature_data: string; // base64 PNG data URL
+  }) => apiFetch<{ data: Signature }>('/signatures', { method: 'POST', body: JSON.stringify(data) }),
+  getById: (id: string) => apiFetch<{ data: Signature }>(`/signatures/${id}`),
+  getByDocument: (type: string, documentId: string) =>
+    apiFetch<{ data: Signature[] }>(`/signatures/document/${type}/${documentId}`),
+  list: (options?: { document_type?: string; limit?: number }) => {
+    const params = new URLSearchParams();
+    if (options?.document_type) params.append('document_type', options.document_type);
+    if (options?.limit) params.append('limit', String(options.limit));
+    const qs = params.toString();
+    return apiFetch<{ data: Signature[] }>(`/signatures${qs ? `?${qs}` : ''}`);
+  },
+};

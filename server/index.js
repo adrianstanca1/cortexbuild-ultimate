@@ -237,6 +237,7 @@ app.use('/api/bim-models',    require('./routes/bim-models'));
 app.use('/api/cost-management', require('./routes/cost-management'));
 app.use('/api/submittals',    require('./routes/submittals'));
 app.use('/api/webhooks',      require('./routes/webhooks').router);
+app.use('/api/signatures',    require('./routes/signatures'));
 app.use('/api/chat',          require('./routes/chat'));
 app.use('/api/activity-feed', require('./routes/activity-feed'));
 app.use('/api/admin/stats',   require('./routes/admin-stats'));
