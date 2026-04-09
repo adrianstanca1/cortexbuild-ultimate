@@ -84,8 +84,6 @@ const MODULE_LABELS: Record<Module, string> = {
   'client-portal':      'Client Portal',
   'webhooks':           'Webhooks',
   'carbon-estimating':   'Carbon Estimating',
-  'drone-capture':       'Drone Capture',
-  'equipment-iot':      'Equipment IoT',
   'bim-4d':            '4D BIM',
 };
 

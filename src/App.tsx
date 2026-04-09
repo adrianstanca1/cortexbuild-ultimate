@@ -81,8 +81,6 @@ const AIVision            = lazy(() => import('./components/modules/AIVision'));
 const ClientPortal        = lazy(() => import('./components/modules/ClientPortal'));
 const Webhooks            = lazy(() => import('./components/modules/Webhooks'));
 const CarbonEstimating   = lazy(() => import('./components/modules/CarbonEstimating'));
-const DroneCapture       = lazy(() => import('./components/modules/DroneCapture'));
-const EquipmentIoT      = lazy(() => import('./components/modules/EquipmentIoT'));
 const BIM4D             = lazy(() => import('./components/modules/BIM4D'));
 const MyDesktop           = lazy(() => import('./components/modules/MyDesktop'));
 const AdvancedAnalytics   = lazy(() => import('./components/modules/AdvancedAnalytics'));
@@ -202,8 +200,6 @@ function AppShell() {
       case 'client-portal':         return <ClientPortal />;
       case 'webhooks':               return <Webhooks />;
       case 'carbon-estimating':    return <CarbonEstimating />;
-      case 'drone-capture':        return <DroneCapture />;
-      case 'equipment-iot':       return <EquipmentIoT />;
       case 'bim-4d':              return <BIM4D />;
       case 'admin-dashboard':       return <AdminDashboard />;
       case 'team-chat':             return <TeamChat />;
