@@ -1180,3 +1180,110 @@ export const droneApi = {
   analyse: (id: string) =>
     apiFetch<{ message: string; capture_id: string; status: string }>(`/drone/captures/${id}/analyse`, { method: 'POST' }),
 };
+
+// ─── Equipment IoT / Telematics ────────────────────────────────────────────
+export interface IoTDevice {
+  id: string;
+  equipment_id: string;
+  equipment_name?: string;
+  equipment_type?: string;
+  device_serial: string;
+  device_type: string;
+  status: string;
+  project_id?: string;
+  last_seen_at?: string;
+}
+export interface IoTTelemetry {
+  id: string;
+  device_id: string;
+  recorded_at: string;
+  latitude?: number;
+  longitude?: number;
+  data: Record<string, unknown>;
+  alert?: Record<string, unknown>;
+}
+
+export const iotApi = {
+  getDevices: (options?: { project_id?: string; status?: string; limit?: number }) => {
+    const params = new URLSearchParams();
+    if (options?.project_id) params.append('project_id', options.project_id);
+    if (options?.status) params.append('status', options.status);
+    if (options?.limit) params.append('limit', String(options.limit));
+    const qs = params.toString();
+    return apiFetch<{ data: IoTDevice[] }>(`/equipment-iot/devices${qs ? `?${qs}` : ''}`);
+  },
+  registerDevice: (data: { equipment_id: string; device_serial: string; device_type: string; project_id?: string; installation_date?: string }) =>
+    apiFetch<{ data: IoTDevice; api_key: string }>('/equipment-iot/devices', { method: 'POST', body: JSON.stringify(data) }),
+  getDevice: (id: string, days = 7) =>
+    apiFetch<{ data: IoTDevice; telemetry: IoTTelemetry[]; days: number }>(`/equipment-iot/devices/${id}?days=${days}`),
+  getProjectUtilisation: (projectId: string, days = 30) =>
+    apiFetch<{ data: unknown[]; summary: Record<string, number>; days: number }>(`/equipment-iot/projects/${projectId}?days=${days}`),
+};
+
+// ─── 4D BIM ────────────────────────────────────────────────────────────────
+export interface BIM4DModel {
+  id: string;
+  project_id: string;
+  project_name?: string;
+  name: string;
+  description?: string;
+  model_url?: string;
+  thumbnail_url?: string;
+  ifc_version?: string;
+  simulation_start?: string;
+  simulation_end?: string;
+  phase?: string;
+  status: string;
+  task_count?: number;
+}
+export interface BIM4DTask {
+  id: string;
+  model_id: string;
+  task_id: string;
+  task_name?: string;
+  element_ids: string[];
+  start_date?: string;
+  end_date?: string;
+  colour?: string;
+  percent_complete?: number;
+}
+
+export const bim4dApi = {
+  getProjectModels: (projectId: string, options?: { status?: string; limit?: number }) => {
+    const params = new URLSearchParams();
+    if (options?.status) params.append('status', options.status);
+    if (options?.limit) params.append('limit', String(options.limit));
+    const qs = params.toString();
+    return apiFetch<{ data: BIM4DModel[] }>(`/bim4d/projects/${projectId}/models${qs ? `?${qs}` : ''}`);
+  },
+  create: (data: {
+    project_id: string;
+    name: string;
+    description?: string;
+    model_url?: string;
+    thumbnail_url?: string;
+    ifc_version?: string;
+    simulation_start?: string;
+    simulation_end?: string;
+    phase?: string;
+    notes?: string;
+  }) => apiFetch<{ data: BIM4DModel }>('/bim4d/models', { method: 'POST', body: JSON.stringify(data) }),
+  getById: (id: string) => apiFetch<{ data: BIM4DModel }>(`/bim4d/models/${id}`),
+  update: (id: string, data: Partial<BIM4DModel>) =>
+    apiFetch<{ data: BIM4DModel }>(`/bim4d/models/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+  getTasks: (modelId: string) => apiFetch<{ data: BIM4DTask[] }>(`/bim4d/models/${modelId}/tasks`),
+  linkTasks: (modelId: string, data: {
+    element_ids: string[];
+    task_id: string;
+    start_date?: string;
+    end_date?: string;
+    colour?: string;
+    notes?: string;
+  }) => apiFetch<{ data: BIM4DTask[] }>(`/bim4d/models/${modelId}/tasks`, { method: 'POST', body: JSON.stringify(data) }),
+  getAnimation: (modelId: string, fromDate: string, toDate: string, granularity = 'daily') =>
+    apiFetch<{ model_id: string; total_keyframes: number; keyframes: unknown[] }>(`/bim4d/models/${modelId}/animate`, {
+      method: 'POST',
+      body: JSON.stringify({ from_date: fromDate, to_date: toDate, granularity }),
+    }),
+};
+
