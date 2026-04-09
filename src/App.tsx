@@ -79,6 +79,7 @@ const SubmittalManagement = lazy(() => import('./components/modules/SubmittalMan
 const DevSandbox          = lazy(() => import('./components/modules/DevSandbox'));
 const AIVision            = lazy(() => import('./components/modules/AIVision'));
 const ClientPortal        = lazy(() => import('./components/modules/ClientPortal'));
+const Webhooks            = lazy(() => import('./components/modules/Webhooks'));
 const MyDesktop           = lazy(() => import('./components/modules/MyDesktop'));
 const AdvancedAnalytics   = lazy(() => import('./components/modules/AdvancedAnalytics'));
 const ProjectCalendar     = lazy(() => import('./components/modules/ProjectCalendar'));
@@ -195,6 +196,7 @@ function AppShell() {
       case 'ai-vision':             return <AIVision />;
       case 'my-desktop':            return <MyDesktop />;
       case 'client-portal':         return <ClientPortal />;
+      case 'webhooks':               return <Webhooks />;
       case 'admin-dashboard':       return <AdminDashboard />;
       case 'team-chat':             return <TeamChat />;
       case 'activity-feed':         return <ActivityFeed />;

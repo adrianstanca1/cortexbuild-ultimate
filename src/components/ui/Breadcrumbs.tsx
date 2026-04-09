@@ -83,6 +83,7 @@ const MODULE_LABELS: Record<Module, string> = {
   'team-chat': 'Team Chat',
   'activity-feed': 'Activity Feed',
   'client-portal': 'Client Portal',
+  'webhooks': 'Webhooks',
 };
 
 export function Breadcrumbs({ items, onNavigate }: BreadcrumbsProps) {

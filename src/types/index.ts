@@ -101,7 +101,8 @@ export type Module =
   | 'admin-dashboard'
   | 'team-chat'
   | 'activity-feed'
-  | 'client-portal';
+  | 'client-portal'
+  | 'webhooks';
 
 export type ProjectStatus = 'planning' | 'active' | 'on_hold' | 'completed' | 'archived';
 export type TaskStatus = 'todo' | 'in_progress' | 'review' | 'done' | 'blocked';
