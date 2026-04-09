@@ -95,20 +95,26 @@ jobs:
             docker build -t "$IMAGE_NAME" -f Dockerfile.api .
 
             # Source environment variables after git pull (env file is gitignored, not overwritten)
+            if [ ! -f "$PROJECT_DIR/.env" ]; then
+              echo "FATAL: $PROJECT_DIR/.env not found"
+              exit 1
+            fi
+            set +u
             set -a
-            source "$PROJECT_DIR/.env" || true
+            source "$PROJECT_DIR/.env"
             set +a
+            set -u
 
             # Validate required secrets are present
-            if [ -z "$JWT_SECRET" ]; then
+            if [ -z "${JWT_SECRET:-}" ]; then
               echo "FATAL: JWT_SECRET not set in $PROJECT_DIR/.env"
               exit 1
             fi
-            if [ -z "$SESSION_SECRET" ]; then
+            if [ -z "${SESSION_SECRET:-}" ]; then
               echo "FATAL: SESSION_SECRET not set in $PROJECT_DIR/.env"
               exit 1
             fi
-            if [ -z "$POSTGRES_PASSWORD" ] && [ -z "$DB_PASSWORD" ]; then
+            if [ -z "${POSTGRES_PASSWORD:-}" ] && [ -z "${DB_PASSWORD:-}" ]; then
               echo "FATAL: Neither POSTGRES_PASSWORD nor DB_PASSWORD set in $PROJECT_DIR/.env"
               exit 1
             fi
