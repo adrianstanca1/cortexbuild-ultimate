@@ -1,13 +1,16 @@
 import { useState, useRef } from 'react';
-import { Shield, Plus, Search, FileCheck, AlertTriangle, Clock, CheckCircle, Edit2, Trash2, X, ChevronDown, ChevronUp, Download, Award, Upload, CheckSquare, Square } from 'lucide-react';
+import { Shield, Plus, Search, FileCheck, AlertTriangle, Clock, CheckCircle, Edit2, Trash2, X, ChevronDown, ChevronUp, Download, Award, Upload, CheckSquare, Square, PenLine } from 'lucide-react';
 import { DataImporter, ExportButton } from '../ui/DataImportExport';
 import { ModuleBreadcrumbs } from '../ui/Breadcrumbs';
 import { useRAMS } from '../../hooks/useData';
-import { uploadFile } from '../../services/api';
+import { uploadFile, signaturesApi } from '../../services/api';
 import { EmptyState } from '../ui/EmptyState';
+import { SignatureCapture, SignatureDisplay } from '../ui/SignatureCapture';
 import { toast } from 'sonner';
 import { z } from 'zod';
 import { BulkActionsBar, useBulkSelection } from '../ui/BulkActions';
+import { useAuth } from '../../context/AuthContext';
+import type { Signature } from '../../services/api';
 
 type AnyRow = Record<string, unknown>;
 
@@ -73,6 +76,11 @@ export function RAMS() {
   const _fileInputRef = useRef<HTMLInputElement>(null);
   const [_selectedUploadId, _setSelectedUploadId] = useState<string | null>(null);
   const [showBulkImport, setShowBulkImport] = useState(false);
+  const [showSignModal, setShowSignModal] = useState(false);
+  const [signingDoc, setSigningDoc] = useState<AnyRow | null>(null);
+  const [existingSignatures, setExistingSignatures] = useState<Signature[]>([]);
+
+  const { user } = useAuth();
 
   const { selectedIds, toggle, clearSelection } = useBulkSelection();
 
@@ -191,6 +199,36 @@ export function RAMS() {
       toast.error('Upload failed');
     } finally {
       setUploading(null);
+    }
+  }
+
+  async function openSignModal(r: AnyRow) {
+    setSigningDoc(r);
+    setShowSignModal(true);
+    try {
+      const res = await signaturesApi.getByDocument('rams', String(r.id));
+      setExistingSignatures(Array.isArray(res.data) ? res.data : []);
+    } catch {
+      setExistingSignatures([]);
+    }
+  }
+
+  async function handleSignature(signatureData: string) {
+    if (!signingDoc || !user) return;
+    try {
+      await signaturesApi.create({
+        document_type: 'rams',
+        document_id: String(signingDoc.id),
+        signer_name: user.name || user.email || 'Unknown',
+        signer_role: user.role || 'RAMS Approver',
+        signer_email: user.email,
+        signature_data: signatureData,
+      });
+      toast.success('Document signed successfully');
+      setShowSignModal(false);
+      setSigningDoc(null);
+    } catch {
+      toast.error('Failed to save signature');
     }
   }
 
@@ -319,6 +357,7 @@ export function RAMS() {
                       </div>
                       <div className="flex items-center gap-1">
                         {r.status === 'Under Review' && <button type="button" onClick={e => { e.stopPropagation(); approve(r); }} className="p-1.5 text-green-400 hover:bg-green-500/20 rounded" title="Approve"><CheckCircle size={14} /></button>}
+                        <button type="button" onClick={e => { e.stopPropagation(); openSignModal(r); }} className="p-1.5 text-blue-400 hover:bg-blue-500/20 rounded" title="Sign document"><PenLine size={14} /></button>
                         <button type="button" onClick={e => { e.stopPropagation(); openEdit(r); }} className="p-1.5 text-gray-500 hover:text-blue-400 hover:bg-blue-500/20 rounded"><Edit2 size={14} /></button>
                         <button type="button" onClick={e => { e.stopPropagation(); handleDelete(id); }} className="p-1.5 text-gray-500 hover:text-red-400 hover:bg-red-500/20 rounded"><Trash2 size={14} /></button>
                         <button className="p-1.5 text-gray-500 hover:text-gray-300 hover:bg-gray-700 rounded" title="Download"><Download size={14} /></button>
@@ -354,7 +393,23 @@ export function RAMS() {
                           >
                             <Upload size={14} /> {uploading === String(r.id) ? 'Uploading...' : 'Upload Document'}
                           </button>
+                          <button
+                            type="button"
+                            onClick={() => openSignModal(r)}
+                            className="flex items-center gap-2 px-3 py-2 bg-blue-700 hover:bg-blue-600 text-gray-300 rounded-lg text-xs transition-colors"
+                          >
+                            <PenLine size={14} /> Sign
+                          </button>
                         </div>
+                        {(() => {
+                          const sigs = existingSignatures.filter(s => String(s.document_id) === String(r.id));
+                          if (sigs.length === 0) return null;
+                          return (
+                            <div className="pt-2 border-t border-gray-700 space-y-2">
+                              {sigs.map(sig => <SignatureDisplay key={sig.id} signature={sig} compact />)}
+                            </div>
+                          );
+                        })()}
                       </div>
                     )}
                   </div>
@@ -573,6 +628,27 @@ export function RAMS() {
                 onImport={handleBulkImport}
                 format="csv"
                 exampleData={{ title: '', activity: '', status: '', valid_until: '', reviewed_by: '' }}
+              />
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showSignModal && signingDoc && (
+        <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
+          <div className="bg-gray-900 rounded-2xl shadow-2xl w-full max-w-lg border border-gray-700">
+            <div className="flex items-center justify-between p-6 border-b border-gray-800">
+              <div>
+                <h2 className="text-lg font-semibold text-white">Sign RAMS Document</h2>
+                <p className="text-sm text-gray-400 mt-0.5">{String(signingDoc.title ?? '')}</p>
+              </div>
+              <button type="button" onClick={() => { setShowSignModal(false); setSigningDoc(null); }} className="p-2 hover:bg-gray-800 rounded-lg text-gray-400"><X size={18} /></button>
+            </div>
+            <div className="p-6">
+              <SignatureCapture
+                onSign={handleSignature}
+                onCancel={() => { setShowSignModal(false); setSigningDoc(null); }}
+                signerName={user?.name || user?.email}
               />
             </div>
           </div>
