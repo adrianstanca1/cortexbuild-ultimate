@@ -85,6 +85,7 @@ const MODULE_LABELS: Record<Module, string> = {
   'webhooks':           'Webhooks',
   'carbon-estimating':   'Carbon Estimating',
   'drone-capture':       'Drone Capture',
+  'equipment-iot':      'Equipment IoT',
 };
 
 // Module accent colors for the breadcrumb bar

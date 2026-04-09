@@ -86,6 +86,7 @@ const MODULE_LABELS: Record<Module, string> = {
   'webhooks': 'Webhooks',
   'carbon-estimating': 'Carbon Estimating',
   'drone-capture': 'Drone Capture',
+  'equipment-iot': 'Equipment IoT',
 };
 
 export function Breadcrumbs({ items, onNavigate }: BreadcrumbsProps) {
