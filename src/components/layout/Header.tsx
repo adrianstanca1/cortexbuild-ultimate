@@ -86,6 +86,7 @@ const MODULE_LABELS: Record<Module, string> = {
   'carbon-estimating':   'Carbon Estimating',
   'drone-capture':       'Drone Capture',
   'equipment-iot':      'Equipment IoT',
+  'bim-4d':            '4D BIM',
 };
 
 // Module accent colors for the breadcrumb bar

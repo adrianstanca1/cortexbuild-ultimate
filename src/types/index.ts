@@ -105,7 +105,8 @@ export type Module =
   | 'webhooks'
   | 'carbon-estimating'
   | 'drone-capture'
-  | 'equipment-iot';
+  | 'equipment-iot'
+  | 'bim-4d';
 
 export type ProjectStatus = 'planning' | 'active' | 'on_hold' | 'completed' | 'archived';
 export type TaskStatus = 'todo' | 'in_progress' | 'review' | 'done' | 'blocked';
