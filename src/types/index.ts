@@ -100,7 +100,8 @@ export type Module =
   | 'project-calendar'
   | 'admin-dashboard'
   | 'team-chat'
-  | 'activity-feed';
+  | 'activity-feed'
+  | 'client-portal';
 
 export type ProjectStatus = 'planning' | 'active' | 'on_hold' | 'completed' | 'archived';
 export type TaskStatus = 'todo' | 'in_progress' | 'review' | 'done' | 'blocked';

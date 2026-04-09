@@ -82,6 +82,7 @@ const MODULE_LABELS: Record<Module, string> = {
   'admin-dashboard': 'Admin Dashboard',
   'team-chat': 'Team Chat',
   'activity-feed': 'Activity Feed',
+  'client-portal': 'Client Portal',
 };
 
 export function Breadcrumbs({ items, onNavigate }: BreadcrumbsProps) {
