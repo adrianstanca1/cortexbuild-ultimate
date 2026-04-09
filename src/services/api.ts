@@ -1287,3 +1287,74 @@ export const bim4dApi = {
     }),
 };
 
+// ─── Client / Owner Portal ────────────────────────────────────────────────
+export interface PortalProject {
+  id: string;
+  name: string;
+  client: string;
+  status: string;
+  progress: number;
+  budget: number;
+  spent: number;
+  manager: string;
+  location: string;
+  type: string;
+  startDate: string;
+  endDate: string;
+  description: string;
+}
+export interface PortalRfi {
+  number: string;
+  subject: string;
+  priority: string;
+  status: string;
+  submitted_date: string;
+  due_date: string;
+  assigned_to: string;
+}
+export interface PortalDailyReport {
+  report_date: string;
+  weather: string;
+  workers_on_site: number;
+  progress: string;
+  delays: string;
+  safety_observations: string;
+}
+export interface PortalValuation {
+  appNo: string;
+  period: string;
+  startDate: string;
+  endDate: string;
+  grossValue: number;
+  retentionPct: number;
+  netValue: number;
+  status: string;
+  certifiedDate: string;
+  submittedDate: string;
+}
+
+export const portalApi = {
+  getProjects: () => apiFetch<{ data: PortalProject[] }>('/portal/projects'),
+  getProject: (id: string) => apiFetch<{ data: PortalProject }>(`/portal/projects/${id}`),
+  getProjectRfis: (id: string, options?: { status?: string; limit?: number }) => {
+    const params = new URLSearchParams();
+    if (options?.status) params.append('status', options.status);
+    if (options?.limit) params.append('limit', String(options.limit));
+    const qs = params.toString();
+    return apiFetch<{ data: PortalRfi[] }>(`/portal/projects/${id}/rfis${qs ? `?${qs}` : ''}`);
+  },
+  getProjectDailyReports: (id: string, days = 30) =>
+    apiFetch<{ data: PortalDailyReport[] }>(`/portal/projects/${id}/daily-reports?days=${days}`),
+  getProjectValuations: (id: string) =>
+    apiFetch<{ data: PortalValuation[] }>(`/portal/projects/${id}/valuations`),
+  getProjectDocuments: (id: string, options?: { category?: string; limit?: number }) => {
+    const params = new URLSearchParams();
+    if (options?.category) params.append('category', options.category);
+    if (options?.limit) params.append('limit', String(options.limit));
+    const qs = params.toString();
+    return apiFetch<{ data: unknown[] }>(`/portal/projects/${id}/documents${qs ? `?${qs}` : ''}`);
+  },
+  getProjectIncidents: (id: string, days = 365) =>
+    apiFetch<{ data: unknown[] }>(`/portal/projects/${id}/incidents?days=${days}`),
+};
+

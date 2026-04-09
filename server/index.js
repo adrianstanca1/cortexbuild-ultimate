@@ -242,6 +242,7 @@ app.use('/api/carbon',       require('./routes/carbon'));
 app.use('/api/drone',        require('./routes/drone'));
 app.use('/api/equipment-iot', require('./routes/equipment-iot'));
 app.use('/api/bim4d',        require('./routes/bim4d'));
+app.use('/api/portal',       require('./routes/client-portal'));
 app.use('/api/chat',          require('./routes/chat'));
 app.use('/api/activity-feed', require('./routes/activity-feed'));
 app.use('/api/admin/stats',   require('./routes/admin-stats'));
