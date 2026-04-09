@@ -9,6 +9,7 @@ import { ModuleBreadcrumbs } from '../ui/Breadcrumbs';
 import { EmptyState } from '../ui/EmptyState';
 import { LineChart, Line, CartesianGrid, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
 import { useProjects, useDailyReports } from '../../hooks/useData';
+import { aiSummarizeApi } from '../../services/api';
 import { toast } from 'sonner';
 import { getToken } from '@/lib/supabase';
 
@@ -76,6 +77,10 @@ export function DailyReports() {
   const [form, setForm] = useState({ ...emptyForm });
   const [expanded, setExpanded] = useState<string | null>(null);
   const [detailView, setDetailView] = useState<AnyRow | null>(null);
+  const [aiSummary, setAiSummary] = useState<string | null>(null);
+  const [aiSummaryStats, setAiSummaryStats] = useState<{count: number; avgWorkers: number; weatherSummary: string} | null>(null);
+  const [aiLoading, setAiLoading] = useState(false);
+  const [summaryExpanded, setSummaryExpanded] = useState(false);
 
   const { selectedIds, toggle, clearSelection } = useBulkSelection();
 
@@ -87,6 +92,21 @@ export function DailyReports() {
       clearSelection();
     } catch {
       toast.error('Bulk delete failed');
+    }
+  }
+
+  async function handleSummarizeReports() {
+    setAiLoading(true);
+    setSummaryExpanded(true);
+    try {
+      const res = await aiSummarizeApi.summarizeDailyReports();
+      setAiSummary(res.summary);
+      setAiSummaryStats({ count: res.count, avgWorkers: res.avgWorkers, weatherSummary: res.weatherSummary });
+      toast.success('Daily reports summary generated');
+    } catch {
+      toast.error('Failed to generate AI summary');
+    } finally {
+      setAiLoading(false);
     }
   }
 
@@ -355,8 +375,43 @@ export function DailyReports() {
             </div>
 
             <span className="text-sm text-gray-400 ml-auto">{filtered.length} reports</span>
+            <button
+              type="button"
+              onClick={handleSummarizeReports}
+              disabled={aiLoading}
+              className="flex items-center gap-2 px-3 py-2 bg-purple-600/30 hover:bg-purple-600/50 text-purple-300 rounded-lg text-sm transition-colors disabled:opacity-50"
+            >
+              {aiLoading ? <Loader2 size={14} className="animate-spin" /> : <Brain size={14} />}
+              AI Summary
+            </button>
           </div>
         </>
+      )}
+
+      {/* AI Summary Panel */}
+      {summaryExpanded && (
+        <div className="bg-purple-900/10 border border-purple-500/30 rounded-xl overflow-hidden">
+          <button
+            onClick={() => setSummaryExpanded(false)}
+            className="w-full flex items-center justify-between p-4 hover:bg-purple-900/20 transition-colors"
+          >
+            <div className="flex items-center gap-2">
+              <Brain size={16} className="text-purple-400" />
+              <span className="text-sm font-medium text-purple-300">AI Daily Reports Summary</span>
+              {aiSummaryStats && (
+                <span className="text-xs bg-purple-500/20 text-purple-300 px-2 py-0.5 rounded-full">
+                  {aiSummaryStats.count} reports · avg {aiSummaryStats.avgWorkers} workers · {aiSummaryStats.weatherSummary}
+                </span>
+              )}
+            </div>
+            <ChevronUp size={14} className="text-purple-400" />
+          </button>
+          {aiSummary && (
+            <div className="px-4 pb-4">
+              <p className="text-sm text-gray-300 whitespace-pre-wrap leading-relaxed">{aiSummary}</p>
+            </div>
+          )}
+        </div>
       )}
 
       {mainTab === 'weather' && (
