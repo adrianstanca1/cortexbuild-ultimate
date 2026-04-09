@@ -8,6 +8,9 @@ import { toast } from 'sonner';
 import { BulkActionsBar, useBulkSelection } from '../ui/BulkActions';
 import { EmptyState } from '../ui/EmptyState';
 import { ModuleBreadcrumbs } from '../ui/Breadcrumbs';
+import { InvoiceKPICards } from './invoicing/InvoiceKPICards';
+import { InvoiceTable } from './invoicing/InvoiceTable';
+import { InvoiceDetailPanel } from './invoicing/InvoiceDetailPanel';
 
 const statusConfig: Record<string, { label: string; color: string; bg: string }> = {
   draft:    { label: 'Draft',    color: 'text-gray-400',   bg: 'bg-gray-700' },
@@ -513,27 +516,7 @@ export function Invoicing() {
 
           {/* KPI Cards */}
           {subTab === 'invoices' && (
-            <div className="grid grid-cols-4 gap-4 mb-6">
-              {[
-                { key: 'sent', label: 'Outstanding', val: totals.sent, cls: 'text-blue-400', border: 'border-blue-800/50' },
-                { key: 'paid', label: 'Collected', val: totals.paid, cls: 'text-green-400', border: 'border-green-800/50' },
-                { key: 'overdue', label: 'Overdue', val: totals.overdue, cls: 'text-red-400', border: 'border-red-800/50' },
-                { key: 'draft', label: 'Draft', val: totals.draft, cls: 'text-gray-400', border: 'border-gray-700' },
-              ].map(({ key, label, val, cls, border }) => (
-                <button
-                  key={key}
-                  onClick={() => setFilter(filter === key ? 'all' : key)}
-                  className={clsx(
-                    'rounded-2xl border bg-gray-900 p-4 text-left hover:opacity-90 transition-all',
-                    border,
-                    filter === key && 'ring-2 ring-orange-500/30'
-                  )}
-                >
-                  <p className="text-xs text-gray-400">{label}</p>
-                  <p className={clsx('text-xl font-bold mt-1', cls)}>{fmt(val)}</p>
-                </button>
-              ))}
-            </div>
+            <InvoiceKPICards totals={totals} filter={filter} onFilterChange={setFilter} fmt={fmt} />
           )}
 
           {subTab === 'invoices' && (
@@ -570,124 +553,21 @@ export function Invoicing() {
               )}
 
               {/* Invoice Table */}
-              <div className="rounded-2xl border border-gray-800 bg-gray-900 overflow-hidden mb-8">
-                <div className="overflow-x-auto">
-                  <table className="w-full text-sm">
-                    <thead>
-                      <tr className="border-b border-gray-800">
-                        {['Invoice #', 'Client', 'Project', 'Amount', 'VAT', 'CIS', 'Status', 'Due', 'Actions'].map(
-                          h => (
-                            <th
-                              key={h}
-                              className="px-4 py-3 text-left text-xs font-semibold text-gray-400 uppercase tracking-wide whitespace-nowrap"
-                            >
-                              {h}
-                            </th>
-                          )
-                        )}
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-gray-800">
-                      {filtered.map((inv: Record<string, unknown>) => {
-                        const cfg = statusConfig[String(inv.status)] ?? statusConfig.draft;
-                        const invId = String(inv.id);
-                        const isSelected = selectedIds.has(invId);
-                        return (
-                          <tr
-                            key={invId}
-                            className={`hover:bg-gray-800/50 cursor-pointer transition-colors ${isSelected ? 'bg-blue-900/20' : ''}`}
-                            onClick={() => setSelectedId(invId)}
-                          >
-                            <td className="px-4 py-3" onClick={e => e.stopPropagation()}>
-                              <button type="button" onClick={() => toggle(invId)}>
-                                {isSelected ? <CheckSquare size={16} className="text-blue-400"/> : <Square size={16} className="text-gray-500"/>}
-                              </button>
-                            </td>
-                            <td className="px-4 py-3">
-                              <div className="flex items-center gap-2">
-                                <FileText className="w-4 h-4 text-emerald-400 shrink-0" />
-                                <span className="font-mono text-white font-medium whitespace-nowrap">
-                                  {String(inv.number)}
-                                </span>
-                              </div>
-                            </td>
-                            <td className="px-4 py-3 text-gray-300 whitespace-nowrap">{String(inv.client)}</td>
-                            <td className="px-4 py-3 text-gray-400 max-w-[140px] truncate">
-                              {String(inv.project ?? '—')}
-                            </td>
-                            <td className="px-4 py-3 text-white font-semibold whitespace-nowrap">
-                              {fmt(Number(inv.amount))}
-                            </td>
-                            <td className="px-4 py-3 text-gray-400 whitespace-nowrap">
-                              {fmt(Number(inv.vat))}
-                            </td>
-                            <td className="px-4 py-3 text-orange-400 whitespace-nowrap">
-                              -{fmt(Number(inv.cis_deduction ?? inv.cisDeduction ?? 0))}
-                            </td>
-                            <td className="px-4 py-3">
-                              <span className={clsx('rounded-full px-2.5 py-1 text-xs font-bold whitespace-nowrap', cfg.bg, cfg.color)}>
-                                {cfg.label}
-                              </span>
-                            </td>
-                            <td className="px-4 py-3 text-gray-400 whitespace-nowrap">
-                              {String(inv.due_date ?? inv.dueDate ?? '—')}
-                            </td>
-                            <td className="px-4 py-3" onClick={e => e.stopPropagation()}>
-                              <div className="flex gap-1">
-                                <button
-                                  onClick={() => openEdit(inv)}
-                                  className="p-1.5 rounded-lg bg-gray-800 text-gray-400 hover:text-blue-400 hover:bg-gray-700"
-                                >
-                                  <Edit2 className="w-3.5 h-3.5" />
-                                </button>
-                                {String(inv.status) === 'draft' && (
-                                  <button
-                                    onClick={() => handleStatusChange(String(inv.id), 'sent')}
-                                    className="p-1.5 rounded-lg bg-gray-800 text-gray-400 hover:text-green-400 hover:bg-gray-700"
-                                    title="Mark as Sent"
-                                  >
-                                    <Send className="w-3.5 h-3.5" />
-                                  </button>
-                                )}
-                                {String(inv.status) === 'sent' && (
-                                  <button
-                                    onClick={() => handleStatusChange(String(inv.id), 'paid')}
-                                    className="p-1.5 rounded-lg bg-gray-800 text-gray-400 hover:text-emerald-400 hover:bg-gray-700"
-                                    title="Mark as Paid"
-                                  >
-                                    <span className="text-xs font-bold">✓</span>
-                                  </button>
-                                )}
-                                <button
-                                  onClick={() => handleDelete(String(inv.id))}
-                                  className="p-1.5 rounded-lg bg-gray-800 text-gray-400 hover:text-red-400 hover:bg-gray-700"
-                                >
-                                  <Trash2 className="w-3.5 h-3.5" />
-                                </button>
-                              </div>
-                            </td>
-                          </tr>
-                        );
-                      })}
-                    </tbody>
-                  </table>
-                </div>
-                {!isLoading && filtered.length === 0 && (
-                  <EmptyState
-                    icon={FileText}
-                    title="No invoices found"
-                    description="Create your first invoice to get started."
-                    action={{ label: 'Create Invoice', onClick: openCreate }}
-                  />
-                )}
-                <BulkActionsBar
-                  selectedIds={Array.from(selectedIds)}
-                  actions={[
-                    { id: 'delete', label: 'Delete Selected', icon: Trash2, variant: 'danger', onClick: handleBulkDelete, confirm: 'This action cannot be undone.' },
-                  ]}
-                  onClearSelection={clearSelection}
-                />
-              </div>
+              <InvoiceTable
+                invoices={filtered}
+                selectedIds={selectedIds}
+                onToggle={toggle}
+                onRowClick={setSelectedId}
+                onEdit={openEdit}
+                onDelete={handleDelete}
+                onStatusChange={handleStatusChange}
+                onBulkDelete={handleBulkDelete as (ids: string[]) => Promise<void>}
+                onClearSelection={clearSelection}
+                isLoading={isLoading}
+                openCreate={openCreate}
+                fmt={fmt}
+                statusConfig={statusConfig}
+              />
             </>
           )}
         </>
@@ -1131,147 +1011,14 @@ export function Invoicing() {
 
       {/* Invoice Detail Panel */}
       {selectedInv && mainTab === 'invoices' && !showModal && (
-        <div className="fixed inset-0 z-40 flex" onClick={() => setSelectedId(null)}>
-          <div className="flex-1" />
-          <div
-            className="w-full max-w-md bg-gray-900 border-l border-gray-700 p-8 overflow-y-auto shadow-2xl"
-            onClick={e => e.stopPropagation()}
-          >
-            {/* Invoice Document Style */}
-            <div className="space-y-6">
-              {/* Company Header */}
-              <div>
-                <h1 className="text-2xl font-bold text-white">CortexBuild Ltd</h1>
-                <p className="text-xs text-gray-400 mt-1">Building & Construction</p>
-              </div>
-
-              {/* Invoice Title & Number */}
-              <div className="border-b border-gray-700 pb-4">
-                <p className="text-xs text-gray-400 uppercase tracking-wide">Invoice</p>
-                <p className="text-2xl font-bold text-emerald-400 font-mono">
-                  {String(selectedInv.number)}
-                </p>
-              </div>
-
-              {/* Key Details */}
-              <div className="grid grid-cols-2 gap-4 text-sm">
-                <div>
-                  <p className="text-xs text-gray-400 mb-1">Issue Date</p>
-                  <p className="text-white font-medium">
-                    {String(selectedInv.issue_date ?? selectedInv.issueDate ?? '—')}
-                  </p>
-                </div>
-                <div>
-                  <p className="text-xs text-gray-400 mb-1">Due Date</p>
-                  <p className="text-white font-medium">
-                    {String(selectedInv.due_date ?? selectedInv.dueDate ?? '—')}
-                  </p>
-                </div>
-              </div>
-
-              {/* Client Info */}
-              <div className="border-t border-b border-gray-700 py-4">
-                <p className="text-xs text-gray-400 mb-2 uppercase tracking-wide">Bill To</p>
-                <p className="text-white font-medium">{String(selectedInv.client)}</p>
-                {Boolean(selectedInv.project) && (
-                  <p className="text-sm text-gray-400 mt-1">Project: {String(selectedInv.project)}</p>
-                )}
-              </div>
-
-              {/* Line Items */}
-              <div>
-                <p className="text-xs text-gray-400 mb-3 uppercase tracking-wide">Description</p>
-                <p className="text-white">{String(selectedInv.description)}</p>
-              </div>
-
-              {/* Amounts Section */}
-              <div className="space-y-2 bg-gray-800/30 rounded-lg p-4">
-                <div className="flex justify-between text-sm">
-                  <span className="text-gray-400">Subtotal</span>
-                  <span className="text-white font-medium">
-                    {fmt(Number(selectedInv.amount))}
-                  </span>
-                </div>
-                <div className="flex justify-between text-sm">
-                  <span className="text-gray-400">VAT</span>
-                  <span className="text-white font-medium">
-                    {fmt(Number(selectedInv.vat))}
-                  </span>
-                </div>
-                {Number(selectedInv.cis_deduction ?? selectedInv.cisDeduction ?? 0) > 0 && (
-                  <div className="flex justify-between text-sm">
-                    <span className="text-gray-400">CIS Deduction</span>
-                    <span className="text-orange-400 font-medium">
-                      -{fmt(Number(selectedInv.cis_deduction ?? selectedInv.cisDeduction ?? 0))}
-                    </span>
-                  </div>
-                )}
-                <div className="border-t border-gray-700 pt-2 mt-2 flex justify-between">
-                  <span className="text-white font-semibold">Total Due</span>
-                  <span className="text-emerald-400 font-bold text-lg">
-                    {fmt(
-                      Number(selectedInv.amount) +
-                        Number(selectedInv.vat) -
-                        Number(selectedInv.cis_deduction ?? selectedInv.cisDeduction ?? 0)
-                    )}
-                  </span>
-                </div>
-              </div>
-
-              {/* Status */}
-              <div className="flex items-center justify-between">
-                <p className="text-xs text-gray-400 uppercase tracking-wide">Status</p>
-                <span
-                  className={clsx(
-                    'rounded-full px-3 py-1 text-xs font-bold',
-                    statusConfig[String(selectedInv.status)]?.bg,
-                    statusConfig[String(selectedInv.status)]?.color
-                  )}
-                >
-                  {statusConfig[String(selectedInv.status)]?.label || 'Unknown'}
-                </span>
-              </div>
-
-              {/* Payment Terms & Bank Details */}
-              <div className="border-t border-gray-700 pt-4 space-y-3">
-                <div>
-                  <p className="text-xs text-gray-400 mb-1">Payment Terms</p>
-                  <p className="text-white text-sm">{String(selectedInv.payment_terms ?? 'Net 30')}</p>
-                </div>
-                {Boolean(selectedInv.bank_account) && (
-                  <div>
-                    <p className="text-xs text-gray-400 mb-1">Bank Account</p>
-                    <p className="text-white text-sm font-mono">{String(selectedInv.bank_account)}</p>
-                  </div>
-                )}
-              </div>
-
-              {/* Actions */}
-              <div className="flex gap-2 pt-4 border-t border-gray-700">
-                <button
-                  onClick={() => openEdit(selectedInv as Record<string, unknown>)}
-                  className="flex-1 rounded-xl bg-blue-600 py-2.5 text-sm font-semibold text-white hover:bg-blue-500 flex items-center justify-center gap-1"
-                >
-                  <Edit2 className="w-3.5 h-3.5" /> Edit
-                </button>
-                <button
-                  onClick={() => handleDelete(String(selectedInv.id))}
-                  className="rounded-xl bg-red-900/30 px-3 text-red-400 hover:bg-red-900/50 py-2.5"
-                >
-                  <Trash2 className="w-4 h-4" />
-                </button>
-              </div>
-
-              {/* Close Button */}
-              <button
-                onClick={() => setSelectedId(null)}
-                className="w-full rounded-xl bg-gray-800 py-2.5 text-sm font-medium text-gray-300 hover:bg-gray-700 mt-2"
-              >
-                Close
-              </button>
-            </div>
-          </div>
-        </div>
+        <InvoiceDetailPanel
+          invoice={selectedInv}
+          onClose={() => setSelectedId(null)}
+          onEdit={inv => openEdit(inv as Record<string, unknown>)}
+          onDelete={id => handleDelete(id)}
+          fmt={fmt}
+          statusConfig={statusConfig}
+        />
       )}
     </div>
   );
