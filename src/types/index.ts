@@ -102,7 +102,8 @@ export type Module =
   | 'team-chat'
   | 'activity-feed'
   | 'client-portal'
-  | 'webhooks';
+  | 'webhooks'
+  | 'carbon-estimating';
 
 export type ProjectStatus = 'planning' | 'active' | 'on_hold' | 'completed' | 'archived';
 export type TaskStatus = 'todo' | 'in_progress' | 'review' | 'done' | 'blocked';

@@ -83,6 +83,7 @@ const MODULE_LABELS: Record<Module, string> = {
   'activity-feed':      'Activity Feed',
   'client-portal':      'Client Portal',
   'webhooks':           'Webhooks',
+  'carbon-estimating':   'Carbon Estimating',
 };
 
 // Module accent colors for the breadcrumb bar
