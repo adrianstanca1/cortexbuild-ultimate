@@ -85,6 +85,7 @@ const MODULE_LABELS: Record<Module, string> = {
   'client-portal': 'Client Portal',
   'webhooks': 'Webhooks',
   'carbon-estimating': 'Carbon Estimating',
+  'drone-capture': 'Drone Capture',
 };
 
 export function Breadcrumbs({ items, onNavigate }: BreadcrumbsProps) {
