@@ -1,4 +1,5 @@
 const pool = require('../../db');
+const { buildTenantFilter } = require('../../middleware/tenantFilter');
 
 /**
  * HTML escape helper to prevent XSS
@@ -56,18 +57,7 @@ async function handleGenerateReport(message, req) {
   const sections = [];
   const orgId = req?.user?.organization_id;
   const companyId = req?.user?.company_id;
-  const isSuperAdmin = req?.user?.role === 'super_admin';
-  let orgFilter = '';
-  let queryParams = [];
-  if (!isSuperAdmin) {
-    if (orgId) {
-      orgFilter = 'WHERE organization_id = $1';
-      queryParams = [orgId];
-    } else if (companyId) {
-      orgFilter = 'WHERE company_id = $1';
-      queryParams = [companyId];
-    }
-  }
+  const { clause: orgFilter, params: queryParams } = buildTenantFilter(req, 'WHERE');
 
   if (reportType === 'daily' || reportType === 'executive') {
     const { rows: projects } = await pool.query(

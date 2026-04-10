@@ -9,6 +9,7 @@ const pool      = require('../db');
 const authMw    = require('../middleware/auth');
 const { getEmbedding } = require('../lib/ollama');
 const { manifest, SEARCHABLE_TABLES } = require('../lib/rag-manifest');
+const { buildTenantFilter, isSuperAdmin } = require('../middleware/tenantFilter');
 const ALLOWED_RAG_TABLES = new Set(SEARCHABLE_TABLES);
 
 const router = express.Router();
@@ -18,26 +19,23 @@ const SUPER_ADMIN_ROLES = new Set(['super_admin']);
 
 /**
  * Determine tenant filter clause.
- * Returns two filters:
- *   filter       — for source tables that have both organization_id and company_id columns (uses COALESCE)
- *   embedFilter  — for rag_embeddings which only has organization_id (resolves company_id via subquery)
+ * Uses the centralized tenantFilter module for source tables (with COALESCE),
+ * and resolves company_id to organization_id for rag_embeddings (which lacks company_id).
  */
 function tenantFilter(req) {
   if (!req.user) return { filter: '', embedFilter: '', params: [] };
   if (SUPER_ADMIN_ROLES.has(req.user.role)) return { filter: '', embedFilter: '', params: [] };
-  // company_owner users have organization_id = NULL; use COALESCE for source tables
-  const orgId = req.user.organization_id || req.user.company_id;
-  if (orgId) {
-    return {
-      filter: 'WHERE COALESCE(organization_id, company_id) = $1',
-      // For rag_embeddings (no company_id column): resolve company_id to organization_id via companies table
-      embedFilter: req.user.organization_id
-        ? 'WHERE organization_id = $1'
-        : "WHERE organization_id = (SELECT organization_id FROM companies WHERE id = $1)",
-      params: [orgId],
-    };
+  const { clause: filterClause, params } = buildTenantFilter(req, 'WHERE');
+  // For rag_embeddings (no company_id column): resolve company_id to organization_id via companies table
+  let embedFilter = '';
+  if (filterClause) {
+    if (req.user.organization_id) {
+      embedFilter = 'WHERE organization_id = $1';
+    } else {
+      embedFilter = "WHERE organization_id = (SELECT organization_id FROM companies WHERE id = $1)";
+    }
   }
-  return { filter: '', embedFilter: '', params: [] };
+  return { filter: filterClause, embedFilter, params };
 }
 
 /** GET /api/rag/search

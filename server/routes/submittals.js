@@ -184,10 +184,10 @@ router.get('/:id', authMiddleware, async (req, res) => {
       [req.params.id, req.user.company_id]
     );
 
-    // Get comments
+    // Get comments (tenant-scoped via COALESCE)
     const comments = await pool.query(
-      'SELECT * FROM submittal_comments WHERE submittal_id = $1 ORDER BY created_at ASC',
-      [req.params.id]
+      'SELECT * FROM submittal_comments WHERE submittal_id = $1 AND COALESCE(organization_id, company_id) = $2 ORDER BY created_at ASC',
+      [req.params.id, req.user.company_id]
     );
 
     res.json({

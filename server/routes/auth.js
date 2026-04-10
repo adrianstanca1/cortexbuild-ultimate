@@ -8,6 +8,7 @@ const authMiddleware = require('../middleware/auth');
 const { logAudit } = require('./audit-helper');
 const { insertOrgAndCompany } = require('../lib/bootstrap-tenant');
 const { blacklistToken, revokeAllUserTokens } = require('../lib/tokenBlacklist');
+const { buildTenantFilter, isSuperAdmin, isCompanyOwner } = require('../middleware/tenantFilter');
 
 const router = express.Router();
 // SECURITY: JWT_SECRET MUST be set in environment — no hardcoded fallback
@@ -214,23 +215,8 @@ router.get('/users', authMiddleware, async (req, res) => {
     return res.status(403).json({ message: 'Insufficient permissions' });
   }
   try {
-    const role = req.user.role;
-    const orgId = req.user.organization_id;
-    let query;
-    let params;
-    if (role === 'super_admin') {
-      // super_admin sees all users across orgs
-      query = 'SELECT id,name,email,role,company,phone,avatar,organization_id,company_id,created_at FROM users ORDER BY created_at DESC';
-      params = [];
-    } else if (role === 'company_owner') {
-      // company_owner scoped by company_id (organization_id is NULL for this role)
-      query = 'SELECT id,name,email,role,company,phone,avatar,organization_id,company_id,created_at FROM users WHERE company_id = $1 ORDER BY created_at DESC';
-      params = [req.user.company_id];
-    } else {
-      // admins see their org's users
-      query = 'SELECT id,name,email,role,company,phone,avatar,organization_id,company_id,created_at FROM users WHERE organization_id = $1 ORDER BY created_at DESC';
-      params = [orgId];
-    }
+    const { clause, params } = buildTenantFilter(req, 'WHERE');
+    const query = `SELECT id,name,email,role,company,phone,avatar,organization_id,company_id,created_at FROM users${clause || ''} ORDER BY created_at DESC`;
     const { rows } = await pool.query(query, params);
     res.json(rows);
   } catch (err) {

@@ -2,6 +2,7 @@ const express = require('express');
 const pool = require('../db');
 const authMiddleware = require('../middleware/auth');
 const { broadcastNotification } = require('../lib/ws-broadcast');
+const { buildTenantFilter, isSuperAdmin } = require('../middleware/tenantFilter');
 
 const router = express.Router();
 router.use(authMiddleware);
@@ -9,32 +10,11 @@ router.use(authMiddleware);
 /**
  * GET /api/insights
  * Returns rule-based + trend insights derived from real project data.
- * Multi-tenant: filters by organization_id from req.user.
+ * Multi-tenant: filters by organization_id/company_id from req.user.
  */
 router.get('/', async (req, res) => {
   try {
-    const auth = req.user || {};
-    const orgId = auth.organization_id;
-    const isSuper = auth.role === 'super_admin';
-    if (isSuper && !orgId) {
-      return res.status(400).json({ error: 'organization_id required for super_admin insights' });
-    }
-
-    let orgFilter = '';
-    let params = [];
-    if (orgId || auth.company_id) {
-      orgFilter = 'WHERE COALESCE(organization_id, company_id) = $1';
-      params.push(orgId || auth.company_id);
-    } else if (!isSuper) {
-      // Non-super_admin without organization_id — scope to company_id or deny all rows
-      if (auth.company_id) {
-        orgFilter = 'WHERE company_id = $1';
-        params = [auth.company_id];
-      } else {
-        orgFilter = 'WHERE 1=0'; // No tenant context — return nothing
-        params = [];
-      }
-    }
+    const { clause: orgFilter, params } = buildTenantFilter(req, 'WHERE');
 
     const insights = [];
 

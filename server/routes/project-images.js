@@ -5,6 +5,7 @@ const fs      = require('fs');
 const pool    = require('../db');
 const authMiddleware = require('../middleware/auth');
 const uploadRateLimiter = require('../middleware/uploadRateLimiter');
+const { buildTenantFilter, isSuperAdmin, isCompanyOwner } = require('../middleware/tenantFilter');
 
 const router = express.Router();
 router.use(authMiddleware);
@@ -67,13 +68,11 @@ const upload = multer({ storage, fileFilter, limits: { fileSize: 50 * 1024 * 102
 router.get('/', async (req, res) => {
   try {
     const { project_id } = req.query;
-    const isCompanyOwner = req.user?.role === 'company_owner';
-    const tenantId = isCompanyOwner ? req.user?.company_id : req.user?.organization_id;
-    const tenantCol = isCompanyOwner ? 'company_id' : 'organization_id';
+    const { clause: tenantClause, params: tenantParams } = buildTenantFilter(req, 'AND');
 
-    let query = `SELECT * FROM project_images WHERE ${tenantCol} = $1`;
-    const params = [tenantId];
-    let paramCount = 1;
+    let query = `SELECT * FROM project_images WHERE 1=1${tenantClause}`;
+    const params = [...tenantParams];
+    let paramCount = tenantParams.length;
 
     if (project_id) {
       paramCount++;
@@ -100,13 +99,12 @@ router.post('/upload', upload.single('file'), async (req, res) => {
     const uploadedBy = req.user?.name || req.user?.email || 'Unknown';
     const imagePath = `/uploads/gallery/${req.file.filename}`;
     const category = req.body.category || 'general';
-    const tenantId = isCompanyOwner ? req.user?.company_id : req.user?.organization_id;
 
     const { rows } = await pool.query(
-      `INSERT INTO project_images (organization_id, project_id, file_path, caption, uploaded_by, category)
-       VALUES ($1, $2, $3, $4, $5, $6)
+      `INSERT INTO project_images (organization_id, company_id, project_id, file_path, caption, uploaded_by, category)
+       VALUES ($1, $2, $3, $4, $5, $6, $7)
        RETURNING *`,
-      [tenantId, projectId, imagePath, caption, uploadedBy, category]
+      [req.user.organization_id || null, req.user.company_id || null, projectId, imagePath, caption, uploadedBy, category]
     );
 
     res.status(201).json(rows[0]);
@@ -124,9 +122,7 @@ router.put('/:id', async (req, res) => {
   try {
     const { id } = req.params;
     const { caption, category } = req.body;
-    const isCompanyOwner = req.user?.role === 'company_owner';
-    const tenantId = isCompanyOwner ? req.user?.company_id : req.user?.organization_id;
-    const tenantCol = isCompanyOwner ? 'company_id' : 'organization_id';
+    const { clause: tenantClause, params: tenantParams } = buildTenantFilter(req, 'AND');
     const updates = [];
     const params = [];
     let paramCount = 0;
@@ -146,9 +142,9 @@ router.put('/:id', async (req, res) => {
       return res.status(400).json({ message: 'No fields to update' });
     }
 
-    params.push(id, tenantId);
+    params.push(id, ...tenantParams);
     const { rows } = await pool.query(
-      `UPDATE project_images SET ${updates.join(', ')} WHERE id = $${paramCount + 1} AND ${tenantCol} = $${paramCount + 2} RETURNING *`,
+      `UPDATE project_images SET ${updates.join(', ')} WHERE id = $${paramCount + 1}${tenantClause} RETURNING *`,
       params
     );
 
@@ -167,13 +163,11 @@ router.put('/:id', async (req, res) => {
 router.delete('/:id', async (req, res) => {
   try {
     const { id } = req.params;
-    const isCompanyOwner = req.user?.role === 'company_owner';
-    const tenantId = isCompanyOwner ? req.user?.company_id : req.user?.organization_id;
-    const tenantCol = isCompanyOwner ? 'company_id' : 'organization_id';
+    const { clause: tenantClause, params: tenantParams } = buildTenantFilter(req, 'AND');
 
     const { rows } = await pool.query(
-      `SELECT file_path FROM project_images WHERE id = $1 AND ${tenantCol} = $2`,
-      [id, tenantId]
+      `SELECT file_path FROM project_images WHERE id = $1${tenantClause}`,
+      [id, ...tenantParams]
     );
     if (rows.length === 0) {
       return res.status(404).json({ message: 'Image not found' });
@@ -181,7 +175,7 @@ router.delete('/:id', async (req, res) => {
 
     const filePath = rows[0].file_path;
 
-    await pool.query(`DELETE FROM project_images WHERE id = $1 AND ${tenantCol} = $2`, [id, tenantId]);
+    await pool.query(`DELETE FROM project_images WHERE id = $1${tenantClause}`, [id, ...tenantParams]);
 
     if (filePath) {
       const fullPath = path.resolve(__dirname, '..', filePath);

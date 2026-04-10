@@ -5,21 +5,11 @@ const fs      = require('fs');
 const pool    = require('../db');
 const authMiddleware = require('../middleware/auth');
 const uploadRateLimiter = require('../middleware/uploadRateLimiter');
+const { buildTenantFilter, isSuperAdmin, isCompanyOwner } = require('../middleware/tenantFilter');
 
 const router = express.Router();
 router.use(authMiddleware);
 router.use(uploadRateLimiter);
-
-// Multi-tenancy helper
-function orgFilter(user) {
-  if (user?.role === 'super_admin') return { filter: '', params: [] };
-  if (user?.role === 'company_owner') {
-    if (!user?.company_id) return { filter: ' AND 1=0', params: [] };
-    return { filter: ' AND company_id = $1', params: [user.company_id] };
-  }
-  if (!user?.organization_id) return { filter: ' AND 1=0', params: [] };
-  return { filter: ' AND organization_id = $1', params: [user.organization_id] };
-}
 
 const UPLOADS_DIR = path.join(__dirname, '../uploads');
 if (!fs.existsSync(UPLOADS_DIR)) fs.mkdirSync(UPLOADS_DIR, { recursive: true });
@@ -53,8 +43,8 @@ function formatSize(bytes) {
 router.get('/', async (req, res) => {
   try {
     const { category, project_id, search, type, include_versions } = req.query;
-    const org = orgFilter(req.user);
-    let query = `SELECT * FROM documents WHERE 1=1${org.filter}`;
+    const org = buildTenantFilter(req, 'AND');
+    let query = `SELECT * FROM documents WHERE 1=1${org.clause}`;
     const params = [...org.params];
     let paramCount = org.params.length;
 
@@ -113,12 +103,12 @@ router.get('/', async (req, res) => {
 router.get('/:id', async (req, res) => {
   try {
     const { id } = req.params;
-    const org = orgFilter(req.user);
+    const org = buildTenantFilter(req, 'AND');
     const { rows } = await pool.query(
       `SELECT d.*, json_agg(dv.*) FILTER (WHERE dv.id IS NOT NULL) as versions
        FROM documents d
        LEFT JOIN document_versions dv ON dv.document_id = d.id
-       WHERE d.id = $1${org.filter}
+       WHERE d.id = $1${org.clause}
        GROUP BY d.id`,
       [id, ...org.params]
     );
@@ -178,7 +168,7 @@ router.post('/upload', upload.single('file'), async (req, res) => {
 router.put('/:id', async (req, res) => {
   try {
     const { id } = req.params;
-    const org = orgFilter(req.user);
+    const org = buildTenantFilter(req, 'AND');
     const { name, category, access_level, discipline, date_issued, author } = req.body;
     const updates = [];
     const params = [];
@@ -220,8 +210,8 @@ router.put('/:id', async (req, res) => {
     }
 
     params.push(id);
-    if (org.filter) params.push(...org.params);
-    const whereClause = org.filter || '';
+    if (org.clause) params.push(...org.params);
+    const whereClause = org.clause || '';
     const { rows } = await pool.query(
       `UPDATE documents SET ${updates.join(', ')} WHERE id = $${paramCount + 1}${whereClause} RETURNING *`,
       params
@@ -243,10 +233,10 @@ router.post('/:id/upload-version', upload.single('file'), async (req, res) => {
   try {
     if (!req.file) return res.status(400).json({ message: 'No file provided' });
     const { id } = req.params;
-    const org = orgFilter(req.user);
+    const org = buildTenantFilter(req, 'AND');
 
     // SECURITY: Filter by organization_id to prevent cross-tenant access
-    const { rows: existing } = await pool.query(`SELECT * FROM documents WHERE id = $1${org.filter}`, [id, ...org.params]);
+    const { rows: existing } = await pool.query(`SELECT * FROM documents WHERE id = $1${org.clause}`, [id, ...org.params]);
     if (existing.length === 0) return res.status(404).json({ message: 'Document not found' });
 
     const currentVersion = existing[0].version;
@@ -262,7 +252,7 @@ router.post('/:id/upload-version', upload.single('file'), async (req, res) => {
 
     // SECURITY: Include organization_id filter in UPDATE
     await pool.query(
-      `UPDATE documents SET version = $1, size = $2, type = $3, file_path = $4 WHERE id = $5${org.filter}`,
+      `UPDATE documents SET version = $1, size = $2, type = $3, file_path = $4 WHERE id = $5${org.clause}`,
       [newVersion, fileSize, ext, filePath, id, ...org.params]
     );
 
@@ -272,7 +262,7 @@ router.post('/:id/upload-version', upload.single('file'), async (req, res) => {
       [id, newVersion, filePath, uploadedBy, changes]
     );
 
-    const { rows } = await pool.query(`SELECT * FROM documents WHERE id = $1${org.filter}`, [id, ...org.params]);
+    const { rows } = await pool.query(`SELECT * FROM documents WHERE id = $1${org.clause}`, [id, ...org.params]);
     res.json(rows[0]);
   } catch (err) {
     console.error('[POST /api/files/:id/upload-version]', 'Internal server error');
@@ -284,8 +274,8 @@ router.post('/:id/upload-version', upload.single('file'), async (req, res) => {
 router.get('/:id/download', async (req, res) => {
   try {
     const { id } = req.params;
-    const org = orgFilter(req.user);
-    const { rows } = await pool.query(`SELECT file_path, name, type FROM documents WHERE id = $1${org.filter}`, [id, ...org.params]);
+    const org = buildTenantFilter(req, 'AND');
+    const { rows } = await pool.query(`SELECT file_path, name, type FROM documents WHERE id = $1${org.clause}`, [id, ...org.params]);
     if (rows.length === 0) return res.status(404).json({ message: 'Document not found' });
 
     const doc = rows[0];
@@ -312,8 +302,8 @@ router.get('/:id/download', async (req, res) => {
 router.get('/:id/preview', async (req, res) => {
   try {
     const { id } = req.params;
-    const org = orgFilter(req.user);
-    const { rows } = await pool.query(`SELECT file_path, name, type FROM documents WHERE id = $1${org.filter}`, [id, ...org.params]);
+    const org = buildTenantFilter(req, 'AND');
+    const { rows } = await pool.query(`SELECT file_path, name, type FROM documents WHERE id = $1${org.clause}`, [id, ...org.params]);
     if (rows.length === 0) return res.status(404).json({ message: 'Document not found' });
 
     const doc = rows[0];
@@ -355,14 +345,13 @@ router.get('/:id/preview', async (req, res) => {
 router.get('/folders/list', async (req, res) => {
   try {
     const { parent } = req.query;
-    const tenantCol = req.user?.role === 'company_owner' ? 'company_id' : 'organization_id';
-    const tenantId = req.user?.role === 'company_owner' ? req.user.company_id : req.user?.organization_id;
-    const params = [tenantId];
-    let query = `SELECT DISTINCT parent_folder FROM documents WHERE parent_folder IS NOT NULL AND ${tenantCol} = $1`;
+    const { clause: tenantClause, params: tenantParams } = buildTenantFilter(req, 'AND');
+    const params = [...tenantParams];
+    let query = `SELECT DISTINCT parent_folder FROM documents WHERE parent_folder IS NOT NULL${tenantClause}`;
 
     if (parent) {
-      query += ' AND parent_folder = $2';
       params.push(parent);
+      query += ` AND parent_folder = $${params.length}`;
     }
 
     const { rows } = await pool.query(query, params);
@@ -377,9 +366,9 @@ router.get('/folders/list', async (req, res) => {
 router.delete('/:id', async (req, res) => {
   try {
     const { id } = req.params;
-    const org = orgFilter(req.user);
+    const org = buildTenantFilter(req, 'AND');
 
-    const { rows } = await pool.query(`SELECT file_path FROM documents WHERE id = $1${org.filter}`, [id, ...org.params]);
+    const { rows } = await pool.query(`SELECT file_path FROM documents WHERE id = $1${org.clause}`, [id, ...org.params]);
     if (rows.length === 0) {
       return res.status(404).json({ message: 'Document not found' });
     }
@@ -387,7 +376,7 @@ router.delete('/:id', async (req, res) => {
     const filePath = rows[0].file_path;
 
     await pool.query('DELETE FROM document_versions WHERE document_id = $1', [id]);
-    await pool.query(`DELETE FROM documents WHERE id = $1${org.filter}`, [id, ...org.params]);
+    await pool.query(`DELETE FROM documents WHERE id = $1${org.clause}`, [id, ...org.params]);
 
     if (filePath) {
       // Resolve to absolute path and validate it's within uploads directory

@@ -7,6 +7,7 @@ const express = require('express');
 const pool = require('../db');
 const authMiddleware = require('../middleware/auth');
 const { createNotification, createAlert, broadcast } = require('../lib/websocket');
+const { buildTenantFilter, isSuperAdmin } = require('../middleware/tenantFilter');
 
 const router = express.Router();
 router.use(authMiddleware);
@@ -15,17 +16,24 @@ router.use(authMiddleware);
 router.get('/', async (req, res) => {
   try {
     const userId = req.user?.id;
-    const orgId = req.user?.organization_id;
     const { page = '1', pageSize = '50', status, type, severity, category, projectId } = req.query;
     const offset = (parseInt(page) - 1) * parseInt(pageSize);
 
     let whereClauses = [];
-    let params = [userId, orgId || req.user.company_id];
-    let idx = 3;
+    const tenantFilter = buildTenantFilter(req, 'AND', null, 2);
+    let params = [userId, ...tenantFilter.params];
+    let idx = 2 + tenantFilter.params.length;
 
     // Filter: own notifications OR org-wide (user_id IS NULL)
     // Use COALESCE so company_owner (with null organization_id) can see their company's notifications
-    whereClauses.push(`(user_id = $1 OR (COALESCE(organization_id, company_id) = $2 AND user_id IS NULL))`);
+    // For super_admin, show all notifications; for others, scope by tenant
+    if (isSuperAdmin(req)) {
+      whereClauses.push(`(user_id = $1 OR user_id IS NULL)`);
+      params = [userId];
+      idx = 2;
+    } else {
+      whereClauses.push(`(user_id = $1 OR (COALESCE(organization_id, company_id) = $2 AND user_id IS NULL))`);
+    }
 
     if (status) {
       whereClauses.push(`status = $${idx++}`);
@@ -60,11 +68,16 @@ router.get('/', async (req, res) => {
     );
 
     // Unread count uses only the base user/org filter — not status/type/severity filters
-    const { rows: [{ count: unread }] } = await pool.query(
-      `SELECT COUNT(*) FROM notifications
-       WHERE (user_id = $1 OR (organization_id = $2 AND user_id IS NULL)) AND read = false`,
-      [userId, orgId]
-    );
+    let unreadQuery, unreadParams;
+    if (isSuperAdmin(req)) {
+      unreadQuery = `SELECT COUNT(*) FROM notifications WHERE (user_id = $1 OR user_id IS NULL) AND read = false`;
+      unreadParams = [userId];
+    } else {
+      const unreadFilter = buildTenantFilter(req, 'AND', null, 2);
+      unreadQuery = `SELECT COUNT(*) FROM notifications WHERE (user_id = $1 OR (COALESCE(organization_id, company_id) = $2 AND user_id IS NULL)) AND read = false`;
+      unreadParams = [userId, ...unreadFilter.params];
+    }
+    const { rows: [{ count: unread }] } = await pool.query(unreadQuery, unreadParams);
 
     res.json({ notifications: rows, total: parseInt(total, 10), unreadCount: parseInt(unread, 10) });
   } catch (err) {
@@ -77,14 +90,22 @@ router.get('/', async (req, res) => {
 router.get('/unread-count', async (req, res) => {
   try {
     const userId = req.user?.id;
-    const orgId = req.user?.organization_id;
-    const { rows } = await pool.query(
-      `SELECT COUNT(*) as count FROM notifications
-       WHERE (user_id = $1 OR (organization_id = $2 AND user_id IS NULL))
-         AND read = false
-         AND (snoozed_until IS NULL OR snoozed_until < NOW())`,
-      [userId, orgId]
-    );
+    let query, params;
+    if (isSuperAdmin(req)) {
+      query = `SELECT COUNT(*) as count FROM notifications
+        WHERE (user_id = $1 OR user_id IS NULL)
+          AND read = false
+          AND (snoozed_until IS NULL OR snoozed_until < NOW())`;
+      params = [userId];
+    } else {
+      const filter = buildTenantFilter(req, 'AND', null, 2);
+      query = `SELECT COUNT(*) as count FROM notifications
+        WHERE (user_id = $1 OR (COALESCE(organization_id, company_id) = $2 AND user_id IS NULL))
+          AND read = false
+          AND (snoozed_until IS NULL OR snoozed_until < NOW())`;
+      params = [userId, ...filter.params];
+    }
+    const { rows } = await pool.query(query, params);
     res.json({ unreadCount: parseInt(rows[0].count, 10) });
   } catch (err) {
     console.error('[GET /notifications/unread-count]', err.message);
@@ -179,17 +200,17 @@ router.put('/settings', async (req, res) => {
 router.get('/history', async (req, res) => {
   try {
     const userId = req.user?.id;
-    const orgId = req.user?.organization_id;
     const { page = '1', pageSize = '50' } = req.query;
     const offset = (parseInt(page) - 1) * parseInt(pageSize);
+    const tenantFilter = buildTenantFilter(req, 'AND', null, 2);
 
     const { rows } = await pool.query(
       `SELECT * FROM notifications
-       WHERE (user_id = $1 OR (organization_id = $2 AND user_id IS NULL))
+       WHERE (user_id = $1 OR (COALESCE(organization_id, company_id) = $2 AND user_id IS NULL))
          AND status = 'archived'
        ORDER BY created_at DESC
        LIMIT $3 OFFSET $4`,
-      [userId, orgId, parseInt(pageSize), offset]
+      [userId, ...tenantFilter.params, parseInt(pageSize), offset]
     );
 
     res.json({ notifications: rows, total: rows.length });
@@ -203,12 +224,12 @@ router.get('/history', async (req, res) => {
 router.put('/:id/read', async (req, res) => {
   try {
     const userId = req.user?.id;
-    const orgId = req.user?.organization_id;
+    const tenantFilter = buildTenantFilter(req, 'AND', null, 3);
     const { rows } = await pool.query(
       `UPDATE notifications SET read = true, status = 'read'
-       WHERE id = $1 AND (user_id = $2 OR (organization_id = $3 AND user_id IS NULL))
+       WHERE id = $1 AND (user_id = $2 OR (COALESCE(organization_id, company_id) = $3 AND user_id IS NULL))
        RETURNING *`,
-      [req.params.id, userId, orgId]
+      [req.params.id, userId, ...tenantFilter.params]
     );
     if (!rows[0]) return res.status(404).json({ message: 'Notification not found' });
     res.json(rows[0]);
@@ -222,12 +243,12 @@ router.put('/:id/read', async (req, res) => {
 router.put('/read-all', async (req, res) => {
   try {
     const userId = req.user?.id;
-    const orgId = req.user?.organization_id;
+    const tenantFilter = buildTenantFilter(req, 'AND', null, 2);
     await pool.query(
       `UPDATE notifications SET read = true, status = 'read'
-       WHERE (user_id = $1 OR (organization_id = $2 AND user_id IS NULL))
+       WHERE (user_id = $1 OR (COALESCE(organization_id, company_id) = $2 AND user_id IS NULL))
          AND read = false`,
-      [userId, orgId]
+      [userId, ...tenantFilter.params]
     );
     res.json({ message: 'All notifications marked as read' });
   } catch (err) {
@@ -240,15 +261,15 @@ router.put('/read-all', async (req, res) => {
 router.post('/mark-read-bulk', async (req, res) => {
   try {
     const userId = req.user?.id;
-    const orgId = req.user?.organization_id;
+    const tenantFilter = buildTenantFilter(req, 'AND', null, 3);
     const { ids } = req.body;
     if (!Array.isArray(ids) || !ids.length) {
       return res.status(400).json({ message: 'ids array is required' });
     }
     await pool.query(
       `UPDATE notifications SET read = true, status = 'read'
-       WHERE id = ANY($1) AND (user_id = $2 OR (organization_id = $3 AND user_id IS NULL))`,
-      [ids, userId, orgId]
+       WHERE id = ANY($1) AND (user_id = $2 OR (COALESCE(organization_id, company_id) = $3 AND user_id IS NULL))`,
+      [ids, userId, ...tenantFilter.params]
     );
     res.json({ message: 'Notifications marked as read' });
   } catch (err) {
@@ -261,12 +282,12 @@ router.post('/mark-read-bulk', async (req, res) => {
 router.put('/:id/archive', async (req, res) => {
   try {
     const userId = req.user?.id;
-    const orgId = req.user?.organization_id;
+    const tenantFilter = buildTenantFilter(req, 'AND', null, 3);
     const { rows } = await pool.query(
       `UPDATE notifications SET status = 'archived', archived_at = NOW()
-       WHERE id = $1 AND (user_id = $2 OR (organization_id = $3 AND user_id IS NULL))
+       WHERE id = $1 AND (user_id = $2 OR (COALESCE(organization_id, company_id) = $3 AND user_id IS NULL))
        RETURNING *`,
-      [req.params.id, userId, orgId]
+      [req.params.id, userId, ...tenantFilter.params]
     );
     if (!rows[0]) return res.status(404).json({ message: 'Notification not found' });
     res.json(rows[0]);
@@ -280,12 +301,12 @@ router.put('/:id/archive', async (req, res) => {
 router.post('/archive-read', async (req, res) => {
   try {
     const userId = req.user?.id;
-    const orgId = req.user?.organization_id;
+    const tenantFilter = buildTenantFilter(req, 'AND', null, 2);
     await pool.query(
       `UPDATE notifications SET status = 'archived', archived_at = NOW()
-       WHERE (user_id = $1 OR (organization_id = $2 AND user_id IS NULL))
+       WHERE (user_id = $1 OR (COALESCE(organization_id, company_id) = $2 AND user_id IS NULL))
          AND status = 'read'`,
-      [userId, orgId]
+      [userId, ...tenantFilter.params]
     );
     res.json({ message: 'Read notifications archived' });
   } catch (err) {
@@ -298,14 +319,14 @@ router.post('/archive-read', async (req, res) => {
 router.put('/:id/snooze', async (req, res) => {
   try {
     const userId = req.user?.id;
-    const orgId = req.user?.organization_id;
     const { until } = req.body;
     if (!until) return res.status(400).json({ message: 'until timestamp is required' });
+    const tenantFilter = buildTenantFilter(req, 'AND', null, 4);
     const { rows } = await pool.query(
       `UPDATE notifications SET status = 'snoozed', snoozed_until = $1
-       WHERE id = $2 AND (user_id = $3 OR (organization_id = $4 AND user_id IS NULL))
+       WHERE id = $2 AND (user_id = $3 OR (COALESCE(organization_id, company_id) = $4 AND user_id IS NULL))
        RETURNING *`,
-      [until, req.params.id, userId, orgId]
+      [until, req.params.id, userId, ...tenantFilter.params]
     );
     if (!rows[0]) return res.status(404).json({ message: 'Notification not found' });
     res.json(rows[0]);
@@ -319,12 +340,12 @@ router.put('/:id/snooze', async (req, res) => {
 router.put('/:id/unsnooze', async (req, res) => {
   try {
     const userId = req.user?.id;
-    const orgId = req.user?.organization_id;
+    const tenantFilter = buildTenantFilter(req, 'AND', null, 3);
     const { rows } = await pool.query(
       `UPDATE notifications SET status = 'unread', snoozed_until = NULL
-       WHERE id = $1 AND (user_id = $2 OR (organization_id = $3 AND user_id IS NULL))
+       WHERE id = $1 AND (user_id = $2 OR (COALESCE(organization_id, company_id) = $3 AND user_id IS NULL))
        RETURNING *`,
-      [req.params.id, userId, orgId]
+      [req.params.id, userId, ...tenantFilter.params]
     );
     if (!rows[0]) return res.status(404).json({ message: 'Notification not found' });
     res.json(rows[0]);
@@ -338,10 +359,10 @@ router.put('/:id/unsnooze', async (req, res) => {
 router.delete('/all', async (req, res) => {
   try {
     const userId = req.user?.id;
-    const orgId = req.user?.organization_id;
+    const tenantFilter = buildTenantFilter(req, 'AND', null, 2);
     const { rows } = await pool.query(
-      `DELETE FROM notifications WHERE user_id = $1 AND organization_id = $2 RETURNING id`,
-      [userId, orgId]
+      `DELETE FROM notifications WHERE user_id = $1 AND COALESCE(organization_id, company_id) = $2 RETURNING id`,
+      [userId, ...tenantFilter.params]
     );
     res.json({ message: 'All notifications cleared', count: rows.length });
   } catch (err) {
@@ -354,11 +375,11 @@ router.delete('/all', async (req, res) => {
 router.delete('/:id', async (req, res) => {
   try {
     const userId = req.user?.id;
-    const orgId = req.user?.organization_id;
+    const tenantFilter = buildTenantFilter(req, 'AND', null, 3);
     const { rowCount } = await pool.query(
       `DELETE FROM notifications
-       WHERE id = $1 AND (user_id = $2 OR (organization_id = $3 AND user_id IS NULL))`,
-      [req.params.id, userId, orgId]
+       WHERE id = $1 AND (user_id = $2 OR (COALESCE(organization_id, company_id) = $3 AND user_id IS NULL))`,
+      [req.params.id, userId, ...tenantFilter.params]
     );
     if (!rowCount) return res.status(404).json({ message: 'Notification not found' });
     res.json({ message: 'Notification deleted' });
@@ -372,16 +393,16 @@ router.delete('/:id', async (req, res) => {
 router.post('/delete-bulk', async (req, res) => {
   try {
     const userId = req.user?.id;
-    const orgId = req.user?.organization_id;
+    const tenantFilter = buildTenantFilter(req, 'AND', null, 3);
     const { ids } = req.body;
     if (!Array.isArray(ids) || !ids.length) {
       return res.status(400).json({ message: 'ids array is required' });
     }
     const { rows } = await pool.query(
       `DELETE FROM notifications
-       WHERE id = ANY($1) AND (user_id = $2 OR (organization_id = $3 AND user_id IS NULL))
+       WHERE id = ANY($1) AND (user_id = $2 OR (COALESCE(organization_id, company_id) = $3 AND user_id IS NULL))
        RETURNING id`,
-      [ids, userId, orgId]
+      [ids, userId, ...tenantFilter.params]
     );
     res.json({ message: 'Notifications deleted', count: rows.length });
   } catch (err) {
@@ -394,13 +415,13 @@ router.post('/delete-bulk', async (req, res) => {
 router.post('/export', async (req, res) => {
   try {
     const userId = req.user?.id;
-    const orgId = req.user?.organization_id;
+    const tenantFilter = buildTenantFilter(req, 'AND', null, 2);
     const { format = 'json' } = req.body;
     const { rows } = await pool.query(
       `SELECT * FROM notifications
-       WHERE (user_id = $1 OR (organization_id = $2 AND user_id IS NULL))
+       WHERE (user_id = $1 OR (COALESCE(organization_id, company_id) = $2 AND user_id IS NULL))
        ORDER BY created_at DESC`,
-      [userId, orgId]
+      [userId, ...tenantFilter.params]
     );
     if (format === 'csv') {
       const headers = Object.keys(rows[0] || {}).join(',');

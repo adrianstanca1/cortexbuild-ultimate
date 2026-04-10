@@ -2,6 +2,7 @@ const express = require('express');
 const pool = require('../db');
 const auth = require('../middleware/auth');
 const { sendToRoom } = require('../lib/websocket');
+const { buildTenantFilter, isSuperAdmin } = require('../middleware/tenantFilter');
 
 const router = express.Router();
 router.use(auth);
@@ -13,21 +14,26 @@ router.use(auth);
  * List all chat channels for the organization.
  */
 router.get('/channels', async (req, res) => {
-  const isCompanyOwner = req.user?.role === 'company_owner';
-  const orgId = req.user?.organization_id;
-  const companyId = req.user?.company_id;
-  const tenantFilter = isCompanyOwner ? 'c.company_id = $1' : 'c.organization_id = $1';
-  const tenantId = isCompanyOwner ? companyId : orgId;
-
   try {
+    if (isSuperAdmin(req)) {
+      const { rows } = await pool.query(
+        `SELECT c.*, COUNT(DISTINCT cm.user_id) as member_count
+         FROM chat_channels c
+         LEFT JOIN chat_channel_members cm ON cm.channel_id = c.id
+         GROUP BY c.id
+         ORDER BY c.name`
+      );
+      return res.json(rows);
+    }
+    const { clause, params } = buildTenantFilter(req, 'AND', 'c');
     const { rows } = await pool.query(
       `SELECT c.*, COUNT(DISTINCT cm.user_id) as member_count
        FROM chat_channels c
        LEFT JOIN chat_channel_members cm ON cm.channel_id = c.id
-       WHERE ${tenantFilter}
+       WHERE 1=1${clause}
        GROUP BY c.id
        ORDER BY c.name`,
-      [tenantId]
+      params
     );
     res.json(rows);
   } catch (err) {
@@ -210,14 +216,14 @@ router.put('/channels/:channelId/messages/:messageId/pin', async (req, res) => {
   if (!isAdmin) return res.status(403).json({ error: 'Admin access required' });
 
   try {
-    const companyId = req.user?.company_id;
+    const { clause: pinClause, params: pinParams } = buildTenantFilter(req, 'AND', 'cc', 2);
     const { rows } = await pool.query(
       `UPDATE chat_messages cm
        SET pinned = true
        FROM chat_channels cc
-       WHERE cc.id = cm.channel_id AND cm.id = $1 AND cc.company_id = $2
+       WHERE cc.id = cm.channel_id AND cm.id = $1${pinClause}
        RETURNING cm.*`,
-      [messageId, companyId]
+      [messageId, ...pinParams]
     );
     if (!rows.length) return res.status(404).json({ error: 'Message not found' });
 

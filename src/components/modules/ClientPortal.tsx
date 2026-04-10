@@ -33,9 +33,9 @@ type PortalRfi = {
   subject: string;
   priority: string;
   status: string;
-  submitted_date: string;
-  due_date: string;
-  assigned_to: string;
+  submittedDate: string;
+  dueDate: string;
+  assignedTo: string;
 };
 
 type PortalValuation = {
@@ -52,12 +52,12 @@ type PortalValuation = {
 };
 
 type PortalDailyReport = {
-  report_date: string;
+  reportDate: string;
   weather: string;
-  workers_on_site: number;
+  workersOnSite: number;
   progress: string;
   delays: string;
-  safety_observations: string;
+  safetyObservations: string;
 };
 
 export function ClientPortal() {
@@ -334,9 +334,9 @@ export function ClientPortal() {
                             <td className="px-4 py-3 text-gray-200">{r.subject}</td>
                             <td className="px-4 py-3"><span className={`text-xs px-2 py-0.5 rounded-full ${priorityColour(r.priority)}`}>{r.priority}</span></td>
                             <td className="px-4 py-3"><span className={`text-xs px-2 py-0.5 rounded-full ${statusColour(r.status)}`}>{r.status}</span></td>
-                            <td className="px-4 py-3 text-gray-400 text-xs">{r.submitted_date || '—'}</td>
-                            <td className="px-4 py-3 text-gray-400 text-xs">{r.due_date || '—'}</td>
-                            <td className="px-4 py-3 text-gray-400 text-xs">{r.assigned_to || '—'}</td>
+                            <td className="px-4 py-3 text-gray-400 text-xs">{r.submittedDate || '—'}</td>
+                            <td className="px-4 py-3 text-gray-400 text-xs">{r.dueDate || '—'}</td>
+                            <td className="px-4 py-3 text-gray-400 text-xs">{r.assignedTo || '—'}</td>
                           </tr>
                         ))}
                       </tbody>
@@ -375,14 +375,14 @@ export function ClientPortal() {
                       <tbody className="divide-y divide-gray-800">
                         {dailyReports.map((dr, i) => (
                           <tr key={i} className="hover:bg-gray-800/30">
-                            <td className="px-4 py-3 font-mono text-gray-300 text-xs">{dr.report_date}</td>
+                            <td className="px-4 py-3 font-mono text-gray-300 text-xs">{dr.reportDate}</td>
                             <td className="px-4 py-3 text-gray-300 text-xs">{dr.weather}</td>
-                            <td className="px-4 py-3 text-white">{dr.workers_on_site ?? 0}</td>
+                            <td className="px-4 py-3 text-white">{dr.workersOnSite ?? 0}</td>
                             <td className="px-4 py-3 text-gray-300 text-xs max-w-xs truncate">{dr.progress || '—'}</td>
                             <td className="px-4 py-3 text-xs">
                               {dr.delays ? <span className="text-red-400">{dr.delays.slice(0, 50)}…</span> : <span className="text-gray-500">None</span>}
                             </td>
-                            <td className="px-4 py-3 text-gray-400 text-xs max-w-xs truncate">{dr.safety_observations || '—'}</td>
+                            <td className="px-4 py-3 text-gray-400 text-xs max-w-xs truncate">{dr.safetyObservations || '—'}</td>
                           </tr>
                         ))}
                       </tbody>

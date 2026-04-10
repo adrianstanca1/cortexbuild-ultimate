@@ -9,7 +9,7 @@ import {
   Flag,
   X,
 } from 'lucide-react';
-import { apiGet } from '../../lib/api';
+import { apiFetch } from '../../services/api';
 
 interface CalendarEvent {
   id: string;
@@ -265,17 +265,15 @@ export function ProjectCalendar() {
   });
 
   useEffect(() => {
-    apiGet<Array<{
-      id: string;
-      title: string;
-      type: string;
-      startDate: string;
-      endDate?: string;
-      project?: string;
-    }>>('/calendar')
-      .then((data) => {
-        if (!Array.isArray(data)) return;
-        setEvents(data.map((e) => ({
+    apiFetch<unknown>('/calendar')
+      .then((raw) => {
+        // Generic CRUD routes wrap responses in { data, pagination }
+        const payload = raw as Record<string, unknown>;
+        type ApiEvent = { id: string; title: string; type: string; startDate: string; endDate?: string; project?: string };
+        const arr: ApiEvent[] =
+          Array.isArray(payload?.data) ? payload.data as ApiEvent[] :
+          Array.isArray(raw) ? raw as ApiEvent[] : [];
+        setEvents(arr.map((e) => ({
           id: e.id,
           title: e.title,
           type: (Object.keys(TYPE_COLORS).includes(e.type)

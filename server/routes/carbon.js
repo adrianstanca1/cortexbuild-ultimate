@@ -11,6 +11,7 @@
 const express = require('express');
 const pool    = require('../db');
 const authMw  = require('../middleware/auth');
+const { buildTenantFilter } = require('../middleware/tenantFilter');
 
 const router = express.Router();
 router.use(authMw);
@@ -176,6 +177,16 @@ router.post('/estimate', async (req, res) => {
     // Save to DB if project_id provided
     if (project_id) {
       try {
+        // Verify project belongs to user's tenant
+        const { clause: projFilter, params: projParams } = buildTenantFilter(req, 'AND');
+        const { rows: projRows } = await pool.query(
+          `SELECT id FROM projects WHERE id = $1${projFilter}`,
+          [project_id, ...projParams]
+        );
+        if (projRows.length === 0) {
+          return res.status(403).json({ message: 'Project not found or access denied' });
+        }
+
         const orgId = req.user?.organization_id;
         const companyId = req.user?.company_id;
         await pool.query(

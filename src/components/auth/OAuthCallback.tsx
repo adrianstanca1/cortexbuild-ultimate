@@ -26,8 +26,9 @@ export function OAuthCallback() {
           company: payload.company || '',
           phone: null,
           avatar: null,
-          organization_id: payload.organization_id,
-          company_id: payload.company_id,
+          organization_id: payload.organization_id ?? null,
+          company_id: payload.company_id ?? null,
+          effectiveOrganizationId: payload.organization_id ?? payload.company_id ?? null,
         };
         setToken(oauthToken);
         setStoredUser(user);

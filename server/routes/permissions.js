@@ -170,6 +170,9 @@ router.get('/roles/:id', async (req, res) => {
 });
 
 router.post('/roles', async (req, res) => {
+  if (!['super_admin', 'company_owner', 'admin'].includes(req.user?.role)) {
+    return res.status(403).json({ message: 'Insufficient permissions to create custom roles' });
+  }
   try {
     const { name, description, permissions } = req.body;
     if (!name || !permissions) {
@@ -197,6 +200,9 @@ router.post('/roles', async (req, res) => {
 });
 
 router.put('/roles/:id', async (req, res) => {
+  if (!['super_admin', 'company_owner', 'admin'].includes(req.user?.role)) {
+    return res.status(403).json({ message: 'Insufficient permissions to modify custom roles' });
+  }
   try {
     const { id } = req.params;
     if (!id.startsWith('custom_')) {
@@ -229,6 +235,9 @@ router.put('/roles/:id', async (req, res) => {
 });
 
 router.delete('/roles/:id', async (req, res) => {
+  if (!['super_admin', 'company_owner', 'admin'].includes(req.user?.role)) {
+    return res.status(403).json({ message: 'Insufficient permissions to delete custom roles' });
+  }
   try {
     const { id } = req.params;
     if (!id.startsWith('custom_')) {

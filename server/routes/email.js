@@ -157,12 +157,13 @@ router.put('/templates/:id', async (req, res) => {
     const { id } = req.params;
     const { name, subject, body, description, variables, is_active } = req.body;
     const orgId = req.user?.organization_id;
+    const companyId = req.user?.company_id;
     const { rows } = await pool.query(
       `UPDATE email_templates SET name = COALESCE($1, name), subject = COALESCE($2, subject), body = COALESCE($3, body),
        description = COALESCE($4, description), variables = COALESCE($5, variables), is_active = COALESCE($6, is_active),
-       updated_at = CURRENT_TIMESTAMP WHERE id = $7 AND (organization_id = $8 OR organization_id IS NULL)
+       updated_at = CURRENT_TIMESTAMP WHERE id = $7 AND COALESCE(organization_id, company_id) = $8
        RETURNING id, name, subject, body, email_type as "emailType", description, variables, is_active as "isActive", created_at as "createdAt", updated_at as "updatedAt"`,
-      [name, subject, body, description, variables ? JSON.stringify(variables) : null, is_active, id, orgId]
+      [name, subject, body, description, variables ? JSON.stringify(variables) : null, is_active, id, orgId || companyId]
     );
     if (!rows[0]) return res.status(404).json({ message: 'Template not found' });
     res.json({ success: true, template: rows[0] });
@@ -176,9 +177,10 @@ router.delete('/templates/:id', async (req, res) => {
   try {
     const { id } = req.params;
     const orgId = req.user?.organization_id;
+    const companyId = req.user?.company_id;
     const { rows } = await pool.query(
-      `UPDATE email_templates SET is_active = FALSE, updated_at = CURRENT_TIMESTAMP WHERE id = $1 AND (organization_id = $2 OR organization_id IS NULL) RETURNING id`,
-      [id, orgId]
+      `UPDATE email_templates SET is_active = FALSE, updated_at = CURRENT_TIMESTAMP WHERE id = $1 AND COALESCE(organization_id, company_id) = $2 RETURNING id`,
+      [id, orgId || companyId]
     );
     if (!rows[0]) return res.status(404).json({ message: 'Template not found' });
     res.json({ success: true });

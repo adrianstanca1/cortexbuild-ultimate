@@ -1,6 +1,7 @@
 const express = require('express');
 const pool = require('../db');
 const authMiddleware = require('../middleware/auth');
+const { buildTenantFilter, isSuperAdmin } = require('../middleware/tenantFilter');
 const https = require('https');
 const http = require('http');
 
@@ -86,57 +87,107 @@ router.get('/', async (req, res) => {
     const searchTerm = `%${q.toLowerCase().replace(/[%_\\]/g, '\\$&')}%`;
     const results = { projects: [], invoices: [], contacts: [], rfis: [], documents: [], team: [] };
     const limitNum = parseInt(limit, 10);
-    const role = req.user?.role;
-    const tenantCol = role === 'company_owner' ? 'company_id' : 'organization_id';
-    const tenantId = role === 'company_owner' ? req.user?.company_id : req.user?.organization_id;
 
-    const projectResults = await pool.query(
-      `SELECT id, name, client, status, type FROM projects
-       WHERE ${tenantCol} = $1 AND (LOWER(name) LIKE $2 OR LOWER(client) LIKE $2)
-       ORDER BY created_at DESC LIMIT $3`,
-      [tenantId, searchTerm, limitNum]
-    );
-    results.projects = projectResults.rows;
+    // Super_admin sees everything, others are scoped by tenant
+    if (isSuperAdmin(req)) {
+      const projectResults = await pool.query(
+        `SELECT id, name, client, status, type FROM projects
+         WHERE (LOWER(name) LIKE $1 OR LOWER(client) LIKE $1)
+         ORDER BY created_at DESC LIMIT $2`,
+        [searchTerm, limitNum]
+      );
+      results.projects = projectResults.rows;
 
-    const invoiceResults = await pool.query(
-      `SELECT id, number, client, amount, status FROM invoices
-       WHERE ${tenantCol} = $1 AND (LOWER(number) LIKE $2 OR LOWER(client) LIKE $2)
-       ORDER BY created_at DESC LIMIT $3`,
-      [tenantId, searchTerm, limitNum]
-    );
-    results.invoices = invoiceResults.rows;
+      const invoiceResults = await pool.query(
+        `SELECT id, number, client, amount, status FROM invoices
+         WHERE (LOWER(number) LIKE $1 OR LOWER(client) LIKE $1)
+         ORDER BY created_at DESC LIMIT $2`,
+        [searchTerm, limitNum]
+      );
+      results.invoices = invoiceResults.rows;
 
-    const contactResults = await pool.query(
-      `SELECT id, name, company, email, role FROM contacts
-       WHERE ${tenantCol} = $1 AND (LOWER(name) LIKE $2 OR LOWER(company) LIKE $2 OR LOWER(email) LIKE $2)
-       ORDER BY created_at DESC LIMIT $3`,
-      [tenantId, searchTerm, limitNum]
-    );
-    results.contacts = contactResults.rows;
+      const contactResults = await pool.query(
+        `SELECT id, name, company, email, role FROM contacts
+         WHERE (LOWER(name) LIKE $1 OR LOWER(company) LIKE $1 OR LOWER(email) LIKE $1)
+         ORDER BY created_at DESC LIMIT $2`,
+        [searchTerm, limitNum]
+      );
+      results.contacts = contactResults.rows;
 
-    const rfiResults = await pool.query(
-      `SELECT id, number, subject, status, project FROM rfis
-       WHERE ${tenantCol} = $1 AND (LOWER(number) LIKE $2 OR LOWER(subject) LIKE $2)
-       ORDER BY created_at DESC LIMIT $3`,
-      [tenantId, searchTerm, limitNum]
-    );
-    results.rfis = rfiResults.rows;
+      const rfiResults = await pool.query(
+        `SELECT id, number, subject, status, project FROM rfis
+         WHERE (LOWER(number) LIKE $1 OR LOWER(subject) LIKE $1)
+         ORDER BY created_at DESC LIMIT $2`,
+        [searchTerm, limitNum]
+      );
+      results.rfis = rfiResults.rows;
 
-    const docResults = await pool.query(
-      `SELECT id, name, type, category, project FROM documents
-       WHERE ${tenantCol} = $1 AND (LOWER(name) LIKE $2 OR LOWER(category) LIKE $2)
-       ORDER BY created_at DESC LIMIT $3`,
-      [tenantId, searchTerm, limitNum]
-    );
-    results.documents = docResults.rows;
+      const docResults = await pool.query(
+        `SELECT id, name, type, category, project FROM documents
+         WHERE (LOWER(name) LIKE $1 OR LOWER(category) LIKE $1)
+         ORDER BY created_at DESC LIMIT $2`,
+        [searchTerm, limitNum]
+      );
+      results.documents = docResults.rows;
 
-    const teamResults = await pool.query(
-      `SELECT id, name, role, trade FROM team_members
-       WHERE ${tenantCol} = $1 AND (LOWER(name) LIKE $2 OR LOWER(role) LIKE $2 OR LOWER(trade) LIKE $2)
-       ORDER BY created_at DESC LIMIT $3`,
-      [tenantId, searchTerm, limitNum]
-    );
-    results.team = teamResults.rows;
+      const teamResults = await pool.query(
+        `SELECT id, name, role, trade FROM team_members
+         WHERE (LOWER(name) LIKE $1 OR LOWER(role) LIKE $1 OR LOWER(trade) LIKE $1)
+         ORDER BY created_at DESC LIMIT $2`,
+        [searchTerm, limitNum]
+      );
+      results.team = teamResults.rows;
+    } else {
+      const { clause: tenantClause, params: tenantParams } = buildTenantFilter(req, 'AND');
+
+      const projectResults = await pool.query(
+        `SELECT id, name, client, status, type FROM projects
+         WHERE 1=1${tenantClause} AND (LOWER(name) LIKE $${tenantParams.length + 1} OR LOWER(client) LIKE $${tenantParams.length + 1})
+         ORDER BY created_at DESC LIMIT $${tenantParams.length + 2}`,
+        [...tenantParams, searchTerm, limitNum]
+      );
+      results.projects = projectResults.rows;
+
+      const invoiceResults = await pool.query(
+        `SELECT id, number, client, amount, status FROM invoices
+         WHERE 1=1${tenantClause} AND (LOWER(number) LIKE $${tenantParams.length + 1} OR LOWER(client) LIKE $${tenantParams.length + 1})
+         ORDER BY created_at DESC LIMIT $${tenantParams.length + 2}`,
+        [...tenantParams, searchTerm, limitNum]
+      );
+      results.invoices = invoiceResults.rows;
+
+      const contactResults = await pool.query(
+        `SELECT id, name, company, email, role FROM contacts
+         WHERE 1=1${tenantClause} AND (LOWER(name) LIKE $${tenantParams.length + 1} OR LOWER(company) LIKE $${tenantParams.length + 1} OR LOWER(email) LIKE $${tenantParams.length + 1})
+         ORDER BY created_at DESC LIMIT $${tenantParams.length + 2}`,
+        [...tenantParams, searchTerm, limitNum]
+      );
+      results.contacts = contactResults.rows;
+
+      const rfiResults = await pool.query(
+        `SELECT id, number, subject, status, project FROM rfis
+         WHERE 1=1${tenantClause} AND (LOWER(number) LIKE $${tenantParams.length + 1} OR LOWER(subject) LIKE $${tenantParams.length + 1})
+         ORDER BY created_at DESC LIMIT $${tenantParams.length + 2}`,
+        [...tenantParams, searchTerm, limitNum]
+      );
+      results.rfis = rfiResults.rows;
+
+      const docResults = await pool.query(
+        `SELECT id, name, type, category, project FROM documents
+         WHERE 1=1${tenantClause} AND (LOWER(name) LIKE $${tenantParams.length + 1} OR LOWER(category) LIKE $${tenantParams.length + 1})
+         ORDER BY created_at DESC LIMIT $${tenantParams.length + 2}`,
+        [...tenantParams, searchTerm, limitNum]
+      );
+      results.documents = docResults.rows;
+
+      const teamResults = await pool.query(
+        `SELECT id, name, role, trade FROM team_members
+         WHERE 1=1${tenantClause} AND (LOWER(name) LIKE $${tenantParams.length + 1} OR LOWER(role) LIKE $${tenantParams.length + 1} OR LOWER(trade) LIKE $${tenantParams.length + 1})
+         ORDER BY created_at DESC LIMIT $${tenantParams.length + 2}`,
+        [...tenantParams, searchTerm, limitNum]
+      );
+      results.team = teamResults.rows;
+    }
 
     const totalResults = Object.values(results).flat().length;
 
@@ -148,14 +199,18 @@ router.get('/', async (req, res) => {
         const queryEmbedding = await getEmbedding(q);
         if (queryEmbedding) {
           // Try to fetch stored embeddings and compute cosine similarity
-          const { rows: chunks } = await pool.query(
-            `SELECT de.chunk_text, de.embedding_vector, de.file_id, d.name as file_name, d.type
-             FROM document_embeddings de
-             JOIN documents d ON d.id = de.file_id
-             WHERE COALESCE(d.organization_id, d.company_id) = $1
-             LIMIT 200`,
-            [tenantId]
-          );
+          const semFilter = buildTenantFilter(req, 'AND', 'd');
+          const semQuery = isSuperAdmin(req)
+            ? `SELECT de.chunk_text, de.embedding_vector, de.file_id, d.name as file_name, d.type
+               FROM document_embeddings de
+               JOIN documents d ON d.id = de.file_id
+               LIMIT 200`
+            : `SELECT de.chunk_text, de.embedding_vector, de.file_id, d.name as file_name, d.type
+               FROM document_embeddings de
+               JOIN documents d ON d.id = de.file_id
+               WHERE 1=1${semFilter.clause}
+               LIMIT 200`;
+          const { rows: chunks } = await pool.query(semQuery, semFilter.params);
           // Embeddings are stored as JSON arrays from Ollama
           const scored = chunks.map(row => {
             let emb = null;

@@ -1246,17 +1246,17 @@ export interface PortalRfi {
   subject: string;
   priority: string;
   status: string;
-  submitted_date: string;
-  due_date: string;
-  assigned_to: string;
+  submittedDate: string;
+  dueDate: string;
+  assignedTo: string;
 }
 export interface PortalDailyReport {
-  report_date: string;
+  reportDate: string;
   weather: string;
-  workers_on_site: number;
+  workersOnSite: number;
   progress: string;
   delays: string;
-  safety_observations: string;
+  safetyObservations: string;
 }
 export interface PortalValuation {
   appNo: string;

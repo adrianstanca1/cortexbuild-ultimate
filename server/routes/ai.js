@@ -673,6 +673,8 @@ router.post('/execute', aiExecuteLimiter, async (req, res) => {
       case 'update_invoice_status': {
         const { invoice_id, status } = params;
         if (!invoice_id || !status) return res.status(400).json({ success: false, message: 'invoice_id and status are required' });
+        const VALID_INVOICE_STATUSES = ['draft', 'sent', 'paid', 'overdue', 'disputed'];
+        if (!VALID_INVOICE_STATUSES.includes(status)) return res.status(400).json({ success: false, message: `Invalid status. Valid values: ${VALID_INVOICE_STATUSES.join(', ')}` });
         const companyId = req.user?.company_id;
         const orgFilter = tenantId
           ? 'organization_id = $3'

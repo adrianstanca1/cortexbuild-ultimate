@@ -2,23 +2,32 @@ const express = require('express');
 const router = express.Router();
 const pool = require('../db');
 const auth = require('../middleware/auth');
-
-// ai_conversations only has organization_id (no company_id).
-// For company_owner (organization_id=NULL), scope by user_id alone — safe since
-// each user only ever sees their own sessions anyway.
-function buildOrgFilter(user) {
-  const orgId = user.organization_id || user.organizationId;
-  if (orgId) return { clause: 'AND organization_id = $1', params: [orgId], hasOrg: true };
-  return { clause: '', params: [], hasOrg: false };
-}
+const { buildTenantFilter, isSuperAdmin, isCompanyOwner } = require('../middleware/tenantFilter');
 
 // GET /api/ai-conversations - List distinct sessions for the user
 router.get('/', auth, async (req, res) => {
   try {
     const userId = req.user.id || req.user.userId;
-    const { clause, params, hasOrg } = buildOrgFilter(req.user);
-    const userParam = hasOrg ? '$2' : '$1';
-    const allParams = hasOrg ? [...params, userId] : [userId];
+    if (isSuperAdmin(req)) {
+      // super_admin sees all sessions
+      const { rows } = await pool.query(
+        `SELECT
+           session_id as id,
+           MAX(created_at) as updated_at,
+           COUNT(*) as message_count,
+           (SELECT content FROM ai_conversations c2
+            WHERE c2.session_id = c1.session_id AND c2.role = 'user'
+            ORDER BY c2.created_at ASC LIMIT 1) as first_user_message
+         FROM ai_conversations c1
+         GROUP BY session_id
+         ORDER BY MAX(created_at) DESC
+         LIMIT 50`,
+        []
+      );
+      return res.json({ sessions: rows });
+    }
+    const { clause, params: tenantParams } = buildTenantFilter(req, 'AND', 'c1', 2);
+    const allParams = [userId, ...tenantParams];
 
     const { rows } = await pool.query(
       `SELECT
@@ -26,10 +35,10 @@ router.get('/', auth, async (req, res) => {
          MAX(created_at) as updated_at,
          COUNT(*) as message_count,
          (SELECT content FROM ai_conversations c2
-          WHERE c2.session_id = c1.session_id ${clause} AND c2.role = 'user'
+          WHERE c2.session_id = c1.session_id AND c2.role = 'user'
           ORDER BY c2.created_at ASC LIMIT 1) as first_user_message
        FROM ai_conversations c1
-       WHERE user_id = ${userParam} ${clause}
+       WHERE user_id = $1${clause}
        GROUP BY session_id
        ORDER BY MAX(created_at) DESC
        LIMIT 50`,
@@ -47,14 +56,21 @@ router.get('/:sessionId', auth, async (req, res) => {
   try {
     const { sessionId } = req.params;
     const userId = req.user.id || req.user.userId;
-    const { clause, params, hasOrg } = buildOrgFilter(req.user);
-    const sidParam = '$1';
-    const userParam = hasOrg ? '$3' : '$2';
-    const allParams = hasOrg ? [sessionId, ...params, userId] : [sessionId, userId];
+    if (isSuperAdmin(req)) {
+      const { rows } = await pool.query(
+        `SELECT id, role, content, model, created_at FROM ai_conversations
+         WHERE session_id = $1
+         ORDER BY created_at ASC`,
+        [sessionId]
+      );
+      return res.json({ messages: rows });
+    }
+    const { clause, params: tenantParams } = buildTenantFilter(req, 'AND', null, 2);
+    const allParams = [sessionId, userId, ...tenantParams];
 
     const { rows } = await pool.query(
       `SELECT id, role, content, model, created_at FROM ai_conversations
-       WHERE session_id = ${sidParam} ${clause} AND user_id = ${userParam}
+       WHERE session_id = $1 AND user_id = $2${clause}
        ORDER BY created_at ASC`,
       allParams
     );
@@ -73,13 +89,14 @@ router.post('/', auth, async (req, res) => {
       return res.status(400).json({ message: 'sessionId, role, and content are required' });
     }
 
-    const orgId = req.user.organization_id || req.user.organizationId || null;
+    const orgId = req.user.organization_id || null;
+    const companyId = req.user.company_id || null;
     const userId = req.user.id || req.user.userId;
     const { rows } = await pool.query(
-      `INSERT INTO ai_conversations (organization_id, user_id, session_id, role, content, model)
-       VALUES ($1, $2, $3, $4, $5, $6)
+      `INSERT INTO ai_conversations (organization_id, company_id, user_id, session_id, role, content, model)
+       VALUES ($1, $2, $3, $4, $5, $6, $7)
        RETURNING id, role, content, model, created_at`,
-      [orgId, userId, sessionId, role, content, model || 'qwen3.5']
+      [orgId, companyId, userId, sessionId, role, content, model || 'qwen3.5']
     );
     res.status(201).json({ message: rows[0] });
   } catch (err) {
@@ -93,13 +110,15 @@ router.delete('/:sessionId', auth, async (req, res) => {
   try {
     const { sessionId } = req.params;
     const userId = req.user.id || req.user.userId;
-    const { clause, params, hasOrg } = buildOrgFilter(req.user);
-    const sidParam = '$1';
-    const userParam = hasOrg ? '$3' : '$2';
-    const allParams = hasOrg ? [sessionId, ...params, userId] : [sessionId, userId];
+    if (isSuperAdmin(req)) {
+      await pool.query('DELETE FROM ai_conversations WHERE session_id = $1', [sessionId]);
+      return res.json({ success: true });
+    }
+    const { clause, params: tenantParams } = buildTenantFilter(req, 'AND', null, 2);
+    const allParams = [sessionId, userId, ...tenantParams];
 
     await pool.query(
-      `DELETE FROM ai_conversations WHERE session_id = ${sidParam} ${clause} AND user_id = ${userParam}`,
+      `DELETE FROM ai_conversations WHERE session_id = $1 AND user_id = $2${clause}`,
       allParams
     );
     res.json({ success: true });

@@ -1,23 +1,19 @@
 const express = require('express');
 const pool    = require('../db');
 const authMiddleware = require('../middleware/auth');
+const { buildTenantFilter, isSuperAdmin, isCompanyOwner } = require('../middleware/tenantFilter');
 
 const router = express.Router();
 router.use(authMiddleware);
 
-// Multi-tenancy: super_admin sees all; company_owner by company_id; others by organization_id
-async function orgFilterTasks(user, extraJoinConditions = '') {
-  if (user?.role === 'super_admin') return { join: '', filter: '', params: [] };
-  if (user?.role === 'company_owner') return {
-    join: `JOIN projects p ON pt.project_id = p.id${extraJoinConditions}`,
-    filter: ' AND p.company_id = $1',
-    params: [user.company_id],
-  };
-  if (!user?.organization_id) return { join: '', filter: '', params: [] };
+// Multi-tenancy: use centralized buildTenantFilter with COALESCE
+function orgFilterTasks(req) {
+  const { clause, params } = buildTenantFilter(req, 'AND', 'p');
+  if (!clause) return { join: '', filter: '', params: [] };
   return {
-    join: `JOIN projects p ON pt.project_id = p.id${extraJoinConditions}`,
-    filter: ' AND p.organization_id = $1',
-    params: [user.organization_id],
+    join: 'JOIN projects p ON pt.project_id = p.id',
+    filter: clause,
+    params,
   };
 }
 
@@ -25,7 +21,7 @@ async function orgFilterTasks(user, extraJoinConditions = '') {
 router.get('/', async (req, res) => {
   try {
     const { project_id, status, priority, assigned_to } = req.query;
-    const { join, filter, params } = await orgFilterTasks(req.user);
+    const { join, filter, params } = await orgFilterTasks(req);
     const baseParamsLen = params.length;
 
     let query = `SELECT pt.* FROM project_tasks pt ${join} WHERE 1=1${filter}`;
@@ -112,7 +108,7 @@ router.post('/', async (req, res) => {
 router.get('/:id', async (req, res) => {
   try {
     const { id } = req.params;
-    const { join, filter, params } = await orgFilterTasks(req.user);
+    const { join, filter, params } = await orgFilterTasks(req);
     const { rows } = await pool.query(
       `SELECT pt.* FROM project_tasks pt ${join} WHERE pt.id = $${params.length + 1}${filter}`,
       [...params, id]
@@ -120,8 +116,8 @@ router.get('/:id', async (req, res) => {
     if (rows.length === 0) return res.status(404).json({ message: 'Task not found' });
 
     const { rows: comments } = await pool.query(
-      `SELECT * FROM project_task_comments WHERE task_id = $1 AND ${req.user.role === 'company_owner' ? 'company_id' : 'organization_id'} = $2 ORDER BY created_at ASC`,
-      [id, req.user.role === 'company_owner' ? req.user.company_id : req.user.organization_id]
+      `SELECT * FROM project_task_comments WHERE task_id = $1 AND COALESCE(organization_id, company_id) = $2 ORDER BY created_at ASC`,
+      [id, req.user.organization_id || req.user.company_id]
     );
 
     res.json({ ...rows[0], comments });
@@ -140,7 +136,7 @@ router.put('/:id', async (req, res) => {
       due_date, category, estimated_hours, tags, progress
     } = req.body;
 
-    const { params: baseParams } = await orgFilterTasks(req.user);
+    const { params: baseParams } = await orgFilterTasks(req);
     const queryParams = [...baseParams];
     const updates = [];
 
@@ -187,7 +183,7 @@ router.put('/:id', async (req, res) => {
 router.delete('/:id', async (req, res) => {
   try {
     const { id } = req.params;
-    const { filter, params: baseParams } = await orgFilterTasks(req.user);
+    const { filter, params: baseParams } = await orgFilterTasks(req);
     const idParamIndex = baseParams.length + 1;
 
     const { rows } = await pool.query(
@@ -215,7 +211,7 @@ router.post('/:id/comments', async (req, res) => {
     if (!comment) return res.status(400).json({ message: 'Comment is required' });
 
     // Verify task belongs to user's org
-    const { filter, params: baseParams } = await orgFilterTasks(req.user);
+    const { filter, params: baseParams } = await orgFilterTasks(req);
     const idParamIndex = baseParams.length + 1;
     const { rows: task } = await pool.query(
       `SELECT pt.id FROM project_tasks pt
@@ -249,7 +245,7 @@ router.put('/bulk-status', async (req, res) => {
     }
     if (!status) return res.status(400).json({ message: 'status is required' });
 
-    const { filter, params: baseParams } = await orgFilterTasks(req.user);
+    const { filter, params: baseParams } = await orgFilterTasks(req);
     const placeholders = ids.map((_, i) => `$${baseParams.length + 1 + i}`).join(', ');
     const statusParamIndex = baseParams.length + ids.length + 1;
     const { rows } = await pool.query(

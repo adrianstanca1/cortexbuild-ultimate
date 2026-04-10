@@ -1,29 +1,16 @@
 const express = require('express');
 const pool = require('../db');
 const authMiddleware = require('../middleware/auth');
+const { buildTenantFilter, isSuperAdmin, isCompanyOwner, getTenantId } = require('../middleware/tenantFilter');
 
 const router = express.Router();
 router.use(authMiddleware);
-
-// Multi-tenancy: super_admin sees all; company_owner by company_id; others by organization_id
-function orgFilter(user) {
-  if (user?.role === 'super_admin') return { filter: '', params: [] };
-  if (user?.role === 'company_owner') return {
-    filter: ' AND wp.company_id = $1',
-    params: [user.company_id],
-  };
-  if (!user?.organization_id) return { filter: '', params: [] };
-  return {
-    filter: ' AND wp.organization_id = $1',
-    params: [user.organization_id],
-  };
-}
 
 // ─── GET /api/work-packages?project_id=xxx ─────────────────────────────────
 router.get('/', async (req, res) => {
   try {
     const { project_id } = req.query;
-    const { filter, params } = orgFilter(req.user);
+    const { clause: filter, params } = buildTenantFilter(req, 'AND', 'wp');
     const queryParams = [...params];
 
     let query = `SELECT wp.*, p.name as project_name FROM work_packages wp
@@ -48,7 +35,7 @@ router.get('/', async (req, res) => {
 router.get('/:id', async (req, res) => {
   try {
     const { id } = req.params;
-    const { filter, params } = orgFilter(req.user);
+    const { clause: filter, params } = buildTenantFilter(req, 'AND', 'wp');
     const { rows } = await pool.query(
       `SELECT wp.*, p.name as project_name FROM work_packages wp
        LEFT JOIN projects p ON wp.project_id = p.id
@@ -72,21 +59,20 @@ router.post('/', async (req, res) => {
       assigned_to, start_date, end_date, budget, progress
     } = req.body;
 
-    const isCompanyOwner = req.user?.role === 'company_owner';
-    const tenantCol = isCompanyOwner ? 'company_id' : 'organization_id';
-    const tenantId = isCompanyOwner ? req.user.company_id : req.user.organization_id;
+    const tenantId = getTenantId(req);
 
-    if (!tenantId) {
+    if (!tenantId && !isSuperAdmin(req)) {
       return res.status(400).json({ message: 'User profile incomplete. Please complete your profile setup.' });
     }
 
     if (!name) return res.status(400).json({ message: 'Name is required' });
 
     // Verify project belongs to user's tenant
-    if (project_id) {
+    if (project_id && !isSuperAdmin(req)) {
+      const { clause: projFilter, params: projParams } = buildTenantFilter(req, 'AND');
       const { rows: proj } = await pool.query(
-        `SELECT id FROM projects WHERE id = $1 AND ${tenantCol} = $2`,
-        [project_id, tenantId]
+        `SELECT id FROM projects WHERE id = $1${projFilter}`,
+        [project_id, ...projParams]
       );
       if (proj.length === 0) {
         return res.status(403).json({ message: 'Project not found or access denied' });
@@ -99,8 +85,8 @@ router.post('/', async (req, res) => {
        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
        RETURNING *`,
       [
-        isCompanyOwner ? null : req.user.organization_id,
-        req.user.company_id,
+        req.user.organization_id || null,
+        req.user.company_id || null,
         project_id || null,
         name,
         description || '',
@@ -130,9 +116,9 @@ router.patch('/:id', async (req, res) => {
       start_date, end_date, budget, progress
     } = req.body;
 
-    const { params: baseParams } = orgFilter(req.user);
-    // Build query params: org first ($1), then update values, then id last
-    const queryParams = [...baseParams];
+    const { clause: wpFilter, params: wpParams } = buildTenantFilter(req, 'AND', 'wp');
+    // Build query params: update values first, then tenant filter + id
+    const queryParams = [];
     const updates = [];
 
     const ALLOWED_FIELDS = ['name', 'description', 'status', 'priority', 'assigned_to', 'start_date', 'end_date', 'budget', 'progress'];
@@ -152,11 +138,14 @@ router.patch('/:id', async (req, res) => {
       return res.status(400).json({ message: 'No fields to update' });
     }
 
+    // Add tenant filter params and id
+    const idParamIdx = queryParams.length + 1;
     queryParams.push(id);
+    queryParams.push(...wpParams);
 
     const { rows } = await pool.query(
       `UPDATE work_packages wp SET ${updates.join(', ')}
-       WHERE COALESCE(wp.organization_id, wp.company_id) = $1 AND wp.id = $${queryParams.length}
+       WHERE wp.id = $${idParamIdx}${wpFilter}
        RETURNING wp.*`,
       queryParams
     );
@@ -176,15 +165,13 @@ router.patch('/:id', async (req, res) => {
 router.delete('/:id', async (req, res) => {
   try {
     const { id } = req.params;
-    const { params: baseParams } = orgFilter(req.user);
+    const { clause: wpFilter, params: wpParams } = buildTenantFilter(req, 'AND', 'wp');
 
-    // id goes first ($1), then org params follow
-    const queryParams = [id, ...baseParams];
-    const orgIdParamIndex = queryParams.length;
+    const queryParams = [id, ...wpParams];
 
     const { rows } = await pool.query(
       `DELETE FROM work_packages wp
-       WHERE wp.id = $1 AND COALESCE(wp.organization_id, wp.company_id) = $${orgIdParamIndex}
+       WHERE wp.id = $1${wpFilter}
        RETURNING wp.id`,
       queryParams
     );

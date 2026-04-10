@@ -245,6 +245,8 @@ app.use('/api/portal',       require('./routes/client-portal'));
 app.use('/api/chat',          require('./routes/chat'));
 app.use('/api/activity-feed', require('./routes/activity-feed'));
 app.use('/api/admin/stats',   require('./routes/admin-stats'));
+app.use('/api/ai-vision',      require('./routes/ai-vision'));
+app.use('/api/ai_vision_logs', makeRouter('ai_vision_logs'));
 
 // ─── 404 ──────────────────────────────────────────────────────────────────────
 app.use((_req, res) => res.status(404).json({ message: 'Route not found' }));

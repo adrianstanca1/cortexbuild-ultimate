@@ -2,18 +2,11 @@ const express = require('express');
 const authMiddleware = require('../middleware/auth');
 const pool = require('../db');
 const { checkPermission } = require('../middleware/checkPermission');
+const { buildTenantFilter } = require('../middleware/tenantFilter');
 
 const router = express.Router();
 router.use(authMiddleware);
 router.use(checkPermission('executive-reports', 'read'));
-
-// Multi-tenancy: super_admin sees all; company_owner scoped by company_id; others by organization_id
-function getTenantFilter(req) {
-  const auth = req.user || {};
-  if (!auth.role || auth.role === 'super_admin') return { filter: '', params: [] };
-  if (auth.role === 'company_owner') return { filter: ' AND company_id = $1', params: [auth.company_id] };
-  return { filter: ' AND organization_id = $1', params: [auth.organization_id] };
-}
 
 async function buildRagStatusMap(projectIds) {
   if (projectIds.length === 0) return {};
@@ -47,23 +40,25 @@ async function buildRagStatusMap(projectIds) {
  */
 router.get('/summary', async (req, res) => {
   try {
-    const { filter: tenantFilter, params: tenantParams } = getTenantFilter(req);
+    const { clause: invoicesFilter, params: tenantParams } = buildTenantFilter(req, 'AND');
+    const { clause: projectsFilter } = buildTenantFilter(req, 'AND', 'p');
+    const pIdx = tenantParams.length + 1;
 
     const [invoicesResult, projectsCountResult, projectsListResult, teamResult, budgetResult] = await Promise.all([
       pool.query(
-        `SELECT 
+        `SELECT
           COALESCE(SUM(CASE WHEN status = 'paid' THEN amount ELSE 0 END), 0) as portfolio_value,
           COALESCE(SUM(CASE WHEN status = 'paid' AND EXTRACT(YEAR FROM issue_date) = EXTRACT(YEAR FROM CURRENT_DATE) THEN amount ELSE 0 END), 0) as revenue_ytd
         FROM invoices
-        WHERE 1=1${tenantFilter}`,
+        WHERE 1=1${invoicesFilter}`,
         tenantParams,
       ),
       pool.query(
-        `SELECT COUNT(*) as count FROM projects WHERE status = 'active'${tenantFilter}`,
+        `SELECT COUNT(*) as count FROM projects WHERE status = 'active'${invoicesFilter}`,
         tenantParams,
       ),
       pool.query(
-        `SELECT 
+        `SELECT
           p.id,
           p.name,
           p.client,
@@ -73,13 +68,13 @@ router.get('/summary', async (req, res) => {
           p.manager as pm,
           p.status
         FROM projects p
-        WHERE p.status = 'active'${tenantFilter}
+        WHERE p.status = 'active'${projectsFilter}
         ORDER BY p.created_at DESC
         LIMIT 50`,
         tenantParams,
       ),
       pool.query(
-        `SELECT COUNT(*) as count FROM team_members WHERE 1=1${tenantFilter}`,
+        `SELECT COUNT(*) as count FROM team_members WHERE 1=1${invoicesFilter}`,
         tenantParams,
       ),
       pool.query(
@@ -88,7 +83,7 @@ router.get('/summary', async (req, res) => {
           COALESCE(SUM(bi.spent), 0) as total_spent
         FROM budget_items bi
         JOIN projects p ON p.id = bi.project_id
-        WHERE p.status = 'active'${tenantFilter.replace('organization_id', 'p.organization_id')}`,
+        WHERE p.status = 'active'${projectsFilter}`,
         tenantParams,
       ),
     ]);
@@ -141,9 +136,10 @@ router.get('/summary', async (req, res) => {
  */
 router.get('/trends', async (req, res) => {
   try {
-    const { filter: tenantFilter, params: tenantParams } = getTenantFilter(req);
+    const { clause: invoicesFilter, params: tenantParams } = buildTenantFilter(req, 'AND');
+    const { clause: projectsFilter } = buildTenantFilter(req, 'AND', 'p');
 
-    const revenueWhere = `status = 'paid' AND issue_date >= DATE_TRUNC('month', CURRENT_DATE) - INTERVAL '5 months'${tenantFilter}`;
+    const revenueWhere = `status = 'paid' AND issue_date >= DATE_TRUNC('month', CURRENT_DATE) - INTERVAL '5 months'${invoicesFilter}`;
     const revenueQuery = `
       SELECT 
         DATE_TRUNC('month', issue_date) as month,
@@ -156,7 +152,7 @@ router.get('/trends', async (req, res) => {
 
     const headcountQuery = `
       SELECT COUNT(*) as count FROM team_members
-      WHERE 1=1${tenantFilter}
+      WHERE 1=1${invoicesFilter}
     `;
 
     const budgetQuery = `
@@ -165,7 +161,7 @@ router.get('/trends', async (req, res) => {
         COALESCE(SUM(bi.spent), 0) as total_spent
       FROM budget_items bi
       JOIN projects p ON p.id = bi.project_id
-      WHERE p.status = 'active'${tenantFilter.replace('organization_id', 'p.organization_id')}
+      WHERE p.status = 'active'${projectsFilter}
     `;
 
     const [revenueResult, headcountResult, budgetData] = await Promise.all([

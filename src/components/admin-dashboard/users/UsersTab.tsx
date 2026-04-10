@@ -46,7 +46,7 @@ export default function UsersTab({ users: propUsers = [], loading: propLoading =
         status: 'active' as const,
         avatar: u.avatar ? String(u.avatar) : undefined,
         phone: u.phone ? String(u.phone) : undefined,
-        createdAt: String(u.created_at ?? ''),
+        createdAt: String(u.createdAt ?? ''),
       }))))
       .catch(e => console.warn('[UsersTab] failed to load:', e))
       .finally(() => setFetchLoading(false));

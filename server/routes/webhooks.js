@@ -16,6 +16,7 @@ const express   = require('express');
 const crypto    = require('crypto');
 const pool      = require('../db');
 const authMw    = require('../middleware/auth');
+const { checkPermission } = require('../middleware/checkPermission');
 const https     = require('https');
 const http      = require('http');
 
@@ -213,7 +214,7 @@ router.get('/', async (req, res) => {
 });
 
 /** POST /api/webhooks — create webhook */
-router.post('/', async (req, res) => {
+router.post('/', checkPermission('settings', 'create'), async (req, res) => {
   try {
     const { name, url, secret, events = [], headers = {}, active = true } = req.body;
     if (!name || !url) return res.status(400).json({ message: 'name and url are required' });
@@ -252,7 +253,7 @@ router.post('/', async (req, res) => {
 });
 
 /** PUT /api/webhooks/:id — update webhook */
-router.put('/:id', async (req, res) => {
+router.put('/:id', checkPermission('settings', 'update'), async (req, res) => {
   try {
     const { id } = req.params;
     const { name, url, secret, events, headers, active } = req.body;
@@ -296,7 +297,7 @@ router.put('/:id', async (req, res) => {
 });
 
 /** DELETE /api/webhooks/:id — delete webhook */
-router.delete('/:id', async (req, res) => {
+router.delete('/:id', checkPermission('settings', 'delete'), async (req, res) => {
   try {
     const { id } = req.params;
     const orgId   = req.user?.organization_id;
