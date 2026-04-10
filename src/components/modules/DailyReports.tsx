@@ -675,6 +675,7 @@ export function DailyReports() {
                     toast.success('Generating AI summary…');
                     try {
                       const token = getToken();
+                      // Raw fetch — bypasses apiFetch camelization; response keys are snake_case
                       const res = await fetch('/api/reports/summary', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
@@ -1152,6 +1153,7 @@ async function exportWeeklyReportsPDF(reports: AnyRow[], projectName: string) {
   if (!reports.length) { toast.error('No reports to export'); return; }
   try {
     const token = getToken();
+    // Raw fetch — bypasses apiFetch camelization; response is a Blob (no key normalization needed)
     const res = await fetch('/api/reports/weekly-pdf', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
@@ -1178,7 +1180,7 @@ ${r.activities ? JSON.parse(String(r.activities)).map((a: AnyRow) => `- ${a.desc
       win.document.close();
       win.print();
     }
-    toast.error('PDF export failed — opening print view instead');
+    toast.warning('PDF export failed — opening print view instead');
   }
 }
 

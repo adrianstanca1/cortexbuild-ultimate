@@ -80,26 +80,30 @@ export function InvoiceDetailPanel({ invoice, onClose, onEdit, onDelete, fmt, st
               <span className="text-gray-400">VAT</span>
               <span className="text-white font-medium">{fmt(Number(invoice.vat))}</span>
             </div>
-            {Number(invoice.cis_deduction ?? invoice.cisDeduction ?? 0) > 0 && (
-              <div className="flex justify-between text-sm">
-                <span className="text-gray-400">CIS Deduction</span>
-                <span className="text-orange-400 font-medium">
-                  -{fmt(Number(invoice.cis_deduction ?? invoice.cisDeduction ?? 0))}
-                </span>
-              </div>
-            )}
-            <div className="border-t border-gray-700 pt-2 mt-2 flex justify-between">
-              <span className="text-white font-semibold">Total Due</span>
-              <span className="text-emerald-400 font-bold text-lg">
-                {fmt(
-                  Number(invoice.amount) +
-                    Number(invoice.vat) -
-                    (Number.isFinite(Number(invoice.cis_deduction ?? invoice.cisDeduction ?? 0))
-                      ? Number(invoice.cis_deduction ?? invoice.cisDeduction ?? 0)
-                      : 0)
+            {(() => {
+              const cisValue = Number(invoice.cis_deduction ?? invoice.cisDeduction ?? 0);
+              const safeCis = Number.isFinite(cisValue) ? cisValue : 0;
+              return (<>
+                {safeCis > 0 && (
+                  <div className="flex justify-between text-sm">
+                    <span className="text-gray-400">CIS Deduction</span>
+                    <span className="text-orange-400 font-medium">
+                      -{fmt(safeCis)}
+                    </span>
+                  </div>
                 )}
-              </span>
-            </div>
+                <div className="border-t border-gray-700 pt-2 mt-2 flex justify-between">
+                  <span className="text-white font-semibold">Total Due</span>
+                  <span className="text-emerald-400 font-bold text-lg">
+                    {fmt(
+                      Number(invoice.amount) +
+                        Number(invoice.vat) -
+                        safeCis
+                    )}
+                  </span>
+                </div>
+              </>);
+            })()}
           </div>
 
           {/* Status */}
