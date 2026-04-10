@@ -41,6 +41,7 @@ async function buildRagStatusMap(projectIds) {
 router.get('/summary', async (req, res) => {
   try {
     const { clause: invoicesFilter, params: tenantParams } = buildTenantFilter(req, 'AND');
+    // projectsFilter uses same $1 param index as invoicesFilter — both reference tenantParams[0]
     const { clause: projectsFilter } = buildTenantFilter(req, 'AND', 'p');
     const pIdx = tenantParams.length + 1;
 
@@ -137,6 +138,7 @@ router.get('/summary', async (req, res) => {
 router.get('/trends', async (req, res) => {
   try {
     const { clause: invoicesFilter, params: tenantParams } = buildTenantFilter(req, 'AND');
+    // projectsFilter uses same $1 param index as invoicesFilter — both reference tenantParams[0]
     const { clause: projectsFilter } = buildTenantFilter(req, 'AND', 'p');
 
     const revenueWhere = `status = 'paid' AND issue_date >= DATE_TRUNC('month', CURRENT_DATE) - INTERVAL '5 months'${invoicesFilter}`;

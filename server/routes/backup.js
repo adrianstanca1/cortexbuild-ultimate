@@ -144,7 +144,8 @@ router.get('/export-all', checkPermission('settings', 'read'), async (req, res) 
             `SELECT * FROM ${table} ORDER BY created_at DESC LIMIT 10000`
           );
           allData[table] = { count: result.rows.length, rows: result.rows };
-        } catch {
+        } catch (err) {
+          console.error(`[Backup export] Error querying ${table}:`, err.message);
           allData[table] = { count: 0, rows: [], error: 'table not found or inaccessible' };
         }
       }
@@ -174,7 +175,8 @@ router.get('/export-all', checkPermission('settings', 'read'), async (req, res) 
           tenantParams
         );
         allData[table] = { count: result.rows.length, rows: result.rows };
-      } catch {
+      } catch (err) {
+        console.error(`[Backup export] Error querying ${table}:`, err.message);
         allData[table] = { count: 0, rows: [], error: 'table not found or inaccessible' };
       }
     }

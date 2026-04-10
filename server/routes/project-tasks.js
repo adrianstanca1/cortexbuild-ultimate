@@ -115,9 +115,10 @@ router.get('/:id', async (req, res) => {
     );
     if (rows.length === 0) return res.status(404).json({ message: 'Task not found' });
 
+    const { clause: commentClause, params: commentParams } = buildTenantFilter(req, 'AND', null, 2);
     const { rows: comments } = await pool.query(
-      `SELECT * FROM project_task_comments WHERE task_id = $1 AND COALESCE(organization_id, company_id) = $2 ORDER BY created_at ASC`,
-      [id, req.user.organization_id || req.user.company_id]
+      `SELECT * FROM project_task_comments WHERE task_id = $1${commentClause} ORDER BY created_at ASC`,
+      [id, ...commentParams]
     );
 
     res.json({ ...rows[0], comments });

@@ -28,7 +28,7 @@ function tenantFilter(req) {
   const { clause: filterClause, params } = buildTenantFilter(req, 'WHERE');
   // For rag_embeddings (no company_id column): resolve company_id to organization_id via companies table
   let embedFilter = '';
-  if (filterClause) {
+  if (params.length > 0) {
     if (req.user.organization_id) {
       embedFilter = 'WHERE organization_id = $1';
     } else {

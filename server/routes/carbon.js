@@ -194,7 +194,9 @@ router.post('/estimate', async (req, res) => {
            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`,
           [project_id, orgId, companyId, area_m2, embodied, operational, Math.round(lifetime_total), epc_rating || 'C', JSON.stringify(result)]
         );
-      } catch (_) {}
+      } catch (err) {
+        console.error('[Carbon estimate save error]', err.message);
+      }
     }
 
     res.json(result);

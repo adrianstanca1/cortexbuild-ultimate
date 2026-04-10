@@ -116,8 +116,7 @@ router.patch('/:id', async (req, res) => {
       start_date, end_date, budget, progress
     } = req.body;
 
-    const { clause: wpFilter, params: wpParams } = buildTenantFilter(req, 'AND', 'wp');
-    // Build query params: update values first, then tenant filter + id
+    // Build query params: update values first, then id, then tenant filter
     const queryParams = [];
     const updates = [];
 
@@ -138,9 +137,13 @@ router.patch('/:id', async (req, res) => {
       return res.status(400).json({ message: 'No fields to update' });
     }
 
-    // Add tenant filter params and id
+    // Add id param after update values
     const idParamIdx = queryParams.length + 1;
     queryParams.push(id);
+
+    // Tenant filter uses param index AFTER id
+    const tenantParamIdx = queryParams.length + 1;
+    const { clause: wpFilter, params: wpParams } = buildTenantFilter(req, 'AND', 'wp', tenantParamIdx);
     queryParams.push(...wpParams);
 
     const { rows } = await pool.query(

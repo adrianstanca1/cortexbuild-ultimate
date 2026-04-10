@@ -49,27 +49,27 @@ function emitWebhookEvent(orgId, companyId, tableName, action, record) {
 
 // Per-table column whitelists — prevents column-name injection
 const ALLOWED_COLUMNS = {
-  projects:         ['name','client','status','progress','budget','spent','start_date','end_date','manager','location','type','phase','workers','contract_value','description'],
-  invoices:         ['number','client','project_id','project','amount','vat','cis_deduction','status','issue_date','due_date','description','payment_terms','bank_account','notes'],
-  safety_incidents: ['type','title','severity','status','project_id','project','reported_by','reported_by_name','date','location','description','root_cause','corrective_actions','injured_party','immediate_actions','riddor_reportable','injury_type','body_part_affected','days_lost','witness_name','target_closure_date'],
-  rfis:             ['number','title','project_id','project','rfi_number','subject','question','answer','priority','status','submitted_by','submitted_date','due_date','assigned_to','response','discipline','notes','ball_in_court','cost_impact','schedule_impact'],
-  change_orders:    ['number','co_number','project_id','project','title','description','amount','value','status','submitted_date','approved_date','reason','schedule_impact','days_extension','rejection_reason','cost_change','schedule_change','type'],
-  team_members:    ['name','role','trade','trade_type','email','phone','status','cis_status','utr_number','ni_number','hours_this_week','rams_completed','notes','daily_rate','cscs_card','cscs_expiry','cscs_type'],
-  equipment:        ['name','type','registration','status','location','next_service','daily_rate','hire_period','category','serial_number','ownership','inspection_due','mewp_check','project_id','supplier','notes'],
-  subcontractors:   ['company','trade','contact','email','phone','status','cis_verified','cis_status','insurance_expiry','rams_approved','rams_status','current_project','contract_value','rating','utr_number','address','notes'],
+  projects:         ['name','client','status','progress','budget','spent','start_date','end_date','manager','location','type','phase','workers','contract_value','description','organization_id','company_id'],
+  invoices:         ['number','client','project_id','project','amount','vat','cis_deduction','status','issue_date','due_date','description','payment_terms','bank_account','notes','organization_id','company_id'],
+  safety_incidents: ['type','title','severity','status','project_id','project','reported_by','reported_by_name','date','location','description','root_cause','corrective_actions','injured_party','immediate_actions','riddor_reportable','injury_type','body_part_affected','days_lost','witness_name','target_closure_date','organization_id','company_id'],
+  rfis:             ['number','title','project_id','project','rfi_number','subject','question','answer','priority','status','submitted_by','submitted_date','due_date','assigned_to','response','discipline','notes','ball_in_court','cost_impact','schedule_impact','organization_id','company_id'],
+  change_orders:    ['number','co_number','project_id','project','title','description','amount','value','status','submitted_date','approved_date','reason','schedule_impact','days_extension','rejection_reason','cost_change','schedule_change','type','organization_id','company_id'],
+  team_members:    ['name','role','trade','trade_type','email','phone','status','cis_status','utr_number','ni_number','hours_this_week','rams_completed','notes','daily_rate','cscs_card','cscs_expiry','cscs_type','organization_id','company_id'],
+  equipment:        ['name','type','registration','status','location','next_service','daily_rate','hire_period','category','serial_number','ownership','inspection_due','mewp_check','project_id','supplier','notes','organization_id','company_id'],
+  subcontractors:   ['company','trade','contact','email','phone','status','cis_verified','cis_status','insurance_expiry','rams_approved','rams_status','current_project','contract_value','rating','utr_number','address','notes','organization_id','company_id'],
   documents:        ['name','type','project_id','project','uploaded_by','version','size','status','category','discipline','file_url','date_issued','author'],
-  timesheets:       ['worker_id','worker','project_id','project','week','regular_hours','overtime_hours','daywork_hours','total_pay','status','cis_deduction','notes'],
-  meetings:         ['title','meeting_type','project_id','project','date','time','location','attendees','agenda','minutes','actions','status','link'],
-  materials:        ['name','category','quantity','unit','unit_cost','total_cost','supplier','project_id','project','status','delivery_date','po_number','order_date','notes'],
-  punch_list:       ['project_id','project','location','description','assigned_to','priority','status','due_date','photos','trade','item_number','category','resolution','notes'],
-  inspections:      ['type','project_id','project','inspector','date','status','score','items','next_inspection','title','location','notes','findings','corrective_actions'],
-  rams:             ['title','project_id','project','activity','doc_type','version','status','created_by','approved_by','review_date','hazards','method_statement','ppe','signatures','required','risk_level','valid_from','valid_until','controls','reviewed_by','likelihood','severity','notes'],
-  cis_returns:      ['contractor','utr','period','gross_payment','materials_cost','labour_net','cis_deduction','cis_rate','status','verification_status','payment_date','notes'],
-  tenders:          ['title','client','value','deadline','status','probability','type','location','ai_score','notes','stage','result_date'],
-  contacts:         ['name','company','role','email','phone','type','value','last_contact','status','projects','address','website','notes','rating'],
-  risk_register:    ['title','project_id','project','category','likelihood','impact','risk_score','owner','status','mitigation','review_date','notes','contingency','description'],
-  purchase_orders:  ['number','supplier','project_id','project','amount','status','order_date','delivery_date','items','notes','category'],
-  daily_reports:   ['project_id','project','report_date','prepared_by','weather','temperature','workers_on_site','activities','materials','equipment','issues','photos','progress','temp_high','temp_low','delays','safety_observations','visitors','status','submitted_by'],
+  timesheets:       ['worker_id','worker','project_id','project','week','regular_hours','overtime_hours','daywork_hours','total_pay','status','cis_deduction','notes','organization_id','company_id'],
+  meetings:         ['title','meeting_type','project_id','project','date','time','location','attendees','agenda','minutes','actions','status','link','organization_id','company_id'],
+  materials:        ['name','category','quantity','unit','unit_cost','total_cost','supplier','project_id','project','status','delivery_date','po_number','order_date','notes','organization_id','company_id'],
+  punch_list:       ['project_id','project','location','description','assigned_to','priority','status','due_date','photos','trade','item_number','category','resolution','notes','organization_id','company_id'],
+  inspections:      ['type','project_id','project','inspector','date','status','score','items','next_inspection','title','location','notes','findings','corrective_actions','organization_id','company_id'],
+  rams:             ['title','project_id','project','activity','doc_type','version','status','created_by','approved_by','review_date','hazards','method_statement','ppe','signatures','required','risk_level','valid_from','valid_until','controls','reviewed_by','likelihood','severity','notes','organization_id','company_id'],
+  cis_returns:      ['contractor','utr','period','gross_payment','materials_cost','labour_net','cis_deduction','cis_rate','status','verification_status','payment_date','notes','organization_id','company_id'],
+  tenders:          ['title','client','value','deadline','status','probability','type','location','ai_score','notes','stage','result_date','organization_id','company_id'],
+  contacts:         ['name','company','role','email','phone','type','value','last_contact','status','projects','address','website','notes','rating','organization_id','company_id'],
+  risk_register:    ['title','project_id','project','category','likelihood','impact','risk_score','owner','status','mitigation','review_date','notes','contingency','description','organization_id','company_id'],
+  purchase_orders:  ['number','supplier','project_id','project','amount','status','order_date','delivery_date','items','notes','category','organization_id','company_id'],
+  daily_reports:   ['project_id','project','report_date','prepared_by','weather','temperature','workers_on_site','activities','materials','equipment','issues','photos','progress','temp_high','temp_low','delays','safety_observations','visitors','status','submitted_by','organization_id','company_id'],
   variations:        ['ref','title','project_id','project','subcontractor','status','type','value','original_value','impact','submitted_date','responded_date','description','reason','affected_items','approval_chain','documents'],
   defects:           ['reference','title','project_id','project','location','description','priority','status','trade','raised_by','assigned_to','due_date','closed_date','photos','cost','category'],
   valuations:        ['reference','project_id','project','application_number','period_start','period_end','status','contractor_name','client_name','original_value','variations','total_value','retention','amount_due','submitted_date','certified_date','certified_by','notes'],
@@ -143,7 +143,7 @@ function makeRouter(tableName, orderCol = 'created_at') {
     if (scope === 'all') return { filter: '', params: [] };
     if (scope === 'deny') return { filter: ' WHERE 1=0', params: [] };
     if (scope === 'company') return { filter: ' WHERE COALESCE(organization_id, company_id) = $1', params: [req.user.company_id] };
-    return { filter: ' WHERE organization_id = $1', params: [req.user.organization_id] };
+    return { filter: ' WHERE COALESCE(organization_id, company_id) = $1', params: [req.user.organization_id] };
   }
 
   /**
@@ -166,7 +166,7 @@ function makeRouter(tableName, orderCol = 'created_at') {
       };
     }
     return {
-      filter: ` WHERE organization_id = $${tenantPl} AND id = $${idPl}`,
+      filter: ` WHERE COALESCE(organization_id, company_id) = $${tenantPl} AND id = $${idPl}`,
       params: [req.user.organization_id, req.params.id],
     };
   }

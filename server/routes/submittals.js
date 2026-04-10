@@ -184,10 +184,11 @@ router.get('/:id', authMiddleware, async (req, res) => {
       [req.params.id, req.user.company_id]
     );
 
-    // Get comments (tenant-scoped via COALESCE)
+    // Get comments (tenant-scoped via centralized filter)
+    const { clause: commentClause, params: commentParams } = buildTenantFilter(req, 'AND', null, 2);
     const comments = await pool.query(
-      'SELECT * FROM submittal_comments WHERE submittal_id = $1 AND COALESCE(organization_id, company_id) = $2 ORDER BY created_at ASC',
-      [req.params.id, req.user.company_id]
+      `SELECT * FROM submittal_comments WHERE submittal_id = $1${commentClause} ORDER BY created_at ASC`,
+      [req.params.id, ...commentParams]
     );
 
     res.json({
