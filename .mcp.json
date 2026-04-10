@@ -4,10 +4,6 @@
       "command": "npx",
       "args": ["-y", "@modelcontextprotocol/server-filesystem", "/root/cortexbuild-work"]
     },
-    "postgresql": {
-      "command": "npx",
-      "args": ["-y", "@modelcontextprotocol/server-postgres", "postgresql://cortexbuild:cortexbuild_dev_password@localhost:5432/cortexbuild"]
-    },
     "context7": {
       "command": "npx",
       "args": ["-y", "@context7/mcp-server"]

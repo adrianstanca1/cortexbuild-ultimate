@@ -134,7 +134,7 @@ npm run check            # tsc --noEmit + lint + test
 
 **Invoice valid statuses**: `draft`, `sent`, `paid`, `overdue`, `disputed` — NOT `pending`, `unpaid`.
 
-**Migrations**: 54 SQL files in `server/migrations/` (000-053). Apply with `psql -d cortexbuild -f server/migrations/NNN_file.sql`. No migration runner — apply manually or via `scripts/run-migrations.sh`.
+**Migrations**: 55 SQL files in `server/migrations/` (000-054). Apply with `psql -d cortexbuild -f server/migrations/NNN_file.sql`. No migration runner — apply manually or via `scripts/run-migrations.sh`.
 
 **Seed data**: `server/scripts/seed.sql` — default password `CortexBuild2024!` for all users.
 
