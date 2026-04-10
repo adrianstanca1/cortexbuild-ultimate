@@ -1,6 +1,6 @@
 import { useState, useRef } from 'react';
 import {
-  ClipboardList, Plus, Search, CloudRain, Sun, Cloud, Wind, Users, Edit2,
+  ClipboardList, Plus, CloudRain, Sun, Cloud, Wind, Users, Edit2,
   Trash2, X, ChevronDown, ChevronUp, AlertTriangle, Download, FileText,
   Camera, Brain, CheckCircle2, CheckSquare, Square, Loader2
 } from 'lucide-react';
