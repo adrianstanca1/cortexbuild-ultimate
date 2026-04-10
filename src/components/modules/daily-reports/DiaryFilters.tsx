@@ -1,9 +1,9 @@
 import { Search, Brain, Loader2, AlertTriangle } from 'lucide-react';
 
 /**
- * Report/project data from the generic CRUD router (snake_case DB columns).
- * apiFetch camelCases generic responses, so runtime keys may be projectId/reportDate
- * depending on the route. Using AnyRow matches the parent's convention.
+ * Report/project data from the generic CRUD router.
+ * apiFetch camelizes all responses, so runtime keys are camelCase (e.g., projectId, reportDate).
+ * Using AnyRow accommodates the untyped data from the parent component.
  */
 type AnyRow = Record<string, unknown>;
 
@@ -39,6 +39,9 @@ export function DiaryFilters({
   projects,
 }: DiaryFiltersProps) {
   const safeProjects = projects ?? [];
+  if (projects == null && import.meta.env.DEV) {
+    console.warn('[DiaryFilters] projects prop is null/undefined — this should not happen');
+  }
 
   return (
     <div className="flex flex-wrap gap-3 items-center bg-gray-800 rounded-xl border border-gray-700 p-4">

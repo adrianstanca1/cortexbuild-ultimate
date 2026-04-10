@@ -2,15 +2,18 @@ import { CloudRain, Sun, Wind, Cloud, CloudSnow, CloudFog, CloudLightning, Alert
 import { LineChart, Line, CartesianGrid, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
 
 /**
- * Report data from the generic CRUD router (snake_case DB columns).
- * apiFetch camelCases generic responses, so runtime keys may be projectId/reportDate
- * depending on the route. Using AnyRow matches the parent's convention.
+ * Report data from the generic CRUD router.
+ * apiFetch camelizes all responses, so runtime keys are camelCase (e.g., projectId, reportDate).
+ * Dual-key access (snake_case ?? camelCase) supports data that bypassed apiFetch normalization.
+ * Using AnyRow matches the parent component's convention.
  */
 type AnyRow = Record<string, unknown>;
 
 type WeatherWidgetProps = {
   reports: AnyRow[];
   projectFilter: string;
+  isLoading?: boolean;
+  error?: string | null;
 };
 
 function WeatherIcon({ weather }: { weather: string }) {
@@ -30,8 +33,27 @@ function isValidDate(value: unknown): value is string {
   return !isNaN(new Date(value).getTime());
 }
 
-export function WeatherWidget({ reports, projectFilter }: WeatherWidgetProps) {
-  const filtered = reports.filter(r => !projectFilter || String(r.project_id ?? r.projectId ?? '') === projectFilter);
+export function WeatherWidget({ reports, projectFilter, isLoading, error }: WeatherWidgetProps) {
+  if (error) {
+    return (
+      <div className="bg-gray-800 rounded-xl border border-red-500/30 p-8 text-center text-red-400" role="alert">
+        <Cloud size={32} className="mx-auto text-red-400 mb-3" />
+        Failed to load weather data: {error}
+      </div>
+    );
+  }
+
+  if (isLoading) {
+    return (
+      <div className="space-y-6">
+        <div className="bg-gray-800 rounded-xl border border-gray-700 p-6 animate-pulse h-80" />
+        <div className="bg-gray-800 rounded-xl border border-gray-700 p-6 animate-pulse h-40" />
+      </div>
+    );
+  }
+
+  const safeReports = reports ?? [];
+  const filtered = safeReports.filter(r => !projectFilter || String(r.project_id ?? r.projectId ?? '') === projectFilter);
 
   if (filtered.length === 0) {
     return (

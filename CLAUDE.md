@@ -8,11 +8,14 @@ CortexBuild Ultimate is an AI-Powered Unified Construction Management Platform f
 
 **Stack**: React 19 + TypeScript + Vite (frontend) / Express 4 + PostgreSQL 16 + Redis 7 (backend) / React Context + TanStack Query (state) / WebSocket (real-time)
 
+**Note**: The `prisma/` directory is **reference schema only** — production uses raw SQL migrations in `server/migrations/`. The `ARCHITECTURE.md` describes an aspirational/design architecture and may not reflect the current implementation.
+
 ## Commands
 
-### Frontend (root directory)
+### Frontend (cortexbuild-work/ directory)
 
 ```bash
+npm install
 npm run dev              # Dev server on http://localhost:5173 (proxies /api → localhost:3001)
 npm run build            # tsc -b && vite build → dist/
 npm run lint             # ESLint check (src/ only)
@@ -23,6 +26,8 @@ npm run test:coverage    # Coverage report
 npx vitest run src/test/hooks.test.ts           # Single test file
 npx vitest run -t "pattern"                      # Tests matching name pattern
 npm run test:e2e         # Playwright E2E tests (Chromium only)
+npm run test:e2e:ui      # Playwright with UI
+npm run test:e2e:headed  # Playwright headed mode
 ```
 
 ### Backend (server/ directory)
@@ -39,7 +44,7 @@ The server requires `DB_PASSWORD` to be set — it exits with code 1 if missing.
 ### Full Verification
 
 ```bash
-npm run verify:all       # Runs: route verification + TypeScript check + tests + lint + build
+npm run verify:all       # route verification + TypeScript check + tests + lint + build
 npm run check            # tsc --noEmit + lint + test
 ```
 
@@ -48,9 +53,9 @@ npm run check            # tsc --noEmit + lint + test
 ### Frontend
 
 - **Vite app** (`src/`) — React 19 + TypeScript. Entry: `src/main.tsx`. Import alias `@` → `src/`.
-- **Module lazy-loading** — `src/App.tsx` registers 60+ modules via `React.lazy()`. No React Router — navigation uses `activeModule` state with a custom `Sidebar`/`AppShell` pattern.
+- **Module lazy-loading** — `src/App.tsx` registers 60+ modules via `React.lazy()`. No React Router for main navigation — uses `activeModule` state with a custom `Sidebar`/`AppShell` pattern. React Router is installed but currently unused for module routing.
 - **Auth** — JWT stored in `localStorage` under key `cortexbuild_token` (NOT `'token'`). Use `getToken()` from `src/lib/supabase.ts`. On login, user object stored under key `cortexbuild_user`. Logout blacklists the JWT server-side via Redis.
-- **API layer** — `src/services/api.ts` provides `apiFetch<T>()` which auto-converts snake_case DB columns to camelCase. **Critical**: responses from custom route handlers are returned as-is; only generic CRUD responses go through camelCase normalization. The `fetchAll()` helper unwraps the `{ data, pagination }` wrapper from generic routes.
+- **API layer** — `src/services/api.ts` provides `apiFetch<T>()` which auto-converts snake_case DB columns to camelCase. **All** responses through `apiFetch` are camelized unconditionally. The real caveat: calls made via raw `fetch()` (bypassing `apiFetch`) receive snake_case keys from the server. Request bodies are sent as-is (not transformed) — send snake_case keys to match DB columns. The `fetchAll()` helper unwraps the `{ data, pagination }` wrapper from generic routes.
 - **State** — React Context (`AuthContext`, `ThemeContext`) for auth/theme. TanStack Query via `useData.ts` hooks for server state with caching, background refresh, and WebSocket invalidation.
 - **CRUD hooks** — `src/hooks/useData.ts` exposes `makeHooks(resource)` factory generating `useList`, `useOne`, `useCreate`, `useUpdate`, `useDelete` per entity. WebSocket `ws:message` events auto-invalidate relevant queries.
 - **Design system** — `src/components/daisyui/` contains 15+ DaisyUI-based primitives (Button, Modal, Table, etc.) with barrel `index.ts`.
@@ -80,7 +85,7 @@ npm run check            # tsc --noEmit + lint + test
 | `files.js` / `upload.js` | Multer → `server/uploads/`, magic number validation |
 | `generic.js` | Per-table CRUD factory (30+ tables) |
 
-**API response normalization**: `apiFetch` in `src/services/api.ts` converts snake_case keys to camelCase recursively. Custom route handlers return raw JSON — snake_case stays snake_case unless the handler explicitly camelizes.
+**API response normalization**: `apiFetch` in `src/services/api.ts` converts snake_case keys to camelCase recursively on ALL responses. Only raw `fetch()` calls bypass this normalization, so custom route handlers called via `apiFetch` still return camelCase keys. Request bodies are sent as-is (snake_case keys match DB columns).
 
 **Route registration order matters** in `server/index.js` — more specific paths must be registered before wildcard paths. e.g., `/api/tenders/ai` must come before `/api/tenders`.
 
@@ -102,7 +107,7 @@ npm run check            # tsc --noEmit + lint + test
 
 - **Local Ollama only** — `qwen3.5:latest` and `deepseek-r1:7b` via Docker container `cortexbuild-ollama` (port 11434).
 - **Intent classifiers** in `server/routes/ai-intents/` handle natural language: invoices, daily reports, projects, team, safety, budget.
-- **8 AI agents** with streaming UI — see `server/routes/ai-intents/`.
+- **25 per-domain intent classifiers** in `server/routes/ai-intents/` — route natural language to domain-specific actions.
 - **Embedding model** — `EMBEDDING_MODEL` env var (default: `nomic-embed-text:latest`). This MUST be a dedicated embedding model — `qwen3.5` is an LLM and will produce null embeddings, breaking all vector similarity search (RAG).
 
 ### Database Schema

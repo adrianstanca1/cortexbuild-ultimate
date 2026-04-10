@@ -94,7 +94,9 @@ export function InvoiceDetailPanel({ invoice, onClose, onEdit, onDelete, fmt, st
                 {fmt(
                   Number(invoice.amount) +
                     Number(invoice.vat) -
-                    Number(invoice.cis_deduction ?? invoice.cisDeduction ?? 0)
+                    (Number.isFinite(Number(invoice.cis_deduction ?? invoice.cisDeduction ?? 0))
+                      ? Number(invoice.cis_deduction ?? invoice.cisDeduction ?? 0)
+                      : 0)
                 )}
               </span>
             </div>

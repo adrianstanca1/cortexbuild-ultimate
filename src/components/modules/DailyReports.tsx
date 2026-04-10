@@ -1,6 +1,6 @@
 import { useState, useRef } from 'react';
 import {
-  ClipboardList, Plus, CloudRain, Sun, Cloud, Wind, Users, Edit2,
+  ClipboardList, Plus, CloudRain, Sun, Cloud, Wind, CloudSnow, CloudFog, CloudLightning, Users, Edit2,
   Trash2, X, ChevronDown, ChevronUp, AlertTriangle, Download, FileText,
   Camera, Brain, CheckCircle2, CheckSquare, Square, Loader2
 } from 'lucide-react';
@@ -27,9 +27,13 @@ const statusColour: Record<string, string> = {
 };
 
 const weatherIcon = (w: string) => {
-  if (w.includes('Rain')) return <CloudRain size={16} className="text-blue-400" />;
-  if (w.includes('Sun') || w.includes('Sunny')) return <Sun size={16} className="text-yellow-400" />;
-  if (w.includes('Wind')) return <Wind size={16} className="text-gray-400" />;
+  const l = w.toLowerCase();
+  if (l.includes('rain') || l.includes('drizzle') || l.includes('shower')) return <CloudRain size={16} className="text-blue-400" />;
+  if (l.includes('sun') || l.includes('clear')) return <Sun size={16} className="text-yellow-400" />;
+  if (l.includes('wind') || l.includes('gale')) return <Wind size={16} className="text-gray-400" />;
+  if (l.includes('snow') || l.includes('frost') || l.includes('ice')) return <CloudSnow size={16} className="text-blue-200" />;
+  if (l.includes('fog') || l.includes('mist')) return <CloudFog size={16} className="text-gray-300" />;
+  if (l.includes('thunder') || l.includes('storm')) return <CloudLightning size={16} className="text-purple-400" />;
   return <Cloud size={16} className="text-gray-400" />;
 };
 
@@ -56,7 +60,7 @@ export function DailyReports() {
   const { useList, useCreate, useUpdate, useDelete } = useDailyReports;
 
   const { data: rawProjects = [] } = useProjectsList();
-  const { data: raw = [], isLoading } = useList();
+  const { data: raw = [], isLoading, error: listError } = useList();
 
   const projects = rawProjects as AnyRow[];
   const reports = raw as AnyRow[];
@@ -82,6 +86,7 @@ export function DailyReports() {
   const [aiSummary, setAiSummary] = useState<string | null>(null);
   const [aiSummaryStats, setAiSummaryStats] = useState<{count: number; avgWorkers: number; weatherSummary: string} | null>(null);
   const [aiLoading, setAiLoading] = useState(false);
+  const [aiError, setAiError] = useState<string | null>(null);
   const [summaryExpanded, setSummaryExpanded] = useState(false);
 
   const { selectedIds, toggle, clearSelection } = useBulkSelection();
@@ -92,21 +97,25 @@ export function DailyReports() {
       await Promise.all(ids.map(id => deleteMutation.mutateAsync(id)));
       toast.success(`Deleted ${ids.length} item(s)`);
       clearSelection();
-    } catch {
+    } catch (err) {
+      console.error('[DailyReports] Bulk delete failed:', err);
       toast.error('Bulk delete failed');
     }
   }
 
   async function handleSummarizeReports() {
     setAiLoading(true);
+    setAiError(null);
     setSummaryExpanded(true);
     try {
       const res = await aiSummarizeApi.summarizeDailyReports();
       setAiSummary(res.summary);
       setAiSummaryStats({ count: res.count, avgWorkers: res.avgWorkers, weatherSummary: res.weatherSummary });
       toast.success('Daily reports summary generated');
-    } catch {
-      toast.error('Failed to generate AI summary');
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : 'Failed to generate AI summary';
+      setAiError(msg);
+      toast.error(msg);
     } finally {
       setAiLoading(false);
     }
@@ -181,7 +190,7 @@ export function DailyReports() {
     const payload = {
       ...form,
       workers_on_site: Number(form.workers_on_site) || 0,
-      temperature: Number(form.temperature) || null,
+      temperature: form.temperature !== '' ? Number(form.temperature) : null,
     };
 
     if (editing) {
@@ -238,6 +247,7 @@ export function DailyReports() {
         averageWorkersPerDay={averageWorkersPerDay}
         projectsWithoutReport={projectsWithoutReport}
         isLoading={isLoading}
+        error={listError?.message}
       />
 
       {/* Main Tabs */}
@@ -308,6 +318,7 @@ export function DailyReports() {
             onDateToChange={setDateTo}
             filteredLength={filtered.length}
             aiLoading={aiLoading}
+            aiError={aiError}
             onSummarize={handleSummarizeReports}
             projects={projects}
           />
@@ -581,7 +592,7 @@ export function DailyReports() {
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-600" />
             </div>
           ) : (
-            <WeatherWidget reports={reports} projectFilter={weatherProjectFilter} />
+            <WeatherWidget reports={reports} projectFilter={weatherProjectFilter} isLoading={isLoading} error={listError?.message} />
           )}
         </div>
       )}
@@ -673,10 +684,11 @@ export function DailyReports() {
                       const data = await res.json() as { summary?: string };
                       toast.success(data.summary || 'Summary generated successfully');
                     } catch {
-                      // Fallback: show a basic text summary via alert
+                      // Fallback: show a basic text summary (AI unavailable)
                       const totalWorkers = currentWeek.reduce((s: number, r: AnyRow) => s + Number(r.workers_on_site ?? 0), 0);
                       const issues = currentWeek.filter((r: AnyRow) => r.issues_delays).length;
-                      toast.success(`Week Summary: ${currentWeek.length} reports, ${totalWorkers} total workers, ${issues} issues`);
+                      toast.warning('AI summary unavailable — showing basic stats');
+                      toast.info(`Week Summary: ${currentWeek.length} reports, ${totalWorkers} total workers, ${issues} issues`);
                     }
                   }}
                   className="flex items-center gap-2 px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg text-sm font-medium transition-colors"
@@ -1129,7 +1141,8 @@ async function handleDailyReportPhotoUpload(files: File[], projectId: string) {
     }) as Response;
     if (!res.ok) throw new Error('Upload failed');
     toast.success(`${files.length} photo(s) uploaded`);
-  } catch {
+  } catch (err) {
+    console.error('[DailyReports] Photo upload failed:', err);
     toast.error('Photo upload failed');
   }
 }
@@ -1165,7 +1178,7 @@ ${r.activities ? JSON.parse(String(r.activities)).map((a: AnyRow) => `- ${a.desc
       win.document.close();
       win.print();
     }
-    toast.success('Print view opened');
+    toast.error('PDF export failed — opening print view instead');
   }
 }
 
