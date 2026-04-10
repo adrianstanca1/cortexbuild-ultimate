@@ -21,7 +21,7 @@ function queueEmbedding(tableName, row, user, action) {
     try {
       if (action === 'delete') {
         // Delete the embedding
-        const { pool } = require('../db');
+        const pool = require('../db');
         await pool.query(
           `DELETE FROM rag_embeddings WHERE organization_id = $1 AND table_name = $2 AND row_id = $3`,
           [orgId, tableName, row.id]

@@ -108,7 +108,7 @@ app.use('/api/auth', require('./routes/oauth')); // Google OAuth
 async function checkHealth() {
   const checks = { postgres: false, redis: false, status: 'degraded' };
   try {
-    const { pool } = require('./db');
+    const pool = require('./db');
     await pool.query('SELECT 1');
     checks.postgres = true;
   } catch {
@@ -260,7 +260,7 @@ function gracefulShutdown(signal) {
   server.close(async () => {
     console.log('[HTTP] Server closed');
     try {
-      const { pool } = require('./db');
+      const pool = require('./db');
       await pool.end();
       console.log('[PostgreSQL] Pool closed');
     } catch (e) {
