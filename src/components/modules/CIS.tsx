@@ -113,7 +113,7 @@ export function CIS() {
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    const payload = { ...form, gross_payment:Number(form.gross_payment)||0, cis_rate:Number(form.cis_rate)||20, labour_only:Number(form.labour_only)||0, materials:Number(form.materials)||0 };
+    const payload = { ...form, gross_payment: form.gross_payment !== '' ? Number(form.gross_payment) : 0, cis_rate: form.cis_rate !== '' ? Number(form.cis_rate) : 20, labour_only: form.labour_only !== '' ? Number(form.labour_only) : 0, materials: form.materials !== '' ? Number(form.materials) : 0 };
     try {
       if (editing) { await updateMutation.mutateAsync({ id:String(editing.id), data:payload }); }
       else { await createMutation.mutateAsync(payload); }
@@ -142,9 +142,9 @@ export function CIS() {
   }
 
   // Live calculation from form
-  const formGross = Number(form.gross_payment)||0;
-  const formMaterials = Number(form.materials)||0;
-  const formRate = Number(form.cis_rate)||20;
+  const formGross = form.gross_payment !== '' ? Number(form.gross_payment) : 0;
+  const formMaterials = form.materials !== '' ? Number(form.materials) : 0;
+  const formRate = form.cis_rate !== '' ? Number(form.cis_rate) : 20;
   const formDeduction = Math.max(0, formGross - formMaterials) * (formRate/100);
   const formNet = formGross - formDeduction;
 

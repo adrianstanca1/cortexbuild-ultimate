@@ -321,7 +321,7 @@ export function Teams() {
       toast.error(firstError.message);
       return;
     }
-    const payload = { ...form, daily_rate: Number(form.daily_rate)||0 };
+    const payload = { ...form, daily_rate: form.daily_rate !== '' ? Number(form.daily_rate) : 0 };
     if (editing) { await updateMutation.mutateAsync({ id: String(editing.id), data: payload }); toast.success('Member updated'); }
     else { await createMutation.mutateAsync(payload); toast.success('Member added'); }
     setShowModal(false);

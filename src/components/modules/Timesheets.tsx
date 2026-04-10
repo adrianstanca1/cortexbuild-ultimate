@@ -199,11 +199,11 @@ export function Timesheets() {
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    const regularHours = Number(form.regularHours)||0;
-    const overtimeHours = Number(form.overtimeHours)||0;
-    const overtimeRate = Number(form.overtimeRate)||1.5;
-    const dayworkHours = Number(form.dayworkHours)||0;
-    const dayworkRate = Number(form.dayworkRate)||0;
+    const regularHours = form.regularHours !== '' ? Number(form.regularHours) : 0;
+    const overtimeHours = form.overtimeHours !== '' ? Number(form.overtimeHours) : 0;
+    const overtimeRate = form.overtimeRate !== '' ? Number(form.overtimeRate) : 1.5;
+    const dayworkHours = form.dayworkHours !== '' ? Number(form.dayworkHours) : 0;
+    const dayworkRate = form.dayworkRate !== '' ? Number(form.dayworkRate) : 0;
     const totalPay = (regularHours * CITB_RATE) + (overtimeHours * CITB_RATE * overtimeRate) + (dayworkHours * dayworkRate);
     const cisDeduction = calculateCIS(totalPay);
     const payload = { ...form, regularHours, overtimeHours, overtimeRate, dayworkHours, dayworkRate, totalPay, cisDeduction };
@@ -250,10 +250,12 @@ export function Timesheets() {
     toast.success(`Payroll run complete: ${approved.length} payments processed`);
   }
 
-  const formRegular = Number(form.regularHours)||0;
-  const formOT = Number(form.overtimeHours)||0;
-  const formDaywork = Number(form.dayworkHours)||0;
-  const formTotalPay = (formRegular * CITB_RATE) + (formOT * CITB_RATE * (Number(form.overtimeRate)||1.5)) + (formDaywork * (Number(form.dayworkRate)||0));
+  const formRegular = form.regularHours !== '' ? Number(form.regularHours) : 0;
+  const formOT = form.overtimeHours !== '' ? Number(form.overtimeHours) : 0;
+  const formDaywork = form.dayworkHours !== '' ? Number(form.dayworkHours) : 0;
+  const formOTRate = form.overtimeRate !== '' ? Number(form.overtimeRate) : 1.5;
+  const formDayworkRate = form.dayworkRate !== '' ? Number(form.dayworkRate) : 0;
+  const formTotalPay = (formRegular * CITB_RATE) + (formOT * CITB_RATE * formOTRate) + (formDaywork * formDayworkRate);
 
   return (
     <>

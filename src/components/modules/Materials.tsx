@@ -110,9 +110,9 @@ export function Materials() {
     e.preventDefault();
     const payload = {
       ...form,
-      quantity:Number(form.quantity)||0,
-      unit_cost:Number(form.unit_cost)||0,
-      quantity_received:Number(form.quantity_received)||0
+      quantity: form.quantity !== '' ? Number(form.quantity) : 0,
+      unit_cost: form.unit_cost !== '' ? Number(form.unit_cost) : 0,
+      quantity_received: form.quantity_received !== '' ? Number(form.quantity_received) : 0
     };
     if (editing) {
       await updateMutation.mutateAsync({ id:String(editing.id), data:payload });

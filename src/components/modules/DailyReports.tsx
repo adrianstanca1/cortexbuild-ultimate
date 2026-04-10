@@ -189,7 +189,7 @@ export function DailyReports() {
     e.preventDefault();
     const payload = {
       ...form,
-      workers_on_site: Number(form.workers_on_site) || 0,
+      workers_on_site: form.workers_on_site !== '' ? Number(form.workers_on_site) : 0,
       temperature: form.temperature !== '' ? Number(form.temperature) : null,
     };
 
