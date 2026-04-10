@@ -4,7 +4,6 @@ import { LineChart, Line, CartesianGrid, XAxis, YAxis, Tooltip, ResponsiveContai
 /**
  * Report data from the generic CRUD router.
  * apiFetch camelizes all responses, so runtime keys are camelCase (e.g., projectId, reportDate).
- * Dual-key access (snake_case ?? camelCase) supports data that bypassed apiFetch normalization.
  * Using AnyRow matches the parent component's convention.
  */
 type AnyRow = Record<string, unknown>;

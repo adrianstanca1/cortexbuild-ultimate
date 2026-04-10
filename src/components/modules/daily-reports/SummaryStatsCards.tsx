@@ -1,8 +1,9 @@
 import { Calendar, ClipboardList, Users, AlertTriangle } from 'lucide-react';
 
 /**
- * Report data from the generic CRUD router (snake_case DB columns).
- * Using AnyRow matches the parent DailyReports convention.
+ * Report data from the generic CRUD router.
+ * apiFetch camelizes all responses, so runtime keys are camelCase.
+ * Using AnyRow matches the parent component's convention.
  */
 type AnyRow = Record<string, unknown>;
 
