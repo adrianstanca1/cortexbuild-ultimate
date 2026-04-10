@@ -208,7 +208,7 @@ export function Safety() {
       status: String(i.status??'open'), project: String(i.project??''), location: String(i.location??''),
       date: String(i.date??new Date().toISOString().split('T')[0]), description: String(i.description??''),
       immediate_action: String(i.immediate_action??''), injured_party: String(i.injured_party??''),
-      reported_by_name: String(i.reported_by_name??i.reportedBy??''), riddor_reportable: Boolean(i.riddor_reportable),
+      reported_by_name: String(i.reportedBy ?? ''), riddor_reportable: Boolean(i.riddor_reportable),
       injury_type: String(i.injury_type??'None'), body_part_affected: String(i.body_part_affected??'Head'),
       days_lost: Number(i.days_lost??0), witness_name: String(i.witness_name??''),
       root_cause: String(i.root_cause??'Human Error'), corrective_action: String(i.corrective_action??''),
@@ -501,7 +501,7 @@ export function Safety() {
                           <span>{typeInfo.label}</span>
                           {!!inc.project && <span>{String(inc.project)}</span>}
                           {!!inc.date && <span>{String(inc.date)}</span>}
-                          {(inc.reported_by_name || inc.reportedBy) ? <span>By: {String(inc.reported_by_name ?? inc.reportedBy)}</span> : null}
+                          {(inc.reportedBy) ? <span>By: {String(inc.reportedBy)}</span> : null}
                         </div>
                         {selectedId === incId && !!inc.description && (
                           <p className="mt-2 text-xs text-gray-400 leading-relaxed">{String(inc.description)}</p>

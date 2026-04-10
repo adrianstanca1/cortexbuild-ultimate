@@ -81,7 +81,7 @@ export function ProjectCard({ project, isSelected, onToggle, onSelect, onEdit, o
   const budget = Number(project.budget ?? 0);
   const spent = Number(project.spent ?? 0);
   const pct = budget > 0 ? (spent / budget) * 100 : 0;
-  const endDate = String(project.endDate ?? project.end_date ?? '');
+  const endDate = String(project.endDate ?? '');
   const days = endDate ? daysDiff(endDate) : null;
   const budgetHealth = getBudgetHealth(spent, budget);
 

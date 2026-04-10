@@ -15,16 +15,16 @@ import type { Row } from '../../../services/api';
 function mapApiToSubcontractor(row: Row): Subcontractor {
   return {
     id: String(row.id ?? ''),
-    company: String(row.company_name ?? row.company ?? ''),
+    company: String(row.companyName ?? row.company ?? ''),
     trade: String(row.trade ?? ''),
-    submissionDate: String(row.submission_date ?? row.created_at ?? new Date().toISOString().split('T')[0]),
+    submissionDate: String(row.submissionDate ?? row.createdAt ?? new Date().toISOString().split('T')[0]),
     status: (row.status as Subcontractor['status']) ?? 'pending',
     score: Number(row.score ?? 0),
-    overallScore: Number(row.overall_score ?? row.score ?? 0),
+    overallScore: Number(row.overallScore ?? row.score ?? 0),
     approvalDate: row.approval_date ? String(row.approval_date) : undefined,
     expiryDate: row.expiry_date ? String(row.expiry_date) : undefined,
     tier: (row.tier as Subcontractor['tier']) ?? undefined,
-    contact: row.contact_person ?? row.contact ? String(row.contact_person ?? row.contact) : undefined,
+    contact: row.contactPerson ?? row.contact ? String(row.contactPerson ?? row.contact) : undefined,
     location: row.location ? String(row.location) : undefined,
     insurance: row.insurance ? String(row.insurance) : undefined,
   };

@@ -102,12 +102,12 @@ export function Accounting() {
   }
   function openEdit(inv:AnyRow) {
     setEditId(String(inv.id));
-    setFNum(String(inv.number??inv.invoice_number??''));
+    setFNum(String(inv.number ?? inv.invoiceNumber ?? ''));
     setFClient(String(inv.client??''));
     setFProject(String(inv.project??''));
     setFAmount(String(inv.amount??''));
     setFStatus(String(inv.status??'draft'));
-    setFDue(String(inv.dueDate??inv.due_date??''));
+    setFDue(String(inv.dueDate ?? ''));
     setFDesc(String(inv.description??''));
     setShowModal(true);
   }
@@ -426,7 +426,7 @@ export function Accounting() {
                             {isSelected ? <CheckSquare size={16} className="text-blue-400"/> : <Square size={16} className="text-gray-500"/>}
                           </button>
                         </td>
-                        <td className="px-4 py-3 font-mono text-xs text-blue-400 font-bold">{String(inv.number??inv.invoice_number??'—')}</td>
+                        <td className="px-4 py-3 font-mono text-xs text-blue-400 font-bold">{String(inv.number ?? inv.invoiceNumber ?? '—')}</td>
                         <td className="px-4 py-3 text-white font-medium">{String(inv.client??'—')}</td>
                         <td className="px-4 py-3 text-gray-400 max-w-[180px] truncate">{String(inv.project??'—')}</td>
                         <td className="px-4 py-3 text-white font-bold">{fmt(Number(inv.amount??0))}</td>
@@ -435,7 +435,7 @@ export function Accounting() {
                             {String(inv.status??'')}
                           </span>
                         </td>
-                        <td className="px-4 py-3 text-gray-400 text-sm">{String(inv.dueDate??inv.due_date??'—')}</td>
+                        <td className="px-4 py-3 text-gray-400 text-sm">{String(inv.dueDate ?? '—')}</td>
                         <td className="px-4 py-3">
                           <div className="flex items-center gap-2">
                             {inv.status!=='paid' && (
@@ -518,7 +518,7 @@ export function Accounting() {
                     return (
                       <tr key={String(proj.id)} className="hover:bg-gray-900/40 transition-colors">
                         <td className="px-5 py-4 font-medium text-white">{String(proj.name??'—')}</td>
-                        <td className="px-5 py-4 text-gray-300">{fmt(Number(proj.contractValue??proj.contract_value??0))}</td>
+                        <td className="px-5 py-4 text-gray-300">{fmt(Number(proj.contractValue ?? 0))}</td>
                         <td className="px-5 py-4 font-semibold text-white">{fmt(budget)}</td>
                         <td className="px-5 py-4 text-gray-300">{fmt(spent)}</td>
                         <td className="px-5 py-4 font-semibold text-green-400">{fmt(budget-spent)}</td>

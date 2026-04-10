@@ -44,13 +44,13 @@ export function InvoiceDetailPanel({ invoice, onClose, onEdit, onDelete, fmt, st
             <div>
               <p className="text-xs text-gray-400 mb-1">Issue Date</p>
               <p className="text-white font-medium">
-                {String(invoice.issue_date ?? invoice.issueDate ?? '—')}
+                {String(invoice.issueDate ?? '—')}
               </p>
             </div>
             <div>
               <p className="text-xs text-gray-400 mb-1">Due Date</p>
               <p className="text-white font-medium">
-                {String(invoice.due_date ?? invoice.dueDate ?? '—')}
+                {String(invoice.dueDate ?? '—')}
               </p>
             </div>
           </div>
@@ -120,10 +120,10 @@ export function InvoiceDetailPanel({ invoice, onClose, onEdit, onDelete, fmt, st
               <p className="text-xs text-gray-400 mb-1">Payment Terms</p>
               <p className="text-white text-sm">{String(invoice.payment_terms ?? 'Net 30')}</p>
             </div>
-            {Boolean(invoice.bank_account ?? invoice.bankAccount) && (
+            {Boolean(invoice.bankAccount) && (
               <div>
                 <p className="text-xs text-gray-400 mb-1">Bank Account</p>
-                <p className="text-white text-sm font-mono">{String(invoice.bank_account ?? invoice.bankAccount)}</p>
+                <p className="text-white text-sm font-mono">{String(invoice.bankAccount)}</p>
               </div>
             )}
           </div>

@@ -117,7 +117,7 @@ export function RAMS() {
   const reviewCount = rams.filter(r => r.status === 'Under Review').length;
   const _draftCount = rams.filter(r => r.status === 'Draft').length;
   const expiringSoon = rams.filter(r => {
-    const until = r.valid_until ?? r.validUntil;
+    const until = r.validUntil;
     if (!until || r.status !== 'Approved') return false;
     const diff = (new Date(String(until)).getTime() - Date.now()) / 86400000;
     return diff >= 0 && diff <= 30;
@@ -334,7 +334,7 @@ export function RAMS() {
                 const id = String(r.id ?? '');
                 const isExp = expanded === id;
                 const isSelected = selectedIds.has(id);
-                const validUntil = r.valid_until ?? r.validUntil;
+                const validUntil = r.validUntil;
                 const version = r.version;
                 return (
                   <div key={id} className={`${isSelected ? 'bg-blue-900/10' : ''}`}>
@@ -370,9 +370,9 @@ export function RAMS() {
                         {!!(r.controls) && <div><p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">Control Measures</p><p className="text-gray-300 whitespace-pre-wrap">{String(r.controls)}</p></div>}
                         {!!(r.ppe) && <div><p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">PPE Required</p><p className="text-gray-300">{String(r.ppe)}</p></div>}
                         <div className="flex gap-6 flex-wrap pb-2">
-                          {!!(r.reviewed_by ?? r.reviewedBy) && <div><p className="text-xs text-gray-500">Reviewed By</p><p className="text-gray-300">{String(r.reviewed_by ?? r.reviewedBy)}</p></div>}
-                          {!!(r.approved_by ?? r.approvedBy) && <div><p className="text-xs text-gray-500">Approved By</p><p className="text-gray-300">{String(r.approved_by ?? r.approvedBy)}</p></div>}
-                          {!!(r.created_by ?? r.createdBy) && <div><p className="text-xs text-gray-500">Created By</p><p className="text-gray-300">{String(r.created_by ?? r.createdBy)}</p></div>}
+                          {!!(r.reviewedBy) && <div><p className="text-xs text-gray-500">Reviewed By</p><p className="text-gray-300">{String(r.reviewedBy)}</p></div>}
+                          {!!(r.approvedBy) && <div><p className="text-xs text-gray-500">Approved By</p><p className="text-gray-300">{String(r.approvedBy)}</p></div>}
+                          {!!(r.createdBy) && <div><p className="text-xs text-gray-500">Created By</p><p className="text-gray-300">{String(r.createdBy)}</p></div>}
                         </div>
                         <div className="flex gap-2 pt-2 border-t border-gray-700">
                           <input

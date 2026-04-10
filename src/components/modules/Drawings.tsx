@@ -45,7 +45,7 @@ interface Transmittal {
 function buildRevisions(d: AnyRow): RevisionRecord[] {
   return [{
     letter: String(d.revision ?? 'A'),
-    date: String(d.date_issued ?? d.created_at ?? ''),
+    date: String(d.dateIssued ?? d.createdAt ?? ''),
     issuedBy: String(d.author ?? 'Unknown'),
     description: String(d.description ?? 'Initial issue'),
     status: String(d.status ?? 'Current'),

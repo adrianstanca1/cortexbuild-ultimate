@@ -117,7 +117,7 @@ export function Subcontractors() {
   const ratingHistory = subs.slice(0, 5).map(s => ({
     company: String(s.company ?? ''),
     rating: Number(s.rating ?? 0),
-    project: String(s.current_project ?? s.currentProject ?? 'Unassigned'),
+    project: String(s.currentProject ?? 'Unassigned'),
   }));
 
   function openCreate() {

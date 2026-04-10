@@ -745,18 +745,18 @@ function DashboardComponent() {
               const row = r as AnyRow;
               const statusRaw = String(row.status ?? 'OPEN');
               const status = statusRaw === 'OVERDUE' ? 'OPEN' : statusRaw;
-              const dueRaw = row.dueDate ?? row.due_date;
+              const dueRaw = row.dueDate;
               const dueDate =
                 dueRaw !== undefined && dueRaw !== null && (typeof dueRaw === 'string' || typeof dueRaw === 'number')
                   ? String(dueRaw)
                   : undefined;
               return {
                 id: String(row.id ?? ''),
-                number: String(row.number ?? row.rfi_number ?? ''),
+                number: String(row.number ?? row.rfiNumber ?? ''),
                 title: String(row.title ?? row.subject ?? ''),
                 status: status as 'OPEN' | 'ANSWERED' | 'CLOSED',
                 dueDate,
-                createdAt: String(row.createdAt ?? row.created_at ?? ''),
+                createdAt: String(row.createdAt ?? ''),
               };
             })}
           />
@@ -778,7 +778,7 @@ function DashboardComponent() {
                 : undefined;
             const assigneeName =
               assigneeObj && typeof assigneeObj.name === 'string' ? assigneeObj.name : undefined;
-            const taskDueRaw = row.dueDate ?? row.due_date;
+            const taskDueRaw = row.dueDate;
             const dueDate =
               taskDueRaw !== undefined &&
               taskDueRaw !== null &&

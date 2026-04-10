@@ -61,7 +61,7 @@ function ProjectWorkspace({ project, onBack, onEdit }: WorkspaceProps) {
   const spent = Number(project.spent ?? 0);
   const pct = budget > 0 ? (spent / budget) * 100 : 0;
   const progress = Number(project.progress ?? 0);
-  const endDate = String(project.endDate ?? project.end_date ?? '');
+  const endDate = String(project.endDate ?? '');
   const daysLeft = endDate ? daysDiff(endDate) : null;
   const statusCfg = STATUS_CFG[String(project.status ?? '')] ?? STATUS_CFG.planning;
   const budgetHealth = getBudgetHealth(spent, budget);
@@ -140,7 +140,7 @@ function ProjectWorkspace({ project, onBack, onEdit }: WorkspaceProps) {
         <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
           <div className="bg-gray-800/60 rounded-xl p-3">
             <p className="text-gray-400 text-xs mb-1">Contract Value</p>
-            <p className="text-white font-bold text-lg">{fmtM(Number(project.contractValue ?? project.contract_value ?? 0))}</p>
+            <p className="text-white font-bold text-lg">{fmtM(Number(project.contractValue ?? 0))}</p>
           </div>
           <div className="bg-gray-800/60 rounded-xl p-3">
             <p className="text-gray-400 text-xs mb-1">Budget Used</p>
@@ -157,7 +157,7 @@ function ProjectWorkspace({ project, onBack, onEdit }: WorkspaceProps) {
           <div className="bg-gray-800/60 rounded-xl p-3">
             <p className="text-gray-400 text-xs mb-1">Workers On Site</p>
             <p className="text-white font-bold text-lg">{String(project.workers ?? 0)}</p>
-            <p className="text-gray-500 text-xs">{String(project.phase ?? project.current_phase ?? '—')}</p>
+            <p className="text-gray-500 text-xs">{String(project.phase ?? project.currentPhase ?? '—')}</p>
           </div>
           <BudgetHealthIndicator spent={spent} budget={budget} />
         </div>
@@ -207,10 +207,10 @@ function ProjectWorkspace({ project, onBack, onEdit }: WorkspaceProps) {
               <dl className="space-y-3 text-sm">
                 {[
                   ['Type', String(project.type ?? '—')],
-                  ['Manager', String(project.manager ?? project.project_manager ?? '—')],
-                  ['Start Date', String(project.startDate ?? project.start_date ?? '—')],
-                  ['End Date', String(project.endDate ?? project.end_date ?? '—')],
-                  ['Phase', String(project.phase ?? project.current_phase ?? '—')],
+                  ['Manager', String(project.manager ?? project.projectManager ?? '—')],
+                  ['Start Date', String(project.startDate ?? '—')],
+                  ['End Date', String(project.endDate ?? '—')],
+                  ['Phase', String(project.phase ?? project.currentPhase ?? '—')],
                 ].map(([k, v]) => (
                   <div key={k} className="flex items-center justify-between">
                     <dt className="text-gray-400">{k}</dt>
@@ -223,7 +223,7 @@ function ProjectWorkspace({ project, onBack, onEdit }: WorkspaceProps) {
               <h3 className="text-sm font-semibold text-white mb-4">Phase Milestones</h3>
               <div className="space-y-2">
                 {PROJECT_PHASES.slice(0, 7).map(phase => {
-                  const idx = PROJECT_PHASES.indexOf(String(project.phase ?? project.current_phase ?? ''));
+                  const idx = PROJECT_PHASES.indexOf(String(project.phase ?? project.currentPhase ?? ''));
                   const phIdx = PROJECT_PHASES.indexOf(phase);
                   const done = phIdx < idx;
                   const cur = phIdx === idx;
@@ -385,10 +385,10 @@ function ProjectWorkspace({ project, onBack, onEdit }: WorkspaceProps) {
                 <tbody className="divide-y divide-gray-800">
                   {invoices.map(inv => (
                     <tr key={String(inv.id)} className="hover:bg-gray-800/40">
-                      <td className="px-4 py-3 font-mono text-xs text-blue-400 font-bold">{String(inv.number ?? inv.invoice_number ?? '—')}</td>
+                      <td className="px-4 py-3 font-mono text-xs text-blue-400 font-bold">{String(inv.number ?? inv.invoiceNumber ?? '—')}</td>
                       <td className="px-4 py-3 text-white font-bold">£{Number(inv.amount ?? 0).toLocaleString()}</td>
                       <td className="px-4 py-3"><span className={`text-xs px-2 py-0.5 rounded-full font-medium ${inv.status === 'paid' ? 'bg-green-900/30 text-green-300' : inv.status === 'overdue' ? 'bg-red-900/30 text-red-300' : inv.status === 'sent' ? 'bg-blue-900/30 text-blue-300' : 'bg-gray-700/50 text-gray-600'}`}>{String(inv.status ?? '')}</span></td>
-                      <td className="px-4 py-3 text-gray-400 text-xs">{String(inv.dueDate ?? inv.due_date ?? '—')}</td>
+                      <td className="px-4 py-3 text-gray-400 text-xs">{String(inv.dueDate ?? '—')}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -420,7 +420,7 @@ function ProjectWorkspace({ project, onBack, onEdit }: WorkspaceProps) {
                 </div>
                 <div className="min-w-0">
                   <p className="text-white font-medium text-sm truncate">{String(m.name ?? '—')}</p>
-                  <p className="text-gray-400 text-xs truncate">{String(m.role ?? m.trade_type ?? '—')}</p>
+                  <p className="text-gray-400 text-xs truncate">{String(m.role ?? m.tradeType ?? '—')}</p>
                   <span className={`text-xs px-1.5 py-0.5 rounded font-medium ${m.status === 'Active' ? 'bg-green-900/40 text-green-400' : 'bg-gray-700 text-gray-400'}`}>{String(m.status ?? '—')}</span>
                 </div>
               </div>
@@ -445,11 +445,11 @@ function ProjectWorkspace({ project, onBack, onEdit }: WorkspaceProps) {
                 <tbody className="divide-y divide-gray-800">
                   {rfis.map(r => (
                     <tr key={String(r.id)} className="hover:bg-gray-800/40">
-                      <td className="px-4 py-3 font-mono text-xs text-blue-400 font-bold">{String(r.rfi_number ?? r.number ?? '—')}</td>
+                      <td className="px-4 py-3 font-mono text-xs text-blue-400 font-bold">{String(r.rfiNumber ?? r.number ?? '—')}</td>
                       <td className="px-4 py-3 text-white max-w-[240px] truncate">{String(r.subject ?? r.title ?? '—')}</td>
                       <td className="px-4 py-3"><span className={`text-xs px-2 py-0.5 rounded-full font-medium ${r.priority === 'critical' ? 'bg-red-900/30 text-red-300' : r.priority === 'high' ? 'bg-orange-900/30 text-orange-300' : r.priority === 'medium' ? 'bg-yellow-900/30 text-yellow-300' : 'bg-gray-700/50 text-gray-600'}`}>{String(r.priority ?? '—')}</span></td>
                       <td className="px-4 py-3 text-gray-400 text-xs capitalize">{String(r.status ?? '—')}</td>
-                      <td className="px-4 py-3 text-gray-400 text-xs">{String(r.due_date ?? r.dueDate ?? '—')}</td>
+                      <td className="px-4 py-3 text-gray-400 text-xs">{String(r.dueDate ?? '—')}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -467,7 +467,7 @@ function ProjectWorkspace({ project, onBack, onEdit }: WorkspaceProps) {
                 <tbody className="divide-y divide-gray-800">
                   {cos.map(co => (
                     <tr key={String(co.id)} className="hover:bg-gray-800/40">
-                      <td className="px-4 py-3 font-mono text-xs text-blue-400 font-bold">{String(co.co_number ?? co.number ?? '—')}</td>
+                      <td className="px-4 py-3 font-mono text-xs text-blue-400 font-bold">{String(co.coNumber ?? co.number ?? '—')}</td>
                       <td className="px-4 py-3 text-white max-w-[240px] truncate">{String(co.title ?? '—')}</td>
                       <td className="px-4 py-3 text-white font-bold">£{Number(co.value ?? co.amount ?? 0).toLocaleString()}</td>
                       <td className="px-4 py-3"><span className={`text-xs px-2 py-0.5 rounded-full font-medium ${co.status === 'approved' ? 'bg-green-900/30 text-green-300' : co.status === 'rejected' ? 'bg-red-900/30 text-red-300' : 'bg-yellow-900/30 text-yellow-300'}`}>{String(co.status ?? '—')}</span></td>
@@ -505,7 +505,7 @@ function ProjectWorkspace({ project, onBack, onEdit }: WorkspaceProps) {
                       <td className="px-4 py-3 text-gray-400 text-xs capitalize">{String(s.type ?? '').replace(/_/g, ' ')}</td>
                       <td className="px-4 py-3"><span className={`text-xs px-2 py-0.5 rounded-full font-medium ${s.severity === 'serious' || s.severity === 'critical' ? 'bg-red-900/30 text-red-300' : s.severity === 'moderate' ? 'bg-orange-900/30 text-orange-300' : 'bg-green-900/30 text-green-300'}`}>{String(s.severity ?? '—')}</span></td>
                       <td className="px-4 py-3 text-xs capitalize text-gray-300">{String(s.status ?? '—')}</td>
-                      <td className="px-4 py-3 text-gray-400 text-xs">{String(s.date ?? s.incident_date ?? '—')}</td>
+                      <td className="px-4 py-3 text-gray-400 text-xs">{String(s.date ?? s.incidentDate ?? '—')}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -523,7 +523,7 @@ function ProjectWorkspace({ project, onBack, onEdit }: WorkspaceProps) {
                 <div className="flex items-center justify-between mb-3">
                   <div>
                     <p className="text-white font-semibold">{String(rep.date ?? '—')}</p>
-                    <p className="text-gray-400 text-xs">Prepared by {String(rep.preparedBy ?? rep.prepared_by ?? '—')} · {String(rep.weather ?? '—')} {String(rep.temperature ?? '')}</p>
+                    <p className="text-gray-400 text-xs">Prepared by {String(rep.preparedBy ?? '—')} · {String(rep.weather ?? '—')} {String(rep.temperature ?? '')}</p>
                   </div>
                   <span className={`text-xs px-2 py-1 rounded-full font-medium ${rep.status === 'approved' ? 'bg-green-900/30 text-green-300' : 'bg-yellow-900/30 text-yellow-300'}`}>{String(rep.status ?? 'draft')}</span>
                 </div>
@@ -585,7 +585,7 @@ export function Projects() {
     completed: projects.filter(p => p.status === 'completed').length,
   };
 
-  const totalCV = projects.reduce((s, p) => s + (Number(p.contract_value ?? p.contractValue) || 0), 0);
+  const totalCV = projects.reduce((s, p) => s + (Number(p.contractValue) || 0), 0);
   const totalWorkers = projects.reduce((s, p) => s + (Number(p.workers) || 0), 0);
 
   function openCreate() {
@@ -597,10 +597,10 @@ export function Projects() {
     setEditMode(true);
     setForm({
       name: String(p.name ?? ''), client: String(p.client ?? ''), location: String(p.location ?? ''),
-      type: String(p.type ?? 'Commercial'), manager: String(p.manager ?? p.project_manager ?? ''),
-      budget: String(p.budget ?? ''), contract_value: String(p.contractValue ?? p.contract_value ?? ''),
-      workers: String(p.workers ?? '0'), start_date: String(p.startDate ?? p.start_date ?? ''),
-      end_date: String(p.endDate ?? p.end_date ?? ''), status: String(p.status ?? 'planning'),
+      type: String(p.type ?? 'Commercial'), manager: String(p.projectManager ?? ''),
+      budget: String(p.budget ?? ''), contract_value: String(p.contractValue ?? ''),
+      workers: String(p.workers ?? '0'), start_date: String(p.startDate ?? ''),
+      end_date: String(p.endDate ?? ''), status: String(p.status ?? 'planning'),
       phase: String(p.phase ?? 'Pre-construction'), description: String(p.description ?? ''),
     });
     setSelectedId(String(p.id));
@@ -678,7 +678,7 @@ export function Projects() {
               const budget = Number(p.budget ?? 0);
               const spent = Number(p.spent ?? 0);
               const pct = budget > 0 ? (spent / budget) * 100 : 0;
-              const endDate = String(p.endDate ?? p.end_date ?? '');
+              const endDate = String(p.endDate ?? '');
               const days = endDate ? daysDiff(endDate) : null;
               const budgetHealth = getBudgetHealth(spent, budget);
               const isSelected = selectedIds.has(String(p.id));

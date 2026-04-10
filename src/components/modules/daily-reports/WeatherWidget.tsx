@@ -52,7 +52,7 @@ export function WeatherWidget({ reports, projectFilter, isLoading, error }: Weat
   }
 
   const safeReports = reports ?? [];
-  const filtered = safeReports.filter(r => !projectFilter || String(r.project_id ?? r.projectId ?? '') === projectFilter);
+  const filtered = safeReports.filter(r => !projectFilter || String(r.projectId ?? '') === projectFilter);
 
   if (filtered.length === 0) {
     return (
@@ -64,22 +64,22 @@ export function WeatherWidget({ reports, projectFilter, isLoading, error }: Weat
   }
 
   const last14 = [...filtered]
-    .filter(r => isValidDate(r.report_date ?? r.reportDate))
+    .filter(r => isValidDate(r.reportDate))
     .sort((a, b) => {
-      const aDate = new Date(String(a.report_date ?? a.reportDate)).getTime();
-      const bDate = new Date(String(b.report_date ?? b.reportDate)).getTime();
+      const aDate = new Date(String(a.reportDate)).getTime();
+      const bDate = new Date(String(b.reportDate)).getTime();
       return aDate - bDate;
     })
     .slice(-14);
 
   const chartData = last14.map(r => ({
-    date: String(r.report_date ?? r.reportDate ?? '').slice(-5),
+    date: String(r.reportDate ?? '').slice(-5),
     temp: r.temperature !== null && r.temperature !== undefined && r.temperature !== '' ? Number(r.temperature) : null,
   }));
 
   const sunnyCount = filtered.filter(r => String(r.weather ?? '').toLowerCase().includes('sunny')).length;
   const rainyCount = filtered.filter(r => String(r.weather ?? '').toLowerCase().includes('rain')).length;
-  const delayCount = filtered.filter(r => String(r.issues_delays ?? r.issuesDelays ?? '').toLowerCase().includes('weather')).length;
+  const delayCount = filtered.filter(r => String(r.issuesDelays ?? '').toLowerCase().includes('weather')).length;
 
   return (
     <>
@@ -105,11 +105,11 @@ export function WeatherWidget({ reports, projectFilter, isLoading, error }: Weat
         <h3 className="text-lg font-semibold text-white mb-4">Daily Weather (Last 14 Days)</h3>
         <div className="grid grid-cols-7 gap-3">
           {last14.map(r => {
-            const hasWeatherDelay = String(r.issues_delays ?? r.issuesDelays ?? '').toLowerCase().includes('weather');
+            const hasWeatherDelay = String(r.issuesDelays ?? '').toLowerCase().includes('weather');
             return (
               <div key={String(r.id)} className="bg-gray-700/50 rounded-lg p-3 border border-gray-700 text-center">
                 <p className="text-xs text-gray-400 mb-2">
-                  {(r.report_date ?? r.reportDate) ? String(r.report_date ?? r.reportDate).slice(-5) : 'N/A'}
+                  {(r.reportDate) ? String(r.reportDate).slice(-5) : 'N/A'}
                 </p>
                 <div className="flex justify-center mb-2">
                   <WeatherIcon weather={String(r.weather ?? '')} />

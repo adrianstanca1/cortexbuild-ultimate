@@ -540,7 +540,7 @@ const handleSaveDelay = async () => {
                         ? 'bg-orange-900/30 text-orange-300'
                         : 'bg-gray-700/30 text-gray-300';
 
-                const nextService = String(e.next_service ?? e.service_due ?? '');
+                const nextService = String(e.nextService ?? e.serviceDue ?? '');
                 const isServiceSoon = nextService && new Date(nextService) <= new Date(Date.now() + 14 * 24 * 60 * 60 * 1000);
 
                 return (
@@ -650,7 +650,7 @@ const handleSaveDelay = async () => {
 
                       return (
                         <tr key={String(w.id)} className={`hover:bg-gray-700/50 ${hasNoRAMS ? 'bg-red-900/20' : ''}`}>
-                          <td className="px-4 py-3 font-medium text-gray-100">{String(w.name ?? w.worker_name ?? '—')}</td>
+                          <td className="px-4 py-3 font-medium text-gray-100">{String(w.name ?? w.workerName ?? '—')}</td>
                           <td className="px-4 py-3 text-gray-300">{String(w.role ?? '—')}</td>
                           <td className="px-4 py-3 text-gray-300">{String(w.trade ?? w.skill ?? '—')}</td>
                           <td className="px-4 py-3 text-gray-300">{String(w.project ?? w.assignment ?? '—')}</td>

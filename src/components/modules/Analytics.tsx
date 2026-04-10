@@ -140,7 +140,7 @@ export function Analytics() {
     const typeMap: Record<string, number> = {};
     projects.forEach(p => {
       const type = String(p.type ?? 'Other').split(' ')[0] || 'Other';
-      typeMap[type] = (typeMap[type] ?? 0) + Number(p.contract_value ?? p.budget ?? 0);
+      typeMap[type] = (typeMap[type] ?? 0) + Number(p.contractValue ?? p.budget ?? 0);
     });
     const colors = ['#3b82f6','#8b5cf6','#10b981','#f59e0b'];
     return Object.entries(typeMap).slice(0, 4).map(([name, value], i) => ({
@@ -176,14 +176,14 @@ export function Analytics() {
   const totalRevenue   = invoices.filter(i => i.status === 'paid').reduce((s,i) => s + Number(i.amount??0), 0);
   const grossMargin    = totalRevenue > 0 ? ((totalRevenue * 0.342) / totalRevenue * 100).toFixed(1) : '34.2';
   const avgProjValue   = activeProjects.length > 0
-    ? activeProjects.reduce((s,p) => s + Number(p.contractValue??p.contract_value??0), 0) / activeProjects.length
+    ? activeProjects.reduce((s,p) => s + Number(p.contractValue??0), 0) / activeProjects.length
     : 0;
 
   // Overview KPIs
   const ytdRevenue = totalRevenue;
   const grossProfitPct = Number(grossMargin);
   const outstandingInvoices = invoices.filter(i => i.status === 'sent' || i.status === 'draft' || i.status === 'overdue').reduce((s,i) => s + Number(i.amount??0), 0);
-  const pipelineValue = projects.filter(p => p.status === 'quoted' || p.status === 'tendering').reduce((s,p) => s + Number(p.contractValue??p.contract_value??0), 0);
+  const pipelineValue = projects.filter(p => p.status === 'quoted' || p.status === 'tendering').reduce((s,p) => s + Number(p.contractValue??0), 0);
   const lastIncidentDate = safety.length > 0 ? new Date(String(safety[0].date??Date.now())) : null;
   const daysSinceLastIncident = lastIncidentDate ? Math.floor((Date.now() - lastIncidentDate.getTime()) / (1000 * 60 * 60 * 24)) : 0;
 
@@ -269,7 +269,7 @@ export function Analytics() {
 
   // Top 3 projects by value
   const top3Projects = activeProjects
-    .map(p => ({ name: String(p.name??''), value: Number(p.contractValue??p.contract_value??0) }))
+    .map(p => ({ name: String(p.name??''), value: Number(p.contractValue??0) }))
     .sort((a,b) => b.value - a.value)
     .slice(0,3);
 

@@ -216,8 +216,8 @@ export function DocumentsTab({ projectId, projectName }: DocumentsTabProps) {
                   <td className="px-4 py-3"><span className="text-xs px-2 py-0.5 rounded-full bg-gray-800 text-gray-300">{String(doc.category ?? '—')}</span></td>
                   <td className="px-4 py-3 text-orange-400 text-xs font-mono">v{String(doc.version ?? '1.0')}</td>
                   <td className="px-4 py-3 text-gray-400 text-xs">{String(doc.size ?? '—')}</td>
-                  <td className="px-4 py-3 text-gray-400 text-xs">{String(doc.author ?? doc.uploaded_by ?? '—')}</td>
-                  <td className="px-4 py-3 text-gray-400 text-xs">{formatDate(String(doc.date_issued ?? doc.created_at ?? ''))}</td>
+                  <td className="px-4 py-3 text-gray-400 text-xs">{String(doc.author ?? doc.uploadedBy ?? '—')}</td>
+                  <td className="px-4 py-3 text-gray-400 text-xs">{formatDate(String(doc.dateIssued ?? doc.createdAt ?? ''))}</td>
                   <td className="px-4 py-3">
                     <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                       {['PNG', 'JPG', 'JPEG', 'GIF', 'WEBP'].includes(String(doc.type ?? '').toUpperCase()) ? (

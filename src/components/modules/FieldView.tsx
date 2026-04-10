@@ -235,7 +235,7 @@ export function FieldView() {
               const pid = String(p.id ?? '');
               const report = getProjectReport(pid);
               const openInc = getProjectIncidents(pid);
-              const progress = Number(p.progress ?? p.completion_percentage ?? 0);
+              const progress = Number(p.progress ?? p.completionPercentage ?? 0);
               const hasReport = !!report;
               const location = String(p.location ?? '');
               const locationWeather = getWeatherForLocation(location);
@@ -571,8 +571,8 @@ export function FieldView() {
                             {String(r.report_date ?? '—')}
                           </span>
                         </td>
-                        <td className="px-4 py-3 font-medium text-white">{String(r.project_name ?? r.project ?? '—')}</td>
-                        <td className="px-4 py-3 text-gray-400">{String(r.submitted_by ?? r.author ?? '—')}</td>
+                        <td className="px-4 py-3 font-medium text-white">{String(r.projectName ?? r.project ?? '—')}</td>
+                        <td className="px-4 py-3 text-gray-400">{String(r.submittedBy ?? r.author ?? '—')}</td>
                         <td className="px-4 py-3 text-center">
                           <span className="flex items-center gap-1 text-gray-300 justify-center">
                             <Users size={12} />
@@ -634,15 +634,15 @@ export function FieldView() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-700">
-                  {[...incidents].sort((a, b) => String(b.date ?? b.incident_date ?? '').localeCompare(String(a.date ?? a.incident_date ?? ''))).map(i => {
+                  {[...incidents].sort((a, b) => String(b.date ?? b.incidentDate ?? '').localeCompare(String(a.date ?? a.incidentDate ?? ''))).map(i => {
                     const sev = String(i.severity ?? '');
                     const st = String(i.status ?? '');
                     const stColour = st === 'Closed' ? 'bg-gray-600 text-gray-300' : st === 'Investigation' ? 'bg-purple-500/20 text-purple-300 border border-purple-500/30' : 'bg-red-500/20 text-red-300 border border-red-500/30';
                     return (
                       <tr key={String(i.id)} className="hover:bg-gray-700/30 transition-colors">
-                        <td className="px-4 py-3 text-gray-400 whitespace-nowrap">{String(i.date ?? i.incident_date ?? '—')}</td>
+                        <td className="px-4 py-3 text-gray-400 whitespace-nowrap">{String(i.date ?? i.incidentDate ?? '—')}</td>
                         <td className="px-4 py-3 font-medium text-white">{String(i.title ?? i.description ?? 'Incident')}</td>
-                        <td className="px-4 py-3 text-gray-400">{String(i.type ?? i.incident_type ?? '—')}</td>
+                        <td className="px-4 py-3 text-gray-400">{String(i.type ?? i.incidentType ?? '—')}</td>
                         <td className="px-4 py-3">
                           {!!sev && <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${sevColour(sev)}`}>{sev}</span>}
                         </td>

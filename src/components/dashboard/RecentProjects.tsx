@@ -69,7 +69,7 @@ export function RecentProjects() {
               : '';
           const budgetRaw = project.budget;
           const budget = typeof budgetRaw === 'number' ? budgetRaw : Number(budgetRaw) || 0;
-          const updatedAtRaw = project.updatedAt ?? project.updated_at;
+          const updatedAtRaw = project.updatedAt;
           const updatedAt =
             typeof updatedAtRaw === 'string' || typeof updatedAtRaw === 'number'
               ? new Date(updatedAtRaw)

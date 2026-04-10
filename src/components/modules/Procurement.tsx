@@ -138,7 +138,7 @@ export function Procurement() {
   const thisMonth = new Date().getMonth();
   const deliveredThisMonth = pos.filter(p => {
     if (p.status !== 'delivered') return false;
-    const d = new Date(String(p.delivery_date??p.deliveryDate??''));
+    const d = new Date(String(p.deliveryDate ?? ''));
     return !isNaN(d.getTime()) && d.getMonth() === thisMonth;
   }).length;
 
@@ -159,7 +159,7 @@ export function Procurement() {
       }
       sMap[sup].spend += Number(p.value ?? 0);
       sMap[sup].count += 1;
-      const orderDate = String(p.order_date ?? p.orderDate ?? '');
+      const orderDate = String(p.orderDate ?? '');
       if (orderDate > sMap[sup].lastOrder) sMap[sup].lastOrder = orderDate;
     });
     return Object.values(sMap).sort((a, b) => b.spend - a.spend);
@@ -201,7 +201,7 @@ export function Procurement() {
       const year = m.getFullYear();
       const mName = m.toLocaleDateString('en-GB', { month: 'short' });
       const spent = pos.filter(p => {
-        const od = new Date(String(p.order_date ?? p.orderDate ?? ''));
+        const od = new Date(String(p.orderDate ?? ''));
         return !isNaN(od.getTime()) && od.getMonth() === month && od.getFullYear() === year;
       }).reduce((s, p) => s + Number(p.value ?? 0), 0);
       return { month: mName, spent: spent / 1000 };
@@ -214,15 +214,15 @@ export function Procurement() {
     return pos
       .filter(p => ['pending_delivery', 'on_site', 'ordered'].includes(String(p.status ?? '')))
       .sort((a, b) => {
-        const aDate = new Date(String(a.delivery_date ?? a.deliveryDate ?? ''));
-        const bDate = new Date(String(b.delivery_date ?? b.deliveryDate ?? ''));
+        const aDate = new Date(String(a.deliveryDate ?? ''));
+        const bDate = new Date(String(b.deliveryDate ?? ''));
         return aDate.getTime() - bDate.getTime();
       });
   }, [pos]);
 
-  const overdueCount = deliverySchedule.filter(p => daysUntil(String(p.delivery_date ?? p.deliveryDate ?? '')) < 0).length;
+  const overdueCount = deliverySchedule.filter(p => daysUntil(String(p.deliveryDate ?? '')) < 0).length;
   const dueSoonCount = deliverySchedule.filter(p => {
-    const d = daysUntil(String(p.delivery_date ?? p.deliveryDate ?? ''));
+    const d = daysUntil(String(p.deliveryDate ?? ''));
     return d >= 0 && d <= 7;
   }).length;
 
@@ -242,8 +242,8 @@ export function Procurement() {
     setFProject(String(po.project??''));
     setFCategory(String(po.category??'Other'));
     setFStatus(String(po.status??'pending_approval'));
-    setFOrder(String(po.order_date??po.orderDate??''));
-    setFDelivery(String(po.delivery_date??po.deliveryDate??''));
+    setFOrder(String(po.orderDate ?? ''));
+    setFDelivery(String(po.deliveryDate ?? ''));
     setFNotes(String(po.notes??''));
     setShowModal(true);
   }
@@ -408,7 +408,7 @@ export function Procurement() {
                       const id = String(po.id);
                       const isSelected = selectedIds.has(id);
                       const StatusIcon = STATUS_ICON[String(po.status??'')] ?? Package;
-                      const delDate = String(po.delivery_date ?? po.deliveryDate ?? '');
+                      const delDate = String(po.deliveryDate ?? '');
                       const urgency = getUrgency(delDate);
                       return (
                         <tr key={id} className="hover:bg-gray-800/40 transition-colors cursor-pointer" onClick={()=>openDetail(po)}>
@@ -423,7 +423,7 @@ export function Procurement() {
                           <td className="px-4 py-3 text-gray-400 text-xs">{String(po.category??'—')}</td>
                           <td className="px-4 py-3 text-gray-400 text-xs max-w-[120px] truncate">{String(po.project??'—')}</td>
                           <td className="px-4 py-3 text-white font-bold">{fmt(Number(po.value??0))}</td>
-                          <td className="px-4 py-3 text-gray-400 text-xs">{String(po.order_date ?? po.orderDate ?? '—').substring(0,10)}</td>
+                          <td className="px-4 py-3 text-gray-400 text-xs">{String(po.orderDate ?? '—').substring(0,10)}</td>
                           <td className={`px-4 py-3 text-sm font-medium ${urgency==='overdue'?'text-red-400':urgency==='urgent'?'text-red-400':urgency==='warning'?'text-yellow-400':'text-gray-400'}`}>
                             {delDate ? delDate.substring(0,10) : '—'}
                           </td>
@@ -641,7 +641,7 @@ export function Procurement() {
                 </thead>
                 <tbody className="divide-y divide-gray-800">
                   {deliverySchedule.map(po=>{
-                    const delDate = String(po.delivery_date ?? po.deliveryDate ?? '');
+                    const delDate = String(po.deliveryDate ?? '');
                     const days = daysUntil(delDate);
                     let trafficLight = 'bg-emerald-900/30 text-emerald-300';
                     if (days < 0) trafficLight = 'bg-red-900/30 text-red-300';
@@ -802,7 +802,7 @@ export function Procurement() {
                 </div>
                 <div>
                   <p className="text-xs text-gray-400 uppercase font-semibold mb-1">Order Date</p>
-                  <p className="text-white">{String(selectedPO.order_date ?? selectedPO.orderDate ?? '—').substring(0,10)}</p>
+                  <p className="text-white">{String(selectedPO.orderDate ?? '—').substring(0,10)}</p>
                 </div>
               </div>
 
@@ -811,11 +811,11 @@ export function Procurement() {
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <p className="text-xs text-gray-400 mb-1">Expected Delivery</p>
-                    <p className="text-white font-medium">{String(selectedPO.delivery_date ?? selectedPO.deliveryDate ?? '—').substring(0,10)}</p>
+                    <p className="text-white font-medium">{String(selectedPO.deliveryDate ?? '—').substring(0,10)}</p>
                   </div>
                   <div>
                     <p className="text-xs text-gray-400 mb-1">Days Until Delivery</p>
-                    <p className="text-white font-medium">{daysUntil(String(selectedPO.delivery_date ?? selectedPO.deliveryDate ?? '')) === Infinity ? '—' : daysUntil(String(selectedPO.delivery_date ?? selectedPO.deliveryDate ?? '')) < 0 ? `${-daysUntil(String(selectedPO.delivery_date ?? selectedPO.deliveryDate ?? ''))}d overdue` : `${daysUntil(String(selectedPO.delivery_date ?? selectedPO.deliveryDate ?? ''))}d`}</p>
+                    <p className="text-white font-medium">{daysUntil(String(selectedPO.deliveryDate ?? '')) === Infinity ? '—' : daysUntil(String(selectedPO.deliveryDate ?? '')) < 0 ? `${-daysUntil(String(selectedPO.deliveryDate ?? ''))}d overdue` : `${daysUntil(String(selectedPO.deliveryDate ?? ''))}d`}</p>
                   </div>
                 </div>
               </div>

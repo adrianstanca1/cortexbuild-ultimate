@@ -227,7 +227,7 @@ export function ChangeOrders() {
   const filtered = orders.filter(o => {
     const title = String(o.title ?? '').toLowerCase();
     const num = String(o.co_number ?? '').toLowerCase();
-    const proj = String(o.project ?? o.project_id ?? '').toLowerCase();
+    const proj = String(o.project ?? o.projectId ?? '').toLowerCase();
     const matchSearch = title.includes(search.toLowerCase()) || num.includes(search.toLowerCase());
     const matchProject = !projectFilter || proj.includes(projectFilter.toLowerCase());
     let matchStatus = statusFilter === 'All' || o.status === statusFilter;
@@ -250,7 +250,7 @@ export function ChangeOrders() {
   const totalDays = approvedOrders.reduce((s, o) => s + Number(o.days_extension ?? 0), 0);
   const avgProcessingTime = approvedCount > 0 ? Math.round(totalDays / approvedCount) : 0;
   const _underReviewCount = orders.filter(o => o.status === 'Under Review').length;
-  const projects = Array.from(new Set(orders.map(o => String(o.project ?? o.project_id ?? '')).filter(Boolean)));
+  const projects = Array.from(new Set(orders.map(o => String(o.project ?? o.projectId ?? '')).filter(Boolean)));
 
   function nextCONumber() {
     const nums = orders.map(o => parseInt(String(o.co_number ?? '0').replace(/\D/g, ''))).filter(n => !isNaN(n));
@@ -372,10 +372,10 @@ export function ChangeOrders() {
   const _chartData = generateChartData(orders);
   const cumulativeData = generateCumulativeData(orders);
   const reasonBreakdown = generateReasonBreakdown(orders);
-  const byProjectData = Array.from(new Set(orders.map(o => String(o.project ?? o.project_id ?? ''))))
+  const byProjectData = Array.from(new Set(orders.map(o => String(o.project ?? o.projectId ?? ''))))
     .map(proj => ({
       project: proj || 'Unassigned',
-      value: orders.filter(o => String(o.project ?? o.project_id ?? '') === proj && o.status === 'Approved')
+      value: orders.filter(o => String(o.project ?? o.projectId ?? '') === proj && o.status === 'Approved')
         .reduce((s, o) => s + Number(o.value ?? 0), 0)
     }))
     .filter(d => d.value > 0)
@@ -537,7 +537,7 @@ export function ChangeOrders() {
                           <button type="button" onClick={e => { e.stopPropagation(); toggle(id); }}>{isSelected ? <CheckSquare size={16} className="text-blue-400"/> : <Square size={16} className="text-gray-500"/>}</button>
                         </td>
                         <td className="px-4 py-3 font-mono text-xs font-bold text-orange-600">{String(o.co_number ?? '—')}</td>
-                        <td className="px-4 py-3 text-gray-300 text-sm">{String(o.project ?? o.project_id ?? '—')}</td>
+                        <td className="px-4 py-3 text-gray-300 text-sm">{String(o.project ?? o.projectId ?? '—')}</td>
                         <td className="px-4 py-3 font-medium text-white max-w-xs truncate">{String(o.title ?? '—')}</td>
                         <td className="px-4 py-3 font-semibold text-white">
                           {Number(o.value ?? 0) >= 0 ? '+' : ''}£{Number(o.value ?? 0).toLocaleString()}
@@ -820,7 +820,7 @@ export function ChangeOrders() {
                           </div>
                           <p className="text-white font-semibold">{String(co.title ?? '—')}</p>
                           <p className="text-sm text-gray-400 mt-1">
-                            Project: <span className="text-gray-300">{String(co.project ?? co.project_id ?? '—')}</span>
+                            Project: <span className="text-gray-300">{String(co.project ?? co.projectId ?? '—')}</span>
                           </p>
                           <p className="text-sm text-gray-400">
                             Amount: <span className="text-white font-semibold">£{Number(co.value ?? 0).toLocaleString()}</span>
