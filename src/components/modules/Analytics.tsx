@@ -91,9 +91,9 @@ const HEADCOUNT_TREND = [
 export function Analytics() {
   const [activeTab, setActiveTab] = useState<'overview'|'financial'|'projects'|'safety'|'labour'>('overview');
 
-  const { data: rawProjects = [] } = useProjects.useList();
-  const { data: rawSafety   = [] } = useSafety.useList();
-  const { data: rawInvoices = [] } = useInvoices.useList();
+  const { data: rawProjects = [], isError: projectsError, error: projectsErr } = useProjects.useList();
+  const { data: rawSafety   = [], isError: safetyError, error: safetyErr } = useSafety.useList();
+  const { data: rawInvoices = [], isError: invoicesError, error: invoicesErr } = useInvoices.useList();
 
   const projects = rawProjects as AnyRow[];
   const safety   = rawSafety   as AnyRow[];
@@ -286,6 +286,11 @@ export function Analytics() {
   return (
     <>
       <ModuleBreadcrumbs currentModule="analytics" onNavigate={() => {}} />
+      {(projectsError || safetyError || invoicesError) && (
+        <div className="bg-red-900/30 border border-red-700 rounded-xl px-4 py-3 text-red-300 mb-4">
+          Failed to load data: {projectsErr?.message || safetyErr?.message || invoicesErr?.message}
+        </div>
+      )}
       <div className="h-full overflow-y-auto bg-gray-900 p-6 text-white">
       <div className="mb-6">
         <h1 className="text-3xl font-bold text-white mb-4">Analytics &amp; Intelligence</h1>
