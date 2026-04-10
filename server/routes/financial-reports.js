@@ -11,7 +11,7 @@ router.use(checkPermission('financial-reports', 'read'));
 function orgFilter(user) {
   if (!user || user.role === 'super_admin') return { filter: '', params: [] };
   if (user.role === 'company_owner') return { filter: ' company_id = $1', params: [user.company_id] };
-  return { filter: ' organization_id = $1', params: [user.organization_id] };
+  return { filter: ' COALESCE(organization_id, company_id) = $1', params: [user.organization_id || user.company_id] };
 }
 
 router.get('/summary', async (req, res) => {

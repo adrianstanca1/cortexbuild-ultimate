@@ -48,7 +48,7 @@ function mapApiToSubmittal(item: Record<string, unknown>): Submittal {
     description: String(item.description || ''),
     files: Array.isArray(item.files) ? (item.files as string[]).map(String) : [],
     comments: Number(item.comments || item.comment_count || 0),
-    revisionNumber: Number(item.revision_number || item.revisionNumber || 1),
+    revisionNumber: Number(item.revision_number ?? item.revisionNumber ?? 1),
     trade: String(item.trade || ''),
   };
 }

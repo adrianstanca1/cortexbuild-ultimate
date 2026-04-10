@@ -68,9 +68,9 @@ export function CarbonEstimating() {
     try {
       const res = await carbonApi.estimate({
         area_m2: parseFloat(floorArea),
-        programme_months: parseInt(programmeMonths) || 12,
+        programme_months: programmeMonths !== null && programmeMonths !== undefined ? parseInt(programmeMonths) : 12,
         epc_rating: epcRating,
-        occupancy_hours: parseInt(occupancyHours) || 12,
+        occupancy_hours: occupancyHours !== null && occupancyHours !== undefined ? parseInt(occupancyHours) : 12,
       });
       setResult(res);
       toast.success('Carbon estimate generated');

@@ -18,8 +18,8 @@ router.get('/overview', async (req, res) => {
       where = 'WHERE company_id = $1';
       params.push(auth.company_id);
     } else {
-      where = 'WHERE organization_id = $1';
-      params.push(orgId);
+      where = 'WHERE COALESCE(organization_id, company_id) = $1';
+      params.push(orgId || auth.company_id);
     }
 
     const [projectsResult, invoicesResult, rfisResult, safetyResult, teamResult] = await Promise.all([
@@ -77,8 +77,8 @@ router.get('/revenue', async (req, res) => {
       where = 'WHERE company_id = $1';
       params.push(auth.company_id);
     } else {
-      where = 'WHERE organization_id = $1';
-      params.push(orgId);
+      where = 'WHERE COALESCE(organization_id, company_id) = $1';
+      params.push(orgId || auth.company_id);
     }
 
     const result = await pool.query(`
@@ -118,8 +118,8 @@ router.get('/project-status', async (req, res) => {
       where = 'WHERE company_id = $1';
       params.push(auth.company_id);
     } else {
-      where = 'WHERE organization_id = $1';
-      params.push(orgId);
+      where = 'WHERE COALESCE(organization_id, company_id) = $1';
+      params.push(orgId || auth.company_id);
     }
 
     const result = await pool.query(`
@@ -168,8 +168,8 @@ router.get('/safety-chart', async (req, res) => {
       params.push(auth.company_id);
     } else {
       join = 'JOIN projects p ON si.project_id = p.id';
-      where = 'WHERE p.organization_id = $1';
-      params.push(orgId);
+      where = 'WHERE COALESCE(p.organization_id, p.company_id) = $1';
+      params.push(orgId || auth.company_id);
     }
 
     const result = await pool.query(`

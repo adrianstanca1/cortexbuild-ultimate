@@ -296,7 +296,7 @@ router.post('/summarize-project', aiSummarizeLimiter, async (req, res) => {
     let projWhere = 'WHERE id = $1';
     let projParams = [projectId];
     if (isCompanyOwner) { projWhere += ' AND company_id = $2'; projParams.push(req.user.company_id); }
-    else if (!isSuper && orgId) { projWhere += ' AND organization_id = $2'; projParams.push(orgId); }
+    else if (!isSuper && (orgId || req.user.company_id)) { projWhere += ' AND COALESCE(organization_id, company_id) = $2'; projParams.push(orgId || req.user.company_id); }
     const { rows: projects } = await pool.query(
       `SELECT name, client, status, progress, budget, spent, manager, location, type, description, start_date, end_date
        FROM projects ${projWhere} LIMIT 1`,
@@ -767,7 +767,7 @@ router.post('/execute', aiExecuteLimiter, async (req, res) => {
         let exWhere = 'WHERE id = $1';
         let exParams = [projectId];
         if (isCoOwner) { exWhere += ' AND company_id = $2'; exParams.push(req.user.company_id); }
-        else if (!isSuperAdmin && orgId) { exWhere += ' AND organization_id = $2'; exParams.push(orgId); }
+        else if (!isSuperAdmin && (orgId || req.user.company_id)) { exWhere += ' AND COALESCE(organization_id, company_id) = $2'; exParams.push(orgId || req.user.company_id); }
         const { rows } = await pool.query(
           `SELECT name, client, status, progress, budget, spent, manager, description
            FROM projects ${exWhere} LIMIT 1`,

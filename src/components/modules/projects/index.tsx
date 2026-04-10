@@ -585,8 +585,8 @@ export function Projects() {
     completed: projects.filter(p => p.status === 'completed').length,
   };
 
-  const totalCV = projects.reduce((s, p) => s + (Number(p.contractValue) || 0), 0);
-  const totalWorkers = projects.reduce((s, p) => s + (Number(p.workers) || 0), 0);
+  const totalCV = projects.reduce((s, p) => s + (p.contractValue !== null && p.contractValue !== undefined ? Number(p.contractValue) : 0), 0);
+  const totalWorkers = projects.reduce((s, p) => s + (p.workers !== null && p.workers !== undefined ? Number(p.workers) : 0), 0);
 
   function openCreate() {
     setEditMode(false);

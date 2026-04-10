@@ -617,7 +617,7 @@ export function Timesheets() {
               {formTotalPay > 0 && (
                 <div className="grid grid-cols-3 gap-3 bg-green-900/30 border border-green-700 rounded-lg p-4 text-sm">
                   <div className="text-center"><p className="text-xs text-gray-400">Regular Pay</p><p className="font-bold text-white">£{Math.round(formRegular * CITB_RATE).toLocaleString()}</p></div>
-                  <div className="text-center"><p className="text-xs text-gray-400">OT Pay</p><p className="font-bold text-amber-400">£{Math.round(formOT * CITB_RATE * (Number(form.overtimeRate)||1.5)).toLocaleString()}</p></div>
+                  <div className="text-center"><p className="text-xs text-gray-400">OT Pay</p><p className="font-bold text-amber-400">£{Math.round(formOT * CITB_RATE * (form.overtimeRate !== null && form.overtimeRate !== undefined ? Number(form.overtimeRate) : 1.5)).toLocaleString()}</p></div>
                   <div className="text-center"><p className="text-xs text-gray-400">Total Pay</p><p className="font-bold text-green-400">£{Math.round(formTotalPay).toLocaleString()}</p></div>
                 </div>
               )}

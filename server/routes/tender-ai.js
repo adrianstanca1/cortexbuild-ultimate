@@ -351,9 +351,9 @@ router.post('/:id/ai-score', async (req, res) => {
       if (isCompanyOwner) {
         whereClause += ' AND company_id = $2';
         params.push(req.user.company_id);
-      } else if (!isSuper && orgId) {
-        whereClause += ' AND organization_id = $2';
-        params.push(orgId);
+      } else if (!isSuper && (orgId || req.user.company_id)) {
+        whereClause += ' AND COALESCE(organization_id, company_id) = $2';
+        params.push(orgId || req.user.company_id);
       }
       const { rows } = await pool.query(
         `SELECT title, client, value, deadline, status, probability, type, location, notes
@@ -531,9 +531,9 @@ Be honest. Do not inflate scores.`;
       if (isCompanyOwner) {
         updateQuery += ' AND company_id = $3';
         updateParams.push(req.user.company_id);
-      } else if (!isSuper && orgId) {
-        updateQuery += ' AND organization_id = $3';
-        updateParams.push(orgId);
+      } else if (!isSuper && (orgId || req.user.company_id)) {
+        updateQuery += ' AND COALESCE(organization_id, company_id) = $3';
+        updateParams.push(orgId || req.user.company_id);
       }
       await pool.query(updateQuery, updateParams);
     } catch (dbErr) {
@@ -582,7 +582,7 @@ router.post('/batch/ai-score', async (req, res) => {
       let batchWhere = 'WHERE id = $1';
       let batchParams = [id];
       if (isCompanyOwner) { batchWhere += ' AND company_id = $2'; batchParams.push(req.user.company_id); }
-      else if (!isSuper && orgId) { batchWhere += ' AND organization_id = $2'; batchParams.push(orgId); }
+      else if (!isSuper && (orgId || req.user.company_id)) { batchWhere += ' AND COALESCE(organization_id, company_id) = $2'; batchParams.push(orgId || req.user.company_id); }
       const { rows } = await pool.query(
         `SELECT title, client, value, deadline, status, probability, type, location, notes
          FROM tenders ${batchWhere} LIMIT 1`,
@@ -614,9 +614,15 @@ router.post('/batch/ai-score', async (req, res) => {
         );
       }
 
+      const tenantFilter = !isSuper && (orgId || req.user.company_id)
+        ? `AND COALESCE(organization_id, company_id) = $3`
+        : '';
+      const tenantParams = !isSuper && (orgId || req.user.company_id)
+        ? [overall, id, orgId || req.user.company_id]
+        : [overall, id];
       await pool.query(
-        `UPDATE tenders SET ai_score = $1 WHERE id = $2 ${orgId && !isSuper ? 'AND organization_id = $3' : ''}`,
-        orgId && !isSuper ? [overall, id, orgId] : [overall, id]
+        `UPDATE tenders SET ai_score = $1 WHERE id = $2 ${tenantFilter}`,
+        tenantParams
       );
 
       results.push({ id, overall });

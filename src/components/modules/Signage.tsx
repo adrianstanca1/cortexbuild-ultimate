@@ -158,7 +158,7 @@ export default function Signage() {
         description: form.description || '',
         size: form.size || '',
         material: form.material || '',
-        quantity: parseInt(form.quantity) || 1,
+        quantity: form.quantity !== null && form.quantity !== undefined ? parseInt(form.quantity) : 1,
         required_date: form.required_date || null,
         installed_date: form.installed_date || null,
         installed_by: form.installed_by || '',
@@ -754,7 +754,7 @@ export default function Signage() {
                     value={editItem ? editItem.inspection_interval || '30' : form.inspection_interval}
                     onChange={(e) => {
                       if (editItem) {
-                        setEditItem({ ...editItem, inspection_interval: parseInt(e.target.value) || 30 });
+                        setEditItem({ ...editItem, inspection_interval: (() => { const val = parseInt(e.target.value); return isNaN(val) ? 30 : val; })() });
                       } else {
                         setForm({ ...form, inspection_interval: e.target.value });
                       }

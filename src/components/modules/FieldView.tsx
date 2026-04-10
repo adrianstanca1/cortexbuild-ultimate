@@ -317,7 +317,7 @@ export function FieldView() {
                       <p className="text-xs text-gray-400">Incidents</p>
                     </div>
                     <div>
-                      <p className="text-lg font-bold text-white">{Number(p.workers ?? 0) || '—'}</p>
+                      <p className="text-lg font-bold text-white">{p.workers !== null && p.workers !== undefined ? Number(p.workers) : '—'}</p>
                       <p className="text-xs text-gray-400">Workforce</p>
                     </div>
                   </div>

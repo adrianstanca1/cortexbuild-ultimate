@@ -42,7 +42,7 @@ function daysSinceContact(id: string): number {
 // Get health score for client type contacts
 function getHealthScore(contact: AnyRow): 'Excellent'|'Good'|'At Risk'|'Lost' {
   if (String(contact.type) !== 'Client') return 'Good';
-  const rating = Number(contact.rating || 3);
+  const rating = contact.rating !== null && contact.rating !== undefined ? Number(contact.rating) : 3;
   const status = String(contact.status || 'Active');
 
   if (status === 'Do Not Contact' || status === 'Inactive') return 'Lost';
@@ -134,7 +134,7 @@ export function CRM() {
 
   const totalPipelineValue = contacts.reduce((sum, c) => {
     if (String(c.pipelineStage) === 'Lost' || !c.contractValue) return sum;
-    return sum + (Number(c.contractValue) || 0);
+    return sum + (c.contractValue !== null && c.contractValue !== undefined ? Number(c.contractValue) : 0);
   }, 0);
 
   // Opportunities (Prospects in pipeline)
@@ -194,8 +194,8 @@ export function CRM() {
     e.preventDefault();
     const payload = {
       ...form,
-      rating: Number(form.rating)||3,
-      contractValue: Number(form.contractValue)||0,
+      rating: form.rating !== null && form.rating !== undefined ? Number(form.rating) : 3,
+      contractValue: form.contractValue !== null && form.contractValue !== undefined ? Number(form.contractValue) : 0,
     };
     if (editing) {
       await updateMutation.mutateAsync({ id:String(editing.id), data:payload });

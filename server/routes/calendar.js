@@ -19,8 +19,8 @@ async function getEvents(req, res) {
       orgFilter = 'AND company_id = $1';
       params = [req.user.company_id];
     } else {
-      orgFilter = 'AND organization_id = $1';
-      params = [orgId];
+      orgFilter = 'AND COALESCE(organization_id, company_id) = $1';
+      params = [orgId || req.user.company_id];
     }
 
     const { rows: projects } = await pool.query(
@@ -86,8 +86,8 @@ async function getEvents(req, res) {
       deadlineFilter = 'AND company_id = $1';
       deadlineParams = [req.user.company_id, req.user.company_id];
     } else if (role !== 'super_admin') {
-      deadlineFilter = 'AND organization_id = $1';
-      deadlineParams = [orgId, orgId];
+      deadlineFilter = 'AND COALESCE(organization_id, company_id) = $1';
+      deadlineParams = [orgId || req.user.company_id, orgId || req.user.company_id];
     }
     const deadlineFilterCO = deadlineFilter ? deadlineFilter.replace('$1', '$2') : '';
     const { rows: deadlines } = await pool.query(

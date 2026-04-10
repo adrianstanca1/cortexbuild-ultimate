@@ -24,7 +24,7 @@ router.post('/forecast', async (req, res) => {
     let projWhere = 'WHERE id = $1';
     let projParams = [projectId];
     if (isCompanyOwner) { projWhere += ' AND company_id = $2'; projParams.push(req.user.company_id); }
-    else if (!isSuper && orgId) { projWhere += ' AND organization_id = $2'; projParams.push(orgId); }
+    else if (!isSuper && (orgId || req.user.company_id)) { projWhere += ' AND COALESCE(organization_id, company_id) = $2'; projParams.push(orgId || req.user.company_id); }
     const { rows: [project] } = await pool.query(
       `SELECT name, budget, spent, progress, start_date, end_date FROM projects ${projWhere}`,
       projParams
@@ -36,7 +36,7 @@ router.post('/forecast', async (req, res) => {
     const { rows: budgetItems } = await (orgId
       ? pool.query(
           `SELECT name, budgeted, spent, variance, variance_percent
-           FROM budget_items WHERE project_id = $1 AND organization_id = $2`,
+           FROM budget_items WHERE project_id = $1 AND COALESCE(organization_id, company_id) = $2`,
           [projectId, orgId]
         )
       : req.user?.company_id

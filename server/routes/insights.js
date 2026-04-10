@@ -22,9 +22,9 @@ router.get('/', async (req, res) => {
 
     let orgFilter = '';
     let params = [];
-    if (orgId) {
-      orgFilter = 'WHERE organization_id = $1';
-      params.push(orgId);
+    if (orgId || auth.company_id) {
+      orgFilter = 'WHERE COALESCE(organization_id, company_id) = $1';
+      params.push(orgId || auth.company_id);
     } else if (!isSuper) {
       // Non-super_admin without organization_id — scope to company_id or deny all rows
       if (auth.company_id) {

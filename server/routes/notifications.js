@@ -20,11 +20,12 @@ router.get('/', async (req, res) => {
     const offset = (parseInt(page) - 1) * parseInt(pageSize);
 
     let whereClauses = [];
-    let params = [userId, orgId];
+    let params = [userId, orgId || req.user.company_id];
     let idx = 3;
 
     // Filter: own notifications OR org-wide (user_id IS NULL)
-    whereClauses.push(`(user_id = $1 OR (organization_id = $2 AND user_id IS NULL))`);
+    // Use COALESCE so company_owner (with null organization_id) can see their company's notifications
+    whereClauses.push(`(user_id = $1 OR (COALESCE(organization_id, company_id) = $2 AND user_id IS NULL))`);
 
     if (status) {
       whereClauses.push(`status = $${idx++}`);

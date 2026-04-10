@@ -46,9 +46,9 @@ router.get('/', async (req, res) => {
       whereClauses.push(`a.company_id = $${paramIndex}`);
       params.push(req.user.company_id);
       paramIndex++;
-    } else if (orgId) {
-      whereClauses.push(`a.organization_id = $${paramIndex}`);
-      params.push(orgId);
+    } else if (orgId || req.user.company_id) {
+      whereClauses.push(`COALESCE(a.organization_id, a.company_id) = $${paramIndex}`);
+      params.push(orgId || req.user.company_id);
       paramIndex++;
     }
 

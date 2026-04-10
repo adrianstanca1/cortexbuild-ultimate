@@ -747,8 +747,8 @@ export default function Measuring() {
                     Total: £
                     {(
                       editItem
-                        ? (Number(editItem?.quantity) || 0) * (Number(editItem?.rate) || 0)
-                        : (parseFloat(form.quantity) || 0) * (parseFloat(form.rate) || 0)
+                        ? (editItem?.quantity !== null && editItem?.quantity !== undefined ? Number(editItem?.quantity) : 0) * (editItem?.rate !== null && editItem?.rate !== undefined ? Number(editItem?.rate) : 0)
+                        : (form.quantity !== null && form.quantity !== undefined ? parseFloat(form.quantity) : 0) * (form.rate !== null && form.rate !== undefined ? parseFloat(form.rate) : 0)
                     ).toFixed(2)}
                   </p>
                 </div>

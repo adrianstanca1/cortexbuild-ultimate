@@ -231,9 +231,9 @@ export function Tenders() {
     e.preventDefault();
     const payload = {
       ...form,
-      value: Number(form.value) || 0,
-      probability: Number(form.probability) || 50,
-      aiScore: Number(form.aiScore) || 0,
+      value: form.value !== null && form.value !== undefined ? Number(form.value) : 0,
+      probability: form.probability !== null && form.probability !== undefined ? Number(form.probability) : 50,
+      aiScore: form.aiScore !== null && form.aiScore !== undefined ? Number(form.aiScore) : 0,
     };
     try {
       if (editing) {

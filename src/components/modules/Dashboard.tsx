@@ -231,15 +231,15 @@ function DashboardComponent() {
           projectsApi.getAll().then((data: unknown) => {
             const rows = data as AnyRow[];
             setProjects(rows.slice(0, 8).map((row, idx) => ({
-              id: Number(row.id) || idx + 1,
+              id: row.id !== null && row.id !== undefined ? Number(row.id) : idx + 1,
               name: String(row.name || `Project ${idx + 1}`),
               client: String(row.client || row.company || 'Unknown Client'),
-              value: Number(row.value) || 0,
-              progress: Number(row.progress) || 0,
+              value: row.value !== null && row.value !== undefined ? Number(row.value) : 0,
+              progress: row.progress !== null && row.progress !== undefined ? Number(row.progress) : 0,
               budgetRAG: (row.budgetRAG as 'red'|'amber'|'green') || 'green',
               programmeRAG: (row.programmeRAG as 'red'|'amber'|'green') || 'green',
               qualityRAG: (row.qualityRAG as 'red'|'amber'|'green') || 'green',
-              daysToCompletion: Number(row.daysToCompletion || row.daysRemaining) || 0,
+              daysToCompletion: row.daysToCompletion !== null && row.daysToCompletion !== undefined ? Number(row.daysToCompletion) : row.daysRemaining !== null && row.daysRemaining !== undefined ? Number(row.daysRemaining) : 0,
               pmInitials: String(row.pmInitials || row.projectManagerInitials || 'PM'),
             })));
           }).catch((err) => {
@@ -291,15 +291,15 @@ function DashboardComponent() {
     projectsApi.getAll().then((data: unknown) => {
       const rows = data as AnyRow[];
       setProjects(rows.slice(0, 8).map((row, idx) => ({
-        id: Number(row.id) || idx + 1,
+        id: row.id !== null && row.id !== undefined ? Number(row.id) : idx + 1,
         name: String(row.name || `Project ${idx + 1}`),
         client: String(row.client || row.company || 'Unknown Client'),
-        value: Number(row.value) || 0,
-        progress: Number(row.progress) || 0,
+        value: row.value !== null && row.value !== undefined ? Number(row.value) : 0,
+        progress: row.progress !== null && row.progress !== undefined ? Number(row.progress) : 0,
         budgetRAG: (row.budgetRAG as 'red'|'amber'|'green') || 'green',
         programmeRAG: (row.programmeRAG as 'red'|'amber'|'green') || 'green',
         qualityRAG: (row.qualityRAG as 'red'|'amber'|'green') || 'green',
-        daysToCompletion: Number(row.daysToCompletion || row.daysRemaining) || 0,
+        daysToCompletion: row.daysToCompletion !== null && row.daysToCompletion !== undefined ? Number(row.daysToCompletion) : row.daysRemaining !== null && row.daysRemaining !== undefined ? Number(row.daysRemaining) : 0,
         pmInitials: String(row.pmInitials || row.projectManagerInitials || 'PM'),
       })));
     }).catch((err) => {

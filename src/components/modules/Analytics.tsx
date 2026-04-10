@@ -513,8 +513,8 @@ export function Analytics() {
                   {vatTracker.map((row: AnyRow, idx: number) => (
                     <tr key={idx} className="border-b border-gray-700 hover:bg-gray-700/30">
                       <td className="px-4 py-3 text-white font-medium">{String(row.quarter ?? '')}</td>
-                      <td className="px-4 py-3 text-gray-300">£{((Number(row.liability) || 0)/1000).toFixed(1)}K</td>
-                      <td className="px-4 py-3 text-gray-300">£{((Number(row.paid) || 0)/1000).toFixed(1)}K</td>
+                      <td className="px-4 py-3 text-gray-300">£{((row.liability !== null && row.liability !== undefined ? Number(row.liability) : 0)/1000).toFixed(1)}K</td>
+                      <td className="px-4 py-3 text-gray-300">£{((row.paid !== null && row.paid !== undefined ? Number(row.paid) : 0)/1000).toFixed(1)}K</td>
                       <td className="px-4 py-3">
                         <span className={clsx('text-xs px-2 py-1 rounded-full font-semibold',
                           row.status === 'paid' ? 'bg-green-900 text-green-300' : row.status === 'due' ? 'bg-red-900 text-red-300' : 'bg-amber-900 text-amber-300'

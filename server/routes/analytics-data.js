@@ -18,8 +18,8 @@ router.get('/overtime', async (req, res) => {
       where = 'WHERE t.company_id = $1';
       params.push(auth.company_id);
     } else {
-      where = 'WHERE t.organization_id = $1';
-      params.push(orgId);
+      where = 'WHERE COALESCE(t.organization_id, t.company_id) = $1';
+      params.push(orgId || auth.company_id);
     }
 
     const result = await pool.query(`
@@ -60,8 +60,8 @@ router.get('/vat', async (req, res) => {
       where = 'WHERE company_id = $1';
       params.push(auth.company_id);
     } else {
-      where = 'WHERE organization_id = $1';
-      params.push(orgId);
+      where = 'WHERE COALESCE(organization_id, company_id) = $1';
+      params.push(orgId || auth.company_id);
     }
 
     const result = await pool.query(`

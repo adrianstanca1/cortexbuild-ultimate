@@ -1,5 +1,6 @@
 const express = require('express');
 const authMiddleware = require('../middleware/auth');
+const { checkPermission } = require('../middleware/checkPermission');
 const router = express.Router();
 const pool = require('../db');
 
@@ -99,7 +100,7 @@ router.get('/export/:table', async (req, res) => {
   }
 });
 
-router.get('/export-all', async (req, res) => {
+router.get('/export-all', checkPermission('settings', 'read'), async (req, res) => {
   const { format = 'json' } = req.query;
   const orgId = req.user?.organization_id;
   const companyId = req.user?.company_id;

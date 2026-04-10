@@ -290,7 +290,7 @@ export function ChangeOrders() {
       toast.error(result.error.issues[0].message);
       return;
     }
-    const payload = { ...form, value: Number(form.value) || 0, days_extension: Number(form.days_extension) || 0 };
+    const payload = { ...form, value: form.value !== null && form.value !== undefined ? Number(form.value) : 0, days_extension: form.days_extension !== null && form.days_extension !== undefined ? Number(form.days_extension) : 0 };
     if (editing) {
       await updateMutation.mutateAsync({ id: String(editing.id), data: payload });
       toast.success('Change order updated');

@@ -63,9 +63,10 @@ export function BIM4D() {
   const fetchModels = useCallback(async () => {
     try {
       const res = await bim4dApi.getProjectModels('demo-project');
-      setModels(Array.isArray(res.data) ? res.data : []);
-      if (res.data.length > 0 && !selectedModel) {
-        setSelectedModel(res.data[0]);
+      const data = Array.isArray(res.data) ? res.data : [];
+      setModels(data);
+      if (data.length > 0) {
+        setSelectedModel(data[0]);
       }
     } catch {
       setModels([]);

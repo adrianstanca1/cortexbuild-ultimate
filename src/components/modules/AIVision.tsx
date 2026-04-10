@@ -1,4 +1,3 @@
-// @ts-nocheck
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import {
   Camera, Eye, AlertTriangle, CheckCircle2,
@@ -6,6 +5,8 @@ import {
   Target, Activity, Upload, Image as ImageIcon,
   X, ArrowRight, FileText
 } from 'lucide-react';
+import { toast } from 'sonner';
+import { ModuleBreadcrumbs } from '../ui/Breadcrumbs';
 import { aiVisionApi } from '../../services/api';
 
 
@@ -55,82 +56,17 @@ export const AIVision: React.FC = () => {
   const streamRef = useRef<MediaStream | null>(null);
   const intervalRef = useRef<number | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const modeRef = useRef<AnalysisMode>(mode);
+  modeRef.current = mode;
 
-  // --- Helper Callbacks (defined before their usage in other callbacks) ---
-
-  // Mock detection generator based on analysis mode
-  const _generateMockDetections = useCallback((analysisMode: AnalysisMode): Detection[] => {
-    const baseDetections = {
-      SAFETY: [
-        {
-          severity: 'CRITICAL' as const,
-          title: 'Worker without hard hat detected',
-          description: 'Construction worker observed in active zone without required head protection',
-          recommendation: 'Ensure all personnel wear approved hard hats in designated areas'
-        },
-        {
-          severity: 'WARNING' as const,
-          title: 'Unsecured scaffolding',
-          description: 'Scaffolding structure appears to lack proper securing mechanisms',
-          recommendation: 'Inspect and secure scaffolding according to safety standards'
-        },
-        {
-          severity: 'PASS' as const,
-          title: 'Proper safety signage visible',
-          description: 'Safety warning signs are clearly visible and appropriately placed',
-          recommendation: 'Continue maintaining good safety signage practices'
-        }
-      ],
-      QUALITY: [
-        {
-          severity: 'WARNING' as const,
-          title: 'Surface finish inconsistency',
-          description: 'Variation in concrete surface texture detected',
-          recommendation: 'Review finishing techniques and ensure consistent application'
-        },
-        {
-          severity: 'INFO' as const,
-          title: 'Material placement verified',
-          description: 'Construction materials are properly positioned according to specifications',
-          recommendation: 'Maintain current material handling procedures'
-        }
-      ],
-      PROGRESS: [
-        {
-          severity: 'INFO' as const,
-          title: 'Foundation work 75% complete',
-          description: 'Foundation construction is progressing according to schedule',
-          recommendation: 'Continue current pace to meet project milestones'
-        },
-        {
-          severity: 'WARNING' as const,
-          title: 'Potential schedule delay detected',
-          description: 'Current work rate may impact planned completion date',
-          recommendation: 'Consider additional resources to maintain schedule'
-        }
-      ]
-    };
-
-    return baseDetections[analysisMode].map((det, index) => ({
-      id: `${analysisMode}-${Date.now()}-${index}`,
-      timestamp: new Date().toLocaleTimeString(),
-      ...det,
-      confidence: 0.85 + Math.random() * 0.15, // 85-100% confidence
-      coordinates: {
-        x: Math.random() * 0.8,
-        y: Math.random() * 0.8,
-        w: 0.1 + Math.random() * 0.1,
-        h: 0.1 + Math.random() * 0.1
-      }
-    }));
-  }, []); 
+  // File handling
 
   // Image Analysis
   const analyzeImage = useCallback(async (imageData: string) => {
     setIsProcessing(true);
 
     try {
-      const result = await aiVisionApi.analyze(imageData, mode);
+      const result = await aiVisionApi.analyze(imageData, modeRef.current);
       setAnalysisResults(prev => [result, ...prev.slice(0, 19)]); // Keep last 20 results
 
     } catch (error) {
@@ -139,7 +75,7 @@ export const AIVision: React.FC = () => {
     } finally {
       setIsProcessing(false);
     }
-  }, [mode]);
+  }, []);
 
   // Camera Capture and Analysis
   const captureAndAnalyze = useCallback(async () => {
@@ -162,7 +98,7 @@ export const AIVision: React.FC = () => {
   }, [analyzeImage]);
 
   // File handling
-  const _handleFileSelect = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileSelect = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file && file.type.startsWith('image/')) {
       const reader = new FileReader();
@@ -272,6 +208,15 @@ export const AIVision: React.FC = () => {
 
   return (
     <div className="p-6 space-y-6 bg-base-300 min-h-screen">
+      {/* Hidden file input for image upload */}
+      <input
+        type="file"
+        ref={fileInputRef}
+        onChange={handleFileSelect}
+        className="hidden"
+        accept="image/*"
+      />
+
       {/* Breadcrumbs */}
       <ModuleBreadcrumbs currentModule="ai-vision" onNavigate={() => {}} />
 

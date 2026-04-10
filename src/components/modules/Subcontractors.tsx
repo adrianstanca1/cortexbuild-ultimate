@@ -80,8 +80,8 @@ export function Subcontractors() {
     if (!s.insuranceExpiry) return false;
     return new Date(String(s.insuranceExpiry)).getTime() > Date.now();
   }).length;
-  const totalContractValue = subs.reduce((sum, s) => sum + (Number(s.contractValue) || 0), 0);
-  const _avgRating = subs.length > 0 ? (subs.reduce((sum, s) => sum + (Number(s.rating) || 0), 0) / subs.length).toFixed(1) : '—';
+  const totalContractValue = subs.reduce((sum, s) => sum + (s.contractValue !== null && s.contractValue !== undefined ? Number(s.contractValue) : 0), 0);
+  const _avgRating = subs.length > 0 ? (subs.reduce((sum, s) => sum + (s.rating !== null && s.rating !== undefined ? Number(s.rating) : 0), 0) / subs.length).toFixed(1) : '—';
 
   // Insurance expiring soon (30 days)
   const _insuranceExpiringSoon = subs.filter(s => {
@@ -95,11 +95,11 @@ export function Subcontractors() {
 
   // Performance: top 5 by contract value
   const top5ByValue = [...subs]
-    .sort((a, b) => (Number(b.contractValue) || 0) - (Number(a.contractValue) || 0))
+    .sort((a, b) => (b.contractValue !== null && b.contractValue !== undefined ? Number(b.contractValue) : 0) - (a.contractValue !== null && a.contractValue !== undefined ? Number(a.contractValue) : 0))
     .slice(0, 5)
     .map(s => ({
       name: String(s.company ?? ''),
-      value: Number(s.contractValue) || 0,
+      value: s.contractValue !== null && s.contractValue !== undefined ? Number(s.contractValue) : 0,
     }));
 
   // Payment data derived from real subcontractor fields
@@ -155,7 +155,7 @@ export function Subcontractors() {
       toast.error(result.error.issues[0].message);
       return;
     }
-    const payload = { ...form, rating: Number(form.rating) || 3, contractValue: Number(form.contractValue) || 0 };
+    const payload = { ...form, rating: form.rating !== null && form.rating !== undefined ? Number(form.rating) : 3, contractValue: form.contractValue !== null && form.contractValue !== undefined ? Number(form.contractValue) : 0 };
     try {
       if (editing) {
         await updateMutation.mutateAsync({ id: String(editing.id), data: payload });
@@ -360,7 +360,7 @@ export function Subcontractors() {
                     <div className="grid grid-cols-3 gap-3 pt-3 border-t border-gray-700">
                       <div>
                         <p className="text-xs text-gray-400 mb-1">Contract Value</p>
-                        <p className="font-semibold text-gray-100">£{((Number(s.contractValue) || 0) / 1000).toFixed(0)}k</p>
+                        <p className="font-semibold text-gray-100">£{((s.contractValue !== null && s.contractValue !== undefined ? Number(s.contractValue) : 0) / 1000).toFixed(0)}k</p>
                       </div>
                       <div>
                         <p className="text-xs text-gray-400 mb-1">Rating</p>
@@ -891,14 +891,14 @@ export function Subcontractors() {
                       <Star
                         key={i}
                         size={14}
-                        className={i <= (Number(selectedSub.rating) || 0) ? 'text-yellow-400 fill-yellow-400' : 'text-gray-600'}
+                        className={i <= (selectedSub.rating !== null && selectedSub.rating !== undefined ? Number(selectedSub.rating) : 0) ? 'text-yellow-400 fill-yellow-400' : 'text-gray-600'}
                       />
                     ))}
                   </div>
                 </div>
                 <div>
                   <p className="text-xs text-gray-400 mb-1">Contract Value</p>
-                  <p className="text-gray-100 font-semibold">£{((Number(selectedSub.contractValue) || 0) / 1000).toFixed(0)}k</p>
+                  <p className="text-gray-100 font-semibold">£{((selectedSub.contractValue !== null && selectedSub.contractValue !== undefined ? Number(selectedSub.contractValue) : 0) / 1000).toFixed(0)}k</p>
                 </div>
               </div>
 

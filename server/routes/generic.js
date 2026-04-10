@@ -92,6 +92,7 @@ const ALLOWED_COLUMNS = {
   toolbox_talks:      ['date','topic','location','presenter','attendees','signed_off'],
   drawing_transmittals: ['project','issued_to','date','purpose','status'],
   site_inspections:     ['name','status','description','category','severity','resolution','due_date','project_id','inspector','location','findings','corrective_actions','scheduled_date','completed_date'],
+  ai_vision_logs:       ['organization_id','company_id','project_id','image_url','analysis_result','confidence_score','processed_at'],
 };
 
 const VALID_ORDER_COLS = new Set([
@@ -104,15 +105,18 @@ const VALID_ORDER_COLS = new Set([
 const SUPER_ADMIN_ROLES = new Set(['super_admin', 'company_owner']);
 
 /**
- * @returns {'all'|'tenant'|'deny'}
- * - all: super_admin / company_owner — no org filter
+ * @returns {'all'|'tenant'|'company'|'deny'}
+ * - all: super_admin — no org filter (sees everything)
  * - tenant: scoped to organization_id
- * - deny: authenticated but missing organization_id — match no rows (never cross-tenant reads/writes)
+ * - company: company_owner with null organization_id — scoped by company_id via COALESCE
+ * - deny: authenticated but missing both organization_id and company_id
  */
 function getTenantScope(req) {
   if (!req.user) return 'deny';
-  if (SUPER_ADMIN_ROLES.has(req.user.role)) return 'all';
+  if (req.user.role === 'super_admin') return 'all';
   if (req.user.organization_id) return 'tenant';
+  // company_owner (or any user) with null organization_id but valid company_id
+  if (req.user.company_id) return 'company';
   return 'deny';
 }
 
@@ -138,6 +142,7 @@ function makeRouter(tableName, orderCol = 'created_at') {
     const scope = getTenantScope(req);
     if (scope === 'all') return { filter: '', params: [] };
     if (scope === 'deny') return { filter: ' WHERE 1=0', params: [] };
+    if (scope === 'company') return { filter: ' WHERE COALESCE(organization_id, company_id) = $1', params: [req.user.company_id] };
     return { filter: ' WHERE organization_id = $1', params: [req.user.organization_id] };
   }
 
@@ -152,10 +157,16 @@ function makeRouter(tableName, orderCol = 'created_at') {
     if (scope === 'deny') {
       return { filter: ' WHERE 1=0', params: [] };
     }
-    const orgPl = nextParamIndex;
+    const tenantPl = nextParamIndex;
     const idPl = nextParamIndex + 1;
+    if (scope === 'company') {
+      return {
+        filter: ` WHERE COALESCE(organization_id, company_id) = $${tenantPl} AND id = $${idPl}`,
+        params: [req.user.company_id, req.params.id],
+      };
+    }
     return {
-      filter: ` WHERE organization_id = $${orgPl} AND id = $${idPl}`,
+      filter: ` WHERE organization_id = $${tenantPl} AND id = $${idPl}`,
       params: [req.user.organization_id, req.params.id],
     };
   }
@@ -221,7 +232,7 @@ function makeRouter(tableName, orderCol = 'created_at') {
     }
 
     // Guard: prevent inserts without tenant scoping (OAuth users without profile)
-    if (!req.user?.organization_id) {
+    if (!req.user?.organization_id && !req.user?.company_id) {
       return res.status(400).json({
         message: 'User profile incomplete. Please complete your profile setup.'
       });
@@ -235,13 +246,15 @@ function makeRouter(tableName, orderCol = 'created_at') {
     let colSuffix = '';
     let valSuffix = '';
     const tenantValues = [];
-    if (req.user && req.user.organization_id) {
-      colSuffix = ', organization_id';
-      valSuffix = `, $${values.length + 1}`;
-      tenantValues.push(req.user.organization_id);
+    if (req.user) {
+      if (req.user.organization_id) {
+        colSuffix += ', organization_id';
+        valSuffix += `, $${values.length + tenantValues.length + 1}`;
+        tenantValues.push(req.user.organization_id);
+      }
       if (req.user.company_id) {
         colSuffix += ', company_id';
-        valSuffix += `, $${values.length + 2}`;
+        valSuffix += `, $${values.length + tenantValues.length + 1}`;
         tenantValues.push(req.user.company_id);
       }
     }

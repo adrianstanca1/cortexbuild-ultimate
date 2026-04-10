@@ -185,7 +185,7 @@ export function PlantEquipment() {
     ev.preventDefault();
     const payload = {
       ...equipmentForm,
-      dailyRate: Number(equipmentForm.dailyRate) || 0
+      dailyRate: equipmentForm.dailyRate !== null && equipmentForm.dailyRate !== undefined ? Number(equipmentForm.dailyRate) : 0
     };
     try {
       if (editingEquipment) {

@@ -89,13 +89,13 @@ export default function WasteManagement() {
   );
 
   const totalRecycling = waste.reduce((acc: number, w) => {
-    const qty = Number(w.quantity) || 0;
-    const actualRecycled = Number(w.recycling_rate) || (w.status === 'collected' ? 75 : 0);
+    const qty = w.quantity !== null && w.quantity !== undefined ? Number(w.quantity) : 0;
+    const actualRecycled = w.recycling_rate !== null && w.recycling_rate !== undefined ? Number(w.recycling_rate) : (w.status === 'collected' ? 75 : 0);
     return acc + (actualRecycled * qty / 100);
   }, 0);
   const totalWaste = waste.reduce((acc: number, w) => acc + Number(w.quantity || 0), 0);
   const recyclingRate = totalWaste > 0 ? Math.round(totalRecycling / totalWaste * 100) : 0;
-  const totalCost = waste.reduce((acc: number, w) => acc + (Number(w.cost) || 0), 0);
+  const totalCost = waste.reduce((acc: number, w) => acc + (w.cost !== null && w.cost !== undefined ? Number(w.cost) : 0), 0);
 
   const handleCreate = async () => {
     if (!form.wasteType) return;
@@ -311,7 +311,7 @@ export default function WasteManagement() {
                             </span>
                           </td>
                           <td className="py-3 px-4 text-gray-300">{log.carrier}</td>
-                          <td className="py-3 px-4 text-right text-amber-400 font-medium">£{Number(log.cost) || 0}</td>
+                          <td className="py-3 px-4 text-right text-amber-400 font-medium">£{log.cost !== null && log.cost !== undefined ? Number(log.cost) : 0}</td>
                           <td className="py-3 px-4 text-right">
                             <div className="flex items-center gap-2 justify-end">
                               <button className="p-1 hover:bg-blue-900/30 rounded" title="Edit" onClick={() => setEditItem(log as unknown as Row)}><Edit size={14} className="text-blue-400" /></button>

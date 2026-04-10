@@ -8,6 +8,7 @@ const rateLimit  = require('express-rate-limit');
 const redis      = require('redis');
 const db         = require('../db');
 const { createOAuthUserWithTenant } = require('../lib/bootstrap-tenant');
+const authMiddleware = require('../middleware/auth');
 const router     = express.Router();
 
 // Redis client for OAuth state storage (distributed, survives restarts)
@@ -354,7 +355,7 @@ router.get('/microsoft/callback', oauthLimiter, async (req, res, next) => {
 });
 
 // Link Google account to existing user (requires JWT auth)
-router.post('/google/link', async (req, res) => {
+router.post('/google/link', authMiddleware, async (req, res) => {
   try {
     const { accessToken, refreshToken, profile } = req.body;
     const userId = req.user?.id;
@@ -388,7 +389,7 @@ router.post('/google/link', async (req, res) => {
 });
 
 // Unlink Google account (requires JWT auth)
-router.delete('/google/unlink', async (req, res) => {
+router.delete('/google/unlink', authMiddleware, async (req, res) => {
   try {
     const userId = req.user?.id;
 
@@ -409,7 +410,7 @@ router.delete('/google/unlink', async (req, res) => {
 });
 
 // Get OAuth providers for current user
-router.get('/oauth/providers', async (req, res) => {
+router.get('/oauth/providers', authMiddleware, async (req, res) => {
   try {
     const userId = req.user?.id;
 

@@ -149,9 +149,9 @@ export function CIS() {
   const formNet = formGross - formDeduction;
 
   // Calculator calculations
-  const calcGrossNum = Number(calcGross)||0;
-  const calcMatNum = Number(calcMaterials)||0;
-  const calcRateNum = Number(calcRate)||20;
+  const calcGrossNum = calcGross !== null && calcGross !== undefined ? Number(calcGross) : 0;
+  const calcMatNum = calcMaterials !== null && calcMaterials !== undefined ? Number(calcMaterials) : 0;
+  const calcRateNum = calcRate !== null && calcRate !== undefined ? Number(calcRate) : 20;
   const calcNetPaymentSubject = Math.max(0, calcGrossNum - calcMatNum);
   const calcDeductionAmount = calcNetPaymentSubject * (calcRateNum/100);
   const calcNetPayment = calcGrossNum - calcDeductionAmount;

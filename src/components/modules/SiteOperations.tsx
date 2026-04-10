@@ -152,7 +152,7 @@ const handleSaveDelay = async () => {
         activities: `Delay recorded: ${newDelay.type}`,
         delays: newDelay.type,
         delay_type: newDelay.type,
-        delay_duration: Number(newDelay.duration) || 0,
+        delay_duration: newDelay.duration !== null && newDelay.duration !== undefined ? Number(newDelay.duration) : 0,
         delay_cause: newDelay.cause,
         delay_impact: newDelay.impact,
         delay_status: newDelay.status,

@@ -68,7 +68,7 @@ export function RecentProjects() {
               ? String(project.description)
               : '';
           const budgetRaw = project.budget;
-          const budget = typeof budgetRaw === 'number' ? budgetRaw : Number(budgetRaw) || 0;
+          const budget = typeof budgetRaw === 'number' ? budgetRaw : budgetRaw !== null && budgetRaw !== undefined ? Number(budgetRaw) : 0;
           const updatedAtRaw = project.updatedAt;
           const updatedAt =
             typeof updatedAtRaw === 'string' || typeof updatedAtRaw === 'number'

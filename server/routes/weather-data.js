@@ -22,12 +22,12 @@ router.get('/', async (req, res) => {
     } else if (auth.role === 'company_owner') {
       where = 'WHERE company_id = $1';
       params = [auth.company_id];
-    } else if (orgId) {
-      where = 'WHERE organization_id = $1';
-      params = [orgId];
+    } else if (orgId || auth.company_id) {
+      where = 'WHERE COALESCE(organization_id, company_id) = $1';
+      params = [orgId || auth.company_id];
     } else {
-      where = 'WHERE organization_id = $1';
-      params = [0];
+      where = 'WHERE 1=0';
+      params = [];
     }
 
     // Fallback: generate a plausible 5-day forecast based on recent daily_reports weather
