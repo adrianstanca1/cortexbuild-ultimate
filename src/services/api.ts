@@ -211,6 +211,14 @@ export const sitePermitsApi = {
   delete: (id: string) => deleteRow('site-permits', id),
 };
 
+export const siteInspectionsApi = {
+  getAll: () => fetchAll<Row>('site-inspections'),
+  getById: (id: string) => apiFetch(`/site-inspections/${id}`),
+  create: (data: Row) => insertRow('site-inspections', data),
+  update: (id: string, data: Row) => updateRow('site-inspections', id, data),
+  delete: (id: string) => deleteRow('site-inspections', id),
+};
+
 export const subcontractorsApi = {
   getAll: () => fetchAll<Row>('subcontractors'),
   getById: (id: string) => apiFetch(`/subcontractors/${id}`),

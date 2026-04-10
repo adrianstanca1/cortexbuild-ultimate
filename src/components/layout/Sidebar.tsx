@@ -105,6 +105,7 @@ const NAV_GROUPS: { id: string; label: string; accent: string; items: NavItem[] 
     accent: '#ef4444', // red
     items: [
       { id: 'safety',          label: 'Safety & HSE',         icon: AlertTriangle,  badge: null },
+      { id: 'site-inspections',label: 'Site Inspections',      icon: ClipboardCheck, badge: 'NEW' },
       { id: 'rams',            label: 'RAMS',                   icon: ShieldCheck,    badge: 'UK' },
       { id: 'inspections',     label: 'Inspections',            icon: ClipboardCheck, badge: null },
       { id: 'punch-list',      label: 'Punch List',             icon: CheckSquare,    badge: null },

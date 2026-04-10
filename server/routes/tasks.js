@@ -1,20 +1,34 @@
 const express = require('express');
 const pool = require('../db');
 const authMiddleware = require('../middleware/auth');
+const { checkPermission } = require('../middleware/checkPermission');
 
 const router = express.Router();
 router.use(authMiddleware);
 
-// /api/tasks is an alias for /api/project-tasks with projectId query param
-// Multi-tenancy: filter through project join
-async function orgFilterTasks(user) {
+const VALID_STATUSES = ['todo', 'in_progress', 'review', 'done', 'blocked'];
+const VALID_PRIORITIES = ['low', 'medium', 'high', 'critical'];
+
+// Multi-tenancy helper: returns tenant filter SQL fragment and params for writes
+// For super_admin: no filter (can access all)
+// For company_owner: filter by company_id
+// For others: filter by organization_id
+function tenantFilter(user) {
+  if (user?.role === 'super_admin') return { where: '', params: [] };
+  if (user?.role === 'company_owner') return { where: 'p.company_id', params: [user.company_id] };
+  if (!user?.organization_id) return { where: '0', params: [1] }; // deny access if no org
+  return { where: 'p.organization_id', params: [user.organization_id] };
+}
+
+// Build JOIN + WHERE clauses for reads (GET)
+function orgFilterRead(user) {
   if (user?.role === 'super_admin') return { join: '', filter: '', params: [] };
   if (user?.role === 'company_owner') return {
     join: 'JOIN projects p ON t.project_id = p.id',
     filter: ' AND p.company_id = $1',
     params: [user.company_id],
   };
-  if (!user?.organization_id) return { join: '', filter: '', params: [] };
+  if (!user?.organization_id) return { join: '', filter: ' AND 1=0', params: [] }; // deny if no org
   return {
     join: 'JOIN projects p ON t.project_id = p.id',
     filter: ' AND p.organization_id = $1',
@@ -23,10 +37,10 @@ async function orgFilterTasks(user) {
 }
 
 // ─── GET /api/tasks?projectId=xxx&status=xxx ───────────────────────────────
-router.get('/', async (req, res) => {
+router.get('/', checkPermission('tasks', 'read'), async (req, res) => {
   try {
     const { projectId, status, priority, assigned_to } = req.query;
-    const { join, filter, params } = await orgFilterTasks(req.user);
+    const { join, filter, params } = orgFilterRead(req.user);
     const queryParams = [...params];
 
     let query = `SELECT t.* FROM tasks t ${join} WHERE 1=1${filter}`;
@@ -58,7 +72,7 @@ router.get('/', async (req, res) => {
 });
 
 // ─── POST /api/tasks ───────────────────────────────────────────────────────
-router.post('/', async (req, res) => {
+router.post('/', checkPermission('tasks', 'create'), async (req, res) => {
   try {
     const {
       project_id, title, description, status, priority,
@@ -69,14 +83,22 @@ router.post('/', async (req, res) => {
     const tenantCol = isCompanyOwner ? 'company_id' : 'organization_id';
     const tenantId = isCompanyOwner ? req.user.company_id : req.user.organization_id;
 
-    if (!tenantId) {
+    if (!tenantId && req.user?.role !== 'super_admin') {
       return res.status(400).json({ message: 'User profile incomplete. Please complete your profile setup.' });
     }
 
     if (!title) return res.status(400).json({ message: 'Title is required' });
 
-    // Verify project belongs to user's tenant
-    if (project_id) {
+    // Validate status and priority
+    if (status && !VALID_STATUSES.includes(status)) {
+      return res.status(400).json({ message: `Invalid status. Valid values: ${VALID_STATUSES.join(', ')}` });
+    }
+    if (priority && !VALID_PRIORITIES.includes(priority)) {
+      return res.status(400).json({ message: `Invalid priority. Valid values: ${VALID_PRIORITIES.join(', ')}` });
+    }
+
+    // Verify project belongs to user's tenant (IDOR protection)
+    if (project_id && req.user?.role !== 'super_admin') {
       const { rows: proj } = await pool.query(
         `SELECT id FROM projects WHERE id = $1 AND ${tenantCol} = $2`,
         [project_id, tenantId]
@@ -115,10 +137,10 @@ router.post('/', async (req, res) => {
 });
 
 // ─── GET /api/tasks/:id ────────────────────────────────────────────────────
-router.get('/:id', async (req, res) => {
+router.get('/:id', checkPermission('tasks', 'read'), async (req, res) => {
   try {
     const { id } = req.params;
-    const { join, filter, params } = await orgFilterTasks(req.user);
+    const { join, filter, params } = orgFilterRead(req.user);
     const { rows } = await pool.query(
       `SELECT t.* FROM tasks t ${join} WHERE t.id = $${params.length + 1}${filter}`,
       [...params, id]
@@ -133,7 +155,7 @@ router.get('/:id', async (req, res) => {
 });
 
 // ─── PUT /api/tasks/:id ────────────────────────────────────────────────────
-router.put('/:id', async (req, res) => {
+router.put('/:id', checkPermission('tasks', 'update'), async (req, res) => {
   try {
     const { id } = req.params;
     const {
@@ -141,10 +163,17 @@ router.put('/:id', async (req, res) => {
       due_date, category, estimated_hours, tags, progress
     } = req.body;
 
-    const { params: baseParams } = await orgFilterTasks(req.user);
-    // Build query params: org first ($1), then update values, then id last
-    const queryParams = [...baseParams];
+    // Validate status and priority if provided
+    if (status && !VALID_STATUSES.includes(status)) {
+      return res.status(400).json({ message: `Invalid status. Valid values: ${VALID_STATUSES.join(', ')}` });
+    }
+    if (priority && !VALID_PRIORITIES.includes(priority)) {
+      return res.status(400).json({ message: `Invalid priority. Valid values: ${VALID_PRIORITIES.join(', ')}` });
+    }
+
+    const tf = tenantFilter(req.user);
     const updates = [];
+    const queryParams = [];
 
     const ALLOWED_FIELDS = ['title', 'description', 'status', 'priority', 'assigned_to', 'due_date', 'category', 'estimated_hours', 'tags', 'progress'];
     const fields = {
@@ -165,10 +194,19 @@ router.put('/:id', async (req, res) => {
 
     queryParams.push(id);
 
+    // Build WHERE clause dynamically based on role
+    let whereClause;
+    if (req.user?.role === 'super_admin') {
+      whereClause = 't.id = $' + queryParams.length;
+    } else {
+      whereClause = `p.id = t.project_id AND ${tf.where} = $${queryParams.length + 1} AND t.id = $${queryParams.length}`;
+      queryParams.push(...tf.params);
+    }
+
     const { rows } = await pool.query(
       `UPDATE tasks t SET ${updates.join(', ')}
        FROM projects p
-       WHERE p.id = t.project_id AND p.organization_id = $1 AND t.id = $${queryParams.length}
+       WHERE ${whereClause}
        RETURNING t.*`,
       queryParams
     );
@@ -185,21 +223,23 @@ router.put('/:id', async (req, res) => {
 });
 
 // ─── DELETE /api/tasks/:id ─────────────────────────────────────────────────
-router.delete('/:id', async (req, res) => {
+router.delete('/:id', checkPermission('tasks', 'delete'), async (req, res) => {
   try {
     const { id } = req.params;
-    const { params: baseParams } = await orgFilterTasks(req.user);
+    const tf = tenantFilter(req.user);
 
-    // id goes first ($1), then org params follow
-    const queryParams = [id, ...baseParams];
-    const orgIdParamIndex = queryParams.length;
+    let query, queryParams;
+    if (req.user?.role === 'super_admin') {
+      query = 'DELETE FROM tasks WHERE id = $1 RETURNING id';
+      queryParams = [id];
+    } else {
+      query = `DELETE FROM tasks t USING projects p
+               WHERE p.id = t.project_id AND t.id = $1 AND ${tf.where} = $2
+               RETURNING t.id`;
+      queryParams = [id, ...tf.params];
+    }
 
-    const { rows } = await pool.query(
-      `DELETE FROM tasks t USING projects p
-       WHERE p.id = t.project_id AND t.id = $1 AND p.organization_id = $${orgIdParamIndex}
-       RETURNING t.id`,
-      queryParams
-    );
+    const { rows } = await pool.query(query, queryParams);
     if (rows.length === 0) return res.status(404).json({ message: 'Task not found' });
 
     res.json({ message: 'Task deleted' });
