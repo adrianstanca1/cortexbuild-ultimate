@@ -41,7 +41,7 @@ const emptyForm = { subcontractor_name:'',utr_number:'',tax_period:'',gross_paym
 
 export function CIS() {
   const { useList, useCreate, useUpdate, useDelete } = useCIS;
-  const { data: raw = [], isLoading } = useList();
+  const { data: raw = [], isLoading, isError, error } = useList();
   const returns = raw as AnyRow[];
   const createMutation = useCreate();
   const updateMutation = useUpdate();
@@ -86,7 +86,8 @@ export function CIS() {
     const gross = Number(r.gross_payment??0);
     const materials = Number(r.materials??0);
     const rate = Number(r.cis_rate??20)/100;
-    return s + (gross - materials) * rate;
+    const netSubject = Math.max(0, gross - materials);
+    return s + netSubject * rate;
   },0);
   const submittedCount = returns.filter(r=>r.status==='Submitted').length;
   const verifiedCount = returns.filter(r=>r.status==='Verified').length;
@@ -96,7 +97,8 @@ export function CIS() {
     const gross = Number(r.gross_payment??0);
     const materials = Number(r.materials??0);
     const rate = Number(r.cis_rate??20)/100;
-    return (gross - materials) * rate;
+    const netSubject = Math.max(0, gross - materials);
+    return netSubject * rate;
   }
   function calcNet(r: AnyRow) {
     return Number(r.gross_payment??0) - calcDeduction(r);
@@ -112,33 +114,45 @@ export function CIS() {
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     const payload = { ...form, gross_payment:Number(form.gross_payment)||0, cis_rate:Number(form.cis_rate)||20, labour_only:Number(form.labour_only)||0, materials:Number(form.materials)||0 };
-    if (editing) { await updateMutation.mutateAsync({ id:String(editing.id), data:payload }); toast.success('CIS return updated'); }
-    else { await createMutation.mutateAsync(payload); toast.success('CIS return created'); }
-    setShowModal(false);
+    try {
+      if (editing) { await updateMutation.mutateAsync({ id:String(editing.id), data:payload }); }
+      else { await createMutation.mutateAsync(payload); }
+      setShowModal(false);
+    } catch {
+      // Error toast handled by hook's onError
+    }
   }
 
   async function handleDelete(id: string) {
     if (!confirm('Delete this CIS return?')) return;
-    await deleteMutation.mutateAsync(id); toast.success('CIS return deleted');
+    try {
+      await deleteMutation.mutateAsync(id);
+    } catch {
+      // Error toast handled by hook's onError
+    }
   }
 
   async function markSubmitted(r: AnyRow) {
-    await updateMutation.mutateAsync({ id:String(r.id), data:{ status:'Submitted' } });
-    toast.success('Marked as submitted to HMRC');
+    try {
+      await updateMutation.mutateAsync({ id:String(r.id), data:{ status:'Submitted' } });
+      toast.success('Marked as submitted to HMRC');
+    } catch {
+      // Error toast handled by hook's onError
+    }
   }
 
   // Live calculation from form
   const formGross = Number(form.gross_payment)||0;
   const formMaterials = Number(form.materials)||0;
   const formRate = Number(form.cis_rate)||20;
-  const formDeduction = (formGross - formMaterials) * (formRate/100);
+  const formDeduction = Math.max(0, formGross - formMaterials) * (formRate/100);
   const formNet = formGross - formDeduction;
 
   // Calculator calculations
   const calcGrossNum = Number(calcGross)||0;
   const calcMatNum = Number(calcMaterials)||0;
   const calcRateNum = Number(calcRate)||20;
-  const calcNetPaymentSubject = calcGrossNum - calcMatNum;
+  const calcNetPaymentSubject = Math.max(0, calcGrossNum - calcMatNum);
   const calcDeductionAmount = calcNetPaymentSubject * (calcRateNum/100);
   const calcNetPayment = calcGrossNum - calcDeductionAmount;
 
@@ -225,9 +239,14 @@ export function CIS() {
             </select>
           </div>
 
+          {isError && (
+            <div className="bg-red-900/30 border border-red-700 rounded-xl px-4 py-3 text-red-300 mb-4">
+              Failed to load CIS returns: {error?.message ?? 'Unknown error'}
+            </div>
+          )}
           {isLoading ? (
             <div className="flex justify-center py-20"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-600"/></div>
-          ) : (
+          ) : !isError && (
             <div className="card bg-base-200 overflow-hidden">
               <table className="w-full text-sm">
                 <thead className="bg-gray-900 border-b border-gray-700">
