@@ -39,7 +39,7 @@ export function DiaryFilters({
   projects,
 }: DiaryFiltersProps) {
   const safeProjects = projects ?? [];
-  if (projects == null && import.meta.env.DEV) {
+  if (projects === null && import.meta.env.DEV) {
     console.warn('[DiaryFilters] projects prop is null/undefined — this should not happen');
   }
 

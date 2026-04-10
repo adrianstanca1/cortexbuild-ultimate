@@ -5,8 +5,8 @@
  */
 import { useState, useEffect } from 'react';
 import {
-  Building2, FileText, AlertTriangle, CheckCircle, Clock,
-  TrendingUp, Users, Shield, ChevronDown, ChevronUp, ExternalLink, RefreshCw
+  Building2, FileText, AlertTriangle, Clock,
+  TrendingUp, ChevronDown, ChevronUp
 } from 'lucide-react';
 import { portalApi } from '../../services/api';
 import { ModuleBreadcrumbs } from '../ui/Breadcrumbs';

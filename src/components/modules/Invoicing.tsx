@@ -1,12 +1,11 @@
 // Module: Invoicing — CortexBuild Ultimate (Enhanced)
 import React, { useState } from 'react';
-import { Plus, X, Loader2, FileText, Download, Send, Edit2, Trash2, RefreshCw, Search, CheckSquare, Square } from 'lucide-react';
+import { Plus, X, Loader2, FileText, Download, Edit2, Trash2, RefreshCw, Search } from 'lucide-react';
 import { useInvoices, useProjects } from '../../hooks/useData';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import clsx from 'clsx';
 import { toast } from 'sonner';
-import { BulkActionsBar, useBulkSelection } from '../ui/BulkActions';
-import { EmptyState } from '../ui/EmptyState';
+import { useBulkSelection } from '../ui/BulkActions';
 import { ModuleBreadcrumbs } from '../ui/Breadcrumbs';
 import { InvoiceKPICards } from './invoicing/InvoiceKPICards';
 import { InvoiceTable } from './invoicing/InvoiceTable';

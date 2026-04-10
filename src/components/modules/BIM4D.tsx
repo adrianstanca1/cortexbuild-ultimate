@@ -5,8 +5,8 @@
  */
 import { useState, useEffect, useCallback } from 'react';
 import {
-  Box, Play, Pause, SkipBack, SkipForward, ChevronLeft, ChevronRight,
-  Calendar, Clock, Layers, Loader2, RefreshCw, Plus
+  Box, Play, Pause, SkipBack, ChevronLeft, ChevronRight,
+  Calendar, Clock, Layers, Plus
 } from 'lucide-react';
 import { bim4dApi } from '../../services/api';
 import { ModuleBreadcrumbs } from '../ui/Breadcrumbs';
@@ -51,7 +51,7 @@ export function BIM4D() {
   const [loading, setLoading] = useState(true);
   const [selectedModel, setSelectedModel] = useState<BIM4DModel | null>(null);
   const [tasks, setTasks] = useState<BIM4DTask[]>([]);
-  const [tasksLoading, setTasksLoading] = useState(false);
+  const [, setTasksLoading] = useState(false);
   const [currentPhaseIndex, setCurrentPhaseIndex] = useState(0);
   const [isPlaying, setIsPlaying] = useState(false);
   const [showModelModal, setShowModelModal] = useState(false);

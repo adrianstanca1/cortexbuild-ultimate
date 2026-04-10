@@ -4,8 +4,8 @@
  */
 import { useState } from 'react';
 import {
-  Leaf, Calculator, Info, TrendingDown, Factory, Truck, Home,
-  Zap, ChevronDown, ChevronUp, Loader2
+  Leaf, Calculator, Info, Factory, Truck,
+  ChevronDown, ChevronUp, Loader2
 } from 'lucide-react';
 import { carbonApi } from '../../services/api';
 import { ModuleBreadcrumbs } from '../ui/Breadcrumbs';

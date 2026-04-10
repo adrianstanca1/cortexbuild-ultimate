@@ -5,7 +5,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import {
   Webhook as WebhookIcon, Plus, Search, Trash2, Edit2, X, Send, CheckCircle,
-  XCircle, AlertTriangle, Clock, ChevronDown, ChevronUp, RefreshCw, Activity
+  XCircle, Clock, ChevronDown, ChevronUp, RefreshCw, Activity
 } from 'lucide-react';
 import { webhooksApi } from '../../services/api';
 import { ModuleBreadcrumbs } from '../ui/Breadcrumbs';

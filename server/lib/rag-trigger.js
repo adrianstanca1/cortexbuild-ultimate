@@ -13,7 +13,10 @@ const { SEARCHABLE_TABLES } = require('./rag-manifest');
 function queueEmbedding(tableName, row, user, action) {
   if (!SEARCHABLE_TABLES.includes(tableName)) return;
 
-  const orgId = user?.organization_id;
+  // company_owner users have organization_id = NULL but a valid company_id.
+  // Use company_id as a fallback so RAG embeddings are stored and queryable
+  // for all tenant types — consistent with rag.js tenantFilter and ai-predictive.js.
+  const orgId = user?.organization_id || user?.company_id;
   if (!orgId) return;
 
   // Async — don't await
