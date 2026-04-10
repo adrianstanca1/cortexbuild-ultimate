@@ -114,10 +114,10 @@ export function InvoiceDetailPanel({ invoice, onClose, onEdit, onDelete, fmt, st
               <p className="text-xs text-gray-400 mb-1">Payment Terms</p>
               <p className="text-white text-sm">{String(invoice.payment_terms ?? 'Net 30')}</p>
             </div>
-            {Boolean(invoice.bank_account) && (
+            {Boolean(invoice.bank_account ?? invoice.bankAccount) && (
               <div>
                 <p className="text-xs text-gray-400 mb-1">Bank Account</p>
-                <p className="text-white text-sm font-mono">{String(invoice.bank_account)}</p>
+                <p className="text-white text-sm font-mono">{String(invoice.bank_account ?? invoice.bankAccount)}</p>
               </div>
             )}
           </div>

@@ -93,7 +93,9 @@ export function InvoiceTable({
                   </td>
                   <td className="px-4 py-3 text-gray-400 whitespace-nowrap">{fmt(Number(inv.vat))}</td>
                   <td className="px-4 py-3 text-orange-400 whitespace-nowrap">
-                    -{fmt(Number(inv.cis_deduction ?? inv.cisDeduction ?? 0))}
+                    {Number(inv.cis_deduction ?? inv.cisDeduction ?? 0) > 0
+                      ? `-${fmt(Number(inv.cis_deduction ?? inv.cisDeduction ?? 0))}`
+                      : '—'}
                   </td>
                   <td className="px-4 py-3">
                     <span

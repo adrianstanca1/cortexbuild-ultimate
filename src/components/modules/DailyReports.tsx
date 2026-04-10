@@ -1,17 +1,19 @@
 import { useState, useRef } from 'react';
 import {
   ClipboardList, Plus, Search, CloudRain, Sun, Cloud, Wind, Users, Edit2,
-  Trash2, X, ChevronDown, ChevronUp, Calendar, AlertTriangle, Download, FileText,
+  Trash2, X, ChevronDown, ChevronUp, AlertTriangle, Download, FileText,
   Camera, Brain, CheckCircle2, CheckSquare, Square, Loader2
 } from 'lucide-react';
 import { BulkActionsBar, useBulkSelection } from '../ui/BulkActions';
 import { ModuleBreadcrumbs } from '../ui/Breadcrumbs';
 import { EmptyState } from '../ui/EmptyState';
-import { LineChart, Line, CartesianGrid, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
 import { useProjects, useDailyReports } from '../../hooks/useData';
 import { aiSummarizeApi } from '../../services/api';
 import { toast } from 'sonner';
 import { getToken } from '@/lib/supabase';
+import { SummaryStatsCards } from './daily-reports/SummaryStatsCards';
+import { DiaryFilters } from './daily-reports/DiaryFilters';
+import { WeatherWidget } from './daily-reports/WeatherWidget';
 
 type AnyRow = Record<string, unknown>;
 
@@ -230,50 +232,13 @@ export function DailyReports() {
       </div>
 
       {/* Summary Stats */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        {[
-          {
-            label: 'This Week',
-            value: thisWeekCount,
-            icon: Calendar,
-            colour: 'text-blue-400',
-            bg: 'bg-blue-500/10 border-blue-500/30',
-          },
-          {
-            label: 'Draft Reports',
-            value: draftCount,
-            icon: ClipboardList,
-            colour: 'text-yellow-400',
-            bg: 'bg-yellow-500/10 border-yellow-500/30',
-          },
-          {
-            label: 'Avg Workers/Day',
-            value: averageWorkersPerDay,
-            icon: Users,
-            colour: 'text-green-400',
-            bg: 'bg-green-500/10 border-green-500/30',
-          },
-          {
-            label: 'No Report Today',
-            value: projectsWithoutReport.length,
-            icon: AlertTriangle,
-            colour: projectsWithoutReport.length > 0 ? 'text-red-400' : 'text-gray-400',
-            bg: projectsWithoutReport.length > 0 ? 'bg-red-500/10 border-red-500/30' : 'bg-gray-500/10 border-gray-500/30',
-          },
-        ].map(kpi => (
-          <div key={kpi.label} className={`bg-gray-800 rounded-xl border ${kpi.bg} p-4`}>
-            <div className="flex items-center gap-3">
-              <div className="p-2 rounded-lg bg-gray-700">
-                <kpi.icon size={20} className={kpi.colour} />
-              </div>
-              <div>
-                <p className="text-xs text-gray-400">{kpi.label}</p>
-                <p className="text-xl font-bold text-white">{kpi.value}</p>
-              </div>
-            </div>
-          </div>
-        ))}
-      </div>
+      <SummaryStatsCards
+        thisWeekCount={thisWeekCount}
+        draftCount={draftCount}
+        averageWorkersPerDay={averageWorkersPerDay}
+        projectsWithoutReport={projectsWithoutReport}
+        isLoading={isLoading}
+      />
 
       {/* Main Tabs */}
       <div className="border-b border-gray-700 flex gap-1 overflow-x-auto">
@@ -332,59 +297,20 @@ export function DailyReports() {
           </div>
 
           {/* Filters */}
-          <div className="flex flex-wrap gap-3 items-center bg-gray-800 rounded-xl border border-gray-700 p-4">
-            <div className="relative flex-1 min-w-48">
-              <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500" />
-              <input
-                value={search}
-                onChange={e => setSearch(e.target.value)}
-                placeholder="Search date or work description…"
-                className="w-full pl-9 pr-4 py-2 text-sm border border-gray-700 bg-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-orange-500"
-              />
-            </div>
-
-            <select
-              value={projectFilter}
-              onChange={e => setProjectFilter(e.target.value)}
-              className="text-sm border border-gray-700 bg-gray-700 text-white rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-orange-500"
-            >
-              <option value="all">All Projects</option>
-              {projects.map(p => (
-                <option key={String(p.id)} value={String(p.id)}>
-                  {String(p.name ?? p.title ?? 'Unnamed')}
-                </option>
-              ))}
-            </select>
-
-            <div className="flex items-center gap-2">
-              <input
-                type="date"
-                value={dateFrom}
-                onChange={e => setDateFrom(e.target.value)}
-                className="text-sm border border-gray-700 bg-gray-700 text-white rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-orange-500"
-                title="From date"
-              />
-              <span className="text-gray-500 text-xs">–</span>
-              <input
-                type="date"
-                value={dateTo}
-                onChange={e => setDateTo(e.target.value)}
-                className="text-sm border border-gray-700 bg-gray-700 text-white rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-orange-500"
-                title="To date"
-              />
-            </div>
-
-            <span className="text-sm text-gray-400 ml-auto">{filtered.length} reports</span>
-            <button
-              type="button"
-              onClick={handleSummarizeReports}
-              disabled={aiLoading}
-              className="flex items-center gap-2 px-3 py-2 bg-purple-600/30 hover:bg-purple-600/50 text-purple-300 rounded-lg text-sm transition-colors disabled:opacity-50"
-            >
-              {aiLoading ? <Loader2 size={14} className="animate-spin" /> : <Brain size={14} />}
-              AI Summary
-            </button>
-          </div>
+          <DiaryFilters
+            search={search}
+            onSearchChange={setSearch}
+            projectFilter={projectFilter}
+            onProjectFilterChange={setProjectFilter}
+            dateFrom={dateFrom}
+            onDateFromChange={setDateFrom}
+            dateTo={dateTo}
+            onDateToChange={setDateTo}
+            filteredLength={filtered.length}
+            aiLoading={aiLoading}
+            onSummarize={handleSummarizeReports}
+            projects={projects}
+          />
         </>
       )}
 
@@ -655,90 +581,7 @@ export function DailyReports() {
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-600" />
             </div>
           ) : (
-            <>
-              {/* Weather Chart */}
-              <div className="bg-gray-800 rounded-xl border border-gray-700 p-6">
-                <h3 className="text-lg font-semibold text-white mb-4">Temperature Trend (Last 14 Days)</h3>
-                <ResponsiveContainer width="100%" height={300}>
-                  <LineChart
-                    data={reports
-                      .filter(r => !weatherProjectFilter || String(r.project_id) === weatherProjectFilter)
-                      .sort((a, b) => new Date(String(a.report_date)).getTime() - new Date(String(b.report_date)).getTime())
-                      .slice(-14)
-                      .map(r => ({
-                        date: String(r.report_date ?? '').slice(-5),
-                        temp: Number(r.temperature ?? 0),
-                      }))}
-                  >
-                    <CartesianGrid stroke="#374151" />
-                    <XAxis dataKey="date" tick={{ fill: '#9ca3af' }} />
-                    <YAxis tick={{ fill: '#9ca3af' }} />
-                    <Tooltip
-                      contentStyle={{ backgroundColor: '#1f2937', border: '1px solid #374151', borderRadius: '8px' }}
-                      labelStyle={{ color: '#fff' }}
-                    />
-                    <Line type="monotone" dataKey="temp" stroke="#f97316" strokeWidth={2} dot={{ fill: '#f97316' }} />
-                  </LineChart>
-                </ResponsiveContainer>
-              </div>
-
-              {/* Weather Grid */}
-              <div className="bg-gray-800 rounded-xl border border-gray-700 p-6">
-                <h3 className="text-lg font-semibold text-white mb-4">Daily Weather (Last 14 Days)</h3>
-                <div className="grid grid-cols-7 gap-3">
-                  {reports
-                    .filter(r => !weatherProjectFilter || String(r.project_id) === weatherProjectFilter)
-                    .sort((a, b) => new Date(String(a.report_date)).getTime() - new Date(String(b.report_date)).getTime())
-                    .slice(-14)
-                    .map(r => (
-                      <div key={String(r.id)} className="bg-gray-700/50 rounded-lg p-3 border border-gray-700 text-center">
-                        <p className="text-xs text-gray-400 mb-2">{String(r.report_date ?? '').slice(-5)}</p>
-                        <div className="flex justify-center mb-2">
-                          {weatherIcon(String(r.weather ?? ''))}
-                        </div>
-                        <p className="text-xs text-gray-300 font-medium">{Number(r.temperature ?? 0)}°C</p>
-                        <p className="text-xs text-gray-500 mt-1">
-                          <CheckCircle2 size={12} className="inline text-green-400" />
-                        </p>
-                      </div>
-                    ))}
-                </div>
-              </div>
-
-              {/* Weather Summary */}
-              <div className="grid grid-cols-3 gap-4">
-                <div className="bg-gray-800 rounded-xl border border-gray-700 p-4">
-                  <p className="text-xs text-gray-400 uppercase tracking-wide mb-1">Sunny Days</p>
-                  <p className="text-2xl font-bold text-yellow-400">
-                    {Number(
-                      reports
-                        .filter(r => !weatherProjectFilter || String(r.project_id) === weatherProjectFilter)
-                        .filter(r => String(r.weather ?? '').includes('Sunny')).length
-                    )}
-                  </p>
-                </div>
-                <div className="bg-gray-800 rounded-xl border border-gray-700 p-4">
-                  <p className="text-xs text-gray-400 uppercase tracking-wide mb-1">Rainy Days</p>
-                  <p className="text-2xl font-bold text-blue-400">
-                    {Number(
-                      reports
-                        .filter(r => !weatherProjectFilter || String(r.project_id) === weatherProjectFilter)
-                        .filter(r => String(r.weather ?? '').includes('Rain')).length
-                    )}
-                  </p>
-                </div>
-                <div className="bg-gray-800 rounded-xl border border-gray-700 p-4">
-                  <p className="text-xs text-gray-400 uppercase tracking-wide mb-1">Weather Delays</p>
-                  <p className="text-2xl font-bold text-orange-400">
-                    {Number(
-                      reports
-                        .filter(r => !weatherProjectFilter || String(r.project_id) === weatherProjectFilter)
-                        .filter(r => String(r.issues_delays ?? '').toLowerCase().includes('weather')).length
-                    )}
-                  </p>
-                </div>
-              </div>
-            </>
+            <WeatherWidget reports={reports} projectFilter={weatherProjectFilter} />
           )}
         </div>
       )}
