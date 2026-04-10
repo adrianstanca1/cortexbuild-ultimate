@@ -12,11 +12,26 @@ function camelize(s: string): string {
   return s.replace(/_([a-z])/g, (_, c) => c.toUpperCase());
 }
 
+function snakify(s: string): string {
+  return s.replace(/[A-Z]/g, c => '_' + c.toLowerCase());
+}
+
 function toCamel<T>(obj: unknown): T {
   if (Array.isArray(obj)) return obj.map(toCamel) as unknown as T;
   if (obj !== null && typeof obj === 'object') {
     return Object.fromEntries(
       Object.entries(obj as Record<string, unknown>).map(([k, v]) => [camelize(k), toCamel(v)])
+    ) as unknown as T;
+  }
+  return obj as T;
+}
+
+/** Convert camelCase keys back to snake_case for API request bodies. */
+export function toSnake<T>(obj: unknown): T {
+  if (Array.isArray(obj)) return obj.map(toSnake) as unknown as T;
+  if (obj !== null && typeof obj === 'object') {
+    return Object.fromEntries(
+      Object.entries(obj as Record<string, unknown>).map(([k, v]) => [snakify(k), toSnake(v)])
     ) as unknown as T;
   }
   return obj as T;

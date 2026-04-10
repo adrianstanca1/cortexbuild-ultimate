@@ -1,5 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { useSiteInspections } from '../../hooks/useData';
+import { toSnake } from '../../services/api';
 import { toast } from 'sonner';
 import {
   Plus, X, Pencil, Trash2, ClipboardCheck, Search,
@@ -73,10 +74,10 @@ export function SiteInspections() {
   const handleSave = async () => {
     try {
       if (editing) {
-        await updateMutation.mutateAsync({ id: String(editing.id), data: form });
+        await updateMutation.mutateAsync({ id: String(editing.id), data: toSnake(form) });
         toast.success('Inspection updated');
       } else {
-        await createMutation.mutateAsync(form);
+        await createMutation.mutateAsync(toSnake(form));
         toast.success('Inspection created');
       }
       setShowModal(false);
@@ -97,11 +98,12 @@ export function SiteInspections() {
   };
 
   const handleBulkDelete = async () => {
+    const count = selectedIds.size;
     for (const id of Array.from(selectedIds)) {
       await deleteMutation.mutateAsync(id);
     }
     clearSelection();
-    toast.success(`${selectedIds.size} inspection(s) deleted`);
+    toast.success(`${count} inspection(s) deleted`);
   };
 
   const openCreate = () => {

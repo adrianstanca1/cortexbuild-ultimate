@@ -195,21 +195,21 @@ router.put('/:id', checkPermission('tasks', 'update'), async (req, res) => {
     queryParams.push(id);
 
     // Build WHERE clause dynamically based on role
-    let whereClause;
+    let queryText;
     if (req.user?.role === 'super_admin') {
-      whereClause = 't.id = $' + queryParams.length;
+      // super_admin can update any task — no need to join projects
+      queryText = `UPDATE tasks SET ${updates.join(', ')}
+        WHERE id = $${queryParams.length}
+        RETURNING *`;
     } else {
-      whereClause = `p.id = t.project_id AND ${tf.where} = $${queryParams.length + 1} AND t.id = $${queryParams.length}`;
       queryParams.push(...tf.params);
+      queryText = `UPDATE tasks t SET ${updates.join(', ')}
+        FROM projects p
+        WHERE p.id = t.project_id AND ${tf.where} = $${queryParams.length} AND t.id = $${queryParams.length - tf.params.length}
+        RETURNING t.*`;
     }
 
-    const { rows } = await pool.query(
-      `UPDATE tasks t SET ${updates.join(', ')}
-       FROM projects p
-       WHERE ${whereClause}
-       RETURNING t.*`,
-      queryParams
-    );
+    const { rows } = await pool.query(queryText, queryParams);
 
     if (rows.length === 0) {
       return res.status(404).json({ message: 'Task not found' });
