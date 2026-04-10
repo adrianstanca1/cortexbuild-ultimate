@@ -91,6 +91,7 @@ const ALLOWED_COLUMNS = {
   safety_permits:     ['permit_no','type','project','location','start_date','end_date','issued_by','status'],
   toolbox_talks:      ['date','topic','location','presenter','attendees','signed_off'],
   drawing_transmittals: ['project','issued_to','date','purpose','status'],
+  site_inspections:     ['name','status','description','category','severity','resolution','due_date','project_id','project','inspector','location','findings','corrective_actions','scheduled_date','completed_date'],
 };
 
 const VALID_ORDER_COLS = new Set([

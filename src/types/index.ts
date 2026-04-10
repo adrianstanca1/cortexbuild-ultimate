@@ -104,6 +104,7 @@ export type Module =
   | 'client-portal'
   | 'webhooks'
   | 'carbon-estimating'
+  | 'site-inspections'
   | 'bim-4d';
 
 export type ProjectStatus = 'planning' | 'active' | 'on_hold' | 'completed' | 'archived';

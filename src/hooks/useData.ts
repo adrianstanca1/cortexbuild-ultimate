@@ -15,6 +15,7 @@ import {
   wasteManagementApi, sustainabilityApi, trainingApi, certificationsApi,
   prequalificationApi, lettingsApi, measuringApi, valuationsApi,
   sitePermitsApi,
+  siteInspectionsApi,
   reportTemplatesApi, auditApi, ReportTemplate,
   type Row,
 } from '../services/api';
@@ -132,6 +133,7 @@ export const useLettings        = makeHooks<LettingPackageRow>('lettings',      
 export const useMeasuring       = makeHooks<MeasurementRow>('measuring',        'measuring',       measuringApi);
 export const useValuations      = makeHooks<ValuationRow>('valuations',        'valuations',       valuationsApi);
 export const useSitePermits     = makeHooks('site-permits',     'site-permits',    sitePermitsApi);
+export const useSiteInspections = makeHooks('site-inspections', 'site_inspections', siteInspectionsApi);
 export const useReportTemplates  = makeHooks<ReportTemplate>('report-templates', 'report_templates', {
   getAll: () => reportTemplatesApi.getAll(),
   create: (data: Row) => reportTemplatesApi.create(data as Parameters<typeof reportTemplatesApi.create>[0]) as Promise<ReportTemplate | null>,
