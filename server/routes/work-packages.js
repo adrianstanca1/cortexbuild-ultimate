@@ -156,7 +156,7 @@ router.patch('/:id', async (req, res) => {
 
     const { rows } = await pool.query(
       `UPDATE work_packages wp SET ${updates.join(', ')}
-       WHERE wp.organization_id = $1 AND wp.id = $${queryParams.length}
+       WHERE COALESCE(wp.organization_id, wp.company_id) = $1 AND wp.id = $${queryParams.length}
        RETURNING wp.*`,
       queryParams
     );
@@ -184,7 +184,7 @@ router.delete('/:id', async (req, res) => {
 
     const { rows } = await pool.query(
       `DELETE FROM work_packages wp
-       WHERE wp.id = $1 AND wp.organization_id = $${orgIdParamIndex}
+       WHERE wp.id = $1 AND COALESCE(wp.organization_id, wp.company_id) = $${orgIdParamIndex}
        RETURNING wp.id`,
       queryParams
     );

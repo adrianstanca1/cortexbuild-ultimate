@@ -67,11 +67,13 @@ router.post('/', async (req, res) => {
 
     if (!title) return res.status(400).json({ message: 'Title is required' });
 
-    // Verify project belongs to user's org
-    if (project_id && req.user?.organization_id) {
+    // Verify project belongs to user's tenant
+    if (project_id && (req.user?.organization_id || req.user?.company_id)) {
+      const tenantCol = req.user?.role === 'company_owner' ? 'company_id' : 'organization_id';
+      const tenantId = req.user?.role === 'company_owner' ? req.user.company_id : req.user.organization_id;
       const { rows: proj } = await pool.query(
-        'SELECT id FROM projects WHERE id = $1 AND organization_id = $2',
-        [project_id, req.user.organization_id]
+        `SELECT id FROM projects WHERE id = $1 AND COALESCE(organization_id, company_id) = $2`,
+        [project_id, tenantId]
       );
       if (proj.length === 0) {
         return res.status(403).json({ message: 'Project not found or access denied' });
@@ -94,7 +96,7 @@ router.post('/', async (req, res) => {
         category || 'general',
         estimated_hours || null,
         tags || '',
-        req.user.organization_id,
+        req.user.organization_id || null,
         req.user.company_id || null
       ]
     );
@@ -165,7 +167,7 @@ router.put('/:id', async (req, res) => {
     const { rows } = await pool.query(
       `UPDATE project_tasks pt SET ${updates.join(', ')}
        FROM projects p
-       WHERE p.id = pt.project_id AND p.organization_id = $1 AND pt.id = $${idParamIndex}
+       WHERE p.id = pt.project_id AND COALESCE(p.organization_id, p.company_id) = $1 AND pt.id = $${idParamIndex}
        RETURNING pt.*`,
       queryParams
     );

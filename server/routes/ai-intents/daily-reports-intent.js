@@ -8,7 +8,7 @@ async function handleDailyReports(user) {
   const orgId = user?.organization_id;
   const companyId = user?.company_id;
   const { rows } = await pool.query(
-    `SELECT project, date, weather, workers_on_site, progress_notes FROM daily_reports WHERE organization_id = $1 OR (organization_id IS NULL AND company_id = $2) ORDER BY created_at DESC`,
+    `SELECT project, date, weather, workers_on_site, progress_notes FROM daily_reports WHERE (organization_id = $1 OR (organization_id IS NULL AND company_id = $2)) ORDER BY created_at DESC`,
     [orgId, companyId]
   );
   if (!rows.length) {

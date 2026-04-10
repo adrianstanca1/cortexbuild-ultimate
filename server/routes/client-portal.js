@@ -42,10 +42,10 @@ function fmt(n) {
 }
 
 function safeProjectFilter(projectTable, alias = 'p') {
-  return `(${alias}.organization_id = $1 OR ${alias}.client IN (
-    SELECT email FROM users WHERE organization_id = $1
+  return `(COALESCE(${alias}.organization_id, ${alias}.company_id) = $1 OR ${alias}.client IN (
+    SELECT email FROM users WHERE COALESCE(organization_id, company_id) = $1
     UNION
-    SELECT email FROM contacts WHERE organization_id = $1
+    SELECT email FROM contacts WHERE COALESCE(organization_id, company_id) = $1
   ))`;
 }
 
@@ -64,11 +64,11 @@ router.get('/projects', async (req, res) => {
               p.manager, p.location, p.type, p.start_date, p.end_date,
               p.description, p.updated_at
        FROM projects p
-       WHERE p.organization_id = $1
+       WHERE COALESCE(p.organization_id, p.company_id) = $1
          AND (p.client ILIKE '%' || $2 || '%'
               OR p.id IN (
                 SELECT project_id FROM contacts c
-                WHERE c.organization_id = $1 AND c.email ILIKE '%' || $2 || '%'
+                WHERE COALESCE(c.organization_id, c.company_id) = $1 AND c.email ILIKE '%' || $2 || '%'
               ))
        ORDER BY p.updated_at DESC`,
       [orgId, userEmail.split('@')[1] || '']
@@ -126,7 +126,7 @@ router.get('/projects/:id', async (req, res) => {
 
     // Get project (with org/company check)
     const { rows: projects } = await pool.query(
-      `SELECT * FROM projects WHERE id = $1 AND organization_id = $2`,
+      `SELECT * FROM projects WHERE id = $1 AND COALESCE(organization_id, company_id) = $2`,
       [id, orgId]
     );
     if (!projects.length) return res.status(404).json({ message: 'Project not found' });
@@ -202,7 +202,7 @@ router.get('/projects/:id/rfis', async (req, res) => {
     if (!orgId) return res.status(403).json({ message: 'Portal access denied' });
 
     let query = `SELECT number, subject, priority, status, submitted_date, due_date, assigned_to
-                 FROM rfis WHERE project_id = $1 AND organization_id = $2`;
+                 FROM rfis WHERE project_id = $1 AND COALESCE(organization_id, company_id) = $2`;
     const params = [id, orgId];
     if (status) { query += ` AND status = $3`; params.push(status); }
     query += ` ORDER BY due_date ASC LIMIT $${params.length + 1}`;
@@ -227,7 +227,7 @@ router.get('/projects/:id/daily-reports', async (req, res) => {
     const { rows } = await pool.query(
       `SELECT report_date, weather, workers_on_site, progress, delays, safety_observations, notes
        FROM daily_reports
-       WHERE project_id = $1 AND organization_id = $2
+       WHERE project_id = $1 AND COALESCE(organization_id, company_id) = $2
          AND report_date >= CURRENT_DATE - INTERVAL '1' * $3
        ORDER BY report_date DESC
        LIMIT $3`,
@@ -250,7 +250,7 @@ router.get('/projects/:id/valuations', async (req, res) => {
 
     const { rows } = await pool.query(
       `SELECT app_no, period, start_date, end_date, gross_value, retention_pct, net_value, status, certified_date, submitted_date
-       FROM valuations WHERE project_id = $1 AND organization_id = $2
+       FROM valuations WHERE project_id = $1 AND COALESCE(organization_id, company_id) = $2
        ORDER BY start_date DESC`,
       [id, orgId]
     );
@@ -282,7 +282,7 @@ router.get('/projects/:id/documents', async (req, res) => {
     if (!orgId) return res.status(403).json({ message: 'Portal access denied' });
 
     let query = `SELECT name, category, discipline, version, date_issued, author, file_url, type
-                 FROM documents WHERE project_id = $1 AND organization_id = $2`;
+                 FROM documents WHERE project_id = $1 AND COALESCE(organization_id, company_id) = $2`;
     const params = [id, orgId];
     if (category) { query += ` AND category = $3`; params.push(category); }
     query += ` ORDER BY date_issued DESC LIMIT $${params.length + 1}`;
@@ -307,7 +307,7 @@ router.get('/projects/:id/incidents', async (req, res) => {
     const { rows } = await pool.query(
       `SELECT type, title, date, severity, status, outcome
        FROM safety_incidents
-       WHERE project_id = $1 AND organization_id = $2
+       WHERE project_id = $1 AND COALESCE(organization_id, company_id) = $2
          AND date >= CURRENT_DATE - INTERVAL '1' * $3
        ORDER BY date DESC`,
       [id, orgId]

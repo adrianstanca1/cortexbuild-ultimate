@@ -12,8 +12,13 @@ router.use(uploadRateLimiter);
 
 // Multi-tenancy helper
 function orgFilter(user) {
-  if (!user?.organization_id) return { filter: '', params: [] };
-  return { filter: ' organization_id = $1', params: [user.organization_id] };
+  if (user?.role === 'super_admin') return { filter: '', params: [] };
+  if (user?.role === 'company_owner') {
+    if (!user?.company_id) return { filter: ' AND 1=0', params: [] };
+    return { filter: ' AND company_id = $1', params: [user.company_id] };
+  }
+  if (!user?.organization_id) return { filter: ' AND 1=0', params: [] };
+  return { filter: ' AND organization_id = $1', params: [user.organization_id] };
 }
 
 const UPLOADS_DIR = path.join(__dirname, '../uploads');
@@ -144,12 +149,13 @@ router.post('/upload', upload.single('file'), async (req, res) => {
     const dateIssued = req.body.date_issued || null;
     const author = req.body.author || uploadedBy;
     const organizationId = req.user?.organization_id || null;
+    const companyId = req.user?.company_id || null;
 
     const { rows } = await pool.query(
-      `INSERT INTO documents (name, type, project_id, uploaded_by, version, size, status, category, file_path, access_level, discipline, date_issued, author, organization_id)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
+      `INSERT INTO documents (name, type, project_id, uploaded_by, version, size, status, category, file_path, access_level, discipline, date_issued, author, organization_id, company_id)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)
        RETURNING *`,
-      [name, ext, projectId, uploadedBy, '1.0', fileSize, 'current', category, filePath, accessLevel, discipline, dateIssued, author, organizationId]
+      [name, ext, projectId, uploadedBy, '1.0', fileSize, 'current', category, filePath, accessLevel, discipline, dateIssued, author, organizationId, companyId]
     );
 
     await pool.query(
@@ -215,7 +221,7 @@ router.put('/:id', async (req, res) => {
 
     params.push(id);
     if (org.filter) params.push(...org.params);
-    const whereClause = org.filter ? ` AND${org.filter}` : '';
+    const whereClause = org.filter || '';
     const { rows } = await pool.query(
       `UPDATE documents SET ${updates.join(', ')} WHERE id = $${paramCount + 1}${whereClause} RETURNING *`,
       params

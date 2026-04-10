@@ -16,17 +16,28 @@ router.use(authMw);
 
 const SUPER_ADMIN_ROLES = new Set(['super_admin']);
 
-/** Determine tenant filter clause. */
+/**
+ * Determine tenant filter clause.
+ * Returns two filters:
+ *   filter       — for source tables that have both organization_id and company_id columns (uses COALESCE)
+ *   embedFilter  — for rag_embeddings which only has organization_id (resolves company_id via subquery)
+ */
 function tenantFilter(req) {
-  if (!req.user) return { filter: '', params: [] };
-  if (SUPER_ADMIN_ROLES.has(req.user.role)) return { filter: '', params: [] };
-  if (req.user.organization_id) {
-    return { filter: 'WHERE organization_id = $1', params: [req.user.organization_id] };
+  if (!req.user) return { filter: '', embedFilter: '', params: [] };
+  if (SUPER_ADMIN_ROLES.has(req.user.role)) return { filter: '', embedFilter: '', params: [] };
+  // company_owner users have organization_id = NULL; use COALESCE for source tables
+  const orgId = req.user.organization_id || req.user.company_id;
+  if (orgId) {
+    return {
+      filter: 'WHERE COALESCE(organization_id, company_id) = $1',
+      // For rag_embeddings (no company_id column): resolve company_id to organization_id via companies table
+      embedFilter: req.user.organization_id
+        ? 'WHERE organization_id = $1'
+        : "WHERE organization_id = (SELECT organization_id FROM companies WHERE id = $1)",
+      params: [orgId],
+    };
   }
-  if (req.user.company_id) {
-    return { filter: 'WHERE company_id = $1', params: [req.user.company_id] };
-  }
-  return { filter: '', params: [] };
+  return { filter: '', embedFilter: '', params: [] };
 }
 
 /** GET /api/rag/search
@@ -57,11 +68,11 @@ router.get('/search', async (req, res) => {
       return res.status(502).json({ message: 'Embedding service unavailable' });
     }
 
-    const { filter, params: filterParams } = tenantFilter(req);
+    const { filter, embedFilter, params: filterParams } = tenantFilter(req);
 
     // Search each table, use pg_vector for similarity
     // For super_admin / no org filter: search across all orgs
-    // Otherwise: filter by organization_id
+    // Otherwise: filter using embedFilter (resolves company_id for rag_embeddings)
     const allResults = [];
 
     for (const tableName of tables) {
@@ -69,19 +80,15 @@ router.get('/search', async (req, res) => {
       // Extra defense: validate against known manifest keys only
       if (!(tableName in manifest)) continue;
 
-      // Build per-table query
-      const orgFilter = filter
-        ? `WHERE ${filter.replace('WHERE', '')} AND organization_id = $1`
-        : 'WHERE organization_id = $1';
-
-      // Use <-> (Euclidean distance) or <=> (cosine distance) operator from pg_vector
-      // vector_cosine_ops supports <=> (cosine distance = 1 - cosine_similarity)
-      const searchQuery = filter
+      // Build per-table query using the embeddings-specific filter for rag_embeddings
+      // Filtered params: $1=orgId, $2=embedding, $3=tableName, $4=limit
+      // Unfiltered params: $1=embedding, $2=tableName, $3=limit
+      const searchQuery = embedFilter
         ? `SELECT id, row_id, chunk_text,
                   (embedding <=> $2) AS similarity,
                   updated_at
            FROM rag_embeddings
-           WHERE organization_id = $1 AND table_name = $3
+           ${embedFilter} AND table_name = $3
            ORDER BY embedding <=> $2
            LIMIT $4`
         : `SELECT id, row_id, chunk_text,
@@ -92,7 +99,7 @@ router.get('/search', async (req, res) => {
            ORDER BY embedding <=> $1
            LIMIT $3`;
 
-      const queryParams = filter
+      const queryParams = embedFilter
         ? [filterParams[0], JSON.stringify(queryEmbedding), tableName, limit]
         : [JSON.stringify(queryEmbedding), tableName, limit];
 
@@ -147,6 +154,7 @@ router.get('/context', async (req, res) => {
     if (!pairs.length) return res.json({ context: [] });
 
     const { filter, params: filterParams } = tenantFilter(req);
+    // Context endpoint queries source tables (not rag_embeddings), so COALESCE filter is correct
     const context = [];
 
     for (const pair of pairs) {
@@ -159,7 +167,7 @@ router.get('/context', async (req, res) => {
       if (!ALLOWED_RAG_TABLES.has(tableName)) continue;
       let query, params;
       if (filter) {
-        query = `SELECT * FROM ${tableName} WHERE id = $1 AND organization_id = $2`;
+        query = `SELECT * FROM ${tableName} WHERE id = $1 AND COALESCE(organization_id, company_id) = $2`;
         params = [rowId, filterParams[0]];
       } else {
         query = `SELECT * FROM ${tableName} WHERE id = $1`;

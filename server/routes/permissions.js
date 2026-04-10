@@ -116,9 +116,10 @@ router.get('/permissions', (req, res) => {
 router.get('/roles', async (req, res) => {
   try {
     const orgId = req.user?.organization_id;
+    const companyId = req.user?.company_id;
     const { rows: customRoles } = await pool.query(
-      'SELECT * FROM custom_roles WHERE organization_id = $1 ORDER BY created_at DESC',
-      [orgId]
+      'SELECT * FROM custom_roles WHERE COALESCE(organization_id, company_id) = $1 ORDER BY created_at DESC',
+      [orgId || companyId]
     );
     const roles = [
       ...Object.entries(DEFAULT_ROLES).map(([key, val]) => ({
@@ -150,9 +151,10 @@ router.get('/roles/:id', async (req, res) => {
     }
     const customId = id.replace('custom_', '');
     const orgId = req.user?.organization_id;
+    const companyId = req.user?.company_id;
     const { rows } = await pool.query(
-      'SELECT * FROM custom_roles WHERE id = $1 AND organization_id = $2',
-      [customId, orgId]
+      'SELECT * FROM custom_roles WHERE id = $1 AND COALESCE(organization_id, company_id) = $2',
+      [customId, orgId || companyId]
     );
     if (!rows[0]) return res.status(404).json({ message: 'Role not found' });
     res.json({
@@ -174,11 +176,12 @@ router.post('/roles', async (req, res) => {
       return res.status(400).json({ message: 'name and permissions are required' });
     }
     const createdBy = req.user?.id || 'unknown';
-    const organizationId = req.user?.organization_id;
+    const orgId = req.user?.organization_id;
+    const companyId = req.user?.company_id;
     const { rows } = await pool.query(
-      `INSERT INTO custom_roles (name, description, permissions, created_by, organization_id)
-       VALUES ($1, $2, $3, $4, $5) RETURNING *`,
-      [name, description || '', JSON.stringify(permissions), createdBy, organizationId]
+      `INSERT INTO custom_roles (name, description, permissions, created_by, organization_id, company_id)
+       VALUES ($1, $2, $3, $4, $5, $6) RETURNING *`,
+      [name, description || '', JSON.stringify(permissions), createdBy, orgId || null, companyId || null]
     );
     res.status(201).json({
       id: `custom_${rows[0].id}`,
@@ -202,14 +205,15 @@ router.put('/roles/:id', async (req, res) => {
     const customId = id.replace('custom_', '');
     const { name, description, permissions } = req.body;
     const orgId = req.user?.organization_id;
+    const companyId = req.user?.company_id;
     const { rows } = await pool.query(
       `UPDATE custom_roles
        SET name = COALESCE($1, name),
            description = COALESCE($2, description),
            permissions = COALESCE($3, permissions),
            updated_at = CURRENT_TIMESTAMP
-       WHERE id = $4 AND organization_id = $5 RETURNING *`,
-      [name, description, permissions ? JSON.stringify(permissions) : null, customId, orgId]
+       WHERE id = $4 AND COALESCE(organization_id, company_id) = $5 RETURNING *`,
+      [name, description, permissions ? JSON.stringify(permissions) : null, customId, orgId || companyId]
     );
     if (!rows[0]) return res.status(404).json({ message: 'Role not found' });
     res.json({
@@ -232,9 +236,10 @@ router.delete('/roles/:id', async (req, res) => {
     }
     const customId = id.replace('custom_', '');
     const orgId = req.user?.organization_id;
+    const companyId = req.user?.company_id;
     const { rowCount } = await pool.query(
-      'DELETE FROM custom_roles WHERE id = $1 AND organization_id = $2',
-      [customId, orgId]
+      'DELETE FROM custom_roles WHERE id = $1 AND COALESCE(organization_id, company_id) = $2',
+      [customId, orgId || companyId]
     );
     if (!rowCount) return res.status(404).json({ message: 'Role not found' });
     res.json({ message: 'Role deleted' });

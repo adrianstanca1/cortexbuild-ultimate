@@ -446,7 +446,7 @@ router.get('/:id/clashes', authMiddleware, async (req, res) => {
        INNER JOIN bim_models m ON c.model_id = m.id
        LEFT JOIN users u1 ON c.assigned_to = u1.id
        LEFT JOIN users u2 ON c.resolved_by = u2.id
-       WHERE c.model_id = $1 AND c.organization_id = $2 AND m.company_id = $3
+       WHERE c.model_id = $1 AND COALESCE(c.organization_id, c.company_id) = $2 AND m.company_id = $3
        ORDER BY
          CASE c.severity
            WHEN 'critical' THEN 1
@@ -454,7 +454,7 @@ router.get('/:id/clashes', authMiddleware, async (req, res) => {
            WHEN 'minor' THEN 3
          END,
          c.created_at DESC`,
-      [req.params.id, req.user.organization_id, req.user.company_id]
+      [req.params.id, req.user.organization_id || req.user.company_id, req.user.company_id]
     );
 
     res.json(rows);
@@ -481,14 +481,15 @@ router.post('/:id/clashes', authMiddleware, async (req, res) => {
   try {
     const { rows } = await pool.query(
       `INSERT INTO bim_clashes_detections (
-        organization_id, model_id, clash_type, severity,
+        organization_id, company_id, model_id, clash_type, severity,
         element_a_name, element_b_name,
         location_x, location_y, location_z,
         description, assigned_to
-       ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+       ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
        RETURNING *`,
       [
-        req.user.organization_id,
+        req.user.organization_id || null,
+        req.user.company_id || null,
         req.params.id,
         clash_type,
         severity,

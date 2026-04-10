@@ -16,7 +16,7 @@ async function handleTimesheets(user) {
   const orgId = user?.organization_id;
   const companyId = user?.company_id;
   const { rows } = await pool.query(
-    `SELECT member_name, project, hours, date, status, overtime_hours FROM timesheets WHERE organization_id = $1 OR (organization_id IS NULL AND company_id = $2) ORDER BY created_at DESC`,
+    `SELECT member_name, project, hours, date, status, overtime_hours FROM timesheets WHERE (organization_id = $1 OR (organization_id IS NULL AND company_id = $2)) ORDER BY created_at DESC`,
     [orgId, companyId]
   );
   if (!rows.length) {

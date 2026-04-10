@@ -24,7 +24,7 @@ function pct(spent, budget) {
 async function handleProjects(user) {
   const orgId = user?.organization_id;
   const companyId = user?.company_id;
-  const where = orgId ? `WHERE organization_id = $1 OR (organization_id IS NULL AND company_id = $2)` : '';
+  const where = orgId ? `WHERE (organization_id = $1 OR (organization_id IS NULL AND company_id = $2))` : '';
   const params = orgId ? [orgId, companyId] : [];
   const { rows } = await pool.query(
     `SELECT name, client, status, progress, budget, spent, manager, location FROM projects ${where} ORDER BY created_at DESC`,

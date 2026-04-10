@@ -642,7 +642,7 @@ router.post('/execute', aiExecuteLimiter, async (req, res) => {
         const { rows } = await pool.query(
           `INSERT INTO projects(name,client,budget,status,type,manager,location,progress,spent,organization_id,company_id)
            VALUES($1,$2,$3,$4,$5,$6,$7,0,0,$8,$9) RETURNING id,name,status`,
-          [name, client, Number(budget) || 0, status, type, manager || null, location || null, tenantId, req.user.company_id]
+          [name, client, budget !== null && budget !== undefined ? Number(budget) : 0, status, type, manager || null, location || null, tenantId, req.user.company_id]
         );
         broadcastDashboardUpdate('create', 'projects', rows[0]);
         broadcastNotification('New Project Created', `"${name}" has been added to the project register.`, 'info', { projectId: rows[0].id, projectName: name });

@@ -82,7 +82,7 @@ function callOllama(messages, options = {}) {
 function analyseContractType(tender) {
   const type = (tender.type || '').toLowerCase();
   const notes = (tender.notes || '').toLowerCase();
-  const value = Number(tender.value) || 0;
+  const value = tender.value !== null && tender.value !== undefined ? Number(tender.value) : 0;
 
   // Detect contract family
   const isNEC   = /\bnec[23]?\b/i.test(type + notes);
@@ -199,7 +199,7 @@ function analyseContractType(tender) {
 function scorePAS91(tender) {
   const notes = (tender.notes || '').toLowerCase();
   const type  = (tender.type  || '').toLowerCase();
-  const value = Number(tender.value) || 0;
+  const value = tender.value !== null && tender.value !== undefined ? Number(tender.value) : 0;
 
   let score    = 60; // baseline
   const flags  = [];
@@ -287,8 +287,8 @@ function ruleBasedScores(tender) {
   const now       = Date.now();
   const deadline  = tender.deadline ? new Date(String(tender.deadline)).getTime() : null;
   const daysLeft  = deadline ? Math.ceil((deadline - now) / (1000 * 3600 * 24)) : null;
-  const value     = Number(tender.value) || 0;
-  const prob      = Number(tender.probability) || 50;
+  const value     = tender.value !== null && tender.value !== undefined ? Number(tender.value) : 0;
+  const prob      = tender.probability !== null && tender.probability !== undefined ? Number(tender.probability) : 50;
 
   // Client relationship (0-100): probability is a strong proxy
   let clientRel = Math.min(95, Math.max(15, prob + (daysLeft && daysLeft > 30 ? 10 : 0)));

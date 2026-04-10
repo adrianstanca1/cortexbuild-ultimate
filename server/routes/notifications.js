@@ -454,8 +454,8 @@ router.post('/generate-alerts', async (req, res) => {
 
     // Check for overdue invoices
     const { rows: overdueInvoices } = await pool.query(
-      `SELECT COUNT(*) as count FROM invoices WHERE status = 'overdue' AND organization_id = $1`,
-      [orgId]
+      `SELECT COUNT(*) as count FROM invoices WHERE status = 'overdue' AND COALESCE(organization_id, company_id) = $1`,
+      [orgId || companyId]
     );
     if (parseInt(overdueInvoices[0].count, 10) > 0) {
       alerts.push({
@@ -469,8 +469,8 @@ router.post('/generate-alerts', async (req, res) => {
 
     // Check for expiring RAMS (within 30 days)
     const { rows: expiringRams } = await pool.query(
-      `SELECT COUNT(*) as count FROM rams WHERE review_date < NOW() + INTERVAL '30 days' AND review_date > NOW() AND organization_id = $1`,
-      [orgId]
+      `SELECT COUNT(*) as count FROM rams WHERE review_date < NOW() + INTERVAL '30 days' AND review_date > NOW() AND COALESCE(organization_id, company_id) = $1`,
+      [orgId || companyId]
     );
     if (parseInt(expiringRams[0].count, 10) > 0) {
       alerts.push({
@@ -484,8 +484,8 @@ router.post('/generate-alerts', async (req, res) => {
 
     // Check for open safety incidents
     const { rows: openIncidents } = await pool.query(
-      `SELECT COUNT(*) as count FROM safety_incidents WHERE status IN ('open', 'investigating') AND organization_id = $1`,
-      [orgId]
+      `SELECT COUNT(*) as count FROM safety_incidents WHERE status IN ('open', 'investigating') AND COALESCE(organization_id, company_id) = $1`,
+      [orgId || companyId]
     );
     if (parseInt(openIncidents[0].count, 10) > 0) {
       alerts.push({

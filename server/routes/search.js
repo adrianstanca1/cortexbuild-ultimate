@@ -152,7 +152,7 @@ router.get('/', async (req, res) => {
             `SELECT de.chunk_text, de.embedding_vector, de.file_id, d.name as file_name, d.type
              FROM document_embeddings de
              JOIN documents d ON d.id = de.file_id
-             WHERE d.organization_id = $1
+             WHERE COALESCE(d.organization_id, d.company_id) = $1
              LIMIT 200`,
             [tenantId]
           );

@@ -199,7 +199,7 @@ router.get('/', async (req, res) => {
       query = `SELECT * FROM webhooks ORDER BY created_at DESC`;
     } else {
       query = `SELECT * FROM webhooks
-               WHERE organization_id = $1 OR (organization_id IS NULL AND company_id = $2)
+               WHERE (organization_id = $1 OR (organization_id IS NULL AND company_id = $2))
                ORDER BY created_at DESC`;
       params = [orgId, companyId];
     }

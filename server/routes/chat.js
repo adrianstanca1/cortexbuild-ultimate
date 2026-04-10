@@ -45,14 +45,15 @@ router.post('/channels', async (req, res) => {
   if (!name) return res.status(400).json({ error: 'name is required' });
 
   const orgId = req.user?.organization_id;
+  const companyId = req.user?.company_id;
   const userId = req.user?.id;
 
   try {
     const { rows } = await pool.query(
-      `INSERT INTO chat_channels (name, description, organization_id, created_by)
-       VALUES ($1, $2, $3, $4)
+      `INSERT INTO chat_channels (name, description, organization_id, company_id, created_by)
+       VALUES ($1, $2, $3, $4, $5)
        RETURNING *`,
-      [name, description || '', orgId, userId]
+      [name, description || '', orgId || null, companyId || null, userId]
     );
 
     // Add creator as member
@@ -62,7 +63,7 @@ router.post('/channels', async (req, res) => {
     );
 
     // Broadcast to organization room
-    sendToRoom(`org:${orgId}`, {
+    sendToRoom(`org:${orgId || companyId}`, {
       type: 'collaboration',
       event: 'chat_channel_created',
       payload: {
@@ -94,6 +95,7 @@ router.get('/channels/:channelId/messages', async (req, res) => {
   const limit = parseInt(req.query.limit || '100', 10);
   const offset = parseInt(req.query.offset || '0', 10);
   const orgId = req.user?.organization_id;
+  const companyId = req.user?.company_id;
 
   try {
     const { rows } = await pool.query(
@@ -101,10 +103,10 @@ router.get('/channels/:channelId/messages', async (req, res) => {
        FROM chat_messages m
        JOIN chat_channels cc ON cc.id = m.channel_id
        LEFT JOIN users u ON u.id = m.user_id
-       WHERE m.channel_id = $1 AND cc.organization_id = $2
+       WHERE m.channel_id = $1 AND COALESCE(cc.organization_id, cc.company_id) = $2
        ORDER BY m.created_at ASC
        LIMIT $3 OFFSET $4`,
-      [channelId, orgId, limit, offset]
+      [channelId, orgId || companyId, limit, offset]
     );
     res.json(rows);
   } catch (err) {
@@ -124,12 +126,13 @@ router.post('/channels/:channelId/messages', async (req, res) => {
 
   const userId = req.user?.id;
   const orgId = req.user?.organization_id;
+  const companyId = req.user?.company_id;
 
   try {
     // Verify channel belongs to user's org
     const { rows: channel } = await pool.query(
-      'SELECT id FROM chat_channels WHERE id = $1 AND organization_id = $2',
-      [channelId, orgId]
+      'SELECT id FROM chat_channels WHERE id = $1 AND COALESCE(organization_id, company_id) = $2',
+      [channelId, orgId || companyId]
     );
     if (!channel.length) return res.status(404).json({ error: 'Channel not found or access denied' });
 
