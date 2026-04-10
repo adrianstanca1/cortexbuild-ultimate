@@ -2,7 +2,7 @@
   "ci": {
     "collect": {
       "startServerCommand": "npx vite preview --port 4173",
-      "startServerReadyPattern": "localhost:4173",
+      "startServerReadyPattern": "Local",
       "startServerReadyTimeout": 60000,
       "startServerWait": 5000,
       "url": [
