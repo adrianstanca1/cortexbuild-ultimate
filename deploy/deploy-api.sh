@@ -42,10 +42,24 @@ echo ""
 
 # Start new container
 echo "4. Starting new container..."
+# Ensure API can reach DB/Redis/Ollama on their network
+# Docker Compose creates 'cortexbuild-ultimate_cortexbuild' — use that.
+COMPOSE_NET="cortexbuild-ultimate_cortexbuild"
+FALLBACK_NET="cortexbuild"
+if docker network inspect "$COMPOSE_NET" >/dev/null 2>&1; then
+    DOCKER_NET="$COMPOSE_NET"
+else
+    if ! docker network inspect "$FALLBACK_NET" >/dev/null 2>&1; then
+        echo "Creating $FALLBACK_NET network..."
+        docker network create "$FALLBACK_NET"
+    fi
+    DOCKER_NET="$FALLBACK_NET"
+fi
+
 docker run -d \
     --name "$CONTAINER_NAME" \
     --restart always \
-    --network cortexbuild \
+    --network "$DOCKER_NET" \
     -e DB_HOST=cortexbuild-db \
     -e DB_PORT=5432 \
     -e DB_NAME=cortexbuild \

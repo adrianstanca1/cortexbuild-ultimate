@@ -84,10 +84,18 @@ jobs:
             IMAGE_NAME="cortexbuild-ultimate-api:latest"
             cd "$PROJECT_DIR"
 
-            # Ensure Docker network exists
-            if ! docker network inspect cortexbuild >/dev/null 2>&1; then
-              echo "Creating cortexbuild network..."
-              docker network create cortexbuild
+            # Ensure API can reach DB/Redis/Ollama on their network
+            # Docker Compose creates 'cortexbuild-ultimate_cortexbuild' — use that.
+            COMPOSE_NET="cortexbuild-ultimate_cortexbuild"
+            FALLBACK_NET="cortexbuild"
+            if docker network inspect "$COMPOSE_NET" >/dev/null 2>&1; then
+              DOCKER_NET="$COMPOSE_NET"
+            else
+              if ! docker network inspect "$FALLBACK_NET" >/dev/null 2>&1; then
+                echo "Creating $FALLBACK_NET network..."
+                docker network create "$FALLBACK_NET"
+              fi
+              DOCKER_NET="$FALLBACK_NET"
             fi
 
             git pull origin main
@@ -128,7 +136,7 @@ jobs:
             docker run -d \
               --name "$CONTAINER_NAME" \
               --restart always \
-              --network cortexbuild \
+              --network "$DOCKER_NET" \
               -p 127.0.0.1:3001:3001 \
               -e DB_HOST=cortexbuild-db \
               -e DB_PORT=5432 \
