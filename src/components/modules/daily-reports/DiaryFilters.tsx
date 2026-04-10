@@ -1,6 +1,11 @@
-import { Search, Brain, Loader2 } from 'lucide-react';
+import { Search, Brain, Loader2, AlertTriangle } from 'lucide-react';
 
-type Project = Record<string, unknown>;
+/**
+ * Report/project data from the generic CRUD router (snake_case DB columns).
+ * apiFetch camelCases generic responses, so runtime keys may be projectId/reportDate
+ * depending on the route. Using AnyRow matches the parent's convention.
+ */
+type AnyRow = Record<string, unknown>;
 
 type DiaryFiltersProps = {
   search: string;
@@ -13,8 +18,9 @@ type DiaryFiltersProps = {
   onDateToChange: (v: string) => void;
   filteredLength: number;
   aiLoading: boolean;
+  aiError?: string | null;
   onSummarize: () => void;
-  projects: Project[];
+  projects: AnyRow[];
 };
 
 export function DiaryFilters({
@@ -28,9 +34,12 @@ export function DiaryFilters({
   onDateToChange,
   filteredLength,
   aiLoading,
+  aiError,
   onSummarize,
   projects,
 }: DiaryFiltersProps) {
+  const safeProjects = projects ?? [];
+
   return (
     <div className="flex flex-wrap gap-3 items-center bg-gray-800 rounded-xl border border-gray-700 p-4">
       <div className="relative flex-1 min-w-48">
@@ -38,20 +47,20 @@ export function DiaryFilters({
         <input
           value={search}
           onChange={e => onSearchChange(e.target.value)}
-          placeholder="Search date or work description…"
-          className="w-full pl-9 pr-4 py-2 text-sm border border-gray-700 bg-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-orange-500"
+          placeholder="Search date or work description..."
+          className="input input-bordered input-sm w-full pl-9 bg-gray-700 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-orange-500"
         />
       </div>
 
       <select
         value={projectFilter}
         onChange={e => onProjectFilterChange(e.target.value)}
-        className="text-sm border border-gray-700 bg-gray-700 text-white rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-orange-500"
+        className="select select-bordered select-sm bg-gray-700 text-white focus:outline-none focus:ring-2 focus:ring-orange-500"
       >
         <option value="all">All Projects</option>
-        {projects.map(p => (
+        {safeProjects.map(p => (
           <option key={String(p.id)} value={String(p.id)}>
-            {String(p.name ?? p.title ?? 'Unnamed')}
+            {String(p.name ?? p.title ?? '— data missing —')}
           </option>
         ))}
       </select>
@@ -61,7 +70,7 @@ export function DiaryFilters({
           type="date"
           value={dateFrom}
           onChange={e => onDateFromChange(e.target.value)}
-          className="text-sm border border-gray-700 bg-gray-700 text-white rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-orange-500"
+          className="input input-bordered input-sm bg-gray-700 text-white focus:outline-none focus:ring-2 focus:ring-orange-500"
           title="From date"
         />
         <span className="text-gray-500 text-xs">–</span>
@@ -69,21 +78,30 @@ export function DiaryFilters({
           type="date"
           value={dateTo}
           onChange={e => onDateToChange(e.target.value)}
-          className="text-sm border border-gray-700 bg-gray-700 text-white rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-orange-500"
+          className="input input-bordered input-sm bg-gray-700 text-white focus:outline-none focus:ring-2 focus:ring-orange-500"
           title="To date"
         />
       </div>
 
       <span className="text-sm text-gray-400 ml-auto">{filteredLength} reports</span>
-      <button
-        type="button"
-        onClick={onSummarize}
-        disabled={aiLoading}
-        className="flex items-center gap-2 px-3 py-2 bg-purple-600/30 hover:bg-purple-600/50 text-purple-300 rounded-lg text-sm transition-colors disabled:opacity-50"
-      >
-        {aiLoading ? <Loader2 size={14} className="animate-spin" /> : <Brain size={14} />}
-        AI Summary
-      </button>
+
+      <div className="flex flex-col items-end">
+        <button
+          type="button"
+          onClick={onSummarize}
+          disabled={aiLoading}
+          className="flex items-center gap-2 px-3 py-2 bg-purple-600/30 hover:bg-purple-600/50 text-purple-300 rounded-lg text-sm transition-colors disabled:opacity-50"
+        >
+          {aiLoading ? <Loader2 size={14} className="animate-spin" /> : <Brain size={14} />}
+          AI Summary
+        </button>
+        {aiError && (
+          <p className="text-xs text-red-400 mt-1 flex items-center gap-1" role="alert">
+            <AlertTriangle size={12} />
+            {aiError}
+          </p>
+        )}
+      </div>
     </div>
   );
 }

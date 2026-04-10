@@ -1,15 +1,53 @@
 import { Calendar, ClipboardList, Users, AlertTriangle } from 'lucide-react';
 
-type DailyReport = Record<string, unknown>;
+/**
+ * Report data from the generic CRUD router (snake_case DB columns).
+ * Using AnyRow matches the parent DailyReports convention.
+ */
+type AnyRow = Record<string, unknown>;
 
 type SummaryStatsCardsProps = {
   thisWeekCount: number;
   draftCount: number;
   averageWorkersPerDay: number;
-  projectsWithoutReport: DailyReport[];
+  projectsWithoutReport: AnyRow[];
+  isLoading?: boolean;
+  error?: string | null;
 };
 
-export function SummaryStatsCards({ thisWeekCount, draftCount, averageWorkersPerDay, projectsWithoutReport }: SummaryStatsCardsProps) {
+export function SummaryStatsCards({
+  thisWeekCount,
+  draftCount,
+  averageWorkersPerDay,
+  projectsWithoutReport,
+  isLoading,
+  error,
+}: SummaryStatsCardsProps) {
+  if (error) {
+    return (
+      <div className="bg-gray-800 rounded-xl border border-red-500/30 p-4 text-red-400" role="alert">
+        Failed to load summary stats: {error}
+      </div>
+    );
+  }
+
+  if (isLoading) {
+    return (
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        {[1, 2, 3, 4].map(i => (
+          <div key={i} className="bg-gray-800 rounded-xl border border-gray-700 p-4 animate-pulse">
+            <div className="h-12 bg-gray-700 rounded" />
+          </div>
+        ))}
+      </div>
+    );
+  }
+
+  const safeProjectsWithoutReport = projectsWithoutReport ?? [];
+  const safeAvgWorkers = Number.isFinite(averageWorkersPerDay)
+    ? Math.round(averageWorkersPerDay * 10) / 10
+    : '--';
+
   return (
     <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
       {[
@@ -29,17 +67,17 @@ export function SummaryStatsCards({ thisWeekCount, draftCount, averageWorkersPer
         },
         {
           label: 'Avg Workers/Day',
-          value: averageWorkersPerDay,
+          value: safeAvgWorkers,
           icon: Users,
           colour: 'text-green-400',
           bg: 'bg-green-500/10 border-green-500/30',
         },
         {
           label: 'No Report Today',
-          value: projectsWithoutReport.length,
+          value: safeProjectsWithoutReport.length,
           icon: AlertTriangle,
-          colour: projectsWithoutReport.length > 0 ? 'text-red-400' : 'text-gray-400',
-          bg: projectsWithoutReport.length > 0
+          colour: safeProjectsWithoutReport.length > 0 ? 'text-red-400' : 'text-gray-400',
+          bg: safeProjectsWithoutReport.length > 0
             ? 'bg-red-500/10 border-red-500/30'
             : 'bg-gray-500/10 border-gray-500/30',
         },

@@ -1,34 +1,64 @@
-import { CloudRain, Sun, Wind, Cloud, CheckCircle2 } from 'lucide-react';
+import { CloudRain, Sun, Wind, Cloud, CloudSnow, CloudFog, CloudLightning, AlertTriangle } from 'lucide-react';
 import { LineChart, Line, CartesianGrid, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
 
-type DailyReport = Record<string, unknown>;
+/**
+ * Report data from the generic CRUD router (snake_case DB columns).
+ * apiFetch camelCases generic responses, so runtime keys may be projectId/reportDate
+ * depending on the route. Using AnyRow matches the parent's convention.
+ */
+type AnyRow = Record<string, unknown>;
 
 type WeatherWidgetProps = {
-  reports: DailyReport[];
+  reports: AnyRow[];
   projectFilter: string;
 };
 
 function WeatherIcon({ weather }: { weather: string }) {
-  if (weather.includes('Rain')) return <CloudRain size={16} className="text-blue-400" />;
-  if (weather.includes('Sun') || weather.includes('Sunny')) return <Sun size={16} className="text-yellow-400" />;
-  if (weather.includes('Wind')) return <Wind size={16} className="text-gray-400" />;
+  if (!weather) return <span className="text-xs text-gray-500">--</span>;
+  const w = weather.toLowerCase();
+  if (w.includes('rain') || w.includes('drizzle') || w.includes('shower')) return <CloudRain size={16} className="text-blue-400" />;
+  if (w.includes('sun') || w.includes('clear')) return <Sun size={16} className="text-yellow-400" />;
+  if (w.includes('wind') || w.includes('gale')) return <Wind size={16} className="text-gray-400" />;
+  if (w.includes('snow') || w.includes('frost') || w.includes('ice')) return <CloudSnow size={16} className="text-blue-200" />;
+  if (w.includes('fog') || w.includes('mist')) return <CloudFog size={16} className="text-gray-300" />;
+  if (w.includes('thunder') || w.includes('storm')) return <CloudLightning size={16} className="text-purple-400" />;
   return <Cloud size={16} className="text-gray-400" />;
 }
 
+function isValidDate(value: unknown): value is string {
+  if (typeof value !== 'string' || value.trim() === '') return false;
+  return !isNaN(new Date(value).getTime());
+}
+
 export function WeatherWidget({ reports, projectFilter }: WeatherWidgetProps) {
-  const filtered = reports.filter(r => !projectFilter || String(r.project_id) === projectFilter);
-  const last14 = filtered
-    .sort((a, b) => new Date(String(a.report_date)).getTime() - new Date(String(b.report_date)).getTime())
+  const filtered = reports.filter(r => !projectFilter || String(r.project_id ?? r.projectId ?? '') === projectFilter);
+
+  if (filtered.length === 0) {
+    return (
+      <div className="bg-gray-800 rounded-xl border border-gray-700 p-8 text-center">
+        <Cloud size={32} className="mx-auto text-gray-500 mb-3" />
+        <p className="text-gray-400">No weather data available for the selected filters.</p>
+      </div>
+    );
+  }
+
+  const last14 = [...filtered]
+    .filter(r => isValidDate(r.report_date ?? r.reportDate))
+    .sort((a, b) => {
+      const aDate = new Date(String(a.report_date ?? a.reportDate)).getTime();
+      const bDate = new Date(String(b.report_date ?? b.reportDate)).getTime();
+      return aDate - bDate;
+    })
     .slice(-14);
 
   const chartData = last14.map(r => ({
-    date: String(r.report_date ?? '').slice(-5),
-    temp: Number(r.temperature ?? 0),
+    date: String(r.report_date ?? r.reportDate ?? '').slice(-5),
+    temp: r.temperature != null && r.temperature !== '' ? Number(r.temperature) : null,
   }));
 
-  const sunnyCount = filtered.filter(r => String(r.weather ?? '').includes('Sunny')).length;
-  const rainyCount = filtered.filter(r => String(r.weather ?? '').includes('Rain')).length;
-  const delayCount = filtered.filter(r => String(r.issues_delays ?? '').toLowerCase().includes('weather')).length;
+  const sunnyCount = filtered.filter(r => String(r.weather ?? '').toLowerCase().includes('sunny')).length;
+  const rainyCount = filtered.filter(r => String(r.weather ?? '').toLowerCase().includes('rain')).length;
+  const delayCount = filtered.filter(r => String(r.issues_delays ?? r.issuesDelays ?? '').toLowerCase().includes('weather')).length;
 
   return (
     <>
@@ -44,7 +74,7 @@ export function WeatherWidget({ reports, projectFilter }: WeatherWidgetProps) {
               contentStyle={{ backgroundColor: '#1f2937', border: '1px solid #374151', borderRadius: '8px' }}
               labelStyle={{ color: '#fff' }}
             />
-            <Line type="monotone" dataKey="temp" stroke="#f97316" strokeWidth={2} dot={{ fill: '#f97316' }} />
+            <Line type="monotone" dataKey="temp" stroke="#f97316" strokeWidth={2} dot={{ fill: '#f97316' }} connectNulls={false} />
           </LineChart>
         </ResponsiveContainer>
       </div>
@@ -53,18 +83,28 @@ export function WeatherWidget({ reports, projectFilter }: WeatherWidgetProps) {
       <div className="bg-gray-800 rounded-xl border border-gray-700 p-6">
         <h3 className="text-lg font-semibold text-white mb-4">Daily Weather (Last 14 Days)</h3>
         <div className="grid grid-cols-7 gap-3">
-          {last14.map(r => (
-            <div key={String(r.id)} className="bg-gray-700/50 rounded-lg p-3 border border-gray-700 text-center">
-              <p className="text-xs text-gray-400 mb-2">{String(r.report_date ?? '').slice(-5)}</p>
-              <div className="flex justify-center mb-2">
-                <WeatherIcon weather={String(r.weather ?? '')} />
+          {last14.map(r => {
+            const hasWeatherDelay = String(r.issues_delays ?? r.issuesDelays ?? '').toLowerCase().includes('weather');
+            return (
+              <div key={String(r.id)} className="bg-gray-700/50 rounded-lg p-3 border border-gray-700 text-center">
+                <p className="text-xs text-gray-400 mb-2">
+                  {(r.report_date ?? r.reportDate) ? String(r.report_date ?? r.reportDate).slice(-5) : 'N/A'}
+                </p>
+                <div className="flex justify-center mb-2">
+                  <WeatherIcon weather={String(r.weather ?? '')} />
+                </div>
+                <p className="text-xs text-gray-300 font-medium">
+                  {r.temperature != null && r.temperature !== '' ? `${Number(r.temperature)}°C` : '--°C'}
+                </p>
+                <p className="text-xs text-gray-500 mt-1">
+                  {hasWeatherDelay
+                    ? <AlertTriangle size={12} className="inline text-orange-400" />
+                    : <Cloud size={12} className="inline text-gray-500" />
+                  }
+                </p>
               </div>
-              <p className="text-xs text-gray-300 font-medium">{Number(r.temperature ?? 0)}°C</p>
-              <p className="text-xs text-gray-500 mt-1">
-                <CheckCircle2 size={12} className="inline text-green-400" />
-              </p>
-            </div>
-          ))}
+            );
+          })}
         </div>
       </div>
 
