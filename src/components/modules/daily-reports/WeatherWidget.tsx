@@ -53,7 +53,7 @@ export function WeatherWidget({ reports, projectFilter }: WeatherWidgetProps) {
 
   const chartData = last14.map(r => ({
     date: String(r.report_date ?? r.reportDate ?? '').slice(-5),
-    temp: r.temperature != null && r.temperature !== '' ? Number(r.temperature) : null,
+    temp: r.temperature !== null && r.temperature !== undefined && r.temperature !== '' ? Number(r.temperature) : null,
   }));
 
   const sunnyCount = filtered.filter(r => String(r.weather ?? '').toLowerCase().includes('sunny')).length;
@@ -94,7 +94,7 @@ export function WeatherWidget({ reports, projectFilter }: WeatherWidgetProps) {
                   <WeatherIcon weather={String(r.weather ?? '')} />
                 </div>
                 <p className="text-xs text-gray-300 font-medium">
-                  {r.temperature != null && r.temperature !== '' ? `${Number(r.temperature)}°C` : '--°C'}
+                  {r.temperature !== null && r.temperature !== undefined && r.temperature !== '' ? `${Number(r.temperature)}°C` : '--°C'}
                 </p>
                 <p className="text-xs text-gray-500 mt-1">
                   {hasWeatherDelay
