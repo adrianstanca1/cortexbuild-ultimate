@@ -1,19 +1,37 @@
 const express = require('express');
 const pool = require('../db');
 const authMiddleware = require('../middleware/auth');
+const { checkPermission } = require('../middleware/checkPermission');
 const { logAudit } = require('./audit-helper');
 
 const router = express.Router();
 
+// All routes require authentication
+router.use(authMiddleware);
+
+// Helper: parse a numeric field, returning null for missing/empty values
+// and rejecting NaN. Used for optional financial fields.
+function safeFloat(val, fallback = null) {
+  if (val === undefined || val === null || val === '') return fallback;
+  const n = parseFloat(val);
+  return Number.isNaN(n) ? fallback : n;
+}
+
+// Helper: parse a required numeric field, returning 0 for missing/empty values
+// and rejecting NaN. Used for required financial fields.
+function safeFloatZero(val) {
+  return safeFloat(val, 0);
+}
+
 /**
  * GET /api/cost-management/budget - Get budget items for company/projects
  */
-router.get('/budget', authMiddleware, async (req, res) => {
+router.get('/budget', checkPermission('cost-management', 'read'), async (req, res) => {
   try {
     const { projectId } = req.query;
-    
+
     let query = `
-      SELECT 
+      SELECT
         b.id, b.name, b.description, b.budgeted, b.spent, b.committed,
         b.remaining, b.variance, b.variance_percent, b.status,
         b.start_date, b.end_date, b.created_at,
@@ -26,16 +44,16 @@ router.get('/budget', authMiddleware, async (req, res) => {
       LEFT JOIN users u ON b.created_by = u.id
       WHERE b.company_id = $1
     `;
-    
+
     const params = [req.user.company_id];
-    
+
     if (projectId) {
       query += ' AND b.project_id = $2';
       params.push(projectId);
     }
-    
+
     query += ' ORDER BY c.code, b.name';
-    
+
     const { rows } = await pool.query(query, params);
     res.json(rows);
   } catch (err) {
@@ -47,14 +65,34 @@ router.get('/budget', authMiddleware, async (req, res) => {
 /**
  * POST /api/cost-management/budget - Create budget item
  */
-router.post('/budget', authMiddleware, async (req, res) => {
+router.post('/budget', checkPermission('cost-management', 'create'), async (req, res) => {
   const {
     projectId, costCodeId, name, description,
     budgeted, spent, committed, status, startDate, endDate
   } = req.body;
 
-  if (!name || !budgeted) {
+  if (!name || budgeted === undefined || budgeted === null) {
     return res.status(400).json({ message: 'Name and budgeted amount are required' });
+  }
+
+  const budgetedVal = safeFloatZero(budgeted);
+  const spentVal = safeFloatZero(spent);
+  const committedVal = safeFloatZero(committed);
+
+  // Reject negative financial amounts
+  if (budgetedVal < 0 || spentVal < 0 || committedVal < 0) {
+    return res.status(400).json({ message: 'Financial amounts cannot be negative' });
+  }
+
+  // Verify project ownership if projectId provided (IDOR protection)
+  if (projectId) {
+    const { rows: projectRows } = await pool.query(
+      'SELECT id FROM projects WHERE id = $1 AND company_id = $2',
+      [projectId, req.user.company_id]
+    );
+    if (!projectRows.length) {
+      return res.status(403).json({ message: 'Project not found or access denied' });
+    }
   }
 
   try {
@@ -72,9 +110,9 @@ router.post('/budget', authMiddleware, async (req, res) => {
         costCodeId || null,
         name,
         description || null,
-        parseFloat(budgeted),
-        parseFloat(spent || 0),
-        parseFloat(committed || 0),
+        budgetedVal,
+        spentVal,
+        committedVal,
         status || 'on-track',
         startDate || null,
         endDate || null,
@@ -87,7 +125,7 @@ router.post('/budget', authMiddleware, async (req, res) => {
       action: 'create',
       entityType: 'budget_items',
       entityId: rows[0].id,
-      newData: { name, budgeted, status }
+      newData: { name, budgeted: budgetedVal, status }
     });
 
     res.status(201).json(rows[0]);
@@ -100,11 +138,29 @@ router.post('/budget', authMiddleware, async (req, res) => {
 /**
  * PUT /api/cost-management/budget/:id - Update budget item
  */
-router.put('/budget/:id', authMiddleware, async (req, res) => {
+router.put('/budget/:id', checkPermission('cost-management', 'update'), async (req, res) => {
   const {
     name, description, budgeted, spent, committed,
     status, startDate, endDate
   } = req.body;
+
+  // Validate financial amounts if provided
+  if (budgeted !== undefined && budgeted !== null && Number.isNaN(parseFloat(budgeted))) {
+    return res.status(400).json({ message: 'Invalid budgeted amount' });
+  }
+  if (spent !== undefined && spent !== null && Number.isNaN(parseFloat(spent))) {
+    return res.status(400).json({ message: 'Invalid spent amount' });
+  }
+  if (committed !== undefined && committed !== null && Number.isNaN(parseFloat(committed))) {
+    return res.status(400).json({ message: 'Invalid committed amount' });
+  }
+
+  // Reject negative financial amounts
+  if ((budgeted !== undefined && budgeted !== null && parseFloat(budgeted) < 0) ||
+      (spent !== undefined && spent !== null && parseFloat(spent) < 0) ||
+      (committed !== undefined && committed !== null && parseFloat(committed) < 0)) {
+    return res.status(400).json({ message: 'Financial amounts cannot be negative' });
+  }
 
   try {
     const { rows } = await pool.query(
@@ -122,9 +178,9 @@ router.put('/budget/:id', authMiddleware, async (req, res) => {
        RETURNING *`,
       [
         name, description,
-        budgeted ? parseFloat(budgeted) : null,
-        spent ? parseFloat(spent) : null,
-        committed ? parseFloat(committed) : null,
+        budgeted != null ? parseFloat(budgeted) : null,
+        spent != null ? parseFloat(spent) : null,
+        committed != null ? parseFloat(committed) : null,
         status,
         startDate, endDate,
         req.params.id,
@@ -154,12 +210,16 @@ router.put('/budget/:id', authMiddleware, async (req, res) => {
 /**
  * DELETE /api/cost-management/budget/:id - Delete budget item
  */
-router.delete('/budget/:id', authMiddleware, async (req, res) => {
+router.delete('/budget/:id', checkPermission('cost-management', 'delete'), async (req, res) => {
   try {
-    await pool.query(
+    const { rowCount } = await pool.query(
       'DELETE FROM budget_items WHERE id = $1 AND company_id = $2',
       [req.params.id, req.user.company_id]
     );
+
+    if (!rowCount) {
+      return res.status(404).json({ message: 'Budget item not found' });
+    }
 
     logAudit({
       auth: req.user,
@@ -178,27 +238,27 @@ router.delete('/budget/:id', authMiddleware, async (req, res) => {
 /**
  * GET /api/cost-management/forecast - Get cost forecasts
  */
-router.get('/forecast', authMiddleware, async (req, res) => {
+router.get('/forecast', checkPermission('cost-management', 'read'), async (req, res) => {
   try {
     const { projectId } = req.query;
-    
+
     let query = `
-      SELECT 
+      SELECT
         f.*, p.name as project_name
       FROM cost_forecasts f
       LEFT JOIN projects p ON f.project_id = p.id
       WHERE f.company_id = $1
     `;
-    
+
     const params = [req.user.company_id];
-    
+
     if (projectId) {
       query += ' AND f.project_id = $2';
       params.push(projectId);
     }
-    
+
     query += ' ORDER BY f.period_start';
-    
+
     const { rows } = await pool.query(query, params);
     res.json(rows);
   } catch (err) {
@@ -210,11 +270,28 @@ router.get('/forecast', authMiddleware, async (req, res) => {
 /**
  * POST /api/cost-management/forecast - Create/update forecast
  */
-router.post('/forecast', authMiddleware, async (req, res) => {
+router.post('/forecast', checkPermission('cost-management', 'create'), async (req, res) => {
   const { projectId, periodStart, periodEnd, projectedCost, actualCost, notes } = req.body;
 
-  if (!projectId || !periodStart || !periodEnd || !projectedCost) {
+  if (!projectId || !periodStart || !periodEnd || projectedCost === undefined || projectedCost === null) {
     return res.status(400).json({ message: 'Project, period, and projected cost are required' });
+  }
+
+  const projectedCostVal = safeFloatZero(projectedCost);
+  const actualCostVal = safeFloat(actualCost);
+
+  // Reject negative financial amounts
+  if (projectedCostVal < 0 || (actualCostVal !== null && actualCostVal < 0)) {
+    return res.status(400).json({ message: 'Financial amounts cannot be negative' });
+  }
+
+  // Verify project ownership (IDOR protection)
+  const { rows: projectRows } = await pool.query(
+    'SELECT id FROM projects WHERE id = $1 AND company_id = $2',
+    [projectId, req.user.company_id]
+  );
+  if (!projectRows.length) {
+    return res.status(403).json({ message: 'Project not found or access denied' });
   }
 
   try {
@@ -235,8 +312,8 @@ router.post('/forecast', authMiddleware, async (req, res) => {
         projectId,
         periodStart,
         periodEnd,
-        parseFloat(projectedCost),
-        actualCost ? parseFloat(actualCost) : null,
+        projectedCostVal,
+        actualCostVal,
         notes || null
       ]
     );
@@ -251,10 +328,10 @@ router.post('/forecast', authMiddleware, async (req, res) => {
 /**
  * GET /api/cost-management/summary - Get cost summary dashboard
  */
-router.get('/summary', authMiddleware, async (req, res) => {
+router.get('/summary', checkPermission('cost-management', 'read'), async (req, res) => {
   try {
     const { rows } = await pool.query(
-      `SELECT 
+      `SELECT
         COUNT(*) as total_items,
         SUM(budgeted) as total_budgeted,
         SUM(spent) as total_spent,
@@ -280,10 +357,10 @@ router.get('/summary', authMiddleware, async (req, res) => {
 /**
  * GET /api/cost-management/codes - Get cost codes
  */
-router.get('/codes', authMiddleware, async (req, res) => {
+router.get('/codes', checkPermission('cost-management', 'read'), async (req, res) => {
   try {
     const { rows } = await pool.query(
-      `SELECT 
+      `SELECT
         c.*, p.name as parent_name,
         (SELECT COUNT(*) FROM budget_items WHERE cost_code_id = c.id) as items_count
        FROM cost_codes c
@@ -303,7 +380,7 @@ router.get('/codes', authMiddleware, async (req, res) => {
 /**
  * POST /api/cost-management/codes - Create cost code
  */
-router.post('/codes', authMiddleware, async (req, res) => {
+router.post('/codes', checkPermission('cost-management', 'create'), async (req, res) => {
   const { code, name, description, parentId, category } = req.body;
 
   if (!code || !name) {

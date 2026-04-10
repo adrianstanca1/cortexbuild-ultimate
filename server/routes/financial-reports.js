@@ -34,14 +34,26 @@ router.get('/summary', async (req, res) => {
     const outstandingAmount = [...pendingInvoices, ...overdueInvoices].reduce((sum, i) => sum + (parseFloat(i.amount) || 0), 0);
     const overdueAmount = overdueInvoices.reduce((sum, i) => sum + (parseFloat(i.amount) || 0), 0);
 
+    // Gross profit = revenue minus direct project costs
+    const grossProfit = totalRevenue - totalSpent;
+    // Net profit = gross profit minus overhead (approximated as 15% of revenue for indirect costs)
+    // TODO: Replace overhead calculation with actual overhead data when available
+    const overheadRate = 0.15;
+    const netProfit = grossProfit - (totalRevenue * overheadRate);
+
+    // Monthly burn rate: average monthly spend based on project count as denominator
+    // to avoid divide-by-zero and give meaningful per-project metric
+    const projectCount = projects.rows.length || 1;
+    const monthlyBurn = totalSpent / Math.max(12, projectCount * 12);
+
     res.json({
       totalRevenue,
       totalCosts: totalSpent,
-      grossProfit: totalRevenue - totalSpent,
-      netProfit: totalRevenue - totalSpent,
+      grossProfit,
+      netProfit,
       outstandingInvoices: outstandingAmount,
       overdueAmount,
-      monthlyBurn: totalSpent / 12,
+      monthlyBurn,
       projectCount: projects.rows.length,
       invoiceCount: invoices.rows.length,
       paidCount: paidInvoices.length,

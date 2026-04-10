@@ -8,12 +8,14 @@ const ROLES = {
   admin: {
     '*': ['create', 'read', 'update', 'export', 'approve', 'view_financials'],
     'financial-reports': ['read', 'export'],
+    'cost-management': ['read', 'update'],
     'audit-log': ['read'],
     settings: ['read', 'update'],
   },
   project_manager: {
     projects: ['create', 'read', 'update'],
     invoicing: ['read'],
+    'cost-management': ['create', 'read', 'update'],
     safety: ['create', 'read', 'update'],
     teams: ['read'],
     documents: ['create', 'read', 'update'],
