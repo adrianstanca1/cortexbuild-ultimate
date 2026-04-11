@@ -18,7 +18,7 @@ export function OAuthCallback() {
 
     // ── New: exchange one-time code for JWT ───────────────────────────────────
     if (code) {
-      apiFetch<{ token: string; user: Record<string, unknown> }>(`/oauth/exchange?code=${encodeURIComponent(code)}`)
+      apiFetch<{ token: string; user: Record<string, unknown> }>(`/auth/exchange?code=${encodeURIComponent(code)}`)
         .then(({ token, user }) => {
           setToken(token);
           setStoredUser({
