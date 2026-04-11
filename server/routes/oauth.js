@@ -30,6 +30,18 @@ async function deleteOAuthState(state) {
   await redisClient.del(`oauth:state:${state}`);
 }
 
+// One-time OAuth code exchange — replaces JWT-in-URL pattern
+// Code is valid for 60 seconds and deleted on first use
+async function setOAuthCode(code, token) {
+  await redisClient.setEx(`oauth:code:${code}`, 60, token);
+}
+
+async function getAndDeleteOAuthCode(code) {
+  const token = await redisClient.get(`oauth:code:${code}`);
+  if (token) await redisClient.del(`oauth:code:${code}`);
+  return token;
+}
+
 // Rate limiter for OAuth callbacks (prevent brute force attacks)
 const oauthLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
@@ -260,9 +272,11 @@ router.get('/google/callback', oauthLimiter, async (req, res, next) => {
         { expiresIn: '7d' }
       );
 
-      // Redirect to callback page with token in URL — frontend stores it in localStorage
+      // Use one-time code to avoid JWT appearing in URL, logs, or Referer headers
+      const code = crypto.randomBytes(16).toString('hex');
+      await setOAuthCode(code, token);
       const redirectUri = storedState.redirectUri;
-      res.redirect(`${redirectUri}?oauth_token=${token}`);
+      res.redirect(`${redirectUri}?code=${code}`);
     } catch (e) {
       console.error('[OAuth] Google callback error:', e);
       res.redirect(`${process.env.FRONTEND_URL || 'http://localhost:5173'}/login?error=google_auth_failed`);
@@ -342,9 +356,11 @@ router.get('/microsoft/callback', oauthLimiter, async (req, res, next) => {
         { expiresIn: '7d' }
       );
 
-      // Redirect to callback page with token in URL — frontend stores it in localStorage
+      // Use one-time code to avoid JWT appearing in URL, logs, or Referer headers
+      const code = crypto.randomBytes(16).toString('hex');
+      await setOAuthCode(code, token);
       const redirectUri = storedState.redirectUri;
-      res.redirect(`${redirectUri}?oauth_token=${token}`);
+      res.redirect(`${redirectUri}?code=${code}`);
     } catch (e) {
       console.error('[OAuth] Microsoft callback error:', e);
       res.redirect(`${process.env.FRONTEND_URL || 'http://localhost:5173'}/login?error=microsoft_auth_failed`);
@@ -425,6 +441,35 @@ router.get('/oauth/providers', authMiddleware, async (req, res) => {
   } catch (err) {
     console.error('Failed to get OAuth providers:', err);
     res.status(500).json({ error: 'Failed to get OAuth providers' });
+  }
+});
+
+// GET /api/oauth/exchange?code=xxx
+// Exchanges a one-time code (60s TTL) for a JWT. Code is deleted on first use.
+// This avoids placing the JWT in a redirect URL where it leaks into logs and history.
+router.get('/exchange', async (req, res) => {
+  const { code } = req.query;
+  if (!code || typeof code !== 'string') {
+    return res.status(400).json({ error: 'Missing code parameter' });
+  }
+  try {
+    const token = await getAndDeleteOAuthCode(code);
+    if (!token) {
+      return res.status(400).json({ error: 'Invalid or expired code' });
+    }
+    const jwt = require('jsonwebtoken');
+    const payload = jwt.verify(token, process.env.JWT_SECRET);
+    const { rows } = await db.query(
+      'SELECT id,name,email,role,phone,avatar,organization_id,company_id,created_at FROM users WHERE id = $1',
+      [payload.id]
+    );
+    if (!rows[0]) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+    res.json({ token, user: rows[0] });
+  } catch (err) {
+    console.error('[OAuth exchange]', err);
+    res.status(500).json({ error: 'Exchange failed' });
   }
 });
 
