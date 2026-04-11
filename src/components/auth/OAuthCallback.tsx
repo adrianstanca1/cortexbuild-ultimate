@@ -23,7 +23,7 @@ export function OAuthCallback() {
           name: payload.name || payload.email,
           email: payload.email,
           role: payload.role || 'field_worker',
-          company: payload.company || '',
+          company: payload.company || payload.company_id || '',
           phone: null,
           avatar: null,
           organization_id: payload.organization_id ?? null,

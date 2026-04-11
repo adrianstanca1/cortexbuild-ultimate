@@ -23,6 +23,7 @@ interface UsersTabProps {
 
 export default function UsersTab({ users: propUsers = [], loading: propLoading = false, onRefresh }: UsersTabProps) {
   const [fetchedUsers, setFetchedUsers] = useState<User[]>([]);
+  const [companyNames, setCompanyNames] = useState<Record<string, string>>({});
   const [fetchLoading, setFetchLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [filterRole, setFilterRole] = useState<string>('all');
@@ -37,17 +38,31 @@ export default function UsersTab({ users: propUsers = [], loading: propLoading =
   const loadUsers = () => {
     setFetchLoading(true);
     usersApi.getAll()
-      .then(data => setFetchedUsers((data as AnyRow[]).map(u => ({
-        id: String(u.id ?? ''),
-        name: String(u.name ?? ''),
-        email: String(u.email ?? ''),
-        role: (u.role as UserRole) ?? 'field_worker',
-        company: u.company ? String(u.company) : undefined,
-        status: 'active' as const,
-        avatar: u.avatar ? String(u.avatar) : undefined,
-        phone: u.phone ? String(u.phone) : undefined,
-        createdAt: String(u.createdAt ?? ''),
-      }))))
+      .then(data => {
+        setFetchedUsers((data as AnyRow[]).map(u => ({
+          id: String(u.id ?? ''),
+          name: String(u.name ?? ''),
+          email: String(u.email ?? ''),
+          role: (u.role as UserRole) ?? 'field_worker',
+          company: u.company_id ? String(u.company_id) : (u.company ? String(u.company) : undefined),
+          status: 'active' as const,
+          avatar: u.avatar ? String(u.avatar) : undefined,
+          phone: u.phone ? String(u.phone) : undefined,
+          createdAt: String(u.createdAt ?? ''),
+        })));
+        // Also fetch company names for display
+        apiFetch('/companies')
+          .then((companies: unknown) => {
+            const map: Record<string, string> = {};
+            if (Array.isArray(companies)) {
+              for (const c of companies as AnyRow[]) {
+                map[String(c.id)] = String(c.name ?? '');
+              }
+            }
+            setCompanyNames(map);
+          })
+          .catch(() => {/* non-critical */});
+      })
       .catch(e => console.warn('[UsersTab] failed to load:', e))
       .finally(() => setFetchLoading(false));
   };
@@ -181,9 +196,11 @@ export default function UsersTab({ users: propUsers = [], loading: propLoading =
     { key: 'status', header: 'Status', width: '120px', render: (user: AnyRow) => (
       <StatusBadge status={String(user.status || 'active')} />
     )},
-    { key: 'company', header: 'Company', width: '180px', render: (user: AnyRow) => (
-      <span className="text-sm text-gray-300">{String(user.company || '\u2014')}</span>
-    )},
+    { key: 'company', header: 'Company', width: '180px', render: (user: AnyRow) => {
+      const companyId = String(user.company || '');
+      const companyName = companyId ? (companyNames[companyId] || companyId) : '\u2014';
+      return <span className="text-sm text-gray-300">{companyName}</span>;
+    }},
     { key: 'lastLogin', header: 'Last Login', width: '150px', render: (user: AnyRow) => (
       <span className="text-sm text-gray-400">{fmtDateTime(String(user.lastLogin || ''))}</span>
     )},

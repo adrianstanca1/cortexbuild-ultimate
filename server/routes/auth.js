@@ -72,14 +72,13 @@ router.post('/register', registerLimiter, async (req, res) => {
         companyName: companyName,
       });
       const { rows } = await client.query(
-        `INSERT INTO users (name, email, password_hash, role, company, phone, organization_id, company_id)
-         VALUES ($1, $2, $3, 'company_owner', $4, $5, $6, $7)
-         RETURNING id, name, email, role, company, phone, organization_id, company_id, created_at`,
+        `INSERT INTO users (name, email, password_hash, role, phone, organization_id, company_id)
+         VALUES ($1, $2, $3, 'company_owner', $4, $5, $6)
+         RETURNING id, name, email, role, phone, organization_id, company_id, created_at`,
         [
           name.trim(),
           email.toLowerCase().trim(),
           hash,
-          companyName,
           phone || null,
           organizationId,
           companyId,
@@ -96,7 +95,7 @@ router.post('/register', registerLimiter, async (req, res) => {
     logAudit({ auth: { userId: newUser.id, organization_id: newUser.organization_id, company_id: newUser.company_id }, action: 'create', entityType: 'users', entityId: newUser.id, newData: { email: newUser.email, role: newUser.role, name: newUser.name } });
 
     const token = jwt.sign(
-      { id: newUser.id, jti: crypto.randomUUID(), email: newUser.email, role: newUser.role, name: newUser.name, company: newUser.company, organization_id: newUser.organization_id, company_id: newUser.company_id },
+      { id: newUser.id, jti: crypto.randomUUID(), email: newUser.email, role: newUser.role, name: newUser.name, organization_id: newUser.organization_id, company_id: newUser.company_id },
       SECRET,
       { expiresIn: '7d' }
     );
@@ -122,7 +121,7 @@ router.post('/login', loginLimiter, async (req, res) => {
     if (!valid) return res.status(401).json({ message: 'Invalid email or password' });
 
     const token = jwt.sign(
-      { id: user.id, jti: crypto.randomUUID(), email: user.email, role: user.role, name: user.name, company: user.company, organization_id: user.organization_id, company_id: user.company_id },
+      { id: user.id, jti: crypto.randomUUID(), email: user.email, role: user.role, name: user.name, organization_id: user.organization_id, company_id: user.company_id },
       SECRET,
       { expiresIn: '7d' }
     );
@@ -139,7 +138,7 @@ router.post('/login', loginLimiter, async (req, res) => {
 router.get('/me', authMiddleware, async (req, res) => {
   try {
     const { rows } = await pool.query(
-      'SELECT id,name,email,role,company,phone,avatar,organization_id,company_id,created_at FROM users WHERE id = $1',
+      'SELECT id,name,email,role,phone,avatar,organization_id,company_id,created_at FROM users WHERE id = $1',
       [req.user.id]
     );
     if (!rows[0]) return res.status(404).json({ message: 'User not found' });
@@ -154,7 +153,7 @@ router.put('/profile', authMiddleware, async (req, res) => {
   const { name, phone } = req.body;
   try {
     const { rows } = await pool.query(
-      'UPDATE users SET name=$1, phone=$2 WHERE id=$3 RETURNING id,name,email,role,company,phone,avatar,organization_id,company_id',
+      'UPDATE users SET name=$1, phone=$2 WHERE id=$3 RETURNING id,name,email,role,phone,avatar,organization_id,company_id',
       [name, phone, req.user.id]
     );
     res.json(rows[0]);
@@ -216,7 +215,7 @@ router.get('/users', authMiddleware, async (req, res) => {
   }
   try {
     const { clause, params } = buildTenantFilter(req, 'WHERE');
-    const query = `SELECT id,name,email,role,company,phone,avatar,organization_id,company_id,created_at FROM users${clause || ''} ORDER BY created_at DESC`;
+    const query = `SELECT id,name,email,role,phone,avatar,organization_id,company_id,created_at FROM users${clause || ''} ORDER BY created_at DESC`;
     const { rows } = await pool.query(query, params);
     res.json(rows);
   } catch (err) {
@@ -230,7 +229,7 @@ router.post('/users', authMiddleware, async (req, res) => {
     return res.status(403).json({ message: 'Insufficient permissions' });
   }
 
-  const { name, email, password, role = 'project_manager', company, phone } = req.body;
+  const { name, email, password, role = 'project_manager', phone } = req.body;
   if (!name || !email || !password) return res.status(400).json({ message: 'Name, email, and password are required' });
   if (password.length < 8) return res.status(400).json({ message: 'Password must be at least 8 characters' });
   if (!VALID_ROLES.includes(role)) return res.status(400).json({ message: `Invalid role. Must be one of: ${VALID_ROLES.join(', ')}` });
@@ -238,8 +237,8 @@ router.post('/users', authMiddleware, async (req, res) => {
   try {
     const hash = await bcrypt.hash(password, 12);
     const { rows } = await pool.query(
-      'INSERT INTO users (name,email,password_hash,role,company,phone,organization_id,company_id) VALUES ($1,$2,$3,$4,$5,$6,$7,$8) RETURNING id,name,email,role,company,phone,organization_id,company_id,created_at',
-      [name, email.toLowerCase().trim(), hash, role, company || 'CortexBuild Ltd', phone || null, req.user.organization_id, req.user.company_id]
+      'INSERT INTO users (name,email,password_hash,role,phone,organization_id,company_id) VALUES ($1,$2,$3,$4,$5,$6,$7) RETURNING id,name,email,role,phone,organization_id,company_id,created_at',
+      [name, email.toLowerCase().trim(), hash, role, phone || null, req.user.organization_id, req.user.company_id]
     );
     const newUser = rows[0];
     logAudit({ auth: req.user, action: 'create', entityType: 'users', entityId: newUser.id, newData: { email: newUser.email, role: newUser.role, name: newUser.name } });
@@ -279,7 +278,7 @@ router.put('/avatar', authMiddleware, async (req, res) => {
   }
   try {
     const { rows } = await pool.query(
-      'UPDATE users SET avatar=$1 WHERE id=$2 RETURNING id,name,email,role,company,phone,avatar',
+      'UPDATE users SET avatar=$1 WHERE id=$2 RETURNING id,name,email,role,phone,avatar',
       [avatar, req.user.id]
     );
     res.json(rows[0]);
