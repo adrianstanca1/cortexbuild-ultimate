@@ -2,9 +2,11 @@
 -- Passwords: CortexBuild2024! (bcrypt hash)
 
 -- Users
-INSERT INTO users (name, email, password_hash, role, company, phone) VALUES
-('Adrian Stanca',    'adrian@cortexbuild.co.uk', '$2b$10$a/iZ20htsbJ9IC1jNsk9/.PKWdPIxEwDNmS/FPN2HFseU8cN/sNDK', 'company_owner', 'CortexBuild Ltd', '07700 900123'),
-('James Harrington', 'admin@cortexbuild.co.uk',  '$2b$10$a/iZ20htsbJ9IC1jNsk9/.PKWdPIxEwDNmS/FPN2HFseU8cN/sNDK', 'admin',         'CortexBuild Ltd', '07700 900456')
+-- organization_id: NULL for company_owner (uses company_id instead), set for other roles
+-- company_id: references the seeded company (00000000-0000-0000-0000-000000000002)
+INSERT INTO users (name, email, password_hash, role, organization_id, company_id, phone) VALUES
+('Adrian Stanca',    'adrian@cortexbuild.co.uk', '$2b$10$a/iZ20htsbJ9IC1jNsk9/.PKWdPIxEwDNmS/FPN2HFseU8cN/sNDK', 'company_owner', NULL, '00000000-0000-0000-0000-000000000002', '07700 900123'),
+('James Harrington', 'admin@cortexbuild.co.uk',  '$2b$10$a/iZ20htsbJ9IC1jNsk9/.PKWdPIxEwDNmS/FPN2HFseU8cN/sNDK', 'admin',         '00000000-0000-0000-0000-000000000001', '00000000-0000-0000-0000-000000000002', '07700 900456')
 ON CONFLICT (email) DO NOTHING;
 
 -- Projects

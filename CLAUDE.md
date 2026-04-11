@@ -123,8 +123,8 @@ npm run check            # tsc --noEmit + lint + test
 
 ### Database Schema
 
-**Users table** (authoritative columns): `id, name, email, password_hash, role, company, phone, avatar, created_at, organization_id, company_id, notification_preferences`
-**No**: `first_name`, `last_name`, `job_title`, `is_active`, `updated_at`
+**Users table** (authoritative columns): `id, name, email, password_hash, role, organization_id, company_id, phone, avatar, created_at, permissions, is_active, notification_preferences`
+**No**: `first_name`, `last_name`, `job_title`, `updated_at`, `company` (replaced by `company_id` in migration 055)
 
 **Tables without `updated_at`**: `projects`, `invoices`, `rfis`, `tenders`, `companies`, `cost_forecasts`. Do NOT use `updated_at = NOW()` in UPDATE/upsert queries for these tables.
 
