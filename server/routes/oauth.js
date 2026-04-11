@@ -37,9 +37,7 @@ async function setOAuthCode(code, token) {
 }
 
 async function getAndDeleteOAuthCode(code) {
-  const token = await redisClient.get(`oauth:code:${code}`);
-  if (token) await redisClient.del(`oauth:code:${code}`);
-  return token;
+  return await redisClient.getDel(`oauth:code:${code}`);
 }
 
 // Rate limiter for OAuth callbacks (prevent brute force attacks)
@@ -457,7 +455,6 @@ router.get('/exchange', async (req, res) => {
     if (!token) {
       return res.status(400).json({ error: 'Invalid or expired code' });
     }
-    const jwt = require('jsonwebtoken');
     const payload = jwt.verify(token, process.env.JWT_SECRET);
     const { rows } = await db.query(
       'SELECT id,name,email,role,phone,avatar,organization_id,company_id,created_at FROM users WHERE id = $1',
