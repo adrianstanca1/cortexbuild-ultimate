@@ -106,15 +106,14 @@ CREATE INDEX IF NOT EXISTS idx_notifications_user_unread
 CREATE INDEX IF NOT EXISTS idx_email_logs_created_at 
   ON email_logs(created_at DESC);
 
--- Users: Active users by org (common query)
-CREATE INDEX IF NOT EXISTS idx_users_org_role_active 
-  ON users(organization_id, role, is_active)
-  WHERE is_active = true;
+-- Users: By org and role (no is_active column)
+CREATE INDEX IF NOT EXISTS idx_users_org_role_active
+  ON users(organization_id, role)
+  WHERE organization_id IS NOT NULL;
 
--- Organizations: Multi-tenancy
-CREATE INDEX IF NOT EXISTS idx_organizations_slug_active 
-  ON organizations(slug, is_active)
-  WHERE is_active = true;
+-- Organizations: Lookup by name (no slug or is_active columns)
+CREATE INDEX IF NOT EXISTS idx_organizations_name
+  ON organizations(name);
 
 COMMIT;
 

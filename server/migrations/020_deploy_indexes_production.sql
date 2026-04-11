@@ -231,18 +231,17 @@ CREATE INDEX IF NOT EXISTS idx_report_templates_type_default
 CREATE INDEX IF NOT EXISTS idx_custom_roles_name 
   ON custom_roles(name);
 
--- Users: Authentication
-CREATE INDEX IF NOT EXISTS idx_users_org_role_active 
-  ON users(organization_id, role, is_active)
-  WHERE is_active = true;
+-- Users: Authentication (no is_active column)
+CREATE INDEX IF NOT EXISTS idx_users_org_role_active
+  ON users(organization_id, role)
+  WHERE organization_id IS NOT NULL;
 
-CREATE INDEX IF NOT EXISTS idx_users_email_lower 
+CREATE INDEX IF NOT EXISTS idx_users_email_lower
   ON users(LOWER(email));
 
--- Organizations: Multi-tenancy
-CREATE INDEX IF NOT EXISTS idx_organizations_slug_active 
-  ON organizations(slug, is_active)
-  WHERE is_active = true;
+-- Organizations: Multi-tenancy (no slug or is_active columns)
+CREATE INDEX IF NOT EXISTS idx_organizations_name
+  ON organizations(name);
 
 -- Companies: Multi-tenancy
 CREATE INDEX IF NOT EXISTS idx_companies_org_id 

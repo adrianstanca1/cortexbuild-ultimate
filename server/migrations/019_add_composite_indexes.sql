@@ -129,19 +129,19 @@ COMMENT ON INDEX idx_weather_logs_project_date IS 'Composite: Weather history by
 -- Smaller, faster indexes for commonly-filtered active records
 -- ─────────────────────────────────────────────────────────────────────────────
 
--- Users: Only active users (most queries filter is_active=true)
-CREATE INDEX IF NOT EXISTS idx_users_active_organization 
+-- Users: By organization and role (no is_active column exists)
+CREATE INDEX IF NOT EXISTS idx_users_org_role
   ON users(organization_id, role)
-  WHERE is_active = true;
+  WHERE organization_id IS NOT NULL;
 
-COMMENT ON INDEX idx_users_active_organization IS 'Partial: Active users by organization and role';
+COMMENT ON INDEX idx_users_org_role IS 'Partial: Users by organization and role';
 
--- Users: Active by company (company user lists)
-CREATE INDEX IF NOT EXISTS idx_users_active_company 
+-- Users: By company and role (company user lists)
+CREATE INDEX IF NOT EXISTS idx_users_company_role
   ON users(company_id, role)
-  WHERE is_active = true AND company_id IS NOT NULL;
+  WHERE company_id IS NOT NULL;
 
-COMMENT ON INDEX idx_users_active_company IS 'Partial: Active users by company';
+COMMENT ON INDEX idx_users_company_role IS 'Partial: Users by company and role';
 
 -- Projects: Only active projects (dashboard queries)
 CREATE INDEX IF NOT EXISTS idx_projects_active_company 
@@ -192,19 +192,8 @@ CREATE INDEX IF NOT EXISTS idx_equipment_active_location
 
 COMMENT ON INDEX idx_equipment_active_location IS 'Partial: Active equipment by location';
 
--- Invitations: Only pending invitations
-CREATE INDEX IF NOT EXISTS idx_invitations_pending_org 
-  ON invitations(organization_id, email, status)
-  WHERE status = 'pending';
-
-COMMENT ON INDEX idx_invitations_pending_org IS 'Partial: Pending organization invitations';
-
--- Sessions: Valid sessions only
-CREATE INDEX IF NOT EXISTS idx_sessions_valid 
-  ON sessions(user_id, expires_at)
-  WHERE expires_at > NOW();
-
-COMMENT ON INDEX idx_sessions_valid IS 'Partial: Valid user sessions';
+-- Invitations table does not exist — skipping invitation indexes
+-- Sessions table does not exist (using Redis) — skipping session indexes
 
 -- ─────────────────────────────────────────────────────────────────────────────
 -- PHASE 3: COVERING INDEXES FOR DASHBOARD QUERIES
@@ -417,23 +406,8 @@ COMMENT ON INDEX idx_subcontractors_search_vector IS 'Full-text search: Subcontr
 -- For querying JSON/JSONB columns
 -- ─────────────────────────────────────────────────────────────────────────────
 
--- User permissions - if queried with JSON operators
-CREATE INDEX IF NOT EXISTS idx_user_permissions_gin 
-  ON users USING GIN (permissions jsonb_path_ops);
-
-COMMENT ON INDEX idx_user_permissions_gin IS 'GIN: User permissions JSON queries';
-
--- Workflow nodes - if queried with JSON operators
-CREATE INDEX IF NOT EXISTS idx_workflow_nodes_gin 
-  ON workflows USING GIN (nodes jsonb_path_ops);
-
-COMMENT ON INDEX idx_workflow_nodes_gin IS 'GIN: Workflow nodes JSON queries';
-
--- Workflow triggers - if queried with JSON operators
-CREATE INDEX IF NOT EXISTS idx_workflow_triggers_gin 
-  ON workflows USING GIN (trigger jsonb_path_ops);
-
-COMMENT ON INDEX idx_workflow_triggers_gin IS 'GIN: Workflow triggers JSON queries';
+-- users.permissions column does not exist — skipping JSON index
+-- workflows table does not exist — skipping workflow JSON indexes
 
 -- ─────────────────────────────────────────────────────────────────────────────
 -- PHASE 7: ADDITIONAL OPTIMIZATION INDEXES
