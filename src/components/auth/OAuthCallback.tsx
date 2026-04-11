@@ -29,9 +29,9 @@ export function OAuthCallback() {
             company: '',  // never use company_id UUID as display name — resolve via /companies
             phone: null,
             avatar: null,
-            organization_id: (user.organization_id as string | null) ?? null,
-            company_id: (user.company_id as string | null) ?? null,
-            effectiveOrganizationId: (user.organization_id ?? user.company_id ?? null) as string | null,
+            organization_id: (user.organizationId as string | null) ?? null,
+            company_id: (user.companyId as string | null) ?? null,
+            effectiveOrganizationId: (user.organizationId ?? user.companyId ?? null) as string | null,
           });
           setStatus('success');
           setTimeout(() => navigate('/dashboard', { replace: true }), 1500);
