@@ -61,9 +61,14 @@ export default function UsersTab({ users: propUsers = [], loading: propLoading =
             }
             setCompanyNames(map);
           })
-          .catch(() => {/* non-critical */});
+          .catch((e: unknown) => {
+            console.warn('[UsersTab] failed to load company names — company column will show IDs:', e);
+          });
       })
-      .catch(e => console.warn('[UsersTab] failed to load:', e))
+      .catch((e: unknown) => {
+        console.error('[UsersTab] failed to load users:', e);
+        toast.error('Failed to load users. Please refresh the page.');
+      })
       .finally(() => setFetchLoading(false));
   };
 
