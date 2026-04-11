@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Loader2, CheckCircle, XCircle } from 'lucide-react';
 import { setToken, setStoredUser } from '../../lib/supabase';
+import { apiFetch } from '../../services/api';
 
 export function OAuthCallback() {
   const [searchParams] = useSearchParams();
@@ -12,9 +13,38 @@ export function OAuthCallback() {
   useEffect(() => {
     const errorParam = searchParams.get('error');
     const stateParam = searchParams.get('state');
-    const oauthToken = searchParams.get('oauth_token');
+    const code = searchParams.get('code');
+    const oauthToken = searchParams.get('oauth_token'); // legacy fallback (dev only)
 
-    // ── OAuth completed with token in URL ──────────────────────────────────────
+    // ── New: exchange one-time code for JWT ───────────────────────────────────
+    if (code) {
+      apiFetch<{ token: string; user: Record<string, unknown> }>(`/oauth/exchange?code=${encodeURIComponent(code)}`)
+        .then(({ token, user }) => {
+          setToken(token);
+          setStoredUser({
+            id: String(user.id ?? ''),
+            name: String(user.name || user.email),
+            email: String(user.email ?? ''),
+            role: (user.role as string) || 'field_worker',
+            company: '',  // never use company_id UUID as display name — resolve via /companies
+            phone: null,
+            avatar: null,
+            organization_id: (user.organization_id as string | null) ?? null,
+            company_id: (user.company_id as string | null) ?? null,
+            effectiveOrganizationId: (user.organization_id ?? user.company_id ?? null) as string | null,
+          });
+          setStatus('success');
+          setTimeout(() => navigate('/dashboard', { replace: true }), 1500);
+        })
+        .catch((err: unknown) => {
+          console.error('[OAuthCallback] code exchange failed:', err);
+          setStatus('error');
+          setError('Failed to complete sign-in. Please try again.');
+        });
+      return;
+    }
+
+    // ── Legacy: direct JWT in URL (dev / backward compat) ─────────────────────
     if (oauthToken) {
       try {
         const payload = JSON.parse(atob(oauthToken.split('.')[1].replace(/-/g, '+').replace(/_/g, '/')));
@@ -23,7 +53,7 @@ export function OAuthCallback() {
           name: payload.name || payload.email,
           email: payload.email,
           role: payload.role || 'field_worker',
-          company: payload.company || payload.company_id || '',
+          company: '',  // company_id is a UUID, not a display name
           phone: null,
           avatar: null,
           organization_id: payload.organization_id ?? null,
@@ -34,7 +64,8 @@ export function OAuthCallback() {
         setStoredUser(user);
         setStatus('success');
         setTimeout(() => navigate('/dashboard', { replace: true }), 1500);
-      } catch {
+      } catch (err) {
+        console.error('[OAuthCallback] failed to decode JWT payload:', err);
         setStatus('error');
         setError('Failed to process authentication. Please try again.');
       }
