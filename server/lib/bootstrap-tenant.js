@@ -7,12 +7,11 @@
 async function insertOrgAndCompany(client, { orgName, companyName }) {
   const name = orgName.trim();
   const comp = (companyName || name).trim();
-  const slug = name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
   const { rows: [org] } = await client.query(
-    `INSERT INTO organizations (id, name, slug, industry, plan)
-     VALUES (gen_random_uuid(), $1, $2, 'Construction', 'ENTERPRISE')
+    `INSERT INTO organizations (id, name, description)
+     VALUES (gen_random_uuid(), $1, $2)
      RETURNING id`,
-    [name, slug]
+    [name, `${name} organization`]
   );
   const { rows: [company] } = await client.query(
     `INSERT INTO companies (id, organization_id, name, country)
