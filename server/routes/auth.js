@@ -144,6 +144,7 @@ router.get('/me', authMiddleware, async (req, res) => {
     if (!rows[0]) return res.status(404).json({ message: 'User not found' });
     res.json(rows[0]);
   } catch (err) {
+    console.error('[auth/me]', err);
     res.status(500).json({ message: 'Server error' });
   }
 });
@@ -158,6 +159,7 @@ router.put('/profile', authMiddleware, async (req, res) => {
     );
     res.json(rows[0]);
   } catch (err) {
+    console.error('[auth/profile]', err);
     res.status(500).json({ message: 'Server error' });
   }
 });
@@ -178,6 +180,7 @@ router.put('/password', authMiddleware, async (req, res) => {
     await pool.query('UPDATE users SET password_hash=$1 WHERE id=$2', [hash, req.user.id]);
     res.json({ message: 'Password updated successfully' });
   } catch (err) {
+    console.error('[auth/password]', err);
     res.status(500).json({ message: 'Server error' });
   }
 });
@@ -191,6 +194,7 @@ router.get('/preferences', authMiddleware, async (req, res) => {
     );
     res.json(rows[0]?.notification_preferences ?? null);
   } catch (err) {
+    console.error('[auth/preferences GET]', err);
     res.status(500).json({ message: 'Server error' });
   }
 });
@@ -204,6 +208,7 @@ router.put('/preferences', authMiddleware, async (req, res) => {
     );
     res.json(rows[0].notification_preferences);
   } catch (err) {
+    console.error('[auth/preferences PUT]', err);
     res.status(500).json({ message: 'Server error' });
   }
 });
@@ -219,6 +224,7 @@ router.get('/users', authMiddleware, async (req, res) => {
     const { rows } = await pool.query(query, params);
     res.json(rows);
   } catch (err) {
+    console.error('[auth/users GET]', err);
     res.status(500).json({ message: 'Server error' });
   }
 });
@@ -264,6 +270,7 @@ router.delete('/users/:id', authMiddleware, async (req, res) => {
     logAudit({ auth: req.user, action: 'delete', entityType: 'users', entityId: req.params.id, oldData: oldRows.rows[0] });
     res.json({ message: 'User deleted' });
   } catch (err) {
+    console.error('[auth/users DELETE]', err);
     res.status(500).json({ message: 'Server error' });
   }
 });
@@ -283,6 +290,7 @@ router.put('/avatar', authMiddleware, async (req, res) => {
     );
     res.json(rows[0]);
   } catch (err) {
+    console.error('[auth/avatar]', err);
     res.status(500).json({ message: 'Server error' });
   }
 });
@@ -297,6 +305,7 @@ router.get('/settings', authMiddleware, async (req, res) => {
     const settings = Object.fromEntries(rows.map(r => [r.key, r.value]));
     res.json(settings);
   } catch (err) {
+    console.error('[auth/settings GET]', err);
     res.status(500).json({ message: 'Server error' });
   }
 });
@@ -319,6 +328,7 @@ router.put('/settings', authMiddleware, async (req, res) => {
     );
     res.json({ key, value });
   } catch (err) {
+    console.error('[auth/settings PUT]', err);
     res.status(500).json({ message: 'Server error' });
   }
 });
