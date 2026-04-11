@@ -442,7 +442,7 @@ router.get('/oauth/providers', authMiddleware, async (req, res) => {
   }
 });
 
-// GET /api/oauth/exchange?code=xxx
+// GET /api/auth/exchange?code=xxx
 // Exchanges a one-time code (60s TTL) for a JWT. Code is deleted on first use.
 // This avoids placing the JWT in a redirect URL where it leaks into logs and history.
 router.get('/exchange', async (req, res) => {
