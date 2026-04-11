@@ -164,12 +164,16 @@ export default function UsersTab({ users: propUsers = [], loading: propLoading =
       } catch {
         toast.error('Failed to delete users');
       }
-    } else if (action === 'activate') {
-      toast.success(`Activated ${ids.length} users`);
-      clearSelection();
-    } else if (action === 'deactivate') {
-      toast.success(`Deactivated ${ids.length} users`);
-      clearSelection();
+    } else if (action === 'activate' || action === 'deactivate') {
+      const isActive = action === 'activate';
+      try {
+        await Promise.all(ids.map(id => usersApi.setActive(id, isActive)));
+        toast.success(`${isActive ? 'Activated' : 'Deactivated'} ${ids.length} user${ids.length !== 1 ? 's' : ''}`);
+        onRefresh?.(); loadUsers();
+        clearSelection();
+      } catch {
+        toast.error(`Failed to ${action} users`);
+      }
     }
   };
 

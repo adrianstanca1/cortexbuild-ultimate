@@ -255,7 +255,7 @@ router.put('/users/:id', authMiddleware, async (req, res) => {
     return res.status(403).json({ message: 'Insufficient permissions' });
   }
 
-  const { role, phone } = req.body;
+  const { role, phone, is_active } = req.body;
 
   // SECURITY: Restrict assignable roles based on updater's role to prevent privilege escalation
   const ASSIGNABLE_ROLES = {
@@ -285,10 +285,11 @@ router.put('/users/:id', authMiddleware, async (req, res) => {
     const { rows } = await pool.query(
       `UPDATE users SET
         role = COALESCE($1, role),
-        phone = COALESCE($2, phone)
-       WHERE id = $3 AND company_id = $4
-       RETURNING id, email, name, role, phone`,
-      [role, phone, req.params.id, req.user.company_id]
+        phone = COALESCE($2, phone),
+        is_active = COALESCE($3, is_active)
+       WHERE id = $4 AND company_id = $5
+       RETURNING id, email, name, role, phone, is_active`,
+      [role || null, phone || null, is_active !== undefined ? is_active : null, req.params.id, req.user.company_id]
     );
 
     if (!rows.length) {
@@ -300,7 +301,7 @@ router.put('/users/:id', authMiddleware, async (req, res) => {
       action: 'update',
       entityType: 'users',
       entityId: req.params.id,
-      newData: { role }
+      newData: { role, is_active }
     });
 
     res.json(rows[0]);

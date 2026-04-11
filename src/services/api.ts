@@ -383,6 +383,7 @@ export const usersApi = {
   create: (data: Row) => apiFetch<Row>('/company/users', { method: 'POST', body: JSON.stringify(data) }),
   update: (id: string, data: Row) => apiFetch<Row>(`/company/users/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
   delete: (id: string) => apiFetch<void>(`/company/users/${id}`, { method: 'DELETE' }),
+  setActive: (id: string, isActive: boolean) => apiFetch<Row>(`/company/users/${id}`, { method: 'PUT', body: JSON.stringify({ is_active: isActive }) }),
 };
 
 export const companyApi = {
