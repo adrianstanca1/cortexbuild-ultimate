@@ -46,8 +46,7 @@
     "three": "^0.183.2",
     "web-ifc": "^0.0.77",
     "web-ifc-three": "^0.0.126",
-    "zod": "^4.3.6",
-    "zustand": "^5.0.12"
+    "zod": "^4.3.6"
   },
   "optionalDependencies": {
     "@rolldown/binding-linux-arm64-gnu": "^1.0.0-rc.12"

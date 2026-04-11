@@ -19,7 +19,6 @@ fix_any.js
 .claude/
 backups/
 server/doc/
-server/doc/
 
 # SSL certificates - NEVER commit private keys
 nginx/ssl/*.pem
@@ -30,9 +29,8 @@ nginx/ssl/*.key
 playwright-report/
 test-results/
 .env*.local
-playwright-report/
-playwright-report/
-# macOS artifact files and runtime uploads
+
+# macOS artifacts and runtime uploads
 ._*
 uploads/
 server/uploads/
@@ -45,4 +43,18 @@ logs/
 # Local session state
 .remember/
 .logs/
-*.pid
+
+# Removed dead directories (prevent re-addition)
+.agents/
+.jez/
+.qwen/
+agents/
+prisma/
+startup-scripts/
+types/
+
+# Removed dead files
+.eslintrc.cjs
+Dockerfile
+deploy.sh
+server/security.js

@@ -8,10 +8,6 @@ CortexBuild Ultimate is an AI-Powered Unified Construction Management Platform f
 
 **Stack**: React 19 + TypeScript + Vite (frontend) / Express 4 + PostgreSQL 16 + Redis 7 (backend) / React Context + TanStack Query (state) / WebSocket (real-time)
 
-**Note**: The `prisma/` directory is **reference schema only** — production uses raw SQL migrations in `server/migrations/`. The `ARCHITECTURE.md` describes an aspirational/design architecture and may not reflect the current implementation.
-
-**Zustand is listed as a dependency but NOT used anywhere** — state management uses React Context (`AuthContext`, `ThemeContext`) + TanStack Query via `useData.ts` hooks. The `src/lib/store/` directory does not exist.
-
 ## Commands
 
 ### Frontend (cortexbuild-work/ directory)
@@ -56,7 +52,7 @@ npm run check            # tsc --noEmit + lint + test
 
 - **Vite app** (`src/`) — React 19 + TypeScript. Entry: `src/main.tsx`. Import alias `@` → `src/`. `tsconfig.json` has `strict: true` but `noUnusedLocals: false` and `noUnusedParameters: false` — unused vars/params are warnings, not errors.
 - **Module lazy-loading** — `src/App.tsx` registers 68 modules via `React.lazy()`. No React Router for main navigation — uses `activeModule` state with a custom `Sidebar`/`AppShell` pattern. React Router is installed but currently unused for module routing. `OAuthCallback` handles `/auth/callback` via `window.location.pathname` detection (not React Router).
-- **Auth** — JWT stored in `localStorage` under key `cortexbuild_token` (NOT `'token'`). Use `getToken()` from `src/lib/supabase.ts` (misleading filename — it's a local JWT helper, not Supabase). On login, user object stored under key `cortexbuild_user`. Logout blacklists the JWT server-side via Redis.
+- **Auth** — JWT stored in `localStorage` under key `cortexbuild_token` (NOT `'token'`). Use `getToken()` from `src/lib/auth-storage.ts` (local JWT helper, not Supabase). On login, user object stored under key `cortexbuild_user`. Logout blacklists the JWT server-side via Redis.
 - **API layer** — TWO competing API utility modules with different behaviors:
   - `src/services/api.ts` — `apiFetch<T>()` auto-converts snake_case to camelCase on ALL responses. `fetchAll()` unwraps `{ data, pagination }` from generic routes. Throws on HTTP errors. `useData.ts` hooks use this module.
   - `src/lib/api.ts` — `apiRequest<T>()` returns `{ ok, status, data, error }` without throwing. `apiGet/apiPost/apiPut/apiDelete` DO throw. Does NOT perform key conversion. `useNotificationCenter.ts` uses this module.
@@ -188,5 +184,5 @@ bash /root/deploy-frontend.sh
 - **Generic route ordering**: Register specific paths (`/tenders/ai`) before wildcard routes (`/tenders`) in `server/index.js`.
 - **Generic router pagination**: Generic CRUD returns `{ data, pagination }` — the frontend `fetchAll()` helper handles the unwrap.
 - **Test environment**: Vitest uses `happy-dom` (not jsdom). Setup file is `src/test/setup.ts`. `globals: true` — `describe`, `it`, `expect` are available without imports. Setup imports `@testing-library/jest-dom` matchers and mocks `HTMLCanvasElement.getContext`, `window.matchMedia`, `URL.createObjectURL`. `vitest.config.ts` excludes `rateLimiter.test.ts` from runs.
-- **ESLint**: Flat config (`eslint.config.js`) ignores `server/`, `e2e/`, `prisma/`. Server code has no linter.
+- **ESLint**: Flat config (`eslint.config.js`) ignores `server/`, `e2e/`. Server code has no linter.
 - **Docker Compose broken**: VPS has Docker Compose v1.29.2 which is broken. Use `docker run` commands or the deploy scripts.
