@@ -27,7 +27,8 @@ export default defineConfig({
   },
   build: {
     emptyOutDir: true,
-    chunkSizeWarningLimit: 1000,
+    // web-ifc WASM is ~2MB and lazy-loaded with BIMViewer — expected for IFC parsing
+    chunkSizeWarningLimit: 3000,
     rollupOptions: {
       output: {
         manualChunks(id: string) {
