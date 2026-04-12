@@ -150,6 +150,35 @@ export default {
           'error-content': '#ffffff',
         },
       },
+      {
+        // Ocean theme - blue-based color scheme
+        ocean: {
+          primary: '#0ea5e9',      // Sky 500
+          'primary-focus': '#0284c7', // Sky 600
+          'primary-content': '#ffffff',
+          secondary: '#6366f1',    // Indigo 500
+          'secondary-focus': '#4f46e5', // Indigo 600
+          'secondary-content': '#ffffff',
+          accent: '#10b981',       // Emerald 500
+          'accent-focus': '#059669',
+          'accent-content': '#ffffff',
+          neutral: '#1e293b',      // Slate 700
+          'neutral-focus': '#0d1117', // Slate 900
+          'neutral-content': '#f1f5f9',
+          'base-100': '#0f172a',   // Slate 900
+          'base-200': '#1e293b',   // Slate 800
+          'base-300': '#334155',   // Slate 700
+          'base-content': '#f8fafc', // Slate 50
+          info: '#0ea5e9',
+          'info-content': '#ffffff',
+          success: '#10b981',
+          'success-content': '#ffffff',
+          warning: '#f59e0b',
+          'warning-content': '#080b12',
+          error: '#ef4444',
+          'error-content': '#ffffff',
+        },
+      },
     ],
     darkTheme: 'dark',
     base: true,

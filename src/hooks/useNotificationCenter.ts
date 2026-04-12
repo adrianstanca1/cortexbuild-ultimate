@@ -6,7 +6,7 @@
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { apiGet, apiPut, apiPost, apiDelete } from '@/lib/api';
 import { eventBus } from '@/lib/eventBus';
-import { getToken } from '@/lib/supabase';
+import { getToken } from '@/lib/auth-storage';
 import {
   validateNotification,
   validateNotificationsResponse,

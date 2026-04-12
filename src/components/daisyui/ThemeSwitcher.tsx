@@ -16,6 +16,7 @@ const THEME_ICONS: Record<string, string> = {
   sunset: '🌅',
   cortexbuild: '🏗️',
   'cortex-light': '🏢',
+  ocean: '🌊',
 };
 
 export const ThemeSwitcher: React.FC<ThemeSwitcherProps> = ({
@@ -30,6 +31,7 @@ export const ThemeSwitcher: React.FC<ThemeSwitcherProps> = ({
     'sunset',
     'cortexbuild',
     'cortex-light',
+    'ocean',
   ],
   className = '',
 }) => {

@@ -2,7 +2,7 @@
  * API utility for making authenticated requests to the backend
  * Handles auth headers and base path automatically
  */
-import { getToken, clearToken } from './supabase';
+import { getToken, clearToken } from './auth-storage';
 
 export interface ApiErrorResponse {
   error: string;

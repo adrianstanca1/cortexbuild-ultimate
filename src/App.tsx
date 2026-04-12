@@ -319,18 +319,22 @@ function ThemedApp() {
     );
   }
 
-  return (
-    <ErrorBoundary>
-      <Toaster
-        theme={resolvedTheme}
-        position="top-right"
-        toastOptions={{
-          style: { background: resolvedTheme === 'dark' ? '#1f2937' : '#ffffff', border: '1px solid #374151', color: resolvedTheme === 'dark' ? '#f9fafb' : '#1f2937' },
-        }}
-      />
-      {isAuthenticated ? <AppShell /> : <LoginPage />}
-    </ErrorBoundary>
-  );
+   return (
+     <ErrorBoundary>
+       <Toaster
+         theme={['dark', 'cortexbuild', 'corporate', 'synthwave', 'cyberpunk', 'dracula', 'nord', 'ocean'].includes(resolvedTheme) ? 'dark' : 'light'}
+         position="top-right"
+         toastOptions={{
+           style: { 
+             background: ['dark', 'cortexbuild', 'corporate', 'synthwave', 'cyberpunk', 'dracula', 'nord', 'ocean'].includes(resolvedTheme) ? '#1f2937' : '#ffffff', 
+             border: '1px solid #374151', 
+             color: ['dark', 'cortexbuild', 'corporate', 'synthwave', 'cyberpunk', 'dracula', 'nord', 'ocean'].includes(resolvedTheme) ? '#f9fafb' : '#1f2937' 
+           },
+         }}
+       />
+       {isAuthenticated ? <AppShell /> : <LoginPage />}
+     </ErrorBoundary>
+   );
 }
 
 export default function App() {

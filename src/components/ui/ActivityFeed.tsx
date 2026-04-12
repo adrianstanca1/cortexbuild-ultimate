@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { User, FileText, AlertTriangle, CheckCircle, Clock } from 'lucide-react';
-import { getToken, API_BASE } from '../../lib/supabase';
+import { getToken, API_BASE } from '../../lib/auth-storage';
 
 /**
  * ActivityFeed Component

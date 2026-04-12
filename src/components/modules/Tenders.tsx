@@ -12,7 +12,7 @@ import {
   LineChart, Line
 } from 'recharts';
 
-import { getToken } from '../../lib/supabase';
+import { getToken } from '../../lib/auth-storage';
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001';
 

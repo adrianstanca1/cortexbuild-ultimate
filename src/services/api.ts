@@ -2,7 +2,7 @@
  * CortexBuild Ultimate — API Service
  * All CRUD operations route to the local Express.js backend.
  */
-import { getToken, API_BASE } from '../lib/supabase';
+import { getToken, API_BASE } from '../lib/auth-storage';
 
 export type Row = Record<string, unknown>;
 

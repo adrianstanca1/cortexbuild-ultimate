@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { Send, Users, Hash, Plus, X, Search, Smile, Paperclip, Pin, Trash2 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
-import { getToken, API_BASE } from '../../lib/supabase';
+import { getToken, API_BASE } from '../../lib/auth-storage';
 import { toast } from 'sonner';
 import { EmptyState } from '../ui/EmptyState';
 import { ModuleBreadcrumbs } from '../ui/Breadcrumbs';

@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
-import { getToken, setToken, clearToken, getStoredUser, setStoredUser, API_BASE } from '../lib/supabase';
+import { getToken, setToken, clearToken, getStoredUser, setStoredUser, API_BASE } from '../lib/auth-storage';
 
 interface Profile {
   id: string;

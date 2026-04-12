@@ -3,7 +3,7 @@ import { X } from 'lucide-react';
 import { toast } from 'sonner';
 import { PreferenceRow } from './PreferenceRow';
 import { ChannelHeader } from './ChannelHeader';
-import { getToken, API_BASE } from '../../lib/supabase';
+import { getToken, API_BASE } from '../../lib/auth-storage';
 
 export interface NotificationPreference {
   type: string;

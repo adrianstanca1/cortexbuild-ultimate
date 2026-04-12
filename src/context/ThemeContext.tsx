@@ -1,15 +1,15 @@
 /**
  * CortexBuild Ultimate — Theme Context
- * Dark/Light theme support with localStorage persistence
+ * Supports all DaisyUI themes with localStorage persistence
  */
 import { createContext, useContext, useState, useEffect, useCallback, ReactNode } from 'react';
 
-type Theme = 'dark' | 'light' | 'system';
+type Theme = 'dark' | 'light' | 'system' | 'cortexbuild' | 'cortex-light' | 'corporate' | 'synthwave' | 'cyberpunk' | 'dracula' | 'nord' | 'sunset' | 'ocean';
 
 interface ThemeContextType {
   theme: Theme;
   setTheme: (theme: Theme) => void;
-  resolvedTheme: 'dark' | 'light';
+  resolvedTheme: string; // This will be the actual theme name applied to data-theme
   isDark: boolean;
 }
 
@@ -17,33 +17,43 @@ const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 
 const STORAGE_KEY = 'cortexbuild-theme';
 
+// Define which themes are considered "dark" for the isDark flag
+const DARK_THEMES = new Set([
+  'dark',
+  'cortexbuild',
+  'corporate',
+  'synthwave',
+  'cyberpunk',
+  'dracula',
+  'nord',
+  'ocean'
+]);
+
 export function ThemeProvider({ children }: { children: ReactNode }) {
   const [theme, setThemeState] = useState<Theme>(() => {
     if (typeof window !== 'undefined') {
-      return (localStorage.getItem(STORAGE_KEY) as Theme) || 'dark';
+      const saved = localStorage.getItem(STORAGE_KEY);
+      return saved ? (saved as Theme) : 'cortexbuild'; // Default to our custom theme
     }
-    return 'dark';
+    return 'cortexbuild';
   });
   
-  const [resolvedTheme, setResolvedTheme] = useState<'dark' | 'light'>('dark');
+  const [resolvedTheme, setResolvedTheme] = useState<string>('cortexbuild');
 
-  const resolveTheme = useCallback((t: Theme): 'dark' | 'light' => {
+  const resolveTheme = useCallback((t: Theme): string => {
     if (t === 'system') {
       return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
     }
-    return t;
+    return t; // For all other themes, return the theme name directly
   }, []);
 
-  const applyTheme = useCallback((resolved: 'dark' | 'light') => {
+  const applyTheme = useCallback((themeName: string) => {
     const root = document.documentElement;
-    if (resolved === 'dark') {
-      root.classList.add('dark');
-      root.classList.remove('light');
-    } else {
-      root.classList.add('light');
-      root.classList.remove('dark');
-    }
-    setResolvedTheme(resolved);
+    // Remove all theme attributes first
+    root.removeAttribute('data-theme');
+    // Apply the selected theme
+    root.setAttribute('data-theme', themeName);
+    setResolvedTheme(themeName);
   }, []);
 
   useEffect(() => {
@@ -74,7 +84,12 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
   }, []);
 
   return (
-    <ThemeContext.Provider value={{ theme, setTheme, resolvedTheme, isDark: resolvedTheme === 'dark' }}>
+    <ThemeContext.Provider value={{ 
+      theme, 
+      setTheme, 
+      resolvedTheme, 
+      isDark: DARK_THEMES.has(resolvedTheme as any) 
+    }}>
       {children}
     </ThemeContext.Provider>
   );
