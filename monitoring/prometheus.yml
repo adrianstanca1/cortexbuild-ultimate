@@ -16,7 +16,7 @@ scrape_configs:
 
   - job_name: 'cortexbuild-api'
     static_configs:
-      - targets: ['cortexbuild-api:3001']
+      - targets: ['172.18.0.1:3001']
     metrics_path: '/api/metrics'
     scrape_interval: 15s
     scrape_timeout: 10s

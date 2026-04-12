@@ -24,7 +24,7 @@ const httpRequestDuration = new promClient.Histogram({
 });
 
 // Expose metrics endpoint for Prometheus scraping (no auth — Prometheus is internal network only)
-router.get('/', authMw, async (req, res) => {
+router.get('/', async (req, res) => {
   try {
     res.set('Content-Type', register.contentType);
     res.send(await register.metrics());
