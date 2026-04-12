@@ -18,12 +18,12 @@ router.get('/', async (req, res) => {
 
     if (!isSuper) {
       if (req.user?.role === 'company_owner') {
-        conditions.push(`company_id = $${params.length + 1}`);
+        conditions.push(`al.company_id = $${params.length + 1}`);
         params.push(req.user.company_id);
       } else if (!orgId) {
         return res.status(403).json({ message: 'No organization context' });
       } else {
-        conditions.push(`organization_id = $${params.length + 1}`);
+        conditions.push(`al.organization_id = $${params.length + 1}`);
         params.push(orgId);
       }
     }
@@ -31,23 +31,23 @@ router.get('/', async (req, res) => {
 
     if (table) {
       params.push(table);
-      conditions.push(`table_name = $${params.length}`);
+      conditions.push(`al.table_name = $${params.length}`);
     }
     if (record_id) {
       params.push(record_id);
-      conditions.push(`record_id = $${params.length}`);
+      conditions.push(`al.record_id = $${params.length}`);
     }
     if (user_id) {
       params.push(user_id);
-      conditions.push(`user_id = $${params.length}`);
+      conditions.push(`al.user_id = $${params.length}`);
     }
     if (start_date) {
       params.push(start_date);
-      conditions.push(`created_at >= $${params.length}`);
+      conditions.push(`al.created_at >= $${params.length}`);
     }
     if (end_date) {
       params.push(end_date);
-      conditions.push(`created_at <= $${params.length}`);
+      conditions.push(`al.created_at <= $${params.length}`);
     }
 
     params.push(parseInt(limit, 10));
@@ -136,22 +136,22 @@ router.get('/export', async (req, res) => {
 
     if (!isSuper) {
       if (req.user?.role === 'company_owner') {
-        conditions.push(`company_id = $${params.length + 1}`);
+        conditions.push(`al.company_id = $${params.length + 1}`);
         params.push(req.user.company_id);
       } else if (!orgId) {
         return res.status(403).json({ message: 'No organization context' });
       } else {
-        conditions.push(`organization_id = $${params.length + 1}`);
+        conditions.push(`al.organization_id = $${params.length + 1}`);
         params.push(orgId);
       }
     }
     if (table) {
       params.push(table);
-      conditions.push(`table_name = $${params.length}`);
+      conditions.push(`al.table_name = $${params.length}`);
     }
     if (action) {
       params.push(action);
-      conditions.push(`action = $${params.length}`);
+      conditions.push(`al.action = $${params.length}`);
     }
 
     params.push(Math.min(parseInt(limit, 10), 50000));

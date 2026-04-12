@@ -52,6 +52,8 @@ services:
       timeout: 10s
       retries: 3
 
+  # NOTE: The api service is managed by PM2 on the host (not Docker) to avoid port 3001 conflicts.
+  # To switch to Docker-managed API: stop PM2 first with: pm2 stop cortex-api
   api:
     build:
       context: .
@@ -74,14 +76,14 @@ services:
       OLLAMA_HOST: ${OLLAMA_HOST:-http://ollama:11434}
       OLLAMA_MODEL: ${OLLAMA_MODEL:-qwen3.5:latest}
       CORS_ORIGIN: ${CORS_ORIGIN:?CORS_ORIGIN must be set for production}
-      FRONTEND_URL: ${FRONTEND_URL:-https://www.cortexbuildpro.com}
+      FRONTEND_URL: ${FRONTEND_URL:-https://cortexbuildpro.com}
       GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
       GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET:-}
-      GOOGLE_CALLBACK_URL: ${GOOGLE_CALLBACK_URL:-https://www.cortexbuildpro.com/api/auth/google/callback}
+      GOOGLE_CALLBACK_URL: ${GOOGLE_CALLBACK_URL:-https://cortexbuildpro.com/api/auth/google/callback}
       MICROSOFT_CLIENT_ID: ${MICROSOFT_CLIENT_ID:-}
       MICROSOFT_CLIENT_SECRET: ${MICROSOFT_CLIENT_SECRET:-}
       MICROSOFT_TENANT: ${MICROSOFT_TENANT:-common}
-      MICROSOFT_CALLBACK_URL: ${MICROSOFT_CALLBACK_URL:-https://www.cortexbuildpro.com/api/auth/microsoft/callback}
+      MICROSOFT_CALLBACK_URL: ${MICROSOFT_CALLBACK_URL:-https://cortexbuildpro.com/api/auth/microsoft/callback}
     ports:
       - "127.0.0.1:3001:3001"
     networks:

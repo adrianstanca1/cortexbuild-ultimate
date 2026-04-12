@@ -72,15 +72,15 @@ docker run -d \
     -e NODE_ENV=production \
     -e OLLAMA_HOST=http://cortexbuild-ollama:11434 \
     -e OLLAMA_MODEL=qwen3.5:latest \
-    -e CORS_ORIGIN=https://www.cortexbuildpro.com,https://cortexbuildpro.com \
-    -e FRONTEND_URL=https://www.cortexbuildpro.com \
+    -e CORS_ORIGIN=https://cortexbuildpro.com \
+    -e FRONTEND_URL=https://cortexbuildpro.com \
     -e GOOGLE_CLIENT_ID \
     -e GOOGLE_CLIENT_SECRET \
-    -e GOOGLE_CALLBACK_URL=https://www.cortexbuildpro.com/api/auth/google/callback \
+    -e GOOGLE_CALLBACK_URL=https://cortexbuildpro.com/api/auth/google/callback \
     -e MICROSOFT_CLIENT_ID \
     -e MICROSOFT_CLIENT_SECRET \
     -e MICROSOFT_TENANT=common \
-    -e MICROSOFT_CALLBACK_URL=https://www.cortexbuildpro.com/api/auth/microsoft/callback \
+    -e MICROSOFT_CALLBACK_URL=https://cortexbuildpro.com/api/auth/microsoft/callback \
     "$IMAGE_NAME"
 echo "   ✅ Container started: $CONTAINER_NAME"
 echo ""
