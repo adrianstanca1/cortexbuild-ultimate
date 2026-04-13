@@ -55,9 +55,9 @@ async function processBIMModel(modelId) {
         floorsCount = 1;
       }
     } else {
-      // For other formats (GLTF, etc.), we use a simpler approximation or
-      // would integrate specific parsers (e.g., gltf-parser)
-      elementsCount = Math.floor(Math.random() * 5000) + 500;
+      // Non-IFC formats (GLTF, OBJ, etc.) are not yet supported for extraction.
+      // Leave elements_count at 0 — do NOT fabricate data.
+      elementsCount = 0;
       floorsCount = 1;
     }
 
