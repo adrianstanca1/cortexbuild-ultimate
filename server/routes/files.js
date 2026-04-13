@@ -388,8 +388,12 @@ router.delete('/:id', async (req, res) => {
         console.error('[SECURITY] Path traversal attempt detected:', filePath);
         return res.status(403).json({ message: 'Invalid file path' });
       }
-      if (fs.existsSync(fullPath)) {
-        fs.unlinkSync(fullPath);
+      try {
+        await fs.promises.unlink(fullPath);
+      } catch (err) {
+        if (err.code !== 'ENOENT') {
+          console.error('[DELETE /api/files/:id] Error deleting file:', err);
+        }
       }
     }
 
