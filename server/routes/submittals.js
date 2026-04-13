@@ -119,7 +119,7 @@ router.get('/', authMiddleware, async (req, res) => {
       LEFT JOIN users u1 ON s.submitted_by = u1.id
       LEFT JOIN users u2 ON s.reviewer_id = u2.id
       LEFT JOIN projects p ON s.project_id = p.id
-      WHERE s.company_id = $1
+      WHERE COALESCE(s.organization_id, s.company_id) = $1
     `;
     
     const params = [req.user.company_id];
@@ -168,7 +168,7 @@ router.get('/:id', authMiddleware, async (req, res) => {
        LEFT JOIN users u1 ON s.submitted_by = u1.id
        LEFT JOIN users u2 ON s.reviewer_id = u2.id
        LEFT JOIN projects p ON s.project_id = p.id
-       WHERE s.id = $1 AND s.company_id = $2`,
+       WHERE s.id = $1 AND COALESCE(s.organization_id, s.company_id) = $2`,
       [req.params.id, req.user.company_id]
     );
 
@@ -180,7 +180,7 @@ router.get('/:id', authMiddleware, async (req, res) => {
     const attachments = await pool.query(
       `SELECT sa.* FROM submittal_attachments sa
        JOIN submittals s ON sa.submittal_id = s.id
-       WHERE sa.submittal_id = $1 AND s.company_id = $2`,
+       WHERE sa.submittal_id = $1 AND COALESCE(s.organization_id, s.company_id) = $2`,
       [req.params.id, req.user.company_id]
     );
 
@@ -354,7 +354,7 @@ router.put('/:id', authMiddleware, async (req, res) => {
 
     const { rows } = await pool.query(
       `UPDATE submittals SET ${updateFields.join(', ')}
-       WHERE id = $${paramIndex} AND company_id = $${paramIndex + 1}
+       WHERE id = $${paramIndex} AND COALESCE(organization_id, company_id) = $${paramIndex + 1}
        RETURNING *`,
       values
     );
@@ -389,7 +389,7 @@ router.delete('/:id', authMiddleware, async (req, res) => {
       [req.params.id]
     );
 
-    await pool.query('DELETE FROM submittals WHERE id = $1 AND company_id = $2', [req.params.id, req.user.company_id]);
+    await pool.query('DELETE FROM submittals WHERE id = $1 AND COALESCE(organization_id, company_id) = $2', [req.params.id, req.user.company_id]);
 
     // Delete physical files
     for (const attachment of attachments.rows) {
@@ -429,7 +429,7 @@ router.post('/:id/comments', authMiddleware, async (req, res) => {
   try {
     // Verify submittal belongs to user's company before adding comment
     const submittal = await pool.query(
-      `SELECT id FROM submittals WHERE id = $1 AND company_id = $2`,
+      `SELECT id FROM submittals WHERE id = $1 AND COALESCE(organization_id, company_id) = $2`,
       [req.params.id, req.user.company_id]
     );
     if (!submittal.rows.length) {
@@ -472,7 +472,7 @@ router.get('/stats/summary', authMiddleware, async (req, res) => {
         COUNT(CASE WHEN status = 'resubmit-required' THEN 1 END) as resubmit_required,
         COUNT(CASE WHEN due_date < NOW() AND status NOT IN ('approved', 'approved-with-comments', 'cancelled') THEN 1 END) as overdue
        FROM submittals
-       WHERE company_id = $1`,
+       WHERE COALESCE(organization_id, company_id) = $1`,
       [req.user.company_id]
     );
 

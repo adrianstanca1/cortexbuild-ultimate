@@ -42,7 +42,7 @@ router.get('/budget', checkPermission('cost-management', 'read'), async (req, re
       LEFT JOIN cost_codes c ON b.cost_code_id = c.id
       LEFT JOIN projects p ON b.project_id = p.id
       LEFT JOIN users u ON b.created_by = u.id
-      WHERE b.company_id = $1
+      WHERE COALESCE(b.organization_id, b.company_id) = $1
     `;
 
     const params = [req.user.company_id];
@@ -87,7 +87,7 @@ router.post('/budget', checkPermission('cost-management', 'create'), async (req,
   // Verify project ownership if projectId provided (IDOR protection)
   if (projectId) {
     const { rows: projectRows } = await pool.query(
-      'SELECT id FROM projects WHERE id = $1 AND company_id = $2',
+      'SELECT id FROM projects WHERE id = $1 AND COALESCE(organization_id, company_id) = $2',
       [projectId, req.user.company_id]
     );
     if (!projectRows.length) {
@@ -174,7 +174,7 @@ router.put('/budget/:id', checkPermission('cost-management', 'update'), async (r
         start_date = COALESCE($7, start_date),
         end_date = COALESCE($8, end_date),
         updated_at = NOW()
-       WHERE id = $9 AND company_id = $10
+       WHERE id = $9 AND COALESCE(organization_id, company_id) = $10
        RETURNING *`,
       [
         name, description,
@@ -213,7 +213,7 @@ router.put('/budget/:id', checkPermission('cost-management', 'update'), async (r
 router.delete('/budget/:id', checkPermission('cost-management', 'delete'), async (req, res) => {
   try {
     const { rowCount } = await pool.query(
-      'DELETE FROM budget_items WHERE id = $1 AND company_id = $2',
+      'DELETE FROM budget_items WHERE id = $1 AND COALESCE(organization_id, company_id) = $2',
       [req.params.id, req.user.company_id]
     );
 
@@ -247,7 +247,7 @@ router.get('/forecast', checkPermission('cost-management', 'read'), async (req, 
         f.*, p.name as project_name
       FROM cost_forecasts f
       LEFT JOIN projects p ON f.project_id = p.id
-      WHERE f.company_id = $1
+      WHERE COALESCE(f.organization_id, f.company_id) = $1
     `;
 
     const params = [req.user.company_id];
@@ -287,7 +287,7 @@ router.post('/forecast', checkPermission('cost-management', 'create'), async (re
 
   // Verify project ownership (IDOR protection)
   const { rows: projectRows } = await pool.query(
-    'SELECT id FROM projects WHERE id = $1 AND company_id = $2',
+    'SELECT id FROM projects WHERE id = $1 AND COALESCE(organization_id, company_id) = $2',
     [projectId, req.user.company_id]
   );
   if (!projectRows.length) {
@@ -343,7 +343,7 @@ router.get('/summary', checkPermission('cost-management', 'read'), async (req, r
         COUNT(CASE WHEN status = 'at-risk' THEN 1 END) as at_risk_count,
         COUNT(CASE WHEN status = 'over-budget' THEN 1 END) as over_budget_count
        FROM budget_items
-       WHERE company_id = $1`,
+       WHERE COALESCE(organization_id, company_id) = $1`,
       [req.user.company_id]
     );
 
@@ -365,7 +365,7 @@ router.get('/codes', checkPermission('cost-management', 'read'), async (req, res
         (SELECT COUNT(*) FROM budget_items WHERE cost_code_id = c.id) as items_count
        FROM cost_codes c
        LEFT JOIN cost_codes p ON c.parent_id = p.id
-       WHERE c.company_id = $1 AND c.is_active = true
+       WHERE COALESCE(c.organization_id, c.company_id) = $1 AND c.is_active = true
        ORDER BY c.code`,
       [req.user.company_id]
     );
