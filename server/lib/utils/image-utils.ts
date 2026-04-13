@@ -142,7 +142,7 @@ export function estimateBase64Size(base64Data: string): number {
   // Each 4 base64 characters = 3 bytes
   const paddingCount = (base64Data.match(/=/g) || []).length;
   const cleanLength = base64Data.replace(/=/g, '').length;
-  return Math.floor((cleanLength * 3) / 4) + paddingCount;
+  return Math.max(0, Math.floor((base64Data.length * 3) / 4) - paddingCount);
 }
 
 /**
