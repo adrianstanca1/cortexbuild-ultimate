@@ -39,6 +39,14 @@ const rooms = new Map();   // Map<roomId, Set<userId>>
 function initWebSocket(server, { enabled = true } = {}) {
   if (!enabled) {
     console.log('[WS] WebSocket feature is disabled — server not initialized');
+    // Reject WS upgrade requests with HTTP 403 so the frontend can
+    // distinguish "disabled" from "server error" and stop reconnecting.
+    server.on('upgrade', (req, socket, head) => {
+      if (req.url?.startsWith('/ws')) {
+        socket.write('HTTP/1.1 403 Forbidden\r\nX-WS-Disabled: true\r\n\r\n');
+        socket.destroy();
+      }
+    });
     return null;
   }
 

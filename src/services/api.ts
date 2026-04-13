@@ -39,6 +39,17 @@ export function toSnake<T>(obj: unknown): T {
 
 // ─── Core fetch helper ────────────────────────────────────────────────────────
 
+/** Error thrown when the server rejects a request because a feature flag is disabled. */
+export class FeatureDisabledError extends Error {
+  readonly code = 'FEATURE_DISABLED';
+  readonly feature: string;
+  constructor(message: string, feature: string) {
+    super(message);
+    this.name = 'FeatureDisabledError';
+    this.feature = feature;
+  }
+}
+
 export async function apiFetch<T>(path: string, options?: RequestInit): Promise<T> {
   const token = getToken();
   const res = await fetch(`${API_BASE}${path}`, {
@@ -51,6 +62,10 @@ export async function apiFetch<T>(path: string, options?: RequestInit): Promise<
   });
   if (!res.ok) {
     const err = await res.json().catch(() => ({ message: res.statusText }));
+    // Distinguish feature-disabled 403s from authorization 403s
+    if (err.code === 'FEATURE_DISABLED' && err.feature) {
+      throw new FeatureDisabledError(err.message || 'This feature is currently disabled', err.feature);
+    }
     throw new Error(err.message || 'Request failed');
   }
   const data = await res.json();

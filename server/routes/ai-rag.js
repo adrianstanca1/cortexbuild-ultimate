@@ -27,9 +27,10 @@ const ALLOWED_TABLES = new Set([
 
 function tenantFilter(req) {
   if (!req.user) return { clause: ' AND 1=0', params: [] };
-  if (req.user.role === 'super_admin') return { clause: '', params: [] };
+  if (req.user.role === 'super_admin' || req.user.role === 'company_owner') return { clause: '', params: [] };
   const scope = req.user.organization_id || req.user.company_id;
   if (scope) return { clause: ' AND COALESCE(organization_id, company_id) = $1', params: [scope] };
+  console.warn('[RAG] tenantFilter: user has no organization_id or company_id:', req.user.id, 'role:', req.user.role);
   return { clause: ' AND 1=0', params: [] };
 }
 
@@ -48,8 +49,9 @@ function buildContextPrompt(contextItems) {
 }
 
 async function getEmbedding(text) {
-  return new Promise(resolve => {
-    const body = JSON.stringify({ model: process.env.EMBEDDING_MODEL || 'qwen3.5:latest', prompt: text });
+  return new Promise((resolve, reject) => {
+    const model = process.env.EMBEDDING_MODEL || 'nomic-embed-text:latest';
+    const body = JSON.stringify({ model, prompt: text });
     const url    = new URL(OLLAMA_HOST + '/api/embeddings');
     const isHttps = url.protocol === 'https:';
     const lib    = isHttps ? https : http;
@@ -64,18 +66,30 @@ async function getEmbedding(text) {
       let data = '';
       res.on('data', c => data += c);
       res.on('end', () => {
-        try { resolve(JSON.parse(data)?.embedding || null); }
-        catch { resolve(null); }
+        try {
+          const parsed = JSON.parse(data);
+          if (parsed.embedding) return resolve(parsed.embedding);
+          if (parsed.error) return reject(new Error('Ollama error: ' + parsed.error));
+          reject(new Error('Ollama returned no embedding for model ' + model));
+        } catch (e) {
+          reject(new Error('Ollama returned invalid JSON: ' + data.slice(0, 200)));
+        }
       });
     });
-    req.on('error', () => resolve(null));
-    req.on('timeout', () => { req.destroy(); resolve(null); });
+    req.on('error', (err) => reject(new Error('Embedding service unavailable: ' + err.message)));
+    req.on('timeout', () => { req.destroy(); reject(new Error('Embedding service timed out after 30s')); });
     req.write(body); req.end();
   });
 }
 
 async function retrieveContext(question, tables, orgFilter) {
-  const embedding = await getEmbedding(question);
+  let embedding;
+  try {
+    embedding = await getEmbedding(question);
+  } catch (embedErr) {
+    console.error('[RAG] getEmbedding failed:', embedErr.message);
+    throw embedErr;
+  }
   if (!embedding) return [];
 
   const { clause: filterClause, params: filterParams } = orgFilter;
@@ -129,11 +143,18 @@ router.post('/', async (req, res) => {
 
     const orgFilterObj = tenantFilter(req);
 
-    const contextItems = safeTables.length
-      ? await retrieveContext(question, safeTables, orgFilterObj)
-      : [];
+    let contextItems = [];
+    let embeddingError = null;
+    if (safeTables.length) {
+      try {
+        contextItems = await retrieveContext(question, safeTables, orgFilterObj);
+      } catch (embedErr) {
+        embeddingError = embedErr.message;
+        console.error('[RAG] retrieveContext failed:', embedErr.message);
+      }
+    }
 
-    const systemPrompt = `You are a helpful construction management AI assistant. Answer questions using ONLY the provided context data. If the context doesn't contain enough information to answer, say so clearly. Be specific and reference actual values from the data.`;
+    const systemPrompt = `You are a helpful construction management AI assistant. Answer questions using ONLY the provided context data. If the context doesn't contain enough information to answer, say so clearly. Be specific and reference actual values from the data.${embeddingError ? ' NOTE: The document search service is currently unavailable — the user may not be able to access project data. Mention this politely.' : ''}`;
     const contextPrompt = buildContextPrompt(contextItems);
 
     const messages = [

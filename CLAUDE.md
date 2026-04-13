@@ -68,6 +68,10 @@ npm run check            # tsc --noEmit + lint + test
 
 **Entry point**: `server/index.js` — Express 4 server with HTTP + WebSocket on port 3001. Middleware stack: dotenv (loads from `server/.env` subdirectory, NOT project root), helmet (CSP), cors, express.json (10mb limit), requestLogger, cookieParser, express-session (Redis-backed, 24-hour cookie, secure in production), passport.initialize(), passport.session(), rateLimiter. `app.set('trust proxy', 1)`. CORS defaults to deny-all if `CORS_ORIGIN` is not set. Graceful shutdown with 10-second timeout.
 
+**CRITICAL: `server/db.js` exports pool directly** — `module.exports = pool`. Import with `const pool = require('./db')`, NOT `const { pool }` — destructuring yields `undefined`.
+
+**Feature flags**: `server/middleware/featureFlag.js` — `requireFeature()` (Express middleware) + `isFeatureEnabled()` (boolean helper). 5 flags: FEATURE_AI_AGENTS, FEATURE_RAG_SEARCH, FEATURE_WEBSOCKET, FEATURE_FILE_UPLOAD, FEATURE_EMAIL. Set `"false"` in `server/.env` to disable (case-insensitive: `"False"`, `"NO"`, `"0"` also work). Default: enabled when unset. Routes gated with `requireFeature()` in `server/index.js`. Disabled flags return 403 with `{ message, code: 'FEATURE_DISABLED', feature: flagName }` — distinguishable from auth 403s via the `code` field. WebSocket server creation is skipped entirely when FEATURE_WEBSOCKET is disabled.
+
 **Key endpoints**: `/api/health` (checks PostgreSQL + Redis connectivity), `/api/metrics` (Prometheus request timing), `/uploads` (static file serving, directory listing disabled).
 
 **Generic CRUD Router** (`server/routes/generic.js`):
@@ -88,14 +92,17 @@ npm run check            # tsc --noEmit + lint + test
 | `notifications.js` | CRUD + mark-read/snooze/archive. Returns `{ notifications: [...], total, unreadCount }` |
 | `files.js` / `upload.js` | Multer → `server/uploads/`, magic number validation |
 | `deploy.js` | Rate-limited (5/hour) deploy webhook, protected by `DEPLOY_SECRET` bearer token |
+| `email.js` | Email templates, send, bulk, schedule. Uses COALESCE pattern for tenant isolation. |
 | `generic.js` | Per-table CRUD factory (30+ tables) |
 
-**API response normalization**: `apiFetch` in `src/services/api.ts` converts snake_case keys to camelCase recursively on ALL responses. Only raw `fetch()` calls bypass this normalization, so custom route handlers called via `apiFetch` still return camelCase keys. Request bodies are sent as-is (snake_case keys match DB columns).
+**API response normalization**: `apiFetch` in `src/services/api.ts` converts snake_case keys to camelCase recursively on ALL responses. Only raw `fetch()` calls bypass this normalization, so custom route handlers called via `apiFetch` still return camelCase keys. Request bodies are sent as-is (snake_case keys match DB columns). `apiFetch` throws `FeatureDisabledError` (with `code: 'FEATURE_DISABLED'` and `feature` property) when the server returns a feature-flag 403 — catch with `instanceof FeatureDisabledError` to distinguish from auth 403s.
 
 **Route registration order matters** in `server/index.js` — more specific paths must be registered before wildcard paths. e.g., `/api/tenders/ai` must come before `/api/tenders`.
 
 **WebSocket system** (`server/lib/websocket.js`):
 - Authenticated WS on `/ws?token=JWT`. Rooms model: user rooms (`user:${userId}`) + project rooms (`project:${projectId}`). Supports multiple tabs per user.
+- Server creation is gated by `FEATURE_WEBSOCKET` flag — disabled flag rejects upgrade requests with HTTP 403 + `X-WS-Disabled: true` header, and skips `new WebSocket.Server()` entirely.
+- Frontend hooks detect rejected upgrades (code 1006, never opened) and stop reconnecting after 3 attempts, showing "Real-time disabled" status instead of infinite reconnect loop.
 - `server/lib/ws-broadcast.js` provides server-side broadcast helpers. `broadcastDashboardUpdate` only fires for 7 whitelisted tables: `projects`, `invoices`, `safety_incidents`, `rfis`, `team_members`, `daily_reports`, `change_orders`. Changes to other tables do NOT trigger dashboard broadcasts.
 - Frontend `src/lib/eventBus.ts` is a typed singleton (events: `ws:message`, `ws:connect`, `ws:disconnect`) that propagates WS messages to TanStack Query invalidation.
 - Frontend `src/hooks/useNotificationCenter.ts` is the only direct WS consumer. It bridges to eventBus via `eventBus.emit('ws:message', ...)`.
@@ -107,7 +114,11 @@ npm run check            # tsc --noEmit + lint + test
 - Routes using only `authMiddleware` are accessible to any authenticated user in the org — add `checkPermission` to restrict write operations.
 - 6 roles: `super_admin`, `company_owner`, `admin`, `project_manager`, `field_worker`, `client`.
 - `super_admin` and `company_owner` have wildcard `'*': ['*']` access.
-- Module actions: create, read, update, delete, export, approve, view_financials.
+
+**Tenant isolation** (`server/middleware/tenantFilter.js`):
+- Centralized module for multi-tenant scope. Handles: `super_admin` (no filter), `company_owner` (no filter — same access as super_admin), regular (COALESCE), deny (`1=0`).
+- **CRITICAL**: `company_owner` users have `organization_id = NULL`. ALL INSERT statements must write BOTH `organization_id` AND `company_id`. ALL SELECT/UPDATE/DELETE must use `COALESCE(organization_id, company_id) = $N` — never bare `organization_id = $N` which evaluates to always-FALSE when NULL.
+- `ai-rag.js` and `email.js` had bare `organization_id = $N` and INSERTs without `company_id` — now fixed. Do NOT use bare `organization_id = $1` in any route.
 
 **Other middleware** (`server/middleware/`):
 - `uploadRateLimiter.js` — Stricter rate limit (20 req/min per user) for upload endpoints. Redis-backed with in-memory fallback.
@@ -120,6 +131,7 @@ npm run check            # tsc --noEmit + lint + test
 - **Intent classifiers** in `server/routes/ai-intents/` handle natural language: invoices, daily reports, projects, team, safety, budget.
 - **25 per-domain intent classifiers** in `server/routes/ai-intents/` — route natural language to domain-specific actions.
 - **Embedding model** — `EMBEDDING_MODEL` env var (default: `nomic-embed-text:latest`). This MUST be a dedicated embedding model — `qwen3.5` is an LLM and will produce null embeddings, breaking all vector similarity search (RAG).
+- **RAG error handling** — `getEmbedding()` in `ai-rag.js` rejects on transport/parsing failures (not silently returns null). The POST handler catches embedding failures and streams a message to the user that the search service is unavailable.
 
 ### Database Schema
 
@@ -142,7 +154,7 @@ All services run as Docker containers (managed with `docker run`, **never `docke
 - `cortexbuild-api` — Express.js on port 3001 (Docker network, not exposed externally)
 - `cortexbuild-db` — PostgreSQL 16 + pgvector on port 5432
 - `cortexbuild-redis` — Redis 7 on port 6379
-- `cortexbuild-ollama` — Ollama with `qwen3.5:latest`, `deepseek-r1:7b`
+- `cortexbuild-ollama` — Ollama with `qwen3.5:latest`, `deepseek-r1:7b`, `gemma4:latest`, `qwen2.5:7b`, `nomic-embed-text:latest`
 - `cortexbuild-prometheus` — Metrics (9090)
 - `cortexbuild-grafana` — Dashboards (3002)
 - Nginx — Host machine (not Docker), ports 80/443 as reverse proxy
@@ -157,6 +169,8 @@ bash /root/deploy-api.sh    # Full Docker rebuild + health check
 bash /root/deploy-frontend.sh
 ```
 
+**Never edit files in `/var/www/cortexbuild-ultimate/` directly** — use deploy scripts. This directory is the production checkout synced by GitHub Actions; manual edits will be overwritten on next deploy.
+
 ### Key Environment Variables
 
 - `DB_PASSWORD` — Required, server exits without it
@@ -166,6 +180,7 @@ bash /root/deploy-frontend.sh
 - Feature flags: `FEATURE_AI_AGENTS`, `FEATURE_RAG_SEARCH`, `FEATURE_WEBSOCKET`, `FEATURE_FILE_UPLOAD`, `FEATURE_EMAIL` — enforced server-side via `server/middleware/featureFlag.js` (`requireFeature` middleware + `isFeatureEnabled` helper). Set to `"false"` in `server/.env` to disable. Default to enabled when unset.
 - `DEPLOY_SECRET` — Bearer token for the deploy webhook route
 - Server loads `.env` from `server/.env` subdirectory (not project root)
+- Deploy script (`/root/deploy-api.sh`) sources both root `.env` and `server/.env`, then passes all feature flags + OAuth vars + `EMBEDDING_MODEL` via `-e` flags to the Docker container
 
 ## Git & CI
 
@@ -178,6 +193,7 @@ bash /root/deploy-frontend.sh
 
 - **`ECONNREFUSED` on auth**: Inside Docker, `DB_HOST` must be `cortexbuild-db`, not `localhost`.
 - **`organization_id = NULL` crashes routes**: `company_owner` users have `organization_id = NULL`. Routes that filter `WHERE organization_id = $1` will crash. Use `company_id` for company_owner, or handle NULL explicitly with `COALESCE(organization_id, company_id)`.
+- **`db.js` destructuring trap**: `module.exports = pool` (not `{ pool }`). `const { pool } = require('./db')` yields `undefined`. Always use `const pool = require('./db')`.
 - **Route returns object but frontend expects array**: `GET /notifications` returns `{ notifications: [...], total }` (object). `apiFetch` does NOT unwrap this — callers must destructure. Always verify the actual response shape of custom route handlers.
 - **Microsoft OAuth crashes**: Guard both `/microsoft` and `/microsoft/callback` routes — `MICROSOFT_CLIENT_ID` env var may be empty in dev.
 - **`vi.mock()` in Vitest**: Must be at module top level, not inside `beforeEach()`.
@@ -186,3 +202,32 @@ bash /root/deploy-frontend.sh
 - **Test environment**: Vitest uses `happy-dom` (not jsdom). Setup file is `src/test/setup.ts`. `globals: true` — `describe`, `it`, `expect` are available without imports. Setup imports `@testing-library/jest-dom` matchers and mocks `HTMLCanvasElement.getContext`, `window.matchMedia`, `URL.createObjectURL`. `vitest.config.ts` excludes `rateLimiter.test.ts` from runs.
 - **ESLint**: Flat config (`eslint.config.js`) ignores `server/`, `e2e/`. Server code has no linter.
 - **Docker Compose broken**: VPS has Docker Compose v1.29.2 which is broken. Use `docker run` commands or the deploy scripts.
+- **Deploy script env var gap**: The deploy script must source both root `.env` and `server/.env` then pass all needed vars via `-e` flags. Missing `-e` flags mean the container runs without those env vars. If a new env var is added to `server/.env`, it must also be added to the deploy script's `docker run` command.
+
+## Debugging
+
+```bash
+# Check container status
+docker ps --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}"
+
+# API logs (last 50 lines)
+docker logs cortexbuild-api --tail 50
+
+# API health check
+curl -sf http://localhost:3001/api/health
+
+# Database query
+docker exec cortexbuild-db psql -U cortexbuild -d cortexbuild -c "\dt"
+
+# Describe a table
+docker exec cortexbuild-db psql -U cortexbuild -d cortexbuild -c "\d <table>"
+
+# Check running migrations
+docker exec cortexbuild-db psql -U cortexbuild -d cortexbuild -c "SELECT tablename FROM pg_tables WHERE schemaname = 'public' ORDER BY tablename;"
+
+# Quick container restart (no rebuild)
+docker restart cortexbuild-api
+
+# Full redeploy
+bash /root/deploy-api.sh
+```

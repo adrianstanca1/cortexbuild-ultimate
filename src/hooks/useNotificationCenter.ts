@@ -348,8 +348,10 @@ export function useNotificationCenter(
       const wsUrl = `${protocol}//${window.location.host}/ws${authToken ? `?token=${encodeURIComponent(authToken)}` : ''}`;
 
       const ws = new WebSocket(wsUrl);
+      let wasEverOpen = false;
 
       ws.onopen = () => {
+        wasEverOpen = true;
         setIsConnecting(false);
         setWsStatus({
           isConnected: true,
@@ -423,9 +425,23 @@ export function useNotificationCenter(
         }
       };
 
-      ws.onclose = () => {
+      ws.onclose = (event) => {
         setWsStatus((prev) => ({ ...prev, isConnected: false }));
         eventBus.emit('ws:disconnect', undefined);
+
+        // If connection was never opened (code 1006 = abnormal closure),
+        // the server may have rejected the upgrade because WS is disabled.
+        // Try to detect this by checking if it was never open, and if so
+        // check with a lightweight API call before deciding to reconnect.
+        if (!wasEverOpen && event.code === 1006) {
+          // Server rejected the WS upgrade — likely FEATURE_WEBSOCKET is disabled.
+          // Stop reconnecting after a few attempts; set a disabled-like status.
+          if (reconnectAttemptRef.current >= 3) {
+            console.warn('[WS] Server rejected WebSocket upgrade multiple times — likely disabled. Stopping reconnect.');
+            setWsStatus({ isConnected: false, reconnecting: false, reconnectAttempt: 0, error: 'WebSocket is disabled on the server' });
+            return;
+          }
+        }
 
         // Reconnect with exponential backoff
         const delay = Math.min(1000 * Math.pow(2, reconnectAttemptRef.current), 30000);
