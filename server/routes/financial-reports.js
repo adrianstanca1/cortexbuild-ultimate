@@ -20,9 +20,17 @@ router.get('/summary', async (req, res) => {
     const orgClause = org.filter ? ' AND' + org.filter : '';
     const params = org.params;
 
-    const [projects, invoices] = await Promise.all([
+    const budgetOrgClause = orgClause.replace(/company_id/g, 'b.company_id').replace(/organization_id/g, 'b.organization_id');
+
+    const [projects, invoices, overheadResult] = await Promise.all([
       pool.query(`SELECT * FROM projects WHERE 1=1${orgClause}`, params),
       pool.query(`SELECT * FROM invoices WHERE 1=1${orgClause}`, params),
+      pool.query(`
+        SELECT SUM(b.spent) as total_overhead
+        FROM budget_items b
+        JOIN cost_codes c ON b.cost_code_id = c.id
+        WHERE c.category = 'overhead'${budgetOrgClause}
+      `, params)
     ]);
 
     const totalBudget = projects.rows.reduce((sum, p) => sum + (parseFloat(p.budget) || 0), 0);
@@ -36,10 +44,9 @@ router.get('/summary', async (req, res) => {
 
     // Gross profit = revenue minus direct project costs
     const grossProfit = totalRevenue - totalSpent;
-    // Net profit = gross profit minus overhead (approximated as 15% of revenue for indirect costs)
-    // TODO: Replace overhead calculation with actual overhead data when available
-    const overheadRate = 0.15;
-    const netProfit = grossProfit - (totalRevenue * overheadRate);
+    // Net profit = gross profit minus actual overhead
+    const overhead = parseFloat(overheadResult.rows[0]?.total_overhead) || 0;
+    const netProfit = grossProfit - overhead;
 
     // Monthly burn rate: average monthly spend based on project count as denominator
     // to avoid divide-by-zero and give meaningful per-project metric
