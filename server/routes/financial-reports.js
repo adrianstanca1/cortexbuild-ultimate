@@ -34,12 +34,21 @@ router.get('/summary', async (req, res) => {
     const outstandingAmount = [...pendingInvoices, ...overdueInvoices].reduce((sum, i) => sum + (parseFloat(i.amount) || 0), 0);
     const overdueAmount = overdueInvoices.reduce((sum, i) => sum + (parseFloat(i.amount) || 0), 0);
 
+    // Fetch actual overhead data
+    const overheadQuery = `
+      SELECT COALESCE(SUM(b.spent), 0) as total_overhead
+      FROM budget_items b
+      JOIN cost_codes c ON b.cost_code_id = c.id
+      JOIN projects p ON b.project_id = p.id
+      WHERE c.category = 'overhead'${orgClause.replace(/company_id/g, 'p.company_id').replace(/organization_id/g, 'p.organization_id')}
+    `;
+    const overheadResult = await pool.query(overheadQuery, params);
+    const totalOverhead = parseFloat(overheadResult.rows[0].total_overhead) || 0;
+
     // Gross profit = revenue minus direct project costs
     const grossProfit = totalRevenue - totalSpent;
-    // Net profit = gross profit minus overhead (approximated as 15% of revenue for indirect costs)
-    // TODO: Replace overhead calculation with actual overhead data when available
-    const overheadRate = 0.15;
-    const netProfit = grossProfit - (totalRevenue * overheadRate);
+    // Net profit = gross profit minus actual overhead
+    const netProfit = grossProfit - totalOverhead;
 
     // Monthly burn rate: average monthly spend based on project count as denominator
     // to avoid divide-by-zero and give meaningful per-project metric
