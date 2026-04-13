@@ -126,11 +126,11 @@ npm run check            # tsc --noEmit + lint + test
 **Users table** (authoritative columns): `id, name, email, password_hash, role, organization_id, company_id, phone, avatar, created_at, permissions, is_active, notification_preferences`
 **No**: `first_name`, `last_name`, `job_title`, `updated_at`, `company` (replaced by `company_id` in migration 055)
 
-**Tables without `updated_at`**: `projects`, `invoices`, `rfis`, `tenders`, `companies`, `cost_forecasts`. Do NOT use `updated_at = NOW()` in UPDATE/upsert queries for these tables.
+**`updated_at` triggers**: `invoices`, `rfis`, `tenders`, `companies`, `cost_forecasts` have `BEFORE UPDATE` triggers via `set_updated_at()` (migration 057) that auto-set `updated_at = CURRENT_TIMESTAMP`. Do NOT manually set `updated_at` in UPDATE queries for these tables — the trigger handles it. `projects` still lacks an `updated_at` trigger.
 
 **Invoice valid statuses**: `draft`, `sent`, `paid`, `overdue`, `disputed` — NOT `pending`, `unpaid`.
 
-**Migrations**: 56 SQL files in `server/migrations/` (000-055). Apply with `psql -d cortexbuild -f server/migrations/NNN_file.sql`. No migration runner — apply manually or via `scripts/run-migrations.sh`.
+**Migrations**: 57 SQL files in `server/migrations/` (000-056). Apply with `psql -d cortexbuild -f server/migrations/NNN_file.sql`. No migration runner — apply manually or via `scripts/run-migrations.sh`.
 
 **Seed data**: `server/scripts/seed.sql` — default password `CortexBuild2024!` for all users.
 

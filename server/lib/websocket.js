@@ -33,8 +33,15 @@ const rooms = new Map();   // Map<roomId, Set<userId>>
 /**
  * Initialize WebSocket server
  * @param {http.Server} server - HTTP server to attach to
+ * @param {object} [options] - Options
+ * @param {boolean} [options.enabled=true] - Whether to create the WS server (FEATURE_WEBSOCKET gate)
  */
-function initWebSocket(server) {
+function initWebSocket(server, { enabled = true } = {}) {
+  if (!enabled) {
+    console.log('[WS] WebSocket feature is disabled — server not initialized');
+    return null;
+  }
+
   const wss = new WebSocket.Server({ server, path: '/ws' });
 
   wss.on('connection', (ws, req) => {

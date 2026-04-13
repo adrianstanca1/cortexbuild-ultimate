@@ -12,6 +12,7 @@ const authRoutes     = require('./routes/auth');
 const rateLimiter    = require('./middleware/rateLimiter');
 const requestLogger = require('./middleware/requestLogger');
 const { initWebSocket } = require('./lib/websocket');
+const { requireFeature, isFeatureEnabled } = require('./middleware/featureFlag');
 const rateLimit = require('express-rate-limit');
 const { RedisStore: RateLimitRedisStore } = require('rate-limit-redis');
 const cookieParser = require('cookie-parser');
@@ -29,8 +30,8 @@ const redisClient = redis.createClient({
 });
 redisClient.connect().catch(err => console.error('[Redis]', err.message));
 
-// Initialize WebSocket server
-initWebSocket(server);
+// Initialize WebSocket server (gated by feature flag — skips server creation when disabled)
+initWebSocket(server, { enabled: isFeatureEnabled('FEATURE_WEBSOCKET') });
 
 // ─── Session & Passport middleware for OAuth ─────────────────────────────────
 const sessionSecret = process.env.SESSION_SECRET || process.env.JWT_SECRET;
@@ -155,18 +156,18 @@ app.use('/api', authMiddleware);
 app.use('/api/company', require('./routes/company'));
 
 // ─── Upload route ─────────────────────────────────────────────────────────────
-app.use('/api/upload',          require('./routes/upload'));
-app.use('/api/files',           require('./routes/files'));
-app.use('/api/project-images',  require('./routes/project-images'));
+app.use('/api/upload',          requireFeature('FEATURE_FILE_UPLOAD'), require('./routes/upload'));
+app.use('/api/files',           requireFeature('FEATURE_FILE_UPLOAD'), require('./routes/files'));
+app.use('/api/project-images',  requireFeature('FEATURE_FILE_UPLOAD'), require('./routes/project-images'));
 app.use('/api/project-tasks',   require('./routes/project-tasks'));
 app.use('/api/tasks',           require('./routes/tasks'));
 app.use('/api/work-packages',   require('./routes/work-packages'));
 
 // ─── AI routes ────────────────────────────────────────────────────────────────
-app.use('/api/ai', require('./routes/ai'));
+app.use('/api/ai', requireFeature('FEATURE_AI_AGENTS'), require('./routes/ai'));
 
-app.use('/api/ai-conversations', require('./routes/ai-conversations'));
-app.use('/api/ai-predictive', require('./routes/ai-predictive'));
+app.use('/api/ai-conversations', requireFeature('FEATURE_AI_AGENTS'), require('./routes/ai-conversations'));
+app.use('/api/ai-predictive', requireFeature('FEATURE_AI_AGENTS'), require('./routes/ai-predictive'));
 
 
 // ─── CRUD routes ─────────────────────────────────────────────────────────────
@@ -226,14 +227,14 @@ app.use('/api/executive-reports', require('./routes/executive-reports'));
 app.use('/api/search',          require('./routes/search'));
 app.use('/api/audit',           require('./routes/audit'));
 app.use('/api/calendar',        require('./routes/calendar'));
-app.use('/api/email',          require('./routes/email'));
+app.use('/api/email',          requireFeature('FEATURE_EMAIL'), require('./routes/email'));
 app.use('/api/insights',         require('./routes/insights'));
 app.use('/api/weather-forecast', require('./routes/weather-data'));
 app.use('/api/backup',         require('./routes/backup'));
 app.use('/api/report-templates', require('./routes/report-templates'));
 app.use('/api/permissions',    require('./routes/permissions'));
-app.use('/api/rag',           require('./routes/rag'));
-app.use('/api/rag-chat',      require('./routes/ai-rag'));
+app.use('/api/rag',           requireFeature('FEATURE_RAG_SEARCH'), require('./routes/rag'));
+app.use('/api/rag-chat',      requireFeature('FEATURE_RAG_SEARCH'), require('./routes/ai-rag'));
 app.use('/api/bim-models',    require('./routes/bim-models'));
 app.use('/api/cost-management', require('./routes/cost-management'));
 app.use('/api/submittals',    require('./routes/submittals'));
@@ -245,7 +246,7 @@ app.use('/api/portal',       require('./routes/client-portal'));
 app.use('/api/chat',          require('./routes/chat'));
 app.use('/api/activity-feed', require('./routes/activity-feed'));
 app.use('/api/admin/stats',   require('./routes/admin-stats'));
-app.use('/api/ai-vision',      require('./routes/ai-vision'));
+app.use('/api/ai-vision',      requireFeature('FEATURE_AI_AGENTS'), require('./routes/ai-vision'));
 app.use('/api/ai_vision_logs', makeRouter('ai_vision_logs'));
 
 // ─── 404 ──────────────────────────────────────────────────────────────────────
