@@ -50,11 +50,11 @@ describe('useNotificationCenter cleanup', () => {
     const clearTimeoutSpy = vi.spyOn(global, 'clearTimeout');
 
     const abortSpy = vi.fn();
-    const mockAbortController = {
+    const mockAbortController = vi.fn().mockImplementation(() => ({
       abort: abortSpy,
       signal: { aborted: false }
-    };
-    (global as any).AbortController = vi.fn().mockImplementation(() => mockAbortController);
+    }));
+    (global as any).AbortController = mockAbortController;
 
     const { unmount } = renderHook(() => useNotificationCenter({ autoConnect: true }));
 
