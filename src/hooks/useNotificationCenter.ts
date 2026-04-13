@@ -106,7 +106,9 @@ const playNotificationSound = () => {
       oscillator.start(ctx.currentTime);
       oscillator.stop(ctx.currentTime + 0.5);
       // SECURITY FIX: Close AudioContext to prevent memory leak
-      ctx.close();
+      oscillator.onended = () => {
+        ctx.close().catch(console.error);
+      };
     });
   } catch {
     // Silent fail if audio not supported
