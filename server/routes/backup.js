@@ -138,7 +138,7 @@ router.get('/export-all', checkPermission('settings', 'read'), async (req, res) 
   if (isSuperAdmin(req)) {
     try {
       const allData = {};
-      for (const table of ALLOWED_TABLES) {
+      const promises = ALLOWED_TABLES.map(async (table) => {
         try {
           const result = await pool.query(
             `SELECT * FROM ${table} ORDER BY created_at DESC LIMIT 10000`
@@ -148,12 +148,20 @@ router.get('/export-all', checkPermission('settings', 'read'), async (req, res) 
           console.error(`[Backup export] Error querying ${table}:`, err.message);
           allData[table] = { count: 0, rows: [], error: 'table not found or inaccessible' };
         }
+      });
+      await Promise.all(promises);
+
+      // Restore insertion order by building a new object with keys in the order of ALLOWED_TABLES
+      const orderedData = {};
+      for (const table of ALLOWED_TABLES) {
+        orderedData[table] = allData[table];
       }
+
       const backup = {
         exportedAt: new Date().toISOString(),
         version: '3.0.0',
-        tables: Object.keys(allData),
-        data: allData,
+        tables: Object.keys(orderedData),
+        data: orderedData,
       };
       res.setHeader('Content-Disposition', `attachment; filename="cortexbuild-backup-${Date.now()}.json"`);
       res.json(backup);
@@ -168,7 +176,7 @@ router.get('/export-all', checkPermission('settings', 'read'), async (req, res) 
   }
   try {
     const allData = {};
-    for (const table of ALLOWED_TABLES) {
+    const promises = ALLOWED_TABLES.map(async (table) => {
       try {
         const result = await pool.query(
           `SELECT * FROM ${table} ${tenantClause} ORDER BY created_at DESC LIMIT 10000`,
@@ -179,12 +187,20 @@ router.get('/export-all', checkPermission('settings', 'read'), async (req, res) 
         console.error(`[Backup export] Error querying ${table}:`, err.message);
         allData[table] = { count: 0, rows: [], error: 'table not found or inaccessible' };
       }
+    });
+    await Promise.all(promises);
+
+    // Restore insertion order by building a new object with keys in the order of ALLOWED_TABLES
+    const orderedData = {};
+    for (const table of ALLOWED_TABLES) {
+      orderedData[table] = allData[table];
     }
+
     const backup = {
       exportedAt: new Date().toISOString(),
       version: '3.0.0',
-      tables: Object.keys(allData),
-      data: allData,
+      tables: Object.keys(orderedData),
+      data: orderedData,
     };
     res.setHeader('Content-Disposition', `attachment; filename="cortexbuild-backup-${Date.now()}.json"`);
     res.json(backup);
