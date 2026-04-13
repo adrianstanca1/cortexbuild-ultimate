@@ -7,6 +7,7 @@ const http       = require('http');
 const passport   = require('passport');
 const session    = require('express-session');
 const authMiddleware = require('./middleware/auth');
+const { startBIMProcessor } = require('./workers/bimProcessor');
 const makeRouter     = require('./routes/generic');
 const authRoutes     = require('./routes/auth');
 const rateLimiter    = require('./middleware/rateLimiter');
@@ -289,6 +290,9 @@ process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
 process.on('SIGINT',  () => gracefulShutdown('SIGINT'));
 
 // ─── Start ────────────────────────────────────────────────────────────────────
+// ─── Start Background Workers ──────────────────────────────────────────────────
+startBIMProcessor();
+
 server.listen(PORT, () => {
   console.log(`\n🏗  CortexBuild API running on port ${PORT}`);
   console.log(`   Health: http://localhost:${PORT}/api/health`);
