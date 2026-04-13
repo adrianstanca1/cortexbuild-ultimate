@@ -56,7 +56,6 @@ export const DevSandbox: React.FC = () => {
   
   // Environment State
   const [environment, setEnvironment] = useState<'development' | 'staging' | 'production'>('development');
-  const [_apiEndpoint, _setApiEndpoint] = useState('http://localhost:3001/api'); // Renamed to _apiEndpoint, _setApiEndpoint to mark as unused
 
   const addLog = useCallback((level: LogEntry['level'], message: string) => {
     const entry: LogEntry = {
