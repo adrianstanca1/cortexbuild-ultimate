@@ -26,7 +26,7 @@ async function processBIMModel(modelId) {
         const ifcApi = new WebIFC.IfcAPI();
         await ifcApi.Init();
 
-        const fileBuffer = fs.readFileSync(model.file_path);
+        const fileBuffer = await fs.promises.readFile(model.file_path);
         const modelIFC = ifcApi.OpenModel(fileBuffer);
 
         // 1. Extract total elements
