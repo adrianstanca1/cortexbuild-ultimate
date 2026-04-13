@@ -231,6 +231,7 @@ export function useNotificationCenter(
   const reconnectTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const reconnectAttemptRef = useRef(0);
   const settingsRef = useRef<NotificationSettings>(DEFAULT_SETTINGS);
+  const abortControllerRef = useRef<AbortController | null>(null);
 
   // State
   const [notifications, setNotifications] = useState<Notification[]>([]);
@@ -250,7 +251,7 @@ export function useNotificationCenter(
   const [searchQuery, setSearchQuery] = useState('');
 
   // Fetch notifications from API
-  const fetchNotifications = useCallback(async (query?: NotificationQuery) => {
+  const fetchNotifications = useCallback(async (query?: NotificationQuery, signal?: AbortSignal) => {
     setIsLoading(true);
     setError(null);
 
@@ -271,7 +272,8 @@ export function useNotificationCenter(
       if (query?.sortOrder) params.set('sortOrder', query.sortOrder);
 
       const rawResult = await apiGet<unknown>(
-        `/notifications${params.toString() ? `?${params.toString()}` : ''}`
+        `/notifications${params.toString() ? `?${params.toString()}` : ''}`,
+        { signal }
       );
 
       const result = validateNotificationsResponse(rawResult);
@@ -303,9 +305,9 @@ export function useNotificationCenter(
   }, []);
 
   // Fetch unread count
-  const fetchUnreadCount = useCallback(async () => {
+  const fetchUnreadCount = useCallback(async (signal?: AbortSignal) => {
     try {
-      const result = await apiGet<UnreadCountResponse>('/notifications/unread-count');
+      const result = await apiGet<UnreadCountResponse>('/notifications/unread-count', { signal });
       setUnreadCount(result.unreadCount);
     } catch (err) {
       console.error('Failed to fetch unread count:', err);
@@ -313,9 +315,9 @@ export function useNotificationCenter(
   }, []);
 
   // Fetch settings
-  const fetchSettings = useCallback(async () => {
+  const fetchSettings = useCallback(async (signal?: AbortSignal) => {
     try {
-      const rawResult = await apiGet<unknown>('/notifications/settings');
+      const rawResult = await apiGet<unknown>('/notifications/settings', { signal });
       const result = validateNotificationSettings(rawResult);
 
       if (!result) {
@@ -460,6 +462,9 @@ export function useNotificationCenter(
     }
 
     if (wsRef.current) {
+      wsRef.current.onopen = null;
+      wsRef.current.onmessage = null;
+      wsRef.current.onerror = null;
       wsRef.current.onclose = null;
       wsRef.current.close();
       wsRef.current = null;
@@ -730,11 +735,12 @@ export function useNotificationCenter(
   }, [fetchNotifications, currentFilter]);
 
   // Load history (archived notifications)
-  const loadHistory = useCallback(async (page = 1) => {
+  const loadHistory = useCallback(async (page = 1, signal?: AbortSignal) => {
     setIsLoading(true);
     try {
       const result = await apiGet<NotificationsResponse>(
-        `/notifications/history?page=${page}&pageSize=50&status=archived`
+        `/notifications/history?page=${page}&pageSize=50&status=archived`,
+        { signal }
       );
       setNotifications(result.notifications);
       setTotal(result.total);
@@ -781,8 +787,11 @@ export function useNotificationCenter(
 
   // Initialize
   useEffect(() => {
-    fetchNotifications({ page: 1, pageSize: maxNotifications });
-    fetchSettings();
+    const controller = new AbortController();
+    abortControllerRef.current = controller;
+
+    fetchNotifications({ page: 1, pageSize: maxNotifications }, controller.signal);
+    fetchSettings(controller.signal);
 
     // Auto-connect WebSocket
     if (autoConnect) {
@@ -791,16 +800,19 @@ export function useNotificationCenter(
 
     // Poll for updates
     const pollInterval = setInterval(() => {
-      fetchUnreadCount();
+      fetchUnreadCount(controller.signal);
     }, pollingInterval);
 
     // SECURITY FIX: Proper cleanup of all resources
     return () => {
+      controller.abort();
       clearInterval(pollInterval);
       disconnectWebSocket();
+
       // Clear any pending timeouts
       if (reconnectTimeoutRef.current) {
         clearTimeout(reconnectTimeoutRef.current);
+        reconnectTimeoutRef.current = null;
       }
     };
   }, [
