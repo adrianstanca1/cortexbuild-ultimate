@@ -82,16 +82,17 @@ export async function apiRequest<T>(
   }
 }
 
-export async function apiGet<T>(endpoint: string): Promise<T> {
-  const result = await apiRequest<T>(endpoint, { method: 'GET' });
+export async function apiGet<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
+  const result = await apiRequest<T>(endpoint, { ...options, method: 'GET' });
   if (!result.ok) {
     throw new Error(result.error?.error || 'Failed to fetch');
   }
   return result.data as T;
 }
 
-export async function apiPost<T>(endpoint: string, data: unknown): Promise<T> {
+export async function apiPost<T>(endpoint: string, data: unknown, options: RequestInit = {}): Promise<T> {
   const result = await apiRequest<T>(endpoint, {
+    ...options,
     method: 'POST',
     body: JSON.stringify(data),
   });
@@ -101,8 +102,9 @@ export async function apiPost<T>(endpoint: string, data: unknown): Promise<T> {
   return result.data as T;
 }
 
-export async function apiPut<T>(endpoint: string, data: unknown): Promise<T> {
+export async function apiPut<T>(endpoint: string, data: unknown, options: RequestInit = {}): Promise<T> {
   const result = await apiRequest<T>(endpoint, {
+    ...options,
     method: 'PUT',
     body: JSON.stringify(data),
   });
@@ -112,8 +114,8 @@ export async function apiPut<T>(endpoint: string, data: unknown): Promise<T> {
   return result.data as T;
 }
 
-export async function apiDelete<T>(endpoint: string): Promise<T> {
-  const result = await apiRequest<T>(endpoint, { method: 'DELETE' });
+export async function apiDelete<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
+  const result = await apiRequest<T>(endpoint, { ...options, method: 'DELETE' });
   if (!result.ok) {
     throw new Error(result.error?.error || 'Failed to delete');
   }
