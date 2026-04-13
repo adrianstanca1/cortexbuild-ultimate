@@ -4,6 +4,27 @@ const { checkPermission } = require('../middleware/checkPermission');
 const { buildTenantFilter, isSuperAdmin } = require('../middleware/tenantFilter');
 const router = express.Router();
 const pool = require('../db');
+// Map for safe table name lookup (prevents SQL injection via identifier interpolation)
+const ALLOWED_TABLE_MAP = Object.fromEntries(
+  [
+    'projects', 'invoices', 'safety_incidents', 'rfis', 'change_orders',
+    'team_members', 'equipment', 'subcontractors', 'documents', 'timesheets',
+    'meetings', 'materials', 'punch_list', 'inspections', 'rams',
+    'cis_returns', 'tenders', 'contacts', 'risk_register', 'purchase_orders',
+    'daily_reports', 'variations', 'defects', 'valuations', 'specifications',
+    'temp_works', 'signage', 'waste_management', 'sustainability', 'training',
+    'certifications', 'prequalification', 'lettings', 'measuring',
+    'site_permits', 'equipment_service_logs', 'equipment_hire_logs',
+    'risk_mitigation_actions', 'contact_interactions', 'safety_permits',
+    'toolbox_talks', 'drawing_transmittals', 'tasks', 'work_packages',
+    'bim_models', 'bim_clashes_detections', 'bim_model_layers',
+    'cost_codes', 'budget_items', 'cost_forecasts', 'submittals',
+    'submittal_attachments', 'submittal_comments', 'chat_channels',
+    'chat_messages', 'notifications', 'report_templates',
+    'users', 'companies', 'organizations',
+  ].map(t => [t, t])
+);
+
 // Whitelist of tables allowed for backup export
 const ALLOWED_BACKUP_TABLES = new Set([
   'projects', 'invoices', 'safety_incidents', 'rfis', 'change_orders',
@@ -48,7 +69,8 @@ router.get('/export/:table', async (req, res) => {
   const { table } = req.params;
   const { format = 'json', limit = '10000' } = req.query;
 
-  if (!ALLOWED_TABLES.includes(table)) {
+  const safeTable = ALLOWED_TABLE_MAP[table];
+  if (!safeTable) {
     return res.status(403).json({ message: 'Table not allowed for export' });
   }
 
@@ -56,7 +78,7 @@ router.get('/export/:table', async (req, res) => {
     const limitNum = Math.min(parseInt(limit, 10), 50000);
     try {
       const result = await pool.query(
-        `SELECT * FROM ${table} ORDER BY created_at DESC LIMIT $1`,
+        `SELECT * FROM ${safeTable} ORDER BY created_at DESC LIMIT $1`,
         [limitNum]
       );
       if (format === 'csv') {
@@ -141,15 +163,15 @@ router.get('/export-all', checkPermission('settings', 'read'), async (req, res) 
       const CHUNK_SIZE = 10;
       for (let i = 0; i < ALLOWED_TABLES.length; i += CHUNK_SIZE) {
         const chunk = ALLOWED_TABLES.slice(i, i + CHUNK_SIZE);
-        const promises = chunk.map(async (table) => {
+        const promises = chunk.map(async (tableName) => {
           try {
             const result = await pool.query(
-              `SELECT * FROM ${table} ORDER BY created_at DESC LIMIT 10000`
+              `SELECT * FROM ${tableName} ORDER BY created_at DESC LIMIT 10000`
             );
-            return { table, data: { count: result.rows.length, rows: result.rows } };
+            return { table: tableName, data: { count: result.rows.length, rows: result.rows } };
           } catch (err) {
-            console.error(`[Backup export] Error querying ${table}:`, err.message);
-            return { table, data: { count: 0, rows: [], error: 'table not found or inaccessible' } };
+            console.error(`[Backup export] Error querying ${tableName}:`, err.message);
+            return { table: tableName, data: { count: 0, rows: [], error: 'table not found or inaccessible' } };
           }
         });
         const results = await Promise.all(promises);
@@ -179,16 +201,16 @@ router.get('/export-all', checkPermission('settings', 'read'), async (req, res) 
     const CHUNK_SIZE = 10;
     for (let i = 0; i < ALLOWED_TABLES.length; i += CHUNK_SIZE) {
       const chunk = ALLOWED_TABLES.slice(i, i + CHUNK_SIZE);
-      const promises = chunk.map(async (table) => {
+      const promises = chunk.map(async (tableName) => {
         try {
           const result = await pool.query(
-            `SELECT * FROM ${table} ${tenantClause} ORDER BY created_at DESC LIMIT 10000`,
+            `SELECT * FROM ${tableName} ${tenantClause} ORDER BY created_at DESC LIMIT 10000`,
             tenantParams
           );
-          return { table, data: { count: result.rows.length, rows: result.rows } };
+          return { table: tableName, data: { count: result.rows.length, rows: result.rows } };
         } catch (err) {
-          console.error(`[Backup export] Error querying ${table}:`, err.message);
-          return { table, data: { count: 0, rows: [], error: 'table not found or inaccessible' } };
+          console.error(`[Backup export] Error querying ${tableName}:`, err.message);
+          return { table: tableName, data: { count: 0, rows: [], error: 'table not found or inaccessible' } };
         }
       });
       const results = await Promise.all(promises);
