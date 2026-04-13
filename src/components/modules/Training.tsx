@@ -1,9 +1,8 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import { useState, useRef } from 'react';
 import { Plus, GraduationCap, Award, AlertCircle, Trash2, X, Edit, Download } from 'lucide-react';
 import { EmptyState } from '../ui/EmptyState';
 import { ModuleBreadcrumbs } from '../ui/Breadcrumbs';
-import { DataImporter, ExportButton } from '../ui/DataImportExport';
+import { DataImporter, ExportButton, ColumnMapping } from '../ui/DataImportExport';
 import { trainingApi, uploadFile } from '../../services/api';
 import { BulkActionsBar, useBulkSelection } from '../ui/BulkActions';
 import { toast } from 'sonner';
@@ -40,7 +39,7 @@ export default function Training() {
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [activeTab, setActiveTab] = useState<'register' | 'schedule' | 'matrix' | 'providers' | 'reports'>('register');
   const [form, setForm] = useState({ title: '', provider: '', type: 'formal_course', status: 'scheduled', scheduledDate: '', completedDate: '', duration: '', location: '', certification: 'no', certName: '', attendees: '' });
-  const [editItem, setEditItem] = useState<TrainingRecord | null>(null);
+  const [editItem, setEditItem] = useState<(TrainingRecord & { scheduledDate?: string; completedDate?: string }) | null>(null);
   const [showBulkImport, setShowBulkImport] = useState(false);
 
   const { selectedIds, clearSelection } = useBulkSelection();
@@ -58,13 +57,13 @@ export default function Training() {
     }
   }
 
-  const filtered = trainingData.filter((t: any) =>
+  const filtered = trainingData.filter((t: TrainingRecord) =>
     (t.title || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
     (t.provider || '').toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  const completedCount = trainingData.filter((t: any) => t.status === 'completed').length;
-  const scheduledCount = trainingData.filter((t: any) => t.status === 'scheduled').length;
+  const completedCount = trainingData.filter((t: TrainingRecord) => t.status === 'completed').length;
+  const scheduledCount = trainingData.filter((t: TrainingRecord) => t.status === 'scheduled').length;
   const totalCount = trainingData.length;
 
   const handleCreate = async () => {
@@ -142,7 +141,7 @@ export default function Training() {
     }
   };
 
-  async function handleBulkImport(data: Record<string, unknown>[], mapping: any[]) {
+  async function handleBulkImport(data: Record<string, unknown>[], mapping: ColumnMapping[]) {
     let failed = 0;
     for (const row of data) {
       const mapped: Record<string, unknown> = {};
@@ -186,7 +185,7 @@ export default function Training() {
               </tr>
             </thead>
             <tbody>
-              {filtered.map((t: any) => (
+              {filtered.map((t: TrainingRecord) => (
                 <tr key={t.id} className="border-b border-gray-700 hover:bg-gray-800/50">
                   <td className="px-4 py-3 text-white font-medium">{t.title}</td>
                   <td className="px-4 py-3 text-gray-300">{t.type.replace(/_/g, ' ')}</td>
@@ -213,8 +212,8 @@ export default function Training() {
   const scheduleTab = (
     <div className="space-y-4">
       {(() => {
-        const sorted = [...trainingData].sort((a: any, b: any) => new Date(a.scheduled_date || a.completed_date).getTime() - new Date(b.scheduled_date || b.completed_date).getTime());
-        const grouped = new Map<string, any[]>();
+        const sorted = [...trainingData].sort((a: TrainingRecord, b: TrainingRecord) => new Date(a.scheduled_date || a.completed_date || 0).getTime() - new Date(b.scheduled_date || b.completed_date || 0).getTime());
+        const grouped = new Map<string, TrainingRecord[]>();
 
         sorted.forEach(t => {
           const dateStr = t.scheduled_date || t.completed_date || '';
@@ -336,7 +335,7 @@ export default function Training() {
   const reportsTab = (
     <div className="space-y-6">
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div className="card p-4"><div className="text-gray-400 text-xs mb-2">Total Training Hours</div><div className="text-3xl font-bold text-white">{Math.round(trainingData.reduce((sum: number, t: any) => sum + (t.duration || 0), 0))}</div></div>
+        <div className="card p-4"><div className="text-gray-400 text-xs mb-2">Total Training Hours</div><div className="text-3xl font-bold text-white">{Math.round(trainingData.reduce((sum: number, t: TrainingRecord) => sum + (t.duration || 0), 0))}</div></div>
         <div className="card p-4"><div className="text-gray-400 text-xs mb-2">Completion Rate</div><div className="text-3xl font-bold text-green-400">{Math.round((completedCount / totalCount) * 100)}%</div></div>
         <div className="card p-4"><div className="text-gray-400 text-xs mb-2">Scheduled</div><div className="text-3xl font-bold text-amber-400">{scheduledCount}</div></div>
       </div>

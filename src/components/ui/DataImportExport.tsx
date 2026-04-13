@@ -14,7 +14,7 @@ import clsx from 'clsx';
 export type ExportFormat = 'csv' | 'json' | 'xlsx';
 export type ImportFormat = 'csv' | 'json';
 
-interface ColumnMapping {
+export interface ColumnMapping {
   source: string;
   target: string;
   transform?: (value: string) => unknown;
