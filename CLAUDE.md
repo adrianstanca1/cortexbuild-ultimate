@@ -123,14 +123,14 @@ npm run check            # tsc --noEmit + lint + test
 
 ### Database Schema
 
-**Users table** (authoritative columns): `id, name, email, password_hash, role, organization_id, company_id, phone, avatar, created_at, permissions, is_active, notification_preferences`
-**No**: `first_name`, `last_name`, `job_title`, `updated_at`, `company` (replaced by `company_id` in migration 055)
+**Users table** (authoritative columns): `id, name, email, password_hash, role, organization_id, company_id, phone, avatar, created_at, updated_at, permissions, is_active, notification_preferences, company`
+**No**: `first_name`, `last_name`, `job_title` (replaced by `name` and `company_id` in migration 055). The `company` column still exists as a text default.
 
-**`updated_at` triggers**: `invoices`, `rfis`, `tenders`, `companies`, `cost_forecasts` have `BEFORE UPDATE` triggers via `set_updated_at()` (migration 057) that auto-set `updated_at = CURRENT_TIMESTAMP`. Do NOT manually set `updated_at` in UPDATE queries for these tables — the trigger handles it. `projects` still lacks an `updated_at` trigger.
+**`updated_at` triggers**: All 54 tables with `updated_at` have `BEFORE UPDATE` triggers via `set_updated_at()` (migrations 057-058). Do NOT manually set `updated_at` in UPDATE queries — the trigger handles it.
 
 **Invoice valid statuses**: `draft`, `sent`, `paid`, `overdue`, `disputed` — NOT `pending`, `unpaid`.
 
-**Migrations**: 57 SQL files in `server/migrations/` (000-056). Apply with `psql -d cortexbuild -f server/migrations/NNN_file.sql`. No migration runner — apply manually or via `scripts/run-migrations.sh`.
+**Migrations**: 60 SQL files in `server/migrations/` (000-059, no file 051). Apply with `psql -d cortexbuild -f server/migrations/NNN_file.sql`. No migration runner — apply manually or via `scripts/run-migrations.sh`.
 
 **Seed data**: `server/scripts/seed.sql` — default password `CortexBuild2024!` for all users.
 
@@ -163,7 +163,7 @@ bash /root/deploy-frontend.sh
 - `JWT_SECRET` / `SESSION_SECRET` — 64-char hex strings
 - `OLLAMA_HOST` — `http://localhost:11434` (local) or `http://ollama:11434` (Docker) or `http://cortexbuild-ollama:11434` (Docker network)
 - `EMBEDDING_MODEL` — Must be `nomic-embed-text:latest`, NOT an LLM
-- Feature flags: `FEATURE_AI_AGENTS`, `FEATURE_RAG_SEARCH`, `FEATURE_WEBSOCKET`, `FEATURE_FILE_UPLOAD`, `FEATURE_EMAIL` — documented but NOT checked in server code (no runtime enforcement)
+- Feature flags: `FEATURE_AI_AGENTS`, `FEATURE_RAG_SEARCH`, `FEATURE_WEBSOCKET`, `FEATURE_FILE_UPLOAD`, `FEATURE_EMAIL` — enforced server-side via `server/middleware/featureFlag.js` (`requireFeature` middleware + `isFeatureEnabled` helper). Set to `"false"` in `server/.env` to disable. Default to enabled when unset.
 - `DEPLOY_SECRET` — Bearer token for the deploy webhook route
 - Server loads `.env` from `server/.env` subdirectory (not project root)
 

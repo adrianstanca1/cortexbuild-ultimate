@@ -17,8 +17,6 @@ const LLM_MODEL   = process.env.LLM_MODEL  || process.env.OLLAMA_MODEL || 'qwen3
 const router  = express.Router();
 router.use(authMw);
 
-const SUPER_ADMIN_ROLES = new Set(['super_admin', 'company_owner']);
-
 const ALLOWED_TABLES = new Set([
   'projects', 'invoices', 'rfis', 'contacts', 'documents',
   'safety_incidents', 'change_orders', 'team_members',
@@ -28,11 +26,11 @@ const ALLOWED_TABLES = new Set([
 ]);
 
 function tenantFilter(req) {
-  if (!req.user) return { clause: '', params: [] };
-  if (SUPER_ADMIN_ROLES.has(req.user.role)) return { clause: '', params: [] };
-  if (req.user.organization_id) return { clause: ' AND organization_id = $1', params: [req.user.organization_id] };
-  if (req.user.company_id) return { clause: ' AND company_id = $1', params: [req.user.company_id] };
-  return { clause: '', params: [] };
+  if (!req.user) return { clause: ' AND 1=0', params: [] };
+  if (req.user.role === 'super_admin') return { clause: '', params: [] };
+  const scope = req.user.organization_id || req.user.company_id;
+  if (scope) return { clause: ' AND COALESCE(organization_id, company_id) = $1', params: [scope] };
+  return { clause: ' AND 1=0', params: [] };
 }
 
 function buildContextPrompt(contextItems) {
