@@ -12,7 +12,7 @@
     "connect-redis": "^9.0.0",
     "cookie-parser": "^1.4.7",
     "cors": "^2.8.6",
-    "dotenv": "^16.4.5",
+    "dotenv": "^16.6.1",
     "express": "^4.19.2",
     "express-rate-limit": "^8.3.1",
     "express-session": "^1.19.0",
@@ -25,10 +25,10 @@
     "passport-google-oauth20": "^2.0.0",
     "passport-microsoft": "^2.1.0",
     "pg": "^8.11.5",
+    "prom-client": "^15.1.0",
     "rate-limit-redis": "^4.3.1",
     "redis": "^5.11.0",
     "web-ifc": "^0.0.77",
-    "ws": "^8.20.0",
-    "prom-client": "^15.1.0"
+    "ws": "^8.20.0"
   }
 }
