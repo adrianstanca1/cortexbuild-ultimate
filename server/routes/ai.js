@@ -255,13 +255,14 @@ router.post('/chat', aiChatLimiter, async (req, res) => {
 
     // ── Save conversation to DB (atomic — both messages or neither) ────────────
     if (sessionId && req.user) {
-      const orgId = req.user.organization_id || req.user.company_id || 'anon';
+      const orgId = req.user.organization_id || null;
+      const companyId = req.user.company_id || null;
       const uid = req.user.id || null;
       try {
         await pool.query(
-          `INSERT INTO ai_conversations (organization_id, user_id, session_id, role, content, model)
-           VALUES ($1, $2, $3, 'user', $4, $5), ($1, $2, $3, 'assistant', $6, $7)`,
-          [orgId, uid, sessionId, message.trim(), LLM_MODEL, reply, LLM_MODEL]
+          `INSERT INTO ai_conversations (organization_id, company_id, user_id, session_id, role, content, model)
+           VALUES ($1, $2, $3, $4, 'user', $5, $6), ($1, $2, $3, $4, 'assistant', $7, $8)`,
+          [orgId, companyId, uid, sessionId, message.trim(), LLM_MODEL, reply, LLM_MODEL]
         );
       } catch (e) {
         console.warn('[AI] Could not save conversation:', e.message);
@@ -311,12 +312,9 @@ router.post('/summarize-project', aiSummarizeLimiter, async (req, res) => {
     const projOrgId = proj.organization_id || orgId;
     const projCompanyId = proj.company_id || req.user?.company_id;
     let tenantFilter, tenantParam;
-    if (projOrgId) {
-      tenantFilter = 'organization_id = $2';
-      tenantParam = projOrgId;
-    } else if (projCompanyId) {
-      tenantFilter = 'company_id = $2';
-      tenantParam = projCompanyId;
+    if (projOrgId || projCompanyId) {
+      tenantFilter = 'COALESCE(organization_id, company_id) = $2';
+      tenantParam = projOrgId || projCompanyId;
     } else {
       tenantFilter = '1=0';
       tenantParam = null;
@@ -654,11 +652,9 @@ router.post('/execute', aiExecuteLimiter, async (req, res) => {
         const { project_id, status } = params;
         if (!project_id || !status) return res.status(400).json({ success: false, message: 'project_id and status are required' });
         const companyId = req.user?.company_id;
-        const orgFilter = tenantId
-          ? 'organization_id = $3'
-          : companyId
-            ? 'company_id = $3'
-            : '1=0';
+        const orgFilter = (tenantId || companyId)
+          ? 'COALESCE(organization_id, company_id) = $3'
+          : '1=0';
         const { rows } = await pool.query(
           `UPDATE projects SET status=$1 WHERE id=$2 AND ${orgFilter} RETURNING id,name,status`,
           [status, project_id, tenantId || companyId]
@@ -676,11 +672,9 @@ router.post('/execute', aiExecuteLimiter, async (req, res) => {
         const VALID_INVOICE_STATUSES = ['draft', 'sent', 'paid', 'overdue', 'disputed'];
         if (!VALID_INVOICE_STATUSES.includes(status)) return res.status(400).json({ success: false, message: `Invalid status. Valid values: ${VALID_INVOICE_STATUSES.join(', ')}` });
         const companyId = req.user?.company_id;
-        const orgFilter = tenantId
-          ? 'organization_id = $3'
-          : companyId
-            ? 'company_id = $3'
-            : '1=0';
+        const orgFilter = (tenantId || companyId)
+          ? 'COALESCE(organization_id, company_id) = $3'
+          : '1=0';
         const { rows } = await pool.query(
           `UPDATE invoices SET status=$1 WHERE id=$2 AND ${orgFilter} RETURNING id,number,status`,
           [status, invoice_id, tenantId || companyId]
@@ -735,11 +729,9 @@ router.post('/execute', aiExecuteLimiter, async (req, res) => {
         const { rfi_id, status } = params;
         if (!rfi_id || !status) return res.status(400).json({ success: false, message: 'rfi_id and status are required' });
         const companyId = req.user?.company_id;
-        const orgFilter = tenantId
-          ? 'organization_id = $3'
-          : companyId
-            ? 'company_id = $3'
-            : '1=0';
+        const orgFilter = (tenantId || companyId)
+          ? 'COALESCE(organization_id, company_id) = $3'
+          : '1=0';
         const { rows } = await pool.query(
           `UPDATE rfis SET status=$1 WHERE id=$2 AND ${orgFilter} RETURNING id,number,status`,
           [status, rfi_id, tenantId || companyId]

@@ -50,6 +50,10 @@ function escapeHtml(str) {
     .replace(/'/g, '&#039;');
 }
 
+function sanitizeSubjectValue(str) {
+  return String(str).replace(/[\r\n]/g, '').replace(/<[^>]*>/g, '');
+}
+
 function escapeAttr(str) {
   if (str === null || str === undefined) return '';
   return String(str).replace(/"/g, '&quot;');
@@ -113,7 +117,7 @@ const EMAIL_TYPES = {
   },
 };
 
-router.get('/templates', async (req, res) => {
+router.get('/templates', checkPermission('email', 'read'), async (req, res) => {
   try {
     const tenantId = req.user?.organization_id || req.user?.company_id;
     // Return both system email types and user-created templates from DB
@@ -195,16 +199,18 @@ router.delete('/templates/:id', async (req, res) => {
   }
 });
 
-router.get('/history', async (req, res) => {
+router.get('/history', checkPermission('email', 'read'), async (req, res) => {
   try {
     const { limit = '50', offset = '0' } = req.query;
     const tenantId = req.user?.organization_id || req.user?.company_id;
-    const userId = req.user?.id;
+    if (!tenantId) {
+      return res.status(403).json({ message: 'No organization context' });
+    }
     const { rows } = await pool.query(
-      `SELECT * FROM email_logs WHERE created_by = $1 OR COALESCE(organization_id, company_id) = $2 ORDER BY created_at DESC LIMIT $3 OFFSET $4`,
-      [userId, tenantId, parseInt(limit, 10), parseInt(offset, 10)]
+      `SELECT * FROM email_logs WHERE COALESCE(organization_id, company_id) = $1 ORDER BY created_at DESC LIMIT $2 OFFSET $3`,
+      [tenantId, parseInt(limit, 10), parseInt(offset, 10)]
     );
-    const { rows: count } = await pool.query('SELECT COUNT(*) FROM email_logs WHERE created_by = $1 OR COALESCE(organization_id, company_id) = $2', [userId, tenantId]);
+    const { rows: count } = await pool.query('SELECT COUNT(*) FROM email_logs WHERE COALESCE(organization_id, company_id) = $1', [tenantId]);
     res.json({ emails: rows, total: parseInt(count[0].count, 10) });
   } catch (err) {
     console.error('[Email History]', err.message);
@@ -212,7 +218,7 @@ router.get('/history', async (req, res) => {
   }
 });
 
-router.post('/send', async (req, res) => {
+router.post('/send', checkPermission('email', 'send'), async (req, res) => {
   try {
     if (!checkRateLimit(req.user?.id)) {
       return res.status(429).json({ message: 'Rate limit exceeded. Try again later.' });
@@ -264,7 +270,7 @@ router.post('/send', async (req, res) => {
     let emailBody = body || generateEmailBody(type, data);
 
     Object.entries(data || {}).forEach(([key, value]) => {
-      emailSubject = emailSubject.replace(`{{${key}}}`, String(value));
+      emailSubject = emailSubject.replace(`{{${key}}}`, sanitizeSubjectValue(value));
     });
 
     const { rows } = await pool.query(
@@ -297,7 +303,7 @@ router.post('/send', async (req, res) => {
   }
 });
 
-router.post('/bulk', async (req, res) => {
+router.post('/bulk', checkPermission('email', 'send'), async (req, res) => {
   try {
     if (!checkRateLimit(req.user?.id)) {
       return res.status(429).json({ message: 'Rate limit exceeded. Try again later.' });
@@ -322,7 +328,7 @@ router.post('/bulk', async (req, res) => {
     let emailSubject = subject || template.subject;
 
     Object.entries(data || {}).forEach(([key, value]) => {
-      emailSubject = emailSubject.replace(`{{${key}}}`, String(value));
+      emailSubject = emailSubject.replace(`{{${key}}}`, sanitizeSubjectValue(value));
     });
 
     const orgId = req.user?.organization_id;
@@ -380,13 +386,15 @@ router.post('/schedule', checkPermission('email', 'send'), async (req, res) => {
     let emailSubject = template?.subject || 'Scheduled Email';
 
     Object.entries(data || {}).forEach(([key, value]) => {
-      emailSubject = emailSubject.replace(`{{${key}}}`, String(value));
+      emailSubject = emailSubject.replace(`{{${key}}}`, sanitizeSubjectValue(value));
     });
 
+    const orgId = req.user?.organization_id;
+    const companyId = req.user?.company_id;
     const { rows } = await pool.query(
-      `INSERT INTO scheduled_emails (recipient, subject, email_type, data, scheduled_at, created_by)
-       VALUES ($1, $2, $3, $4, $5, $6) RETURNING *`,
-      [to, emailSubject, type, JSON.stringify(data), scheduledAt, req.user?.id || 'system']
+      `INSERT INTO scheduled_emails (recipient, subject, email_type, data, scheduled_at, created_by, organization_id, company_id)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING *`,
+      [to, emailSubject, type, JSON.stringify(data), scheduledAt, req.user?.id || 'system', orgId, companyId]
     );
 
     res.status(201).json({ success: true, scheduled: rows[0] });
