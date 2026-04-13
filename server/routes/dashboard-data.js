@@ -14,9 +14,6 @@ router.get('/overview', async (req, res) => {
     let where = '';
     if (auth.role === 'super_admin') {
       // no filter — global admin
-    } else if (auth.role === 'company_owner') {
-      where = 'WHERE company_id = $1';
-      params.push(auth.company_id);
     } else {
       where = 'WHERE COALESCE(organization_id, company_id) = $1';
       params.push(orgId || auth.company_id);
