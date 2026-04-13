@@ -440,7 +440,7 @@ router.post('/summarize-rfi-thread', aiSummarizeLimiter, async (req, res) => {
       const { rows } = await pool.query(
         `SELECT number, subject, priority, status, due_date, assigned_to, submitted_date, project
          FROM rfis
-         WHERE (organization_id = $1 OR (organization_id IS NULL AND company_id = $2))
+         WHERE COALESCE(organization_id, company_id) = $1
            AND status IN ('open', 'pending', 'overdue')
          ORDER BY
            CASE WHEN priority = 'critical' THEN 0 WHEN priority = 'high' THEN 1 ELSE 2 END,
@@ -537,7 +537,7 @@ router.post('/summarize-daily-reports', aiSummarizeLimiter, async (req, res) => 
       params = [orgId, companyId, daysNum];
       query = `SELECT project, date, weather, workers_on_site, progress_notes, delays, notes, equipment_on_site
                FROM daily_reports
-               WHERE (organization_id = $1 OR (organization_id IS NULL AND company_id = $2))
+               WHERE COALESCE(organization_id, company_id) = $1
                  AND date >= CURRENT_DATE - INTERVAL '${daysNum} days'
                ORDER BY date DESC`;
     }

@@ -171,9 +171,9 @@ async function emitEvent(organizationId, companyId, event, payload) {
     const { rows: webhooks } = await pool.query(
       `SELECT id, url, secret, headers, active FROM webhooks
        WHERE active = true
-         AND (organization_id = $1 OR (organization_id IS NULL AND company_id = $2))
-         AND $3 = ANY(events)`,
-      [organizationId, companyId, event]
+         AND COALESCE(organization_id, company_id) = $1
+         AND $2 = ANY(events)`,
+      [organizationId || companyId, event]
     );
 
     // Fire all webhooks concurrently (non-blocking)
@@ -200,7 +200,7 @@ router.get('/', async (req, res) => {
       query = `SELECT * FROM webhooks ORDER BY created_at DESC`;
     } else {
       query = `SELECT * FROM webhooks
-               WHERE (organization_id = $1 OR (organization_id IS NULL AND company_id = $2))
+               WHERE COALESCE(organization_id, company_id) = $1
                ORDER BY created_at DESC`;
       params = [orgId, companyId];
     }

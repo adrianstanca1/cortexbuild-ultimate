@@ -145,7 +145,7 @@ router.get('/', async (req, res) => {
     } else {
       query = `SELECT id, document_type, document_id, signer_name, signer_role, signer_email, signed_at, created_at
                FROM signatures
-               WHERE (organization_id = $1 OR (organization_id IS NULL AND company_id = $2))
+               WHERE COALESCE(organization_id, company_id) = $1
                ORDER BY signed_at DESC LIMIT $3`;
       params = [orgId, companyId, limitNum];
     }
