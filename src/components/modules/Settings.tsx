@@ -76,7 +76,7 @@ export function Settings() {
         // Transform API response to match UI structure
         const transformed = data.map(u => ({
           id: String(u.id),
-          name: `${u.first_name || u.firstName || ''} ${u.last_name || u.lastName || ''}`.trim() || 'Unknown',
+          name: u.name || 'Unknown',
           email: u.email,
           role: u.role,
           status: u.is_active !== false ? 'active' : 'inactive',
