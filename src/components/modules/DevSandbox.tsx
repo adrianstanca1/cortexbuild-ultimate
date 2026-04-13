@@ -66,12 +66,6 @@ export const DevSandbox: React.FC = () => {
     setLogs(prev => [entry, ...prev.slice(0, 99)]); // Keep last 100 logs
   }, []);
 
-  useEffect(() => {
-    // This useEffect is now solely for logging environment changes for debugging purposes
-    // Removed specific console.log to satisfy 'no-console' lint rule
-    // addLog is now part of initial state and external calls, not triggered here on every render
-  }, [environment]); 
-
   const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
