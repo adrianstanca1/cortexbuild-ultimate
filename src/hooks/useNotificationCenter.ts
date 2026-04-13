@@ -276,6 +276,8 @@ export function useNotificationCenter(
         { signal }
       );
 
+      if (signal?.aborted) return;
+
       const result = validateNotificationsResponse(rawResult);
 
       if (!result) {
@@ -296,11 +298,14 @@ export function useNotificationCenter(
       setTotal(result.total);
       setStats(calculateStats(validNotifications, result.unreadCount));
     } catch (err) {
+      if (signal?.aborted) return;
       const error = err instanceof Error ? err : new Error('Failed to fetch notifications');
       setError(error);
       console.error('Failed to fetch notifications:', error);
     } finally {
-      setIsLoading(false);
+      if (!signal?.aborted) {
+        setIsLoading(false);
+      }
     }
   }, []);
 
@@ -308,8 +313,10 @@ export function useNotificationCenter(
   const fetchUnreadCount = useCallback(async (signal?: AbortSignal) => {
     try {
       const result = await apiGet<UnreadCountResponse>('/notifications/unread-count', { signal });
+      if (signal?.aborted) return;
       setUnreadCount(result.unreadCount);
     } catch (err) {
+      if (signal?.aborted) return;
       console.error('Failed to fetch unread count:', err);
     }
   }, []);
@@ -318,6 +325,7 @@ export function useNotificationCenter(
   const fetchSettings = useCallback(async (signal?: AbortSignal) => {
     try {
       const rawResult = await apiGet<unknown>('/notifications/settings', { signal });
+      if (signal?.aborted) return;
       const result = validateNotificationSettings(rawResult);
 
       if (!result) {
@@ -330,6 +338,7 @@ export function useNotificationCenter(
       setSettings(result);
       settingsRef.current = result;
     } catch (err) {
+      if (signal?.aborted) return;
       console.error('Failed to fetch notification settings:', err);
       // Use defaults if fetch fails
       setSettings(DEFAULT_SETTINGS);
@@ -339,7 +348,12 @@ export function useNotificationCenter(
 
   // Connect to WebSocket
   const connectWebSocket = useCallback(() => {
-    if (wsRef.current?.readyState === WebSocket.OPEN) return;
+    if (
+      wsRef.current?.readyState === WebSocket.OPEN ||
+      wsRef.current?.readyState === WebSocket.CONNECTING
+    ) {
+      return;
+    }
 
     setIsConnecting(true);
     setWsStatus((prev) => ({ ...prev, reconnecting: true, reconnectAttempt: reconnectAttemptRef.current + 1 }));
@@ -486,7 +500,13 @@ export function useNotificationCenter(
       wsRef.current = null;
     }
 
-    setWsStatus((prev) => ({ ...prev, isConnected: false }));
+    setIsConnecting(false);
+    reconnectAttemptRef.current = 0;
+    setWsStatus({
+      isConnected: false,
+      reconnecting: false,
+      reconnectAttempt: 0,
+    });
   }, []);
 
   // Mark notification as read
@@ -758,12 +778,16 @@ export function useNotificationCenter(
         `/notifications/history?page=${page}&pageSize=50&status=archived`,
         { signal }
       );
+      if (signal?.aborted) return;
       setNotifications(result.notifications);
       setTotal(result.total);
     } catch (err) {
+      if (signal?.aborted) return;
       console.error('Failed to load notification history:', err);
     } finally {
-      setIsLoading(false);
+      if (!signal?.aborted) {
+        setIsLoading(false);
+      }
     }
   }, []);
 
@@ -822,6 +846,9 @@ export function useNotificationCenter(
     // SECURITY FIX: Proper cleanup of all resources
     return () => {
       controller.abort();
+      if (abortControllerRef.current === controller) {
+        abortControllerRef.current = null;
+      }
       clearInterval(pollInterval);
       disconnectWebSocket();
 
