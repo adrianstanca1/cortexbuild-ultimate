@@ -10,7 +10,7 @@ CortexBuild Ultimate is an AI-Powered Unified Construction Management Platform f
 
 ## Commands
 
-### Frontend (cortexbuild-work/ directory)
+### Frontend
 
 ```bash
 npm install
@@ -34,7 +34,7 @@ npm run test:e2e:headed  # Playwright headed mode
 cd server && npm install
 npm run dev              # nodemon auto-reload on port 3001
 npm start                # Production (plain node, not Docker)
-npm run db:reset:local   # Reset local database
+npm run db:reset:local   # Reset local database (runs from server/ subdir)
 ```
 
 The server requires `DB_PASSWORD` to be set — it exits with code 1 if missing. `SESSION_SECRET` must be at least 32 characters or the server exits.
@@ -42,8 +42,9 @@ The server requires `DB_PASSWORD` to be set — it exits with code 1 if missing.
 ### Full Verification
 
 ```bash
-npm run verify:all       # route verification + TypeScript check + tests + lint + build
+npm run verify:all       # route verification + pre-commit check (tsc + lint + test)
 npm run check            # tsc --noEmit + lint + test
+npm run verify:routes    # Verify all server routes are registered
 ```
 
 ## Architecture
@@ -51,7 +52,7 @@ npm run check            # tsc --noEmit + lint + test
 ### Frontend
 
 - **Vite app** (`src/`) — React 19 + TypeScript. Entry: `src/main.tsx`. Import alias `@` → `src/`. `tsconfig.json` has `strict: true` but `noUnusedLocals: false` and `noUnusedParameters: false` — unused vars/params are warnings, not errors.
-- **Module lazy-loading** — `src/App.tsx` registers 68 modules via `React.lazy()`. No React Router for main navigation — uses `activeModule` state with a custom `Sidebar`/`AppShell` pattern. React Router is installed but currently unused for module routing. `OAuthCallback` handles `/auth/callback` via `window.location.pathname` detection (not React Router).
+- **Module lazy-loading** — `src/App.tsx` registers 69 modules via `React.lazy()`. No React Router for main navigation — uses `activeModule` state with a custom `Sidebar`/`AppShell` pattern. React Router is installed but currently unused for module routing. `OAuthCallback` handles `/auth/callback` via `window.location.pathname` detection (not React Router).
 - **Auth** — JWT stored in `localStorage` under key `cortexbuild_token` (NOT `'token'`). Use `getToken()` from `src/lib/auth-storage.ts` (local JWT helper, not Supabase). On login, user object stored under key `cortexbuild_user`. Logout blacklists the JWT server-side via Redis.
 - **API layer** — TWO competing API utility modules with different behaviors:
   - `src/services/api.ts` — `apiFetch<T>()` auto-converts snake_case to camelCase on ALL responses. `fetchAll()` unwraps `{ data, pagination }` from generic routes. Throws on HTTP errors. `useData.ts` hooks use this module.
@@ -214,7 +215,7 @@ docker ps --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}"
 docker logs cortexbuild-api --tail 50
 
 # API health check
-curl -sf http://localhost:3001/api/health
+curl -sf http://127.0.0.1:3001/api/health
 
 # Database query
 docker exec cortexbuild-db psql -U cortexbuild -d cortexbuild -c "\dt"
