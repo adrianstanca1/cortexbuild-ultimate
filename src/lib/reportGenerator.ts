@@ -117,8 +117,8 @@ export class ReportGenerator {
       margin: { left: 14 },
     });
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    return (this.doc as any).lastAutoTable?.finalY + 10;
+    const finalY = (this.doc as jsPDF & { lastAutoTable?: { finalY: number } }).lastAutoTable?.finalY;
+    return (finalY ?? yPos) + 10;
   }
 
   private addKpiSection(section: ReportSection, yPos: number): number {
