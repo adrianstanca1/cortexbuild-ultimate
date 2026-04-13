@@ -138,20 +138,24 @@ router.get('/export-all', checkPermission('settings', 'read'), async (req, res) 
   if (isSuperAdmin(req)) {
     try {
       const allData = {};
-      const promises = ALLOWED_TABLES.map(async (table) => {
-        try {
-          const result = await pool.query(
-            `SELECT * FROM ${table} ORDER BY created_at DESC LIMIT 10000`
-          );
-          return { table, data: { count: result.rows.length, rows: result.rows } };
-        } catch (err) {
-          console.error(`[Backup export] Error querying ${table}:`, err.message);
-          return { table, data: { count: 0, rows: [], error: 'table not found or inaccessible' } };
+      const CHUNK_SIZE = 10;
+      for (let i = 0; i < ALLOWED_TABLES.length; i += CHUNK_SIZE) {
+        const chunk = ALLOWED_TABLES.slice(i, i + CHUNK_SIZE);
+        const promises = chunk.map(async (table) => {
+          try {
+            const result = await pool.query(
+              `SELECT * FROM ${table} ORDER BY created_at DESC LIMIT 10000`
+            );
+            return { table, data: { count: result.rows.length, rows: result.rows } };
+          } catch (err) {
+            console.error(`[Backup export] Error querying ${table}:`, err.message);
+            return { table, data: { count: 0, rows: [], error: 'table not found or inaccessible' } };
+          }
+        });
+        const results = await Promise.all(promises);
+        for (const { table, data } of results) {
+          allData[table] = data;
         }
-      });
-      const results = await Promise.all(promises);
-      for (const { table, data } of results) {
-        allData[table] = data;
       }
       const backup = {
         exportedAt: new Date().toISOString(),
@@ -172,21 +176,25 @@ router.get('/export-all', checkPermission('settings', 'read'), async (req, res) 
   }
   try {
     const allData = {};
-    const promises = ALLOWED_TABLES.map(async (table) => {
-      try {
-        const result = await pool.query(
-          `SELECT * FROM ${table} ${tenantClause} ORDER BY created_at DESC LIMIT 10000`,
-          tenantParams
-        );
-        return { table, data: { count: result.rows.length, rows: result.rows } };
-      } catch (err) {
-        console.error(`[Backup export] Error querying ${table}:`, err.message);
-        return { table, data: { count: 0, rows: [], error: 'table not found or inaccessible' } };
+    const CHUNK_SIZE = 10;
+    for (let i = 0; i < ALLOWED_TABLES.length; i += CHUNK_SIZE) {
+      const chunk = ALLOWED_TABLES.slice(i, i + CHUNK_SIZE);
+      const promises = chunk.map(async (table) => {
+        try {
+          const result = await pool.query(
+            `SELECT * FROM ${table} ${tenantClause} ORDER BY created_at DESC LIMIT 10000`,
+            tenantParams
+          );
+          return { table, data: { count: result.rows.length, rows: result.rows } };
+        } catch (err) {
+          console.error(`[Backup export] Error querying ${table}:`, err.message);
+          return { table, data: { count: 0, rows: [], error: 'table not found or inaccessible' } };
+        }
+      });
+      const results = await Promise.all(promises);
+      for (const { table, data } of results) {
+        allData[table] = data;
       }
-    });
-    const results = await Promise.all(promises);
-    for (const { table, data } of results) {
-      allData[table] = data;
     }
     const backup = {
       exportedAt: new Date().toISOString(),
