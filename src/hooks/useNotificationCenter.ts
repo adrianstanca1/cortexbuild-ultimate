@@ -575,7 +575,6 @@ export function useNotificationCenter(
         )
       );
 
-      // FIX: Use functional update to avoid stale closure
       setUnreadCount((prev) => {
         // We don't need to check notifications array - just decrement if it was unread
         return prev > 0 ? prev - 1 : prev;
@@ -614,7 +613,6 @@ export function useNotificationCenter(
         )
       );
 
-      // FIX: Use functional update to avoid stale closure
       setUnreadCount((prev) => {
         return prev > 0 ? prev - 1 : prev;
       });
