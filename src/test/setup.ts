@@ -7,20 +7,20 @@ HTMLCanvasElement.prototype.getContext = () => null;
 Object.defineProperty(window, 'matchMedia', {
   writable: true,
   value: vi.fn().mockImplementation((query: string) => {
-    const listeners = new Set<(e: any) => void>();
+    const listeners = new Set<(e: MediaQueryListEvent) => void>();
     return {
       matches: false,
       media: query,
       onchange: null,
-      addListener: (handler: (e: any) => void) => listeners.add(handler),
-      removeListener: (handler: (e: any) => void) => listeners.delete(handler),
-      addEventListener: (type: string, handler: (e: any) => void) => {
+      addListener: (handler: (e: MediaQueryListEvent) => void) => listeners.add(handler),
+      removeListener: (handler: (e: MediaQueryListEvent) => void) => listeners.delete(handler),
+      addEventListener: (type: string, handler: (e: MediaQueryListEvent) => void) => {
         if (type === 'change') listeners.add(handler);
       },
-      removeEventListener: (type: string, handler: (e: any) => void) => {
+      removeEventListener: (type: string, handler: (e: MediaQueryListEvent) => void) => {
         if (type === 'change') listeners.delete(handler);
       },
-      dispatchEvent: (event: any) => {
+      dispatchEvent: (event: Event) => {
         listeners.forEach((handler) => handler(event));
         return true;
       },
