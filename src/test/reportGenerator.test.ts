@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { ReportGenerator } from '../lib/reportGenerator';
-import jsPDF from 'jspdf';
+
 import autoTable from 'jspdf-autotable';
 
 // Mock jsPDF correctly as a constructor
@@ -38,7 +38,7 @@ describe('ReportGenerator', () => {
       download: '',
       click: vi.fn()
     };
-    vi.spyOn(document, 'createElement').mockReturnValue(mockLink as any);
+    vi.spyOn(document, 'createElement').mockReturnValue(mockLink as unknown as HTMLElement);
   });
 
   describe('generate', () => {
@@ -49,12 +49,12 @@ describe('ReportGenerator', () => {
         sections: []
       };
 
-      const result = await generator.generate(config as any);
+      const result = await generator.generate(config as Parameters<typeof generator.generate>[0]);
 
       expect(result).toBeInstanceOf(Blob);
 
       // Access the doc instance directly to verify calls since we can't easily spy on the class constructor return
-      const doc = (generator as any).doc;
+      const doc = (generator as unknown as { doc: { text: (text: string | string[], x: number, y: number) => void, splitTextToSize: (text: string, maxW: number) => string[] } }).doc;
 
       // It should strip out < and >
       expect(doc.text).toHaveBeenCalledWith('scriptalert("xss")/scriptMy Report', 14, 20);
@@ -69,9 +69,9 @@ describe('ReportGenerator', () => {
         ]
       };
 
-      await generator.generate(config as any);
+      await generator.generate(config as Parameters<typeof generator.generate>[0]);
 
-      const doc = (generator as any).doc;
+      const doc = (generator as unknown as { doc: { text: (text: string | string[], x: number, y: number) => void, splitTextToSize: (text: string, maxW: number) => string[] } }).doc;
 
       expect(doc.text).toHaveBeenCalledWith('Text Section', 14, expect.any(Number));
       expect(doc.text).toHaveBeenCalledWith(['Some text content'], 14, expect.any(Number));
@@ -90,9 +90,9 @@ describe('ReportGenerator', () => {
         ]
       };
 
-      await generator.generate(config as any);
+      await generator.generate(config as Parameters<typeof generator.generate>[0]);
 
-      const doc = (generator as any).doc;
+      const doc = (generator as unknown as { doc: { text: (text: string | string[], x: number, y: number) => void, splitTextToSize: (text: string, maxW: number) => string[] } }).doc;
 
       expect(doc.text).toHaveBeenCalledWith('Table Section', 14, expect.any(Number));
       expect(autoTable).toHaveBeenCalledWith(doc, expect.objectContaining({
@@ -116,9 +116,9 @@ describe('ReportGenerator', () => {
         ]
       };
 
-      await generator.generate(config as any);
+      await generator.generate(config as Parameters<typeof generator.generate>[0]);
 
-      const doc = (generator as any).doc;
+      const doc = (generator as unknown as { doc: { text: (text: string | string[], x: number, y: number) => void, splitTextToSize: (text: string, maxW: number) => string[] } }).doc;
 
       expect(doc.text).toHaveBeenCalledWith('KPI Section', 14, expect.any(Number));
       expect(doc.text).toHaveBeenCalledWith('Users', 14, expect.any(Number));
@@ -131,7 +131,7 @@ describe('ReportGenerator', () => {
   describe('download', () => {
     it('should generate PDF and trigger download', async () => {
       const config = { title: 'Test', sections: [] };
-      await generator.download(config as any, 'test.pdf');
+      await generator.download(config as Parameters<typeof generator.generate>[0], 'test.pdf');
 
       expect(global.URL.createObjectURL).toHaveBeenCalled();
       expect(document.createElement).toHaveBeenCalledWith('a');
