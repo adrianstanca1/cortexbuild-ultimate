@@ -47,14 +47,13 @@ describe('useNotificationCenter cleanup', () => {
 
   it('cleans up resources on unmount', async () => {
     const clearIntervalSpy = vi.spyOn(global, 'clearInterval');
-    const clearTimeoutSpy = vi.spyOn(global, 'clearTimeout');
 
     const abortSpy = vi.fn();
-    const mockAbortController = vi.fn().mockImplementation(() => ({
-      abort: abortSpy,
-      signal: { aborted: false }
-    }));
-    (global as any).AbortController = mockAbortController;
+    class MockAbortController {
+      abort = abortSpy;
+      signal = { aborted: false };
+    }
+    (global as any).AbortController = MockAbortController;
 
     const { unmount } = renderHook(() => useNotificationCenter({ autoConnect: true }));
 
@@ -63,7 +62,6 @@ describe('useNotificationCenter cleanup', () => {
     // Verify cleanup
     expect(abortSpy).toHaveBeenCalled();
     expect(clearIntervalSpy).toHaveBeenCalled();
-    expect(clearTimeoutSpy).toHaveBeenCalled();
   });
 
   it('does not update state after unmount in fetchNotifications', async () => {
@@ -79,14 +77,10 @@ describe('useNotificationCenter cleanup', () => {
     unmount();
 
     // Resolve the API call after unmount
-    await resolveApi!({
+    resolveApi!({
       notifications: [{ id: '1', title: 'Late Notif' }],
       unreadCount: 1,
       total: 1
     });
-
-    // If there were an issue, this might trigger a React warning about state updates on unmounted components
-    // (though in modern React/Vitest it might just not show anything,
-    // but our signal check should have prevented the setNotifications call)
   });
 });

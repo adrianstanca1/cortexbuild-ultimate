@@ -4,3 +4,6 @@
 ## 2024-05-19 - N+1 Queries in RAG Context Retrieval
 **Learning:** Performing single-row lookups inside a loop after an initial query (N+1 query problem) severely degrades performance, especially in latency-sensitive paths like RAG context retrieval where multiple tables and rows are checked sequentially.
 **Action:** Always batch related lookups into a single query using PostgreSQL's `ANY($1)` with array parameters when fetching associated data for multiple rows. Construct an associative object map keyed by row ID in JavaScript to quickly reconstruct the final ordered result from the batched rows.
+## 2024-04-14 - Render Database Initialization
+**Learning:** Render Postgres requires SSL connections from external IPs, which often causes 'Connection terminated unexpectedly' when trying to run seed scripts locally or via CI/CD.
+**Action:** When initializing a Render database, prefer connecting to the database internally from a Render Web Service running in the same region, passing `ssl: { rejectUnauthorized: false }` or no SSL config when using the internal `DATABASE_URL` during application startup.
