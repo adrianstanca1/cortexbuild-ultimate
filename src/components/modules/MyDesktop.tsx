@@ -38,7 +38,7 @@ export const MyDesktop: React.FC = () => {
   const [showSystemStats, setShowSystemStats] = useState(false);
   
   const desktopRef = useRef<HTMLDivElement>(null);
-  const dragRef = useRef<{ id: string, startX: number, startY: number, initX: number, initY: number } | null>(null);
+  const dragRef = useRef<{ id: string, startX: number, startY: number, initX: number, initY: number, currentX?: number, currentY?: number } | null>(null);
 
   // Available Applications
   const availableApps: AppInfo[] = [
@@ -270,26 +270,41 @@ export const MyDesktop: React.FC = () => {
   }, [windows, maxZIndex, focusWindow, toggleMinimize, getAppContent]);
 
   useEffect(() => {
+    let rafId: number;
+
     const handleMouseMove = (e: MouseEvent) => {
       if (!dragRef.current) return;
 
       const deltaX = e.clientX - dragRef.current.startX;
       const deltaY = e.clientY - dragRef.current.startY;
 
-      setWindows(prev => prev.map(w => 
-        w.id === dragRef.current?.id
-          ? {
-              ...w,
-              position: {
-                x: Math.max(0, dragRef.current.initX + deltaX),
-                y: Math.max(0, dragRef.current.initY + deltaY)
-              }
-            }
-          : w
-      ));
+      const newX = Math.max(0, dragRef.current.initX + deltaX);
+      const newY = Math.max(0, dragRef.current.initY + deltaY);
+
+      dragRef.current.currentX = newX;
+      dragRef.current.currentY = newY;
+
+      const windowEl = document.getElementById(dragRef.current.id);
+      if (windowEl) {
+        cancelAnimationFrame(rafId);
+        rafId = requestAnimationFrame(() => {
+          // Direct DOM manipulation to avoid top-level re-renders
+          windowEl.style.left = `${newX}px`;
+          windowEl.style.top = `${newY}px`;
+        });
+      }
     };
 
     const handleMouseUp = () => {
+      if (dragRef.current && dragRef.current.currentX !== undefined && dragRef.current.currentY !== undefined) {
+        // Sync final position to React state
+        const { id, currentX, currentY } = dragRef.current;
+        setWindows(prev => prev.map(w =>
+          w.id === id
+            ? { ...w, position: { x: currentX, y: currentY } }
+            : w
+        ));
+      }
       dragRef.current = null;
     };
 
@@ -299,6 +314,7 @@ export const MyDesktop: React.FC = () => {
     return () => {
       document.removeEventListener('mousemove', handleMouseMove);
       document.removeEventListener('mouseup', handleMouseUp);
+      cancelAnimationFrame(rafId);
     };
   }, []);
 
@@ -349,6 +365,7 @@ export const MyDesktop: React.FC = () => {
       {windows.map(window => (
         <div
           key={window.id}
+          id={window.id}
           className={`absolute bg-white rounded-lg shadow-2xl overflow-hidden ${window.isMinimized ? 'hidden' : ''}`}
           style={{
             left: window.isMaximized ? 0 : window.position.x,

@@ -4,3 +4,6 @@
 ## 2024-05-19 - N+1 Queries in RAG Context Retrieval
 **Learning:** Performing single-row lookups inside a loop after an initial query (N+1 query problem) severely degrades performance, especially in latency-sensitive paths like RAG context retrieval where multiple tables and rows are checked sequentially.
 **Action:** Always batch related lookups into a single query using PostgreSQL's `ANY($1)` with array parameters when fetching associated data for multiple rows. Construct an associative object map keyed by row ID in JavaScript to quickly reconstruct the final ordered result from the batched rows.
+## 2026-04-14 - Layout-Wide Re-renders from Mouse-Driven UI Effects (MyDesktop.tsx)
+**Learning:** The anti-pattern of using React state (`useState`) for mouse-driven window dragging was observed in `MyDesktop.tsx`, causing continuous re-renders of the top-level app state.
+**Action:** Use `useRef` to store window coordinates and apply them directly to the DOM element via `requestAnimationFrame`, deferring the React state update until the drag concludes (`mouseup`).
