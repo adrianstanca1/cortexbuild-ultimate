@@ -1,7 +1,7 @@
 // Module: Invoicing — CortexBuild Ultimate (Enhanced)
 import React, { useState } from 'react';
 import { Plus, X, Loader2, FileText, Download, Edit2, Trash2, RefreshCw, Search } from 'lucide-react';
-import { useInvoices, useProjects } from '../../hooks/useData';
+import { useInvoices, useProjects, useValuations } from '../../hooks/useData';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import clsx from 'clsx';
 import { toast } from 'sonner';
@@ -52,6 +52,12 @@ export function Invoicing() {
   const createMutation = useCreate();
   const updateMutation = useUpdate();
   const deleteMutation = useDelete();
+  const { useList: useValuationList, useCreate: useValuationCreate, useUpdate: useValuationUpdate, useDelete: useValuationDelete } = useValuations;
+  const { data: rawValuations = [] } = useValuationList();
+  const valuations = rawValuations as AnyRow[];
+  const createValuationMutation = useValuationCreate();
+  const updateValuationMutation = useValuationUpdate();
+  const deleteValuationMutation = useValuationDelete();
 
   // Main tabs
   const [mainTab, setMainTab] = useState<'invoices' | 'valuations' | 'pnl'>('invoices');
@@ -81,28 +87,6 @@ export function Invoicing() {
   const [showValuationModal, setShowValuationModal] = useState(false);
   const [editValuationId, setEditValuationId] = useState<string | null>(null);
   const [valuationForm, setValuationForm] = useState<ValuationFormData>(defaultValuationForm);
-  const [valuations, setValuations] = useState<AnyRow[]>([
-    {
-      id: '1',
-      app_no: 'AFC-001',
-      project: 'Office Renovation',
-      gross_value: 45000,
-      retention_pct: 5,
-      materials_on_site: 3200,
-      previously_certified: 35000,
-      status: 'certified',
-    },
-    {
-      id: '2',
-      app_no: 'AFC-002',
-      project: 'Retail Development',
-      gross_value: 28500,
-      retention_pct: 5,
-      materials_on_site: 1500,
-      previously_certified: 0,
-      status: 'submitted',
-    },
-  ]);
 
   // Invoice filtering
   const filtered = invoices
@@ -194,11 +178,31 @@ export function Invoicing() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    // Validate required fields
+    if (!form.number.trim()) { toast.error('Invoice number is required'); return; }
+    if (!form.client.trim()) { toast.error('Client name is required'); return; }
+
+    // Validate non-negative amounts
+    const amount = Number(form.amount);
+    const vat = Number(form.vat);
+    const cisDeduction = Number(form.cis_deduction);
+    if (isNaN(amount) || amount < 0) { toast.error('Amount must be a non-negative number'); return; }
+    if (isNaN(vat) || vat < 0) { toast.error('VAT must be a non-negative number'); return; }
+    if (isNaN(cisDeduction) || cisDeduction < 0) { toast.error('CIS deduction must be non-negative'); return; }
+    if (cisDeduction > amount + vat) { toast.error('CIS deduction cannot exceed total (amount + VAT)'); return; }
+
+    // Validate dates
+    if (form.due_date && form.issue_date && form.due_date < form.issue_date) {
+      toast.error('Due date cannot be before issue date');
+      return;
+    }
+
     const payload = {
       ...form,
-      amount: Number(form.amount),
-      vat: Number(form.vat),
-      cis_deduction: Number(form.cis_deduction),
+      amount,
+      vat,
+      cis_deduction: cisDeduction,
     };
     if (editId) {
       await updateMutation.mutateAsync({ id: editId, data: payload });
@@ -226,12 +230,13 @@ export function Invoicing() {
     setShowValuationModal(true);
   };
 
+  // Map DB fields → form fields for edit
   const openEditValuation = (val: AnyRow) => {
     setValuationForm({
-      app_no: String(val.app_no ?? ''),
+      app_no: String(val.application_number ?? val.app_no ?? ''),
       project: String(val.project ?? ''),
-      gross_value: String(val.gross_value ?? ''),
-      retention_pct: String(val.retention_pct ?? ''),
+      gross_value: String(val.original_value ?? val.gross_value ?? ''),
+      retention_pct: String(val.retention ?? val.retention_pct ?? ''),
       materials_on_site: String(val.materials_on_site ?? ''),
       previously_certified: String(val.previously_certified ?? ''),
       status: String(val.status ?? 'submitted'),
@@ -240,44 +245,63 @@ export function Invoicing() {
     setShowValuationModal(true);
   };
 
+  // Map form fields → DB fields for submit
   const handleValuationSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    // Validate required fields
+    if (!valuationForm.app_no.trim()) { toast.error('Application number is required'); return; }
+    if (!valuationForm.project.trim()) { toast.error('Project is required'); return; }
+
+    // Validate numeric fields
+    const gross = Number(valuationForm.gross_value);
+    const retention = Number(valuationForm.retention_pct);
+    const materials = Number(valuationForm.materials_on_site);
+    const previously = Number(valuationForm.previously_certified);
+    if (isNaN(gross) || gross < 0) { toast.error('Gross value must be non-negative'); return; }
+    if (isNaN(retention) || retention < 0 || retention > 100) {
+      toast.error('Retention must be between 0 and 100%');
+      return;
+    }
+    if (isNaN(materials) || materials < 0) { toast.error('Materials on site must be non-negative'); return; }
+    if (isNaN(previously) || previously < 0) { toast.error('Previously certified must be non-negative'); return; }
+
     const payload = {
-      ...valuationForm,
-      gross_value: Number(valuationForm.gross_value),
-      retention_pct: Number(valuationForm.retention_pct),
-      materials_on_site: Number(valuationForm.materials_on_site),
-      previously_certified: Number(valuationForm.previously_certified),
+      project: valuationForm.project,
+      application_number: valuationForm.app_no,
+      original_value: gross,
+      retention,
+      materials_on_site: materials,
+      previously_certified: previously,
+      status: valuationForm.status,
     };
 
     if (editValuationId) {
-      setValuations(v =>
-        v.map(val => (val.id === editValuationId ? { ...val, ...payload } : val))
-      );
+      await updateValuationMutation.mutateAsync({ id: editValuationId, data: payload });
     } else {
-      setValuations(v => [...v, { id: String(Date.now()), ...payload }]);
+      await createValuationMutation.mutateAsync(payload);
     }
     setShowValuationModal(false);
   };
 
-  const handleDeleteValuation = (id: string) => {
+  const handleDeleteValuation = async (id: string) => {
     if (!confirm('Delete this application?')) return;
-    setValuations(v => v.filter(val => val.id !== id));
+    await deleteValuationMutation.mutateAsync(id);
   };
 
   const fmt = (n: number) => `£${Number(n).toLocaleString('en-GB', { minimumFractionDigits: 2 })}`;
 
   // Valuation calculations
   const valuationTotals = {
-    grossTotal: valuations.reduce((s, v) => s + Number(v.gross_value ?? 0), 0),
+    grossTotal: valuations.reduce((s, v) => s + Number(v.original_value ?? v.gross_value ?? 0), 0),
     materialsTotal: valuations.reduce((s, v) => s + Number(v.materials_on_site ?? 0), 0),
     previouslyTotal: valuations.reduce((s, v) => s + Number(v.previously_certified ?? 0), 0),
   };
 
   const calculateThisApplication = (v: AnyRow) => {
-    const gross = Number(v.gross_value ?? 0);
+    const gross = Number(v.original_value ?? v.gross_value ?? 0);
     const materials = Number(v.materials_on_site ?? 0);
-    const retention = Number(v.retention_pct ?? 0);
+    const retention = Number(v.retention ?? v.retention_pct ?? 0);
     const previously = Number(v.previously_certified ?? 0);
     const thisApp = gross + materials - (gross * retention / 100) - previously;
     return Math.max(0, thisApp);
@@ -605,12 +629,12 @@ export function Invoicing() {
                 return (
                   <tr key={String(val.id)} className="hover:bg-gray-800/50">
                     <td className="px-4 py-3 font-mono text-cyan-400 font-medium">
-                      {String(val.app_no)}
+                      {String(val.application_number ?? val.app_no)}
                     </td>
                     <td className="px-4 py-3 text-white font-medium">{String(val.project)}</td>
-                    <td className="px-4 py-3 text-white">{fmt(Number(val.gross_value ?? 0))}</td>
+                    <td className="px-4 py-3 text-white">{fmt(Number(val.original_value ?? val.gross_value ?? 0))}</td>
                     <td className="px-4 py-3 text-gray-400">
-                      {Number(val.retention_pct ?? 0)}%
+                      {Number(val.retention ?? val.retention_pct ?? 0)}%
                     </td>
                     <td className="px-4 py-3 text-blue-400">
                       {fmt(Number(val.materials_on_site ?? 0))}
@@ -686,7 +710,7 @@ export function Invoicing() {
             <table className="w-full text-sm">
               <thead className="bg-gray-800 border-b border-gray-700">
                 <tr>
-                  {['Project', 'Contract Value', 'Invoiced', 'Collected', 'Outstanding', 'Net Revenue'].map(
+                  {['Project', 'Total Invoiced', 'Collected', 'Outstanding'].map(
                     h => (
                       <th
                         key={h}
@@ -703,10 +727,8 @@ export function Invoicing() {
                   <tr key={row.project} className="hover:bg-gray-800/50">
                     <td className="px-4 py-3 font-medium text-white">{row.project}</td>
                     <td className="px-4 py-3 text-gray-400">{fmt(row.invoiced)}</td>
-                    <td className="px-4 py-3 text-white">{fmt(row.invoiced)}</td>
                     <td className="px-4 py-3 text-emerald-400">{fmt(row.collected)}</td>
                     <td className="px-4 py-3 text-blue-400">{fmt(row.outstanding)}</td>
-                    <td className="px-4 py-3 text-cyan-400 font-semibold">{fmt(row.collected)}</td>
                   </tr>
                 ))}
               </tbody>
@@ -716,17 +738,11 @@ export function Invoicing() {
                   <td className="px-4 py-3 font-semibold text-gray-400">
                     {fmt(pnlData.reduce((s, r) => s + r.invoiced, 0))}
                   </td>
-                  <td className="px-4 py-3 font-semibold text-white">
-                    {fmt(pnlData.reduce((s, r) => s + r.invoiced, 0))}
-                  </td>
                   <td className="px-4 py-3 font-semibold text-emerald-400">
                     {fmt(pnlData.reduce((s, r) => s + r.collected, 0))}
                   </td>
                   <td className="px-4 py-3 font-semibold text-blue-400">
                     {fmt(pnlData.reduce((s, r) => s + r.outstanding, 0))}
-                  </td>
-                  <td className="px-4 py-3 font-semibold text-cyan-400">
-                    {fmt(pnlData.reduce((s, r) => s + r.collected, 0))}
                   </td>
                 </tr>
               </tfoot>
