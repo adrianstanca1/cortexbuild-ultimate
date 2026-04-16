@@ -40,7 +40,7 @@ describe('useIsMobile', () => {
   });
 
   it('should update reactive state when window is resized', () => {
-    let changeHandler: (e: any) => void = () => {};
+    let changeHandler: (e: MediaQueryListEvent) => void = () => {};
 
     vi.mocked(window.matchMedia).mockImplementation((query) => ({
       matches: query.includes('767px') && window.innerWidth < 768,

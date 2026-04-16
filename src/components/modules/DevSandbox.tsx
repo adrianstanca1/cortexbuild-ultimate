@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useRef, useCallback } from 'react';
 import { 
   Terminal, Play, AlertCircle, CheckCircle, 
   Activity, Code, Settings, X, Upload, Download, RefreshCw, Copy, FileText

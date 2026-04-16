@@ -6,12 +6,7 @@ import {
   safetyReportSchema,
   notificationQuietHoursSchema,
   notificationCategoryPreferencesSchema,
-  notificationSettingsSchema,
-  relatedItemSchema,
-  notificationActionSchema,
-  notificationMetadataSchema,
-  notificationSchema,
-  notificationsResponseSchema
+  notificationSchema
 } from '../lib/validations';
 
 describe('Validations', () => {
