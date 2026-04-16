@@ -7,3 +7,6 @@
 ## 2026-04-14 - Layout-Wide Re-renders from Mouse-Driven UI Effects (MyDesktop.tsx)
 **Learning:** The anti-pattern of using React state (`useState`) for mouse-driven window dragging was observed in `MyDesktop.tsx`, causing continuous re-renders of the top-level app state.
 **Action:** Use `useRef` to store window coordinates and apply them directly to the DOM element via `requestAnimationFrame`, deferring the React state update until the drag concludes (`mouseup`).
+## 2026-04-14 - Layout-Wide Re-renders from scroll events
+**Learning:** Setting React state continuously from a `window.addEventListener('scroll')` handler without debouncing or throttling causes the entire component (and its children) to re-render constantly. This degrades performance significantly.
+**Action:** Use `useRef` to keep track of high-frequency variables like the last scroll position instead of `useState`. Conditionally call state updates only when the state should genuinely transition, e.g. hiding/showing an element, to save unneeded renders.

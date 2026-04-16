@@ -85,7 +85,8 @@ export function MobileBottomNav({
   const isMobile = useIsMobile(768);
   const [quickActionsOpen, setQuickActionsOpen] = useState(false);
   const [headerVisible, setHeaderVisible] = useState(true);
-  const [lastScrollY, setLastScrollY] = useState(0);
+  const lastScrollY = useRef(0);
+  const headerVisibleRef = useRef(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [pullDistance, setPullDistance] = useState(0);
   const [contextMenu, setContextMenu] = useState<{
@@ -102,20 +103,34 @@ export function MobileBottomNav({
   const accentColor = MODULE_ACCENTS[activeModule] || '#f59e0b';
 
   // ── Scroll-based header visibility ───────────────────────────────────────────
+  // ⚡ Bolt Performance Optimization:
+  // Replaced lastScrollY useState with useRef.
+  // Storing high-frequency scroll positions in React state causes layout-wide
+  // re-renders on every scroll tick. Using useRef prevents this while still
+  // allowing us to calculate scroll direction. headerVisible state is only
+  // updated when it actually needs to toggle, saving ~60 renders per second during scroll.
   useEffect(() => {
     const handleScroll = () => {
       const currentScrollY = window.scrollY;
-      if (currentScrollY > lastScrollY && currentScrollY > 100) {
+
+      // Determine if header should be hidden
+      const shouldHide = currentScrollY > lastScrollY.current && currentScrollY > 100;
+
+      // Only trigger a React state update if the visibility actually changes
+      if (shouldHide && headerVisibleRef.current) {
+        headerVisibleRef.current = false;
         setHeaderVisible(false);
-      } else {
+      } else if (!shouldHide && !headerVisibleRef.current) {
+        headerVisibleRef.current = true;
         setHeaderVisible(true);
       }
-      setLastScrollY(currentScrollY);
+
+      lastScrollY.current = currentScrollY;
     };
 
     window.addEventListener('scroll', handleScroll, { passive: true });
     return () => window.removeEventListener('scroll', handleScroll);
-  }, [lastScrollY]);
+  }, []);
 
   // ── Pull to refresh handlers ─────────────────────────────────────────────────
   const handleTouchStart = useCallback((e: TouchEvent) => {
