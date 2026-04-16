@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "type": "commonjs",
   "scripts": {
-    "start": "node index.js",
+    "start": "node ./scripts/render-init-db.js && node index.js",
     "dev": "nodemon index.js",
     "db:reset:local": "node ./scripts/reset-local-db.js"
   },
