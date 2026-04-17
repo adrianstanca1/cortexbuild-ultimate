@@ -27,12 +27,36 @@ interface WindowState {
   zIndex: number;
 }
 
+
+
+// ⚡ Bolt Performance Optimization:
+// Extracted SystemClock into a standalone component.
+// Previously, currentTime was stored in the parent MyDesktop state and updated via
+// setInterval every second, which caused the entire MyDesktop (and all its windows)
+// to re-render 1x/sec. Isolating this state ensures only the clock UI re-renders.
+const SystemClock: React.FC = () => {
+  const [currentTime, setCurrentTime] = useState(new Date());
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setCurrentTime(new Date());
+    }, 1000);
+    return () => clearInterval(timer);
+  }, []);
+
+  return (
+    <div className="text-white text-sm font-medium flex flex-col items-end">
+      <div>{currentTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</div>
+      <div className="text-xs text-gray-400">{currentTime.toLocaleDateString()}</div>
+    </div>
+  );
+};
+
 export const MyDesktop: React.FC = () => {
   // Desktop State
   const [windows, setWindows] = useState<WindowState[]>([]);
   const [activeWindowId, setActiveWindowId] = useState<string | null>(null);
   const [startMenuOpen, setStartMenuOpen] = useState(false);
-  const [currentTime, setCurrentTime] = useState(new Date());
   const [maxZIndex, setMaxZIndex] = useState(10);
   const [searchQuery, setSearchQuery] = useState('');
   const [showSystemStats, setShowSystemStats] = useState(false);
@@ -74,13 +98,6 @@ export const MyDesktop: React.FC = () => {
     return acc;
   }, {} as Record<string, AppInfo[]>);
 
-  // Time update effect
-  useEffect(() => {
-    const timer = setInterval(() => {
-      setCurrentTime(new Date());
-    }, 1000);
-    return () => clearInterval(timer);
-  }, []);
 
   // --- Window Management Callbacks ---
   const focusWindow = useCallback((windowId: string) => {
@@ -484,10 +501,7 @@ export const MyDesktop: React.FC = () => {
             CPU: 12%
           </button>
           
-          <div className="text-white text-sm font-medium">
-            <div>{currentTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</div>
-            <div className="text-xs text-gray-400">{currentTime.toLocaleDateString()}</div>
-          </div>
+          <SystemClock />
         </div>
       </div>
 
