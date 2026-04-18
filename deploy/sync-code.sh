@@ -4,6 +4,12 @@ set -euo pipefail
 # CortexBuild Ultimate - VPS Code Sync Script
 # Syncs git commits from local to production VPS
 
+check_cortex_health_contract() {
+    local payload="$1"
+    [ -n "$payload" ] || return 1
+    python3 -c "import json,sys; d=json.loads(sys.argv[1]); c=d.get('checks') or {}; assert d.get('status') == 'ok'; assert c.get('postgres') is True; assert c.get('redis') is True" "$payload" >/dev/null 2>&1
+}
+
 readonly SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 readonly PROJECT_ROOT="$(dirname "$SCRIPT_DIR")"
 readonly VPS_HOST="root@72.62.132.43"
@@ -165,26 +171,30 @@ echo ""
 echo "🔄 Restarting services..."
 ssh $SSH_OPTS "$VPS_HOST" "
     cd $VPS_PATH
-    docker-compose restart api nginx || true
+    docker-compose restart api
+    nginx -t >/dev/null 2>&1 && (systemctl reload nginx || service nginx reload || nginx -s reload)
 "
 
 # Health check
 echo ""
 echo "🏥 Running health checks..."
-HEALTH_RESULT=$(ssh $SSH_OPTS "$VPS_HOST" "curl -sf http://localhost:3001/api/health")
+HEALTH_RESULT=$(ssh $SSH_OPTS "$VPS_HOST" "curl -fsS http://localhost:3001/api/health" 2>/dev/null || true)
 
-if [[ -n "$HEALTH_RESULT" ]]; then
-    echo "✅ API health: $HEALTH_RESULT"
+if check_cortex_health_contract "$HEALTH_RESULT"; then
+    echo "✅ API health contract verified"
 else
-    echo "⚠️  API health check failed"
-    echo "   Check logs: ssh $SSH_OPTS $VPS_HOST 'docker-compose logs api'"
+    echo "❌ API health contract failed"
+    echo "   Payload: ${HEALTH_RESULT:-<empty>}"
+    echo "   Check logs: ssh $SSH_OPTS $VPS_HOST 'docker logs --tail 80 cortexbuild-api'"
+    exit 1
 fi
 
 SITE_CHECK=$(ssh $SSH_OPTS "$VPS_HOST" "curl -sf -o /dev/null -w '%{http_code}' https://www.cortexbuildpro.com/ || echo 'FAILED'")
 if [[ "$SITE_CHECK" == "200" ]]; then
     echo "✅ Site health: HTTP $SITE_CHECK"
 else
-    echo "⚠️  Site health check failed (HTTP $SITE_CHECK)"
+    echo "❌ Site health check failed (HTTP $SITE_CHECK)"
+    exit 1
 fi
 
 echo ""

@@ -154,21 +154,47 @@ jobs:
               -e FRONTEND_URL=https://www.cortexbuildpro.com \
               "$IMAGE_NAME"
             echo "Waiting for API health..."
+            check_cortex_health() {
+              local payload
+              payload=$(curl -fsS http://localhost:3001/api/health 2>/dev/null || true)
+              [ -n "$payload" ] || return 1
+              python3 -c "import json,sys; d=json.loads(sys.argv[1]); c=d.get('checks') or {}; assert d.get('status')=='ok'; assert c.get('postgres') is True; assert c.get('redis') is True" "$payload" >/dev/null 2>&1
+            }
             for i in $(seq 1 30); do
-              if curl -sf http://localhost:3001/api/health >/dev/null 2>&1; then
-                echo "API healthy on localhost:3001"
+              if check_cortex_health; then
+                echo "API health contract verified on localhost:3001"
                 break
               fi
               sleep 2
             done
+            if ! check_cortex_health; then
+              echo "FATAL: API health contract failed on localhost:3001"
+              docker logs --tail 50 "$CONTAINER_NAME" || true
+              exit 1
+            fi
 
             # Restart nginx to refresh DNS resolution for new container
             echo "Restarting nginx..."
             systemctl restart nginx || service nginx restart || nginx -s reload || true
             sleep 5
 
-            # Final check
-            curl -s http://localhost:3001/api/health >/dev/null 2>&1 && echo "API OK after restart" || echo "API may need manual check"
+            # Final local + public checks
+            if ! check_cortex_health; then
+              echo "FATAL: API no longer healthy after nginx restart"
+              exit 1
+            fi
+            for i in $(seq 1 20); do
+              external_payload=$(curl -fsS https://www.cortexbuildpro.com/api/health 2>/dev/null || true)
+              if [ -n "$external_payload" ] && python3 -c "import json,sys; d=json.loads(sys.argv[1]); c=d.get('checks') or {}; assert d.get('status')=='ok'; assert c.get('postgres') is True; assert c.get('redis') is True" "$external_payload" >/dev/null 2>&1; then
+                echo "External HTTPS health contract verified"
+                break
+              fi
+              sleep 3
+            done
+            if ! external_payload=$(curl -fsS https://www.cortexbuildpro.com/api/health 2>/dev/null || true) || ! [ -n "$external_payload" ] || ! python3 -c "import json,sys; d=json.loads(sys.argv[1]); c=d.get('checks') or {}; assert d.get('status')=='ok'; assert c.get('postgres') is True; assert c.get('redis') is True" "$external_payload" >/dev/null 2>&1; then
+              echo "FATAL: External HTTPS health contract failed after deploy"
+              exit 1
+            fi
 
             echo "=== API Deploy Complete ==="
             DEPLOYEOF
@@ -182,12 +208,30 @@ jobs:
 
       - name: Verify deployment
         run: |
-          sleep 30
-          STATUS=$(curl -sL -o /dev/null -w "%{http_code}" https://www.cortexbuildpro.com/api/health)
-          if [ "$STATUS" -eq 200 ]; then
-            echo "✅ Deployment verified - HTTP $STATUS"
-          else
-            echo "⚠️  External health check returned HTTP $STATUS"
-            echo "   API may need more time or nginx routing issue"
-            echo "   Check VPS: docker ps, docker logs cortexbuild-api"
-          fi
+          set -euo pipefail
+
+          check_tls() {
+            local domain="$1"
+            echo | openssl s_client -connect "${domain}:443" -servername "${domain}" -brief >/dev/null 2>&1
+          }
+
+          check_https_health_contract() {
+            local domain="$1"
+            local attempts=30
+            local i payload
+            for i in $(seq 1 "$attempts"); do
+              payload=$(curl -fsS "https://${domain}/api/health" 2>/dev/null || true)
+              if [ -n "$payload" ] && python3 -c "import json,sys; d=json.loads(sys.argv[1]); c=d.get('checks') or {}; assert d.get('status')=='ok'; assert c.get('postgres') is True; assert c.get('redis') is True" "$payload" >/dev/null 2>&1; then
+                echo "✅ ${domain} HTTPS API health contract verified"
+                return 0
+              fi
+              sleep 5
+            done
+            echo "❌ ${domain} HTTPS API health contract failed"
+            return 1
+          }
+
+          check_tls cortexbuildpro.com
+          check_tls www.cortexbuildpro.com
+          check_https_health_contract cortexbuildpro.com
+          check_https_health_contract www.cortexbuildpro.com

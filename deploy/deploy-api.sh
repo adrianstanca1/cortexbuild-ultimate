@@ -15,6 +15,13 @@ HEALTH_URL="http://localhost:3001/api/health"
 MAX_RETRIES=30
 RETRY_INTERVAL=2
 
+check_cortex_health() {
+    local payload
+    payload=$(curl -fsS "$HEALTH_URL" 2>/dev/null || true)
+    [ -n "$payload" ] || return 1
+    python3 -c "import json,sys; d=json.loads(sys.argv[1]); c=d.get('checks') or {}; assert d.get('status')=='ok'; assert c.get('postgres') is True; assert c.get('redis') is True" "$payload" >/dev/null 2>&1
+}
+
 cd "$PROJECT_DIR"
 
 # Pull latest code
@@ -88,21 +95,19 @@ echo ""
 # Health check
 echo "5. Running health check..."
 for i in $(seq 1 $MAX_RETRIES); do
-    HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" "$HEALTH_URL" 2>/dev/null || echo "000")
-
-    if [ "$HTTP_CODE" = "200" ]; then
-        echo "   ✅ API is healthy (HTTP $HTTP_CODE)"
+    if check_cortex_health; then
+        echo "   ✅ API health contract verified"
         echo ""
         echo "=== API Deploy Complete ==="
         echo "Finished at: $(date)"
         exit 0
     fi
 
-    echo "   Attempt $i/$MAX_RETRIES: HTTP $HTTP_CODE - waiting..."
+    echo "   Attempt $i/$MAX_RETRIES: health contract not ready - waiting..."
     sleep $RETRY_INTERVAL
 done
 
-echo "   ❌ Health check failed after $MAX_RETRIES attempts"
+echo "   ❌ Health contract check failed after $MAX_RETRIES attempts"
 echo "   Showing recent logs:"
 docker logs --tail 20 "$CONTAINER_NAME" 2>&1 || true
 exit 1
