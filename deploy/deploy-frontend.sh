@@ -8,8 +8,30 @@ echo "=== CortexBuild Frontend Deploy ==="
 echo "Started at: $(date)"
 echo ""
 
-PROJECT_DIR="/var/www/cortexbuild-ultimate"
-DIST_DIR="/var/www/cortexbuild-ultimate/dist"
+resolve_project_dir() {
+    local candidate
+    for candidate in \
+        "/var/www/cortexbuild-ultimate" \
+        "/root/cortexbuild-work" \
+        "/root/cortexbuild-ultimate"
+    do
+        if [ -d "$candidate/.git" ] && [ -f "$candidate/package.json" ] && [ -d "$candidate/server" ]; then
+            echo "$candidate"
+            return 0
+        fi
+    done
+    return 1
+}
+
+PROJECT_DIR="$(resolve_project_dir || true)"
+if [ -z "${PROJECT_DIR:-}" ]; then
+    echo "❌ Could not locate CortexBuild project directory on VPS"
+    echo "   Checked: /var/www/cortexbuild-ultimate, /root/cortexbuild-work, /root/cortexbuild-ultimate"
+    exit 1
+fi
+
+DIST_DIR="$PROJECT_DIR/dist"
+echo "Using project directory: $PROJECT_DIR"
 
 # Pull latest code
 echo "1. Pulling latest code..."

@@ -67,7 +67,28 @@ jobs:
             #!/bin/bash
             set -euo pipefail
             echo "=== CortexBuild Frontend Deploy ==="
-            PROJECT_DIR="/var/www/cortexbuild-ultimate"
+            resolve_project_dir() {
+              local candidates=(
+                "/var/www/cortexbuild-ultimate"
+                "/root/cortexbuild-work"
+                "$HOME/cortexbuild-ultimate"
+                "$HOME/cortexbuild-work"
+              )
+              local p
+              for p in "${candidates[@]}"; do
+                if [ -f "$p/package.json" ]; then
+                  echo "$p"
+                  return 0
+                fi
+              done
+              return 1
+            }
+            PROJECT_DIR="$(resolve_project_dir || true)"
+            if [ -z "${PROJECT_DIR:-}" ]; then
+              echo "FATAL: Could not locate project directory on VPS"
+              exit 1
+            fi
+            echo "Using project dir: $PROJECT_DIR"
             cd "$PROJECT_DIR"
             git pull origin main
             npm ci --ignore-scripts
@@ -79,7 +100,28 @@ jobs:
             #!/bin/bash
             set -euo pipefail
             echo "=== CortexBuild API Deploy ==="
-            PROJECT_DIR="/var/www/cortexbuild-ultimate"
+            resolve_project_dir() {
+              local candidates=(
+                "/var/www/cortexbuild-ultimate"
+                "/root/cortexbuild-work"
+                "$HOME/cortexbuild-ultimate"
+                "$HOME/cortexbuild-work"
+              )
+              local p
+              for p in "${candidates[@]}"; do
+                if [ -f "$p/package.json" ]; then
+                  echo "$p"
+                  return 0
+                fi
+              done
+              return 1
+            }
+            PROJECT_DIR="$(resolve_project_dir || true)"
+            if [ -z "${PROJECT_DIR:-}" ]; then
+              echo "FATAL: Could not locate project directory on VPS"
+              exit 1
+            fi
+            echo "Using project dir: $PROJECT_DIR"
             CONTAINER_NAME="cortexbuild-api"
             IMAGE_NAME="cortexbuild-ultimate-api:latest"
             cd "$PROJECT_DIR"
@@ -102,28 +144,28 @@ jobs:
 
             docker build -t "$IMAGE_NAME" -f Dockerfile.api .
 
-            # Source environment variables after git pull (env file is gitignored, not overwritten)
-            if [ ! -f "$PROJECT_DIR/.env" ]; then
-              echo "FATAL: $PROJECT_DIR/.env not found"
-              exit 1
-            fi
             set +u
             set -a
-            source "$PROJECT_DIR/.env"
+            if [ -f "$PROJECT_DIR/.env" ]; then
+              source "$PROJECT_DIR/.env"
+            fi
+            if [ -f "$PROJECT_DIR/server/.env" ]; then
+              source "$PROJECT_DIR/server/.env"
+            fi
             set +a
             set -u
 
             # Validate required secrets are present
             if [ -z "${JWT_SECRET:-}" ]; then
-              echo "FATAL: JWT_SECRET not set in $PROJECT_DIR/.env"
+              echo "FATAL: JWT_SECRET not set in $PROJECT_DIR/.env or $PROJECT_DIR/server/.env"
               exit 1
             fi
             if [ -z "${SESSION_SECRET:-}" ]; then
-              echo "FATAL: SESSION_SECRET not set in $PROJECT_DIR/.env"
+              echo "FATAL: SESSION_SECRET not set in $PROJECT_DIR/.env or $PROJECT_DIR/server/.env"
               exit 1
             fi
             if [ -z "${POSTGRES_PASSWORD:-}" ] && [ -z "${DB_PASSWORD:-}" ]; then
-              echo "FATAL: Neither POSTGRES_PASSWORD nor DB_PASSWORD set in $PROJECT_DIR/.env"
+              echo "FATAL: Neither POSTGRES_PASSWORD nor DB_PASSWORD set in $PROJECT_DIR/.env or $PROJECT_DIR/server/.env"
               exit 1
             fi
 

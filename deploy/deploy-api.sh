@@ -8,12 +8,21 @@ echo "=== CortexBuild API Deploy ==="
 echo "Started at: $(date)"
 echo ""
 
-PROJECT_DIR="/var/www/cortexbuild-ultimate"
 CONTAINER_NAME="cortexbuild-api"
 IMAGE_NAME="cortexbuild-ultimate-api:latest"
 HEALTH_URL="http://localhost:3001/api/health"
 MAX_RETRIES=30
 RETRY_INTERVAL=2
+
+resolve_project_dir() {
+    for candidate in /var/www/cortexbuild-ultimate /root/cortexbuild-work /root/cortexbuild-ultimate; do
+        if [ -d "$candidate/.git" ]; then
+            echo "$candidate"
+            return 0
+        fi
+    done
+    return 1
+}
 
 check_cortex_health() {
     local payload
@@ -21,6 +30,13 @@ check_cortex_health() {
     [ -n "$payload" ] || return 1
     python3 -c "import json,sys; d=json.loads(sys.argv[1]); c=d.get('checks') or {}; assert d.get('status')=='ok'; assert c.get('postgres') is True; assert c.get('redis') is True" "$payload" >/dev/null 2>&1
 }
+
+PROJECT_DIR="$(resolve_project_dir || true)"
+if [ -z "$PROJECT_DIR" ]; then
+    echo "FATAL: could not locate project directory (.git missing in known paths)"
+    exit 1
+fi
+echo "Using project directory: $PROJECT_DIR"
 
 cd "$PROJECT_DIR"
 
@@ -61,6 +77,22 @@ else
         docker network create "$FALLBACK_NET"
     fi
     DOCKER_NET="$FALLBACK_NET"
+fi
+
+# Source environment from root and server subdirectory if present
+if [ -f "$PROJECT_DIR/.env" ]; then
+    set +u
+    set -a
+    source "$PROJECT_DIR/.env"
+    set +a
+    set -u
+fi
+if [ -f "$PROJECT_DIR/server/.env" ]; then
+    set +u
+    set -a
+    source "$PROJECT_DIR/server/.env"
+    set +a
+    set -u
 fi
 
 docker run -d \
