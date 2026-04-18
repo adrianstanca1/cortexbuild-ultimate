@@ -50,7 +50,7 @@ router.get('/', async (req, res) => {
     const where = conditions.length ? `WHERE ${conditions.join(' AND ')}` : '';
     const query = `SELECT al.*, u.name as user_name, u.email as user_email
                   FROM audit_log al
-                  LEFT JOIN users u ON u.id = al.user_id
+                  LEFT JOIN users u ON u.id::text = al.user_id
                   ${where}
                   ORDER BY al.created_at DESC LIMIT $${params.length}`;
 
@@ -150,7 +150,7 @@ router.get('/export', async (req, res) => {
     const where = conditions.length ? `WHERE ${conditions.join(' AND ')}` : '';
     const { rows } = await pool.query(
       `SELECT al.*, u.name as user_name, u.email as user_email
-       FROM audit_log al LEFT JOIN users u ON u.id = al.user_id
+       FROM audit_log al LEFT JOIN users u ON u.id::text = al.user_id
        ${where} ORDER BY al.created_at DESC LIMIT $${params.length}`,
       params
     );

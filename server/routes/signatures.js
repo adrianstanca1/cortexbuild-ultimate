@@ -135,25 +135,28 @@ router.get('/', async (req, res) => {
     const companyId = req.user?.company_id;
     const isSuper = req.user?.role === 'super_admin';
 
-    let query, params;
     const limitNum = Math.min(200, parseInt(limit, 10));
+    const params = [];
+    const conditions = [];
+    let query = `SELECT id, document_type, document_id, signer_name, signer_role, signer_email, signed_at, created_at
+                 FROM signatures`;
 
-    if (isSuper) {
-      query = `SELECT id, document_type, document_id, signer_name, signer_role, signer_email, signed_at, created_at
-               FROM signatures ORDER BY signed_at DESC LIMIT $1`;
-      params = [limitNum];
-    } else {
-      query = `SELECT id, document_type, document_id, signer_name, signer_role, signer_email, signed_at, created_at
-               FROM signatures
-               WHERE COALESCE(organization_id, company_id) = $1
-               ORDER BY signed_at DESC LIMIT $3`;
-      params = [orgId, companyId, limitNum];
+    if (!isSuper) {
+      params.push(orgId || companyId || null);
+      conditions.push(`COALESCE(organization_id, company_id) = $${params.length}`);
     }
 
     if (document_type) {
-      query = query.replace('ORDER BY', `AND document_type = $${params.length + 1} ORDER BY`);
       params.push(document_type);
+      conditions.push(`document_type = $${params.length}`);
     }
+
+    if (conditions.length) {
+      query += ` WHERE ${conditions.join(' AND ')}`;
+    }
+
+    params.push(limitNum);
+    query += ` ORDER BY signed_at DESC LIMIT $${params.length}`;
 
     const { rows } = await pool.query(query, params);
     res.json({ data: rows });

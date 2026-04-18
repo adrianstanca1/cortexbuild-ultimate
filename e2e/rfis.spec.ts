@@ -30,7 +30,7 @@ test.describe('RFIs Module', () => {
     
     // Should have some structure
     const hasTable = await page.locator('table').isVisible()
-    const hasGrid = await page.locator('[class*="grid"]').isVisible()
+    const hasGrid = await page.locator('[class*="grid"]').count() > 0
     const hasCards = await page.locator('[class*="card"]').count() > 0
     const hasAnyContent = await page.locator('#root').innerHTML().then(html => html.length > 100)
     
