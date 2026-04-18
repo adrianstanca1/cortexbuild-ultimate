@@ -59,6 +59,7 @@ jobs:
           host: ${{ secrets.SSH_HOST }}
           username: ${{ secrets.VPS_USER }}
           password: ${{ secrets.VPS_PASSWORD }}
+          command_timeout: 45m
           script: |
             set -e
             # Copy deploy scripts
@@ -67,7 +68,54 @@ jobs:
             #!/bin/bash
             set -euo pipefail
             echo "=== CortexBuild Frontend Deploy ==="
-            PROJECT_DIR="/var/www/cortexbuild-ultimate"
+            REPO_URL="https://github.com/adrianstanca1/cortexbuild-ultimate.git"
+            resolve_project_dir() {
+              local candidates=(
+                "/var/www/cortexbuild-ultimate"
+                "/var/www/cortexbuild-work"
+                "/var/www/html/cortexbuild-ultimate"
+                "/var/www/html/cortexbuild-work"
+                "/var/www/cortexbuildpro"
+                "/var/www/cortexbuildpro-ultimate"
+                "/root/cortexbuild-work"
+                "/root/cortexbuild-ultimate"
+                "/root/cortexbuildpro"
+                "/root/cortexbuildpro-ultimate"
+                "$HOME/cortexbuild-ultimate"
+                "$HOME/cortexbuild-work"
+                "$HOME/cortexbuildpro"
+                "$HOME/cortexbuildpro-ultimate"
+                "/var/www/*"
+                "/var/www/*/*"
+                "/var/www/html/*"
+                "/var/www/html/*/*"
+                "/root/*"
+                "/root/*/*"
+                "/home/*/*"
+                "/home/*/*/*"
+                "/opt/*"
+                "/opt/*/*"
+                "/srv/*"
+                "/srv/*/*"
+              )
+              local p
+              for p in "${candidates[@]}"; do
+                if [ -f "$p/package.json" ]; then
+                  echo "$p"
+                  return 0
+                fi
+              done
+              return 1
+            }
+            PROJECT_DIR="$(resolve_project_dir || true)"
+            if [ -z "${PROJECT_DIR:-}" ]; then
+              PROJECT_DIR="$HOME/cortexbuild-ultimate"
+              echo "Project directory not found. Bootstrapping at $PROJECT_DIR"
+              if [ ! -d "$PROJECT_DIR/.git" ]; then
+                git clone "$REPO_URL" "$PROJECT_DIR"
+              fi
+            fi
+            echo "Using project dir: $PROJECT_DIR"
             cd "$PROJECT_DIR"
             git pull origin main
             npm ci --ignore-scripts
@@ -79,7 +127,54 @@ jobs:
             #!/bin/bash
             set -euo pipefail
             echo "=== CortexBuild API Deploy ==="
-            PROJECT_DIR="/var/www/cortexbuild-ultimate"
+            REPO_URL="https://github.com/adrianstanca1/cortexbuild-ultimate.git"
+            resolve_project_dir() {
+              local candidates=(
+                "/var/www/cortexbuild-ultimate"
+                "/var/www/cortexbuild-work"
+                "/var/www/html/cortexbuild-ultimate"
+                "/var/www/html/cortexbuild-work"
+                "/var/www/cortexbuildpro"
+                "/var/www/cortexbuildpro-ultimate"
+                "/root/cortexbuild-work"
+                "/root/cortexbuild-ultimate"
+                "/root/cortexbuildpro"
+                "/root/cortexbuildpro-ultimate"
+                "$HOME/cortexbuild-ultimate"
+                "$HOME/cortexbuild-work"
+                "$HOME/cortexbuildpro"
+                "$HOME/cortexbuildpro-ultimate"
+                "/var/www/*"
+                "/var/www/*/*"
+                "/var/www/html/*"
+                "/var/www/html/*/*"
+                "/root/*"
+                "/root/*/*"
+                "/home/*/*"
+                "/home/*/*/*"
+                "/opt/*"
+                "/opt/*/*"
+                "/srv/*"
+                "/srv/*/*"
+              )
+              local p
+              for p in "${candidates[@]}"; do
+                if [ -f "$p/package.json" ]; then
+                  echo "$p"
+                  return 0
+                fi
+              done
+              return 1
+            }
+            PROJECT_DIR="$(resolve_project_dir || true)"
+            if [ -z "${PROJECT_DIR:-}" ]; then
+              PROJECT_DIR="$HOME/cortexbuild-ultimate"
+              echo "Project directory not found. Bootstrapping at $PROJECT_DIR"
+              if [ ! -d "$PROJECT_DIR/.git" ]; then
+                git clone "$REPO_URL" "$PROJECT_DIR"
+              fi
+            fi
+            echo "Using project dir: $PROJECT_DIR"
             CONTAINER_NAME="cortexbuild-api"
             IMAGE_NAME="cortexbuild-ultimate-api:latest"
             cd "$PROJECT_DIR"
@@ -102,28 +197,41 @@ jobs:
 
             docker build -t "$IMAGE_NAME" -f Dockerfile.api .
 
-            # Source environment variables after git pull (env file is gitignored, not overwritten)
-            if [ ! -f "$PROJECT_DIR/.env" ]; then
-              echo "FATAL: $PROJECT_DIR/.env not found"
-              exit 1
-            fi
             set +u
             set -a
-            source "$PROJECT_DIR/.env"
+            if [ -f "$PROJECT_DIR/.env" ]; then
+              source "$PROJECT_DIR/.env"
+            fi
+            if [ -f "$PROJECT_DIR/server/.env" ]; then
+              source "$PROJECT_DIR/server/.env"
+            fi
             set +a
             set -u
 
+            # Fallback: recover secrets from existing container env if files are incomplete
+            if docker ps -a --format '{{.Names}}' | grep -Fx "$CONTAINER_NAME" >/dev/null 2>&1; then
+              EXISTING_ENV=$(docker inspect "$CONTAINER_NAME" --format '{{range .Config.Env}}{{println .}}{{end}}' 2>/dev/null || true)
+              if [ -n "$EXISTING_ENV" ]; then
+                [ -z "${JWT_SECRET:-}" ] && JWT_SECRET=$(printf '%s\n' "$EXISTING_ENV" | sed -n 's/^JWT_SECRET=//p' | tail -n 1)
+                [ -z "${SESSION_SECRET:-}" ] && SESSION_SECRET=$(printf '%s\n' "$EXISTING_ENV" | sed -n 's/^SESSION_SECRET=//p' | tail -n 1)
+                if [ -z "${POSTGRES_PASSWORD:-}" ] && [ -z "${DB_PASSWORD:-}" ]; then
+                  DB_PASSWORD=$(printf '%s\n' "$EXISTING_ENV" | sed -n 's/^DB_PASSWORD=//p' | tail -n 1)
+                  [ -z "${DB_PASSWORD:-}" ] && POSTGRES_PASSWORD=$(printf '%s\n' "$EXISTING_ENV" | sed -n 's/^POSTGRES_PASSWORD=//p' | tail -n 1)
+                fi
+              fi
+            fi
+
             # Validate required secrets are present
             if [ -z "${JWT_SECRET:-}" ]; then
-              echo "FATAL: JWT_SECRET not set in $PROJECT_DIR/.env"
+              echo "FATAL: JWT_SECRET not set in $PROJECT_DIR/.env or $PROJECT_DIR/server/.env"
               exit 1
             fi
             if [ -z "${SESSION_SECRET:-}" ]; then
-              echo "FATAL: SESSION_SECRET not set in $PROJECT_DIR/.env"
+              echo "FATAL: SESSION_SECRET not set in $PROJECT_DIR/.env or $PROJECT_DIR/server/.env"
               exit 1
             fi
             if [ -z "${POSTGRES_PASSWORD:-}" ] && [ -z "${DB_PASSWORD:-}" ]; then
-              echo "FATAL: Neither POSTGRES_PASSWORD nor DB_PASSWORD set in $PROJECT_DIR/.env"
+              echo "FATAL: Neither POSTGRES_PASSWORD nor DB_PASSWORD set in $PROJECT_DIR/.env or $PROJECT_DIR/server/.env"
               exit 1
             fi
 
@@ -154,21 +262,47 @@ jobs:
               -e FRONTEND_URL=https://www.cortexbuildpro.com \
               "$IMAGE_NAME"
             echo "Waiting for API health..."
+            check_cortex_health() {
+              local payload
+              payload=$(curl -fsS http://localhost:3001/api/health 2>/dev/null || true)
+              [ -n "$payload" ] || return 1
+              python3 -c "import json,sys; d=json.loads(sys.argv[1]); c=d.get('checks') or {}; assert d.get('status')=='ok'; assert c.get('postgres') is True; assert c.get('redis') is True" "$payload" >/dev/null 2>&1
+            }
             for i in $(seq 1 30); do
-              if curl -sf http://localhost:3001/api/health >/dev/null 2>&1; then
-                echo "API healthy on localhost:3001"
+              if check_cortex_health; then
+                echo "API health contract verified on localhost:3001"
                 break
               fi
               sleep 2
             done
+            if ! check_cortex_health; then
+              echo "FATAL: API health contract failed on localhost:3001"
+              docker logs --tail 50 "$CONTAINER_NAME" || true
+              exit 1
+            fi
 
             # Restart nginx to refresh DNS resolution for new container
             echo "Restarting nginx..."
             systemctl restart nginx || service nginx restart || nginx -s reload || true
             sleep 5
 
-            # Final check
-            curl -s http://localhost:3001/api/health >/dev/null 2>&1 && echo "API OK after restart" || echo "API may need manual check"
+            # Final local + public checks
+            if ! check_cortex_health; then
+              echo "FATAL: API no longer healthy after nginx restart"
+              exit 1
+            fi
+            for i in $(seq 1 20); do
+              external_payload=$(curl -fsS https://www.cortexbuildpro.com/api/health 2>/dev/null || true)
+              if [ -n "$external_payload" ] && python3 -c "import json,sys; d=json.loads(sys.argv[1]); c=d.get('checks') or {}; assert d.get('status')=='ok'; assert c.get('postgres') is True; assert c.get('redis') is True" "$external_payload" >/dev/null 2>&1; then
+                echo "External HTTPS health contract verified"
+                break
+              fi
+              sleep 3
+            done
+            if ! external_payload=$(curl -fsS https://www.cortexbuildpro.com/api/health 2>/dev/null || true) || ! [ -n "$external_payload" ] || ! python3 -c "import json,sys; d=json.loads(sys.argv[1]); c=d.get('checks') or {}; assert d.get('status')=='ok'; assert c.get('postgres') is True; assert c.get('redis') is True" "$external_payload" >/dev/null 2>&1; then
+              echo "FATAL: External HTTPS health contract failed after deploy"
+              exit 1
+            fi
 
             echo "=== API Deploy Complete ==="
             DEPLOYEOF
@@ -182,12 +316,30 @@ jobs:
 
       - name: Verify deployment
         run: |
-          sleep 30
-          STATUS=$(curl -sL -o /dev/null -w "%{http_code}" https://www.cortexbuildpro.com/api/health)
-          if [ "$STATUS" -eq 200 ]; then
-            echo "✅ Deployment verified - HTTP $STATUS"
-          else
-            echo "⚠️  External health check returned HTTP $STATUS"
-            echo "   API may need more time or nginx routing issue"
-            echo "   Check VPS: docker ps, docker logs cortexbuild-api"
-          fi
+          set -euo pipefail
+
+          check_tls() {
+            local domain="$1"
+            echo | openssl s_client -connect "${domain}:443" -servername "${domain}" -brief >/dev/null 2>&1
+          }
+
+          check_https_health_contract() {
+            local domain="$1"
+            local attempts=30
+            local i payload
+            for i in $(seq 1 "$attempts"); do
+              payload=$(curl -fsS "https://${domain}/api/health" 2>/dev/null || true)
+              if [ -n "$payload" ] && python3 -c "import json,sys; d=json.loads(sys.argv[1]); c=d.get('checks') or {}; assert d.get('status')=='ok'; assert c.get('postgres') is True; assert c.get('redis') is True" "$payload" >/dev/null 2>&1; then
+                echo "✅ ${domain} HTTPS API health contract verified"
+                return 0
+              fi
+              sleep 5
+            done
+            echo "❌ ${domain} HTTPS API health contract failed"
+            return 1
+          }
+
+          check_tls cortexbuildpro.com
+          check_tls www.cortexbuildpro.com
+          check_https_health_contract cortexbuildpro.com
+          check_https_health_contract www.cortexbuildpro.com
