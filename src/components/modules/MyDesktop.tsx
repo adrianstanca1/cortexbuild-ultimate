@@ -170,8 +170,8 @@ export const MyDesktop: React.FC = () => {
           <div className="p-4 bg-gray-100 h-full">
             <div className="bg-black text-white text-right p-3 mb-3 font-mono text-lg">0</div>
             <div className="grid grid-cols-4 gap-2">
-              {[ 'C', '±', '%', '÷', '7', '8', '9', '×', '4', '5', '6', '-', '1', '2', '3', '+', '0', '0', '.', '=' ].map((btn) => (
-                <button key={btn} className="bg-gray-300 hover:bg-gray-400 p-3 rounded text-sm font-medium">
+              {[ 'C', '±', '%', '÷', '7', '8', '9', '×', '4', '5', '6', '-', '1', '2', '3', '+', '0', '0', '.', '=' ].map((btn, index) => (
+                <button key={`${btn}-${index}`} className="bg-gray-300 hover:bg-gray-400 p-3 rounded text-sm font-medium">
                   {btn}
                 </button>
               ))}
