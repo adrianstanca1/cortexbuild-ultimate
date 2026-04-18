@@ -15,11 +15,29 @@ MAX_RETRIES=30
 RETRY_INTERVAL=2
 
 resolve_project_dir() {
-    for candidate in /var/www/cortexbuild-ultimate /root/cortexbuild-work /root/cortexbuild-ultimate; do
-        if [ -d "$candidate/.git" ]; then
-            echo "$candidate"
-            return 0
-        fi
+    local candidate
+    local patterns=(
+        "/var/www/cortexbuild-ultimate"
+        "/var/www/cortexbuild-work"
+        "/var/www/html/cortexbuild-ultimate"
+        "/root/cortexbuild-work"
+        "/root/cortexbuild-ultimate"
+        "$HOME/cortexbuild-work"
+        "$HOME/cortexbuild-ultimate"
+        "/var/www/*"
+        "/var/www/html/*"
+        "/opt/*"
+        "/srv/*"
+        "/root/*"
+        "/home/*/*"
+    )
+    for pattern in "${patterns[@]}"; do
+        for candidate in $pattern; do
+            if [ -d "$candidate/.git" ] && [ -f "$candidate/package.json" ] && [ -d "$candidate/server" ]; then
+                echo "$candidate"
+                return 0
+            fi
+        done
     done
     return 1
 }
@@ -33,7 +51,7 @@ check_cortex_health() {
 
 PROJECT_DIR="$(resolve_project_dir || true)"
 if [ -z "$PROJECT_DIR" ]; then
-    echo "FATAL: could not locate project directory (.git missing in known paths)"
+    echo "FATAL: could not locate CortexBuild project directory in common roots"
     exit 1
 fi
 echo "Using project directory: $PROJECT_DIR"

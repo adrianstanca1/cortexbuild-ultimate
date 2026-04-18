@@ -10,15 +10,28 @@ echo ""
 
 resolve_project_dir() {
     local candidate
-    for candidate in \
-        "/var/www/cortexbuild-ultimate" \
-        "/root/cortexbuild-work" \
+    local patterns=(
+        "/var/www/cortexbuild-ultimate"
+        "/var/www/cortexbuild-work"
+        "/var/www/html/cortexbuild-ultimate"
+        "/root/cortexbuild-work"
         "/root/cortexbuild-ultimate"
-    do
-        if [ -d "$candidate/.git" ] && [ -f "$candidate/package.json" ] && [ -d "$candidate/server" ]; then
-            echo "$candidate"
-            return 0
-        fi
+        "$HOME/cortexbuild-work"
+        "$HOME/cortexbuild-ultimate"
+        "/var/www/*"
+        "/var/www/html/*"
+        "/opt/*"
+        "/srv/*"
+        "/root/*"
+        "/home/*/*"
+    )
+    for pattern in "${patterns[@]}"; do
+        for candidate in $pattern; do
+            if [ -d "$candidate/.git" ] && [ -f "$candidate/package.json" ] && [ -d "$candidate/server" ]; then
+                echo "$candidate"
+                return 0
+            fi
+        done
     done
     return 1
 }
@@ -26,7 +39,7 @@ resolve_project_dir() {
 PROJECT_DIR="$(resolve_project_dir || true)"
 if [ -z "${PROJECT_DIR:-}" ]; then
     echo "❌ Could not locate CortexBuild project directory on VPS"
-    echo "   Checked: /var/www/cortexbuild-ultimate, /root/cortexbuild-work, /root/cortexbuild-ultimate"
+    echo "   Checked common roots: /var/www, /var/www/html, /opt, /srv, /root, /home/*"
     exit 1
 fi
 

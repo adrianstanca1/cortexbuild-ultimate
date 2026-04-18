@@ -70,9 +70,19 @@ jobs:
             resolve_project_dir() {
               local candidates=(
                 "/var/www/cortexbuild-ultimate"
+                "/var/www/cortexbuild-work"
+                "/var/www/html/cortexbuild-ultimate"
+                "/var/www/html/cortexbuild-work"
+                "/var/www/cortexbuildpro"
+                "/var/www/cortexbuildpro-ultimate"
                 "/root/cortexbuild-work"
+                "/root/cortexbuild-ultimate"
+                "/root/cortexbuildpro"
+                "/root/cortexbuildpro-ultimate"
                 "$HOME/cortexbuild-ultimate"
                 "$HOME/cortexbuild-work"
+                "$HOME/cortexbuildpro"
+                "$HOME/cortexbuildpro-ultimate"
               )
               local p
               for p in "${candidates[@]}"; do
@@ -103,9 +113,19 @@ jobs:
             resolve_project_dir() {
               local candidates=(
                 "/var/www/cortexbuild-ultimate"
+                "/var/www/cortexbuild-work"
+                "/var/www/html/cortexbuild-ultimate"
+                "/var/www/html/cortexbuild-work"
+                "/var/www/cortexbuildpro"
+                "/var/www/cortexbuildpro-ultimate"
                 "/root/cortexbuild-work"
+                "/root/cortexbuild-ultimate"
+                "/root/cortexbuildpro"
+                "/root/cortexbuildpro-ultimate"
                 "$HOME/cortexbuild-ultimate"
                 "$HOME/cortexbuild-work"
+                "$HOME/cortexbuildpro"
+                "$HOME/cortexbuildpro-ultimate"
               )
               local p
               for p in "${candidates[@]}"; do
