@@ -67,6 +67,7 @@ jobs:
             #!/bin/bash
             set -euo pipefail
             echo "=== CortexBuild Frontend Deploy ==="
+            REPO_URL="https://github.com/adrianstanca1/cortexbuild-ultimate.git"
             resolve_project_dir() {
               local candidates=(
                 "/var/www/cortexbuild-ultimate"
@@ -107,8 +108,11 @@ jobs:
             }
             PROJECT_DIR="$(resolve_project_dir || true)"
             if [ -z "${PROJECT_DIR:-}" ]; then
-              echo "FATAL: Could not locate project directory on VPS"
-              exit 1
+              PROJECT_DIR="$HOME/cortexbuild-ultimate"
+              echo "Project directory not found. Bootstrapping at $PROJECT_DIR"
+              if [ ! -d "$PROJECT_DIR/.git" ]; then
+                git clone "$REPO_URL" "$PROJECT_DIR"
+              fi
             fi
             echo "Using project dir: $PROJECT_DIR"
             cd "$PROJECT_DIR"
@@ -122,6 +126,7 @@ jobs:
             #!/bin/bash
             set -euo pipefail
             echo "=== CortexBuild API Deploy ==="
+            REPO_URL="https://github.com/adrianstanca1/cortexbuild-ultimate.git"
             resolve_project_dir() {
               local candidates=(
                 "/var/www/cortexbuild-ultimate"
@@ -162,8 +167,11 @@ jobs:
             }
             PROJECT_DIR="$(resolve_project_dir || true)"
             if [ -z "${PROJECT_DIR:-}" ]; then
-              echo "FATAL: Could not locate project directory on VPS"
-              exit 1
+              PROJECT_DIR="$HOME/cortexbuild-ultimate"
+              echo "Project directory not found. Bootstrapping at $PROJECT_DIR"
+              if [ ! -d "$PROJECT_DIR/.git" ]; then
+                git clone "$REPO_URL" "$PROJECT_DIR"
+              fi
             fi
             echo "Using project dir: $PROJECT_DIR"
             CONTAINER_NAME="cortexbuild-api"

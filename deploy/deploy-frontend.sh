@@ -44,9 +44,11 @@ resolve_project_dir() {
 
 PROJECT_DIR="$(resolve_project_dir || true)"
 if [ -z "${PROJECT_DIR:-}" ]; then
-    echo "❌ Could not locate CortexBuild project directory on VPS"
-    echo "   Checked common roots: /var/www, /var/www/html, /opt, /srv, /root, /home/*"
-    exit 1
+    PROJECT_DIR="$HOME/cortexbuild-ultimate"
+    echo "⚠️  Project directory not found. Bootstrapping at $PROJECT_DIR"
+    if [ ! -d "$PROJECT_DIR/.git" ]; then
+        git clone "https://github.com/adrianstanca1/cortexbuild-ultimate.git" "$PROJECT_DIR"
+    fi
 fi
 
 DIST_DIR="$PROJECT_DIR/dist"

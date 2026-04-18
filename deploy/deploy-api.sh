@@ -57,8 +57,11 @@ check_cortex_health() {
 
 PROJECT_DIR="$(resolve_project_dir || true)"
 if [ -z "$PROJECT_DIR" ]; then
-    echo "FATAL: could not locate CortexBuild project directory in common roots"
-    exit 1
+    PROJECT_DIR="$HOME/cortexbuild-ultimate"
+    echo "Project directory not found. Bootstrapping at $PROJECT_DIR"
+    if [ ! -d "$PROJECT_DIR/.git" ]; then
+        git clone "https://github.com/adrianstanca1/cortexbuild-ultimate.git" "$PROJECT_DIR"
+    fi
 fi
 echo "Using project directory: $PROJECT_DIR"
 
