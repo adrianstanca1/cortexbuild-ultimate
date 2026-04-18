@@ -199,3 +199,54 @@ docker exec cortexbuild-db psql -U cortexbuild -d cortexbuild -c "\d <table>"
 # Quick restart (no rebuild)
 docker restart cortexbuild-api
 ```
+
+- **Construction**: Procore, BIM 360, PlanGrid, Fieldwire
+- **Accounting**: QuickBooks, Xero
+- **Communication**: Slack, Microsoft Teams
+- **Automation**: Zapier
+
+---
+
+<!-- BEGIN: Productivity System Working Memory -->
+<!-- Managed by /productivity commands. Do not confuse with project instructions above. -->
+<!-- Full knowledge base lives in ./memory/ -->
+
+# Working Memory
+
+## Me
+Adrian (adrian.stanca1@gmail.com) — building CortexBuild Ultimate. Appears to be primary/sole developer based on project docs.
+
+## People
+_No collaborators surfaced from docs. Will capture as they appear._
+
+## Terms
+| Term | Meaning |
+|------|---------|
+| **RAMS** | Risk Assessments and Method Statements (UK construction safety docs) |
+| **RFI** | Request for Information (construction workflow) — has dedicated AI subagent |
+| **CO** | Change Order — has dedicated AI subagent |
+| **BIM / IFC** | Building Information Modeling / Industry Foundation Classes (3D building data; rendered via `web-ifc`) |
+| **RBAC** | Role-Based Access Control — roles: super_admin, company_owner, admin, project_manager, field_worker |
+| **RAG** | Retrieval-Augmented Generation — `rag_embeddings` + `pg_vector` cosine similarity |
+| **Generic CRUD** | `server/routes/generic.js` factory with column whitelists |
+| **Canonical repo** | `cortexbuild-ultimate` (the `-1` copy is a secondary clone that must stay in sync) |
+| **Superpowers plans** | Step-by-step plans in `docs/superpowers/plans/` |
+| **VPS** | Hostinger production host `root@72.62.132.43` |
+
+See `memory/glossary.md` for the full decoder ring.
+
+## Projects
+| Name | What |
+|------|------|
+| **CortexBuild Ultimate** | v3.0.0 — AI-powered unified construction management SaaS for UK contractors (this repo) |
+| **cortexbuildpro.com** | Production frontend (https://www.cortexbuildpro.com) |
+
+See `memory/projects/cortexbuild-ultimate.md` for the deep file.
+
+## Preferences
+- Uses canonical + staging repo pair; cares about keeping them in sync (deploy drift bit him on 2026-04-04)
+- Pre-merge gates always: `tsc --noEmit` + ESLint quiet + `npm test` + `npm run build`
+- Commits per step when following superpowers plans
+- Conventional commit style (`fix(deploy): …`, `feat(...)`, etc.)
+
+<!-- END: Productivity System Working Memory -->
