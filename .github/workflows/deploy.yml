@@ -83,6 +83,18 @@ jobs:
                 "$HOME/cortexbuild-work"
                 "$HOME/cortexbuildpro"
                 "$HOME/cortexbuildpro-ultimate"
+                "/var/www/*"
+                "/var/www/*/*"
+                "/var/www/html/*"
+                "/var/www/html/*/*"
+                "/root/*"
+                "/root/*/*"
+                "/home/*/*"
+                "/home/*/*/*"
+                "/opt/*"
+                "/opt/*/*"
+                "/srv/*"
+                "/srv/*/*"
               )
               local p
               for p in "${candidates[@]}"; do
@@ -126,6 +138,18 @@ jobs:
                 "$HOME/cortexbuild-work"
                 "$HOME/cortexbuildpro"
                 "$HOME/cortexbuildpro-ultimate"
+                "/var/www/*"
+                "/var/www/*/*"
+                "/var/www/html/*"
+                "/var/www/html/*/*"
+                "/root/*"
+                "/root/*/*"
+                "/home/*/*"
+                "/home/*/*/*"
+                "/opt/*"
+                "/opt/*/*"
+                "/srv/*"
+                "/srv/*/*"
               )
               local p
               for p in "${candidates[@]}"; do

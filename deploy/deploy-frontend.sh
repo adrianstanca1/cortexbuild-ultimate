@@ -19,11 +19,17 @@ resolve_project_dir() {
         "$HOME/cortexbuild-work"
         "$HOME/cortexbuild-ultimate"
         "/var/www/*"
+        "/var/www/*/*"
         "/var/www/html/*"
+        "/var/www/html/*/*"
         "/opt/*"
+        "/opt/*/*"
         "/srv/*"
+        "/srv/*/*"
         "/root/*"
+        "/root/*/*"
         "/home/*/*"
+        "/home/*/*/*"
     )
     for pattern in "${patterns[@]}"; do
         for candidate in $pattern; do
