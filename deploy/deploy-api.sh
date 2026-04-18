@@ -122,6 +122,19 @@ if [ -f "$PROJECT_DIR/server/.env" ]; then
     set -u
 fi
 
+# Fallback: recover secrets from existing container env if files are missing/incomplete
+if docker ps -a --format '{{.Names}}' | grep -Fx "$CONTAINER_NAME" >/dev/null 2>&1; then
+    EXISTING_ENV=$(docker inspect "$CONTAINER_NAME" --format '{{range .Config.Env}}{{println .}}{{end}}' 2>/dev/null || true)
+    if [ -n "$EXISTING_ENV" ]; then
+        [ -z "${JWT_SECRET:-}" ] && JWT_SECRET=$(printf '%s\n' "$EXISTING_ENV" | sed -n 's/^JWT_SECRET=//p' | tail -n 1)
+        [ -z "${SESSION_SECRET:-}" ] && SESSION_SECRET=$(printf '%s\n' "$EXISTING_ENV" | sed -n 's/^SESSION_SECRET=//p' | tail -n 1)
+        if [ -z "${POSTGRES_PASSWORD:-}" ] && [ -z "${DB_PASSWORD:-}" ]; then
+            DB_PASSWORD=$(printf '%s\n' "$EXISTING_ENV" | sed -n 's/^DB_PASSWORD=//p' | tail -n 1)
+            [ -z "${DB_PASSWORD:-}" ] && POSTGRES_PASSWORD=$(printf '%s\n' "$EXISTING_ENV" | sed -n 's/^POSTGRES_PASSWORD=//p' | tail -n 1)
+        fi
+    fi
+fi
+
 docker run -d \
     --name "$CONTAINER_NAME" \
     --restart always \
