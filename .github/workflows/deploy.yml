@@ -181,18 +181,28 @@ jobs:
             IMAGE_NAME="cortexbuild-ultimate-api:latest"
             cd "$PROJECT_DIR"
 
-            # Ensure API can reach DB/Redis/Ollama on their network
-            # Docker Compose creates 'cortexbuild-ultimate_cortexbuild' — use that.
-            COMPOSE_NET="cortexbuild-ultimate_cortexbuild"
-            FALLBACK_NET="cortexbuild"
-            if docker network inspect "$COMPOSE_NET" >/dev/null 2>&1; then
-              DOCKER_NET="$COMPOSE_NET"
+            # Ensure core dependencies are running and use Postgres network for API connectivity.
+            if [ -f "$PROJECT_DIR/docker-compose.yml" ]; then
+              docker compose up -d postgres redis >/dev/null 2>&1 || docker-compose up -d postgres redis >/dev/null 2>&1 || true
+            fi
+            docker start cortexbuild-db >/dev/null 2>&1 || true
+            docker start cortexbuild-redis >/dev/null 2>&1 || true
+
+            DB_CONTAINER_NET="$(docker inspect -f '{{range $k,$v := .NetworkSettings.Networks}}{{println $k}}{{end}}' cortexbuild-db 2>/dev/null | awk 'NF{print; exit}')"
+            if [ -n "${DB_CONTAINER_NET:-}" ] && docker network inspect "$DB_CONTAINER_NET" >/dev/null 2>&1; then
+              DOCKER_NET="$DB_CONTAINER_NET"
             else
-              if ! docker network inspect "$FALLBACK_NET" >/dev/null 2>&1; then
-                echo "Creating $FALLBACK_NET network..."
-                docker network create "$FALLBACK_NET"
+              COMPOSE_NET="cortexbuild-ultimate_cortexbuild"
+              FALLBACK_NET="cortexbuild"
+              if docker network inspect "$COMPOSE_NET" >/dev/null 2>&1; then
+                DOCKER_NET="$COMPOSE_NET"
+              else
+                if ! docker network inspect "$FALLBACK_NET" >/dev/null 2>&1; then
+                  echo "Creating $FALLBACK_NET network..."
+                  docker network create "$FALLBACK_NET"
+                fi
+                DOCKER_NET="$FALLBACK_NET"
               fi
-              DOCKER_NET="$FALLBACK_NET"
             fi
 
             git pull origin main
