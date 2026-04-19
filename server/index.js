@@ -10,6 +10,7 @@ const authMiddleware = require('./middleware/auth');
 const { startBIMProcessor } = require('./workers/bimProcessor');
 const { startAutoresearchWorker } = require('./workers/autoresearch-worker');
 const { startAutoimproveScheduler } = require('./workers/autoimprove-scheduler');
+const { startAutorepairMonitor } = require('./workers/autorepair-monitor');
 const makeRouter     = require('./routes/generic');
 const authRoutes     = require('./routes/auth');
 const rateLimiter    = require('./middleware/rateLimiter');
@@ -178,6 +179,7 @@ app.use('/api/work-packages',   require('./routes/work-packages'));
 app.use('/api/ai', requireFeature('FEATURE_AI_AGENTS'), require('./routes/ai'));
 app.use('/api/autoresearch', require('./routes/autoresearch'));
 app.use('/api/autoimprove', require('./routes/autoimprove'));
+app.use('/api/autorepair', require('./routes/autorepair'));
 
 app.use('/api/ai-conversations', requireFeature('FEATURE_AI_AGENTS'), require('./routes/ai-conversations'));
 app.use('/api/ai-predictive', requireFeature('FEATURE_AI_AGENTS'), require('./routes/ai-predictive'));
@@ -312,6 +314,7 @@ process.on('SIGINT',  () => gracefulShutdown('SIGINT'));
 startBIMProcessor();
 startAutoresearchWorker();
 startAutoimproveScheduler();
+startAutorepairMonitor();
 
 server.listen(PORT, () => {
   console.log(`\n🏗  CortexBuild API running on port ${PORT}`);
