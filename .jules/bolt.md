@@ -10,3 +10,6 @@
 ## 2026-04-14 - Layout-Wide Re-renders from scroll events
 **Learning:** Setting React state continuously from a `window.addEventListener('scroll')` handler without debouncing or throttling causes the entire component (and its children) to re-render constantly. This degrades performance significantly.
 **Action:** Use `useRef` to keep track of high-frequency variables like the last scroll position instead of `useState`. Conditionally call state updates only when the state should genuinely transition, e.g. hiding/showing an element, to save unneeded renders.
+## 2024-05-19 - Layout-Wide Re-renders from setInterval (MyDesktop.tsx)
+**Learning:** Having a `setInterval` that sets state (like `currentTime`) in a high-level component (`MyDesktop.tsx`) causes the component and all its children to completely re-render on every tick. This is highly inefficient.
+**Action:** Isolate high-frequency state updates like timers/clocks into their own small standalone leaf components so that only the localized DOM tree re-renders.
