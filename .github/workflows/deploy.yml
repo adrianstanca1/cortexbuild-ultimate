@@ -183,7 +183,7 @@ jobs:
 
             # Ensure core dependencies are running and use Postgres network for API connectivity.
             if [ -f "$PROJECT_DIR/docker-compose.yml" ]; then
-              docker compose up -d postgres redis >/dev/null 2>&1 || docker-compose up -d postgres redis >/dev/null 2>&1 || true
+              docker compose up -d postgres redis ollama >/dev/null 2>&1 || docker-compose up -d postgres redis ollama >/dev/null 2>&1 || true
             fi
             docker start cortexbuild-db >/dev/null 2>&1 || true
             docker start cortexbuild-redis >/dev/null 2>&1 || true
@@ -291,7 +291,7 @@ jobs:
               --name "$CONTAINER_NAME" \
               --restart always \
               --network host \
-                          -e DB_HOST=127.0.0.1 \
+              -e DB_HOST=127.0.0.1 \
               -e DB_PORT=5432 \
               -e DB_NAME=cortexbuild \
               -e DB_USER=cortexbuild \
@@ -303,6 +303,7 @@ jobs:
               -e NODE_ENV=production \
               -e OLLAMA_HOST=http://127.0.0.1:11434 \
               -e OLLAMA_MODEL=qwen3.5:latest \
+              -e EMBEDDING_MODEL="${EMBEDDING_MODEL:-nomic-embed-text:latest}" \
               -e CORS_ORIGIN=https://www.cortexbuildpro.com,https://cortexbuildpro.com \
               -e FRONTEND_URL=https://www.cortexbuildpro.com \
               "$IMAGE_NAME"
