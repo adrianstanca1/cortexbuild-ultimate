@@ -46,5 +46,6 @@ run_sql "$ROOT_DIR/server/scripts/seed.sql"
 run_sql "$ROOT_DIR/server/migrations/016_local_dev_reconcile.sql"
 run_sql "$ROOT_DIR/server/migrations/012_seed_audit_log.sql"
 run_sql "$ROOT_DIR/server/migrations/015_add_ai_conversation_indexes.sql"
+run_sql "$ROOT_DIR/server/migrations/060_add_invoices_payment_fields.sql"
 
 echo "==> Local CortexBuild schema reset complete"

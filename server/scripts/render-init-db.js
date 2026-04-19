@@ -77,6 +77,7 @@ async function main() {
         await runSqlFile(client, path.join(rootDir, 'server/scripts/seed.sql'));
         await runSqlFile(client, path.join(rootDir, 'server/migrations/016_local_dev_reconcile.sql'));
         await runSqlFile(client, path.join(rootDir, 'server/migrations/012_seed_audit_log.sql'));
+        await runSqlFile(client, path.join(rootDir, 'server/migrations/060_add_invoices_payment_fields.sql'));
 
         // Try conversational indexes
         try {
