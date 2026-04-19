@@ -3,7 +3,17 @@
  * Bundle Optimization, Lazy Loading, and Prefetching Strategies
  */
 
-import { lazy, Suspense, type ComponentType, type ReactNode } from 'react';
+import {
+  lazy,
+  Suspense,
+  useCallback,
+  useEffect,
+  useMemo,
+  useState,
+  type ComponentProps,
+  type ComponentType,
+  type ReactNode,
+} from 'react';
 
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -19,37 +29,11 @@ export function lazyLoad<T extends ComponentType<unknown>>(
 ) {
   const LazyComponent = lazy(importFn);
 
-  return function LazyWrapper(props: React.ComponentProps<T>) {
+  return function LazyWrapper(props: ComponentProps<T>) {
+    const C = LazyComponent as unknown as ComponentType<Record<string, unknown>>;
     return (
       <Suspense fallback={fallback ?? <DefaultSkeleton />}>
-        <LazyComponent {...props} />
-      </Suspense>
-    );
-  };
-}
-
-/**
- * Lazy load multiple components from same chunk
- */
-export function lazyLoadMultiple<T extends Record<string, ComponentType<unknown>>>(
-  imports: () => Promise<T>
-) {
-  const LazyComponents = lazy(imports);
-
-  return function LazyMultipleWrapper({
-    component: ComponentName,
-    ...props
-  }: {
-    component: keyof T;
-  } & React.ComponentProps<T[keyof T]>) {
-    return (
-      <Suspense fallback={<DefaultSkeleton />}>
-        <LazyComponents>
-          {(components) => {
-            const Component = components[ComponentName];
-            return <Component {...props} />;
-          }}
-        </LazyComponents>
+        <C {...(props as Record<string, unknown>)} />
       </Suspense>
     );
   };
@@ -127,25 +111,6 @@ export function createDataPrefetcher<T>(
     });
   };
 }
-
-
-// ═══════════════════════════════════════════════════════════════════════════════
-// CODE SPLITTING
-// ═══════════════════════════════════════════════════════════════════════════════
-
-/**
- * Route-based splitting configuration for Vite
- */
-export const routeChunks = {
-  // Auth routes - rarely needed after login
-  auth: () => import(/* webpackChunkName: "auth" */ './pages/auth/*'),
-
-  // Admin routes - only for admin users
-  admin: () => import(/* webpackChunkName: "admin" */ './pages/admin/*'),
-
-  // Heavy modules - BIM viewer, reports
-  heavy: () => import(/* webpackChunkName: "heavy" */ './modules/bim/*'),
-} as const;
 
 
 // ═══════════════════════════════════════════════════════════════════════════════

@@ -8,7 +8,6 @@ import {
   useMutation,
   useQueryClient,
   useInfiniteQuery,
-  useQueryObserver,
   keepPreviousData,
 } from "@tanstack/react-query";
 import { toast } from "sonner";
