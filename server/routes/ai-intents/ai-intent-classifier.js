@@ -35,6 +35,11 @@ function classify(message) {
   if (/valuation|valuations|payment application|interim certificate|prime cost|PC sums/.test(m)) intents.push('valuations');
   if (/defect|defects|snag|snags|punch list|punchlist|items? list|closing/.test(m))             intents.push('defects');
 
+  // Autonomous features
+  if (/research|deep search|investigate|analyse in depth|synthesise|comprehensive report|multi.source|across all/i.test(m)) intents.push('autoresearch');
+  if (/improve|optimize|optimise|recommend|better|inefficien|trend|trends over time|historical|metrics analysis/i.test(m)) intents.push('autoimprove');
+  if (/diagnose|repair|fix|heal|self.repair|infrastructure|container|ollama|embeddings|corrupt/i.test(m)) intents.push('autorepair');
+
   return intents.length > 0 ? intents : ['unknown'];
 }
 
