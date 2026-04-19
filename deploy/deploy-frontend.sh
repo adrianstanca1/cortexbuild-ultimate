@@ -120,8 +120,13 @@ rollback() {
         rm -rf "$DIST_DIR"
         cp -r "$latest_backup" "$DIST_DIR"
         
-        # Reload nginx
-        nginx -t >/dev/null 2>&1 && nginx -s reload 2>/dev/null || service nginx reload 2>/dev/null || true
+        # Reload nginx only after a successful config test
+        if nginx -t >/dev/null 2>&1; then
+            nginx -s reload 2>/dev/null || service nginx reload 2>/dev/null || true
+        else
+            log_error "nginx config test failed; not reloading"
+            return 1
+        fi
         
         log_success "Rollback complete"
         return 0

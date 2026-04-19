@@ -47,7 +47,7 @@ async function summarizeText(text) {
  */
 async function getOllamaResponse(userMessage, context = '', conversationHistory = [], summary = null) {
   return new Promise((resolve, reject) => {
-    const systemPrompt = `You are a helpful AI assistant for CortexBuild, a UK construction management platform. You help users manage projects, contracts, safety, safety, and team operations.
+    const systemPrompt = `You are a helpful AI assistant for CortexBuild, a UK construction management platform. You help users manage projects, contracts, safety, and team operations.
 
 Provide a helpful, concise response. Prefer direct answers over repeating menu-like capability lists. When relevant, use the supplied database context. If the user asks a general question, answer it naturally.`;
 

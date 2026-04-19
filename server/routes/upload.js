@@ -141,11 +141,7 @@ router.post('/', upload.single('file'), validateAfterUpload, async (req, res) =>
 
     res.status(201).json(rows[0]);
   } catch (err) {
-    console.error('[POST /api/upload]', 'Internal server error');
-    // multer file-type error comes through here when fileFilter calls cb(err)
-    if (err.message && err.message.startsWith('File type not allowed')) {
-      return res.status(400).json({ message: 'Upload failed' });
-    }
+    console.error('[POST /api/upload]', err.message);
     res.status(500).json({ message: 'Internal server error' });
   }
 });

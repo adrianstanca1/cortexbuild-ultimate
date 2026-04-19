@@ -44,7 +44,6 @@ export default defineConfig({
         statements: 80,
         // Enforce thresholds (fail CI if not met)
         perFile: true,
-        100: false, // Don't require 100%
       },
     },
     // Test timeouts
@@ -56,7 +55,7 @@ export default defineConfig({
     silent: false,
     // Fake timers configuration
     fakeTimers: {
-      toFake: ["setTimeout", "setInterval", "Date"],
+      toFake: ["setTimeout", "setInterval"],
     },
   },
   // Optimize dependencies

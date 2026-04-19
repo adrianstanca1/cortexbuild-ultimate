@@ -70,7 +70,11 @@ record_check() {
     local status="$2"
     local details="${3:-}"
     CHECKS["$name"]="$status|$details"
-    ((TOTAL_CHECKS++))
+    TOTAL_CHECKS=$((TOTAL_CHECKS + 1))
+    case "$status" in
+        pass|warn) PASSED_CHECKS=$((PASSED_CHECKS + 1)) ;;
+        fail) FAILED_CHECKS=$((FAILED_CHECKS + 1)) ;;
+    esac
 }
 
 # HTTP check with details

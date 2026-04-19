@@ -321,19 +321,19 @@ router.post('/summarize-project', aiSummarizeLimiter, async (req, res) => {
     }
     const { rows: related } = await pool.query(
       `SELECT 'invoice' as type, id, number, amount, status, NULL as title, NULL as priority, NULL as due_date, NULL as reference, NULL as workers_on_site, NULL as progress, NULL as weather, NULL as date
-       FROM invoices WHERE project_id = $1 AND ${tenantFilter}
+       FROM invoices WHERE project_id = $1 AND ${tenantFilter} LIMIT 100
        UNION ALL
        SELECT 'change_order', id, number, amount, status, title, NULL, NULL, NULL, NULL, NULL, NULL, NULL
-       FROM change_orders WHERE project_id = $1 AND ${tenantFilter}
+       FROM change_orders WHERE project_id = $1 AND ${tenantFilter} LIMIT 100
        UNION ALL
        SELECT 'defect', id, reference, amount, status, title, priority, due_date, NULL, NULL, NULL, NULL, NULL
-       FROM defects WHERE project_id = $1 AND ${tenantFilter}
+       FROM defects WHERE project_id = $1 AND ${tenantFilter} LIMIT 100
        UNION ALL
        SELECT 'rfi', id, number, NULL, status, subject, priority, due_date, NULL, NULL, NULL, NULL, NULL
-       FROM rfis WHERE project_id = $1 AND ${tenantFilter}
+       FROM rfis WHERE project_id = $1 AND ${tenantFilter} LIMIT 100
        UNION ALL
        SELECT 'daily_report', id, NULL, NULL, status, NULL, NULL, NULL, date, workers_on_site, progress, weather, date
-       FROM daily_reports WHERE project_id = $1 AND ${tenantFilter} ORDER BY date DESC LIMIT 50`,
+       FROM daily_reports WHERE project_id = $1 AND ${tenantFilter} ORDER BY date DESC LIMIT 100`,
       [projectId, tenantParam]
     );
 

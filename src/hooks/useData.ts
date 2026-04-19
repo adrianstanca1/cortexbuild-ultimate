@@ -131,7 +131,7 @@ export function usePaginatedQuery<T>({
   });
 
   const query = useQuery({
-    queryKey: [...queryKey, pagination.page],
+    queryKey: [...queryKey, pagination.page, pagination.pageSize],
     queryFn: () => queryFn(pagination.page, pagination.pageSize),
     staleTime,
     placeholderData: keepPreviousData,

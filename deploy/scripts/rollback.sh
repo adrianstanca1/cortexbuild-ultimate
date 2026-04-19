@@ -67,11 +67,13 @@ rollback_api() {
         docker stop cortexbuild-api 2>/dev/null || true
         docker rm cortexbuild-api 2>/dev/null || true
         
-        echo 'Starting rolled back version...'
+        NET=\$(docker inspect -f '{{range \$k,\$v := .NetworkSettings.Networks}}{{println \$k}}{{end}}' cortexbuild-db 2>/dev/null | awk '/cortexbuild/ {print; exit}')
+        NET=\${NET:-cortexbuild}
+        echo \"Starting rolled back version on network \$NET...\"
         docker run -d \
             --name cortexbuild-api \
             --restart always \
-            --network cortexbuild \
+            --network \"\$NET\" \
             -p 127.0.0.1:3001:3001 \
             --env-file $VPS_PATH/.env \
             $backup_image
@@ -111,7 +113,12 @@ rollback_frontend() {
         cp -r '$backup_path' $VPS_PATH/dist
         
         echo 'Reloading nginx...'
-        nginx -t >/dev/null 2>&1 && nginx -s reload || service nginx reload
+        if nginx -t >/dev/null 2>&1; then
+            nginx -s reload || service nginx reload
+        else
+            echo 'nginx config test failed; not reloading'
+            exit 1
+        fi
     "
     
     log_success "Frontend rollback complete"
@@ -131,7 +138,12 @@ rollback_code() {
         
         echo 'Restarting services...'
         docker restart cortexbuild-api 2>/dev/null || true
-        nginx -t >/dev/null 2>&1 && nginx -s reload || service nginx reload
+        if nginx -t >/dev/null 2>&1; then
+            nginx -s reload || service nginx reload
+        else
+            echo 'nginx config test failed; not reloading'
+            exit 1
+        fi
     "
     
     log_success "Code rollback complete"

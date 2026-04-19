@@ -358,7 +358,7 @@ ssh -i ~/.ssh/id_ed25519_vps root@72.62.132.43
 
 ```bash
 # Check TypeScript errors
-npm run type-check
+npm run typecheck
 
 # Check linting
 npm run lint

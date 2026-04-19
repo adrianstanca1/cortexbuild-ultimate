@@ -190,7 +190,8 @@ rollback() {
     log_warn "Initiating rollback..."
     
     local backup_image
-    backup_image=$(docker images --format '{{.Repository}}:{{.Tag}}' | grep "^cortexbuild-api-backup-" | tail -n 1 || true)
+    # docker images lists newest first; use head for the most recent backup
+    backup_image=$(docker images --format '{{.Repository}}:{{.Tag}}' | grep "^cortexbuild-api-backup-" | head -n 1 || true)
     
     if [ -n "$backup_image" ]; then
         log_info "Rolling back to: $backup_image"
@@ -202,6 +203,7 @@ rollback() {
             --name "$CONTAINER_NAME" \
             --restart always \
             --network "$(detect_docker_network)" \
+            -p 127.0.0.1:3001:3001 \
             -e DB_HOST=cortexbuild-db \
             -e DB_PORT=5432 \
             -e DB_NAME=cortexbuild \
@@ -324,6 +326,7 @@ main() {
         --name "$CONTAINER_NAME" \
         --restart always \
         --network "$docker_net" \
+        -p 127.0.0.1:3001:3001 \
         -e DB_HOST=cortexbuild-db \
         -e DB_PORT=5432 \
         -e DB_NAME=cortexbuild \

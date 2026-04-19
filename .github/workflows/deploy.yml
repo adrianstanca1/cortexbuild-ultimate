@@ -224,6 +224,12 @@ jobs:
               fi
             done
 
+            # Final fallback: GitHub Actions secrets (expanded when this workflow runs).
+            [ -z "${JWT_SECRET:-}" ] && JWT_SECRET="${{ secrets.JWT_SECRET }}"
+            [ -z "${SESSION_SECRET:-}" ] && SESSION_SECRET="${{ secrets.SESSION_SECRET }}"
+            [ -z "${DB_PASSWORD:-}" ] && DB_PASSWORD="${{ secrets.DB_PASSWORD }}"
+            [ -z "${POSTGRES_PASSWORD:-}" ] && POSTGRES_PASSWORD="${{ secrets.POSTGRES_PASSWORD }}"
+
             # Env vars JWT_SECRET, SESSION_SECRET, POSTGRES_PASSWORD, DB_PASSWORD are set by GitHub Actions env:
             JWT_SECRET="${JWT_SECRET:-}"
             SESSION_SECRET="${SESSION_SECRET:-}"
@@ -262,6 +268,16 @@ jobs:
                 redis:7-alpine 2>&1 || true
             else
               docker start cortexbuild-redis 2>&1 || true
+            fi
+
+            # Ensure ollama container exists and is running (AI / embeddings)
+            if ! docker ps --format '{{.Names}}' | grep -Fx cortexbuild-ollama >/dev/null 2>&1; then
+              echo "Creating ollama container..."
+              docker run -d --name cortexbuild-ollama \
+                --network host \
+                ollama/ollama:latest 2>&1 || true
+            else
+              docker start cortexbuild-ollama 2>&1 || true
             fi
 
             # Wait for postgres to be ready
@@ -306,7 +322,7 @@ jobs:
               --name "$CONTAINER_NAME" \
               --restart always \
               --network host \
-                          -e DB_HOST=127.0.0.1 \
+              -e DB_HOST=127.0.0.1 \
               -e DB_PORT=5432 \
               -e DB_NAME=cortexbuild \
               -e DB_USER=cortexbuild \
@@ -318,6 +334,7 @@ jobs:
               -e NODE_ENV=production \
               -e OLLAMA_HOST=http://127.0.0.1:11434 \
               -e OLLAMA_MODEL=qwen3.5:latest \
+              -e EMBEDDING_MODEL="${EMBEDDING_MODEL:-nomic-embed-text:latest}" \
               -e CORS_ORIGIN=https://www.cortexbuildpro.com,https://cortexbuildpro.com \
               -e FRONTEND_URL=https://www.cortexbuildpro.com \
               "$IMAGE_NAME"
