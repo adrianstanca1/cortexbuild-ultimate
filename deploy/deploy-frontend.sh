@@ -8,21 +8,51 @@ echo "=== CortexBuild Frontend Deploy ==="
 echo "Started at: $(date)"
 echo ""
 
-DEFAULT_PROJECT_DIR="/var/www/cortexbuild-ultimate"
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-FALLBACK_PROJECT_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
+resolve_project_dir() {
+    local candidate
+    local patterns=(
+        "/var/www/cortexbuild-ultimate"
+        "/var/www/cortexbuild-work"
+        "/var/www/html/cortexbuild-ultimate"
+        "/root/cortexbuild-work"
+        "/root/cortexbuild-ultimate"
+        "$HOME/cortexbuild-work"
+        "$HOME/cortexbuild-ultimate"
+        "/var/www/*"
+        "/var/www/*/*"
+        "/var/www/html/*"
+        "/var/www/html/*/*"
+        "/opt/*"
+        "/opt/*/*"
+        "/srv/*"
+        "/srv/*/*"
+        "/root/*"
+        "/root/*/*"
+        "/home/*/*"
+        "/home/*/*/*"
+    )
+    for pattern in "${patterns[@]}"; do
+        for candidate in $pattern; do
+            if [ -d "$candidate/.git" ] && [ -f "$candidate/package.json" ] && [ -d "$candidate/server" ]; then
+                echo "$candidate"
+                return 0
+            fi
+        done
+    done
+    return 1
+}
 
-if [ -d "$DEFAULT_PROJECT_DIR/.git" ]; then
-    PROJECT_DIR="$DEFAULT_PROJECT_DIR"
-elif [ -d "$FALLBACK_PROJECT_DIR/.git" ]; then
-    PROJECT_DIR="$FALLBACK_PROJECT_DIR"
-else
-    echo "   ❌ Could not locate project directory."
-    echo "      Checked: $DEFAULT_PROJECT_DIR and $FALLBACK_PROJECT_DIR"
-    exit 1
+PROJECT_DIR="$(resolve_project_dir || true)"
+if [ -z "${PROJECT_DIR:-}" ]; then
+    PROJECT_DIR="$HOME/cortexbuild-ultimate"
+    echo "⚠️  Project directory not found. Bootstrapping at $PROJECT_DIR"
+    if [ ! -d "$PROJECT_DIR/.git" ]; then
+        git clone "https://github.com/adrianstanca1/cortexbuild-ultimate.git" "$PROJECT_DIR"
+    fi
 fi
 
 DIST_DIR="$PROJECT_DIR/dist"
+echo "Using project directory: $PROJECT_DIR"
 
 # Pull latest code from main deterministically
 echo "1. Pulling latest code..."
