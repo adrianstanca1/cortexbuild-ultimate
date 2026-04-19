@@ -115,11 +115,15 @@ ssh $SSH_OPTS "$VPS_HOST" "
     # Start services
     echo '🚀 Starting services...'
     # Force stop all containers and ensure ports are released
-    docker-compose down -t 10 --remove-orphans || true
+    docker-compose down -t 10 --remove-orphans 2>/dev/null || true
     # Kill anything still holding port 3001
     fuser -k 3001/tcp 2>/dev/null || true
     sleep 3
-    docker-compose up -d --build
+    docker-compose up -d --build 2>/dev/null || {
+        echo '⚠️ docker-compose failed, trying docker run commands...'
+        docker network create cortexbuild 2>/dev/null || true
+        docker run -d --name cortexbuild-api --restart always --network cortexbuild -p 127.0.0.1:3001:3001 --env-file $VPS_PATH/.env cortexbuild-ultimate:latest
+    }
 
     # Health check
     echo '🏥 Waiting for services to start...'
