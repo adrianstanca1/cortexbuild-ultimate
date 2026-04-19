@@ -221,6 +221,24 @@ jobs:
               fi
             fi
 
+            # Fallback: load secrets from common host env files.
+            for env_file in "$HOME/.env" "/root/.env" "/etc/cortexbuild.env" "/etc/environment"; do
+              if [ -f "$env_file" ]; then
+                set +u
+                set -a
+                # shellcheck disable=SC1090
+                source "$env_file" || true
+                set +a
+                set -u
+              fi
+            done
+
+            # Final fallback: use GitHub Actions secrets if configured.
+            [ -z "${JWT_SECRET:-}" ] && JWT_SECRET="${{ secrets.JWT_SECRET }}"
+            [ -z "${SESSION_SECRET:-}" ] && SESSION_SECRET="${{ secrets.SESSION_SECRET }}"
+            [ -z "${DB_PASSWORD:-}" ] && DB_PASSWORD="${{ secrets.DB_PASSWORD }}"
+            [ -z "${POSTGRES_PASSWORD:-}" ] && POSTGRES_PASSWORD="${{ secrets.POSTGRES_PASSWORD }}"
+
             # Validate required secrets are present
             if [ -z "${JWT_SECRET:-}" ]; then
               echo "FATAL: JWT_SECRET not set in $PROJECT_DIR/.env or $PROJECT_DIR/server/.env"
