@@ -171,7 +171,7 @@ echo ""
 echo "🔄 Restarting services..."
 ssh $SSH_OPTS "$VPS_HOST" "
     cd $VPS_PATH
-    docker-compose restart api
+    docker restart cortexbuild-api 2>/dev/null || true
     nginx -t >/dev/null 2>&1 && (systemctl reload nginx || service nginx reload || nginx -s reload)
 "
 

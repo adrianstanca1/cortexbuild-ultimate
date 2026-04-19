@@ -136,10 +136,24 @@ if docker ps -a --format '{{.Names}}' | grep -Fx "$CONTAINER_NAME" >/dev/null 2>
     fi
 fi
 
+if [ -z "${DB_PASSWORD:-}" ] && [ -n "${POSTGRES_PASSWORD:-}" ]; then
+    export DB_PASSWORD="$POSTGRES_PASSWORD"
+fi
+
+MISSING_SECRETS=()
+[ -z "${DB_PASSWORD:-}" ] && [ -z "${POSTGRES_PASSWORD:-}" ] && MISSING_SECRETS+=("DB_PASSWORD or POSTGRES_PASSWORD")
+[ -z "${JWT_SECRET:-}" ] && MISSING_SECRETS+=("JWT_SECRET")
+[ -z "${SESSION_SECRET:-}" ] && MISSING_SECRETS+=("SESSION_SECRET")
+if [ "${#MISSING_SECRETS[@]}" -gt 0 ]; then
+    echo "FATAL: Missing required secrets (${MISSING_SECRETS[*]}) in $PROJECT_DIR/.env or $PROJECT_DIR/server/.env (or recover from existing container env)."
+    exit 1
+fi
+
 docker run -d \
     --name "$CONTAINER_NAME" \
     --restart always \
     --network "$DOCKER_NET" \
+    -p 127.0.0.1:3001:3001 \
     -e DB_HOST=cortexbuild-db \
     -e DB_PORT=5432 \
     -e DB_NAME=cortexbuild \
