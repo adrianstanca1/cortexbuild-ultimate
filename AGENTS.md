@@ -23,6 +23,7 @@ Guide for AI coding agents working on CortexBuild Ultimate.
 ## API Layer
 
 Two competing API modules with different behaviors:
+
 - **`src/services/api.ts`** (`apiFetch`): Auto-converts snake_case → camelCase, throws on HTTP errors, `fetchAll()` unwraps `{ data, pagination }`. Use this for new code.
 - **`src/lib/api.ts`** (`apiRequest`): Returns `{ ok, status, data, error }`, no key conversion, throws only on network errors. Used by notification center only.
 

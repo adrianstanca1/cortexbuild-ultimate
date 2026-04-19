@@ -49,12 +49,14 @@ npm run dev
 ## Quick Command Reference
 
 ### Development
+
 ```bash
 npm run dev           # Frontend dev server (:5173)
 cd server && npm run dev  # Backend dev server (:3001)
 ```
 
 ### Testing
+
 ```bash
 npm test                  # All unit tests (Vitest)
 npm run test:watch       # Watch mode
@@ -64,6 +66,7 @@ npm run test:e2e:ui       # E2E with UI
 ```
 
 ### Build & Deploy
+
 ```bash
 npm run build        # Production build
 npm run lint         # ESLint
@@ -72,6 +75,7 @@ npm run verify:all  # Full pre-commit check
 ```
 
 ### Backend
+
 ```bash
 cd server
 npm run db:reset:local   # Rebuild local DB
@@ -167,14 +171,14 @@ Raw SQL migrations in `server/migrations/`. Generic CRUD via `makeRouter(tableNa
 
 ## Documentation
 
-| Document | Purpose |
-|----------|---------|
-| [docs/README.md](docs/README.md) | Full documentation index |
-| [docs/API_DOCUMENTATION.md](docs/API_DOCUMENTATION.md) | API reference |
-| [DEPLOYMENT_RUNBOOK.md](DEPLOYMENT_RUNBOOK.md) | Production deployment |
-| [CONTRIBUTING.md](CONTRIBUTING.md) | How to contribute |
-| [AGENTS.md](AGENTS.md) | Guide for AI coding agents |
-| [CLAUDE.md](CLAUDE.md) | Claude Code instructions |
+| Document                                               | Purpose                    |
+| ------------------------------------------------------ | -------------------------- |
+| [docs/README.md](docs/README.md)                       | Full documentation index   |
+| [docs/API_DOCUMENTATION.md](docs/API_DOCUMENTATION.md) | API reference              |
+| [DEPLOYMENT_RUNBOOK.md](DEPLOYMENT_RUNBOOK.md)         | Production deployment      |
+| [CONTRIBUTING.md](CONTRIBUTING.md)                     | How to contribute          |
+| [AGENTS.md](AGENTS.md)                                 | Guide for AI coding agents |
+| [CLAUDE.md](CLAUDE.md)                                 | Claude Code instructions   |
 
 ## Security
 

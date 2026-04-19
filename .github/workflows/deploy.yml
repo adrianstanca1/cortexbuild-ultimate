@@ -56,6 +56,11 @@ jobs:
 
       - name: Deploy to VPS
         uses: appleboy/ssh-action@v1.0.3
+        env:
+          JWT_SECRET: ${{ secrets.JWT_SECRET }}
+          SESSION_SECRET: ${{ secrets.SESSION_SECRET }}
+          POSTGRES_PASSWORD: ${{ secrets.POSTGRES_PASSWORD }}
+          DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
         with:
           host: ${{ secrets.SSH_HOST }}
           username: ${{ secrets.VPS_USER }}
@@ -181,35 +186,9 @@ jobs:
             IMAGE_NAME="cortexbuild-ultimate-api:latest"
             cd "$PROJECT_DIR"
 
-            # Ensure core dependencies are running and use Postgres network for API connectivity.
-            if [ -f "$PROJECT_DIR/docker-compose.yml" ]; then
-              docker compose up -d postgres redis ollama 2>&1 || docker-compose up -d postgres redis ollama 2>&1 || true
-            fi
-            docker start cortexbuild-db 2>&1 || true
-            docker start cortexbuild-redis 2>&1 || true
-
-            DB_CONTAINER_NET="$(docker inspect -f '{{range $k,$v := .NetworkSettings.Networks}}{{println $k}}{{end}}' cortexbuild-db 2>/dev/null | awk '/cortexbuild/ {print; exit}' || true)"
-            [ -z "${DB_CONTAINER_NET:-}" ] && DB_CONTAINER_NET="$(docker inspect -f '{{range $k,$v := .NetworkSettings.Networks}}{{println $k}}{{end}}' cortexbuild-db 2>/dev/null | awk 'NF && $0 != "bridge" {print; exit}' || true)"
-            if [ -n "${DB_CONTAINER_NET:-}" ] && docker network inspect "$DB_CONTAINER_NET" >/dev/null 2>&1; then
-              DOCKER_NET="$DB_CONTAINER_NET"
-            else
-              COMPOSE_NET="cortexbuild-ultimate_cortexbuild"
-              FALLBACK_NET="cortexbuild"
-              if docker network inspect "$COMPOSE_NET" >/dev/null 2>&1; then
-                DOCKER_NET="$COMPOSE_NET"
-              else
-                if ! docker network inspect "$FALLBACK_NET" >/dev/null 2>&1; then
-                  echo "Creating $FALLBACK_NET network..."
-                  docker network create "$FALLBACK_NET"
-                fi
-                DOCKER_NET="$FALLBACK_NET"
-              fi
-            fi
-
             git pull origin main
 
-            docker build -t "$IMAGE_NAME" -f Dockerfile.api .
-
+            # Load environment variables BEFORE docker commands
             set +u
             set -a
             if [ -f "$PROJECT_DIR/.env" ]; then
@@ -221,7 +200,7 @@ jobs:
             set +a
             set -u
 
-            # Fallback: recover secrets from existing container env if files are incomplete
+            # Recover secrets from existing container if available
             if docker ps -a --format '{{.Names}}' | grep -Fx "$CONTAINER_NAME" >/dev/null 2>&1; then
               EXISTING_ENV=$(docker inspect "$CONTAINER_NAME" --format '{{range .Config.Env}}{{println .}}{{end}}' 2>/dev/null || true)
               if [ -n "$EXISTING_ENV" ]; then
@@ -234,23 +213,82 @@ jobs:
               fi
             fi
 
-            # Fallback: load secrets from common host env files.
+            # Load from host env files as fallback
             for env_file in "$HOME/.env" "/root/.env" "/etc/cortexbuild.env" "/etc/environment"; do
               if [ -f "$env_file" ]; then
                 set +u
                 set -a
-                # shellcheck disable=SC1090
                 source "$env_file" || true
                 set +a
                 set -u
               fi
             done
 
-            # Final fallback: use GitHub Actions secrets if configured.
+            # Final fallback: GitHub Actions secrets (expanded when this workflow runs).
             [ -z "${JWT_SECRET:-}" ] && JWT_SECRET="${{ secrets.JWT_SECRET }}"
             [ -z "${SESSION_SECRET:-}" ] && SESSION_SECRET="${{ secrets.SESSION_SECRET }}"
             [ -z "${DB_PASSWORD:-}" ] && DB_PASSWORD="${{ secrets.DB_PASSWORD }}"
             [ -z "${POSTGRES_PASSWORD:-}" ] && POSTGRES_PASSWORD="${{ secrets.POSTGRES_PASSWORD }}"
+
+            # Env vars JWT_SECRET, SESSION_SECRET, POSTGRES_PASSWORD, DB_PASSWORD are set by GitHub Actions env:
+            JWT_SECRET="${JWT_SECRET:-}"
+            SESSION_SECRET="${SESSION_SECRET:-}"
+            POSTGRES_PASSWORD="${POSTGRES_PASSWORD:-}"
+            DB_PASSWORD="${DB_PASSWORD:-}"
+
+            # Get actual DB password
+            ACTUAL_DB_PASSWORD="${POSTGRES_PASSWORD:-${DB_PASSWORD}}"
+
+            # Validate required secrets
+            if [ -z "${JWT_SECRET:-}" ] || [ -z "${SESSION_SECRET:-}" ] || [ -z "${ACTUAL_DB_PASSWORD:-}" ]; then
+              echo "FATAL: Missing required secrets (JWT_SECRET, SESSION_SECRET, or DB_PASSWORD)"
+              exit 1
+            fi
+
+            docker build -t "$IMAGE_NAME" -f Dockerfile.api .
+
+            # Ensure postgres container exists and is running
+            if ! docker ps --format '{{.Names}}' | grep -Fx cortexbuild-db >/dev/null 2>&1; then
+              echo "Creating postgres container..."
+              docker run -d --name cortexbuild-db \
+                --network host \
+                -e POSTGRES_USER=cortexbuild \
+                -e POSTGRES_PASSWORD="$ACTUAL_DB_PASSWORD" \
+                -e POSTGRES_DB=cortexbuild \
+                pgvector/pgvector:pg16 2>&1 || true
+            else
+              docker start cortexbuild-db 2>&1 || true
+            fi
+
+            # Ensure redis container exists and is running
+            if ! docker ps --format '{{.Names}}' | grep -Fx cortexbuild-redis >/dev/null 2>&1; then
+              echo "Creating redis container..."
+              docker run -d --name cortexbuild-redis \
+                --network host \
+                redis:7-alpine 2>&1 || true
+            else
+              docker start cortexbuild-redis 2>&1 || true
+            fi
+
+            # Ensure ollama container exists and is running (AI / embeddings)
+            if ! docker ps --format '{{.Names}}' | grep -Fx cortexbuild-ollama >/dev/null 2>&1; then
+              echo "Creating ollama container..."
+              docker run -d --name cortexbuild-ollama \
+                --network host \
+                ollama/ollama:latest 2>&1 || true
+            else
+              docker start cortexbuild-ollama 2>&1 || true
+            fi
+
+            # Wait for postgres to be ready
+            for i in $(seq 1 30); do
+              if docker exec cortexbuild-db pg_isready -U cortexbuild >/dev/null 2>&1; then
+                echo "Postgres is ready"
+                break
+              fi
+              echo "Waiting for postgres..."
+              sleep 2
+            done
 
             # Validate required secrets are present
             if [ -z "${JWT_SECRET:-}" ]; then
@@ -261,13 +299,6 @@ jobs:
               echo "FATAL: SESSION_SECRET not set in $PROJECT_DIR/.env or $PROJECT_DIR/server/.env"
               exit 1
             fi
-            if [ -z "${POSTGRES_PASSWORD:-}" ] && [ -z "${DB_PASSWORD:-}" ]; then
-              echo "FATAL: Neither POSTGRES_PASSWORD nor DB_PASSWORD set in $PROJECT_DIR/.env or $PROJECT_DIR/server/.env"
-              exit 1
-            fi
-
-            # Get the DB password
-            ACTUAL_DB_PASSWORD="${POSTGRES_PASSWORD:-${DB_PASSWORD:-}}"
             echo "Deploying with secure credentials from .env"
 
             docker stop "$CONTAINER_NAME" 2>/dev/null || true
