@@ -183,10 +183,10 @@ jobs:
 
             # Ensure core dependencies are running and use Postgres network for API connectivity.
             if [ -f "$PROJECT_DIR/docker-compose.yml" ]; then
-              docker compose up -d postgres redis ollama >/dev/null 2>&1 || docker-compose up -d postgres redis ollama >/dev/null 2>&1 || true
+              docker compose up -d postgres redis ollama 2>&1 || docker-compose up -d postgres redis ollama 2>&1 || true
             fi
-            docker start cortexbuild-db >/dev/null 2>&1 || true
-            docker start cortexbuild-redis >/dev/null 2>&1 || true
+            docker start cortexbuild-db 2>&1 || true
+            docker start cortexbuild-redis 2>&1 || true
 
             DB_CONTAINER_NET="$(docker inspect -f '{{range $k,$v := .NetworkSettings.Networks}}{{println $k}}{{end}}' cortexbuild-db 2>/dev/null | awk '/cortexbuild/ {print; exit}' || true)"
             [ -z "${DB_CONTAINER_NET:-}" ] && DB_CONTAINER_NET="$(docker inspect -f '{{range $k,$v := .NetworkSettings.Networks}}{{println $k}}{{end}}' cortexbuild-db 2>/dev/null | awk 'NF && $0 != "bridge" {print; exit}' || true)"
