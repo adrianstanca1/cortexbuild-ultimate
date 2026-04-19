@@ -1,29 +1,45 @@
 ---
 name: local-handbook
 description: >-
-  Personal playbook for this machine. Before substantial edits, debugging, or
-  ambiguous requests, read logic.md (how to work) and memory.md (facts to
-  preserve). User’s explicit Cursor instructions override this skill when they
-  conflict. Update memory.md when the user states a durable preference or
-  corrects you.
+  Personal playbook (handbook v2, 2026-04). Before substantial edits, debugging,
+  ambiguous scope, or multi-step work: read logic.md then memory.md. User’s
+  explicit Cursor instructions override this skill when they conflict. Append
+  memory.md when the user states a durable preference or corrects a mistake
+  that should persist.
 ---
 
 # Local handbook
 
-## Files in this skill
+Companion files turn generic model behavior into **repeatable, verifiable** work on this machine and in mirrored repos.
 
-| File        | Purpose                                                                |
-| ----------- | ---------------------------------------------------------------------- |
-| `logic.md`  | How you should reason, verify, and behave on tasks.                    |
-| `memory.md` | Stable facts, preferences, and context worth carrying across sessions. |
+## Files
 
-## When to use
+| File        | Read for                                                           |
+| ----------- | ------------------------------------------------------------------ |
+| `logic.md`  | Reasoning, verification gates, safety, git/MCP habits.             |
+| `memory.md` | Facts that should survive across sessions (paths, remotes, prefs). |
 
-- Non-trivial implementation, refactors, or multi-step plans.
-- Conflicting requirements or missing constraints.
-- After the user corrects a mistake: capture the fix in `memory.md` if it should persist.
+## When this skill applies
+
+- Implementing or refactoring **non-trivial** behavior.
+- Debugging failures, flaky tests, or unclear stack traces.
+- Touching **auth, payments, migrations, deploy**, or anything irreversible without an explicit green light.
+- The user’s ask is **ambiguous** — clarify briefly, then proceed with stated assumptions.
+
+## Boot checklist (do in order)
+
+1. Skim **`memory.md`** for this scope (global vs repo section).
+2. If the repo has **`AGENTS.md`**, **`CLAUDE.md`**, or **`SESSION.md`**, read the relevant one before large edits.
+3. Choose the **narrowest** verify command that matches the change (see repo `memory.md` where listed).
+4. After edits, **run** that command; report failures with evidence, not guesses.
+
+## Progressive disclosure
+
+- **Project rules win** over this handbook when they conflict.
+- Prefer **existing patterns** in the codebase over new abstractions unless the task requires them.
+- Use **MCP tools** when configured and they reduce ambiguity (docs, tickets, CI); handle tool errors without pretending success.
 
 ## Maintenance
 
-- Keep `memory.md` short and factual; move long narratives to a project `AGENTS.md` or `CLAUDE.md` if the work is repo-specific.
-- Keep `logic.md` about process and quality bars, not secrets or one-off task notes.
+- Keep `memory.md` **short** (bullets, not essays). Move long narratives to project `CLAUDE.md` / `AGENTS.md`.
+- Keep `logic.md` about **process**, not secrets or one-off ticket dumps.
