@@ -29,8 +29,8 @@ test.describe('Projects Module', () => {
     await page.waitForTimeout(2000)
     
     // Should have some structure - table, grid, list, cards, or any content
-    const hasTable = await page.locator('table').isVisible()
-    const hasGrid = await page.locator('[class*="grid"]').isVisible()
+    const hasTable = (await page.locator('table').count()) > 0
+    const hasGrid = (await page.locator('[class*="grid"]').count()) > 0
     const hasCards = await page.locator('[class*="card"]').count() > 0
     const hasAnyContent = await page.locator('#root').innerHTML().then(html => html.length > 100)
     

@@ -80,12 +80,20 @@ app.use(helmet({
 
 // ─── Middleware ───────────────────────────────────────────────────────────────
 // CORS: only allow configured origins — never default to '*' in production
-const corsOrigin = process.env.CORS_ORIGIN;
-if (!corsOrigin) {
+const corsOrigins = (process.env.CORS_ORIGIN || '')
+  .split(',')
+  .map((origin) => origin.trim())
+  .filter(Boolean);
+if (!corsOrigins.length) {
   console.warn('[CORS] CORS_ORIGIN not set — restrict to specific origins for production');
 }
 app.use(cors({
-  origin: corsOrigin || false,   // deny all if not configured
+  origin: (origin, callback) => {
+    // Allow same-origin/browserless requests (curl, health checks, server-to-server).
+    if (!origin) return callback(null, true);
+    if (!corsOrigins.length) return callback(null, false);
+    return callback(null, corsOrigins.includes(origin));
+  },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization'],

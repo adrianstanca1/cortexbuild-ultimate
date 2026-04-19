@@ -30,7 +30,7 @@ echo "Days remaining: $DAYS_LEFT"
 echo ""
 
 if [ "$DAYS_LEFT" -le "$CRITICAL_DAYS" ]; then
-  echo "🚨 CRITICAL: Certificate expires in $DAYS_DAYS days! RENEW IMMEDIATELY!"
+  echo "🚨 CRITICAL: Certificate expires in $DAYS_LEFT days! RENEW IMMEDIATELY!"
   exit 2
 elif [ "$DAYS_LEFT" -le "$WARN_DAYS" ]; then
   echo "⚠️  WARNING: Certificate expires in $DAYS_LEFT days. Plan renewal."

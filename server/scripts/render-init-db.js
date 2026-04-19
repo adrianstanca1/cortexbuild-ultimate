@@ -58,13 +58,13 @@ async function main() {
 
         // Try embeddings, but don't fail if pgvector extension fails to create
         try {
-            await runSqlFile(client, path.join(rootDir, 'server/migrations/003_embeddings.sql'));
+            await runSqlFile(client, path.join(rootDir, 'server/migrations/040_embeddings.sql'));
         } catch(e) {
             console.log('Skipped embeddings.sql due to error (possibly missing pgvector extension):', e.message);
         }
 
-        await runSqlFile(client, path.join(rootDir, 'server/migrations/004_add_permissions.sql'));
-        await runSqlFile(client, path.join(rootDir, 'server/migrations/005_add_team_member_data.sql'));
+        await runSqlFile(client, path.join(rootDir, 'server/migrations/005_add_permissions.sql'));
+        await runSqlFile(client, path.join(rootDir, 'server/migrations/041_add_team_member_data.sql'));
         await runSqlFile(client, path.join(rootDir, 'server/migrations/006_add_equipment_permits.sql'));
         await runSqlFile(client, path.join(rootDir, 'server/migrations/007_add_risk_mitigation_actions.sql'));
         await runSqlFile(client, path.join(rootDir, 'server/migrations/008_add_contact_interactions.sql'));
@@ -73,10 +73,11 @@ async function main() {
         await runSqlFile(client, path.join(rootDir, 'server/migrations/011_add_drawing_transmittals.sql'));
         await runSqlFile(client, path.join(rootDir, 'server/migrations/013_enhanced_projects.sql'));
         await runSqlFile(client, path.join(rootDir, 'server/migrations/014_add_email_templates.sql'));
-        await runSqlFile(client, path.join(rootDir, 'server/migrations/migration_new_modules.sql'));
+        await runSqlFile(client, path.join(rootDir, 'server/migrations/035_new_modules_corrected.sql'));
         await runSqlFile(client, path.join(rootDir, 'server/scripts/seed.sql'));
         await runSqlFile(client, path.join(rootDir, 'server/migrations/016_local_dev_reconcile.sql'));
         await runSqlFile(client, path.join(rootDir, 'server/migrations/012_seed_audit_log.sql'));
+        await runSqlFile(client, path.join(rootDir, 'server/migrations/060_add_invoices_payment_fields.sql'));
 
         // Try conversational indexes
         try {

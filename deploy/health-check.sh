@@ -35,6 +35,25 @@ check_url() {
     return 1
 }
 
+check_cortex_health_payload() {
+    local url="$1"
+    local description="$2"
+    local payload
+
+    echo -n "🔍 Verifying $description health contract... "
+    payload=$(curl -fsS "$url" 2>/dev/null || true)
+    if [ -z "$payload" ]; then
+        echo "❌ FAILED (no payload)"
+        return 1
+    fi
+    if python3 -c "import json,sys; d=json.loads(sys.argv[1]); c=d.get('checks') or {}; assert d.get('status')=='ok'; assert c.get('postgres') is True; assert c.get('redis') is True" "$payload" >/dev/null 2>&1; then
+        echo "✅ OK"
+        return 0
+    fi
+    echo "❌ FAILED (unexpected payload)"
+    return 1
+}
+
 # Function to check service on VPS
 check_vps_service() {
     local service="$1"
@@ -57,6 +76,7 @@ echo "================================="
 # Production URL checks
 check_url "$PRODUCTION_URL" "Production frontend" || PROD_ISSUES=1
 check_url "$PRODUCTION_URL/api/health" "Production API" || PROD_ISSUES=1
+check_cortex_health_payload "$PRODUCTION_URL/api/health" "Production API" || PROD_ISSUES=1
 
 echo
 echo "🏠 LOCAL ENVIRONMENT CHECKS"
@@ -65,6 +85,7 @@ echo "==========================="
 # Local service checks
 check_url "$LOCAL_URL:3000" "Local frontend dev server" || LOCAL_ISSUES=1
 check_url "$LOCAL_URL:3001/api/health" "Local API server" || LOCAL_ISSUES=1
+check_cortex_health_payload "$LOCAL_URL:3001/api/health" "Local API server" || LOCAL_ISSUES=1
 check_url "$LOCAL_URL:9090" "Prometheus" || LOCAL_ISSUES=1
 check_url "$LOCAL_URL:3002" "Grafana" || LOCAL_ISSUES=1
 check_url "$LOCAL_URL:11434/api/tags" "Ollama AI service" || LOCAL_ISSUES=1
@@ -147,6 +168,22 @@ if echo | openssl s_client -connect cortexbuildpro.com:443 -servername cortexbui
     echo "✅ Valid (expires: $CERT_EXPIRY)"
 else
     echo "❌ Certificate check failed"
+    PROD_ISSUES=1
+fi
+
+echo -n "🔍 Checking TLS handshake (apex)... "
+if echo | openssl s_client -connect cortexbuildpro.com:443 -servername cortexbuildpro.com -brief >/dev/null 2>&1; then
+    echo "✅ Handshake OK"
+else
+    echo "❌ Handshake failed"
+    PROD_ISSUES=1
+fi
+
+echo -n "🔍 Checking TLS handshake (www)... "
+if echo | openssl s_client -connect www.cortexbuildpro.com:443 -servername www.cortexbuildpro.com -brief >/dev/null 2>&1; then
+    echo "✅ Handshake OK"
+else
+    echo "❌ Handshake failed"
     PROD_ISSUES=1
 fi
 

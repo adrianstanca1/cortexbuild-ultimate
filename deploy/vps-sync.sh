@@ -125,8 +125,8 @@ ssh $SSH_OPTS "$VPS_HOST" "
     echo '🏥 Waiting for services to start...'
     sleep 30
 
-    # Verify deployment
-    if curl -f http://localhost/api/health >/dev/null 2>&1; then
+    # Verify deployment against Cortex API contract on local API port
+    if curl -fsS http://127.0.0.1:3001/api/health 2>/dev/null | python3 -c 'import json,sys; d=json.load(sys.stdin); c=d.get("checks") or {}; assert d.get("status")=="ok"; assert c.get("postgres") is True; assert c.get("redis") is True' >/dev/null 2>&1; then
         echo '✅ Deployment successful!'
         echo '🌐 Site available at: https://cortexbuildpro.com'
     else

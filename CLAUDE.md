@@ -74,22 +74,22 @@ npm run verify:routes    # Verify all 48 server routes are registered
 
 **Specialized routes** (`server/routes/`):
 
-| Route | Purpose |
-|-------|---------|
-| `auth.js` | JWT login/register (bcrypt 12 rounds). Sessions in Redis. |
-| `oauth.js` | Google/Microsoft OAuth via Passport. CSRF state with 10-min expiry. |
-| `ai.js` | Ollama streaming chat, intent routing, AI execute actions |
-| `ai-intents/*.js` | 25 per-domain intent classifiers (invoices, RFIs, daily reports, projects, team, safety, budget, etc.) |
-| `ai-predictive.js` | Cost forecasting and budget variance analysis |
-| `rag.js` | Vector similarity via `pg_vector` cosine distance on `rag_embeddings` |
-| `bim-models.js` | IFC upload + metadata extraction via `IfcAPI` |
-| `workers/bimProcessor.js` | Background BIM processing queue using `SELECT FOR UPDATE SKIP LOCKED` polling |
-| `notifications.js` | CRUD + mark-read/snooze/archive. Returns `{ notifications: [...], total, unreadCount }` |
-| `files.js` / `upload.js` | Multer → `server/uploads/`, magic number validation |
-| `deploy.js` | Rate-limited (5/hour) deploy webhook, protected by `DEPLOY_SECRET` bearer token |
-| `email.js` | Email templates, send, bulk, schedule |
-| `generic.js` | Per-table CRUD factory (30+ tables) |
-| `backup.js` | Full database export with table whitelist. Table names validated via `ALLOWED_TABLE_MAP` (Object.fromEntries) to prevent SQL injection. |
+| Route                     | Purpose                                                                                                                                 |
+| ------------------------- | --------------------------------------------------------------------------------------------------------------------------------------- |
+| `auth.js`                 | JWT login/register (bcrypt 12 rounds). Sessions in Redis.                                                                               |
+| `oauth.js`                | Google/Microsoft OAuth via Passport. CSRF state with 10-min expiry.                                                                     |
+| `ai.js`                   | Ollama streaming chat, intent routing, AI execute actions                                                                               |
+| `ai-intents/*.js`         | 25 per-domain intent classifiers (invoices, RFIs, daily reports, projects, team, safety, budget, etc.)                                  |
+| `ai-predictive.js`        | Cost forecasting and budget variance analysis                                                                                           |
+| `rag.js`                  | Vector similarity via `pg_vector` cosine distance on `rag_embeddings`                                                                   |
+| `bim-models.js`           | IFC upload + metadata extraction via `IfcAPI`                                                                                           |
+| `workers/bimProcessor.js` | Background BIM processing queue using `SELECT FOR UPDATE SKIP LOCKED` polling                                                           |
+| `notifications.js`        | CRUD + mark-read/snooze/archive. Returns `{ notifications: [...], total, unreadCount }`                                                 |
+| `files.js` / `upload.js`  | Multer → `server/uploads/`, magic number validation                                                                                     |
+| `deploy.js`               | Rate-limited (5/hour) deploy webhook, protected by `DEPLOY_SECRET` bearer token                                                         |
+| `email.js`                | Email templates, send, bulk, schedule                                                                                                   |
+| `generic.js`              | Per-table CRUD factory (30+ tables)                                                                                                     |
+| `backup.js`               | Full database export with table whitelist. Table names validated via `ALLOWED_TABLE_MAP` (Object.fromEntries) to prevent SQL injection. |
 
 **Feature flags** (`server/middleware/featureFlag.js`): `requireFeature()` middleware + `isFeatureEnabled()` helper. 5 flags: FEATURE_AI_AGENTS, FEATURE_RAG_SEARCH, FEATURE_WEBSOCKET, FEATURE_FILE_UPLOAD, FEATURE_EMAIL. Set `"false"` in `server/.env` to disable. Default: enabled when unset. Returns 403 with `{ code: 'FEATURE_DISABLED', feature }` — distinguishable from auth 403s.
 
@@ -130,16 +130,17 @@ npm run verify:routes    # Verify all 48 server routes are registered
 
 All services on `cortexbuild-ultimate_cortexbuild` Docker network:
 
-| Container | Port | Hostname |
-|----------|------|----------|
-| `cortexbuild-api` | 127.0.0.1:3001 | `cortexbuild-api` |
-| `cortexbuild-db` | 127.0.0.1:5432 | `cortexbuild-db` |
-| `cortexbuild-redis` | 127.0.0.1:6379 | `cortexbuild-redis` |
+| Container            | Port            | Hostname             |
+| -------------------- | --------------- | -------------------- |
+| `cortexbuild-api`    | 127.0.0.1:3001  | `cortexbuild-api`    |
+| `cortexbuild-db`     | 127.0.0.1:5432  | `cortexbuild-db`     |
+| `cortexbuild-redis`  | 127.0.0.1:6379  | `cortexbuild-redis`  |
 | `cortexbuild-ollama` | 127.0.0.1:11434 | `cortexbuild-ollama` |
 
 Nginx runs on the host (not Docker) on ports 80/443.
 
 **Safe deploy** (on VPS, after git pull):
+
 ```bash
 bash /root/deploy-api.sh    # Docker rebuild + health check
 bash /root/deploy-frontend.sh
@@ -154,6 +155,7 @@ bash /root/deploy-frontend.sh
 Server loads `.env` from `server/.env` subdirectory. Deploy script (`/root/deploy-api.sh`) sources both root `.env` and `server/.env`, then passes all vars via `-e` flags to the Docker container. If a new var is added to `server/.env`, it must also be added to the deploy script's `docker run` command.
 
 Key vars:
+
 - `DB_PASSWORD` — Required (server exits without it)
 - `JWT_SECRET` / `SESSION_SECRET` — 64-char hex strings
 - `OLLAMA_HOST` — `http://cortexbuild-ollama:11434` (Docker network), `http://localhost:11434` (host)
@@ -199,3 +201,61 @@ docker exec cortexbuild-db psql -U cortexbuild -d cortexbuild -c "\d <table>"
 # Quick restart (no rebuild)
 docker restart cortexbuild-api
 ```
+
+### Integrations
+
+- **Construction**: Procore, BIM 360, PlanGrid, Fieldwire
+- **Accounting**: QuickBooks, Xero
+- **Communication**: Slack, Microsoft Teams
+- **Automation**: Zapier
+
+---
+
+<!-- BEGIN: Productivity System Working Memory -->
+<!-- Managed by /productivity commands. Do not confuse with project instructions above. -->
+<!-- Full knowledge base lives in ./memory/ -->
+
+# Working Memory
+
+## Me
+
+Adrian (adrian.stanca1@gmail.com) — building CortexBuild Ultimate. Appears to be primary/sole developer based on project docs.
+
+## People
+
+_No collaborators surfaced from docs. Will capture as they appear._
+
+## Terms
+
+| Term                  | Meaning                                                                                                |
+| --------------------- | ------------------------------------------------------------------------------------------------------ |
+| **RAMS**              | Risk Assessments and Method Statements (UK construction safety docs)                                   |
+| **RFI**               | Request for Information (construction workflow) — has dedicated AI subagent                            |
+| **CO**                | Change Order — has dedicated AI subagent                                                               |
+| **BIM / IFC**         | Building Information Modeling / Industry Foundation Classes (3D building data; rendered via `web-ifc`) |
+| **RBAC**              | Role-Based Access Control — roles: super_admin, company_owner, admin, project_manager, field_worker    |
+| **RAG**               | Retrieval-Augmented Generation — `rag_embeddings` + `pg_vector` cosine similarity                      |
+| **Generic CRUD**      | `server/routes/generic.js` factory with column whitelists                                              |
+| **Canonical repo**    | `cortexbuild-ultimate` (the `-1` copy is a secondary clone that must stay in sync)                     |
+| **Superpowers plans** | Step-by-step plans in `docs/superpowers/plans/`                                                        |
+| **VPS**               | Hostinger production host `root@72.62.132.43`                                                          |
+
+See `memory/glossary.md` for the full decoder ring.
+
+## Projects
+
+| Name                     | What                                                                                    |
+| ------------------------ | --------------------------------------------------------------------------------------- |
+| **CortexBuild Ultimate** | v3.0.0 — AI-powered unified construction management SaaS for UK contractors (this repo) |
+| **cortexbuildpro.com**   | Production frontend (https://www.cortexbuildpro.com)                                    |
+
+See `memory/projects/cortexbuild-ultimate.md` for the deep file.
+
+## Preferences
+
+- Uses canonical + staging repo pair; cares about keeping them in sync (deploy drift bit him on 2026-04-04)
+- Pre-merge gates always: `tsc --noEmit` + ESLint quiet + `npm test` + `npm run build`
+- Commits per step when following superpowers plans
+- Conventional commit style (`fix(deploy): …`, `feat(...)`, etc.)
+
+<!-- END: Productivity System Working Memory -->
