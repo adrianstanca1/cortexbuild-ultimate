@@ -54,11 +54,13 @@ fi
 DIST_DIR="$PROJECT_DIR/dist"
 echo "Using project directory: $PROJECT_DIR"
 
-# Pull latest code
+# Pull latest code from main deterministically
 echo "1. Pulling latest code..."
 cd "$PROJECT_DIR"
-git pull origin main
-echo "   ✅ Code pulled"
+git fetch origin main
+git checkout main
+git pull --ff-only origin main
+echo "   ✅ Code pulled on main"
 echo ""
 
 # Build frontend

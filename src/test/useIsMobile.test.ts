@@ -95,4 +95,17 @@ describe('useIsMobile', () => {
 
     expect(removeEventListenerSpy).toHaveBeenCalledWith('change', expect.any(Function));
   });
+
+  it('should recalculate isMobile when breakpoint prop changes', () => {
+    Object.defineProperty(window, 'innerWidth', { value: 900 });
+
+    const { result, rerender } = renderHook(
+      ({ breakpoint }) => useIsMobile(breakpoint),
+      { initialProps: { breakpoint: 800 } }
+    );
+    expect(result.current).toBe(false);
+
+    rerender({ breakpoint: 1000 });
+    expect(result.current).toBe(true);
+  });
 });
