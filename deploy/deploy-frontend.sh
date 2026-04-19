@@ -262,11 +262,11 @@ main() {
     if ! npm run build 2>&1 | tail -20; then
         log_error "Build failed"
         notify "failure" "Build failed"
-        echo ""
-        read -p "Rollback to previous version? [y/N] " -n 1 -r
-        echo
-        if [[ $REPLY =~ ^[Yy]$ ]]; then
+        if [ "${AUTO_ROLLBACK_ON_FAILURE:-true}" = "true" ]; then
+            log_warn "Auto rollback enabled; restoring previous frontend backup"
             rollback
+        else
+            log_warn "Auto rollback disabled; leaving failed frontend build for investigation"
         fi
         exit 1
     fi

@@ -202,17 +202,17 @@ rollback() {
             --name "$CONTAINER_NAME" \
             --restart always \
             --network "$(detect_docker_network)" \
-                      -e DB_HOST=127.0.0.1 \
+            -e DB_HOST=cortexbuild-db \
             -e DB_PORT=5432 \
             -e DB_NAME=cortexbuild \
             -e DB_USER=cortexbuild \
             -e DB_PASSWORD \
             -e JWT_SECRET \
             -e SESSION_SECRET \
-            -e REDIS_HOST=127.0.0.1 \
+            -e REDIS_HOST=cortexbuild-redis \
             -e PORT=3001 \
             -e NODE_ENV=production \
-            -e OLLAMA_HOST=http://127.0.0.1:11434 \
+            -e OLLAMA_HOST="${OLLAMA_HOST:-http://cortexbuild-ollama:11434}" \
             -e CORS_ORIGIN="${CORS_ORIGIN:-https://cortexbuildpro.com}" \
             -e FRONTEND_URL="${FRONTEND_URL:-https://cortexbuildpro.com}" \
             "$backup_image"
@@ -324,14 +324,14 @@ main() {
         --name "$CONTAINER_NAME" \
         --restart always \
         --network "$docker_net" \
-              -e DB_HOST=127.0.0.1 \
+        -e DB_HOST=cortexbuild-db \
         -e DB_PORT=5432 \
         -e DB_NAME=cortexbuild \
         -e DB_USER=cortexbuild \
         -e DB_PASSWORD \
         -e JWT_SECRET \
         -e SESSION_SECRET \
-        -e REDIS_HOST=127.0.0.1 \
+        -e REDIS_HOST=cortexbuild-redis \
         -e PORT=3001 \
         -e NODE_ENV=production \
         -e OLLAMA_HOST="${OLLAMA_HOST:-http://cortexbuild-ollama:11434}" \
@@ -385,15 +385,14 @@ main() {
         log_error "Health check failed after $MAX_RETRIES attempts"
         log_error "Showing recent logs:"
         docker logs --tail 30 "$CONTAINER_NAME" 2>&1 || true
-        
-        # Offer rollback
-        echo ""
-        read -p "Rollback to previous version? [y/N] " -n 1 -r
-        echo
-        if [[ $REPLY =~ ^[Yy]$ ]]; then
+
+        # Keep deploy automation non-interactive by default.
+        if [ "${AUTO_ROLLBACK_ON_FAILURE:-true}" = "true" ]; then
+            log_warn "Auto rollback enabled; restoring previous container image"
             rollback
             notify "rollback" "Deployed version failed, rolled back"
         else
+            log_warn "Auto rollback disabled; leaving failed deployment for investigation"
             notify "failure" "Deployment failed, no rollback performed"
         fi
         exit 1

@@ -294,8 +294,10 @@ run_checks() {
     check_http "prod:frontend" "$PRODUCTION_URL" "200" "15"
     check_http "prod:api" "$PRODUCTION_URL/api/health" "200" "10"
     check_health_contract "prod:api-contract" "$PRODUCTION_URL/api/health"
-    check_ssl "prod" "www.cortexbuildpro.com"
-    check_tls "prod"
+    check_ssl "cortexbuildpro.com"
+    check_ssl "www.cortexbuildpro.com"
+    check_tls "cortexbuildpro.com"
+    check_tls "www.cortexbuildpro.com"
     check_security_headers "$PRODUCTION_URL"
     check_performance "$PRODUCTION_URL" "3.0"
     

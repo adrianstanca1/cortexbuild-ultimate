@@ -11,10 +11,11 @@ set -euo pipefail
 
 # Configuration
 readonly SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-readonly DEPLOY_API="$SCRIPT_DIR/deploy-api.sh"
-readonly DEPLOY_FRONTEND="$SCRIPT_DIR/deploy-frontend.sh"
-readonly VPS_SYNC="$SCRIPT_DIR/vps-sync.sh"
-readonly HEALTH_CHECK="$SCRIPT_DIR/health-check.sh"
+readonly DEPLOY_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
+readonly DEPLOY_API="$DEPLOY_ROOT/deploy-api.sh"
+readonly DEPLOY_FRONTEND="$DEPLOY_ROOT/deploy-frontend.sh"
+readonly VPS_SYNC="$DEPLOY_ROOT/vps-sync.sh"
+readonly HEALTH_CHECK="$DEPLOY_ROOT/health-check.sh"
 
 # Options
 API_ONLY=false

@@ -142,7 +142,7 @@ services:
       ollama:
         condition: service_healthy
     volumes:
-      - ./server/uploads:/app/uploads:ro
+      - ./server/uploads:/app/uploads
     healthcheck:
       test: ["CMD", "curl", "-sf", "http://localhost:3001/api/health"]
       interval: 30s
