@@ -56,6 +56,11 @@ jobs:
 
       - name: Deploy to VPS
         uses: appleboy/ssh-action@v1.0.3
+        env:
+          JWT_SECRET: ${{ secrets.JWT_SECRET }}
+          SESSION_SECRET: ${{ secrets.SESSION_SECRET }}
+          POSTGRES_PASSWORD: ${{ secrets.POSTGRES_PASSWORD }}
+          DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
         with:
           host: ${{ secrets.SSH_HOST }}
           username: ${{ secrets.VPS_USER }}
@@ -219,11 +224,11 @@ jobs:
               fi
             done
 
-            # Use GitHub Actions secrets as final fallback
-            [ -z "${JWT_SECRET:-}" ] && JWT_SECRET="${{ secrets.JWT_SECRET }}"
-            [ -z "${SESSION_SECRET:-}" ] && SESSION_SECRET="${{ secrets.SESSION_SECRET }}"
-            [ -z "${POSTGRES_PASSWORD:-}" ] && POSTGRES_PASSWORD="${{ secrets.POSTGRES_PASSWORD }}"
-            [ -z "${DB_PASSWORD:-}" ] && DB_PASSWORD="${{ secrets.DB_PASSWORD }}"
+            # Env vars JWT_SECRET, SESSION_SECRET, POSTGRES_PASSWORD, DB_PASSWORD are set by GitHub Actions env:
+            JWT_SECRET="${JWT_SECRET:-}"
+            SESSION_SECRET="${SESSION_SECRET:-}"
+            POSTGRES_PASSWORD="${POSTGRES_PASSWORD:-}"
+            DB_PASSWORD="${DB_PASSWORD:-}"
 
             # Get actual DB password
             ACTUAL_DB_PASSWORD="${POSTGRES_PASSWORD:-${DB_PASSWORD}}"
