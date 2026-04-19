@@ -14,6 +14,7 @@ import { NotificationCenter } from '../ui/NotificationCenter';
 import { NotificationPreferences } from '../ui/NotificationPreferences';
 import { ThemeSwitcher } from '../daisyui/ThemeSwitcher';
 import { useAuth } from '../../context/AuthContext';
+import { HeaderClock } from './HeaderClock';
 
 const MODULE_LABELS: Record<Module, string> = {
   'dashboard':            'Dashboard',
@@ -108,7 +109,6 @@ export function Header({ activeModule, onMenuToggle }: { activeModule: Module; o
   const [notifOpen, setNotifOpen] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
   const [searchFocused, setSearchFocused] = useState(false);
-  const [currentTime, setCurrentTime] = useState(new Date());
   const [showNotificationCenter, setShowNotificationCenter] = useState(false);
   const [showNotificationPrefs, setShowNotificationPrefs] = useState(false);
   const accent = MODULE_ACCENTS[activeModule] || '#f59e0b';
@@ -120,11 +120,9 @@ export function Header({ activeModule, onMenuToggle }: { activeModule: Module; o
     const handleOffline = () => setIsOnline(false);
     window.addEventListener('online', handleOnline);
     window.addEventListener('offline', handleOffline);
-    const timer = setInterval(() => setCurrentTime(new Date()), 1000);
     return () => {
       window.removeEventListener('online', handleOnline);
       window.removeEventListener('offline', handleOffline);
-      clearInterval(timer);
     };
   }, []);
 
@@ -221,21 +219,7 @@ export function Header({ activeModule, onMenuToggle }: { activeModule: Module; o
             {label}
           </div>
           {/* Construction status strip */}
-          <div
-            style={{
-              fontFamily: "'JetBrains Mono', monospace",
-              fontSize: '8px',
-              fontWeight: 600,
-              color: '#475569',
-              letterSpacing: '0.12em',
-              textTransform: 'uppercase',
-              marginTop: '1px',
-            }}
-          >
-            {currentTime.toLocaleDateString('en-GB', { weekday: 'short', day: '2-digit', month: 'short', year: 'numeric' })}
-            {' · '}
-            {currentTime.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
-          </div>
+          <HeaderClock />
         </div>
       </div>
 
