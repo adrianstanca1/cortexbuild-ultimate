@@ -2763,7 +2763,7 @@
       let html = `
         <div class="search-box">
           <span style="color: var(--text-muted);">&#128269;</span>
-          <input type="text" placeholder="Search ${escapeHtml(dirName)}..." id="dirSearch">
+          <input type="text" placeholder="Search ${dirName}..." id="dirSearch" oninput="filterMemoryDirectory('${dirName}', this.value)">
         </div>
         <div class="memory-grid" id="dirGrid">
       `;
@@ -2797,7 +2797,7 @@
         if (!preview) preview = getPreview(p.rawContent, 100);
 
         html += `
-          <div class="memory-card" data-action="open-file" data-dir-name="${escapeHtml(dirName)}" data-file-name="${escapeHtml(file.name)}" data-search="${escapeHtml((title + ' ' + JSON.stringify(p.fields) + ' ' + p.rawContent).toLowerCase())}">
+          <div class="memory-card" onclick="openFileModal('${dirName}', '${file.name}')" data-search="${escapeHtml((title + ' ' + JSON.stringify(p.fields) + ' ' + p.rawContent).toLowerCase())}">
             <div class="memory-card-title">${escapeHtml(title)}</div>
             ${fieldsHtml}
             <div class="memory-card-preview">${escapeHtml(preview)}</div>
@@ -2806,20 +2806,19 @@
       }
 
       html += `
-        <div class="add-btn" data-action="add-file" data-dir-name="${escapeHtml(dirName)}">
+        <div class="add-btn" onclick="openNewFileModal('${dirName}')">
           + Add to ${dirName}
         </div>
       </div>`;
 
       memoryContentContainer.innerHTML = html;
-      bindDirectoryInteractions(dirName);
     }
 
     function renderMemoryDirectoryFlat(dirName, files) {
       let html = `
         <div class="search-box">
           <span style="color: var(--text-muted);">&#128269;</span>
-          <input type="text" placeholder="Search ${escapeHtml(dirName)}..." id="dirSearch">
+          <input type="text" placeholder="Search ${dirName}..." id="dirSearch" oninput="filterMemoryDirectory('${dirName}', this.value)">
         </div>
         <div id="dirGrid">
       `;
@@ -2872,34 +2871,6 @@
 
       html += `</div>`;
       memoryContentContainer.innerHTML = html;
-      bindDirectoryInteractions(dirName);
-    }
-
-    function bindDirectoryInteractions(dirName) {
-      const dirSearch = document.getElementById('dirSearch');
-      if (dirSearch) {
-        dirSearch.addEventListener('input', (event) => {
-          const target = event.target;
-          filterMemoryDirectory(dirName, target.value);
-        });
-      }
-
-      const openFileCards = memoryContentContainer.querySelectorAll('[data-action="open-file"]');
-      openFileCards.forEach((card) => {
-        card.addEventListener('click', () => {
-          const cardDir = card.getAttribute('data-dir-name');
-          const cardFile = card.getAttribute('data-file-name');
-          openFileModal(cardDir, cardFile);
-        });
-      });
-
-      const addButton = memoryContentContainer.querySelector('[data-action="add-file"]');
-      if (addButton) {
-        addButton.addEventListener('click', () => {
-          const cardDir = addButton.getAttribute('data-dir-name');
-          openNewFileModal(cardDir);
-        });
-      }
     }
 
     function filterMemoryDirectory(dirName, searchTerm) {
@@ -2952,7 +2923,6 @@
     // Modal functions
     function openFileModal(dirName, fileName) {
       const files = memoryData.memoryDirs[dirName];
-      if (!Array.isArray(files)) return;
       const file = files.find(f => f.name === fileName);
       if (!file) return;
 
