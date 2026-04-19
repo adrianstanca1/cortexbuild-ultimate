@@ -188,7 +188,8 @@ jobs:
             docker start cortexbuild-db >/dev/null 2>&1 || true
             docker start cortexbuild-redis >/dev/null 2>&1 || true
 
-            DB_CONTAINER_NET="$(docker inspect -f '{{range $k,$v := .NetworkSettings.Networks}}{{println $k}}{{end}}' cortexbuild-db 2>/dev/null | awk 'NF{print; exit}' || true)"
+            DB_CONTAINER_NET="$(docker inspect -f '{{range $k,$v := .NetworkSettings.Networks}}{{println $k}}{{end}}' cortexbuild-db 2>/dev/null | awk '/cortexbuild/ {print; exit}' || true)"
+            [ -z "${DB_CONTAINER_NET:-}" ] && DB_CONTAINER_NET="$(docker inspect -f '{{range $k,$v := .NetworkSettings.Networks}}{{println $k}}{{end}}' cortexbuild-db 2>/dev/null | awk 'NF && $0 != "bridge" {print; exit}' || true)"
             if [ -n "${DB_CONTAINER_NET:-}" ] && docker network inspect "$DB_CONTAINER_NET" >/dev/null 2>&1; then
               DOCKER_NET="$DB_CONTAINER_NET"
             else
