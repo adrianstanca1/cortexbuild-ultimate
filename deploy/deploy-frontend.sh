@@ -8,8 +8,21 @@ echo "=== CortexBuild Frontend Deploy ==="
 echo "Started at: $(date)"
 echo ""
 
-PROJECT_DIR="/var/www/cortexbuild-ultimate"
-DIST_DIR="/var/www/cortexbuild-ultimate/dist"
+DEFAULT_PROJECT_DIR="/var/www/cortexbuild-ultimate"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+FALLBACK_PROJECT_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
+
+if [ -d "$DEFAULT_PROJECT_DIR/.git" ]; then
+    PROJECT_DIR="$DEFAULT_PROJECT_DIR"
+elif [ -d "$FALLBACK_PROJECT_DIR/.git" ]; then
+    PROJECT_DIR="$FALLBACK_PROJECT_DIR"
+else
+    echo "   ❌ Could not locate project directory."
+    echo "      Checked: $DEFAULT_PROJECT_DIR and $FALLBACK_PROJECT_DIR"
+    exit 1
+fi
+
+DIST_DIR="$PROJECT_DIR/dist"
 
 # Pull latest code
 echo "1. Pulling latest code..."
