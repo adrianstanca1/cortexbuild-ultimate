@@ -32,6 +32,7 @@
 ## Someday
 
 <!-- Deferred features from docs/PLATFORM_SPEC.md — promote to Active when ready -->
+
 - [ ] **MFA (TOTP)**
 - [ ] **Workflow automation engine** — visual builder
 - [ ] **Stripe billing integration**

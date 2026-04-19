@@ -186,7 +186,7 @@ test.describe('API Team', { skip: !isApiEnabled }, () => {
       test.skip()
     }
 
-    const response = await request.get(`${API_BASE}/team-members`, {
+    const response = await request.get(`${API_BASE}/team`, {
       headers: {
         Authorization: `Bearer ${authToken}`,
       },
