@@ -50,6 +50,7 @@ jobs:
     name: Deploy to VPS
     needs: test
     runs-on: ubuntu-latest
+    timeout-minutes: 180
     steps:
       - uses: actions/checkout@v4
 
@@ -59,7 +60,8 @@ jobs:
           host: ${{ secrets.SSH_HOST }}
           username: ${{ secrets.VPS_USER }}
           password: ${{ secrets.VPS_PASSWORD }}
-          command_timeout: 45m
+          # VPS frontend (npm ci + tsc/vite) + API image build + health gates can exceed 45m.
+          command_timeout: 120m
           script: |
             set -e
             # Copy deploy scripts
