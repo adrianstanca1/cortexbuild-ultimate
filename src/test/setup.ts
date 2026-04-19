@@ -1,10 +1,8 @@
-import '@testing-library/jest-dom';
-import { vi } from 'vitest';
-
-HTMLCanvasElement.prototype.getContext = () => null;
+import "@testing-library/jest-dom";
+import { vi } from "vitest";
 
 // Mock matchMedia to support event listeners and manual triggers
-Object.defineProperty(window, 'matchMedia', {
+Object.defineProperty(window, "matchMedia", {
   writable: true,
   value: vi.fn().mockImplementation((query: string) => {
     const listeners = new Set<(e: MediaQueryListEvent) => void>();
@@ -12,13 +10,21 @@ Object.defineProperty(window, 'matchMedia', {
       matches: false,
       media: query,
       onchange: null,
-      addListener: (handler: (e: MediaQueryListEvent) => void) => listeners.add(handler),
-      removeListener: (handler: (e: MediaQueryListEvent) => void) => listeners.delete(handler),
-      addEventListener: (type: string, handler: (e: MediaQueryListEvent) => void) => {
-        if (type === 'change') listeners.add(handler);
+      addListener: (handler: (e: MediaQueryListEvent) => void) =>
+        listeners.add(handler),
+      removeListener: (handler: (e: MediaQueryListEvent) => void) =>
+        listeners.delete(handler),
+      addEventListener: (
+        type: string,
+        handler: (e: MediaQueryListEvent) => void,
+      ) => {
+        if (type === "change") listeners.add(handler);
       },
-      removeEventListener: (type: string, handler: (e: MediaQueryListEvent) => void) => {
-        if (type === 'change') listeners.delete(handler);
+      removeEventListener: (
+        type: string,
+        handler: (e: MediaQueryListEvent) => void,
+      ) => {
+        if (type === "change") listeners.delete(handler);
       },
       dispatchEvent: (event: Event) => {
         listeners.forEach((handler) => handler(event));
@@ -28,5 +34,53 @@ Object.defineProperty(window, 'matchMedia', {
   }),
 });
 
-window.URL.createObjectURL = () => 'blob:test';
+// Mock URL.createObjectURL and revokeObjectURL
+window.URL.createObjectURL = () => "blob:test";
 window.URL.revokeObjectURL = () => {};
+
+// Mock canvas getContext
+HTMLCanvasElement.prototype.getContext = () => null;
+
+// Mock ResizeObserver
+global.ResizeObserver = vi.fn().mockImplementation(() => ({
+  observe: vi.fn(),
+  unobserve: vi.fn(),
+  disconnect: vi.fn(),
+}));
+
+// Mock IntersectionObserver
+global.IntersectionObserver = vi.fn().mockImplementation(() => ({
+  observe: vi.fn(),
+  unobserve: vi.fn(),
+  disconnect: vi.fn(),
+  takeRecords: vi.fn(),
+}));
+
+// Mock scrollTo
+window.scrollTo = vi.fn();
+
+// Mock requestAnimationFrame
+global.requestAnimationFrame = vi.fn((cb) => setTimeout(cb, 16));
+global.cancelAnimationFrame = vi.fn((id) => clearTimeout(id));
+
+// Mock console errors in tests (optional - comment out to debug)
+const originalError = console.error;
+console.error = (...args: unknown[]) => {
+  if (
+    typeof args[0] === "string" &&
+    (args[0].includes("Warning:") ||
+      args[0].includes("React does not recognize"))
+  ) {
+    return;
+  }
+  originalError.call(console, ...args);
+};
+
+// Mock fetch globally
+global.fetch = vi.fn();
+
+// Clean up after each test
+afterEach(() => {
+  vi.clearAllMocks();
+  vi.restoreAllMocks();
+});

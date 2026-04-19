@@ -10,6 +10,7 @@
     "preview": "vite preview",
     "lint": "eslint src --ext .ts,.tsx",
     "lint:fix": "eslint src --ext .ts,.tsx --fix",
+    "typecheck": "tsc --noEmit",
     "test": "NODE_ENV=test vitest run",
     "test:watch": "NODE_ENV=test vitest",
     "test:coverage": "NODE_ENV=test vitest run --coverage",
@@ -20,8 +21,14 @@
     "verify:routes": "./scripts/verify-server-routes.sh",
     "verify:all": "./scripts/verify-server-routes.sh && ./scripts/pre-commit-check.sh",
     "precommit": "./scripts/pre-commit-check.sh",
-    "check": "npx tsc --noEmit && npm run lint && npm test",
-    "prepare": "husky install"
+    "check": "npm run typecheck && npm run lint && npm test",
+    "prepare": "husky install",
+    "db:migrate": "cd server && npm run db:migrate",
+    "db:reset": "cd server && npm run db:reset:local",
+    "server:dev": "cd server && npm run dev",
+    "server:build": "cd server && npm run build",
+    "format": "prettier --write \"src/**/*.{ts,tsx,json,css,md}\"",
+    "format:check": "prettier --check \"src/**/*.{ts,tsx,json,css,md}\""
   },
   "dependencies": {
     "@dnd-kit/utilities": "^3.2.2",
@@ -77,6 +84,7 @@
     "husky": "^9.1.7",
     "jsdom": "^29.0.2",
     "postcss": "^8.5.9",
+    "rollup-plugin-visualizer": "^7.0.1",
     "sharp": "^0.34.5",
     "typescript": "^6.0.2",
     "typescript-eslint": "^8.58.1",

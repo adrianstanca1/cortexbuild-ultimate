@@ -4,13 +4,66 @@ This directory contains production deployment and maintenance scripts.
 
 ## Quick Reference
 
-| Script | Purpose | Usage |
-|--------|---------|-------|
-| `deploy.sh` | Frontend-only deployment | `./deploy.sh` |
-| `deploy/vps-sync.sh` | Full stack deployment | `./deploy/vps-sync.sh` |
-| `deploy/sync-code.sh` | Git sync (code only) | `./deploy/sync-code.sh` |
-| `deploy/recreate-nginx.sh` | Fix nginx container mounts | `./deploy/recreate-nginx.sh` |
-| `deploy/setup-production-env.sh` | Generate secure .env files | `./deploy/setup-production-env.sh` |
+| Script                           | Purpose                           | Usage                              |
+| -------------------------------- | --------------------------------- | ---------------------------------- |
+| `deploy.sh`                      | Frontend-only deployment          | `./deploy.sh`                      |
+| `deploy/vps-sync.sh`             | Full stack deployment             | `./deploy/vps-sync.sh`             |
+| `deploy/sync-code.sh`            | Git sync (code only)              | `./deploy/sync-code.sh`            |
+| `deploy/recreate-nginx.sh`       | Fix nginx container mounts        | `./deploy/recreate-nginx.sh`       |
+| `deploy/setup-production-env.sh` | Generate secure .env files        | `./deploy/setup-production-env.sh` |
+| `deploy/health-check.sh`         | Comprehensive health verification | `./deploy/health-check.sh`         |
+| `deploy/scripts/full-deploy.sh`  | Orchestrated full deployment      | `./deploy/scripts/full-deploy.sh`  |
+| `deploy/scripts/rollback.sh`     | Rollback API/frontend/code        | `./deploy/scripts/rollback.sh`     |
+
+---
+
+## Deployment Workflows
+
+### 1. Full Production Deploy (Recommended)
+
+```bash
+# Orchestrated deploy with health checks
+cd ~/cortexbuild-ultimate
+./deploy/scripts/full-deploy.sh
+
+# Or manual step-by-step:
+./deploy/deploy-api.sh      # 1. Deploy API (Docker)
+./deploy/deploy-frontend.sh  # 2. Deploy frontend
+```
+
+### 2. Code-Only Sync (Fast)
+
+When you've made code changes and want a quick sync without full Docker rebuild:
+
+```bash
+cd ~/cortexbuild-ultimate
+./deploy/sync-code.sh
+```
+
+### 3. Frontend Only
+
+For UI/styling changes only:
+
+```bash
+cd ~/cortexbuild-ultimate
+./deploy/deploy-frontend.sh
+```
+
+### 4. Rollback
+
+```bash
+# List available backups
+./deploy/scripts/rollback.sh --list
+
+# Rollback API
+./deploy/scripts/rollback.sh --api
+
+# Rollback frontend
+./deploy/scripts/rollback.sh --frontend
+
+# Rollback code to previous commit
+./deploy/scripts/rollback.sh --code HEAD~1
+```
 
 ---
 
@@ -41,62 +94,66 @@ ssh -i ~/.ssh/id_ed25519_vps root@72.62.132.43
 
 ## Scripts
 
-### 1. `deploy.sh` - Frontend Deployment
+### deploy-api.sh - API Deployment (VPS Side)
 
-**Purpose:** Quick deployment of frontend assets only (dist/).
+**Purpose:** Builds Docker image and deploys API container on VPS.
 
-**Use when:** You only changed frontend code (React components, styles, etc.)
+**Location on VPS:** `/root/deploy-api.sh`
 
-**What it does:**
-1. Builds production bundle (`npm run build`)
-2. Syncs `dist/` to VPS via rsync
-3. Fixes file permissions for nginx
-4. Verifies site is accessible
+**Features:**
 
-**Usage:**
+- Atomic deployment with rollback on failure
+- Secret recovery from existing container
+- Health contract verification
+- Docker network auto-detection
+- Backup before deploy
+- Webhook notifications
+
+**Usage (on VPS):**
+
 ```bash
-cd /Users/adrianstanca/cortexbuild-ultimate
-./deploy.sh
+ssh root@72.62.132.43
+bash /root/deploy-api.sh
 ```
 
-**Environment variables:**
-- `SSH_KEY` - Path to SSH key (default: `~/.ssh/id_ed25519_vps`)
+**Environment Variables:**
+
+- `DEPLOY_WEBHOOK_URL` - Slack/Discord webhook for notifications
+- `AUTO_ROLLBACK_ON_FAILURE` - Set to `false` to disable auto-rollback
 
 ---
 
-### 2. `deploy/vps-sync.sh` - Full Stack Deployment
+### deploy-frontend.sh - Frontend Deployment (VPS Side)
 
-**Purpose:** Complete deployment including backend, Docker images, and frontend.
+**Purpose:** Builds frontend and syncs to VPS.
 
-**Use when:** You changed backend code, dependencies, or Docker configuration.
+**Location on VPS:** `/root/deploy-frontend.sh`
 
-**What it does:**
-1. Builds production frontend
-2. Builds Docker image locally
-3. Creates deployment archive (excludes node_modules, .env, etc.)
-4. Uploads to VPS
-5. Creates backup of current deployment
-6. Installs dependencies on VPS
-7. Rebuilds and restarts Docker containers
-8. Runs health checks
+**Features:**
 
-**Usage:**
+- Pre-build validation (disk, memory)
+- Backup before deploy
+- CDN cache invalidation
+- Nginx reload verification
+- Rollback capability
+
+**Usage (on VPS):**
+
 ```bash
-cd /Users/adrianstanca/cortexbuild-ultimate
-./deploy/vps-sync.sh
+ssh root@72.62.132.43
+bash /root/deploy-frontend.sh
 ```
-
-**Duration:** ~5-10 minutes
 
 ---
 
-### 3. `deploy/sync-code.sh` - Git Code Sync
+### sync-code.sh - Git Code Sync
 
 **Purpose:** Sync git commits to VPS without full deployment.
 
 **Use when:** You want to quickly sync code changes and let VPS rebuild.
 
 **What it does:**
+
 1. Compares local and VPS git commits
 2. Shows commits that will be synced
 3. Creates backup of current code
@@ -107,8 +164,9 @@ cd /Users/adrianstanca/cortexbuild-ultimate
 8. Runs health checks
 
 **Usage:**
+
 ```bash
-cd /Users/adrianstanca/cortexbuild-ultimate
+cd ~/cortexbuild-ultimate
 ./deploy/sync-code.sh
 ```
 
@@ -116,13 +174,14 @@ cd /Users/adrianstanca/cortexbuild-ultimate
 
 ---
 
-### 4. `deploy/recreate-nginx.sh` - Fix Nginx Mounts
+### recreate-nginx.sh - Fix Nginx Mounts
 
 **Purpose:** Recreate nginx container with correct volume bindings.
 
 **Use when:** Nginx is mounting from wrong path (e.g., `/root/cortexbuild-work/` instead of `/var/www/cortexbuild-ultimate/`)
 
 **What it does:**
+
 1. Stops nginx container
 2. Removes container
 3. Recreates with correct mounts from docker-compose.yml
@@ -130,20 +189,22 @@ cd /Users/adrianstanca/cortexbuild-ultimate
 5. Runs health checks
 
 **Usage:**
+
 ```bash
-cd /Users/adrianstanca/cortexbuild-ultimate
+cd ~/cortexbuild-ultimate
 ./deploy/recreate-nginx.sh
 ```
 
 ---
 
-### 5. `deploy/setup-production-env.sh` - Environment Setup
+### setup-production-env.sh - Environment Setup
 
 **Purpose:** Generate secure `.env` files on VPS with random secrets.
 
 **Use when:** Setting up fresh production environment or rotating secrets.
 
 **What it does:**
+
 1. Generates secure random secrets (JWT, session, deploy, DB password)
 2. Prompts for configuration values
 3. Creates `.env`, `server/.env`, and `.env.docker`
@@ -151,12 +212,85 @@ cd /Users/adrianstanca/cortexbuild-ultimate
 5. Restarts services
 
 **Usage:**
+
 ```bash
-cd /Users/adrianstanca/cortexbuild-ultimate
+cd ~/cortexbuild-ultimate
 ./deploy/setup-production-env.sh
 ```
 
-**⚠️ Important:** Save the generated secrets securely!
+**Important:** Save the generated secrets securely!
+
+---
+
+### health-check.sh - Comprehensive Health Verification
+
+**Purpose:** Verify all services are healthy.
+
+**Features:**
+
+- Multi-environment checks (Production, Local, VPS)
+- SSL/TLS certificate monitoring
+- Database connectivity tests
+- Docker container health
+- Security headers verification
+- Performance benchmarks
+- JSON output for monitoring systems
+
+**Usage:**
+
+```bash
+# Human-readable output
+./deploy/health-check.sh
+
+# JSON output (for monitoring)
+./deploy/health-check.sh --json
+
+# Verbose output
+./deploy/health-check.sh --verbose
+```
+
+---
+
+### full-deploy.sh - Orchestrated Deployment
+
+**Purpose:** Coordinates API + Frontend deployment with rollback on failure.
+
+**Options:**
+
+- `--api-only` - Deploy API only
+- `--frontend-only` - Deploy frontend only
+- `--skip-health` - Skip post-deploy health checks
+- `--skip-build` - Skip build step (use existing)
+
+**Usage:**
+
+```bash
+./deploy/scripts/full-deploy.sh
+./deploy/scripts/full-deploy.sh --api-only
+./deploy/scripts/full-deploy.sh --skip-health
+```
+
+---
+
+### rollback.sh - Rollback Script
+
+**Purpose:** Rollback API, frontend, or code to previous versions.
+
+**Options:**
+
+- `--api` - Rollback API container
+- `--frontend` - Rollback frontend files
+- `--code [commit]` - Rollback code to git commit
+- `--list` - List available backups
+
+**Usage:**
+
+```bash
+./deploy/scripts/rollback.sh --list
+./deploy/scripts/rollback.sh --api
+./deploy/scripts/rollback.sh --frontend
+./deploy/scripts/rollback.sh --code HEAD~1
+```
 
 ---
 
@@ -165,6 +299,7 @@ cd /Users/adrianstanca/cortexbuild-ultimate
 ### 1. Never Commit Secrets
 
 All `.env*` files are in `.gitignore`. Never commit:
+
 - Database passwords
 - JWT secrets
 - API keys
@@ -181,8 +316,10 @@ Run `setup-production-env.sh` periodically to rotate secrets.
 ### 4. Backup Before Deploy
 
 All deployment scripts create backups automatically:
+
 - Code backups: `/var/backups/cortexbuild-code-YYYYMMDD_HHMMSS.tar.gz`
-- Full backups: `/var/backups/cortexbuild-YYYYMMDD_HHMMSS/`
+- API container backups: Keep last 5 as Docker images
+- Frontend backups: `/var/backups/cortexbuild-frontend/frontend-YYYYMMDD-HHMMSS/`
 
 ### 5. Rollback Procedure
 
@@ -195,13 +332,9 @@ ssh -i ~/.ssh/id_ed25519_vps root@72.62.132.43
 # List backups
 ls -la /var/backups/cortexbuild-*
 
-# Rollback to specific backup
-cd /var/www
-sudo rm -rf cortexbuild-ultimate
-sudo mv /var/backups/cortexbuild-20260401_120000 cortexbuild-ultimate
-cd cortexbuild-ultimate
-docker-compose down
-docker-compose up -d
+# Manual rollback (if script fails)
+./deploy/scripts/rollback.sh --list
+./deploy/scripts/rollback.sh --api
 ```
 
 ---
@@ -272,31 +405,67 @@ docker exec cortexbuild-nginx ls -la /var/www/cortexbuild-ultimate/dist/
 
 ## Production URLs
 
-| Service | URL |
-|---------|-----|
-| Main Site | https://www.cortexbuildpro.com |
+| Service    | URL                                       |
+| ---------- | ----------------------------------------- |
+| Main Site  | https://www.cortexbuildpro.com            |
 | API Health | https://www.cortexbuildpro.com/api/health |
-| Grafana | http://72.62.132.43:3002 |
-| Prometheus | http://72.62.132.43:9090 |
-| VPS Direct | http://72.62.132.43 |
+| Grafana    | http://72.62.132.43:3002                  |
+| Prometheus | http://72.62.132.43:9090                  |
+| VPS Direct | http://72.62.132.43                       |
 
 ---
 
 ## VPS Information
 
-| Item | Value |
-|------|-------|
-| IP Address | 72.62.132.43 |
-| SSH User | root |
-| SSH Key | `~/.ssh/id_ed25519_vps` |
-| Deployment Path | `/var/www/cortexbuild-ultimate` |
-| Docker Network | cortexbuild |
+| Item             | Value                           |
+| ---------------- | ------------------------------- |
+| IP Address       | 72.62.132.43                    |
+| SSH User         | root                            |
+| SSH Key          | `~/.ssh/id_ed25519_vps`         |
+| Deployment Path  | `/var/www/cortexbuild-ultimate` |
+| Docker Network   | cortexbuild                     |
+| API Container    | cortexbuild-api                 |
+| DB Container     | cortexbuild-db                  |
+| Redis Container  | cortexbuild-redis               |
+| Ollama Container | cortexbuild-ollama              |
+
+---
+
+## Monitoring
+
+### Health Check Cron Setup
+
+```bash
+# Add to crontab on LOCAL machine for daily checks
+0 6 * * * cd ~/cortexbuild-ultimate && ./deploy/health-check.sh --json >> ~/logs/health-check-$(date +\%Y\%m\%d).log 2>&1
+
+# Or run from VPS crontab
+0 6 * * * /var/www/cortexbuild-ultimate/deploy/health-check.sh --json >> /var/log/health-check-daily.log 2>&1
+```
+
+### Resource Monitoring
+
+On VPS, monitor resources:
+
+```bash
+# Real-time container stats
+watch -n 1 'docker stats --no-stream --format "table {{.Name}}\t{{.CPUPerc}}\t{{.MemUsage}}\t{{.NetIO}}"'
+
+# Disk usage
+df -h
+docker system df
+
+# Memory
+free -h
+```
 
 ---
 
 ## Support
 
 For issues or questions:
+
 1. Check logs: `docker-compose logs -f api`
 2. Review runbook: `DEPLOYMENT_RUNBOOK.md`
 3. Check architecture: `ARCHITECTURE.md`
+4. Run health check: `./deploy/health-check.sh --verbose`

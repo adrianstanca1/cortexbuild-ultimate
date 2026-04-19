@@ -1,240 +1,406 @@
 #!/bin/bash
+# =============================================================================
+# CortexBuild Ultimate - COMPREHENSIVE Health Check Script
+# =============================================================================
+# Features:
+#   - Multi-environment checks (Production, Local, VPS)
+#   - Detailed service verification
+#   - SSL certificate monitoring
+#   - Database connectivity tests
+#   - Docker container health
+#   - Performance metrics
+#   - JSON output for monitoring systems
+#
+# Usage: bash health-check.sh [--json] [--verbose]
+# =============================================================================
+
 set -euo pipefail
 
-# CortexBuild Ultimate - Comprehensive Health Check Script
-# Verifies all services and components are running correctly
-
+# Configuration
 readonly VPS_HOST="root@72.62.132.43"
-readonly PRODUCTION_URL="https://cortexbuildpro.com"
-readonly LOCAL_URL="http://localhost"
+readonly PRODUCTION_URL="https://www.cortexbuildpro.com"
+readonly LOCAL_API="http://localhost:3001"
+readonly LOCAL_FRONTEND="http://localhost:5173"
+readonly LOCAL_PROMETHEUS="http://localhost:9090"
+readonly LOCAL_GRAFANA="http://localhost:3002"
+readonly LOCAL_OLLAMA="http://localhost:11434"
 
-echo "🏥 CortexBuild Ultimate - Health Check"
-echo "======================================"
-date
-echo
+# Output mode
+JSON_OUTPUT=false
+VERBOSE=false
 
-# Function to check URL with retry
-check_url() {
-    local url="$1"
-    local description="$2"
-    local max_attempts=3
-    local attempt=1
+# Parse arguments
+while [[ $# -gt 0 ]]; do
+    case $1 in
+        --json) JSON_OUTPUT=true; shift ;;
+        --verbose) VERBOSE=true; shift ;;
+        *) echo "Unknown option: $1"; exit 1 ;;
+    esac
+done
+
+# Results storage
+declare -A CHECKS
+TOTAL_CHECKS=0
+PASSED_CHECKS=0
+FAILED_CHECKS=0
+
+# Colors
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+BLUE='\033[0;34m'
+NC='\033[0m'
+
+# Logging (only for non-JSON)
+log() {
+    local level="$1"
+    local message="$2"
+    if [ "$JSON_OUTPUT" = false ]; then
+        echo -e "${level} ${message}"
+    fi
+}
+log_info()   { log "${BLUE}[INFO]${NC}" "$1"; }
+log_ok()     { log "${GREEN}[OK]${NC}" "$1"; ((PASSED_CHECKS++)); }
+log_fail()   { log "${RED}[FAIL]${NC}" "$1"; ((FAILED_CHECKS++)); }
+log_warn()   { log "${YELLOW}[WARN]${NC}" "$1"; }
+log_section(){ log "" ""; log "${BLUE}=== $1 ===${NC}" ""; }
+
+record_check() {
+    local name="$1"
+    local status="$2"
+    local details="${3:-}"
+    CHECKS["$name"]="$status|$details"
+    ((TOTAL_CHECKS++))
+}
+
+# HTTP check with details
+check_http() {
+    local name="$1"
+    local url="$2"
+    local expected_code="${3:-200}"
+    local timeout="${4:-10}"
     
-    echo -n "🔍 Checking $description... "
+    local start_time
+    start_time=$(date +%s%3N)
     
-    while [ $attempt -le $max_attempts ]; do
-        if curl -sf "$url" >/dev/null 2>&1; then
-            echo "✅ OK"
+    local response
+    response=$(curl -sf -o /dev/null -w "%{http_code}|%{time_total}" --connect-timeout 5 --max-time "$timeout" "$url" 2>/dev/null || echo "000|0")
+    
+    local http_code="${response%%|*}"
+    local time_total="${response##*|}"
+    
+    if [ "$http_code" = "$expected_code" ]; then
+        record_check "$name" "pass" "${http_code} (${time_total}s)"
+        return 0
+    else
+        record_check "$name" "fail" "Expected $expected_code, got $http_code"
+        return 1
+    fi
+}
+
+# Health contract verification
+check_health_contract() {
+    local name="$1"
+    local url="$2"
+    
+    local payload
+    payload=$(curl -sf --connect-timeout 5 --max-time 10 "$url" 2>/dev/null || true)
+    
+    if [ -z "$payload" ]; then
+        record_check "$name" "fail" "No response"
+        return 1
+    fi
+    
+    # Verify JSON structure and checks
+    if python3 -c "
+import json,sys
+d=json.loads(sys.argv[1])
+c=d.get('checks',{})
+assert d.get('status')=='ok', f'Status: {d.get(\"status\")}'
+assert c.get('postgres') is True, 'Postgres failed'
+assert c.get('redis') is True, 'Redis failed'
+print('OK')
+" "$payload" 2>/dev/null; then
+        record_check "$name" "pass" "Contract verified"
+        return 0
+    else
+        record_check "$name" "fail" "Contract invalid"
+        return 1
+    fi
+}
+
+# Docker container check
+check_container() {
+    local name="$1"
+    local expected_status="${2:-running}"
+    
+    local status
+    status=$(docker ps --filter "name=$name" --format '{{.Status}}' 2>/dev/null || echo "not found")
+    
+    if echo "$status" | grep -qi "$expected_status"; then
+        record_check "container:$name" "pass" "$status"
+        return 0
+    else
+        record_check "container:$name" "fail" "$status"
+        return 1
+    fi
+}
+
+# Database connectivity
+check_database() {
+    local db_name="${1:-cortexbuild}"
+    local db_user="${2:-cortexbuild}"
+    
+    if docker exec cortexbuild-db pg_isready -U "$db_user" -d "$db_name" >/dev/null 2>&1; then
+        # Test query
+        if docker exec cortexbuild-db psql -U "$db_user" -d "$db_name" -c "SELECT 1;" >/dev/null 2>&1; then
+            record_check "database:$db_name" "pass" "Connected"
             return 0
         fi
-        sleep 2
-        ((attempt++))
-    done
-    
-    echo "❌ FAILED"
+    fi
+    record_check "database:$db_name" "fail" "Connection failed"
     return 1
 }
 
-check_cortex_health_payload() {
-    local url="$1"
-    local description="$2"
-    local payload
-
-    echo -n "🔍 Verifying $description health contract... "
-    payload=$(curl --connect-timeout 5 --max-time 10 -fsS "$url" 2>/dev/null || true)
-    if [ -z "$payload" ]; then
-        echo "❌ FAILED (no payload)"
-        return 1
-    fi
-    if python3 -c "import json,sys; d=json.loads(sys.argv[1]); c=d.get('checks') or {}; assert d.get('status')=='ok'; assert c.get('postgres') is True; assert c.get('redis') is True" "$payload" >/dev/null 2>&1; then
-        echo "✅ OK"
+# Redis check
+check_redis() {
+    if docker exec cortexbuild-redis redis-cli ping 2>/dev/null | grep -qi PONG; then
+        record_check "redis" "pass" "PONG"
         return 0
     fi
-    echo "❌ FAILED (unexpected payload)"
+    record_check "redis" "fail" "No response"
     return 1
 }
-
-# Function to check service on VPS
-check_vps_service() {
-    local service="$1"
-    local description="$2"
-    
-    echo -n "🔍 Checking $description on VPS... "
-    
-    if ssh -o ConnectTimeout=10 "$VPS_HOST" "$service" >/dev/null 2>&1; then
-        echo "✅ OK"
-        return 0
-    else
-        echo "❌ FAILED"
-        return 1
-    fi
-}
-
-echo "🌐 PRODUCTION ENVIRONMENT CHECKS"
-echo "================================="
-
-# Production URL checks
-check_url "$PRODUCTION_URL" "Production frontend" || PROD_ISSUES=1
-check_url "$PRODUCTION_URL/api/health" "Production API" || PROD_ISSUES=1
-check_cortex_health_payload "$PRODUCTION_URL/api/health" "Production API" || PROD_ISSUES=1
-
-echo
-echo "🏠 LOCAL ENVIRONMENT CHECKS"
-echo "==========================="
-
-# Local service checks
-check_url "$LOCAL_URL:3000" "Local frontend dev server" || LOCAL_ISSUES=1
-check_url "$LOCAL_URL:3001/api/health" "Local API server" || LOCAL_ISSUES=1
-check_cortex_health_payload "$LOCAL_URL:3001/api/health" "Local API server" || LOCAL_ISSUES=1
-check_url "$LOCAL_URL:9090" "Prometheus" || LOCAL_ISSUES=1
-check_url "$LOCAL_URL:3002" "Grafana" || LOCAL_ISSUES=1
-check_url "$LOCAL_URL:11434/api/tags" "Ollama AI service" || LOCAL_ISSUES=1
-
-echo
-echo "🐳 DOCKER CONTAINER STATUS"
-echo "=========================="
-
-if command -v docker >/dev/null 2>&1; then
-    echo "Local Docker containers:"
-    docker-compose ps 2>/dev/null | grep -E "(cortexbuild|Up|healthy)" || echo "⚠️ No containers running"
-else
-    echo "❌ Docker not available"
-    LOCAL_ISSUES=1
-fi
-
-echo
-echo "🔗 VPS CONNECTIVITY CHECKS"
-echo "=========================="
-
-# VPS accessibility
-if ping -c 1 72.62.132.43 >/dev/null 2>&1; then
-    echo "✅ VPS ping successful (72.62.132.43)"
-    
-    # SSH connectivity
-    if ssh -o ConnectTimeout=5 "$VPS_HOST" "echo 'SSH OK'" >/dev/null 2>&1; then
-        echo "✅ SSH connection successful"
-        
-        # VPS services
-        check_vps_service "docker ps --filter 'name=cortexbuild' --format 'table {{.Names}}\t{{.Status}}'" "Docker containers"
-        check_vps_service "curl -sf http://localhost/api/health" "VPS API endpoint"
-        check_vps_service "systemctl is-active docker" "Docker daemon"
-        
-    else
-        echo "❌ SSH connection failed"
-        echo "🔧 To fix: Check SSH keys or reset VPS password via Hostinger panel"
-        VPS_ISSUES=1
-    fi
-else
-    echo "❌ VPS unreachable (ping failed)"
-    VPS_ISSUES=1
-fi
-
-echo
-echo "💾 DATABASE CHECKS"
-echo "=================="
-
-# Local database
-if docker exec cortexbuild-db pg_isready -U cortexuser -d cortexbuild >/dev/null 2>&1; then
-    echo "✅ Local PostgreSQL responsive"
-    
-    # Database connection test
-    if docker exec cortexbuild-db psql -U cortexuser -d cortexbuild -c "SELECT 1;" >/dev/null 2>&1; then
-        echo "✅ Database query test passed"
-    else
-        echo "❌ Database query test failed"
-        LOCAL_ISSUES=1
-    fi
-else
-    echo "❌ Local PostgreSQL not responsive"
-    LOCAL_ISSUES=1
-fi
-
-# Redis
-if docker exec cortexbuild-redis redis-cli ping >/dev/null 2>&1; then
-    echo "✅ Redis responsive"
-else
-    echo "❌ Redis not responsive"
-    LOCAL_ISSUES=1
-fi
-
-echo
-echo "🔐 SECURITY STATUS"
-echo "=================="
 
 # SSL certificate check
-echo -n "🔍 Checking SSL certificate... "
-if echo | openssl s_client -connect cortexbuildpro.com:443 -servername cortexbuildpro.com 2>/dev/null | openssl x509 -noout -dates | grep -q "notAfter"; then
-    CERT_EXPIRY=$(echo | openssl s_client -connect cortexbuildpro.com:443 -servername cortexbuildpro.com 2>/dev/null | openssl x509 -noout -dates | grep "notAfter" | cut -d= -f2)
-    echo "✅ Valid (expires: $CERT_EXPIRY)"
-else
-    echo "❌ Certificate check failed"
-    PROD_ISSUES=1
-fi
+check_ssl() {
+    local domain="$1"
+    local port="${2:-443}"
+    
+    local cert_info
+    cert_info=$(echo | openssl s_client -connect "$domain:$port" -servername "$domain" 2>/dev/null | openssl x509 -noout -dates 2>/dev/null || echo "")
+    
+    if [ -z "$cert_info" ]; then
+        record_check "ssl:$domain" "fail" "No certificate"
+        return 1
+    fi
+    
+    local expiry
+    expiry=$(echo "$cert_info" | grep "notAfter" | cut -d= -f2)
+    record_check "ssl:$domain" "pass" "Expires: $expiry"
+    return 0
+}
 
-echo -n "🔍 Checking TLS handshake (apex)... "
-if echo | openssl s_client -connect cortexbuildpro.com:443 -servername cortexbuildpro.com -brief >/dev/null 2>&1; then
-    echo "✅ Handshake OK"
-else
-    echo "❌ Handshake failed"
-    PROD_ISSUES=1
-fi
+# TLS handshake check
+check_tls() {
+    local domain="$1"
+    
+    if echo | openssl s_client -connect "$domain:443" -servername "$domain" -brief 2>/dev/null >/dev/null; then
+        record_check "tls:$domain" "pass" "Handshake OK"
+        return 0
+    fi
+    record_check "tls:$domain" "fail" "Handshake failed"
+    return 1
+}
 
-echo -n "🔍 Checking TLS handshake (www)... "
-if echo | openssl s_client -connect www.cortexbuildpro.com:443 -servername www.cortexbuildpro.com -brief >/dev/null 2>&1; then
-    echo "✅ Handshake OK"
-else
-    echo "❌ Handshake failed"
-    PROD_ISSUES=1
-fi
+# VPS connectivity
+check_vps() {
+    local ping_result
+    ping_result=$(ping -c 1 -W 3 72.62.132.43 2>/dev/null && echo "ok" || echo "fail")
+    
+    if [ "$ping_result" = "ok" ]; then
+        record_check "vps:ping" "pass" "Reply received"
+        
+        # SSH check
+        if ssh -o ConnectTimeout=10 -o BatchMode=yes "$VPS_HOST" "echo ok" >/dev/null 2>&1; then
+            record_check "vps:ssh" "pass" "Connected"
+            return 0
+        else
+            record_check "vps:ssh" "fail" "Connection failed"
+            return 1
+        fi
+    else
+        record_check "vps:ping" "fail" "No reply"
+        return 1
+    fi
+}
+
+# Docker daemon check
+check_docker() {
+    if docker ps >/dev/null 2>&1; then
+        local container_count
+        container_count=$(docker ps --format '{{.Names}}' 2>/dev/null | wc -l)
+        record_check "docker" "pass" "$container_count containers running"
+        return 0
+    fi
+    record_check "docker" "fail" "Daemon not accessible"
+    return 1
+}
 
 # Security headers check
-echo -n "🔍 Checking security headers... "
-if curl -sI "$PRODUCTION_URL" | grep -q "Strict-Transport-Security"; then
-    echo "✅ HSTS enabled"
-else
-    echo "⚠️ Security headers missing"
-fi
-
-echo
-echo "📊 PERFORMANCE METRICS"
-echo "======================"
-
-# Response time check
-echo -n "🔍 Checking response times... "
-RESPONSE_TIME=$(curl -o /dev/null -s -w "%{time_total}" "$PRODUCTION_URL" || echo "failed")
-if [ "$RESPONSE_TIME" != "failed" ] && [ $(echo "$RESPONSE_TIME < 3.0" | bc -l) -eq 1 ]; then
-    echo "✅ ${RESPONSE_TIME}s (good)"
-else
-    echo "⚠️ Slow response: ${RESPONSE_TIME}s"
-fi
-
-echo
-echo "🎯 SUMMARY"
-echo "=========="
-
-TOTAL_ISSUES=$((${PROD_ISSUES:-0} + ${LOCAL_ISSUES:-0} + ${VPS_ISSUES:-0}))
-
-if [ $TOTAL_ISSUES -eq 0 ]; then
-    echo "🎉 ALL SYSTEMS HEALTHY!"
-    echo "✅ Production: Operational"
-    echo "✅ Local Dev: Operational" 
-    echo "✅ VPS: Accessible"
-    exit 0
-else
-    echo "⚠️ ISSUES DETECTED: $TOTAL_ISSUES"
+check_security_headers() {
+    local url="$1"
+    local missing=()
     
-    if [ ${PROD_ISSUES:-0} -gt 0 ]; then
-        echo "❌ Production issues detected"
+    local headers
+    headers=$(curl -sfI "$url" 2>/dev/null || true)
+    
+    # Check HSTS
+    if ! echo "$headers" | grep -qi "strict-transport-security"; then
+        missing+=("HSTS")
+    fi
+    # Check CSP
+    if ! echo "$headers" | grep -qi "content-security-policy"; then
+        missing+=("CSP")
+    fi
+    # Check X-Frame-Options
+    if ! echo "$headers" | grep -qi "x-frame-options"; then
+        missing+=("X-Frame-Options")
     fi
     
-    if [ ${LOCAL_ISSUES:-0} -gt 0 ]; then
-        echo "❌ Local environment issues detected"
+    if [ ${#missing[@]} -eq 0 ]; then
+        record_check "security-headers" "pass" "All present"
+        return 0
+    else
+        record_check "security-headers" "warn" "Missing: ${missing[*]}"
+        return 0  # Warning, not failure
     fi
+}
+
+# Performance check
+check_performance() {
+    local url="$1"
+    local max_time="${2:-3.0}"
     
-    if [ ${VPS_ISSUES:-0} -gt 0 ]; then
-        echo "❌ VPS connectivity issues detected"
-        echo "🔧 Fix VPS access: ~/cortexbuild-ultimate/deploy/vps-access-recovery.sh"
+    local time_total
+    time_total=$(curl -sf -o /dev/null -w "%{time_total}" --max-time 30 "$url" 2>/dev/null || echo "99")
+    
+    local time_ms
+    time_ms=$(echo "$time_total * 1000" | bc 2>/dev/null || echo "99999")
+    
+    if (( $(echo "$time_total < $max_time" | bc -l) )); then
+        record_check "performance:$url" "pass" "${time_total}s"
+        return 0
+    else
+        record_check "performance:$url" "fail" "Slow: ${time_total}s (max: ${max_time}s)"
+        return 1
     fi
+}
+
+# Run all checks
+run_checks() {
+    log_section "PRODUCTION ENVIRONMENT"
     
-    exit 1
-fi
+    check_http "prod:frontend" "$PRODUCTION_URL" "200" "15"
+    check_http "prod:api" "$PRODUCTION_URL/api/health" "200" "10"
+    check_health_contract "prod:api-contract" "$PRODUCTION_URL/api/health"
+    check_ssl "cortexbuildpro.com"
+    check_ssl "www.cortexbuildpro.com"
+    check_tls "cortexbuildpro.com"
+    check_tls "www.cortexbuildpro.com"
+    check_security_headers "$PRODUCTION_URL"
+    check_performance "$PRODUCTION_URL" "3.0"
+    
+    log_section "LOCAL DEVELOPMENT"
+    
+    check_http "local:frontend" "$LOCAL_FRONTEND" "200" "10" || true
+    check_http "local:api" "$LOCAL_API/api/health" "200" "10" || true
+    check_health_contract "local:api-contract" "$LOCAL_API/api/health" || true
+    
+    log_section "MONITORING STACK"
+    
+    check_http "local:prometheus" "$LOCAL_PROMETHEUS" "200" "5" || true
+    check_http "local:grafana" "$LOCAL_GRAFANA" "200" "5" || true
+    check_http "local:ollama" "$LOCAL_OLLAMA/api/tags" "200" "5" || true
+    
+    log_section "DOCKER CONTAINERS"
+    
+    check_docker
+    check_container "cortexbuild-db" "Up"
+    check_container "cortexbuild-redis" "Up"
+    check_container "cortexbuild-ollama" "Up"
+    check_container "cortexbuild-api" "Up" || true
+    
+    log_section "DATABASES"
+    
+    check_database || true
+    check_redis || true
+    
+    log_section "VPS CONNECTIVITY"
+    
+    check_vps || true
+}
+
+# Output results
+output_results() {
+    if [ "$JSON_OUTPUT" = true ]; then
+        # JSON output for monitoring systems
+        cat << EOF
+{
+  "timestamp": "$(date -Iseconds)",
+  "summary": {
+    "total": $TOTAL_CHECKS,
+    "passed": $PASSED_CHECKS,
+    "failed": $FAILED_CHECKS,
+    "status": "$([ $FAILED_CHECKS -eq 0 ] && echo "healthy" || echo "unhealthy")"
+  },
+  "checks": {
+EOF
+        local first=true
+        for name in "${!CHECKS[@]}"; do
+            local value="${CHECKS[$name]}"
+            local status="${value%%|*}"
+            local details="${value##*|}"
+            if [ "$first" = true ]; then
+                first=false
+            else
+                echo ","
+            fi
+            printf '    "%s": {"status": "%s", "details": "%s"}' "$name" "$status" "$details"
+        done
+        echo ""
+        echo "  }"
+        echo "}"
+    else
+        # Human-readable output
+        echo ""
+        echo "╔═══════════════════════════════════════════════════════════════╗"
+        echo "║              CortexBuild Health Check Results                   ║"
+        echo "╚═══════════════════════════════════════════════════════════════╝"
+        echo ""
+        
+        for name in "${!CHECKS[@]}"; do
+            local value="${CHECKS[$name]}"
+            local status="${value%%|*}"
+            local details="${value##*|}"
+            
+            case "$status" in
+                pass) echo -e "  ${GREEN}✓${NC} $name: $details" ;;
+                fail) echo -e "  ${RED}✗${NC} $name: $details" ;;
+                warn) echo -e "  ${YELLOW}⚠${NC} $name: $details" ;;
+            esac
+        done
+        
+        echo ""
+        echo "───────────────────────────────────────────────────────────────"
+        echo "  Total: $TOTAL_CHECKS  |  Passed: $PASSED_CHECKS  |  Failed: $FAILED_CHECKS"
+        echo "───────────────────────────────────────────────────────────────"
+        echo ""
+        
+        if [ $FAILED_CHECKS -eq 0 ]; then
+            echo -e "${GREEN}✓ ALL SYSTEMS HEALTHY${NC}"
+            exit 0
+        else
+            echo -e "${RED}✗ ISSUES DETECTED${NC}"
+            exit 1
+        fi
+    fi
+}
+
+# Main
+main() {
+    run_checks
+    output_results
+}
+
+main

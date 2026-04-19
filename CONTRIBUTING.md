@@ -1,53 +1,10 @@
-# 🤝 Contributing to CortexBuild Ultimate
+# Contributing to CortexBuild Ultimate
 
-**Version:** 3.0.0  
-**Platform Health:** 100/100  
-**Last Updated:** 2026-04-01
+**Version:** 3.0.0 | **Platform Health:** 100/100
 
 ---
 
-## 🎯 Welcome!
-
-Thank you for your interest in contributing to CortexBuild Ultimate! This guide will help you get started.
-
----
-
-## 📋 Table of Contents
-
-1. [Code of Conduct](#code-of-conduct)
-2. [Getting Started](#getting-started)
-3. [Development Setup](#development-setup)
-4. [Making Changes](#making-changes)
-5. [Pull Request Process](#pull-request-process)
-6. [Coding Standards](#coding-standards)
-7. [Testing Guidelines](#testing-guidelines)
-8. [Documentation](#documentation)
-
----
-
-## 📜 Code of Conduct
-
-### Our Pledge
-
-We pledge to make participation in our project a harassment-free experience for everyone.
-
-### Expected Behavior
-
-- Be respectful and inclusive
-- Accept constructive criticism
-- Focus on what's best for the community
-- Show empathy towards others
-
-### Unacceptable Behavior
-
-- Harassment or discrimination
-- Trolling or insulting comments
-- Publishing others' private information
-- Other unethical conduct
-
----
-
-## 🚀 Getting Started
+## Getting Started
 
 ### Prerequisites
 
@@ -55,106 +12,76 @@ We pledge to make participation in our project a harassment-free experience for 
 - npm or yarn
 - Git
 - Docker (for local database)
+- PM2 (for backend process management)
 
-### Fork and Clone
+### Setup
 
 ```bash
-# 1. Fork the repository on GitHub
-# 2. Clone your fork
+# 1. Fork and clone
 git clone https://github.com/YOUR_USERNAME/cortexbuild-ultimate.git
 cd cortexbuild-ultimate
 
-# 3. Add upstream remote
+# 2. Add upstream
 git remote add upstream https://github.com/adrianstanca1/cortexbuild-ultimate.git
 
-# 4. Create branch for your work
-git checkout -b feature/your-feature-name
-```
-
----
-
-## 💻 Development Setup
-
-### Install Dependencies
-
-```bash
-# Frontend
+# 3. Install dependencies
 npm install
-
-# Backend
 cd server && npm install && cd ..
-```
 
-### Environment Setup
-
-```bash
-# Copy environment template
+# 4. Configure environment
 cp .env.example .env.local
+# Edit .env.local with your settings
 
-# Edit with your settings
-nano .env.local
-```
+# 5. Start database
+docker compose up -d  # or use local Postgres
 
-### Start Development Environment
+# 6. Reset database
+cd server && npm run db:reset:local
 
-```bash
-# Start backend
+# 7. Start development
 pm2 start server/index.js --name cortexbuild-api
-
-# Start frontend (in new terminal)
 npm run dev
 ```
 
-### Verify Setup
+---
+
+## Branch Strategy
+
+```
+main              # Production-ready code
+├── feature/*     # New features
+├── fix/*         # Bug fixes
+├── docs/*        # Documentation
+├── perf/*        # Performance
+└── test/*        # Tests
+```
+
+### Creating Branches
 
 ```bash
-# Run tests
-npm test
-
-# Build check
-npm run build
-
-# Lint check
-npx eslint .
+git checkout -b feature/add-calendar
+git checkout -b fix/notification-error
+git checkout -b docs/api-reference
 ```
 
 ---
 
-## ✏️ Making Changes
+## Commit Convention
 
-### Branch Naming Convention
+Format: `type(scope): description`
 
-```
-feature/add-new-module
-fix/resolve-login-issue
-docs/update-api-documentation
-perf/optimize-database-queries
-test/add-unit-tests
-```
+| Type       | Use Case                              |
+| ---------- | ------------------------------------- |
+| `feat`     | New feature                           |
+| `fix`      | Bug fix                               |
+| `docs`     | Documentation                         |
+| `refactor` | Code restructure (no behavior change) |
+| `perf`     | Performance improvement               |
+| `test`     | Tests                                 |
+| `chore`    | Maintenance                           |
 
-### Commit Message Format
+### Examples
 
-We follow [Conventional Commits](https://www.conventionalcommits.org/):
-
-```
-type(scope): description
-
-[optional body]
-
-[optional footer]
-```
-
-**Types:**
-- `feat`: New feature
-- `fix`: Bug fix
-- `docs`: Documentation
-- `style`: Formatting
-- `refactor`: Code restructuring
-- `perf`: Performance improvement
-- `test`: Tests
-- `chore`: Maintenance
-
-**Examples:**
 ```
 feat(modules): add project calendar module
 fix(auth): resolve session timeout issue
@@ -163,244 +90,226 @@ perf(database): optimize slow queries
 test(components): add unit tests for NotificationCenter
 ```
 
-### Making Your Changes
+---
+
+## Development Commands
+
+### Frontend
 
 ```bash
-# 1. Make your changes
-# 2. Stage changes
-git add src/components/modules/Calendar.tsx
+npm run dev              # Dev server :5173 (proxies /api → :3001)
+npm run build            # Production build → dist/
+npm run lint             # ESLint check
+npm run lint:fix         # ESLint auto-fix
+npm test                 # Vitest (happy-dom)
+npm run test:watch       # Watch mode
+npm run test:coverage    # Coverage report
+npx vitest run src/test/hooks.test.ts  # Single file
+```
 
-# 3. Commit with message
-git commit -m "feat(calendar): add project calendar module
+### Backend
 
-- Month/Week/Day views
-- Event management
-- Color-coded event types
+```bash
+cd server
+npm run dev              # nodemon on :3001
+npm start                # Production (node, not Docker)
+npm run db:reset:local   # Rebuild local DB
+```
 
-Closes #123"
+### Verification
 
-# 4. Push to your fork
-git push origin feature/add-calendar-module
+```bash
+npm run verify:all       # Full pre-commit check
+npm run verify:routes    # Verify 48 routes registered
 ```
 
 ---
 
-## 🔄 Pull Request Process
+## Making Changes
 
-### Before Submitting
+### 1. Create Branch
 
-- [ ] Code follows style guidelines
-- [ ] Tests added/updated
-- [ ] Documentation updated
-- [ ] No ESLint errors
-- [ ] Build passes
-- [ ] All tests pass
+```bash
+git checkout -b feature/your-feature-name
+```
 
-### Creating PR
+### 2. Make Changes
 
-1. **Go to your fork on GitHub**
-2. **Click "New Pull Request"**
-3. **Choose base branch:** `main`
-4. **Fill out PR template:**
-   ```markdown
-   ## Description
-   Brief description of changes
+```bash
+# Edit files
+git add src/components/modules/YourModule.tsx
+git add server/routes/your-route.js
+```
 
-   ## Type of Change
-   - [ ] Bug fix
-   - [ ] New feature
-   - [ ] Breaking change
-   - [ ] Documentation update
+### 3. Test
 
-   ## Testing
-   - [ ] Tests pass locally
-   - [ ] New tests added
-   - [ ] Manual testing completed
+```bash
+# Run tests
+npm test
 
-   ## Checklist
-   - [ ] Code follows guidelines
-   - [ ] Documentation updated
-   - [ ] No breaking changes
-   ```
+# Run lint
+npm run lint
 
-### Review Process
+# Build check
+npm run build
+```
 
-1. **Automated Checks:**
-   - Build verification
-   - Test suite
-   - Lighthouse CI
-   - ESLint
+### 4. Commit
 
-2. **Code Review:**
-   - Maintainer reviews code
-   - Feedback provided
-   - Changes requested if needed
+```bash
+git commit -m "feat(scope): description
 
-3. **Approval:**
-   - All checks pass
-   - Maintainer approves
-   - PR merged
+- Bullet points for details
+- Closes #123"
+```
 
-### After Merge
+### 5. Push & PR
 
-- Delete your feature branch
-- Pull latest from main
-- Celebrate! 🎉
+```bash
+git push origin feature/your-feature-name
+# Create PR on GitHub
+```
 
 ---
 
-## 📏 Coding Standards
+## Pull Request Checklist
+
+- [ ] Code follows style guidelines (ESLint passes)
+- [ ] Tests added/updated
+- [ ] Documentation updated
+- [ ] Build passes
+- [ ] All tests pass
+- [ ] Commit follows convention
+
+### PR Template
+
+```markdown
+## Description
+
+Brief description of changes
+
+## Type
+
+- [ ] Bug fix
+- [ ] New feature
+- [ ] Breaking change
+- [ ] Documentation
+
+## Testing
+
+- [ ] Tests pass locally
+- [ ] New tests added
+- [ ] Manual testing completed
+
+## Checklist
+
+- [ ] Code follows guidelines
+- [ ] Documentation updated
+- [ ] No breaking changes
+```
+
+---
+
+## Code Standards
 
 ### TypeScript
 
 ```typescript
-// ✅ Good: Proper typing
+// ✅ Good
 interface User {
   id: string;
   name: string;
   email: string;
-  role: UserRole;
 }
 
 function getUser(id: string): Promise<User> {
-  // Implementation
+  return api.get(`/users/${id}`);
 }
 
-// ❌ Bad: Using any
+// ❌ Bad
 function getUser(id: any): any {
-  // Implementation
+  return api.get(`/users/${id}`);
 }
 ```
 
 ### React Components
 
 ```typescript
-// ✅ Good: Typed props, JSDoc
-/**
- * User profile card component
- * @param props - Component props
- * @param props.user - User data
- * @returns JSX element
- */
-interface ProfileCardProps {
+// ✅ Good
+interface Props {
   user: User;
   onEdit?: () => void;
 }
 
-export function ProfileCard({ user, onEdit }: ProfileCardProps) {
-  return (
-    <div className="card">
-      {/* Component content */}
-    </div>
-  );
+export function UserCard({ user, onEdit }: Props) {
+  return <div>{user.name}</div>;
+}
+
+// ❌ Bad - no types, no interface
+export function UserCard({ user }) {
+  return <div>{user.name}</div>;
 }
 ```
 
 ### CSS/Tailwind
 
 ```typescript
-// ✅ Good: Consistent Tailwind usage
-<div className="flex items-center gap-4 p-4 bg-base-100 rounded-lg">
-  {/* Content */}
-</div>
+// ✅ Good
+<div className="flex items-center gap-4 p-4 bg-base-100">
 
-// ❌ Bad: Inline styles (unless dynamic)
+// ❌ Bad - inline styles
 <div style={{ display: 'flex', padding: '16px' }}>
-  {/* Content */}
-</div>
-```
-
-### File Organization
-
-```
-src/
-├── components/
-│   ├── ui/           # Reusable UI components
-│   ├── layout/       # Layout components
-│   └── modules/      # Feature modules
-├── hooks/            # Custom React hooks
-├── lib/              # Utility libraries
-├── services/         # API services
-├── context/          # React context
-├── test/             # Test files
-└── types/            # TypeScript types
 ```
 
 ---
 
-## 🧪 Testing Guidelines
+## Testing
 
-### Test File Naming
+### File Naming
 
-```typescript
-// Component tests
+```
 src/components/ui/Button.test.tsx
-
-// Hook tests
 src/hooks/useAuth.test.ts
-
-// Utility tests
 src/lib/validation.test.ts
-
-// E2E tests
 e2e/login.spec.ts
 ```
 
 ### Writing Tests
 
 ```typescript
-// ✅ Good: Descriptive test names
-describe('NotificationCenter', () => {
-  describe('Rendering', () => {
-    it('renders notification list', () => {
-      // Test implementation
-    });
-
-    it('displays unread count', () => {
-      // Test implementation
-    });
+describe("NotificationCenter", () => {
+  it("renders notification list", () => {
+    // Test implementation
   });
 
-  describe('User Interactions', () => {
-    it('marks notification as read when clicked', () => {
-      // Test implementation
-    });
+  it("marks notification as read when clicked", async () => {
+    // Test implementation
   });
-});
-
-// ❌ Bad: Vague test names
-it('works correctly', () => {
-  // Test implementation
 });
 ```
 
-### Test Coverage
+### Running Tests
 
-**Minimum Requirements:**
-- Components: 80% line coverage
-- Utilities: 90% line coverage
-- Critical paths: 100% coverage
-
-**Run Tests:**
 ```bash
-# All tests
-npm test
-
-# With coverage
-npm run test:coverage
-
-# Watch mode
-npm run test:watch
-
-# Specific file
-npm test -- src/lib/validation.test.ts
+npm test                  # All tests
+npm run test:coverage     # With coverage
+npm run test:watch       # Watch mode
+npm test -- src/lib/validation.test.ts  # Single file
+npm run test:e2e         # Playwright E2E
 ```
 
 ---
 
-## 📚 Documentation
+## Documentation
 
-### Code Comments
+When adding features:
+
+1. Update `README.md` - Quick summary
+2. Update `docs/NEW_FEATURES_GUIDE.md` - Detailed guide
+3. Update `CHANGELOG.md` - Version history
+4. Add JSDoc comments to code
+
+### JSDoc Template
 
 ```typescript
 /**
@@ -414,128 +323,22 @@ export function validateNotification(data: unknown): Notification {
 }
 ```
 
-### README Updates
+---
 
-When adding new features:
+## Common Issues
 
-1. **Update main README.md**
-2. **Add to docs/NEW_FEATURES_GUIDE.md**
-3. **Update CHANGELOG.md**
-4. **Add JSDoc to code**
-
-### Documentation Standards
-
-- Clear and concise
-- Include examples
-- Explain "why" not just "what"
-- Keep up to date
+| Problem                        | Solution                                          |
+| ------------------------------ | ------------------------------------------------- |
+| `ECONNREFUSED` on auth         | Inside Docker: `DB_HOST` must be `cortexbuild-db` |
+| `organization_id = NULL` crash | Use `COALESCE(organization_id, company_id)`       |
+| `db.js` returns undefined      | `const pool = require('./db')` not destructured   |
+| Route ordering                 | Register specific paths before wildcards          |
 
 ---
 
-## 🐛 Reporting Bugs
+## Resources
 
-### Bug Report Template
-
-```markdown
-## Description
-Clear description of the bug
-
-## Reproduction Steps
-1. Go to '...'
-2. Click on '...'
-3. See error
-
-## Expected Behavior
-What should happen
-
-## Screenshots
-If applicable
-
-## Environment
-- OS: [e.g., macOS]
-- Browser: [e.g., Chrome 120]
-- Version: [e.g., 3.0.0]
-
-## Additional Context
-Any other details
-```
-
-### Where to Report
-
-- GitHub Issues: [Create Issue](https://github.com/adrianstanca1/cortexbuild-ultimate/issues)
-- Security issues: Email security@cortexbuild.com
-
----
-
-## 💡 Feature Requests
-
-### Feature Request Template
-
-```markdown
-## Problem Statement
-What problem does this solve?
-
-## Proposed Solution
-How should it work?
-
-## Alternatives Considered
-Other approaches
-
-## Additional Context
-Mockups, examples, etc.
-```
-
----
-
-## 📞 Getting Help
-
-- **Documentation:** [docs/](./docs/)
-- **Existing Issues:** [GitHub Issues](https://github.com/adrianstanca1/cortexbuild-ultimate/issues)
-- **Discussions:** [GitHub Discussions](https://github.com/adrianstanca1/cortexbuild-ultimate/discussions)
-
----
-
-## 🎯 Areas Needing Contribution
-
-### High Priority
-
-- [ ] Unit tests for new components
-- [ ] Accessibility improvements
-- [ ] Performance optimizations
-- [ ] Mobile responsiveness
-
-### Medium Priority
-
-- [ ] Storybook stories
-- [ ] Video tutorials
-- [ ] Translation support
-- [ ] Plugin system
-
-### Low Priority
-
-- [ ] Theme customization
-- [ ] Advanced animations
-- [ ] Social features
-- [ ] Mobile app
-
----
-
-## 🏆 Recognition
-
-Contributors will be recognized in:
-
-- README.md contributors section
-- Release notes
-- Annual contributor report
-
----
-
-## 📜 License
-
-By contributing, you agree that your contributions will be licensed under the MIT License.
-
----
-
-*Thank you for contributing to CortexBuild Ultimate!* 🎉
-
-*Last Updated: 2026-04-01*
+- [Documentation Index](docs/README.md)
+- [API Documentation](docs/API_DOCUMENTATION.md)
+- [Deployment Runbook](DEPLOYMENT_RUNBOOK.md)
+- [GitHub Issues](https://github.com/adrianstanca1/cortexbuild-ultimate/issues)
