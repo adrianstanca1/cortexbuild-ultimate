@@ -6,25 +6,30 @@
 [![Tests](https://img.shields.io/badge/Tests-121%2F121%20passing-success)](docs/CODE_REVIEW_REPORT.md)
 [![Version](https://img.shields.io/badge/Version-3.0.0-blue)](CHANGELOG.md)
 [![Accessibility](https://img.shields.io/badge/Accessibility-WCAG%202.1%20AA-success)](docs/ACCESSIBILITY_AUDIT.md)
+[![License](https://img.shields.io/badge/License-Proprietary-red)](LICENSE)
+[![Docker](https://img.shields.io/badge/Docker-Ready-blue)](Dockerfile.api)
 
 ## Quick Start
 
 ```bash
-# 1. Install
+# 1. Install dependencies
 npm install
 cd server && npm install && cd ..
 
-# 2. Configure
+# 2. Configure environment
 cp .env.example .env.local
 # Edit .env.local with DB_URL, JWT_SECRET, etc.
 
-# 3. Reset database
-cd server && npm run db:reset:local
+# 3. Start database (Docker)
+docker compose up -d
 
-# 4. Start backend
+# 4. Reset database
+cd server && npm run db:reset:local && cd ..
+
+# 5. Start backend
 pm2 start server/index.js --name cortexbuild-api
 
-# 5. Start frontend
+# 6. Start frontend
 npm run dev
 ```
 
@@ -40,6 +45,38 @@ npm run dev
 | Real-time  | WebSocket                                   |
 | Testing    | Vitest + Playwright                         |
 | Deployment | Docker + VPS (Hostinger)                    |
+
+## Quick Command Reference
+
+### Development
+```bash
+npm run dev           # Frontend dev server (:5173)
+cd server && npm run dev  # Backend dev server (:3001)
+```
+
+### Testing
+```bash
+npm test                  # All unit tests (Vitest)
+npm run test:watch       # Watch mode
+npm run test:coverage    # Coverage report
+npm run test:e2e         # Playwright E2E
+npm run test:e2e:ui       # E2E with UI
+```
+
+### Build & Deploy
+```bash
+npm run build        # Production build
+npm run lint         # ESLint
+npm run lint:fix     # ESLint auto-fix
+npm run verify:all  # Full pre-commit check
+```
+
+### Backend
+```bash
+cd server
+npm run db:reset:local   # Rebuild local DB
+npm start                 # Production (node)
+```
 
 ## Key Commands
 
@@ -86,9 +123,24 @@ npm run verify:all   # Full pre-commit check
 ## Architecture
 
 ```
-Frontend (:5173) → Backend (:3001) → PostgreSQL/Redis
-                     ↓
-              WebSocket (notifications, chat)
+┌─────────────────────────────────────────────────────────────────┐
+│                        Frontend (:5173)                          │
+│   React 19 + TypeScript + Vite + TanStack Query + WebSocket    │
+└──────────────────────────────┬──────────────────────────────────┘
+                               │ REST + WebSocket
+                               ▼
+┌─────────────────────────────────────────────────────────────────┐
+│                      Backend (:3001)                              │
+│              Express.js + Passport + WebSocket                   │
+└──────────────────────────────┬──────────────────────────────────┘
+                               │
+          ┌────────────────────┼────────────────────┐
+          │                    │                    │
+          ▼                    ▼                    ▼
+┌─────────────────┐  ┌─────────────────┐  ┌─────────────────┐
+│   PostgreSQL    │  │     Redis      │  │    Ollama      │
+│   (Database)   │  │   (Sessions)   │  │  (AI Inference) │
+└─────────────────┘  └─────────────────┘  └─────────────────┘
 ```
 
 ### API Layer
@@ -115,11 +167,14 @@ Raw SQL migrations in `server/migrations/`. Generic CRUD via `makeRouter(tableNa
 
 ## Documentation
 
-- [docs/README.md](docs/README.md) - Full documentation index
-- [docs/API_DOCUMENTATION.md](docs/API_DOCUMENTATION.md) - API reference
-- [DEPLOYMENT_RUNBOOK.md](DEPLOYMENT_RUNBOOK.md) - Production deployment
-- [CONTRIBUTING.md](CONTRIBUTING.md) - How to contribute
-- [AGENTS.md](AGENTS.md) - Guide for AI coding agents
+| Document | Purpose |
+|----------|---------|
+| [docs/README.md](docs/README.md) | Full documentation index |
+| [docs/API_DOCUMENTATION.md](docs/API_DOCUMENTATION.md) | API reference |
+| [DEPLOYMENT_RUNBOOK.md](DEPLOYMENT_RUNBOOK.md) | Production deployment |
+| [CONTRIBUTING.md](CONTRIBUTING.md) | How to contribute |
+| [AGENTS.md](AGENTS.md) | Guide for AI coding agents |
+| [CLAUDE.md](CLAUDE.md) | Claude Code instructions |
 
 ## Security
 

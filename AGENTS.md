@@ -39,7 +39,7 @@ Generic CRUD routes return `{ data: Row[], pagination }`. Custom routes return t
 
 ## Frontend Patterns
 
-- **Entry**: `src/main.tsx` → `src/App.tsx` (68 lazy-loaded modules, switch-based routing)
+- **Entry**: `src/main.tsx` → `src/App.tsx` (69 lazy-loaded modules, switch-based routing)
 - **Design system**: `src/components/daisyui/` — 15+ DaisyUI primitives with barrel `index.ts`
 - **Validations**: `src/lib/validations.ts` — Zod schemas for RFI, change orders, daily reports, safety reports, notifications
 - **PWA**: `src/hooks/usePWA.ts` registers service worker; `public/sw.js` and `public/offline.html` handle offline
