@@ -29,6 +29,7 @@ const { handleDailyReports } = require('./ai-intents/daily-reports-intent');
 const { handleRisk } = require('./ai-intents/risk-intent');
 const { handleGenerateReport } = require('./ai-intents/report-generator');
 const { handleAutoresearch } = require('./ai-intents/autoresearch-intent');
+const { handleAutoimprove } = require('./ai-intents/autoimprove-intent');
 const { classify, shouldUseOllama } = require('./ai-intents/ai-intent-classifier');
 const { getConversationHistory, truncateToTokenBudget, MAX_CONTEXT_MESSAGES, SUMMARY_THRESHOLD } = require('./ai-intents/conversation-history');
 const { getOllamaResponse, summarizeText, OLLAMA_HOST, LLM_MODEL } = require('./ai-intents/ollama-client');
@@ -232,6 +233,7 @@ router.post('/chat', aiChatLimiter, async (req, res) => {
         case 'risk':            result = await handleRisk(user);        break;
         case 'report':          result = await handleGenerateReport(message.trim(), req.user); break;
         case 'autoresearch':   result = await handleAutoresearch(message.trim(), req.user); break;
+        case 'autoimprove':    result = await handleAutoimprove(message.trim(), req.user); break;
         default:
           result = handleUnknown(message.trim());
           break;
