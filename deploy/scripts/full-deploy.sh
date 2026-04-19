@@ -74,12 +74,17 @@ run_deployment() {
 
 # Run health check
 run_health_check() {
-    if [ "$SKIP_HEALTH" = false ] && [ -f "$HEALTH_CHECK" ]; then
-        echo ""
-        log_info "Running post-deployment health checks..."
-        echo "───────────────────────────────────────────────────────────────"
-        bash "$HEALTH_CHECK" || true
+    if [ "$SKIP_HEALTH" = true ] || [ ! -f "$HEALTH_CHECK" ]; then
+        return 0
     fi
+    echo ""
+    log_info "Running post-deployment health checks..."
+    echo "───────────────────────────────────────────────────────────────"
+    if bash "$HEALTH_CHECK"; then
+        return 0
+    fi
+    log_error "Post-deployment health check failed"
+    return 1
 }
 
 # Main
@@ -119,8 +124,10 @@ main() {
         fi
     fi
     
-    # Health check
-    run_health_check
+    # Health check (failures mark the overall deploy as failed)
+    if ! run_health_check; then
+        failed=true
+    fi
     
     local end_time=$(date +%s)
     local duration=$((end_time - start_time))
