@@ -221,7 +221,7 @@ jobs:
 
             # Use GitHub Actions secrets as final fallback
             [ -z "${JWT_SECRET:-}" ] && JWT_SECRET="${{ secrets.JWT_SECRET }}"
-            [ -z "${SESSION_SECRET:-}" ] && JWT_SECRET="${{ secrets.SESSION_SECRET }}"
+            [ -z "${SESSION_SECRET:-}" ] && SESSION_SECRET="${{ secrets.SESSION_SECRET }}"
             [ -z "${POSTGRES_PASSWORD:-}" ] && POSTGRES_PASSWORD="${{ secrets.POSTGRES_PASSWORD }}"
             [ -z "${DB_PASSWORD:-}" ] && DB_PASSWORD="${{ secrets.DB_PASSWORD }}"
 
