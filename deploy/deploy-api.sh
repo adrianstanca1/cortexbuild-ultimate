@@ -64,12 +64,13 @@ if [ -z "$PROJECT_DIR" ]; then
     fi
 fi
 echo "Using project directory: $PROJECT_DIR"
-
 cd "$PROJECT_DIR"
 
 # Pull latest code
 echo "1. Pulling latest code..."
-git pull origin main
+git fetch origin main
+git checkout main
+git pull --ff-only origin main
 echo "   ✅ Code pulled"
 echo ""
 
