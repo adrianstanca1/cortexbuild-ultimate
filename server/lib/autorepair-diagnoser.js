@@ -3,7 +3,7 @@
  * LLM-powered diagnostic reasoning for infrastructure failures.
  * Falls back to rule-based diagnosis if Ollama is unavailable.
  */
-const { getOllamaResponse } = require('./ollama-client');
+const { getOllamaResponse } = require('../routes/ai-intents/ollama-client');
 
 /**
  * Diagnose an incident given its type and error context.

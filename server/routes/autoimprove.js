@@ -34,13 +34,14 @@ router.get('/recommendations', async (req, res) => {
       params = status !== 'all' ? [status, tid] : [tid];
     }
 
+    const condition = filter ? filter.replace(/^WHERE /i, 'AND ') : '';
     const { rows } = await pool.query(`
       SELECT r.id, r.organization_id, r.project_id, r.type, r.severity,
              r.recommendation, r.auto_actions, r.status, r.created_at, r.resolved_at,
              p.name AS project_name
       FROM autoimprove_recommendations r
       LEFT JOIN projects p ON p.id = r.project_id
-      ${filter ? filter.replace('WHERE', 'AND') : ''}
+      ${condition}
       ORDER BY
         CASE r.severity WHEN 'high' THEN 1 WHEN 'medium' THEN 2 ELSE 3 END,
         r.created_at DESC

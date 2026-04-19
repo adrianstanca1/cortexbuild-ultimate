@@ -4,7 +4,7 @@
  * Uses LLM to reason about patterns in construction management data.
  */
 const pool = require('../db');
-const { getOllamaResponse } = require('./ollama-client');
+const { getOllamaResponse } = require('../routes/ai-intents/ollama-client');
 
 /**
  * Gather metrics for a tenant's projects.

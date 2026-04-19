@@ -2,7 +2,7 @@
  * server/lib/autoresearch-synthesizer.js
  * Synthesizes RAG search results into structured research findings using LLM.
  */
-const { getOllamaResponse } = require('./ollama-client');
+const { getOllamaResponse } = require('../routes/ai-intents/ollama-client');
 
 /**
  * Synthesize raw RAG search results into structured findings.

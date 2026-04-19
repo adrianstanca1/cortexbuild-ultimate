@@ -108,10 +108,11 @@ router.get('/incidents', async (req, res) => {
       params = status !== 'all' ? [status, tid] : [tid];
     }
 
+    const condition = filter ? filter.replace(/^WHERE /i, 'AND ') : '';
     const { rows } = await pool.query(`
       SELECT id, type, severity, status, detected_at, diagnosed_at, resolved_at, diagnosis, error_context
       FROM autorepair_incidents
-      ${filter ? filter.replace('WHERE', 'AND') : ''}
+      ${condition}
       ORDER BY
         CASE severity WHEN 'critical' THEN 1 WHEN 'high' THEN 2 WHEN 'medium' THEN 3 ELSE 4 END,
         detected_at DESC
