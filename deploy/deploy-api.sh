@@ -165,14 +165,14 @@ docker run -d \
     --restart always \
     --network "$DOCKER_NET" \
     -p 127.0.0.1:3001:3001 \
-    -e DB_HOST=cortexbuild-db \
+    -e DB_HOST=postgres \
     -e DB_PORT=5432 \
     -e DB_NAME=cortexbuild \
     -e DB_USER=cortexbuild \
     -e DB_PASSWORD \
     -e JWT_SECRET \
     -e SESSION_SECRET \
-    -e REDIS_HOST=cortexbuild-redis \
+    -e REDIS_HOST=redis \
     -e PORT=3001 \
     -e NODE_ENV=production \
     -e OLLAMA_HOST=http://cortexbuild-ollama:11434 \
