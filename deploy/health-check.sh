@@ -41,7 +41,7 @@ check_cortex_health_payload() {
     local payload
 
     echo -n "🔍 Verifying $description health contract... "
-    payload=$(curl -fsS "$url" 2>/dev/null || true)
+    payload=$(curl --connect-timeout 5 --max-time 10 -fsS "$url" 2>/dev/null || true)
     if [ -z "$payload" ]; then
         echo "❌ FAILED (no payload)"
         return 1

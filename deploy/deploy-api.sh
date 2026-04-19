@@ -50,7 +50,7 @@ resolve_project_dir() {
 
 check_cortex_health() {
     local payload
-    payload=$(curl -fsS "$HEALTH_URL" 2>/dev/null || true)
+    payload=$(curl --connect-timeout 2 --max-time 5 -fsS "$HEALTH_URL" 2>/dev/null || true)
     [ -n "$payload" ] || return 1
     python3 -c "import json,sys; d=json.loads(sys.argv[1]); c=d.get('checks') or {}; assert d.get('status')=='ok'; assert c.get('postgres') is True; assert c.get('redis') is True" "$payload" >/dev/null 2>&1
 }

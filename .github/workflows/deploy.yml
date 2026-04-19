@@ -297,7 +297,7 @@ jobs:
             echo "Waiting for API health..."
             check_cortex_health() {
               local payload
-              payload=$(curl -fsS http://localhost:3001/api/health 2>/dev/null || true)
+              payload=$(curl --connect-timeout 2 --max-time 5 -fsS http://localhost:3001/api/health 2>/dev/null || true)
               [ -n "$payload" ] || return 1
               python3 -c "import json,sys; d=json.loads(sys.argv[1]); c=d.get('checks') or {}; assert d.get('status')=='ok'; assert c.get('postgres') is True; assert c.get('redis') is True" "$payload" >/dev/null 2>&1
             }
@@ -325,14 +325,14 @@ jobs:
               exit 1
             fi
             for i in $(seq 1 20); do
-              external_payload=$(curl -fsS https://www.cortexbuildpro.com/api/health 2>/dev/null || true)
+              external_payload=$(curl --connect-timeout 5 --max-time 10 -fsS https://www.cortexbuildpro.com/api/health 2>/dev/null || true)
               if [ -n "$external_payload" ] && python3 -c "import json,sys; d=json.loads(sys.argv[1]); c=d.get('checks') or {}; assert d.get('status')=='ok'; assert c.get('postgres') is True; assert c.get('redis') is True" "$external_payload" >/dev/null 2>&1; then
                 echo "External HTTPS health contract verified"
                 break
               fi
               sleep 3
             done
-            if ! external_payload=$(curl -fsS https://www.cortexbuildpro.com/api/health 2>/dev/null || true) || ! [ -n "$external_payload" ] || ! python3 -c "import json,sys; d=json.loads(sys.argv[1]); c=d.get('checks') or {}; assert d.get('status')=='ok'; assert c.get('postgres') is True; assert c.get('redis') is True" "$external_payload" >/dev/null 2>&1; then
+            if ! external_payload=$(curl --connect-timeout 5 --max-time 10 -fsS https://www.cortexbuildpro.com/api/health 2>/dev/null || true) || ! [ -n "$external_payload" ] || ! python3 -c "import json,sys; d=json.loads(sys.argv[1]); c=d.get('checks') or {}; assert d.get('status')=='ok'; assert c.get('postgres') is True; assert c.get('redis') is True" "$external_payload" >/dev/null 2>&1; then
               echo "FATAL: External HTTPS health contract failed after deploy"
               exit 1
             fi
@@ -361,7 +361,7 @@ jobs:
             local attempts=30
             local i payload
             for i in $(seq 1 "$attempts"); do
-              payload=$(curl -fsS "https://${domain}/api/health" 2>/dev/null || true)
+              payload=$(curl --connect-timeout 5 --max-time 10 -fsS "https://${domain}/api/health" 2>/dev/null || true)
               if [ -n "$payload" ] && python3 -c "import json,sys; d=json.loads(sys.argv[1]); c=d.get('checks') or {}; assert d.get('status')=='ok'; assert c.get('postgres') is True; assert c.get('redis') is True" "$payload" >/dev/null 2>&1; then
                 echo "✅ ${domain} HTTPS API health contract verified"
                 return 0

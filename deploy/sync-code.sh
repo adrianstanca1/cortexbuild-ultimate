@@ -178,7 +178,7 @@ ssh $SSH_OPTS "$VPS_HOST" "
 # Health check
 echo ""
 echo "🏥 Running health checks..."
-HEALTH_RESULT=$(ssh $SSH_OPTS "$VPS_HOST" "curl -fsS http://localhost:3001/api/health" 2>/dev/null || true)
+HEALTH_RESULT=$(ssh $SSH_OPTS "$VPS_HOST" "curl --connect-timeout 2 --max-time 5 -fsS http://localhost:3001/api/health" 2>/dev/null || true)
 
 if check_cortex_health_contract "$HEALTH_RESULT"; then
     echo "✅ API health contract verified"
