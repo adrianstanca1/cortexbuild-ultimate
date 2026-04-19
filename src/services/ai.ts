@@ -42,6 +42,14 @@ export async function sendChatMessage(
   return res.json()
 }
 
+/**
+ * @deprecated This function is broken — the backend POST /ai/chat does not
+ * support SSE streaming. The backend returns a single JSON body with no
+ * Transfer-Encoding: chunked or SSE format. This function will never emit
+ * a chunk; it buffers the full response and calls onComplete immediately.
+ * If streaming is needed, implement SSE properly in server/routes/ai.js
+ * using Ollama's stream: true option.
+ */
 export async function streamChatMessage(
   message: string,
   context: Record<string, unknown>,

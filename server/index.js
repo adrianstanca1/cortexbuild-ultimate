@@ -258,6 +258,12 @@ app.use('/api/admin/stats',   require('./routes/admin-stats'));
 app.use('/api/ai-vision',      requireFeature('FEATURE_AI_AGENTS'), require('./routes/ai-vision'));
 app.use('/api/ai_vision_logs', makeRouter('ai_vision_logs'));
 
+// ─── Global error handler ─────────────────────────────────────────────────────
+app.use((err, _req, res, _next) => {
+  console.error('[UnhandledError]', err.message || err);
+  res.status(500).json({ message: 'Internal server error' });
+});
+
 // ─── 404 ──────────────────────────────────────────────────────────────────────
 app.use((_req, res) => res.status(404).json({ message: 'Route not found' }));
 

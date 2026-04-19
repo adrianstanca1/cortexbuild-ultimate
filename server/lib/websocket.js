@@ -243,14 +243,36 @@ function handleMessage(ws, userId, userRole, message) {
   const { type, event, payload, room } = message;
 
   switch (event) {
-    case 'join_room':
-      joinRoom(userId, payload.room);
+    case 'join_room': {
+      // Validate room format and authorize user access
+      const requestedRoom = payload.room;
+      const validUserRoom = `user:${userId}`;
+      const isOwnUserRoom = requestedRoom === validUserRoom;
+
+      // Users can only join their own user room or project rooms they belong to
+      if (!requestedRoom || typeof requestedRoom !== 'string') {
+        sendToClient(ws, { type: MESSAGE_TYPES.ERROR, event: 'room_join_failed', payload: { reason: 'invalid_room' } });
+        break;
+      }
+
+      // Allow user-specific rooms and valid project rooms (format: project:<id>)
+      const isProjectRoom = /^project:\d+$/.test(requestedRoom);
+      const isAllowed = isOwnUserRoom || isProjectRoom;
+
+      if (!isAllowed) {
+        console.warn(`[WS] User ${userId} denied access to room ${requestedRoom}`);
+        sendToClient(ws, { type: MESSAGE_TYPES.ERROR, event: 'room_join_failed', payload: { reason: 'unauthorized_room' } });
+        break;
+      }
+
+      joinRoom(userId, requestedRoom);
       sendToClient(ws, {
         type: MESSAGE_TYPES.SYSTEM,
         event: 'room_joined',
-        payload: { room: payload.room },
+        payload: { room: requestedRoom },
       });
       break;
+    }
 
     case 'leave_room':
       leaveRoom(userId, payload.room);

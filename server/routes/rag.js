@@ -130,7 +130,7 @@ router.get('/search', async (req, res) => {
       query:      q,
       tables:     tables,
       semantic:   true,
-      model:      'qwen3.5:latest',
+      model:      process.env.EMBEDDING_MODEL || 'nomic-embed-text:latest',
     });
   } catch (err) {
     console.error('[rag/search]', err.message);
