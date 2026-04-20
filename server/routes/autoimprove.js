@@ -22,26 +22,25 @@ router.get('/recommendations', async (req, res) => {
     const { status = 'pending', limit = '20' } = req.query;
     const l = Math.min(100, Math.max(1, parseInt(limit, 10)));
 
-    let filter, params;
+    let where, params;
     if (SUPER_ADMIN_ROLES.has(req.user.role)) {
-      filter = status !== 'all' ? 'WHERE status = $1' : '';
+      where = status !== 'all' ? 'WHERE r.status = $1' : '';
       params = status !== 'all' ? [status] : [];
     } else {
       const tid = req.user.organization_id || req.user.company_id;
-      filter = status !== 'all'
-        ? 'WHERE status = $1 AND COALESCE(organization_id, company_id) = $2'
-        : 'WHERE COALESCE(organization_id, company_id) = $1';
+      where = status !== 'all'
+        ? 'WHERE r.status = $1 AND COALESCE(r.organization_id, r.company_id) = $2'
+        : 'WHERE COALESCE(r.organization_id, r.company_id) = $1';
       params = status !== 'all' ? [status, tid] : [tid];
     }
 
-    const condition = filter ? filter.replace(/^WHERE /i, 'AND ') : '';
     const { rows } = await pool.query(`
       SELECT r.id, r.organization_id, r.project_id, r.type, r.severity,
              r.recommendation, r.auto_actions, r.status, r.created_at, r.resolved_at,
              p.name AS project_name
       FROM autoimprove_recommendations r
       LEFT JOIN projects p ON p.id = r.project_id
-      ${condition}
+      ${where}
       ORDER BY
         CASE r.severity WHEN 'high' THEN 1 WHEN 'medium' THEN 2 ELSE 3 END,
         r.created_at DESC

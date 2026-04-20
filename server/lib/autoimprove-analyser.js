@@ -21,8 +21,8 @@ async function gatherMetrics(orgId, companyId) {
 
   // Budget variance: projects with budget vs actual spend
   const { rows: budgetRows } = await pool.query(`
-    SELECT id, name, contract_sum, spent, start_date, finish_date,
-           CASE WHEN contract_sum > 0 THEN ((spent - contract_sum) / contract_sum * 100) ELSE 0 END AS variance_pct
+    SELECT id, name, budget AS contract_sum, spent, start_date, end_date AS finish_date,
+           CASE WHEN budget > 0 THEN ((spent - budget) / budget * 100) ELSE 0 END AS variance_pct
     FROM projects
     WHERE ${tenantFilter('organization_id')} AND status != 'completed'
     ORDER BY created_at DESC
@@ -31,11 +31,11 @@ async function gatherMetrics(orgId, companyId) {
 
   // Safety incidents in last 30 days
   const { rows: safetyRows } = await pool.query(`
-    SELECT id, project_id, severity, description, reported_at
+    SELECT id, project_id, severity, description, date AS reported_at
     FROM safety_incidents
     WHERE ${tenantFilter('organization_id')}
-      AND reported_at > NOW() - INTERVAL '30 days'
-    ORDER BY reported_at DESC
+      AND date > NOW() - INTERVAL '30 days'
+    ORDER BY date DESC
   `, params);
 
   // Open defects
