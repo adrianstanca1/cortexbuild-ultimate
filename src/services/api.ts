@@ -2,7 +2,7 @@
  * CortexBuild Ultimate — API Service
  * All CRUD operations route to the local Express.js backend.
  */
-import { getToken, API_BASE } from '../lib/auth-storage';
+import { API_BASE } from '../lib/auth-storage';
 
 export type Row = Record<string, unknown>;
 
@@ -51,12 +51,11 @@ export class FeatureDisabledError extends Error {
 }
 
 export async function apiFetch<T>(path: string, options?: RequestInit): Promise<T> {
-  const token = getToken();
   const res = await fetch(`${API_BASE}${path}`, {
     ...options,
+    credentials: 'include', // Send httpOnly cookie automatically
     headers: {
       'Content-Type': 'application/json',
-      ...(token ? { Authorization: `Bearer ${token}` } : {}),
       ...options?.headers,
     },
   });
@@ -99,7 +98,6 @@ async function deleteRow(endpoint: string, id: string): Promise<void> {
 }
 
 async function uploadFile(file: File, category: string, project?: string, projectId?: string): Promise<Record<string, unknown>> {
-  const token = getToken();
   const formData = new FormData();
   formData.append('file', file);
   formData.append('category', category);
@@ -108,9 +106,7 @@ async function uploadFile(file: File, category: string, project?: string, projec
 
   const res = await fetch(`${API_BASE}/files/upload`, {
     method: 'POST',
-    headers: {
-      ...(token ? { Authorization: `Bearer ${token}` } : {}),
-    },
+    credentials: 'include',
     body: formData,
   });
   if (!res.ok) {
@@ -274,7 +270,6 @@ export const documentsApi = {
   getTransmittals: () => fetchAll<Row>('drawing-transmittals'),
   createTransmittal: (data: Row) => insertRow('drawing-transmittals', data),
   uploadFile: async (file: File, options?: { project?: string; projectId?: string; category?: string }): Promise<Row> => {
-    const token = getToken();
     const formData = new FormData();
     formData.append('file', file);
     if (options?.project)    formData.append('project', options.project);
@@ -282,7 +277,7 @@ export const documentsApi = {
     if (options?.category)   formData.append('category', options.category);
     const res = await fetch(`${API_BASE}/files/upload`, {
       method: 'POST',
-      headers: token ? { Authorization: `Bearer ${token}` } : {},
+      credentials: 'include',
       body: formData,
     });
     if (!res.ok) throw new Error('Upload failed');
@@ -606,12 +601,11 @@ export const searchApi = {
 /** RAG-augmented AI chat — streams tokens via fetch + ReadableStream */
 export const ragChatApi = {
   stream: (question: string, history: { role: string; content: string }[] = [], tables: string[] = []) => {
-    const token = getToken();
     return fetch(`${import.meta.env.VITE_API_BASE_URL}/api/rag-chat`, {
       method: 'POST',
+      credentials: 'include',
       headers: {
         'Content-Type': 'application/json',
-        ...(token ? { Authorization: `Bearer ${token}` } : {}),
       },
       body: JSON.stringify({ question, history, tables }),
     });
@@ -832,7 +826,7 @@ export const backupApi = {
   exportTable: (table: string, format: 'json' | 'csv' = 'json') => {
     const url = `/backup/export/${table}?format=${format}`;
     return fetch(`${API_BASE}${url}`, {
-      headers: { Authorization: `Bearer ${getToken()}` },
+      credentials: 'include',
     }).then(r => {
       if (!r.ok) throw new Error(`Export failed: ${r.statusText}`);
       if (format === 'csv') return r.text();
@@ -842,7 +836,7 @@ export const backupApi = {
   exportAll: () => {
     const url = '/backup/export-all';
     return fetch(`${API_BASE}${url}`, {
-      headers: { Authorization: `Bearer ${getToken()}` },
+      credentials: 'include',
     }).then(r => {
       if (!r.ok) throw new Error(`Export failed: ${r.statusText}`);
       return r.json();
@@ -1016,7 +1010,6 @@ export const projectImagesApi = {
   update: (id: string, data: Row) => updateRow('project-images', id, data),
   delete: (id: string) => deleteRow('project-images', id),
   uploadImage: async (file: File, projectId: string, caption?: string, category?: string) => {
-    const token = getToken();
     const formData = new FormData();
     formData.append('file', file);
     formData.append('project_id', projectId);
@@ -1024,7 +1017,7 @@ export const projectImagesApi = {
     if (category) formData.append('category', category);
     const res = await fetch(`${API_BASE}/project-images/upload`, {
       method: 'POST',
-      headers: { ...(token ? { Authorization: `Bearer ${token}` } : {}) },
+      credentials: 'include',
       body: formData,
     });
     if (!res.ok) {

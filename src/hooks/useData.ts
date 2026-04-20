@@ -157,11 +157,12 @@ export function usePaginatedQuery<T>({
     }
   }, [pagination.page]);
 
-  // Update total when data changes
+  // Update total when data changes — only track total to avoid infinite loops
   useEffect(() => {
     if (query.data?.total !== undefined) {
       setPagination((prev) => ({ ...prev, total: query.data!.total }));
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- total-only refresh is intentional
   }, [query.data?.total]);
 
   return {
@@ -265,7 +266,7 @@ export function useOptimisticUpdate<T extends Row>({
       );
       return data;
     },
-    onError: (_err, data, context) => {
+    onError: (_err, data, _context) => {
       // Rollback on error
       if (rollbackFn) {
         qc.setQueryData<T[]>(queryKey, (old) =>

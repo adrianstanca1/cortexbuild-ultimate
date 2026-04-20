@@ -256,6 +256,9 @@ export function useDynamicImport<T>(
     error: null,
   });
 
+  // Note: importFn and options are intentionally omitted — importFn is stable
+  // (useCallback upstream) and options is a fresh object per render, so relying on
+  // skip as the signal is correct.
   useEffect(() => {
     if (options.skip) {
       setState({ data: null, loading: false, error: null });
@@ -287,6 +290,7 @@ export function useDynamicImport<T>(
     return () => {
       cancelled = true;
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- intentionally only tracking options.skip
   }, [options.skip]);
 
   return state;

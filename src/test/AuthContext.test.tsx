@@ -108,8 +108,9 @@ describe('AuthContext', () => {
       });
 
       expect(screen.getByTestId('user-name')).toHaveTextContent('Test User');
+      // Session validation uses httpOnly cookie — must include credentials
       expect(mockFetch).toHaveBeenCalledWith('/api/auth/me', expect.objectContaining({
-        headers: { 'Authorization': 'Bearer valid-token' }
+        credentials: 'include'
       }));
       expect(authStorage.setStoredUser).toHaveBeenCalledWith(mockUser);
     });
@@ -188,7 +189,7 @@ describe('AuthContext', () => {
         expect(screen.getByTestId('auth-status')).toHaveTextContent('Authenticated');
       });
 
-      expect(authStorage.setToken).toHaveBeenCalledWith('new-token');
+      // Token is now httpOnly cookie — signIn only stores user data
       expect(authStorage.setStoredUser).toHaveBeenCalledWith(mockUser);
       expect(mockFetch).toHaveBeenCalledWith('/api/auth/login', expect.objectContaining({
         method: 'POST',

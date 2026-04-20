@@ -30,34 +30,27 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [loading, setLoading] = useState(true);
   const [token, setTokenState] = useState<string | null>(null);
 
-  // On mount, restore session from localStorage
+  // On mount, restore session from cookie-backed auth
   useEffect(() => {
     const loadUser = async () => {
-      const storedToken = getToken();
       const stored = getStoredUser();
-      setTokenState(storedToken);
 
-      if (storedToken && stored) {
+      if (stored) {
         try {
-          // Validate token with a backend call
-          const res = await fetch(`${API_BASE}/auth/me`, {
-            headers: {
-              'Authorization': `Bearer ${storedToken}`
-            }
-          });
+          // Validate session with a backend call (cookie sent automatically)
+          const res = await fetch(`${API_BASE}/auth/me`, { credentials: 'include' });
           if (res.ok) {
             const userData = await res.json();
             setUser(userData as Profile);
             setStoredUser(userData);
           } else {
-            console.warn('Token validation failed, clearing session.', res.status);
+            console.warn('Session validation failed, clearing session.', res.status);
             clearToken();
-            setTokenState(null);
             setUser(null);
           }
         } catch (error) {
-          console.error('Error validating token:', error);
-          // Don't clear session on network error — token might still be valid
+          console.error('Error validating session:', error);
+          // Don't clear session on network error — cookie might still be valid
           setUser(stored as unknown as Profile | null);
         }
       }
@@ -70,12 +63,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const res = await fetch(`${API_BASE}/auth/login`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
+      credentials: 'include', // Include httpOnly cookie
       body: JSON.stringify({ email, password }),
     });
     const data = await res.json();
     if (!res.ok) throw new Error(data.message || 'Login failed');
-    setToken(data.token);
-    setTokenState(data.token);
+    // Token is now in httpOnly cookie - only store user data
     setStoredUser(data.user);
     setUser(data.user as Profile);
   };

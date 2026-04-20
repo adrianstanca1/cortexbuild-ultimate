@@ -126,8 +126,17 @@ router.post('/login', loginLimiter, async (req, res) => {
       { expiresIn: '7d' }
     );
 
+    // Set httpOnly cookie for XSS protection
+    res.cookie('token', token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'strict',
+      maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+      path: '/',
+    });
+
     const { password_hash, ...safeUser } = user;
-    res.json({ token, user: safeUser });
+    res.json({ user: safeUser }); // Don't return token in body
   } catch (err) {
     console.error('[auth/login]', err);
     res.status(500).json({ message: 'Server error' });
