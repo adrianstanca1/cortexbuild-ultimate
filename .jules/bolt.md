@@ -13,3 +13,6 @@
 ## 2024-05-19 - Layout-Wide Re-renders from setInterval (MyDesktop.tsx)
 **Learning:** Having a `setInterval` that sets state (like `currentTime`) in a high-level component (`MyDesktop.tsx`) causes the component and all its children to completely re-render on every tick. This is highly inefficient.
 **Action:** Isolate high-frequency state updates like timers/clocks into their own small standalone leaf components so that only the localized DOM tree re-renders.
+## 2024-05-19 - Layout-Wide Re-renders from setInterval (Header.tsx)
+**Learning:** Storing `currentTime` in a `useState` inside a large, frequently-used layout component like `Header.tsx` and updating it via `setInterval` causes the entire header to unnecessarily re-render every second.
+**Action:** Extract the clock logic (the `useState`, `useEffect` with `setInterval`, and the specific clock JSX) into its own small, isolated component (e.g., `HeaderClock`). This isolates the re-renders to just the text nodes that actually need to update, saving CPU cycles.

@@ -103,12 +103,33 @@ const MODULE_ACCENTS: Partial<Record<Module, string>> = {
   'settings': '#64748b',
 };
 
+// ⚡ Bolt Performance Optimization:
+// Extracted HeaderClock into a standalone component.
+// Previously, currentTime was stored in the parent Header state and updated via
+// setInterval every second, which caused the entire Header component to re-render 1x/sec.
+// Isolating this state ensures only the clock UI re-renders.
+function HeaderClock() {
+  const [currentTime, setCurrentTime] = useState(new Date());
+
+  useEffect(() => {
+    const timer = setInterval(() => setCurrentTime(new Date()), 1000);
+    return () => clearInterval(timer);
+  }, []);
+
+  return (
+    <>
+      {currentTime.toLocaleDateString('en-GB', { weekday: 'short', day: '2-digit', month: 'short', year: 'numeric' })}
+      {' · '}
+      {currentTime.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
+    </>
+  );
+}
+
 export function Header({ activeModule, onMenuToggle }: { activeModule: Module; onMenuToggle?: () => void }) {
   const [, setIsOnline] = useState(typeof navigator !== 'undefined' ? navigator.onLine : true);
   const [notifOpen, setNotifOpen] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
   const [searchFocused, setSearchFocused] = useState(false);
-  const [currentTime, setCurrentTime] = useState(new Date());
   const [showNotificationCenter, setShowNotificationCenter] = useState(false);
   const [showNotificationPrefs, setShowNotificationPrefs] = useState(false);
   const accent = MODULE_ACCENTS[activeModule] || '#f59e0b';
@@ -120,11 +141,9 @@ export function Header({ activeModule, onMenuToggle }: { activeModule: Module; o
     const handleOffline = () => setIsOnline(false);
     window.addEventListener('online', handleOnline);
     window.addEventListener('offline', handleOffline);
-    const timer = setInterval(() => setCurrentTime(new Date()), 1000);
     return () => {
       window.removeEventListener('online', handleOnline);
       window.removeEventListener('offline', handleOffline);
-      clearInterval(timer);
     };
   }, []);
 
@@ -232,9 +251,7 @@ export function Header({ activeModule, onMenuToggle }: { activeModule: Module; o
               marginTop: '1px',
             }}
           >
-            {currentTime.toLocaleDateString('en-GB', { weekday: 'short', day: '2-digit', month: 'short', year: 'numeric' })}
-            {' · '}
-            {currentTime.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
+            <HeaderClock />
           </div>
         </div>
       </div>
