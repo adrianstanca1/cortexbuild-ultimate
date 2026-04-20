@@ -1,19 +1,24 @@
 
 const assert = require('assert');
-const { queryOllama, getEmbedding } = require('../lib/unified-ai-client');
+const client = require('../lib/unified-ai-client');
 
-async function runTests() {
-    console.log('Running tests for unified-ai-client...');
+async function testInterface() {
+    console.log('Testing unified-ai-client interface...');
     
-    // Test 1: Embedding check
-    const embedding = await getEmbedding('hello world');
+    // Check exports
+    assert(typeof client.queryOllama === 'function', 'queryOllama should be a function');
+    assert(typeof client.queryGemini === 'function', 'queryGemini should be a function');
+    assert(typeof client.getEmbedding === 'function', 'getEmbedding should be a function');
+    
+    console.log('✅ Interface check passed');
+    
+    // Test getEmbedding (stubbed)
+    const embedding = await client.getEmbedding('hello');
     assert(Array.isArray(embedding), 'Embedding should return an array');
-    console.log('✅ Embedding test passed');
-    
-    process.exit(0);
+    console.log('✅ Embedding stub test passed');
 }
 
-runTests().catch(err => {
+testInterface().catch(err => {
     console.error('❌ Test failed:', err);
     process.exit(1);
 });

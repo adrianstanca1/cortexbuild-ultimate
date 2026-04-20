@@ -1,22 +1,22 @@
-# Project North Star: CortexBuild Ultimate
+# CortexBuild Ultimate: System Architecture & Integrity
 
-## High-Level Architecture
+## 1. Inference Pipeline (Unified AI Client)
 
-- **Frontend**: React 19, TypeScript, Vite, Tailwind CSS (DaisyUI).
-- **Backend**: Express.js, PostgreSQL 16 (PgVector), Redis 7.
-- **AI Layer**: Hybrid Local/Remote (Ollama $\leftrightarrow$ OpenRouter).
-- **Deploy**: Dockerized API, Nginx Reverse Proxy, GitHub Actions CI/CD.
+- **Centralized Client**: All AI requests (Ollama, Gemini, Embeddings) are routed through `server/lib/unified-ai-client.js`.
+- **Inference Routing**: Primary: local `qwen3.5:9b`. Secondary: failover to `openrouter`, `ollama-fast`, `ollama-heavy`.
+- **Integrity Verification**: `server/test/unified-ai-v2.test.js` ensures interface consistency.
 
-## Core Conventions
+## 2. Database Hardening
 
-- **Persistence**: `SESSION.md` for handoffs, `CLAUDE.md` for project rules.
-- **Build**: `scripts/build.py` $\rightarrow$ `npm run build` $\rightarrow$ `dist/`.
-- **Style**: Layered development (Data $\rightarrow$ API $\rightarrow$ UI).
+- **Audit Triggers**: All core modules utilize `update_updated_at_column()` triggered on `BEFORE UPDATE` to guarantee audit accuracy.
+- **Performance Indexes**: Composite indexes established on `projects`, `rfis`, and `invoices` for optimized dashboard performance.
 
-## Hard-Learned Lessons
+## 3. Security & Dependency Maintenance
 
-- **Build Tooling**: Never rely on global `tsc`. Always use `npm run typecheck`.
-- **Vite Dist**: Do not recursive-copy `dist/` folders; verify existence after build.
-- **Docker**: Do not use `docker-compose up` on VPS; use `docker start` and specific deploy scripts.
-- **Database**: Handle `organization_id = NULL` for company owners using `COALESCE`.
-- **Server Env**: Loading `.env` from `server/` subdirectory, not project root.
+- **Vulnerability Management**: Automated pruning and `npm audit fix` enforced.
+- **Parity Sync**: Local production-aligned artifacts (deployment/monitoring/scripts) synchronized to ensure environment parity with the VPS.
+
+## 4. Operational Maintenance
+
+- **Self-Healing**: `hermes-reliability-optimizer` skill manages gateway stabilization and model-response error recovery.
+- **Monitoring**: All system components are health-checkable via `/api/health`.
