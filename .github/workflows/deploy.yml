@@ -265,16 +265,6 @@ jobs:
               docker start cortexbuild-redis 2>&1 || true
             fi
 
-            # Ensure ollama container exists and is running (AI / embeddings)
-            if ! docker ps --format '{{.Names}}' | grep -Fx cortexbuild-ollama >/dev/null 2>&1; then
-              echo "Creating ollama container..."
-              docker run -d --name cortexbuild-ollama \
-                --network host \
-                ollama/ollama:latest 2>&1 || true
-            else
-              docker start cortexbuild-ollama 2>&1 || true
-            fi
-
             # Wait for postgres to be ready
             for i in $(seq 1 30); do
               if docker exec cortexbuild-db pg_isready -U cortexbuild >/dev/null 2>&1; then
