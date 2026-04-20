@@ -449,18 +449,11 @@ router.post('/', async (req, res) => {
       [title, description, severity || 'info', type || 'notification', user_id || null, link || null, orgId, companyId]
     );
 
-    // Send real-time notification via WebSocket
-    if (user_id) {
-      createNotification(user_id, title, description, severity || 'info', { link });
-    } else {
-      // Broadcast to all connected clients in this org
-      broadcast({
-        type: 'notification',
-        payload: { title, description, severity: severity || 'info', link, timestamp: new Date().toISOString() }
-      });
-    }
-
-    res.status(201).json(rows[0]);
+    // Broadcast to all connected clients in this org
+    broadcast({
+      type: 'notification',
+      payload: { title, description, severity: severity || 'info', link: link || null, timestamp: new Date().toISOString() }
+    });
   } catch (err) {
     console.error('[POST /notifications]', err.message);
     res.status(500).json({ message: 'Internal server error' });
