@@ -56,16 +56,11 @@ jobs:
 
       - name: Deploy to VPS
         uses: appleboy/ssh-action@v1.0.3
-        env:
-          JWT_SECRET: ${{ secrets.JWT_SECRET }}
-          SESSION_SECRET: ${{ secrets.SESSION_SECRET }}
-          POSTGRES_PASSWORD: ${{ secrets.POSTGRES_PASSWORD }}
-          DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
         with:
           host: ${{ secrets.SSH_HOST }}
-          username: ${{ secrets.VPS_USER }}
-          password: ${{ secrets.VPS_PASSWORD }}
-          # VPS frontend (npm ci + tsc/vite) + API image build + health gates can exceed 45m.
+          username: ${{ secrets.SSH_USERNAME }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          passphrase: ""
           command_timeout: 120m
           script: |
             set -e
@@ -333,7 +328,7 @@ jobs:
               -e PORT=3001 \
               -e NODE_ENV=production \
               -e OLLAMA_HOST=http://127.0.0.1:11434 \
-              -e OLLAMA_MODEL=qwen3.5:latest \
+              -e OLLAMA_MODEL=gemma4:latest \
               -e EMBEDDING_MODEL="${EMBEDDING_MODEL:-nomic-embed-text:latest}" \
               -e CORS_ORIGIN=https://www.cortexbuildpro.com,https://cortexbuildpro.com \
               -e FRONTEND_URL=https://www.cortexbuildpro.com \
