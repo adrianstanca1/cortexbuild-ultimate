@@ -55,8 +55,8 @@ function initWebSocket(server, { enabled = true } = {}) {
   wss.on('connection', (ws, req) => {
     console.log('[WS] New connection');
 
-    // Authenticate connection
-    const token = extractToken(req.url);
+    // Authenticate connection — tries query param first (legacy), then cookie
+    const token = extractToken(req.url, req.headers.cookie);
     if (!token || !verifyToken(token)) {
       ws.close(4001, 'Unauthorized');
       return;
@@ -139,11 +139,22 @@ function initWebSocket(server, { enabled = true } = {}) {
 }
 
 /**
- * Extract JWT token from WebSocket URL query string
+ * Extract JWT token from WebSocket URL query string (legacy) or Cookie header (preferred).
+ * Supports both so existing connections don't break during rollout.
  */
-function extractToken(url) {
-  const urlObj = new URL(url, 'ws://localhost');
-  return urlObj.searchParams.get('token');
+function extractToken(reqUrl, cookieHeader) {
+  // Try query param first (legacy backward compatibility)
+  const urlObj = new URL(reqUrl, 'ws://localhost');
+  const queryToken = urlObj.searchParams.get('token');
+  if (queryToken) return queryToken;
+
+  // Fall back to httpOnly cookie (same pattern as HTTP API auth)
+  if (cookieHeader) {
+    const match = cookieHeader.match(/(?:^|;\s*)token=([^;]*)/);
+    if (match) return match[1];
+  }
+
+  return null;
 }
 
 /**
