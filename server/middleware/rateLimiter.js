@@ -19,8 +19,11 @@ if (REDIS_ENABLED) {
 
 function getClientKey(req) {
   const authHeader = req.headers.authorization || '';
-  const token = authHeader.startsWith('Bearer ') ? authHeader.slice(7) : 'anonymous';
-  return `rate_limit:${token}:${req.path.replace(/\//g, '_')}`;
+  const token = authHeader.startsWith('Bearer ') ? authHeader.slice(7) : null;
+  if (token) return `rate_limit:token:${token}:${req.path.replace(/\//g, '_')}`;
+  // Unauthenticated: use real client IP (set by nginx as X-Real-IP)
+  const ip = req.headers['x-real-ip'] || req.socket.remoteAddress || 'unknown';
+  return `rate_limit:ip:${ip}:${req.path.replace(/\//g, '_')}`;
 }
 
 function cleanExpired(map) {
