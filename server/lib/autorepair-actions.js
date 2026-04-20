@@ -4,7 +4,7 @@
  * Each action is an isolated, audited, reversible function.
  */
 const pool = require('../db');
-const { getEmbedding } = require('./ollama');
+const { getEmbedding } = require("./unified-ai-client");
 const { createAlert, createNotification } = require('./websocket');
 
 const OLLAMA_HOST = process.env.OLLAMA_HOST || 'http://localhost:11434';

@@ -3,7 +3,7 @@
  * Background worker for deep research jobs — follows bimProcessor.js pattern.
  */
 const pool = require('../db');
-const { getEmbedding } = require('../lib/ollama');
+const { getEmbedding } = require("../lib/unified-ai-client");
 const { manifest, SEARCHABLE_TABLES } = require('../lib/rag-manifest');
 const { buildTenantFilter } = require('../middleware/tenantFilter');
 const { synthesizeResults } = require('../lib/autoresearch-synthesizer');

@@ -35,7 +35,7 @@ router.get('/health', async (req, res) => {
 
     // RAG embeddings check
     try {
-      const { getEmbedding } = require('../lib/ollama');
+      const { getEmbedding } = require("../lib/unified-ai-client");
       const probe = await getEmbedding('health check');
       checks.rag_embeddings = {
         status: probe && probe.length === 1024 ? 'ok' : 'degraded',

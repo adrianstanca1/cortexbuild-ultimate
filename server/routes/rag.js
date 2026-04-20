@@ -7,7 +7,7 @@
 const express   = require('express');
 const pool      = require('../db');
 const authMw    = require('../middleware/auth');
-const { getEmbedding } = require('../lib/ollama');
+const { getEmbedding } = require('../lib/unified-ai-client');
 const { manifest, SEARCHABLE_TABLES } = require('../lib/rag-manifest');
 const { buildTenantFilter, isSuperAdmin } = require('../middleware/tenantFilter');
 const ALLOWED_RAG_TABLES = new Set(SEARCHABLE_TABLES);
