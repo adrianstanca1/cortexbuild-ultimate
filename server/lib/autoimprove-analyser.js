@@ -26,7 +26,6 @@ async function gatherMetrics(orgId, companyId) {
     FROM projects
     WHERE ${tenantFilter('organization_id')} AND status != 'completed'
     ORDER BY created_at DESC
-    LIMIT 20
   `, params);
 
   // Safety incidents in last 30 days

@@ -1,21 +1,18 @@
-# Session: 2026-04-19-Setup-and-Sync
+# Project Session Log: CortexBuild Ultimate
+
+Last Update: 2026-04-19
 
 ## Current State
 
-- **Infrastructure**: Local-only inference configured (Gemma4/Qwen3.5).
-- **CI/CD**: GitHub Actions (`ci.yml`, `cd.yml`) implemented.
-- **Orchestration**: Docker Compose and Dockerfile.api verified.
-- **Build System**: `scripts/build.py` fully operational and verified.
-- **Agents**: `project-build.plugin.ts` integrated.
+- Local: Stable, Verified, Pushed to Origin Main.
+- Remote (VPS): API online (port 3001), but SSH broken (Connection Refused/Permission Denied).
 
-## Pending Tasks
+## Recent Fixes
 
-- [ ] Run automated security audit via Shannon.
-- [ ] Finalize 70-module SaaS specification in `PLATFORM_SPEC.md`.
-- [ ] Initialize Git repository and commit current baseline.
+- Corrected schema mismatch in `server/lib/autoimprove-analyser.js` (column mappings: budget, date).
+- Optimized SQL `WHERE` clauses and table aliasing in `server/routes/autoimprove.js` and `server/routes/autorepair.js`.
+- Verified deployment pipeline locally via `npm run verify:all`.
 
-## Critical Commands
+## Blockers
 
-- Full Build: `python3 scripts/build.py`
-- API Health: `curl http://localhost:3001/api/health`
-- Frontend Dev: `npm run dev`
+- **VPS SSH Access**: Remote deployment of latest commits is blocked. Requires host-level SSHD restart or key correction.
