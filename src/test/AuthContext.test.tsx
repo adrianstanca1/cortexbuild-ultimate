@@ -254,7 +254,6 @@ describe('AuthContext', () => {
         expect(screen.getByTestId('auth-status')).toHaveTextContent('Authenticated');
       });
 
-      expect(authStorage.setToken).toHaveBeenCalledWith('new-token');
       expect(authStorage.setStoredUser).toHaveBeenCalledWith(mockUser);
       expect(mockFetch).toHaveBeenCalledWith('/api/auth/register', expect.objectContaining({
         method: 'POST',
@@ -296,7 +295,7 @@ describe('AuthContext', () => {
       expect(authStorage.clearToken).toHaveBeenCalled();
       expect(mockFetch).toHaveBeenCalledWith('/api/auth/logout', expect.objectContaining({
         method: 'POST',
-        headers: { Authorization: 'Bearer valid-token' }
+        credentials: 'include'
       }));
     });
 
@@ -370,7 +369,8 @@ describe('AuthContext', () => {
       expect(authStorage.setStoredUser).toHaveBeenCalledWith(updatedUser);
       expect(mockFetch).toHaveBeenCalledWith('/api/auth/profile', expect.objectContaining({
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json', Authorization: 'Bearer valid-token' },
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ name: 'Updated Name' })
       }));
     });

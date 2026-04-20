@@ -113,7 +113,7 @@ async function uploadFile(file: File, category: string, project?: string, projec
     const err = await res.json().catch(() => ({ message: res.statusText }));
     throw new Error(err.message || 'Upload failed');
   }
-  return res.json();
+  return toCamel<Record<string, unknown>>(await res.json());
 }
 
 // ─── Entity APIs ──────────────────────────────────────────────────────────────

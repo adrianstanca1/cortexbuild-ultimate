@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
-import { getToken, setToken, clearToken, getStoredUser, setStoredUser, API_BASE } from '../lib/auth-storage';
+import { clearToken, getStoredUser, setStoredUser, API_BASE } from '../lib/auth-storage';
 
 interface Profile {
   id: string;
@@ -28,7 +28,8 @@ const AuthContext = createContext<AuthContextValue | null>(null);
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser]       = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
-  const [token, setTokenState] = useState<string | null>(null);
+  // token is kept for NotificationsPanel which reads it; cookie handles actual auth
+  const [token] = useState<string | null>(null);
 
   // On mount, restore session from cookie-backed auth
   useEffect(() => {
@@ -76,41 +77,35 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const signUp = async (email: string, password: string, name: string, company: string) => {
     const res = await fetch(`${API_BASE}/auth/register`, {
       method: 'POST',
+      credentials: 'include', // Include httpOnly cookie
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ name, email, password, company }),
     });
     const data = await res.json();
     if (!res.ok) throw new Error(data.message || 'Registration failed');
-    setToken(data.token);
-    setTokenState(data.token);
+    // Token is in httpOnly cookie - only store user data
     setStoredUser(data.user);
     setUser(data.user as Profile);
   };
 
   const signOut = async () => {
-    const currentToken = getToken();
-    // Best-effort: tell the server to blacklist this JWT
-    if (currentToken) {
-      try {
-        await fetch(`${API_BASE}/auth/logout`, {
-          method: 'POST',
-          headers: { Authorization: `Bearer ${currentToken}` },
-        });
-      } catch {
-        // Network error — still clear local state
-      }
+    try {
+      await fetch(`${API_BASE}/auth/logout`, {
+        method: 'POST',
+        credentials: 'include', // Send httpOnly cookie
+      });
+    } catch {
+      // Network error — still clear local state
     }
     clearToken();
-    setTokenState(null);
     setUser(null);
   };
 
   const updateProfile = async (updates: Partial<Profile>) => {
-    const currentToken = getToken();
-    if (!currentToken || !user) return;
     const res = await fetch(`${API_BASE}/auth/profile`, {
       method: 'PUT',
-      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${currentToken}` },
+      credentials: 'include', // Send httpOnly cookie
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(updates),
     });
     const data = await res.json();
