@@ -1,5 +1,6 @@
 const https = require('https');
 const http = require('http');
+const { recordAiInference } = require('../metrics');
 
 const OLLAMA_HOST = process.env.OLLAMA_HOST || 'http://localhost:11434';
 const LLM_MODEL = process.env.LLM_MODEL || process.env.OLLAMA_MODEL || 'qwen3.5:latest';
@@ -42,75 +43,70 @@ async function summarizeText(text) {
   });
 }
 
+function truncateToTokenBudget(messages, userMsgContent, systemContext, maxTokens = 28000) {
+  const systemTokens = Math.ceil((systemContext.length + 200) / 4);
+  const userTokens   = Math.ceil(userMsgContent.length / 4);
+  const budget       = maxTokens - systemTokens - userTokens - 500;
+
+  const result = [];
+  let usedTokens = 0;
+
+  for (let i = messages.length - 1; i >= 0; i--) {
+    const m    = messages[i];
+    const cost = Math.ceil(m.content.length / 4);
+    if (usedTokens + cost > budget) break;
+    result.unshift(m);
+    usedTokens += cost;
+  }
+
+  return result;
+}
+
 /**
  * Get response from Ollama for user query.
+ * Records AI inference metrics for Prometheus.
  */
 async function getOllamaResponse(userMessage, context = '', conversationHistory = [], summary = null) {
-  return new Promise((resolve, reject) => {
-    const systemPrompt = `You are a helpful AI assistant for CortexBuild, a UK construction management platform. You help users manage projects, contracts, safety, and team operations.
+  const startTime = Date.now();
+
+  const systemPrompt = `You are a helpful AI assistant for CortexBuild, a UK construction management platform. You help users manage projects, contracts, safety, and team operations.
 
 Provide a helpful, concise response. Prefer direct answers over repeating menu-like capability lists. When relevant, use the supplied database context. If the user asks a general question, answer it naturally.`;
 
-    const promptParts = [systemPrompt];
+  const truncatedHistory = truncateToTokenBudget(
+    conversationHistory,
+    userMessage,
+    `${systemPrompt}\n\n${context || ''}`,
+  );
 
-    if (context) {
-      promptParts.push(`Database context:\n${context}`);
-    }
+  const messages = [{ role: 'system', content: systemPrompt }];
 
-    if (summary) {
-      promptParts.push(`Previous conversation summary:\n${summary}`);
-    }
+  if (context) {
+    messages.push({ role: 'user', content: `Database context:\n${context}` });
+  }
+  if (summary) {
+    messages.push({ role: 'user', content: `Previous conversation summary:\n${summary}` });
+  }
+  if (truncatedHistory.length) {
+    const historyText = truncatedHistory
+      .map((m) => `${m.role === 'user' ? 'User' : 'Assistant'}: ${m.content}`)
+      .join('\n');
+    messages.push({ role: 'user', content: `Recent conversation:\n${historyText}` });
+  }
+  messages.push({ role: 'user', content: userMessage });
 
-    const truncatedHistory = truncateToTokenBudget(
-      conversationHistory,
-      userMessage,
-      `${systemPrompt}\n\n${context || ''}`,
-    );
+  const body = JSON.stringify({
+    model: LLM_MODEL,
+    messages,
+    stream: false,
+    options: {
+      temperature: 0.4,
+      top_p: 0.9,
+      num_predict: 512,
+    },
+  });
 
-    if (truncatedHistory.length) {
-      promptParts.push(
-        'Recent conversation:',
-        truncatedHistory
-          .map((message) => `${message.role === 'user' ? 'User' : 'Assistant'}: ${message.content}`)
-          .join('\n'),
-      );
-    }
-
-    // Build messages array with explicit roles — no index-based guessing
-    const messages = [{ role: 'system', content: systemPrompt }];
-
-    // Add context as a user message (provides DB data for the LLM to reason about)
-    if (context) {
-      messages.push({ role: 'user', content: `Database context:\n${context}` });
-    }
-
-    // Add summary as a user message (prior conversation context)
-    if (summary) {
-      messages.push({ role: 'user', content: `Previous conversation summary:\n${summary}` });
-    }
-
-    // Add conversation history with correct roles
-    if (truncatedHistory.length) {
-      const historyText = truncatedHistory
-        .map((m) => `${m.role === 'user' ? 'User' : 'Assistant'}: ${m.content}`)
-        .join('\n');
-      messages.push({ role: 'user', content: `Recent conversation:\n${historyText}` });
-    }
-
-    // Add the actual user message
-    messages.push({ role: 'user', content: userMessage });
-
-    const body = JSON.stringify({
-      model: LLM_MODEL,
-      messages,
-      stream: false,
-      options: {
-        temperature: 0.4,
-        top_p: 0.9,
-        num_predict: 512,
-      },
-    });
-
+  return new Promise((resolve, reject) => {
     const url = new URL(OLLAMA_HOST + '/api/chat');
     const isHttps = url.protocol === 'https:';
     const lib = isHttps ? https : http;
@@ -129,32 +125,43 @@ Provide a helpful, concise response. Prefer direct answers over repeating menu-l
       let data = '';
       res.on('data', chunk => data += chunk);
       res.on('end', () => {
+        const duration = (Date.now() - startTime) / 1000;
         try {
           const trimmed = data.trim();
           if (!trimmed) {
+            recordAiInference({ provider: 'ollama', model: LLM_MODEL, status: 'error', durationSeconds: duration, errorType: 'empty_response' });
             reject(new Error('Ollama returned empty response'));
             return;
           }
           const parsed = JSON.parse(trimmed);
-          // /api/chat returns { message: { content: '...' } }
           if (parsed.message?.content) {
+            recordAiInference({ provider: 'ollama', model: LLM_MODEL, status: 'success', durationSeconds: duration });
             resolve(parsed.message.content.trim());
           } else if (parsed.response) {
-            // Fallback for /api/generate format
+            recordAiInference({ provider: 'ollama', model: LLM_MODEL, status: 'success', durationSeconds: duration });
             resolve(parsed.response.trim());
           } else if (parsed.error) {
+            recordAiInference({ provider: 'ollama', model: LLM_MODEL, status: 'error', durationSeconds: duration, errorType: 'ollama_error' });
             reject(new Error(parsed.error));
           } else {
+            recordAiInference({ provider: 'ollama', model: LLM_MODEL, status: 'error', durationSeconds: duration, errorType: 'no_content' });
             reject(new Error('Ollama returned no response content'));
           }
         } catch (e) {
+          recordAiInference({ provider: 'ollama', model: LLM_MODEL, status: 'error', durationSeconds: duration, errorType: 'parse_error' });
           reject(e);
         }
       });
     });
 
-    req.on('error', reject);
+    req.on('error', e => {
+      const duration = (Date.now() - startTime) / 1000;
+      recordAiInference({ provider: 'ollama', model: LLM_MODEL, status: 'error', durationSeconds: duration, errorType: 'network_error' });
+      reject(e);
+    });
     req.on('timeout', () => {
+      const duration = (Date.now() - startTime) / 1000;
+      recordAiInference({ provider: 'ollama', model: LLM_MODEL, status: 'error', durationSeconds: duration, errorType: 'timeout' });
       req.destroy();
       reject(new Error('Ollama request timed out'));
     });
@@ -162,26 +169,6 @@ Provide a helpful, concise response. Prefer direct answers over repeating menu-l
     req.write(body);
     req.end();
   });
-}
-
-// Need to import truncateToTokenBudget - circular dependency fix
-function truncateToTokenBudget(messages, userMsgContent, systemContext, maxTokens = 28000) {
-  const systemTokens = Math.ceil((systemContext.length + 200) / 4);
-  const userTokens   = Math.ceil(userMsgContent.length / 4);
-  const budget       = maxTokens - systemTokens - userTokens - 500;
-
-  const result = [];
-  let usedTokens = 0;
-
-  for (let i = messages.length - 1; i >= 0; i--) {
-    const m    = messages[i];
-    const cost = Math.ceil(m.content.length / 4);
-    if (usedTokens + cost > budget) break;
-    result.unshift(m);
-    usedTokens += cost;
-  }
-
-  return result;
 }
 
 module.exports = {
