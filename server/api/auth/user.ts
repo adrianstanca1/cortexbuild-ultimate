@@ -1,4 +1,4 @@
-import type { VercelRequest, VercelResponse } from '@vercel/node';
+import type { VercelRequest, VercelResponse } from '../../types/vercel';
 
 // CORS configuration - inline to avoid module resolution issues
 const ALLOWED_ORIGINS = [
