@@ -6,7 +6,6 @@
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { apiGet, apiPut, apiPost, apiDelete } from '@/lib/api';
 import { eventBus } from '@/lib/eventBus';
-import { getToken } from '@/lib/auth-storage';
 import {
   validateNotification,
   validateNotificationsResponse,
@@ -362,8 +361,7 @@ export function useNotificationCenter(
 
     try {
       const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-      const authToken = getToken() || '';
-      const wsUrl = `${protocol}//${window.location.host}/ws${authToken ? `?token=${encodeURIComponent(authToken)}` : ''}`;
+      const wsUrl = `${protocol}//${window.location.host}/ws`;
 
       const ws = new WebSocket(wsUrl);
       let wasEverOpen = false;
