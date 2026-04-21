@@ -458,6 +458,23 @@ async function smartQuery(prompt, options = {}) {
   throw new Error(`All AI providers failed. Last error: ${lastError?.message || 'Unknown error'}`);
 }
 
+const { detectAgentType, buildAgenticPrompt, getAgentSystemPrompt } = require('./agents/agent-orchestrator');
+
+async function agenticQuery(userQuery, options = {}) {
+  const {
+    context = {},
+    preferredProvider = 'openrouter',
+    model,
+    temperature = 0.7,
+    maxTokens = 4000,
+  } = options;
+
+  const agentType = detectAgentType(userQuery);
+  const prompt = buildAgenticPrompt(userQuery, { agentType, context });
+
+  return smartQuery(prompt, { preferredProvider, model, temperature, maxTokens });
+}
+
 module.exports = { 
   queryOllama, 
   queryGemini,
@@ -465,6 +482,7 @@ module.exports = {
   getEmbedding,
   healthCheck,
   smartQuery,
+  agenticQuery,
   // Expose internal components for testing/monitoring
   __test__: {
     embeddingCache,

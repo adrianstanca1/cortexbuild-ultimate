@@ -213,19 +213,10 @@ function AppShell() {
       case 'calendar':              return <Calendar />;
       case 'search':
         return (
-          <div className="card p-8 max-w-lg mx-auto text-center space-y-4">
-            <h1 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Search and commands</h1>
-            <p className="text-gray-600 dark:text-gray-400 text-sm leading-relaxed">
-              Open the command palette to jump to a module or run a quick action.
-            </p>
-            <p className="text-xs text-gray-500 dark:text-gray-500">
-              <kbd className="px-1.5 py-0.5 rounded bg-gray-100 dark:bg-gray-800 font-mono">Ctrl</kbd>
-              {' / '}
-              <kbd className="px-1.5 py-0.5 rounded bg-gray-100 dark:bg-gray-800 font-mono">⌘</kbd>
-              {' + '}
-              <kbd className="px-1.5 py-0.5 rounded bg-gray-100 dark:bg-gray-800 font-mono">K</kbd>
-            </p>
-          </div>
+          <GlobalSearch
+            embedded
+            onClose={() => setActiveModule('dashboard')}
+          />
         );
       case 'audit-log':             return <AuditLog />;
       case 'variations':            return <Variations />;

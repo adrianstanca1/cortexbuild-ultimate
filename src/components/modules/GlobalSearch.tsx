@@ -70,7 +70,14 @@ const resultLabels: Record<string, string> = {
   team: 'Team',
 };
 
-export function GlobalSearch({ onClose }: { onClose?: () => void }) {
+export function GlobalSearch({
+  onClose,
+  embedded = false,
+}: {
+  onClose?: () => void;
+  /** When true, render inline in the main area instead of a full-screen overlay */
+  embedded?: boolean;
+}) {
   const [subTab, setSubTab] = useState<SubTab>('search');
   const [query, setQuery] = useState('');
   const [results, setResults] = useState<SearchResult | null>(null);
@@ -170,15 +177,37 @@ export function GlobalSearch({ onClose }: { onClose?: () => void }) {
     );
   };
 
+  const shellClass = embedded
+    ? 'relative w-full z-auto'
+    : 'fixed inset-0 bg-black/50 flex items-start justify-center pt-16 z-50';
+  const panelClass = embedded
+    ? 'bg-gray-900 border border-gray-700 rounded-xl w-full max-w-4xl mx-auto shadow-2xl min-h-[min(70vh,720px)] max-h-[calc(100dvh-10rem)] flex flex-col'
+    : 'bg-gray-900 border border-gray-700 rounded-xl w-full max-w-3xl shadow-2xl max-h-[85vh] flex flex-col';
+
   return (
     <>
       <ModuleBreadcrumbs currentModule="search" onNavigate={() => {}} />
-      <div className="fixed inset-0 bg-black/50 flex items-start justify-center pt-16 z-50" onClick={onClose}>
+      <div className={shellClass} onClick={embedded ? undefined : onClose} role={embedded ? undefined : 'presentation'}>
       <div
-        className="bg-gray-900 border border-gray-700 rounded-xl w-full max-w-3xl shadow-2xl max-h-[85vh] flex flex-col"
+        className={panelClass}
         onClick={e => e.stopPropagation()}
       >
         <div className="p-4 border-b border-gray-800">
+          {embedded && (
+            <div className="flex items-center justify-between gap-2 mb-3">
+              <h2 className="text-sm font-semibold text-gray-300">Global search</h2>
+              {onClose ? (
+                <button
+                  type="button"
+                  onClick={onClose}
+                  className="p-1.5 rounded-lg hover:bg-gray-800 text-gray-400 hover:text-white"
+                  aria-label="Close search"
+                >
+                  <X className="h-5 w-5" />
+                </button>
+              ) : null}
+            </div>
+          )}
           <div className="flex items-center gap-3">
             {loading ? (
               <Loader2 className="h-5 w-5 text-gray-500 animate-spin" />
