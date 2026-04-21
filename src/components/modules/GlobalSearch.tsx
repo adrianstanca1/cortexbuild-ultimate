@@ -190,6 +190,7 @@ export function GlobalSearch({
       <div className={shellClass} onClick={embedded ? undefined : onClose} role={embedded ? undefined : 'presentation'}>
       <div
         className={panelClass}
+        data-allow-chrome-shortcuts
         onClick={e => e.stopPropagation()}
       >
         <div className="p-4 border-b border-gray-800">

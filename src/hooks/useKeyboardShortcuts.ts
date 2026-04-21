@@ -18,9 +18,41 @@ interface Shortcut {
 
 export function useKeyboardShortcuts(shortcuts: Shortcut[]) {
   const handleKeyDown = useCallback((e: KeyboardEvent) => {
-    // Ignore if typing in input/textarea
     const target = e.target as HTMLElement;
-    if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable) {
+    // Ignore plain typing in inputs — but still allow modifier chords (⌘/Ctrl+K, etc.)
+    // inside command palette / global search so users can toggle overlays without blur.
+    const inChromeOverlay = Boolean(target.closest?.('[data-allow-chrome-shortcuts]'));
+    const isTypingSurface =
+      target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable;
+    // Only lift the input guard for OS-style chords (⌘/Ctrl). Alt+letter stays ignored in fields
+    // to avoid breaking locale/compose typing; Shift-only chords likewise stay ignored.
+    const hasOsChord = e.ctrlKey || e.metaKey;
+    // #region agent log
+    if (isTypingSurface) {
+      void Promise.resolve(
+        typeof fetch === 'function'
+          ? fetch('http://127.0.0.1:7655/ingest/db9ddb40-9e0f-4951-8101-ecdd6dc75884', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json', 'X-Debug-Session-Id': '608ca2' },
+              body: JSON.stringify({
+                sessionId: '608ca2',
+                hypothesisId: 'H1',
+                location: 'useKeyboardShortcuts.ts:typing-gate',
+                message: 'typing surface keydown',
+                data: {
+                  inChromeOverlay,
+                  hasOsChord,
+                  key: e.key,
+                  gateAllows: inChromeOverlay && hasOsChord,
+                },
+                timestamp: Date.now(),
+              }),
+            })
+          : null,
+      ).catch(() => {});
+    }
+    // #endregion
+    if (isTypingSurface && !(inChromeOverlay && hasOsChord)) {
       return;
     }
 

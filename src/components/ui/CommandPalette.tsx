@@ -426,6 +426,7 @@ export function CommandPalette({ isOpen, onClose, onNavigate }: CommandPalettePr
 
       <div
         className="relative w-full max-w-2xl mx-4 card bg-slate-900 border border-slate-700 shadow-2xl animate-fade-up"
+        data-allow-chrome-shortcuts
         role="dialog"
         aria-modal="true"
         aria-label="Command palette"

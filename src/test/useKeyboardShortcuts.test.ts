@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { renderHook } from '@testing-library/react';
+import { createElement } from 'react';
+import { renderHook, render, fireEvent } from '@testing-library/react';
 import { useKeyboardShortcuts, formatShortcut, DEFAULT_SHORTCUTS } from '../hooks/useKeyboardShortcuts';
 
 describe('useKeyboardShortcuts', () => {
@@ -93,6 +94,25 @@ describe('useKeyboardShortcuts', () => {
 
     expect(mockHandler).not.toHaveBeenCalled();
     document.body.removeChild(textarea);
+  });
+
+  it('allows ctrl/meta chords when focus is inside data-allow-chrome-shortcuts', () => {
+    function Shell() {
+      useKeyboardShortcuts([{ key: 'k', ctrl: true, handler: mockHandler, description: 'Palette' }]);
+      return createElement(
+        'div',
+        { 'data-allow-chrome-shortcuts': '' },
+        createElement('input', { 'data-testid': 'palette-q' }),
+      );
+    }
+    render(createElement(Shell));
+    const input = document.querySelector('[data-testid="palette-q"]') as HTMLInputElement;
+    input.focus();
+    fireEvent.keyDown(input, { key: 'k', ctrlKey: true, bubbles: true });
+    expect(mockHandler).toHaveBeenCalledTimes(1);
+    mockHandler.mockClear();
+    fireEvent.keyDown(input, { key: 'k', metaKey: true, bubbles: true });
+    expect(mockHandler).toHaveBeenCalledTimes(1);
   });
 
   it('ignores events from contentEditable elements', () => {
