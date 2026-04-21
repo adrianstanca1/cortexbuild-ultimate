@@ -14,6 +14,7 @@ import { NotificationCenter } from '../ui/NotificationCenter';
 import { NotificationPreferences } from '../ui/NotificationPreferences';
 import { ThemeSwitcher } from '../daisyui/ThemeSwitcher';
 import { useAuth } from '../../context/AuthContext';
+import { HeaderClock } from './HeaderClock';
 
 const MODULE_LABELS: Record<Module, string> = {
   'dashboard':            'Dashboard',
