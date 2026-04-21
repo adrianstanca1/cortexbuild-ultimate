@@ -103,12 +103,29 @@ const MODULE_ACCENTS: Partial<Record<Module, string>> = {
   'settings': '#64748b',
 };
 
+// ⚡ Bolt Performance Optimization:
+// Extracted high-frequency state update (setInterval clock) into a dedicated leaf component.
+// This prevents the entire <Header> and its children from needlessly re-rendering every second.
+function HeaderClock() {
+  const [currentTime, setCurrentTime] = useState(new Date());
+  useEffect(() => {
+    const timer = setInterval(() => setCurrentTime(new Date()), 1000);
+    return () => clearInterval(timer);
+  }, []);
+  return (
+    <>
+      {currentTime.toLocaleDateString('en-GB', { weekday: 'short', day: '2-digit', month: 'short', year: 'numeric' })}
+      {' · '}
+      {currentTime.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
+    </>
+  );
+}
+
 export function Header({ activeModule, onMenuToggle }: { activeModule: Module; onMenuToggle?: () => void }) {
   const [, setIsOnline] = useState(typeof navigator !== 'undefined' ? navigator.onLine : true);
   const [notifOpen, setNotifOpen] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
   const [searchFocused, setSearchFocused] = useState(false);
-  const [currentTime, setCurrentTime] = useState(new Date());
   const [showNotificationCenter, setShowNotificationCenter] = useState(false);
   const [showNotificationPrefs, setShowNotificationPrefs] = useState(false);
   const accent = MODULE_ACCENTS[activeModule] || '#f59e0b';
@@ -120,11 +137,9 @@ export function Header({ activeModule, onMenuToggle }: { activeModule: Module; o
     const handleOffline = () => setIsOnline(false);
     window.addEventListener('online', handleOnline);
     window.addEventListener('offline', handleOffline);
-    const timer = setInterval(() => setCurrentTime(new Date()), 1000);
     return () => {
       window.removeEventListener('online', handleOnline);
       window.removeEventListener('offline', handleOffline);
-      clearInterval(timer);
     };
   }, []);
 
@@ -232,9 +247,7 @@ export function Header({ activeModule, onMenuToggle }: { activeModule: Module; o
               marginTop: '1px',
             }}
           >
-            {currentTime.toLocaleDateString('en-GB', { weekday: 'short', day: '2-digit', month: 'short', year: 'numeric' })}
-            {' · '}
-            {currentTime.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
+            <HeaderClock />
           </div>
         </div>
       </div>

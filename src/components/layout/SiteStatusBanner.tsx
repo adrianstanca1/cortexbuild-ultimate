@@ -26,17 +26,26 @@ function LiveDot({ color }: { color: string }) {
   );
 }
 
-export function SiteStatusBanner({ compact = false }: { compact?: boolean }) {
+// ⚡ Bolt Performance Optimization:
+// Extracted high-frequency state update (setInterval clock) into a dedicated leaf component.
+// This prevents the entire <SiteStatusBanner> from needlessly re-rendering every second.
+function LiveClock() {
   const [time, setTime] = useState(() => new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }));
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setTime(new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', second: '2-digit' }));
+    }, 1000);
+    return () => clearInterval(interval);
+  }, []);
+  return <>{time}</>;
+}
+
+export function SiteStatusBanner({ compact = false }: { compact?: boolean }) {
   const [date] = useState(() => new Date().toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' }));
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
     setMounted(true);
-    const interval = setInterval(() => {
-      setTime(new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', second: '2-digit' }));
-    }, 1000);
-    return () => clearInterval(interval);
   }, []);
 
   const items = [
@@ -91,7 +100,7 @@ export function SiteStatusBanner({ compact = false }: { compact?: boolean }) {
           color: '#f59e0b',
           letterSpacing: '0.05em',
         }}>
-          {time}
+          <LiveClock />
         </span>
         <span style={{
           fontFamily: "'JetBrains Mono', monospace",
