@@ -1,21 +1,14 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { apiGet, apiPost, apiPut, apiDelete } from '../lib/api';
-import * as authStorage from '../lib/auth-storage';
 
 // We must mock fetch because mocking a function in the same module it is imported from
 // isn't straightforward without complex setup, so we mock the fetch layer itself.
 const mockFetch = vi.fn();
 global.fetch = mockFetch;
 
-vi.mock('../lib/auth-storage', () => ({
-  getToken: vi.fn(),
-  clearToken: vi.fn(),
-}));
-
 describe('API Wrappers (apiGet, apiPost, apiPut, apiDelete)', () => {
   beforeEach(() => {
     mockFetch.mockReset();
-    vi.mocked(authStorage.getToken).mockReturnValue('mock-token');
   });
 
   describe('apiGet', () => {
@@ -32,9 +25,9 @@ describe('API Wrappers (apiGet, apiPost, apiPut, apiDelete)', () => {
       expect(result).toEqual(mockData);
       expect(mockFetch).toHaveBeenCalledWith('/api/test-endpoint', expect.objectContaining({
         method: 'GET',
+        credentials: 'include',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': 'Bearer mock-token'
         }
       }));
     });

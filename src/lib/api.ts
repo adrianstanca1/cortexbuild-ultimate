@@ -1,8 +1,8 @@
 /**
  * API utility for making authenticated requests to the backend
- * Handles auth headers and base path automatically
+ * Handles auth via httpOnly cookie automatically
  */
-import { getToken, clearToken } from './auth-storage';
+import { clearToken } from './auth-storage';
 
 export interface ApiErrorResponse {
   error: string;
@@ -16,14 +16,6 @@ export interface ApiResponse<T> {
   error?: ApiErrorResponse;
 }
 
-function getAuthHeaders(): Record<string, string> {
-  const authToken = getToken() ?? '';
-  return {
-    'Content-Type': 'application/json',
-    ...(authToken ? { Authorization: `Bearer ${authToken}` } : {}),
-  };
-}
-
 export async function apiRequest<T>(
   endpoint: string,
   options: RequestInit = {}
@@ -34,9 +26,10 @@ export async function apiRequest<T>(
     const response = await fetch(url, {
       ...options,
       headers: {
-        ...getAuthHeaders(),
+        'Content-Type': 'application/json',
         ...options.headers,
       },
+      credentials: 'include', // Send httpOnly cookie automatically
     });
 
     let data = null;
@@ -48,7 +41,7 @@ export async function apiRequest<T>(
 
     if (!response.ok) {
       if (response.status === 401) {
-        // Token expired or invalid — clear session and reload
+        // Cookie auth failed — clear local user state and reload
         clearToken();
         window.location.reload();
       }
