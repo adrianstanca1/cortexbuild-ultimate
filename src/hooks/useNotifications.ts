@@ -128,18 +128,18 @@ export function useNotifications(
             const notification: Notification = {
               id: `${raw.type}-${Date.now()}`,
               type: raw.type,
-              title: message.payload.title || message.event || 'Notification',
+              title: raw.payload.title || raw.event || 'Notification',
               description:
-                message.payload.description ||
-                message.payload.message ||
+                raw.payload.description ||
+                raw.payload.message ||
                 'No description',
               severity:
-                (message.payload.severity as 'info' | 'success' | 'warning' | 'error' | 'critical' | undefined) ||
+                (raw.payload.severity as 'info' | 'success' | 'warning' | 'error' | 'critical' | undefined) ||
                 'info',
-              timestamp: message.payload.timestamp || new Date().toISOString(),
+              timestamp: raw.payload.timestamp || new Date().toISOString(),
               read: false,
-              link: message.payload.link,
-              data: message.payload,
+              link: raw.payload.link,
+              data: raw.payload,
             };
             setNotifications((prev) => [notification, ...prev]);
             setUnreadCount((prev) => prev + 1);
