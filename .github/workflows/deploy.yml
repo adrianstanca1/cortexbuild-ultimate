@@ -225,6 +225,8 @@ jobs:
             [ -z "${SESSION_SECRET:-}" ] && SESSION_SECRET="${{ secrets.SESSION_SECRET }}"
             [ -z "${DB_PASSWORD:-}" ] && DB_PASSWORD="${{ secrets.DB_PASSWORD }}"
             [ -z "${POSTGRES_PASSWORD:-}" ] && POSTGRES_PASSWORD="${{ secrets.POSTGRES_PASSWORD }}"
+            [ -z "${GOOGLE_CLIENT_ID:-}" ] && GOOGLE_CLIENT_ID="${{ secrets.GOOGLE_CLIENT_ID }}"
+            [ -z "${GOOGLE_CLIENT_SECRET:-}" ] && GOOGLE_CLIENT_SECRET="${{ secrets.GOOGLE_CLIENT_SECRET }}"
 
             # Env vars JWT_SECRET, SESSION_SECRET, POSTGRES_PASSWORD, DB_PASSWORD are set by GitHub Actions env:
             JWT_SECRET="${JWT_SECRET:-}"
@@ -323,6 +325,8 @@ jobs:
               -e EMBEDDING_MODEL="${EMBEDDING_MODEL:-nomic-embed-text:latest}" \
               -e CORS_ORIGIN=https://www.cortexbuildpro.com,https://cortexbuildpro.com \
               -e FRONTEND_URL=https://www.cortexbuildpro.com \
+              -e GOOGLE_CLIENT_ID="$GOOGLE_CLIENT_ID" \
+              -e GOOGLE_CLIENT_SECRET="$GOOGLE_CLIENT_SECRET" \
               "$IMAGE_NAME"
             echo "Waiting for API health..."
             check_cortex_health() {
