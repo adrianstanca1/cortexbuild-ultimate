@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { apiGet, apiPut, apiDelete } from '@/lib/api';
+import { validateNotification } from '@/lib/validateNotification';
 
 export interface Notification {
   id: string | number;
@@ -122,11 +123,11 @@ export function useNotifications(
 
       ws.current.onmessage = (event) => {
         try {
-          const message = JSON.parse(event.data);
-          if (message.type && message.payload) {
+          const raw = JSON.parse(event.data);
+          if (raw.type && raw.payload) {
             const notification: Notification = {
-              id: `${message.type}-${Date.now()}`,
-              type: message.type,
+              id: `${raw.type}-${Date.now()}`,
+              type: raw.type,
               title: message.payload.title || message.event || 'Notification',
               description:
                 message.payload.description ||
@@ -337,7 +338,9 @@ export function useRealtimeNotifications(
               newSocket.onclose = () => setIsConnected(false);
               newSocket.onmessage = (event) => {
                 try {
-                  const notification = JSON.parse(event.data) as Notification;
+                  const raw = JSON.parse(event.data);
+                  const notification = validateNotification(raw);
+                  if (!notification) return;
                   window.dispatchEvent(new CustomEvent('notification', { detail: notification }));
                 } catch (err) {
                   console.error('Failed to parse WebSocket notification:', err);
@@ -354,7 +357,9 @@ export function useRealtimeNotifications(
 
       socket.onmessage = (event) => {
         try {
-          const notification = JSON.parse(event.data) as Notification;
+          const raw = JSON.parse(event.data);
+          const notification = validateNotification(raw);
+          if (!notification) return; // Drop invalid notifications silently
           // Dispatch custom event that components can listen to
           window.dispatchEvent(
             new CustomEvent('notification', { detail: notification })
