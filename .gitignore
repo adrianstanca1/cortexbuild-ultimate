@@ -7,6 +7,7 @@ dist/
 *.log
 .vercel
 tsconfig.tsbuildinfo
+stats.html
 dist_backup_*/
 .next/
 sendgrid.env

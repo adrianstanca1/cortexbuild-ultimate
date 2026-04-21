@@ -465,7 +465,7 @@ free -h
 
 For issues or questions:
 
-1. Check logs: `docker-compose logs -f api`
+1. Check logs: `docker logs -f cortexbuild-api`
 2. Review runbook: `DEPLOYMENT_RUNBOOK.md`
 3. Check architecture: `ARCHITECTURE.md`
 4. Run health check: `./deploy/health-check.sh --verbose`

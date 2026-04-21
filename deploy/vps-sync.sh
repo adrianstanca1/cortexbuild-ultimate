@@ -47,7 +47,7 @@ cd "$PROJECT_ROOT"
 # Ensure clean build
 if ! npm run build --silent; then
     echo "❌ Build failed. Please fix TypeScript errors first."
-    echo "   Run: npm run type-check"
+    echo "   Run: npm run typecheck"
     exit 1
 fi
 
@@ -59,9 +59,9 @@ if ! docker --version >/dev/null 2>&1; then
     exit 1
 fi
 
-# Create Docker image
+# Create Docker image (matches deploy-api.sh / CI)
 echo "🐳 Building Docker image..."
-docker build -t cortexbuild-ultimate:latest .
+docker build -t cortexbuild-ultimate-api:latest -f Dockerfile.api .
 
 # Create deployment archive
 echo "📦 Creating deployment package..."
@@ -122,7 +122,8 @@ ssh $SSH_OPTS "$VPS_HOST" "
     docker-compose up -d --build 2>/dev/null || {
         echo '⚠️ docker-compose failed, trying docker run commands...'
         docker network create cortexbuild 2>/dev/null || true
-        docker run -d --name cortexbuild-api --restart always --network cortexbuild -p 127.0.0.1:3001:3001 --env-file $VPS_PATH/.env cortexbuild-ultimate:latest
+        docker rm -f cortexbuild-api 2>/dev/null || true
+        docker run -d --name cortexbuild-api --restart always --network cortexbuild -p 127.0.0.1:3001:3001 --env-file $VPS_PATH/.env cortexbuild-ultimate-api:latest
     }
 
     # Health check
@@ -135,7 +136,7 @@ ssh $SSH_OPTS "$VPS_HOST" "
         echo '🌐 Site available at: https://cortexbuildpro.com'
     else
         echo '⚠️ Service health check failed'
-        echo 'Please check logs: docker-compose logs'
+        echo 'Please check logs: docker logs -f cortexbuild-api'
         exit 1
     fi
 

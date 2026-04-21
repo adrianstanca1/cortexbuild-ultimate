@@ -215,6 +215,8 @@ rollback() {
             -e PORT=3001 \
             -e NODE_ENV=production \
             -e OLLAMA_HOST="${OLLAMA_HOST:-http://cortexbuild-ollama:11434}" \
+            -e OLLAMA_MODEL="${OLLAMA_MODEL:-qwen3.5:latest}" \
+            -e EMBEDDING_MODEL="${EMBEDDING_MODEL:-nomic-embed-text:latest}" \
             -e CORS_ORIGIN="${CORS_ORIGIN:-https://cortexbuildpro.com}" \
             -e FRONTEND_URL="${FRONTEND_URL:-https://cortexbuildpro.com}" \
             "$backup_image"
@@ -292,6 +294,21 @@ main() {
     local docker_net
     docker_net="$(detect_docker_network)"
     log_info "Using Docker network: $docker_net"
+
+    log_info "Ensuring Ollama is available..."
+    if docker ps --format '{{.Names}}' | grep -Fxq "cortexbuild-ollama" 2>/dev/null; then
+        :
+    elif docker ps -a --format '{{.Names}}' | grep -Fxq "cortexbuild-ollama" 2>/dev/null; then
+        docker start cortexbuild-ollama >/dev/null 2>&1 || log_warn "Could not start cortexbuild-ollama"
+    else
+        docker volume create ollama_data >/dev/null 2>&1 || true
+        if docker run -d --name cortexbuild-ollama --restart always --network "$docker_net" \
+            -v ollama_data:/root/.ollama ollama/ollama:latest >/dev/null 2>&1; then
+            log_success "Created cortexbuild-ollama on network $docker_net"
+        else
+            log_warn "Ollama container not created (embeddings may be unavailable until Ollama runs)"
+        fi
+    fi
     
     # Step 1: Pull latest code
     log_info "Step 1/5: Pulling latest code..."
@@ -339,6 +356,7 @@ main() {
         -e NODE_ENV=production \
         -e OLLAMA_HOST="${OLLAMA_HOST:-http://cortexbuild-ollama:11434}" \
         -e OLLAMA_MODEL="${OLLAMA_MODEL:-qwen3.5:latest}" \
+        -e EMBEDDING_MODEL="${EMBEDDING_MODEL:-nomic-embed-text:latest}" \
         -e CORS_ORIGIN="${CORS_ORIGIN:-https://cortexbuildpro.com}" \
         -e FRONTEND_URL="${FRONTEND_URL:-https://cortexbuildpro.com}" \
         -e GOOGLE_CLIENT_ID="${GOOGLE_CLIENT_ID:-}" \
