@@ -90,7 +90,8 @@ const corsOrigins = (process.env.CORS_ORIGIN || '')
 if (!corsOrigins.length) {
   console.warn('[CORS] CORS_ORIGIN not set — restrict to specific origins for production');
 }
-const LOCAL_DEV_ORIGIN_RE = /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/i;
+const LOCAL_DEV_ORIGIN_RE =
+  /^https?:\/\/(localhost|127\.0\.0\.1|\[::1\])(:\d+)?$/i;
 
 app.use(cors({
   origin: (origin, callback) => {
