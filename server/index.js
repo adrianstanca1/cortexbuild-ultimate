@@ -90,12 +90,20 @@ const corsOrigins = (process.env.CORS_ORIGIN || '')
 if (!corsOrigins.length) {
   console.warn('[CORS] CORS_ORIGIN not set — restrict to specific origins for production');
 }
+const LOCAL_DEV_ORIGIN_RE = /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/i;
+
 app.use(cors({
   origin: (origin, callback) => {
     // Allow same-origin/browserless requests (curl, health checks, server-to-server).
     if (!origin) return callback(null, true);
+    if (corsOrigins.includes(origin)) return callback(null, true);
+    // Dev: allow browser calls from Vite (5173) or other local ports to API :3001 when
+    // CORS_ORIGIN is unset or does not list every dev URL (common login failure).
+    if (process.env.NODE_ENV !== 'production' && LOCAL_DEV_ORIGIN_RE.test(origin)) {
+      return callback(null, true);
+    }
     if (!corsOrigins.length) return callback(null, false);
-    return callback(null, corsOrigins.includes(origin));
+    return callback(null, false);
   },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
