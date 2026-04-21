@@ -54,7 +54,8 @@ export function MobileNav({ activeModule, setModule }: MobileNavProps) {
           display: 'flex',
           justifyContent: 'space-around',
           alignItems: 'center',
-          height: '56px',
+          minHeight: '56px',
+          paddingTop: '4px',
         }}
       >
         {MOBILE_NAV_ITEMS.map(item => {
@@ -72,7 +73,9 @@ export function MobileNav({ activeModule, setModule }: MobileNavProps) {
                 alignItems: 'center',
                 justifyContent: 'center',
                 gap: '3px',
-                padding: '6px 16px',
+                padding: '8px 14px',
+                minHeight: '48px',
+                minWidth: '48px',
                 background: 'none',
                 border: 'none',
                 cursor: 'pointer',
@@ -108,7 +111,7 @@ export function MobileNav({ activeModule, setModule }: MobileNavProps) {
               <span
                 style={{
                   fontFamily: "'DM Sans', sans-serif",
-                  fontSize: '10px',
+                  fontSize: '11px',
                   fontWeight: isActive ? 600 : 400,
                   color: isActive ? item.accent : '#475569',
                   letterSpacing: '0.02em',
