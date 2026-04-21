@@ -57,46 +57,28 @@ export default defineConfig({
         assetFileNames: "assets/[name]-[hash].[ext]",
         // Manual chunk splitting for optimal bundle sizes
         manualChunks(id: string) {
+          const normalizedId = id.replaceAll("\\", "/");
+          const inPkg = (pkg: string) =>
+            normalizedId.includes(`/node_modules/${pkg}/`);
           // Heavy 3D/chart libraries - lazy loaded
-          if (
-            id.includes("node_modules/recharts") ||
-            id.includes("node_modules/d3") ||
-            id.includes("node_modules/three")
-          )
-            return "charts";
+          if (inPkg("recharts") || inPkg("d3") || inPkg("three")) return "charts";
           // Icon library - lazy loaded
-          if (id.includes("node_modules/lucide-react")) return "icons";
-          // React core - long-term cached
-          if (
-            id.includes("node_modules/react") ||
-            id.includes("node_modules/react-dom")
-          )
-            return "vendor-react";
+          if (inPkg("lucide-react")) return "icons";
+          // React core - long-term cached (exact package path; avoids react-router, etc.)
+          if (inPkg("react") || inPkg("react-dom")) return "vendor-react";
           // TanStack Query - separate chunk
-          if (id.includes("node_modules/@tanstack")) return "vendor-tanstack";
+          if (inPkg("@tanstack")) return "vendor-tanstack";
           // Zod validation - lazy loaded
-          if (id.includes("node_modules/zod")) return "validation";
+          if (inPkg("zod")) return "validation";
           // Date utilities
-          if (
-            id.includes("node_modules/date-fns") ||
-            id.includes("node_modules/dayjs") ||
-            id.includes("node_modules/moment")
-          )
+          if (inPkg("date-fns") || inPkg("dayjs") || inPkg("moment"))
             return "date-libs";
           // i18n libraries
-          if (
-            id.includes("node_modules/i18next") ||
-            id.includes("node_modules/react-i18next")
-          )
-            return "i18n";
+          if (inPkg("i18next") || inPkg("react-i18next")) return "i18n";
           // Form libraries
-          if (
-            id.includes("node_modules/react-hook-form") ||
-            id.includes("node_modules/zod")
-          )
-            return "forms";
+          if (inPkg("react-hook-form") || inPkg("zod")) return "forms";
           // Router
-          if (id.includes("node_modules/react-router")) return "router";
+          if (inPkg("react-router")) return "router";
         },
       },
     },
@@ -109,7 +91,7 @@ export default defineConfig({
       "@tanstack/react-query",
       "sonner",
     ],
-    exclude: ["@rollup/rolldown-linux-arm64-gnu"],
+    exclude: ["@rolldown/binding-linux-arm64-gnu"],
     // Prebuild dependencies for faster dev server startup
     esbuildOptions: {
       target: "es2020",

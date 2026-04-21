@@ -1,11 +1,11 @@
-import { useState, lazy, Suspense, useEffect } from 'react';
+import { useState, lazy, Suspense, useEffect, useCallback } from 'react';
 import { Toaster } from 'sonner';
 import { Sidebar } from './components/layout/Sidebar';
 import { BlueprintBackground } from './components/layout/BlueprintBackground';
 import { Header } from './components/layout/Header';
 import { ThemeProvider } from './context/ThemeContext';
 import { type Module } from './types';
-import { useAuth, AuthProvider } from './context/AuthContext';
+import { useAuth } from './context/AuthContext';
 import { useTheme } from './context/ThemeContext';
 import { useKeyboardShortcuts, DEFAULT_SHORTCUTS } from './hooks/useKeyboardShortcuts';
 import LoginPage from './components/auth/LoginPage';
@@ -89,9 +89,34 @@ const ProjectCalendar     = lazy(() => import('./components/modules/ProjectCalen
 const AdminDashboard      = lazy(() => import('./components/modules/AdminDashboard'));
 const TeamChat            = lazy(() => import('./components/modules/TeamChat'));
 const ActivityFeed        = lazy(() => import('./components/modules/ActivityFeed'));
+/** Themes that use dark chrome for toasts / loading surfaces */
+const DARK_CHROME_THEMES = new Set([
+  'dark',
+  'cortexbuild',
+  'corporate',
+  'synthwave',
+  'cyberpunk',
+  'dracula',
+  'nord',
+  'ocean',
+]);
+
+function isDarkChromeTheme(theme: string | undefined): boolean {
+  return theme ? DARK_CHROME_THEMES.has(theme) : false;
+}
+
 const ModuleLoader = () => (
-  <div className="flex items-center justify-center h-64">
-    <div className="w-8 h-8 border-4 border-orange-500/30 border-t-orange-500 rounded-full animate-spin" />
+  <div
+    className="flex flex-col items-center justify-center gap-3 h-64"
+    role="status"
+    aria-live="polite"
+    aria-busy="true"
+  >
+    <div
+      className="w-8 h-8 border-4 border-orange-500/30 border-t-orange-500 rounded-full motion-safe:animate-spin"
+      aria-hidden
+    />
+    <span className="sr-only">Loading module</span>
   </div>
 );
 
@@ -115,6 +140,18 @@ function AppShell() {
       window.removeEventListener('offline', handleOffline);
     };
   }, []);
+
+  useEffect(() => {
+    if (!mobileMenuOpen) return;
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        e.preventDefault();
+        setMobileMenuOpen(false);
+      }
+    };
+    document.addEventListener('keydown', onKeyDown);
+    return () => document.removeEventListener('keydown', onKeyDown);
+  }, [mobileMenuOpen]);
 
   const toggleSearch = () => setShowGlobalSearch(p => !p);
   const toggleCommandPalette = () => setShowCommandPalette(p => !p);
@@ -174,7 +211,22 @@ function AppShell() {
       case 'executive-reports':     return <ExecutiveReports />;
       case 'predictive-analytics':  return <PredictiveAnalytics />;
       case 'calendar':              return <Calendar />;
-      case 'search':                return <div className="card p-8 text-center text-gray-500">Use Ctrl+K to open Global Search</div>;
+      case 'search':
+        return (
+          <div className="card p-8 max-w-lg mx-auto text-center space-y-4">
+            <h1 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Search and commands</h1>
+            <p className="text-gray-600 dark:text-gray-400 text-sm leading-relaxed">
+              Open the command palette to jump to a module or run a quick action.
+            </p>
+            <p className="text-xs text-gray-500 dark:text-gray-500">
+              <kbd className="px-1.5 py-0.5 rounded bg-gray-100 dark:bg-gray-800 font-mono">Ctrl</kbd>
+              {' / '}
+              <kbd className="px-1.5 py-0.5 rounded bg-gray-100 dark:bg-gray-800 font-mono">⌘</kbd>
+              {' + '}
+              <kbd className="px-1.5 py-0.5 rounded bg-gray-100 dark:bg-gray-800 font-mono">K</kbd>
+            </p>
+          </div>
+        );
       case 'audit-log':             return <AuditLog />;
       case 'variations':            return <Variations />;
       case 'defects':               return <Defects />;
@@ -210,8 +262,13 @@ function AppShell() {
     }
   };
 
+  const closeMobileMenu = useCallback(() => setMobileMenuOpen(false), []);
+
   return (
     <>
+      <a href="#main-content" className="skip-link">
+        Skip to main content
+      </a>
       <div className="flex h-screen overflow-hidden" style={{ position:'relative' }}>
         <BlueprintBackground />
         {/* Sidebar — always visible on desktop, mobile uses drawer */}
@@ -225,8 +282,12 @@ function AppShell() {
         </div>
         <div className="flex flex-col flex-1 overflow-hidden min-w-0" style={{ position: 'relative', zIndex: 1 }}>
           {!isOnline && (
-            <div className="bg-yellow-500 text-black px-4 py-1.5 text-sm text-center font-medium">
-              You're offline. Some features may not work.
+            <div
+              role="status"
+              aria-live="polite"
+              className="bg-yellow-500 text-black px-4 py-2 text-sm text-center font-medium"
+            >
+              You&apos;re offline. Some features may not work.
             </div>
           )}
           <Header
@@ -239,7 +300,12 @@ function AppShell() {
               }
             }}
           />
-          <main className="flex-1 overflow-auto pb-20 md:pb-6" style={{ backgroundAttachment: 'fixed' }}>
+          <main
+            id="main-content"
+            tabIndex={-1}
+            className="flex-1 overflow-auto pb-20 md:pb-6 outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-amber-500/40"
+            style={{ backgroundAttachment: 'fixed' }}
+          >
             <div className="p-4 md:p-6">
               <Suspense fallback={<ModuleLoader />}>
                 {renderModule()}
@@ -251,14 +317,17 @@ function AppShell() {
       {/* Mobile sidebar drawer */}
       {mobileMenuOpen && (
         <>
-          {/* Backdrop */}
-          <div
-            className="mobile-nav-overlay md:hidden"
-            onClick={() => setMobileMenuOpen(false)}
+          <button
+            type="button"
+            className="fixed inset-0 z-[55] md:hidden bg-slate-950/60 backdrop-blur-sm border-0 p-0 cursor-pointer"
+            aria-label="Close navigation menu"
+            onClick={closeMobileMenu}
           />
-          {/* Drawer */}
           <div
-            className="md:hidden"
+            className="mobile-nav-drawer md:hidden"
+            role="dialog"
+            aria-modal="true"
+            aria-label="Main navigation"
             style={{
               position: 'fixed',
               top: 0,
@@ -267,7 +336,6 @@ function AppShell() {
               zIndex: 60,
               width: '280px',
               overflowY: 'auto',
-              animation: 'slideInLeft 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards',
             }}
           >
             <Sidebar
@@ -309,40 +377,52 @@ function ThemedApp() {
   }
 
   if (loading) {
+    const dark = isDarkChromeTheme(resolvedTheme);
     return (
-      <div className="min-h-screen bg-gray-950 flex items-center justify-center">
-        <div className="flex flex-col items-center gap-4">
-          <div className="w-12 h-12 border-4 border-orange-500/30 border-t-orange-500 rounded-full animate-spin" />
-          <p className="text-gray-400 text-sm">Loading CortexBuild...</p>
+      <div className="min-h-dvh bg-gray-950 flex items-center justify-center px-4">
+        <div
+          className="flex flex-col items-center gap-4"
+          role="status"
+          aria-live="polite"
+          aria-busy="true"
+        >
+          <div
+            className="w-12 h-12 border-4 border-orange-500/30 border-t-orange-500 rounded-full motion-safe:animate-spin"
+            aria-hidden
+          />
+          <p className={`text-sm ${dark ? 'text-gray-400' : 'text-gray-600'}`}>Loading CortexBuild…</p>
+          <span className="sr-only">Application is loading</span>
         </div>
       </div>
     );
   }
 
-   return (
-     <ErrorBoundary>
-       <Toaster
-         theme={['dark', 'cortexbuild', 'corporate', 'synthwave', 'cyberpunk', 'dracula', 'nord', 'ocean'].includes(resolvedTheme) ? 'dark' : 'light'}
-         position="top-right"
-         toastOptions={{
-           style: { 
-             background: ['dark', 'cortexbuild', 'corporate', 'synthwave', 'cyberpunk', 'dracula', 'nord', 'ocean'].includes(resolvedTheme) ? '#1f2937' : '#ffffff', 
-             border: '1px solid #374151', 
-             color: ['dark', 'cortexbuild', 'corporate', 'synthwave', 'cyberpunk', 'dracula', 'nord', 'ocean'].includes(resolvedTheme) ? '#f9fafb' : '#1f2937' 
-           },
-         }}
-       />
-       {isAuthenticated ? <AppShell /> : <LoginPage />}
-     </ErrorBoundary>
-   );
+  const darkChrome = isDarkChromeTheme(resolvedTheme);
+
+  return (
+    <ErrorBoundary>
+      <Toaster
+        theme={darkChrome ? 'dark' : 'light'}
+        position="top-right"
+        closeButton
+        containerAriaLabel="Notifications"
+        toastOptions={{
+          style: {
+            background: darkChrome ? '#1f2937' : '#ffffff',
+            border: '1px solid #374151',
+            color: darkChrome ? '#f9fafb' : '#1f2937',
+          },
+        }}
+      />
+      {isAuthenticated ? <AppShell /> : <LoginPage />}
+    </ErrorBoundary>
+  );
 }
 
 export default function App() {
   return (
     <ThemeProvider>
-      <AuthProvider>
-        <ThemedApp />
-      </AuthProvider>
+      <ThemedApp />
     </ThemeProvider>
   );
 }

@@ -62,7 +62,8 @@ rollback_api() {
     
     log_info "Using backup: $backup_image"
     
-    ssh $SSH_OPTS "$VPS_HOST" "
+    if ! ssh $SSH_OPTS "$VPS_HOST" "
+        set -e
         echo 'Stopping current API...'
         docker stop cortexbuild-api 2>/dev/null || true
         docker rm cortexbuild-api 2>/dev/null || true
@@ -84,9 +85,13 @@ rollback_api() {
         if curl -sf http://localhost:3001/api/health >/dev/null 2>&1; then
             echo 'API healthy'
         else
-            echo 'API may need attention'
+            echo 'API health check failed after rollback'
+            exit 1
         fi
-    "
+    "; then
+        log_error "API rollback failed on VPS"
+        return 1
+    fi
     
     log_success "API rollback complete"
 }
