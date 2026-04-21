@@ -26,17 +26,53 @@ function LiveDot({ color }: { color: string }) {
   );
 }
 
-export function SiteStatusBanner({ compact = false }: { compact?: boolean }) {
+function BannerClock() {
   const [time, setTime] = useState(() => new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }));
   const [date] = useState(() => new Date().toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' }));
-  const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
-    setMounted(true);
     const interval = setInterval(() => {
       setTime(new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', second: '2-digit' }));
     }, 1000);
     return () => clearInterval(interval);
+  }, []);
+
+  return (
+    <div style={{
+      display: 'flex',
+      alignItems: 'center',
+      gap: '8px',
+      paddingRight: '16px',
+      marginRight: '16px',
+      borderRight: '1px solid rgba(255,255,255,0.06)',
+    }}>
+      <span style={{
+        fontFamily: "'JetBrains Mono', monospace",
+        fontSize: '13px',
+        fontWeight: 600,
+        color: '#f59e0b',
+        letterSpacing: '0.05em',
+      }}>
+        {time}
+      </span>
+      <span style={{
+        fontFamily: "'JetBrains Mono', monospace",
+        fontSize: '9px',
+        color: '#475569',
+        letterSpacing: '0.08em',
+        textTransform: 'uppercase',
+      }}>
+        {date}
+      </span>
+    </div>
+  );
+}
+
+export function SiteStatusBanner({ compact = false }: { compact?: boolean }) {
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
   }, []);
 
   const items = [
@@ -76,33 +112,7 @@ export function SiteStatusBanner({ compact = false }: { compact?: boolean }) {
       `}</style>
 
       {/* Clock */}
-      <div style={{
-        display: 'flex',
-        alignItems: 'center',
-        gap: '8px',
-        paddingRight: '16px',
-        marginRight: '16px',
-        borderRight: '1px solid rgba(255,255,255,0.06)',
-      }}>
-        <span style={{
-          fontFamily: "'JetBrains Mono', monospace",
-          fontSize: '13px',
-          fontWeight: 600,
-          color: '#f59e0b',
-          letterSpacing: '0.05em',
-        }}>
-          {time}
-        </span>
-        <span style={{
-          fontFamily: "'JetBrains Mono', monospace",
-          fontSize: '9px',
-          color: '#475569',
-          letterSpacing: '0.08em',
-          textTransform: 'uppercase',
-        }}>
-          {date}
-        </span>
-      </div>
+      <BannerClock />
 
       {/* Status items */}
       <div className="status-items" style={{
