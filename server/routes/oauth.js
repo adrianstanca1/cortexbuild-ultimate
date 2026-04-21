@@ -11,6 +11,20 @@ const { createOAuthUserWithTenant } = require('../lib/bootstrap-tenant');
 const authMiddleware = require('../middleware/auth');
 const router     = express.Router();
 
+/**
+ * OAuth redirect URIs must match the provider console exactly (scheme + host + path).
+ * Trailing slashes are stripped. For cortexbuildpro.com, production uses the apex
+ * host for API callbacks (see docker-compose / deploy workflows); normalizing www → apex
+ * avoids redirect_uri_mismatch when env files still used the historical www host.
+ */
+function normalizeProviderCallbackUrl(url) {
+  if (!url || typeof url !== 'string') return url;
+  let u = url.trim();
+  while (u.endsWith('/')) u = u.slice(0, -1);
+  u = u.replace('://www.cortexbuildpro.com', '://cortexbuildpro.com');
+  return u;
+}
+
 // Redis client for OAuth state storage (distributed, survives restarts)
 const redisClient = redis.createClient({ url: process.env.REDIS_URL || 'redis://localhost:6379' });
 redisClient.connect().catch(err => console.error('[OAuth Redis]', err.message));
@@ -54,7 +68,7 @@ if (process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET) {
   passport.use(new GoogleStrategy({
     clientID: process.env.GOOGLE_CLIENT_ID,
     clientSecret: process.env.GOOGLE_CLIENT_SECRET,
-    callbackURL: process.env.GOOGLE_CALLBACK_URL,
+    callbackURL: normalizeProviderCallbackUrl(process.env.GOOGLE_CALLBACK_URL),
     scope: ['profile', 'email'],
     passReqToCallback: true
   }, async (req, accessToken, refreshToken, profile, done) => {
@@ -125,7 +139,7 @@ if (process.env.MICROSOFT_CLIENT_ID && process.env.MICROSOFT_CLIENT_SECRET) {
   passport.use(new MicrosoftStrategy({
     clientID: process.env.MICROSOFT_CLIENT_ID,
     clientSecret: process.env.MICROSOFT_CLIENT_SECRET,
-    callbackURL: process.env.MICROSOFT_CALLBACK_URL,
+    callbackURL: normalizeProviderCallbackUrl(process.env.MICROSOFT_CALLBACK_URL),
     scope: ['user.read'],
     passReqToCallback: true
   }, async (req, accessToken, refreshToken, profile, done) => {
