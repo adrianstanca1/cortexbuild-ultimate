@@ -27,7 +27,8 @@
     "typeRoots": ["./node_modules/@types"],
     "baseUrl": ".",
     "paths": {
-      "@/*": ["src/*"]
+      "@/*": ["src/*"],
+      "~patterns/*": ["/Users/adrianstanca/patterns/src/*"]
     }
   },
   "include": ["src"],

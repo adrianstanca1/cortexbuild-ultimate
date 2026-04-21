@@ -65,9 +65,8 @@ export default function TeamChat() {
   }, [messages, scrollToBottom]);
 
   useEffect(() => {
-    const token = getToken();
-    if (!token) return;
-    const wsUrl = `${API_BASE.replace('http', 'ws')}/ws?token=${token}`;
+    const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+    const wsUrl = `${protocol}//${window.location.host}/ws`;
     const ws = new WebSocket(wsUrl);
     wsRef.current = ws;
 
