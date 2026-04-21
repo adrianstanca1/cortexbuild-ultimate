@@ -27,31 +27,6 @@ export function useKeyboardShortcuts(shortcuts: Shortcut[]) {
     // Only lift the input guard for OS-style chords (⌘/Ctrl). Alt+letter stays ignored in fields
     // to avoid breaking locale/compose typing; Shift-only chords likewise stay ignored.
     const hasOsChord = e.ctrlKey || e.metaKey;
-    // #region agent log
-    if (isTypingSurface) {
-      void Promise.resolve(
-        typeof fetch === 'function'
-          ? fetch('http://127.0.0.1:7655/ingest/db9ddb40-9e0f-4951-8101-ecdd6dc75884', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json', 'X-Debug-Session-Id': '608ca2' },
-              body: JSON.stringify({
-                sessionId: '608ca2',
-                hypothesisId: 'H1',
-                location: 'useKeyboardShortcuts.ts:typing-gate',
-                message: 'typing surface keydown',
-                data: {
-                  inChromeOverlay,
-                  hasOsChord,
-                  key: e.key,
-                  gateAllows: inChromeOverlay && hasOsChord,
-                },
-                timestamp: Date.now(),
-              }),
-            })
-          : null,
-      ).catch(() => {});
-    }
-    // #endregion
     if (isTypingSurface && !(inChromeOverlay && hasOsChord)) {
       return;
     }
