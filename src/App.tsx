@@ -166,9 +166,9 @@ function AppShell() {
     { ...DEFAULT_SHORTCUTS.goToCalendar, handler: () => setActiveModule('calendar') },
     { ...DEFAULT_SHORTCUTS.toggleSidebar, handler: () => setSidebarCollapsed(p => !p) },
     { ...DEFAULT_SHORTCUTS.showHelp, handler: () => setShowShortcuts(true) },
+    { ...DEFAULT_SHORTCUTS.commandPalette, handler: toggleCommandPalette },
     { ...DEFAULT_SHORTCUTS.search, handler: toggleSearch },
-    { ...DEFAULT_SHORTCUTS.openNotifications, handler: () => setShowGlobalSearch(true) },
-    { key: 'k', ctrl: true, shift: false, handler: toggleCommandPalette, description: 'Open command palette' },
+    { ...DEFAULT_SHORTCUTS.openNotifications, handler: () => setActiveModule('notifications') },
   ]);
 
   const renderModule = () => {

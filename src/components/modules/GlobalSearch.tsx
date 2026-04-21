@@ -239,8 +239,10 @@ export function GlobalSearch({
             </div>
           )}
           <div className="mt-3 flex gap-2 text-xs text-gray-500">
-            <kbd className="px-2 py-1 bg-gray-800 rounded">Ctrl+K</kbd>
-            <span>to open search</span>
+            <kbd className="px-2 py-1 bg-gray-800 rounded">Ctrl+Shift+K</kbd>
+            <span className="text-gray-600">/</span>
+            <kbd className="px-2 py-1 bg-gray-800 rounded">⌘⇧K</kbd>
+            <span>to open global search from anywhere</span>
           </div>
         </div>
 

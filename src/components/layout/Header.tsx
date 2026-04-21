@@ -317,7 +317,7 @@ export function Header({ activeModule, onMenuToggle }: { activeModule: Module; o
                     flexShrink: 0,
                   }}
                 >
-                  ⌘K
+                  ⌘⇧K
                 </div>
               )}
             </div>

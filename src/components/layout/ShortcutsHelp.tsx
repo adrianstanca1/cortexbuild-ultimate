@@ -34,6 +34,7 @@ const SHORTCUT_GROUPS = [
     shortcuts: [
       DEFAULT_SHORTCUTS.newProject,
       DEFAULT_SHORTCUTS.newInvoice,
+      DEFAULT_SHORTCUTS.commandPalette,
       DEFAULT_SHORTCUTS.search,
       DEFAULT_SHORTCUTS.toggleSidebar,
     ],

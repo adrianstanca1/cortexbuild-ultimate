@@ -59,7 +59,10 @@ export const DEFAULT_SHORTCUTS = {
   // Actions
   newProject: { key: 'n', ctrl: true, shift: true, description: 'New Project' },
   newInvoice: { key: 'i', ctrl: true, description: 'New Invoice' },
-  search: { key: 'k', ctrl: true, description: 'Search' },
+  /** Command palette — plain ⌘/Ctrl+K (matches common desktop apps) */
+  commandPalette: { key: 'k', ctrl: true, description: 'Command palette' },
+  /** Full-screen global search — ⌘/Ctrl+Shift+K to avoid colliding with command palette */
+  search: { key: 'k', ctrl: true, shift: true, description: 'Global search' },
 
   // Quick navigation
   toggleSidebar: { key: 'b', ctrl: true, description: 'Toggle Sidebar' },
