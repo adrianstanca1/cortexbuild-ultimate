@@ -222,7 +222,7 @@ export function Header({ activeModule, onMenuToggle }: { activeModule: Module; o
         <div style={{ minWidth: 0 }}>
           <div
             style={{
-              fontFamily: "'Syne', sans-serif",
+              fontFamily: "'Bebas Neue', sans-serif",
               fontSize: '14px',
               fontWeight: 700,
               color: '#f1f5f9',
@@ -307,7 +307,7 @@ export function Header({ activeModule, onMenuToggle }: { activeModule: Module; o
               {!searchFocused && (
                 <div
                   style={{
-                    fontFamily: "'JetBrains Mono', monospace",
+              fontFamily: "'Fira Code', monospace",
                     fontSize: '9px',
                     color: '#334155',
                     background: 'rgba(255,255,255,0.05)',

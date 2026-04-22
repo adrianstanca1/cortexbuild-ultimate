@@ -263,7 +263,7 @@ function NavItem({
       {!collapsed && (
         <span
           style={{
-            fontFamily: "'DM Sans', sans-serif",
+            fontFamily: "'Instrument Sans', sans-serif",
             fontSize: '13px',
             fontWeight: active ? 600 : 500,
             flex: 1,
@@ -288,7 +288,7 @@ function NavItem({
             background: `${accent}20`,
             color: accent,
             border: `1px solid ${accent}30`,
-            fontFamily: "'JetBrains Mono', monospace",
+            fontFamily: "'Fira Code', monospace",
           }}
         >
           {item.badge}
@@ -326,7 +326,7 @@ function NavGroup({
             border: 'none',
             cursor: 'pointer',
             color: '#475569',
-            fontFamily: "'JetBrains Mono', monospace",
+            fontFamily: "'Fira Code', monospace",
             fontSize: '9px',
             fontWeight: 700,
             letterSpacing: '0.16em',
@@ -478,19 +478,19 @@ export function Sidebar({ activeModule, setModule, collapsed, setCollapsed }: Si
               <div>
                 <div
                   style={{
-                    fontFamily: "'Syne', sans-serif",
-                    fontSize: '15px',
+                    fontFamily: "'Bebas Neue', sans-serif",
+                    fontSize: '16px',
                     fontWeight: 800,
                     color: '#f1f5f9',
                     lineHeight: 1.1,
-                    letterSpacing: '-0.02em',
+                    letterSpacing: '0.04em',
                   }}
                 >
                   CortexBuild
                 </div>
                 <div
                   style={{
-                    fontFamily: "'JetBrains Mono', monospace",
+                    fontFamily: "'Fira Code', monospace",
                     fontSize: '9px',
                     fontWeight: 600,
                     color: '#f59e0b',
@@ -644,7 +644,7 @@ export function Sidebar({ activeModule, setModule, collapsed, setCollapsed }: Si
             <div style={{ flex: 1, minWidth: 0 }}>
               <div
                 style={{
-                  fontFamily: "'DM Sans', sans-serif",
+                  fontFamily: "'Instrument Sans', sans-serif",
                   fontSize: '12px',
                   fontWeight: 600,
                   color: '#e2e8f0',
@@ -657,7 +657,7 @@ export function Sidebar({ activeModule, setModule, collapsed, setCollapsed }: Si
               </div>
               <div
                 style={{
-                  fontFamily: "'JetBrains Mono', monospace",
+                  fontFamily: "'Fira Code', monospace",
                   fontSize: '9px',
                   color: '#475569',
                   letterSpacing: '0.05em',

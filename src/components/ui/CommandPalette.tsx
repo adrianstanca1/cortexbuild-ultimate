@@ -417,102 +417,263 @@ export function CommandPalette({ isOpen, onClose, onNavigate }: CommandPalettePr
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-start justify-center pt-[15vh]">
+    <div
+      style={{
+        position: 'fixed', inset: 0, zIndex: 9998,
+        display: 'flex', alignItems: 'flex-start', justifyContent: 'center',
+        paddingTop: '12vh',
+        background: 'rgba(9,11,15,0.85)',
+        backdropFilter: 'blur(12px)',
+        WebkitBackdropFilter: 'blur(12px)',
+        animation: 'fade-in 0.15s ease-out',
+      }}
+      aria-modal="true"
+      role="dialog"
+      aria-label="Command palette"
+    >
+      {/* ── Blueprint panel ─────────────────────────────────────────── */}
       <div
-        className="absolute inset-0 bg-slate-950/80 backdrop-blur-sm"
-        onClick={onClose}
-        aria-hidden="true"
-      />
-
-      <div
-        className="relative w-full max-w-2xl mx-4 card bg-slate-900 border border-slate-700 shadow-2xl animate-fade-up"
+        style={{
+          position: 'relative',
+          width: '100%', maxWidth: '680px',
+          margin: '0 16px',
+          background: '#0e1117',
+          border: '1px solid rgba(245,158,11,0.2)',
+          borderRadius: '14px',
+          overflow: 'hidden',
+          boxShadow: '0 24px 80px rgba(0,0,0,0.8), 0 0 0 1px rgba(245,158,11,0.06), inset 0 1px 0 rgba(245,158,11,0.1)',
+          animation: 'scale-in 0.2s cubic-bezier(0.16,1,0.3,1)',
+        }}
         data-allow-chrome-shortcuts
-        role="dialog"
-        aria-modal="true"
-        aria-label="Command palette"
+        onClick={e => e.stopPropagation()}
       >
-        <div className="flex items-center gap-3 p-4 border-b border-slate-700">
-          <Search className="w-5 h-5 text-slate-400 flex-shrink-0" />
+        {/* Blueprint micro-grid bg */}
+        <div style={{
+          position: 'absolute', inset: 0, pointerEvents: 'none', zIndex: 0,
+          backgroundImage: `linear-gradient(rgba(245,158,11,0.025) 1px, transparent 1px), linear-gradient(90deg, rgba(245,158,11,0.025) 1px, transparent 1px)`,
+          backgroundSize: '20px 20px',
+        }} />
+
+        {/* Animated top accent line */}
+        <div style={{
+          position: 'absolute', top: 0, left: 0, right: 0, height: '2px',
+          background: 'linear-gradient(90deg, transparent, rgba(245,158,11,0.6) 30%, rgba(245,158,11,0.9) 50%, rgba(245,158,11,0.6) 70%, transparent)',
+          animation: 'pulse-glow 3s ease-in-out infinite',
+        }} />
+
+        {/* Corner brackets */}
+        <svg width="28" height="28" viewBox="0 0 28 28" fill="none" style={{ position: 'absolute', top: 0, left: 0, zIndex: 2, pointerEvents: 'none' }}>
+          <path d="M 0 14 L 0 0 L 14 0" stroke="#f59e0b" strokeWidth="2" strokeLinecap="round" fill="none" opacity="0.7" />
+          <path d="M 0 7 L 0 0 L 7 0" stroke="#f59e0b" strokeWidth="1.5" strokeLinecap="round" fill="none" opacity="0.5" />
+        </svg>
+        <svg width="28" height="28" viewBox="0 0 28 28" fill="none" style={{ position: 'absolute', top: 0, right: 0, zIndex: 2, pointerEvents: 'none' }}>
+          <path d="M 28 14 L 28 0 L 14 0" stroke="#f59e0b" strokeWidth="2" strokeLinecap="round" fill="none" opacity="0.7" />
+          <path d="M 28 7 L 28 0 L 21 0" stroke="#f59e0b" strokeWidth="1.5" strokeLinecap="round" fill="none" opacity="0.5" />
+        </svg>
+
+        {/* Header row */}
+        <div style={{
+          display: 'flex', alignItems: 'center', gap: '14px',
+          padding: '18px 20px 14px',
+          borderBottom: '1px solid rgba(245,158,11,0.08)',
+          position: 'relative', zIndex: 1,
+        }}>
+          {/* Search icon with glow */}
+          <div style={{ position: 'relative', flexShrink: 0 }}>
+            <Search style={{ width: '18px', height: '18px', color: '#f59e0b' }} />
+            <div style={{
+              position: 'absolute', inset: '-4px', borderRadius: '50%',
+              background: 'rgba(245,158,11,0.12)', filter: 'blur(4px)',
+            }} />
+          </div>
+
           <input
             ref={inputRef}
             type="text"
             value={query}
             onChange={e => setQuery(e.target.value)}
-            placeholder="Jump to a module or run an action…"
-            className="flex-1 bg-transparent text-slate-200 placeholder-slate-500 outline-none text-base"
+            placeholder="Jump to module or run action..."
             aria-label="Search commands"
+            style={{
+              flex: 1, background: 'transparent', border: 'none', outline: 'none',
+              fontFamily: "'Instrument Sans', sans-serif",
+              fontSize: '15px', fontWeight: 400,
+              color: '#e2e8f0',
+              caretColor: '#f59e0b',
+            }}
           />
-          {query && (
+
+          {query ? (
             <button
               onClick={() => setQuery('')}
-              className="p-1 hover:bg-slate-800 rounded transition-colors"
               aria-label="Clear search"
+              style={{
+                width: '24px', height: '24px', borderRadius: '6px',
+                background: 'rgba(255,255,255,0.06)', border: 'none', cursor: 'pointer',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                color: '#64748b', transition: 'all 0.15s',
+              }}
+              onMouseEnter={e => { e.currentTarget.style.background = 'rgba(245,158,11,0.15)'; e.currentTarget.style.color = '#f59e0b'; }}
+              onMouseLeave={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.06)'; e.currentTarget.style.color = '#64748b'; }}
             >
-              <X className="w-4 h-4 text-slate-400" />
+              <X style={{ width: '13px', height: '13px' }} />
             </button>
+          ) : (
+            <div style={{
+              fontFamily: "'Fira Code', monospace", fontSize: '10px',
+              color: '#334155', background: 'rgba(255,255,255,0.04)',
+              border: '1px solid rgba(255,255,255,0.07)',
+              borderRadius: '6px', padding: '3px 8px', letterSpacing: '0.05em',
+            }}>
+              ESC
+            </div>
           )}
-          <kbd className="hidden sm:inline-flex px-2 py-1 text-xs font-mono bg-slate-800 text-slate-400 rounded">
-            ESC
-          </kbd>
         </div>
 
+        {/* Results list */}
         <ul
           ref={listRef}
-          className="max-h-96 overflow-auto p-2"
+          style={{
+            maxHeight: '420px', overflowY: 'auto', overflowX: 'hidden',
+            padding: '8px 12px',
+            position: 'relative', zIndex: 1,
+          }}
           role="listbox"
           aria-label="Command suggestions"
         >
           {filteredItems.length === 0 ? (
-            <li className="p-8 text-center text-slate-400">
-              <Command className="w-8 h-8 mx-auto mb-2 opacity-50" />
-              <p>No commands found</p>
+            <li style={{ padding: '40px 0', textAlign: 'center' }}>
+              <div style={{
+                fontFamily: "'Bebas Neue', sans-serif", fontSize: '32px',
+                color: '#1e2738', letterSpacing: '0.1em', lineHeight: 1,
+                marginBottom: '8px',
+              }}>
+                NO RESULTS
+              </div>
+              <div style={{ fontFamily: "'Fira Code', monospace", fontSize: '11px', color: '#334155' }}>
+                No commands matching &quot;{query}&quot;
+              </div>
             </li>
           ) : (
-            filteredItems.map((item, index) => (
-              <li key={item.id}>
-                <button
-                  onClick={() => handleItemClick(item)}
-                  className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all text-left ${
-                    index === selectedIndex
-                      ? 'bg-amber-500/10 text-amber-400'
-                      : 'hover:bg-slate-800 text-slate-300'
-                  }`}
-                  role="option"
-                  aria-selected={index === selectedIndex}
-                >
-                  <span className="flex-shrink-0 w-5 h-5 flex items-center justify-center">
-                    {item.icon || <Command className="w-4 h-4" />}
-                  </span>
+            filteredItems.map((item, index) => {
+              const isSelected = index === selectedIndex;
+              const isNav = item.category === 'navigation';
+              return (
+                <li key={item.id} style={{ animation: `fade-in-up 0.2s ease-out ${index * 20}ms both` }}>
+                  <button
+                    onClick={() => handleItemClick(item)}
+                    role="option"
+                    aria-selected={isSelected}
+                    style={{
+                      width: '100%', display: 'flex', alignItems: 'center', gap: '12px',
+                      padding: isSelected ? '10px 12px' : '9px 12px',
+                      borderRadius: '10px', border: 'none', cursor: 'pointer',
+                      textAlign: 'left',
+                      background: isSelected
+                        ? 'linear-gradient(90deg, rgba(245,158,11,0.12) 0%, rgba(245,158,11,0.06) 100%)'
+                        : 'transparent',
+                      color: isSelected ? '#f59e0b' : '#64748b',
+                      transition: 'all 0.15s cubic-bezier(0.16,1,0.3,1)',
+                      position: 'relative',
+                    }}
+                    onMouseEnter={e => {
+                      if (!isSelected) {
+                        e.currentTarget.style.background = 'rgba(255,255,255,0.04)';
+                        e.currentTarget.style.color = '#94a3b8';
+                      }
+                    }}
+                    onMouseLeave={e => {
+                      if (!isSelected) {
+                        e.currentTarget.style.background = 'transparent';
+                        e.currentTarget.style.color = '#64748b';
+                      }
+                    }}
+                  >
+                    {/* Left indicator */}
+                    {isSelected && (
+                      <div style={{
+                        position: 'absolute', left: 0, top: '50%', transform: 'translateY(-50%)',
+                        width: '3px', height: '60%', borderRadius: '0 3px 3px 0',
+                        background: '#f59e0b', boxShadow: '0 0 8px rgba(245,158,11,0.5)',
+                      }} />
+                    )}
 
-                  <span className="flex-1 font-medium">{item.label}</span>
+                    {/* Icon */}
+                    <span style={{
+                      width: '32px', height: '32px', borderRadius: '8px',
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      flexShrink: 0,
+                      background: isSelected ? 'rgba(245,158,11,0.15)' : 'rgba(255,255,255,0.05)',
+                      border: `1px solid ${isSelected ? 'rgba(245,158,11,0.25)' : 'rgba(255,255,255,0.07)'}`,
+                      color: isSelected ? '#f59e0b' : '#475569',
+                      transition: 'all 0.15s',
+                    }}>
+                      {item.icon || <Command style={{ width: '14px', height: '14px' }} />}
+                    </span>
 
-                  <span className="text-xs text-slate-500 capitalize">{item.category}</span>
+                    {/* Label */}
+                    <span style={{
+                      flex: 1,
+                      fontFamily: "'Instrument Sans', sans-serif",
+                      fontSize: '13px', fontWeight: isSelected ? 600 : 400,
+                      letterSpacing: isSelected ? '0.02em' : '0',
+                    }}>
+                      {item.label}
+                    </span>
 
-                  {item.shortcut && (
-                    <kbd className="px-1.5 py-0.5 text-xs font-mono bg-slate-800 text-slate-400 rounded">
-                      {item.shortcut}
-                    </kbd>
-                  )}
+                    {/* Category badge */}
+                    <span style={{
+                      fontFamily: "'Fira Code', monospace",
+                      fontSize: '9px', fontWeight: 600,
+                      letterSpacing: '0.1em', textTransform: 'uppercase',
+                      padding: '2px 6px', borderRadius: '4px',
+                      background: isNav ? 'rgba(59,130,246,0.1)' : 'rgba(16,185,129,0.1)',
+                      border: `1px solid ${isNav ? 'rgba(59,130,246,0.2)' : 'rgba(16,185,129,0.2)'}`,
+                      color: isNav ? '#60a5fa' : '#34d399',
+                      flexShrink: 0,
+                    }}>
+                      {item.category}
+                    </span>
 
-                  {index === selectedIndex && <ArrowRight className="w-4 h-4 text-amber-400" />}
-                </button>
-              </li>
-            ))
+                    {/* Arrow indicator */}
+                    {isSelected && (
+                      <ArrowRight style={{ width: '14px', height: '14px', color: '#f59e0b', flexShrink: 0 }} />
+                    )}
+                  </button>
+                </li>
+              );
+            })
           )}
         </ul>
 
-        <div className="flex items-center justify-between px-4 py-3 border-t border-slate-700 text-xs text-slate-500">
-          <div className="flex items-center gap-4">
-            <span className="flex items-center gap-1">
-              <kbd className="px-1.5 py-0.5 bg-slate-800 rounded">↑↓</kbd>
-              to navigate
-            </span>
-            <span className="flex items-center gap-1">
-              <kbd className="px-1.5 py-0.5 bg-slate-800 rounded">↵</kbd>
-              to select
-            </span>
+        {/* Footer */}
+        <div style={{
+          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+          padding: '10px 16px',
+          borderTop: '1px solid rgba(245,158,11,0.08)',
+          background: 'rgba(0,0,0,0.2)',
+          position: 'relative', zIndex: 1,
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+            {[
+              { keys: '↑↓', label: 'navigate' },
+              { keys: '↵', label: 'select' },
+              { keys: 'ESC', label: 'close' },
+            ].map(({ keys, label }) => (
+              <span key={keys} style={{ display: 'flex', alignItems: 'center', gap: '5px', fontFamily: "'Fira Code', monospace", fontSize: '10px', color: '#334155' }}>
+                <span style={{
+                  padding: '2px 6px', borderRadius: '4px',
+                  background: 'rgba(255,255,255,0.05)',
+                  border: '1px solid rgba(255,255,255,0.08)',
+                  color: '#475569',
+                }}>{keys}</span>
+                <span>{label}</span>
+              </span>
+            ))}
           </div>
-          <span>{filteredItems.length} commands</span>
+          <span style={{ fontFamily: "'Fira Code', monospace", fontSize: '10px', color: '#1e2738', letterSpacing: '0.05em' }}>
+            {filteredItems.length} results
+          </span>
         </div>
       </div>
     </div>

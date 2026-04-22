@@ -38,21 +38,37 @@ export function agentDebugLog(entry: {
     import.meta.env.VITE_AGENT_DEBUG === "1";
   if (!import.meta.env.DEV && !force && !agentDebugEligibleHost()) return;
   // #region agent log
-  void Promise.resolve(
-    typeof fetch === "function"
-      ? fetch("/__agent-debug", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            "X-Debug-Session-Id": SESSION,
-          },
-          body: JSON.stringify({
-            sessionId: SESSION,
-            ...entry,
-            timestamp: Date.now(),
-          }),
-        })
-      : null,
-  ).catch(() => {});
+  const body = JSON.stringify({
+    sessionId: SESSION,
+    ...entry,
+    timestamp: Date.now(),
+  });
+  void (async () => {
+    if (typeof fetch !== "function") return;
+    try {
+      const r = await fetch("/api/agent-debug", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "X-Debug-Session-Id": SESSION,
+        },
+        body,
+        credentials: "include",
+      });
+      if (r.ok) return;
+    } catch {
+      /* fall through */
+    }
+    void Promise.resolve(
+      fetch("/__agent-debug", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "X-Debug-Session-Id": SESSION,
+        },
+        body,
+      }),
+    ).catch(() => {});
+  })();
   // #endregion
 }

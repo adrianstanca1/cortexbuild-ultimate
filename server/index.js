@@ -3,6 +3,7 @@ const express    = require('express');
 const cors       = require('cors');
 const helmet     = require('helmet');
 const path       = require('path');
+const fs         = require('fs');
 const http       = require('http');
 const passport   = require('passport');
 const session    = require('express-session');
@@ -151,6 +152,30 @@ app.get('/api/health', async (_req, res) => {
   const statusCode = checks.status === 'ok' ? 200 : 503;
   res.status(statusCode).json({ status: checks.status, version: '1.0.0', checks });
 });
+
+// ─── Debug NDJSON sink (before /api auth) ─────────────────────────────────────
+// Browser POSTs via same-origin `/api` (Vite proxy → :3001) so logs land in the repo.
+// If your server `.env` sets NODE_ENV=production locally, set ENABLE_AGENT_DEBUG_API=1 to opt in.
+const agentDebugApiEnabled =
+  process.env.NODE_ENV !== 'production' ||
+  process.env.ENABLE_AGENT_DEBUG_API === '1';
+if (agentDebugApiEnabled) {
+  const AGENT_DEBUG_LOG = path.join(__dirname, '..', '.cursor', 'debug-82d802.log');
+  const AGENT_DEBUG_MIRROR = path.join(__dirname, '..', 'agent-debug-82d802.ndjson');
+  app.post('/api/agent-debug', (req, res) => {
+    try {
+      const line = JSON.stringify(req.body ?? {});
+      JSON.parse(line);
+      fs.mkdirSync(path.dirname(AGENT_DEBUG_LOG), { recursive: true });
+      fs.appendFileSync(AGENT_DEBUG_LOG, `${line}\n`);
+      fs.appendFileSync(AGENT_DEBUG_MIRROR, `${line}\n`);
+      res.status(204).end();
+    } catch (e) {
+      res.status(500).type('text').send(String(e));
+    }
+  });
+  console.log('[agent-debug] POST /api/agent-debug →', AGENT_DEBUG_LOG);
+}
 
 // Rate-limited deploy route (5 requests per hour, Redis-backed)
 // Protected by DEPLOY_SECRET bearer token (see routes/deploy.js)

@@ -108,15 +108,91 @@ function isDarkChromeTheme(theme: string | undefined): boolean {
 
 const ModuleLoader = () => (
   <div
-    className="flex flex-col items-center justify-center gap-3 h-64"
+    style={{
+      display: 'flex',
+      flexDirection: 'column',
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: '20px',
+      height: 'calc(100vh - 200px)',
+    }}
     role="status"
     aria-live="polite"
     aria-busy="true"
   >
-    <div
-      className="w-8 h-8 border-4 border-orange-500/30 border-t-orange-500 rounded-full motion-safe:animate-spin"
-      aria-hidden
-    />
+    {/* Blueprint crosshair spinner */}
+    <div style={{ position: 'relative', width: '52px', height: '52px' }}>
+      {/* Outer ring */}
+      <svg
+        viewBox="0 0 52 52"
+        fill="none"
+        style={{ position: 'absolute', inset: 0, animation: 'spin-slow 2s linear infinite' }}
+      >
+        <circle
+          cx="26" cy="26" r="23"
+          stroke="rgba(245,158,11,0.12)"
+          strokeWidth="2"
+        />
+        <path
+          d="M 26 3 A 23 23 0 0 1 49 26"
+          stroke="#f59e0b"
+          strokeWidth="2.5"
+          strokeLinecap="round"
+          strokeDasharray="36 108"
+        />
+      </svg>
+      {/* Inner crosshair */}
+      <svg
+        viewBox="0 0 52 52"
+        fill="none"
+        style={{ position: 'absolute', inset: 0, animation: 'spin-slow 1.2s linear infinite reverse' }}
+      >
+        <circle cx="26" cy="26" r="10" stroke="rgba(245,158,11,0.3)" strokeWidth="1" strokeDasharray="4 4" />
+        <line x1="26" y1="12" x2="26" y2="20" stroke="#f59e0b" strokeWidth="1.5" strokeLinecap="round" />
+        <line x1="26" y1="32" x2="26" y2="40" stroke="#f59e0b" strokeWidth="1.5" strokeLinecap="round" />
+        <line x1="12" y1="26" x2="20" y2="26" stroke="#f59e0b" strokeWidth="1.5" strokeLinecap="round" />
+        <line x1="32" y1="26" x2="40" y2="26" stroke="#f59e0b" strokeWidth="1.5" strokeLinecap="round" />
+        <circle cx="26" cy="26" r="2.5" fill="#f59e0b" />
+      </svg>
+      {/* Center dot pulse */}
+      <div
+        style={{
+          position: 'absolute',
+          top: '50%', left: '50%',
+          transform: 'translate(-50%,-50%)',
+          width: '6px', height: '6px',
+          borderRadius: '50%',
+          background: '#f59e0b',
+          animation: 'pulse-glow 1.5s ease-in-out infinite',
+        }}
+      />
+    </div>
+    {/* Loading text */}
+    <div style={{ textAlign: 'center' }}>
+      <div
+        style={{
+          fontFamily: "'Bebas Neue', sans-serif",
+          fontSize: '13px',
+          letterSpacing: '0.3em',
+          color: '#64748b',
+          textTransform: 'uppercase',
+          animation: 'fade-in 0.4s ease-out',
+        }}
+      >
+        Loading Module
+      </div>
+      <div
+        style={{
+          fontFamily: "'Fira Code', monospace",
+          fontSize: '9px',
+          color: '#334155',
+          letterSpacing: '0.1em',
+          marginTop: '4px',
+        }}
+      >
+        Initialising workspace...
+      </div>
+    </div>
     <span className="sr-only">Loading module</span>
   </div>
 );
@@ -303,10 +379,13 @@ function AppShell() {
           <main
             id="main-content"
             tabIndex={-1}
-            className="flex-1 overflow-auto pb-20 md:pb-6 outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-amber-500/40"
-            style={{ backgroundAttachment: 'fixed' }}
+            className="flex-1 overflow-auto pb-20 md:pb-6 outline-none"
+            style={{
+              backgroundAttachment: 'fixed',
+              animation: 'fade-in-up 0.35s var(--ease-out, ease-out) both',
+            }}
           >
-            <div className="p-4 md:p-6">
+            <div className="p-4 md:p-6 stagger-1" style={{ animation: 'fade-in-up 0.4s cubic-bezier(0.0, 0.0, 0.2, 1) both' }}>
               <Suspense fallback={<ModuleLoader />}>
                 {renderModule()}
               </Suspense>
@@ -390,20 +469,66 @@ function ThemedApp() {
   if (loading) {
     const dark = isDarkChromeTheme(resolvedTheme);
     return (
-      <div className="min-h-dvh bg-gray-950 flex items-center justify-center px-4">
-        <div
-          className="flex flex-col items-center gap-4"
-          role="status"
-          aria-live="polite"
-          aria-busy="true"
-        >
-          <div
-            className="w-12 h-12 border-4 border-orange-500/30 border-t-orange-500 rounded-full motion-safe:animate-spin"
-            aria-hidden
-          />
-          <p className={`text-sm ${dark ? 'text-gray-400' : 'text-gray-600'}`}>Loading CortexBuild…</p>
-          <span className="sr-only">Application is loading</span>
+      <div
+        style={{
+          minHeight: '100dvh',
+          background: '#090b0f',
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          justifyContent: 'center',
+          gap: '32px',
+        }}
+        role="status"
+        aria-live="polite"
+        aria-busy="true"
+      >
+        {/* Large logo spinner */}
+        <div style={{ position: 'relative', width: '80px', height: '80px' }}>
+          <svg
+            viewBox="0 0 80 80"
+            fill="none"
+            style={{ position: 'absolute', inset: 0, animation: 'spin-slow 3s linear infinite' }}
+          >
+            <circle cx="40" cy="40" r="36" stroke="rgba(245,158,11,0.08)" strokeWidth="2" />
+            <path d="M 40 4 A 36 36 0 0 1 76 40" stroke="#f59e0b" strokeWidth="3" strokeLinecap="round" strokeDasharray="56 170" />
+          </svg>
+          <svg
+            viewBox="0 0 80 80"
+            fill="none"
+            style={{ position: 'absolute', inset: 0, animation: 'spin-slow 2s linear infinite reverse' }}
+          >
+            <circle cx="40" cy="40" r="22" stroke="rgba(245,158,11,0.15)" strokeWidth="1.5" strokeDasharray="5 5" />
+            <circle cx="40" cy="40" r="4" fill="#f59e0b" fillOpacity="0.8" />
+          </svg>
+          {/* Pulse rings */}
+          <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%,-50%)', width: '8px', height: '8px', borderRadius: '50%', background: '#f59e0b', animation: 'pulse-glow 2s ease-in-out infinite' }} />
         </div>
+        <div style={{ textAlign: 'center' }}>
+          <div
+            style={{
+              fontFamily: "'Bebas Neue', sans-serif",
+              fontSize: '22px',
+              letterSpacing: '0.35em',
+              color: '#f59e0b',
+              textTransform: 'uppercase',
+            }}
+          >
+            CortexBuild
+          </div>
+          <div
+            style={{
+              fontFamily: "'Fira Code', monospace",
+              fontSize: '10px',
+              color: '#334155',
+              letterSpacing: '0.2em',
+              marginTop: '6px',
+            }}
+          >
+            INITIALISING WORKSPACE
+          </div>
+        </div>
+        <span className="sr-only">Application is loading</span>
       </div>
     );
   }
