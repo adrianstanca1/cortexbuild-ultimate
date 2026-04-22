@@ -34,6 +34,8 @@ const { handleAutorepair } = require('./ai-intents/autorepair-intent');
 const { classify, shouldUseOllama } = require('./ai-intents/ai-intent-classifier');
 const { getConversationHistory, truncateToTokenBudget, MAX_CONTEXT_MESSAGES, SUMMARY_THRESHOLD } = require('./ai-intents/conversation-history');
 const { getOllamaResponse, summarizeText, OLLAMA_HOST, LLM_MODEL } = require('./ai-intents/ollama-client');
+const { agenticQuery } = require('../lib/unified-ai-client-v2');
+const { detectAgentType, AGENT_DEFINITIONS } = require('../lib/agents/agent-orchestrator');
 
 const router = express.Router();
 
@@ -162,11 +164,27 @@ router.get('/status', async (req, res) => {
   });
 });
 
+// ─── Agent status ──────────────────────────────────────────────────────────────
+
+router.get('/agent-status', (req, res) => {
+  const { AGENT_DEFINITIONS } = require('../lib/unified-ai-client-v2');
+  res.json({
+    ok: true,
+    available: true,
+    agents: Object.entries(AGENT_DEFINITIONS).map(([key, agent]) => ({
+      key,
+      name: agent.name,
+      description: agent.description,
+      aliases: agent.aliases,
+    })),
+  });
+});
+
 // ─── Helper: handle unknown intent ────────────────────────────────────────────
 
 function handleUnknown(message) {
   return {
-    reply: `I didn't quite understand "${message}", but here's what I can help you with:\n\n• **Projects** — status, progress, budgets\n• **Invoices / Payments** — outstanding, overdue amounts\n• **Safety** — incidents, hazards, open investigations\n• **Team / Workers / Staff** — headcount, trades, hours\n• **RFIs** — open requests, priorities, deadlines\n• **Tenders / Bids** — pipeline, probabilities\n• **Overdue** — overdue invoices\n• **Budget** — total budget vs spend across all projects\n• **Materials** — stock, deliveries, suppliers\n• **Timesheets** — hours, payroll, overtime\n• **Subcontractors** — trades, CIS, insurance\n• **Equipment** — plant, machinery, hire\n• **Change Orders / Variations** — status, values\n• **Purchase Orders** — procurement, deliveries\n• **Contacts / CRM** — clients, prospects, suppliers\n• **RAMS** — method statements, risk assessments\n• **CIS** — construction industry scheme returns\n• **Daily Reports** — site diary, progress\n• **Risk Register** — hazards, risk scores\n\nTry asking something like "Show me all projects" or "What invoices are overdue?"`,
+    reply: `I didn't quite understand "${message}", but here's what I can help you with:\n\n• **Projects** — status, progress, budgets\n• **Invoices / Payments** — outstanding, overdue amounts\n• **Safety** — incidents, hazards, open investigations\n• **Team / Workers / Staff** — headcount, trades, hours\n• **RFIs** — open requests, priorities, deadlines\n• **Tenders / Bids** — pipeline, probabilities\n• **Overdue** — overdue invoices\n• **Budget** — total budget vs spend across all projects\n• **Materials** — stock, deliveries, suppliers\n• **Timesheets** — hours, payroll, overtime\n• **Subcontractors** — trades, CIS, insurance\n• **Equipment** — plant, machinery, hire\n• **Change Orders / Variations** — status, values\n• **Purchase Orders** — procurement, deliveries\n• **Contacts / CRM** — clients, prospects, suppliers\n• **RAMS** — method statements, risk assessments\n• **CIS** — construction industry scheme returns\n• **Daily Reports** — site diary, progress\n• **Risk Register** — hazards, risk scores\n• **Construction Knowledge** — building codes, standards, methods, materials\n\nTry asking something like "Show me all projects" or "What invoices are overdue?"`,
     data: null,
     suggestions: [
       'Show me all projects',
@@ -236,6 +254,22 @@ router.post('/chat', aiChatLimiter, async (req, res) => {
         case 'autoresearch':   result = await handleAutoresearch(message.trim(), req.user); break;
         case 'autoimprove':    result = await handleAutoimprove(message.trim(), req.user); break;
         case 'autorepair':     result = await handleAutorepair(message.trim(), req.user); break;
+        case 'construction_domain':
+          try {
+            const agentType = detectAgentType(message.trim());
+            const agentResult = await agenticQuery(message.trim(), {
+              context: {
+                userId: req.user?.id,
+                organizationId: req.user?.organization_id,
+                companyId: req.user?.company_id,
+              }
+            });
+            result = { reply: agentResult, data: { agentType }, suggestions: ['Ask about specific standards', 'Request material recommendations'] };
+          } catch (agentErr) {
+            console.warn('[AI] agenticQuery failed:', agentErr.message);
+            result = { reply: `Agent processing unavailable: ${agentErr.message}`, data: null, suggestions: [] };
+          }
+          break;
         default:
           result = handleUnknown(message.trim());
           break;

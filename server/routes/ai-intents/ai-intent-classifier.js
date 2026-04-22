@@ -40,6 +40,11 @@ function classify(message) {
   if (/improve|optimize|optimise|recommend|better|inefficien|trend|trends over time|historical|metrics analysis/i.test(m)) intents.push('autoimprove');
   if (/diagnose|repair|fix|heal|self.repair|infrastructure|container|ollama|embeddings|corrupt/i.test(m)) intents.push('autorepair');
 
+  // General construction domain knowledge (when no specific module matches)
+  if (intents.length === 0 && /building code|construction method|material spec|structural|foundation|beam|column|slab|load calculation|weatherproofing|fire safety|accessibility|sustainable|bs |eurocode|british standard|aci | regulation|compliance standard/i.test(m)) {
+    intents.push('construction_domain');
+  }
+
   return intents.length > 0 ? intents : ['unknown'];
 }
 
