@@ -4,6 +4,7 @@
  */
 import { Component, type ErrorInfo, type ReactNode } from 'react';
 import { AlertTriangle, RefreshCw, Bug } from 'lucide-react';
+import { agentDebugLog } from '@/lib/agentDebugLog';
 
 interface Props {
   children: ReactNode;
@@ -29,22 +30,16 @@ export class ErrorBoundary extends Component<Props, State> {
   public override componentDidCatch(error: Error, errorInfo: ErrorInfo) {
     console.error('ErrorBoundary caught an error:', error, errorInfo);
     // #region agent log
-    fetch('http://127.0.0.1:7655/ingest/db9ddb40-9e0f-4951-8101-ecdd6dc75884', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'X-Debug-Session-Id': '82d802' },
-      body: JSON.stringify({
-        sessionId: '82d802',
-        hypothesisId: 'H5',
-        location: 'ErrorBoundary.tsx:componentDidCatch',
-        message: 'error boundary caught',
-        data: {
-          errName: error.name,
-          errMessage: error.message?.slice(0, 200),
-          stackHead: error.stack?.split('\n').slice(0, 3).join(' | ')?.slice(0, 300),
-        },
-        timestamp: Date.now(),
-      }),
-    }).catch(() => {});
+    agentDebugLog({
+      hypothesisId: 'H5',
+      location: 'ErrorBoundary.tsx:componentDidCatch',
+      message: 'error boundary caught',
+      data: {
+        errName: error.name,
+        errMessage: error.message?.slice(0, 200),
+        stackHead: error.stack?.split('\n').slice(0, 3).join(' | ')?.slice(0, 300),
+      },
+    });
     // #endregion
     this.props.onError?.(error, errorInfo);
   }

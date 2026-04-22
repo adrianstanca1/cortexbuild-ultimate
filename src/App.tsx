@@ -11,6 +11,7 @@ import { useKeyboardShortcuts, DEFAULT_SHORTCUTS } from './hooks/useKeyboardShor
 import LoginPage from './components/auth/LoginPage';
 import { OAuthCallback } from './components/auth/OAuthCallback';
 import { ErrorBoundary } from './components/ui/ErrorBoundary';
+import { agentDebugLog } from '@/lib/agentDebugLog';
 import { CommandPalette } from './components/ui/CommandPalette';
 
 // Layout components kept eager — always rendered
@@ -173,18 +174,12 @@ function AppShell() {
 
   const renderModule = () => {
     // #region agent log
-    fetch('http://127.0.0.1:7655/ingest/db9ddb40-9e0f-4951-8101-ecdd6dc75884', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'X-Debug-Session-Id': '82d802' },
-      body: JSON.stringify({
-        sessionId: '82d802',
-        hypothesisId: 'H2',
-        location: 'App.tsx:renderModule',
-        message: 'render module',
-        data: { activeModule },
-        timestamp: Date.now(),
-      }),
-    }).catch(() => {});
+    agentDebugLog({
+      hypothesisId: 'H2',
+      location: 'App.tsx:renderModule',
+      message: 'render module',
+      data: { activeModule },
+    });
     // #endregion
     switch (activeModule) {
       case 'dashboard':             return <Dashboard />;
@@ -375,18 +370,12 @@ function ThemedApp() {
 
   useEffect(() => {
     // #region agent log
-    fetch('http://127.0.0.1:7655/ingest/db9ddb40-9e0f-4951-8101-ecdd6dc75884', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'X-Debug-Session-Id': '82d802' },
-      body: JSON.stringify({
-        sessionId: '82d802',
-        hypothesisId: 'H4',
-        location: 'App.tsx:ThemedApp',
-        message: 'shell gate state',
-        data: { loading, isAuthenticated },
-        timestamp: Date.now(),
-      }),
-    }).catch(() => {});
+    agentDebugLog({
+      hypothesisId: 'H4',
+      location: 'App.tsx:ThemedApp',
+      message: 'shell gate state',
+      data: { loading, isAuthenticated },
+    });
     // #endregion
   }, [loading, isAuthenticated]);
   

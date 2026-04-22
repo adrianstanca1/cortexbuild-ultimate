@@ -1,11 +1,114 @@
-import { defineConfig } from "vite";
+import { defineConfig, type Plugin, type PreviewServer } from "vite";
 import react from "@vitejs/plugin-react";
 import tailwindcss from "@tailwindcss/vite";
 import path from "path";
+import fs from "node:fs";
+import type { IncomingMessage } from "node:http";
 import { visualizer } from "rollup-plugin-visualizer";
+
+const AGENT_DEBUG_LOG = path.resolve(
+  __dirname,
+  ".cursor/debug-82d802.log",
+);
+/** Same NDJSON lines as `.cursor/debug-82d802.log` — easier for tooling if `.cursor/` is not synced. */
+const AGENT_DEBUG_LOG_MIRROR = path.resolve(
+  __dirname,
+  "agent-debug-82d802.ndjson",
+);
+
+/** In-memory copy so GET `/__agent-debug` can return recent lines (same machine as `vite`). */
+const agentDebugRing: string[] = [];
+const AGENT_DEBUG_RING_MAX = 400;
+
+function appendAgentDebugNdjsonLine(body: string) {
+  agentDebugRing.push(body);
+  if (agentDebugRing.length > AGENT_DEBUG_RING_MAX) {
+    agentDebugRing.splice(0, agentDebugRing.length - AGENT_DEBUG_RING_MAX);
+  }
+  try {
+    fs.mkdirSync(path.dirname(AGENT_DEBUG_LOG), { recursive: true });
+    fs.appendFileSync(AGENT_DEBUG_LOG, `${body}\n`, "utf8");
+  } catch {
+    /* disk optional */
+  }
+  try {
+    fs.appendFileSync(AGENT_DEBUG_LOG_MIRROR, `${body}\n`, "utf8");
+  } catch {
+    /* disk optional */
+  }
+}
+
+function readBody(req: IncomingMessage, maxBytes: number): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const chunks: Buffer[] = [];
+    let total = 0;
+    req.on("data", (chunk: Buffer) => {
+      total += chunk.length;
+      if (total > maxBytes) {
+        reject(new Error("body too large"));
+        return;
+      }
+      chunks.push(chunk);
+    });
+    req.on("end", () => resolve(Buffer.concat(chunks).toString("utf8")));
+    req.on("error", reject);
+  });
+}
+
+function attachAgentDebugMiddleware(
+  server: { middlewares: PreviewServer["middlewares"] },
+) {
+  server.middlewares.use((req, res, next) => {
+    const url = req.url?.split("?")[0] ?? "";
+    if (url !== "/__agent-debug") {
+      next();
+      return;
+    }
+    if (req.method === "GET") {
+      res.setHeader("Content-Type", "application/x-ndjson; charset=utf-8");
+      res.setHeader("Cache-Control", "no-store");
+      res.statusCode = 200;
+      res.end(agentDebugRing.length ? `${agentDebugRing.join("\n")}\n` : "");
+      return;
+    }
+    if (req.method !== "POST") {
+      res.statusCode = 405;
+      res.setHeader("Allow", "GET, POST");
+      res.end("Method Not Allowed");
+      return;
+    }
+    void (async () => {
+      try {
+        const body = await readBody(req, 65536);
+        JSON.parse(body);
+        appendAgentDebugNdjsonLine(body);
+        res.statusCode = 204;
+        res.end();
+      } catch (e) {
+        res.statusCode = 500;
+        res.setHeader("Content-Type", "text/plain");
+        res.end(String(e));
+      }
+    })();
+  });
+}
+
+/** Writes browser debug NDJSON lines for `vite` and `vite preview` (same-origin POST). */
+function agentDebugLogPlugin(): Plugin {
+  return {
+    name: "agent-debug-log",
+    configureServer(server) {
+      attachAgentDebugMiddleware(server);
+    },
+    configurePreviewServer(server) {
+      attachAgentDebugMiddleware(server);
+    },
+  };
+}
 
 export default defineConfig({
   plugins: [
+    agentDebugLogPlugin(),
     tailwindcss(),
     react(),
     // Bundle analyzer - generates stats.html in dist

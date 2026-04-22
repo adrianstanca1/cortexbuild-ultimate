@@ -5,6 +5,7 @@ dist/
 .env.production
 .DS_Store
 *.log
+agent-debug-82d802.ndjson
 .vercel
 tsconfig.tsbuildinfo
 stats.html

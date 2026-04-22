@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { clearToken, getStoredUser, setStoredUser, API_BASE } from '../lib/auth-storage';
+import { agentDebugLog } from '@/lib/agentDebugLog';
 
 interface Profile {
   id: string;
@@ -63,18 +64,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
       setLoading(false);
       // #region agent log
-      fetch('http://127.0.0.1:7655/ingest/db9ddb40-9e0f-4951-8101-ecdd6dc75884', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'X-Debug-Session-Id': '82d802' },
-        body: JSON.stringify({
-          sessionId: '82d802',
-          hypothesisId: 'H1',
-          location: 'AuthContext.tsx:loadUser',
-          message: 'auth bootstrap finished',
-          data: { outcome, meStatus, hadStored: Boolean(stored), apiBaseLen: API_BASE?.length ?? 0 },
-          timestamp: Date.now(),
-        }),
-      }).catch(() => {});
+      agentDebugLog({
+        hypothesisId: 'H1',
+        location: 'AuthContext.tsx:loadUser',
+        message: 'auth bootstrap finished',
+        data: { outcome, meStatus, hadStored: Boolean(stored), apiBaseLen: API_BASE?.length ?? 0 },
+      });
       // #endregion
     };
     loadUser();
