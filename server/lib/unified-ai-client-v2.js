@@ -150,7 +150,7 @@ async function queryOllama(prompt, model = "qwen3.5:latest") {
     const cacheKey = `ollama:${model}:${prompt}`;
     const cached = embeddingCache.get(cacheKey);
     if (cached) return cached;
-    
+
     const response = await deduplicatedFetch(
       `ollama:${model}:${prompt}`,
       () => fetch(`${OLLAMA_HOST}/api/generate`, {
@@ -164,18 +164,143 @@ async function queryOllama(prompt, model = "qwen3.5:latest") {
         timeout: 10000
       })
     );
-    
+
     if (!response.ok) {
       throw new Error(`Ollama API error: ${response.status}`);
     }
-    
+
     const data = await response.json();
     const result = data.response || '';
-    
-    // Cache successful responses
+
     embeddingCache.set(cacheKey, result);
     return result;
   });
+}
+
+async function* streamQueryOllama(prompt, model = "qwen3.5:latest") {
+  const response = await fetch(`${OLLAMA_HOST}/api/generate`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ model, prompt, stream: true }),
+    timeout: 30000
+  });
+
+  if (!response.ok) {
+    throw new Error(`Ollama streaming error: ${response.status}`);
+  }
+
+  const reader = response.body.getReader();
+  const decoder = new TextDecoder();
+  let buffer = '';
+
+  while (true) {
+    const { done, chunk } = await reader.read();
+    if (done) break;
+
+    buffer += decoder.decode(chunk, { stream: true });
+    const lines = buffer.split('\n');
+    buffer = lines.pop() || '';
+
+    for (const line of lines) {
+      if (!line.trim() || !line.startsWith('data:')) continue;
+      try {
+        const data = JSON.parse(line.slice(5));
+        if (data.response) yield data.response;
+      } catch {}
+    }
+  }
+}
+
+async function* streamQueryOpenRouter(prompt, model = "anthropic/claude-sonnet-4") {
+  if (!OPENROUTER_API_KEY) throw new Error('OPENROUTER_API_KEY not configured');
+
+  const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${OPENROUTER_API_KEY}`,
+      'Content-Type': 'application/json',
+      'HTTP-Referer': 'https://cortexbuildultimate.com',
+      'X-Title': 'CortexBuild Ultimate'
+    },
+    body: JSON.stringify({
+      model,
+      messages: [{ role: "user", content: prompt }],
+      temperature: 0.7,
+      max_tokens: 4000,
+      stream: true
+    }),
+    timeout: 30000
+  });
+
+  if (!response.ok) {
+    throw new Error(`OpenRouter streaming error: ${response.status}`);
+  }
+
+  const reader = response.body.getReader();
+  const decoder = new TextDecoder();
+  let buffer = '';
+
+  while (true) {
+    const { done, chunk } = await reader.read();
+    if (done) break;
+
+    buffer += decoder.decode(chunk, { stream: true });
+    const lines = buffer.split('\n');
+    buffer = lines.pop() || '';
+
+    for (const line of lines) {
+      if (!line.trim() || !line.startsWith('data:')) continue;
+      if (line.includes('[DONE]')) break;
+      try {
+        const data = JSON.parse(line.slice(5));
+        const token = data.choices?.[0]?.delta?.content;
+        if (token) yield token;
+      } catch {}
+    }
+  }
+}
+
+async function* streamSmartQuery(prompt, options = {}) {
+  const {
+    preferredProvider = 'openrouter',
+    model,
+    temperature = 0.7,
+    maxTokens = 4000,
+  } = options;
+
+  const providers = [
+    preferredProvider,
+    ...['openrouter', 'ollama', 'gemini'].filter(p => p !== preferredProvider)
+  ];
+
+  let lastError;
+  for (const provider of providers) {
+    try {
+      if (provider === 'openrouter' && OPENROUTER_API_KEY) {
+        const gen = streamQueryOpenRouter(prompt, model);
+        for await (const chunk of gen) yield chunk;
+        return;
+      }
+      if (provider === 'ollama') {
+        const gen = streamQueryOllama(prompt, model);
+        for await (const chunk of gen) yield chunk;
+        return;
+      }
+    } catch (error) {
+      lastError = error;
+      console.warn(`Streaming provider ${provider} failed:`, error.message);
+      continue;
+    }
+  }
+
+  throw new Error(`All streaming providers failed. Last error: ${lastError?.message || 'Unknown'}`);
+}
+
+async function streamAgenticQuery(userQuery, options = {}) {
+  const { context = {} } = options;
+  const agentType = detectAgentType(userQuery);
+  const prompt = buildAgenticPrompt(userQuery, { agentType, context });
+  return streamSmartQuery(prompt, options);
 }
 
 async function queryGemini(prompt, model = "gemini-2.0-flash") {
@@ -462,6 +587,7 @@ const { detectAgentType, buildAgenticPrompt, getAgentSystemPrompt } = require('.
 
 async function agenticQuery(userQuery, options = {}) {
   const {
+    agentType: overrideAgentType,
     context = {},
     preferredProvider = 'openrouter',
     model,
@@ -469,21 +595,22 @@ async function agenticQuery(userQuery, options = {}) {
     maxTokens = 4000,
   } = options;
 
-  const agentType = detectAgentType(userQuery);
+  const agentType = overrideAgentType || detectAgentType(userQuery);
   const prompt = buildAgenticPrompt(userQuery, { agentType, context });
 
   return smartQuery(prompt, { preferredProvider, model, temperature, maxTokens });
 }
 
-module.exports = { 
-  queryOllama, 
+module.exports = {
+  queryOllama,
   queryGemini,
   queryOpenRouter,
   getEmbedding,
   healthCheck,
   smartQuery,
   agenticQuery,
-  // Expose internal components for testing/monitoring
+  streamSmartQuery,
+  streamAgenticQuery,
   __test__: {
     embeddingCache,
     ollamaCircuitBreaker,

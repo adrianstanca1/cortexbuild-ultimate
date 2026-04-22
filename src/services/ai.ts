@@ -37,23 +37,15 @@ export async function sendChatMessage(
   return res.json()
 }
 
-/**
- * @deprecated This function is broken — the backend POST /ai/chat does not
- * support SSE streaming. The backend returns a single JSON body with no
- * Transfer-Encoding: chunked or SSE format. This function will never emit
- * a chunk; it buffers the full response and calls onComplete immediately.
- * If streaming is needed, implement SSE properly in server/routes/ai.js
- * using Ollama's stream: true option.
- */
 export async function streamChatMessage(
   message: string,
   context: Record<string, unknown>,
   onChunk: (text: string) => void,
-  onComplete: () => void,
+  onComplete: (intent?: string) => void,
   onError: (error: Error) => void
 ): Promise<void> {
   try {
-    const response = await fetch(`${API_BASE}/ai/chat`, {
+    const response = await fetch(`${API_BASE}/ai/chat/stream`, {
       method: 'POST',
       credentials: 'include',
       headers: { 'Content-Type': 'application/json' },
@@ -65,14 +57,11 @@ export async function streamChatMessage(
     }
 
     const reader = response.body?.getReader()
-    if (!reader) {
-      throw new Error('No response body')
-    }
+    if (!reader) throw new Error('No response body')
 
     const decoder = new TextDecoder()
     let buffer = ''
 
-     
     while (true) {
       const { done, value } = await reader.read()
       if (done) break
@@ -82,21 +71,13 @@ export async function streamChatMessage(
       buffer = lines.pop() || ''
 
       for (const line of lines) {
-        if (line.startsWith('data: ')) {
-          const data = line.slice(6)
-          if (data === '[DONE]') {
-            onComplete()
-            return
-          }
-          try {
-            const parsed = JSON.parse(data)
-            if (parsed.content) {
-              onChunk(parsed.content)
-            }
-          } catch {
-            // Skip invalid JSON chunks
-          }
-        }
+        if (!line.startsWith('data: ')) continue
+        try {
+          const data = JSON.parse(line.slice(6))
+          if (data.token) onChunk(data.token)
+          if (data.done) { onComplete(data.intent); return }
+          if (data.error) { onError(new Error(data.error)); return }
+        } catch { /* skip */ }
       }
     }
 
@@ -104,4 +85,17 @@ export async function streamChatMessage(
   } catch (error) {
     onError(error instanceof Error ? error : new Error(String(error)))
   }
+}
+
+export interface AgentStatus {
+  key: string
+  name: string
+  description: string
+  aliases: string[]
+}
+
+export async function fetchAgentStatus(): Promise<{ agents: AgentStatus[] }> {
+  const res = await fetch(`${API_BASE}/ai/agent-status`, { credentials: 'include' })
+  if (!res.ok) throw new Error(`HTTP ${res.status}`)
+  return res.json()
 }

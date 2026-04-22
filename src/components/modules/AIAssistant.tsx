@@ -3,10 +3,11 @@ import { useState, useEffect, useRef } from 'react';
 import {
   Send, Zap, Shield, TrendingUp, FileText, Calendar,
   MessageSquare, Award, Brain, Clock, Archive, Plus, CheckSquare, Square, Trash2,
+  Radio, Wifi, WifiOff, Cpu,
 } from 'lucide-react';
 import { BulkActionsBar, useBulkSelection } from '../ui/BulkActions';
 import clsx from 'clsx';
-import { sendChatMessage } from '../../services/ai';
+import { sendChatMessage, streamChatMessage, fetchAgentStatus } from '../../services/ai';
 import { aiConversationsApi, dashboardApi } from '../../services/api';
 import { toast } from 'sonner';
 import { ModuleBreadcrumbs } from '../ui/Breadcrumbs';
@@ -162,8 +163,25 @@ export function AIAssistant() {
   const [chatSessions, setChatSessions] = useState<ChatSession[]>([]);
   const [currentSessionId, setCurrentSessionId] = useState<string | null>(null);
   const [liveCounts, setLiveCounts] = useState({ projects: 0, invoices: 0, incidents: 0 });
+  const [agentPanelOpen, setAgentPanelOpen] = useState(false);
+  const [backendAgents, setBackendAgents] = useState<{ key: string; name: string; description: string; aliases: string[] }[]>([]);
+  const [agentHealth, setAgentHealth] = useState<'online' | 'offline' | 'checking'>('checking');
+  const [activeAgentKey, setActiveAgentKey] = useState<string | null>(null);
 
-  // Fetch live KPI counts from dashboard API on mount
+  // Fetch agent status and live KPIs on mount
+  useEffect(() => {
+    fetchAgentStatus()
+      .then(data => { setBackendAgents(data.agents); setAgentHealth('online'); })
+      .catch(() => setAgentHealth('offline'));
+
+    dashboardApi.getOverview().then(d => {
+      setLiveCounts({
+        projects: d.kpi?.activeProjects ?? 0,
+        invoices: d.kpi?.invoiceCount ?? 0,
+        incidents: d.kpi?.safetyIncidents ?? 0,
+      });
+    }).catch(e => console.warn('[AIAssistant] dashboard fetch failed:', e));
+  }, []);
   useEffect(() => {
     dashboardApi.getOverview().then(d => {
       setLiveCounts({
@@ -430,56 +448,59 @@ export function AIAssistant() {
 
     setIsTyping(true);
 
-    sendChatMessage(messageText, {
-      agent: selectedAgent,
-      context: {
+    const assistantMessage: Message = {
+      id: (Date.now() + 1).toString(),
+      role: 'assistant',
+      content: '',
+      timestamp: new Date(),
+      isStreaming: true
+    };
+
+    setMessages(prev => [...prev, assistantMessage]);
+
+    streamChatMessage(
+      messageText,
+      {
+        agent: selectedAgent,
         liveKpis: liveCounts,
         timestamp: new Date().toISOString()
-      }
-    }, finalSessionId || undefined)
-      .then((response) => {
-        const assistantMessage: Message = {
-          id: (Date.now() + 1).toString(),
-          role: 'assistant',
-          content: '',
-          timestamp: new Date(),
-          isStreaming: true
-        };
-
-        setMessages(prev => [...prev, assistantMessage]);
-
-        const words = response.reply.split(' ');
-        let currentIndex = 0;
-
-        const streamInterval = setInterval(() => {
-          if (currentIndex < words.length) {
-            const newContent = words.slice(0, currentIndex + 1).join(' ');
-            setMessages(prev => [
-              ...prev.slice(0, -1),
-              { ...assistantMessage, content: newContent + ' |' }
-            ]);
-            currentIndex++;
-          } else {
-            clearInterval(streamInterval);
-            const finalMessage = { ...assistantMessage, content: response.reply, isStreaming: false };
-            setMessages(prev => [
-              ...prev.slice(0, -1),
-              finalMessage
-            ]);
-            setIsTyping(false);
-            // Persist assistant message to server (async, non-blocking)
-            if (finalSessionId) {
-              aiConversationsApi.saveMessage({ sessionId: finalSessionId, role: 'assistant', content: response.reply }).catch(e => console.warn('[AI] Failed to persist assistant message:', e));
-            }
+      },
+      (token) => {
+        setMessages(prev => {
+          const last = prev[prev.length - 1];
+          if (last?.isStreaming) {
+            return [...prev.slice(0, -1), { ...last, content: last.content + token }];
           }
-        }, Math.random() * 20 + 40);
-      })
-      .catch((error) => {
-        console.error('AI Chat error:', error);
-        toast.error('AI request failed — check the server connection');
-        setMessages(prev => prev.filter(m => !m.isStreaming));
+          return prev;
+        });
+      },
+      (intent) => {
+        const finalMsg: Message = {
+          id: assistantMessage.id,
+          role: 'assistant',
+          content: messages.length > 0
+            ? (messages[messages.length - 1]?.content || '')
+            : assistantMessage.content,
+          timestamp: new Date(),
+          isStreaming: false
+        };
+        setMessages(prev => {
+          const filtered = prev.filter(m => m.isStreaming);
+          return filtered.length ? prev : [...prev, finalMsg];
+        });
         setIsTyping(false);
-      });
+        setActiveAgentKey(intent || null);
+        if (finalSessionId) {
+          aiConversationsApi.saveMessage({ sessionId: finalSessionId, role: 'assistant', content: finalMsg.content }).catch(e => console.warn('[AI] Failed to persist assistant message:', e));
+        }
+      },
+      (error) => {
+        console.error('AI streaming error:', error);
+        setMessages(prev => prev.filter(m => m.isStreaming));
+        setIsTyping(false);
+        toast.error('AI request failed');
+      }
+    );
   };
 
   const selectedAgentData = agents.find(a => a.id === selectedAgent)!;
@@ -490,21 +511,51 @@ export function AIAssistant() {
       <div className="h-full flex bg-gradient-to-br from-gray-950 via-gray-900 to-gray-950">
       {/* Left Sidebar - Chat History & Agents */}
       <div className="w-64 border-r border-gray-800 bg-gray-900/50 p-4 overflow-y-auto flex flex-col">
-        {/* New Chat Button */}
+        {/* Agent Status Toggle */}
         <button
-          onClick={() => {
-            if (currentSessionId) {
-              try { localStorage.setItem(`cortex_ai_session_${currentSessionId}`, JSON.stringify(messages)); } catch (e) { console.warn('[AI] Failed to persist chat to localStorage:', e); }
-            }
-            setMessages([]);
-            setInput('');
-            setCurrentSessionId(null);
-          }}
-          className="mb-4 w-full flex items-center justify-center gap-2 rounded-xl border border-gray-700 bg-blue-900/30 px-4 py-2 text-sm text-blue-300 transition hover:bg-blue-900/50"
+          onClick={() => setAgentPanelOpen(p => !p)}
+          className={clsx(
+            'mb-4 w-full flex items-center gap-2 rounded-xl border px-4 py-2 text-sm transition',
+            agentPanelOpen
+              ? 'border-amber-500/50 bg-amber-500/10 text-amber-400'
+              : 'border-gray-700 bg-gray-800/30 text-gray-400 hover:text-gray-300 hover:border-gray-600'
+          )}
         >
-          <Plus className="h-4 w-4" />
-          New Chat
+          {agentHealth === 'online' ? (
+            <><Radio className="h-4 w-4 text-emerald-400" /> Agent Status</>
+          ) : agentHealth === 'offline' ? (
+            <><WifiOff className="h-4 w-4 text-red-400" /> Agent Offline</>
+          ) : (
+            <><Cpu className="h-4 w-4 text-gray-400 animate-pulse" /> Checking Agents...</>
+          )}
         </button>
+
+        {/* Agent Status Panel */}
+        {agentPanelOpen && (
+          <div className="mb-4 rounded-xl border border-amber-500/20 bg-gray-900/80 p-3">
+            <h3 className="mb-2 text-xs font-bold uppercase tracking-widest text-amber-400/70">Active Agents</h3>
+            <div className="space-y-2">
+              {backendAgents.length === 0 && agentHealth === 'checking' && (
+                <p className="text-xs text-gray-500">Loading...</p>
+              )}
+              {backendAgents.map(agent => (
+                <div key={agent.key} className="flex items-start gap-2">
+                  <div className={clsx(
+                    'mt-0.5 h-2 w-2 rounded-full flex-shrink-0',
+                    agentHealth === 'online' ? 'bg-emerald-400' : 'bg-gray-600'
+                  )} />
+                  <div>
+                    <p className="text-xs font-semibold text-white">{agent.name}</p>
+                    <p className="text-xs text-gray-500 leading-tight">{agent.description}</p>
+                  </div>
+                </div>
+              ))}
+              {agentHealth === 'offline' && (
+                <p className="text-xs text-red-400">Backend agents unreachable. Check API server.</p>
+              )}
+            </div>
+          </div>
+        )}
 
         {/* Chat History */}
         {chatSessions.length > 0 && (

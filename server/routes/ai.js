@@ -34,8 +34,8 @@ const { handleAutorepair } = require('./ai-intents/autorepair-intent');
 const { classify, shouldUseOllama } = require('./ai-intents/ai-intent-classifier');
 const { getConversationHistory, truncateToTokenBudget, MAX_CONTEXT_MESSAGES, SUMMARY_THRESHOLD } = require('./ai-intents/conversation-history');
 const { getOllamaResponse, summarizeText, OLLAMA_HOST, LLM_MODEL } = require('./ai-intents/ollama-client');
-const { agenticQuery } = require('../lib/unified-ai-client-v2');
-const { detectAgentType, AGENT_DEFINITIONS } = require('../lib/agents/agent-orchestrator');
+const { agenticQuery, streamAgenticQuery } = require('../lib/unified-ai-client-v2');
+const { AGENT_DEFINITIONS } = require('../lib/agents/agent-orchestrator');
 
 const router = express.Router();
 
@@ -255,19 +255,31 @@ router.post('/chat', aiChatLimiter, async (req, res) => {
         case 'autoimprove':    result = await handleAutoimprove(message.trim(), req.user); break;
         case 'autorepair':     result = await handleAutorepair(message.trim(), req.user); break;
         case 'construction_domain':
-          try {
-            const agentType = detectAgentType(message.trim());
-            const agentResult = await agenticQuery(message.trim(), {
-              context: {
-                userId: req.user?.id,
-                organizationId: req.user?.organization_id,
-                companyId: req.user?.company_id,
-              }
-            });
-            result = { reply: agentResult, data: { agentType }, suggestions: ['Ask about specific standards', 'Request material recommendations'] };
-          } catch (agentErr) {
-            console.warn('[AI] agenticQuery failed:', agentErr.message);
-            result = { reply: `Agent processing unavailable: ${agentErr.message}`, data: null, suggestions: [] };
+        case 'safety_compliance':
+        case 'cost_estimation':
+        case 'project_coordinator':
+          {
+            const agentType = intent;
+            try {
+              const agentResult = await agenticQuery(message.trim(), {
+                agentType,
+                context: {
+                  userId: req.user?.id,
+                  organizationId: req.user?.organization_id,
+                  companyId: req.user?.company_id,
+                }
+              });
+              const suggestions = {
+                construction_domain: ['Ask about specific standards', 'Request material recommendations'],
+                safety_compliance: ['Review PPE requirements', 'Request hazard analysis', 'Check incident reporting procedures'],
+                cost_estimation: ['Request unit cost breakdown', 'Get labor rate estimates', 'Compare alternative materials'],
+                project_coordinator: ['Review project schedule', 'Check resource allocation', 'Update milestone timeline'],
+              };
+              result = { reply: agentResult, data: { agentType }, suggestions: suggestions[agentType] || [] };
+            } catch (agentErr) {
+              console.warn(`[AI] agenticQuery (${agentType}) failed:`, agentErr.message);
+              result = { reply: `Agent processing unavailable: ${agentErr.message}`, data: null, suggestions: [] };
+            }
           }
           break;
         default:
@@ -658,7 +670,49 @@ Format in Markdown.`;
   }
 });
 
-// ─── POST /execute ────────────────────────────────────────────────────────────
+// ─── POST /chat/stream ────────────────────────────────────────────────────────
+router.post('/chat/stream', aiChatLimiter, async (req, res) => {
+  const { message, context } = req.body;
+
+  if (!message || typeof message !== 'string' || !message.trim()) {
+    return res.status(400).json({ message: 'message is required' });
+  }
+
+  const intents = classify(message.trim());
+  const intent = intents[0];
+
+  const agentIntents = ['construction_domain', 'safety_compliance', 'cost_estimation', 'project_coordinator'];
+  if (!agentIntents.includes(intent)) {
+    return res.status(400).json({ message: 'Streaming is only available for agent queries.' });
+  }
+
+  res.setHeader('Content-Type', 'text/event-stream');
+  res.setHeader('Cache-Control', 'no-cache');
+  res.setHeader('Connection', 'keep-alive');
+  res.flushHeaders();
+
+  try {
+    const stream = await streamAgenticQuery(message.trim(), {
+      agentType: intent,
+      context: {
+        userId: req.user?.id,
+        organizationId: req.user?.organization_id,
+        companyId: req.user?.company_id,
+      }
+    });
+
+    for await (const chunk of stream) {
+      res.write(`data: ${JSON.stringify({ token: chunk })}\n\n`);
+    }
+
+    res.write(`data: ${JSON.stringify({ done: true, intent })}\n\n`);
+  } catch (err) {
+    console.warn('[AI /chat/stream]', err.message);
+    res.write(`data: ${JSON.stringify({ error: err.message })}\n\n`);
+  }
+
+  res.end();
+});
 // Action execution: { action, params } → { success, message, data }
 router.post('/execute', aiExecuteLimiter, async (req, res) => {
   const { action, params = {} } = req.body;
