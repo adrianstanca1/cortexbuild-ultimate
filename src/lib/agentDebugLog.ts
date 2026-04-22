@@ -1,5 +1,11 @@
-/** Dev-only: same-origin POST so Vite can append NDJSON to `.cursor/debug-82d802.log`. */
+/** POSTs to Vite `/__agent-debug` so the dev/preview server can append NDJSON logs. */
 const SESSION = "82d802";
+
+function agentDebugEligibleHost(): boolean {
+  if (typeof window === "undefined") return false;
+  const h = window.location.hostname;
+  return h === "localhost" || h === "127.0.0.1" || h === "[::1]";
+}
 
 export function agentDebugLog(entry: {
   hypothesisId: string;
@@ -10,7 +16,8 @@ export function agentDebugLog(entry: {
 }): void {
   // Never run during Vitest: fetch is mocked and debug POSTs steal mockResolvedValueOnce order.
   if (import.meta.env.VITEST || import.meta.env.MODE === "test") return;
-  if (!import.meta.env.DEV) return;
+  // `vite preview` and other local prod bundles set DEV=false — still want logs on loopback.
+  if (!import.meta.env.DEV && !agentDebugEligibleHost()) return;
   // #region agent log
   void Promise.resolve(
     typeof fetch === "function"
