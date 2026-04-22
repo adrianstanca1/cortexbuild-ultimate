@@ -172,6 +172,20 @@ function AppShell() {
   ]);
 
   const renderModule = () => {
+    // #region agent log
+    fetch('http://127.0.0.1:7655/ingest/db9ddb40-9e0f-4951-8101-ecdd6dc75884', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-Debug-Session-Id': '82d802' },
+      body: JSON.stringify({
+        sessionId: '82d802',
+        hypothesisId: 'H2',
+        location: 'App.tsx:renderModule',
+        message: 'render module',
+        data: { activeModule },
+        timestamp: Date.now(),
+      }),
+    }).catch(() => {});
+    // #endregion
     switch (activeModule) {
       case 'dashboard':             return <Dashboard />;
       case 'projects':              return <Projects />;
@@ -358,6 +372,23 @@ function AppShell() {
 function ThemedApp() {
   const { isAuthenticated, loading } = useAuth();
   const { resolvedTheme } = useTheme();
+
+  useEffect(() => {
+    // #region agent log
+    fetch('http://127.0.0.1:7655/ingest/db9ddb40-9e0f-4951-8101-ecdd6dc75884', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-Debug-Session-Id': '82d802' },
+      body: JSON.stringify({
+        sessionId: '82d802',
+        hypothesisId: 'H4',
+        location: 'App.tsx:ThemedApp',
+        message: 'shell gate state',
+        data: { loading, isAuthenticated },
+        timestamp: Date.now(),
+      }),
+    }).catch(() => {});
+    // #endregion
+  }, [loading, isAuthenticated]);
   
   // Check for OAuth callback route
   const isOAuthCallback = typeof window !== 'undefined' && 

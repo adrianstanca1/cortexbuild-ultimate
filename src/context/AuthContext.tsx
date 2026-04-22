@@ -35,27 +35,47 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     const loadUser = async () => {
       const stored = getStoredUser();
+      let meStatus: number | null = null;
+      let outcome: 'no_stored' | 'me_ok' | 'me_failed' | 'me_network_error' = 'no_stored';
 
       if (stored) {
         try {
           // Validate session with a backend call (cookie sent automatically)
           const res = await fetch(`${API_BASE}/auth/me`, { credentials: 'include' });
+          meStatus = res.status;
           if (res.ok) {
             const userData = await res.json();
             setUser(userData as Profile);
             setStoredUser(userData);
+            outcome = 'me_ok';
           } else {
             console.warn('Session validation failed, clearing session.', res.status);
             clearToken();
             setUser(null);
+            outcome = 'me_failed';
           }
         } catch (error) {
           console.error('Error validating session:', error);
           // Don't clear session on network error — cookie might still be valid
           setUser(stored as unknown as Profile | null);
+          outcome = 'me_network_error';
         }
       }
       setLoading(false);
+      // #region agent log
+      fetch('http://127.0.0.1:7655/ingest/db9ddb40-9e0f-4951-8101-ecdd6dc75884', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-Debug-Session-Id': '82d802' },
+        body: JSON.stringify({
+          sessionId: '82d802',
+          hypothesisId: 'H1',
+          location: 'AuthContext.tsx:loadUser',
+          message: 'auth bootstrap finished',
+          data: { outcome, meStatus, hadStored: Boolean(stored), apiBaseLen: API_BASE?.length ?? 0 },
+          timestamp: Date.now(),
+        }),
+      }).catch(() => {});
+      // #endregion
     };
     loadUser();
   }, []);
