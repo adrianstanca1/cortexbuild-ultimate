@@ -195,7 +195,7 @@ export function Settings() {
       <h1 className="text-3xl font-bold text-white">Settings</h1>
 
       {/* Tab Nav */}
-      <div className="flex gap-1 card bg-base-100 border border-base-300 p-1 overflow-x-auto">
+      <div className="flex gap-1 card bg-base-100 border border-base-300 p-1 cb-table-scroll touch-pan-x">
         {TABS.map(t => {
           const Icon = t.icon;
           return (

@@ -227,7 +227,7 @@ export function ExecutiveReports() {
       </div>
 
       {/* Sub-tabs */}
-      <div className="flex gap-2 border-b border-gray-800 overflow-x-auto">
+      <div className="flex gap-2 border-b border-gray-800 cb-table-scroll touch-pan-x">
         {tabs.map((tab) => {
           const Icon = tab.icon;
           return (

@@ -120,7 +120,7 @@ export function ReportTemplates() {
       </div>
 
       {/* Sub-tabs */}
-      <div className="border-b border-gray-700 flex gap-1 overflow-x-auto">
+      <div className="border-b border-gray-700 flex gap-1 cb-table-scroll touch-pan-x">
         {TABS.map(t => {
           const Icon = t.icon;
           return (
@@ -274,7 +274,7 @@ export function ReportTemplates() {
                   {Number(template.id) === expandedId && (
                     <div className="mt-4 ml-12 p-4 bg-gray-800/50 rounded-lg">
                       <h5 className="text-xs text-gray-500 uppercase mb-2">Configuration</h5>
-                      <pre className="text-xs text-gray-400 overflow-x-auto">
+                      <pre className="text-xs text-gray-400 cb-table-scroll touch-pan-x">
                         {JSON.stringify(template.config, null, 2)}
                       </pre>
                     </div>
@@ -344,7 +344,7 @@ export function ReportTemplates() {
             Schedule New Report
           </button>
           <div className="bg-gray-900 border border-gray-700 rounded-lg overflow-hidden">
-            <div className="overflow-x-auto">
+            <div className="cb-table-scroll touch-pan-x">
               <table className="w-full text-sm">
                 <thead className="bg-gray-800">
                   <tr>
@@ -382,7 +382,7 @@ export function ReportTemplates() {
       {/* ARCHIVE TAB */}
       {subTab === 'archive' && (
         <div className="bg-gray-900 border border-gray-700 rounded-lg overflow-hidden">
-          <div className="overflow-x-auto">
+          <div className="cb-table-scroll touch-pan-x">
             <table className="w-full text-sm">
               <thead className="bg-gray-800">
                 <tr>

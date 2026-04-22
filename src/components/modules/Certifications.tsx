@@ -216,7 +216,7 @@ export default function Certifications() {
       {filtered.length === 0 ? (
         <EmptyState icon={Shield} title="No certifications found" description="Add certifications to get started." />
       ) : (
-        <div className="overflow-x-auto">
+        <div className="cb-table-scroll touch-pan-x">
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-gray-700">

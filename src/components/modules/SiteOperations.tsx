@@ -208,7 +208,7 @@ const handleSaveDelay = async () => {
       </div>
 
       {/* Sub-tabs navigation */}
-      <div className="border-b border-gray-700 flex gap-1 overflow-x-auto">
+      <div className="border-b border-gray-700 flex gap-1 cb-table-scroll touch-pan-x">
         {TABS.map(t => {
           const Icon = t.icon;
           return (
@@ -620,7 +620,7 @@ const handleSaveDelay = async () => {
             </div>
           ) : (
             <div className="bg-gray-800 rounded-lg border border-gray-700 overflow-hidden">
-              <div className="overflow-x-auto">
+              <div className="cb-table-scroll touch-pan-x">
                 <table className="w-full text-sm">
                   <thead>
                     <tr className="bg-gray-700/50 border-b border-gray-700">
@@ -704,7 +704,7 @@ const handleSaveDelay = async () => {
           ) : (
             <div className="space-y-4">
               <div className="bg-gray-800 rounded-lg border border-gray-700 overflow-hidden">
-                <div className="overflow-x-auto">
+                <div className="cb-table-scroll touch-pan-x">
                   <table className="w-full text-sm">
                     <thead>
                       <tr className="bg-gray-700/50 border-b border-gray-700">

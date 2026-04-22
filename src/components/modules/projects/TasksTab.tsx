@@ -261,7 +261,7 @@ export function TasksTab({ projectId }: TasksTabProps) {
       {isLoading ? (
         <div className="flex items-center justify-center py-16"><Loader2 className="w-8 h-8 text-blue-400 animate-spin" /></div>
       ) : (
-        <div className="grid grid-cols-5 gap-3 overflow-x-auto pb-4">
+        <div className="grid grid-cols-5 gap-3 cb-table-scroll touch-pan-x pb-4">
           {TASK_STATUSES.map(status => (
             <KanbanColumn
               key={status}

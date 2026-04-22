@@ -260,7 +260,7 @@ export function AdvancedAnalytics() {
       </div>
 
       {/* Tab Navigation */}
-      <div className="flex gap-2 border-b border-gray-700 overflow-x-auto">
+      <div className="flex gap-2 border-b border-gray-700 cb-table-scroll touch-pan-x">
         {(['portfolio', 'financial', 'resource', 'risk', 'reports'] as const).map((tab) => (
           <button
             key={tab}
@@ -461,7 +461,7 @@ export function AdvancedAnalytics() {
               <Radar className="h-5 w-5 text-amber-400" />
               Skills Gap Matrix
             </h3>
-            <div className="overflow-x-auto">
+            <div className="cb-table-scroll touch-pan-x">
               <table className="w-full text-sm">
                 <thead>
                   <tr className="border-b border-gray-700">

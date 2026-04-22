@@ -182,7 +182,7 @@ export function NotificationCenter({ onClose }: NotificationCenterProps) {
         </div>
 
         {/* Filters */}
-        <div className="p-3 border-b border-base-300 flex gap-2 overflow-x-auto">
+        <div className="p-3 border-b border-base-300 flex gap-2 cb-table-scroll touch-pan-x">
           <select
             value={filter}
             onChange={e => setFilter(e.target.value as 'all' | 'unread' | 'read')}

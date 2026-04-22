@@ -63,6 +63,10 @@ const AnimatedCounter = React.memo(({ value, prefix = '', suffix = '', duration 
 
   useEffect(() => {
     targetRef.current = value;
+    if (typeof window !== 'undefined' && window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) {
+      setDisplay(Math.round(value));
+      return;
+    }
     startRef.current = null;
     const step = (ts: number) => {
       if (!startRef.current) startRef.current = ts;
@@ -82,7 +86,14 @@ const AnimatedCounter = React.memo(({ value, prefix = '', suffix = '', duration 
 const RAGDonut = React.memo(({ data }: { data: { name: string; value: number; fill: string }[] }) => {
   const total = data.reduce((s, d) => s + d.value, 0);
   const [mounted, setMounted] = useState(false);
-  useEffect(() => { setTimeout(() => setMounted(true), 200); }, []);
+  useEffect(() => {
+    if (typeof window !== 'undefined' && window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) {
+      setMounted(true);
+      return;
+    }
+    const t = window.setTimeout(() => setMounted(true), 200);
+    return () => window.clearTimeout(t);
+  }, []);
 
   return (
     <div style={{ position: 'relative', width: '140px', height: '140px' }}>
@@ -119,6 +130,10 @@ const ProgBar = React.memo(({ value, color, animated = true }: { value: number; 
   const [w, setW] = useState(0);
   useEffect(() => {
     if (!animated) { setW(value); return; }
+    if (typeof window !== 'undefined' && window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) {
+      setW(value);
+      return;
+    }
     const t = setTimeout(() => setW(value), 150);
     return () => clearTimeout(t);
   }, [value, animated]);
@@ -139,7 +154,14 @@ const ActivityItem = React.memo(({ user, action, module, time, accent, delay = 0
   user: string; action: string; module: string; time: string; accent: string; delay?: number;
 }) => {
   const [visible, setVisible] = useState(false);
-  useEffect(() => { const t = setTimeout(() => setVisible(true), delay); return () => clearTimeout(t); }, [delay]);
+  useEffect(() => {
+    if (typeof window !== 'undefined' && window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) {
+      setVisible(true);
+      return;
+    }
+    const t = setTimeout(() => setVisible(true), delay);
+    return () => clearTimeout(t);
+  }, [delay]);
   return (
     <div style={{
       display: 'flex', alignItems: 'flex-start', gap: '12px',

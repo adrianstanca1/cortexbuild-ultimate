@@ -396,7 +396,7 @@ export function Procurement() {
             {isLoading ? (
               <div className="p-8 text-center text-gray-400">Loading purchase orders…</div>
             ) : (
-              <div className="overflow-x-auto">
+              <div className="cb-table-scroll touch-pan-x">
                 <table className="w-full text-sm">
                   <thead className="bg-gray-800/60 border-b border-gray-700">
                     <tr>{['PO #','Supplier','Description','Category','Project','Value','Order Date','Delivery','Status',''].map(h=>(
@@ -554,7 +554,7 @@ export function Procurement() {
             <div className="px-6 py-4 border-b border-gray-800">
               <h3 className="text-white font-semibold">Category Summary</h3>
             </div>
-            <div className="overflow-x-auto">
+            <div className="cb-table-scroll touch-pan-x">
               <table className="w-full text-sm">
                 <thead className="bg-gray-800/60 border-b border-gray-700">
                   <tr>{['Category','PO Count','Total Spend','% of Total','Avg PO Size'].map(h=>(
@@ -585,7 +585,7 @@ export function Procurement() {
             <div className="px-6 py-4 border-b border-gray-800">
               <h3 className="text-white font-semibold">Top 5 Suppliers by Spend</h3>
             </div>
-            <div className="overflow-x-auto">
+            <div className="cb-table-scroll touch-pan-x">
               <table className="w-full text-sm">
                 <thead className="bg-gray-800/60 border-b border-gray-700">
                   <tr>{['Supplier','Category','Total Spend','PO Count','Rank'].map(h=>(
@@ -632,7 +632,7 @@ export function Procurement() {
           </div>
 
           <div className="card bg-base-100 border border-base-300 overflow-hidden">
-            <div className="overflow-x-auto">
+            <div className="cb-table-scroll touch-pan-x">
               <table className="w-full text-sm">
                 <thead className="bg-gray-800/60 border-b border-gray-700">
                   <tr>{['PO #','Supplier','Description','Project','Expected Delivery','Days Until','Status',''].map(h=>(

@@ -70,6 +70,17 @@
   .motion-safe\:animate-spin {
     animation: none !important;
   }
+
+  /* Entrance / decorative motion (Command palette, Insights cards, etc.) */
+  .animate-fade-up,
+  .animate-fadeIn {
+    animation: none !important;
+  }
+
+  /* Skeleton shimmer is decorative — show static placeholder instead */
+  .animate-pulse {
+    animation: none !important;
+  }
 }
 
 @layer base {
@@ -86,4 +97,12 @@
   a:focus:not(:focus-visible) {
     outline: none;
   }
+}
+
+/* Horizontally scrollable regions (data tables, tab strips, wide toolbars) — min-w-0 avoids flex blowout */
+.cb-table-scroll {
+  max-width: 100%;
+  min-width: 0;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
 }

@@ -204,7 +204,7 @@ export function FieldView() {
       </div>
 
       {/* Tabs */}
-      <div className="border-b border-gray-700 flex gap-1 overflow-x-auto">
+      <div className="border-b border-gray-700 flex gap-1 cb-table-scroll touch-pan-x">
         {TABS.map(t => {
           const Icon = t.icon;
           return (
@@ -440,7 +440,7 @@ export function FieldView() {
               Issue New Permit
             </button>
           </div>
-          <div className="overflow-x-auto">
+          <div className="cb-table-scroll touch-pan-x">
             <table className="w-full text-sm">
               <thead>
                 <tr className="bg-gray-700 border-b border-gray-600">
@@ -548,7 +548,7 @@ export function FieldView() {
           />
         ) : (
           <div className="bg-gray-800 rounded-xl border border-gray-700 overflow-hidden">
-            <div className="overflow-x-auto">
+            <div className="cb-table-scroll touch-pan-x">
               <table className="w-full text-sm">
                 <thead>
                   <tr className="bg-gray-700 border-b border-gray-600">
@@ -621,7 +621,7 @@ export function FieldView() {
                 <span className="text-xs bg-gray-600 text-gray-300 px-2 py-0.5 rounded-full">{incidents.length} total</span>
               </div>
             </div>
-            <div className="overflow-x-auto">
+            <div className="cb-table-scroll touch-pan-x">
               <table className="w-full text-sm">
                 <thead>
                   <tr className="bg-gray-700 border-b border-gray-600">

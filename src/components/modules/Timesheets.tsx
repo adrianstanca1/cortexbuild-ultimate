@@ -293,7 +293,7 @@ export function Timesheets() {
       </div>
 
       {/* Tabs - 4 Sub-tabs */}
-      <div className="flex gap-1 border-b border-gray-700 overflow-x-auto">
+      <div className="flex gap-1 border-b border-gray-700 cb-table-scroll touch-pan-x">
         {([
           { key:'weekly' as const, label:'Weekly Timesheets', count:filtered.length },
           { key:'labour' as const, label:'Labour Summary', count:labourSummary.length },
@@ -351,7 +351,7 @@ export function Timesheets() {
           {isLoading ? (
             <div className="flex justify-center py-20"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"/></div>
           ) : (
-            <div className="bg-gray-900 rounded-lg border border-gray-700 overflow-x-auto">
+            <div className="bg-gray-900 rounded-lg border border-gray-700 cb-table-scroll touch-pan-x">
               <table className="w-full text-sm">
                 <thead className="bg-gray-800 border-b border-gray-700">
                   <tr>
@@ -468,7 +468,7 @@ export function Timesheets() {
                   </div>
                 </div>
               </div>
-              <div className="bg-gray-900 rounded-lg border border-gray-700 overflow-x-auto">
+              <div className="bg-gray-900 rounded-lg border border-gray-700 cb-table-scroll touch-pan-x">
                 <table className="w-full text-sm">
                   <thead className="bg-gray-800 border-b border-gray-700">
                     <tr>{['Project','Regular Hrs','OT Hrs','Daywork Hrs','Total Hours','Total Cost (£)','CIS (£)'].map(h=><th key={h} className={`text-left px-4 py-3 text-xs font-semibold text-gray-300 uppercase tracking-wide ${['Total Hours','Total Cost (£)','CIS (£)'].includes(h)?'text-right':''}`}>{h}</th>)}</tr>
@@ -508,7 +508,7 @@ export function Timesheets() {
                   <Download size={16}/><span>Export to CSV</span>
                 </button>
               </div>
-              <div className="bg-gray-900 rounded-lg border border-gray-700 overflow-x-auto">
+              <div className="bg-gray-900 rounded-lg border border-gray-700 cb-table-scroll touch-pan-x">
                 <table className="w-full text-sm">
                   <thead className="bg-gray-800 border-b border-gray-700">
                     <tr>{['Name','Sheets','CIS Status','Gross Pay (£)','CIS Deduction (£)','Net Pay (£)'].map(h=><th key={h} className={`text-left px-4 py-3 text-xs font-semibold text-gray-300 uppercase tracking-wide ${['Gross Pay (£)','CIS Deduction (£)','Net Pay (£)'].includes(h)?'text-right':''}`}>{h}</th>)}</tr>
@@ -575,7 +575,7 @@ export function Timesheets() {
                   </ResponsiveContainer>
                 </div>
               </div>
-              <div className="bg-gray-900 rounded-lg border border-gray-700 overflow-x-auto">
+              <div className="bg-gray-900 rounded-lg border border-gray-700 cb-table-scroll touch-pan-x">
                 <table className="w-full text-sm">
                   <thead className="bg-gray-800 border-b border-gray-700">
                     <tr>{['Worker','OT Hours','OT Rate','OT Cost (£)','Daywork Hours','Daywork Cost (£)','Total Extra (£)'].map(h=><th key={h} className={`text-left px-4 py-3 text-xs font-semibold text-gray-300 uppercase tracking-wide ${['OT Hours','OT Cost (£)','Daywork Hours','Daywork Cost (£)','Total Extra (£)'].includes(h)?'text-right':''}`}>{h}</th>)}</tr>

@@ -387,7 +387,7 @@ export function Safety() {
       </div>
 
       {/* Main Tab Navigation */}
-      <div className="flex gap-1 card bg-base-100 border border-base-300 p-1 overflow-x-auto">
+      <div className="flex gap-1 card bg-base-100 border border-base-300 p-1 cb-table-scroll touch-pan-x">
         {[
           { id: 'incidents', label: 'Incidents' },
           { id: 'permits', label: 'Permits' },
@@ -423,7 +423,7 @@ export function Safety() {
           </div>
 
           {/* Category sub-nav */}
-          <div className="flex gap-1 card bg-base-100 border border-base-300 p-1 overflow-x-auto">
+          <div className="flex gap-1 card bg-base-100 border border-base-300 p-1 cb-table-scroll touch-pan-x">
             {[
               {id:'all',        label:'All Records'},
               {id:'incidents',  label:'Incidents'},
@@ -604,7 +604,7 @@ export function Safety() {
       {mainTab === 'permits' && (
         <div className="space-y-4">
           <div className="rounded-2xl border border-gray-800 bg-gray-900 overflow-hidden">
-            <div className="overflow-x-auto">
+            <div className="cb-table-scroll touch-pan-x">
               <table className="w-full text-sm">
                 <thead>
                   <tr className="border-b border-gray-800 bg-gray-800/50">

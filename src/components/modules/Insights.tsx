@@ -387,7 +387,7 @@ export function Insights() {
         </div>
 
         {/* Tab Navigation */}
-        <div className="flex gap-2 border-b border-gray-700 overflow-x-auto">
+        <div className="flex gap-2 border-b border-gray-700 cb-table-scroll touch-pan-x">
           {(['overview', 'alerts', 'recommendations', 'benchmarks', 'actions', 'trends'] as const).map((tab) => (
             <button
               key={tab}

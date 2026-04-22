@@ -125,7 +125,7 @@ export function EmailHistory() {
         ))}
       </div>
 
-      <div className="flex gap-1 border-b border-gray-700 overflow-x-auto">
+      <div className="flex gap-1 border-b border-gray-700 cb-table-scroll touch-pan-x">
         {(['inbox', 'sent', 'threads', 'notifications', 'templates'] as SubTab[]).map((tab) => (
           <button
             key={tab}

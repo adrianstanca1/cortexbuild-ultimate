@@ -287,7 +287,7 @@ export function DataImporter({ onImport, format = 'csv', exampleData }: DataImpo
         <div className="space-y-4">
           <div>
             <h4 className="text-sm font-medium text-gray-400 mb-2">Preview (first 5 rows)</h4>
-            <div className="overflow-x-auto">
+            <div className="cb-table-scroll touch-pan-x">
               <table className="w-full text-sm">
                 <thead>
                   <tr className="border-b border-gray-700">

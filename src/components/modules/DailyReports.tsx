@@ -251,7 +251,7 @@ export function DailyReports() {
       />
 
       {/* Main Tabs */}
-      <div className="border-b border-gray-700 flex gap-1 overflow-x-auto">
+      <div className="border-b border-gray-700 flex gap-1 cb-table-scroll touch-pan-x">
         {[
           { key: 'diary' as const, label: 'Site Diary', icon: ClipboardList },
           { key: 'weather' as const, label: 'Weather Log', icon: Cloud },
@@ -278,7 +278,7 @@ export function DailyReports() {
       {mainTab === 'diary' && (
         <>
           {/* Diary Sub Tabs */}
-          <div className="border-b border-gray-700 flex gap-1 overflow-x-auto">
+          <div className="border-b border-gray-700 flex gap-1 cb-table-scroll touch-pan-x">
             {[
               { key: 'today' as const, label: 'Today', count: reports.filter(r => String(r.report_date ?? '') === today).length },
               { key: 'week' as const, label: 'This Week', count: thisWeekCount },

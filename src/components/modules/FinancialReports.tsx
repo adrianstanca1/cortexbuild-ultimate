@@ -299,7 +299,7 @@ export function FinancialReports() {
     <div className="space-y-6">
       <div className="card p-5">
         <h3 className="text-lg font-bold text-white mb-4">Project Cost Analysis</h3>
-        <div className="overflow-x-auto mb-6">
+        <div className="cb-table-scroll touch-pan-x mb-6">
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-gray-800">

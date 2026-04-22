@@ -340,7 +340,7 @@ export const SubmittalManagement: React.FC = () => {
         </div>
 
         <div className="card-content">
-          <div className="overflow-x-auto">
+          <div className="cb-table-scroll touch-pan-x">
             <table className="w-full">
               <thead>
                 <tr className="border-b border-gray-200">

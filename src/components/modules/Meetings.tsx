@@ -351,7 +351,7 @@ export function Meetings() {
           {filteredActions.length === 0 ? (
             <div className="text-center py-16 bg-gray-800 rounded-xl border border-gray-700"><FileText size={40} className="mx-auto mb-3 opacity-30 text-gray-600"/><p className="text-gray-400">No action items</p></div>
           ) : (
-            <div className="overflow-x-auto bg-gray-800 rounded-xl border border-gray-700">
+            <div className="cb-table-scroll touch-pan-x bg-gray-800 rounded-xl border border-gray-700">
               <table className="w-full text-sm">
                 <thead className="border-b border-gray-700 bg-gray-700/50">
                   <tr>

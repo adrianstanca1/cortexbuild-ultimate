@@ -388,7 +388,7 @@ export function BIM4D() {
                 <div className="p-4 border-b border-gray-800">
                   <h3 className="text-sm font-semibold text-white">All Phases</h3>
                 </div>
-                <div className="overflow-x-auto">
+                <div className="cb-table-scroll touch-pan-x">
                   <table className="w-full text-sm">
                     <thead className="bg-gray-800/50 border-b border-gray-800">
                       <tr>

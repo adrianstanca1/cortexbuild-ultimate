@@ -293,7 +293,7 @@ export function Calendar() {
           )}
 
           {subTab === 'week' && (
-            <div className="bg-gray-900 rounded-xl border border-gray-700 overflow-x-auto">
+            <div className="bg-gray-900 rounded-xl border border-gray-700 cb-table-scroll touch-pan-x">
               <div className="inline-block min-w-full">
                 <div className="grid" style={{ gridTemplateColumns: '80px repeat(7, 1fr)' }}>
                   <div className="bg-gray-800 p-2 text-xs font-semibold text-gray-400" />
@@ -477,7 +477,7 @@ export function Calendar() {
           )}
 
           {subTab === 'resources' && (
-            <div className="bg-gray-900 rounded-xl border border-gray-700 overflow-x-auto">
+            <div className="bg-gray-900 rounded-xl border border-gray-700 cb-table-scroll touch-pan-x">
               <table className="w-full text-sm">
                 <thead className="bg-gray-800 border-b border-gray-700">
                   <tr>

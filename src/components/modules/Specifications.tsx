@@ -205,7 +205,7 @@ export default function Specifications() {
         </div>
 
         <div className="card p-6">
-          <div className="flex border-b border-gray-700 mb-6 gap-2 overflow-x-auto">
+          <div className="flex border-b border-gray-700 mb-6 gap-2 cb-table-scroll touch-pan-x">
             <button
               onClick={() => setActiveTab('specs')}
               className={`px-4 py-3 font-medium transition-colors whitespace-nowrap ${activeTab === 'specs' ? 'text-orange-400 border-b-2 border-orange-400' : 'text-gray-400 hover:text-gray-300'}`}
@@ -402,7 +402,7 @@ export default function Specifications() {
 
           {activeTab === 'submittals' && (
             <div className="space-y-4">
-              <div className="overflow-x-auto">
+              <div className="cb-table-scroll touch-pan-x">
                 <table className="w-full text-sm">
                   <thead>
                     <tr className="border-b border-gray-700">

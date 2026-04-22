@@ -305,7 +305,7 @@ export default function Signage() {
               ) : filtered.length === 0 ? (
                 <EmptyState title="No signage items found" />
               ) : (
-                <div className="overflow-x-auto">
+                <div className="cb-table-scroll touch-pan-x">
                   <table className="w-full text-sm">
                     <thead>
                       <tr className="border-b border-gray-700">

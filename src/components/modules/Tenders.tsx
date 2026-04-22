@@ -463,7 +463,7 @@ export function Tenders() {
             </select>
           </div>
 
-          <div className="overflow-x-auto pb-4">
+          <div className="cb-table-scroll touch-pan-x pb-4">
             <div className="flex gap-4 min-w-max">
               {PIPELINE_STAGES.map(stage => {
                 const stageKey = stage.toLowerCase();

@@ -336,7 +336,7 @@ export default function Measuring() {
               {filtered.length === 0 ? (
                 <EmptyState title="No measurements found" />
               ) : (
-                <div className="overflow-x-auto">
+                <div className="cb-table-scroll touch-pan-x">
                   <table className="w-full text-sm">
                     <thead>
                       <tr className="border-b border-gray-700">
@@ -392,7 +392,7 @@ export default function Measuring() {
           <div className="space-y-4">
             <div className="card p-6">
               <h3 className="text-lg font-bold text-white mb-4">Measurement Summary</h3>
-              <div className="overflow-x-auto mb-4">
+              <div className="cb-table-scroll touch-pan-x mb-4">
                 <table className="w-full text-sm">
                   <thead>
                     <tr className="border-b border-gray-700">
@@ -438,7 +438,7 @@ export default function Measuring() {
           <div className="space-y-4">
             <div className="card p-6">
               <h3 className="text-lg font-bold text-white mb-6">Monthly Valuations</h3>
-              <div className="overflow-x-auto">
+              <div className="cb-table-scroll touch-pan-x">
                 <table className="w-full text-sm">
                   <thead>
                     <tr className="border-b border-gray-700">

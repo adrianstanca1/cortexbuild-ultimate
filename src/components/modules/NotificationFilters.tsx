@@ -200,7 +200,7 @@ export function NotificationFilters({
       </div>
 
       {/* Quick Filters */}
-      <div className="flex items-center gap-2 overflow-x-auto pb-1">
+      <div className="flex items-center gap-2 cb-table-scroll touch-pan-x pb-1">
         {/* Category Dropdown */}
         <div className="dropdown">
           <label

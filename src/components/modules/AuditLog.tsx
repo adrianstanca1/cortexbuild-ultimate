@@ -150,7 +150,7 @@ export function AuditLog() {
       </div>
 
       {/* Sub-tabs */}
-      <div className="border-b border-gray-700 flex gap-1 overflow-x-auto">
+      <div className="border-b border-gray-700 flex gap-1 cb-table-scroll touch-pan-x">
         {TABS.map(t => {
           const Icon = t.icon;
           return (
@@ -219,7 +219,7 @@ export function AuditLog() {
             />
           ) : (
             <div className="bg-gray-900 border border-gray-700 rounded-lg overflow-hidden">
-              <div className="overflow-x-auto">
+              <div className="cb-table-scroll touch-pan-x">
                 <table className="w-full text-sm">
                   <thead className="bg-gray-800">
                     <tr>

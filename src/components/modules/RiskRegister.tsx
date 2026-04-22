@@ -184,7 +184,7 @@ export function RiskRegister() {
         })}
       </div>
 
-      <div className="flex gap-1 border-b border-gray-700 overflow-x-auto">
+      <div className="flex gap-1 border-b border-gray-700 cb-table-scroll touch-pan-x">
         {([
           { key:'register', label:'Risk Register', count:filtered.length },
           { key:'matrix',   label:'Risk Matrix',   count:null },
@@ -202,7 +202,7 @@ export function RiskRegister() {
       {/* ── RISK MATRIX tab ─────────────────────────────────── */}
       {subTab==='matrix' && (
         <div className="space-y-6">
-          <div className="bg-gray-800 rounded-xl border border-gray-700 p-6 overflow-x-auto">
+          <div className="bg-gray-800 rounded-xl border border-gray-700 p-6 cb-table-scroll touch-pan-x">
             <h3 className="font-semibold text-white mb-4">5×5 Likelihood-Impact Heat Map</h3>
             <div className="text-xs text-gray-400 mb-2 ml-20">Impact ⟶</div>
             <div className="flex gap-3">
@@ -300,7 +300,7 @@ export function RiskRegister() {
               <Plus size={14}/><span>Add Action</span>
             </button>
           </div>
-          <div className="overflow-x-auto">
+          <div className="cb-table-scroll touch-pan-x">
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-gray-700 bg-gray-900/50">

@@ -169,7 +169,7 @@ export default function Training() {
       {filtered.length === 0 ? (
         <EmptyState icon={GraduationCap} title="No training records found" description="Add training records to track workforce qualifications." />
       ) : (
-        <div className="overflow-x-auto">
+        <div className="cb-table-scroll touch-pan-x">
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-gray-700">
@@ -261,7 +261,7 @@ export default function Training() {
   // Matrix Tab (Compliance matrix)
   const matrixTab = (
     <div className="space-y-4">
-      <div className="overflow-x-auto">
+      <div className="cb-table-scroll touch-pan-x">
         <table className="w-full text-xs">
           <thead>
             <tr className="border-b border-gray-700 bg-gray-800/50">

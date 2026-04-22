@@ -267,7 +267,7 @@ export function CRM() {
       </div>
 
       {/* Sub-tab nav */}
-      <div className="flex gap-1 border-b border-gray-700 overflow-x-auto">
+      <div className="flex gap-1 border-b border-gray-700 cb-table-scroll touch-pan-x">
         {([
           { key:'contacts', label:'All Contacts', icon:UserCheck, count:contacts.length },
           { key:'opportunities', label:'Opportunities', icon:TrendingUp, count:opportunities.length },

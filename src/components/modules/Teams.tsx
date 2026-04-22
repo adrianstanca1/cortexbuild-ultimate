@@ -485,7 +485,7 @@ export function Teams() {
       )}
 
       {/* Tabs */}
-      <div className="flex gap-1 border-b border-gray-700 overflow-x-auto">
+      <div className="flex gap-1 border-b border-gray-700 cb-table-scroll touch-pan-x">
         {([
           { key:'members'    as const, label:'Members',     icon:Users },
           { key:'skills'     as const, label:'Skills',      icon:Shield },
@@ -561,7 +561,7 @@ export function Teams() {
 
       {/* Skills Matrix Tab */}
       {subTab === 'skills' && (
-        <div className="bg-gray-900 rounded-xl border border-gray-700 overflow-x-auto">
+        <div className="bg-gray-900 rounded-xl border border-gray-700 cb-table-scroll touch-pan-x">
           <div className="flex justify-end p-4">
             <button
               type="button"
@@ -718,7 +718,7 @@ export function Teams() {
 
       {/* Inductions Tab */}
       {subTab === 'inductions' && (
-        <div className="bg-gray-900 rounded-xl border border-gray-700 overflow-x-auto">
+        <div className="bg-gray-900 rounded-xl border border-gray-700 cb-table-scroll touch-pan-x">
           <div className="flex justify-end p-4">
             <button
               type="button"
@@ -776,7 +776,7 @@ export function Teams() {
 
       {/* On Site Tab */}
       {subTab === 'onsite' && (
-        <div className="bg-gray-900 rounded-xl border border-gray-700 overflow-x-auto">
+        <div className="bg-gray-900 rounded-xl border border-gray-700 cb-table-scroll touch-pan-x">
           <div className="flex justify-end p-4">
             <button
               type="button"

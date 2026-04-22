@@ -281,7 +281,7 @@ export default function WasteManagement() {
               {isLoading ? (
                 <div className="text-center py-8 text-gray-400">Loading waste data...</div>
               ) : (
-                <div className="overflow-x-auto">
+                <div className="cb-table-scroll touch-pan-x">
                   <table className="w-full text-sm">
                     <thead>
                       <tr className="border-b border-gray-700">
@@ -332,7 +332,7 @@ export default function WasteManagement() {
 
           {activeTab === 'manifests' && (
             <div className="space-y-4">
-              <div className="overflow-x-auto">
+              <div className="cb-table-scroll touch-pan-x">
                 <table className="w-full text-sm">
                   <thead>
                     <tr className="border-b border-gray-700">
@@ -394,7 +394,7 @@ export default function WasteManagement() {
 
               <div>
                 <h3 className="text-white font-bold mb-4">Recycling Rate by Material Type</h3>
-                <div className="overflow-x-auto">
+                <div className="cb-table-scroll touch-pan-x">
                   <table className="w-full text-sm">
                     <thead>
                       <tr className="border-b border-gray-700">

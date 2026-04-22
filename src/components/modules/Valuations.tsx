@@ -439,7 +439,7 @@ export default function Valuations() {
           </select>
         </div>
 
-        <div className="overflow-x-auto">
+        <div className="cb-table-scroll touch-pan-x">
           <table className="w-full">
             <thead>
               <tr className="text-left text-gray-400 text-xs uppercase tracking-wider border-b border-gray-700">

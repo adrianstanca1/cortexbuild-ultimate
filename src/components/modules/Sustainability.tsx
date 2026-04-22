@@ -437,7 +437,7 @@ export default function Sustainability() {
           {activeTab === 'materials' && (
             <div className="space-y-4">
               <h3 className="text-white font-bold">Sustainable Materials Tracker</h3>
-              <div className="overflow-x-auto">
+              <div className="cb-table-scroll touch-pan-x">
                 <table className="w-full text-sm">
                   <thead>
                     <tr className="border-b border-gray-700">

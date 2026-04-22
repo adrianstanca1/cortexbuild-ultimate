@@ -444,7 +444,7 @@ export default function Lettings() {
               {filtered.length === 0 ? (
                 <EmptyState title="No packages found" />
               ) : (
-                <div className="overflow-x-auto">
+                <div className="cb-table-scroll touch-pan-x">
                   <table className="w-full text-sm">
                     <thead>
                       <tr className="border-b border-gray-700">
@@ -557,7 +557,7 @@ export default function Lettings() {
 
               {mockTenders[selectedPackageForAnalysis] ? (
                 <div className="space-y-4">
-                  <div className="overflow-x-auto">
+                  <div className="cb-table-scroll touch-pan-x">
                     <table className="w-full text-sm">
                       <thead>
                         <tr className="border-b border-gray-700">

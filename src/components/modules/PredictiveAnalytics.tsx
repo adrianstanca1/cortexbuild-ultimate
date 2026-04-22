@@ -282,7 +282,7 @@ export function PredictiveAnalytics() {
       </div>
 
       {/* Sub-tabs */}
-      <div className="flex gap-2 border-b border-gray-800 overflow-x-auto">
+      <div className="flex gap-2 border-b border-gray-800 cb-table-scroll touch-pan-x">
         {tabs.map((tab) => {
           const Icon = tab.icon;
           return (
@@ -518,7 +518,7 @@ export function PredictiveAnalytics() {
             ) : weatherForecast.length === 0 ? (
               <div className="flex items-center justify-center h-32 text-gray-400 text-sm">No forecast data available.</div>
             ) : (
-              <div className="overflow-x-auto">
+              <div className="cb-table-scroll touch-pan-x">
                 <table className="w-full text-sm">
                   <thead>
                     <tr className="border-b border-gray-800">

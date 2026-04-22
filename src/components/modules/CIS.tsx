@@ -377,7 +377,7 @@ export function CIS() {
 
           <div className="card bg-base-200 p-6">
             <h4 className="text-lg font-bold text-white mb-4">Monthly Return Generator</h4>
-            <div className="overflow-x-auto">
+            <div className="cb-table-scroll touch-pan-x">
               <table className="w-full text-sm">
                 <thead className="bg-gray-900 border-b border-gray-700">
                   <tr>{['Subcontractor','Gross Payment','Materials','Net Subject','Rate','Deduction','Net Payment'].map(h=><th key={h} className="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase">{h}</th>)}</tr>

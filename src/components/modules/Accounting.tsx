@@ -378,7 +378,7 @@ export function Accounting() {
           </div>
 
           <h4 className="text-sm font-semibold text-gray-300 mb-3">Recent Transactions</h4>
-          <div className="overflow-x-auto">
+          <div className="cb-table-scroll touch-pan-x">
             <table className="w-full text-sm">
               <thead className="bg-gray-900/50 border-b border-gray-700">
                 <tr>
@@ -409,7 +409,7 @@ export function Accounting() {
         <>
           <div className="card bg-base-200 overflow-hidden">
             {isLoading ? <div className="p-8 text-center text-gray-400">Loading…</div> : (
-              <div className="overflow-x-auto">
+              <div className="cb-table-scroll touch-pan-x">
                 <table className="w-full text-sm">
                   <thead className="bg-gray-900 border-b border-gray-700">
                     <tr>{['Invoice #','Client','Project','Amount','Status','Due',''].map(h=>(
@@ -503,7 +503,7 @@ export function Accounting() {
           </div>
 
           <div className="card bg-base-200 overflow-hidden">
-            <div className="overflow-x-auto">
+            <div className="cb-table-scroll touch-pan-x">
               <table className="w-full text-sm">
                 <thead className="bg-gray-900 border-b border-gray-700">
                   <tr>{['Project','Budget','Spent','Remaining','% Used','Status'].map(h=>(

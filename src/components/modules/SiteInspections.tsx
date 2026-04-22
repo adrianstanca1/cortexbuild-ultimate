@@ -184,7 +184,7 @@ export function SiteInspections() {
           <p className="text-sm">Schedule a new inspection to get started</p>
         </div>
       ) : (
-        <div className="overflow-x-auto">
+        <div className="cb-table-scroll touch-pan-x">
           <table className="table table-zebra">
             <thead>
               <tr>

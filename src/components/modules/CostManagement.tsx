@@ -238,7 +238,7 @@ export function CostManagement() {
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             {/* Budget Table */}
             <div className="card bg-base-200 overflow-hidden lg:col-span-2">
-              <div className="overflow-x-auto">
+              <div className="cb-table-scroll touch-pan-x">
                 <table className="w-full text-sm">
                   <thead className="bg-gray-900 border-b border-gray-700">
                     <tr>

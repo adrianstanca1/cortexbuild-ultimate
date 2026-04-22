@@ -499,7 +499,7 @@ export function Analytics() {
           {/* VAT Liability Tracker */}
           <div className="rounded-xl border border-gray-700 bg-gray-800 p-5">
             <h3 className="mb-4 text-sm font-semibold text-white">VAT Liability Tracker</h3>
-            <div className="overflow-x-auto">
+            <div className="cb-table-scroll touch-pan-x">
               <table className="w-full text-sm">
                 <thead>
                   <tr className="border-b border-gray-700">
@@ -610,7 +610,7 @@ export function Analytics() {
             {/* Budget Variance Table */}
             <div className="rounded-xl border border-gray-700 bg-gray-800 p-5">
               <h3 className="mb-4 text-sm font-semibold text-white">Budget Variance Analysis</h3>
-              <div className="overflow-x-auto">
+              <div className="cb-table-scroll touch-pan-x">
                 <table className="w-full text-xs">
                   <thead>
                     <tr className="border-b border-gray-700">
@@ -802,7 +802,7 @@ export function Analytics() {
           {/* Labour Summary Table */}
           <div className="rounded-xl border border-gray-700 bg-gray-800 p-5">
             <h3 className="mb-4 text-sm font-semibold text-white">Labour Summary by Trade</h3>
-            <div className="overflow-x-auto">
+            <div className="cb-table-scroll touch-pan-x">
               <table className="w-full text-sm">
                 <thead>
                   <tr className="border-b border-gray-700">

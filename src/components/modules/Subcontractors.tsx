@@ -631,7 +631,7 @@ export function Subcontractors() {
           </div>
 
           {/* Payments Table */}
-          <div className="bg-gray-800 rounded-xl border border-gray-700 overflow-x-auto">
+          <div className="bg-gray-800 rounded-xl border border-gray-700 cb-table-scroll touch-pan-x">
             <table className="w-full text-sm">
               <thead className="bg-gray-700/50 border-b border-gray-700">
                 <tr>

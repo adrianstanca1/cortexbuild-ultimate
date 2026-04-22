@@ -573,7 +573,7 @@ export function ProjectCalendar() {
           )}
 
           {view === 'week' && (
-            <div className="bg-gray-800 rounded-lg border border-gray-700 overflow-x-auto">
+            <div className="bg-gray-800 rounded-lg border border-gray-700 cb-table-scroll touch-pan-x">
               <div className="grid" style={{ gridTemplateColumns: 'auto repeat(7, 1fr)' }}>
                 {/* Time slots header */}
                 <div className="bg-gray-700 p-2 text-xs font-semibold text-gray-300 border-r border-gray-600 min-w-[60px]"></div>
@@ -646,7 +646,7 @@ export function ProjectCalendar() {
           )}
 
           {view === 'timeline' && (
-            <div className="bg-gray-800 rounded-lg border border-gray-700 overflow-x-auto p-4">
+            <div className="bg-gray-800 rounded-lg border border-gray-700 cb-table-scroll touch-pan-x p-4">
               <div className="space-y-4">
                 {GANTT_TASKS.map((task) => {
                   const start = new Date(task.startDate);

@@ -304,7 +304,7 @@ export function PunchList() {
             <EmptyState title="No items match your filters" icon={ClipboardList} />
           ) : (
             <>
-            <div className="overflow-x-auto bg-gray-900 border border-gray-700 rounded-lg">
+            <div className="cb-table-scroll touch-pan-x bg-gray-900 border border-gray-700 rounded-lg">
               <table className="w-full text-sm">
                 <thead>
                   <tr className="border-b border-gray-700 bg-gray-800">

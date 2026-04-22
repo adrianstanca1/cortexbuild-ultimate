@@ -74,7 +74,7 @@ export function AdminDashboard() {
         </div>
       </div>
 
-      <div className="flex gap-2 mb-6 overflow-x-auto pb-2">
+      <div className="flex gap-2 mb-6 cb-table-scroll touch-pan-x pb-2">
         {TABS.map(tab => {
           const Icon = tab.icon;
           return (

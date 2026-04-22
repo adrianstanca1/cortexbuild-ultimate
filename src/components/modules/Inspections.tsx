@@ -243,7 +243,7 @@ export function Inspections() {
         ))}
       </div>
 
-      <div className="flex gap-1 border-b border-gray-700 overflow-x-auto">
+      <div className="flex gap-1 border-b border-gray-700 cb-table-scroll touch-pan-x">
         {([
           { key:'results', label:'Results', count:inspections.length },
           { key:'defects', label:'Defects', count:inspections.reduce((sum, i) => sum + Number(i.defect_count??0), 0) },
