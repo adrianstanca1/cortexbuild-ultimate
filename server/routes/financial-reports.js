@@ -44,14 +44,7 @@ router.get('/summary', async (req, res) => {
 
     // Gross profit = revenue minus direct project costs
     const grossProfit = totalRevenue - totalSpent;
-    // Net profit = gross profit minus actual overhead
-    const overhead = parseFloat(overheadResult.rows[0]?.total_overhead) || 0;
-    const netProfit = grossProfit - overhead;
-
-    // Monthly burn rate: average monthly spend based on project count as denominator
-    // to avoid divide-by-zero and give meaningful per-project metric
-    const projectCount = projects.rows.length || 1;
-    const monthlyBurn = totalSpent / Math.max(12, projectCount * 12);
+    const netProfit = grossProfit - totalOverhead;
 
     res.json({
       totalRevenue,
