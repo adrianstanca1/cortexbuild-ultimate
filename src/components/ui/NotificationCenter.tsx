@@ -1,39 +1,20 @@
-import { useState, useEffect } from 'react';
-import { Bell, Check, CheckCheck, X, Settings } from 'lucide-react';
+import { useState, useEffect, useCallback } from 'react';
+import { Bell, Check, CheckCheck, X, Settings, AtSign, AlertTriangle, Server } from 'lucide-react';
 import { toast } from 'sonner';
+import { getToken } from '@/lib/supabase';
 
-/**
- * NotificationCenter Component
- * 
- * Displays all user notifications with filtering and management capabilities.
- * Supports real-time updates via WebSocket connection.
- * 
- * @param props - Component props
- * @param props.onClose - Callback function when modal is closed
- * @returns JSX element displaying notification center modal
- * 
- * @example
- * ```tsx
- * <NotificationCenter onClose={() => setShowNotifications(false)} />
- * ```
- * 
- * @remarks
- * - Supports filtering by read/unread status
- * - Supports filtering by notification type
- * - Provides mark all as read functionality
- * - Accessible with ARIA labels for screen readers
- */
-
+type TabFilter = 'all' | 'mentions' | 'alerts' | 'system';
 
 interface Notification {
   id: string;
   type: 'info' | 'success' | 'warning' | 'error' | 'alert';
   title: string;
-  message: string;
+  description: string;
   timestamp: string;
   read: boolean;
-  actionUrl?: string;
+  link?: string;
   actionLabel?: string;
+  severity?: string;
 }
 
 interface NotificationCenterProps {
@@ -42,75 +23,78 @@ interface NotificationCenterProps {
 
 export function NotificationCenter({ onClose }: NotificationCenterProps) {
   const [notifications, setNotifications] = useState<Notification[]>([]);
-  const [filter, setFilter] = useState<'all' | 'unread' | 'read'>('all');
-  const [selectedType, setSelectedType] = useState<string>('all');
+  const [activeTab, setActiveTab] = useState<TabFilter>('all');
+  const [isLoading, setIsLoading] = useState(true);
 
-  useEffect(() => {
-    // Load notifications
-    const mockNotifications: Notification[] = [
-      {
-        id: '1',
-        type: 'alert',
-        title: 'Safety Alert',
-        message: 'High wind speed detected on Site A. Consider suspending crane operations.',
-        timestamp: new Date(Date.now() - 1000 * 60 * 5).toISOString(),
-        read: false,
-        actionUrl: '/safety/alerts/1',
-        actionLabel: 'View Alert',
-      },
-      {
-        id: '2',
-        type: 'warning',
-        title: 'Budget Variance',
-        message: 'Project Phoenix budget variance exceeded 15%. Review required.',
-        timestamp: new Date(Date.now() - 1000 * 60 * 30).toISOString(),
-        read: false,
-        actionUrl: '/projects/phoenix/budget',
-        actionLabel: 'Review',
-      },
-      {
-        id: '3',
-        type: 'success',
-        title: 'Inspection Passed',
-        message: 'Site B foundation inspection passed successfully.',
-        timestamp: new Date(Date.now() - 1000 * 60 * 120).toISOString(),
-        read: true,
-      },
-      {
-        id: '4',
-        type: 'info',
-        title: 'New Document',
-        message: 'Updated architectural drawings uploaded to Documents.',
-        timestamp: new Date(Date.now() - 1000 * 60 * 180).toISOString(),
-        read: false,
-        actionUrl: '/documents',
-        actionLabel: 'View',
-      },
-    ];
-    setNotifications(mockNotifications);
+  const fetchNotifications = useCallback(async () => {
+    try {
+      const token = getToken();
+      if (!token) return;
+      const response = await fetch('/api/notifications?pageSize=50', {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (response.ok) {
+        const data = await response.json();
+        setNotifications(data.notifications || []);
+      }
+    } catch (err) {
+      console.error('[NotificationCenter] Failed to fetch:', err);
+    } finally {
+      setIsLoading(false);
+    }
   }, []);
 
-  const markAsRead = (id: string) => {
-    setNotifications(prev =>
-      prev.map(n => (n.id === id ? { ...n, read: true } : n))
-    );
-    toast.success('Marked as read');
+  useEffect(() => {
+    fetchNotifications();
+  }, [fetchNotifications]);
+
+  const markAsRead = async (id: string) => {
+    try {
+      const token = getToken();
+      await fetch(`/api/notifications/${id}/read`, {
+        method: 'PUT',
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      setNotifications(prev =>
+        prev.map(n => (n.id === id ? { ...n, read: true } : n))
+      );
+    } catch (err) {
+      toast.error('Failed to mark as read');
+    }
   };
 
-  const markAllAsRead = () => {
-    setNotifications(prev => prev.map(n => ({ ...n, read: true })));
-    toast.success('All notifications marked as read');
+  const markAllAsRead = async () => {
+    try {
+      const token = getToken();
+      await fetch('/api/notifications/read-all', {
+        method: 'PUT',
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      setNotifications(prev => prev.map(n => ({ ...n, read: true })));
+      toast.success('All notifications marked as read');
+    } catch (err) {
+      toast.error('Failed to mark all as read');
+    }
   };
 
-  const deleteNotification = (id: string) => {
-    setNotifications(prev => prev.filter(n => n.id !== id));
-    toast.success('Notification deleted');
+  const deleteNotification = async (id: string) => {
+    try {
+      const token = getToken();
+      await fetch(`/api/notifications/${id}`, {
+        method: 'DELETE',
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      setNotifications(prev => prev.filter(n => n.id !== id));
+      toast.success('Notification deleted');
+    } catch (err) {
+      toast.error('Failed to delete notification');
+    }
   };
 
   const filteredNotifications = notifications.filter(n => {
-    if (filter === 'unread') return !n.read;
-    if (filter === 'read') return n.read;
-    if (selectedType !== 'all') return n.type === selectedType;
+    if (activeTab === 'mentions') return n.title.includes('@') || n.description.includes('@');
+    if (activeTab === 'alerts') return n.type === 'alert' || n.type === 'warning' || n.severity === 'critical';
+    if (activeTab === 'system') return n.type === 'info' || n.type === 'success';
     return true;
   });
 
@@ -124,27 +108,25 @@ export function NotificationCenter({ onClose }: NotificationCenterProps) {
     alert: 'bg-red-600',
   };
 
-  const typeIcons = {
-    info: '📋',
-    success: '✅',
-    warning: '⚠️',
-    error: '❌',
-    alert: '🚨',
-  };
+  const tabs: { id: TabFilter; label: string; icon: React.ReactNode }[] = [
+    { id: 'all', label: 'All', icon: <Bell className="w-4 h-4" /> },
+    { id: 'mentions', label: 'Mentions', icon: <AtSign className="w-4 h-4" /> },
+    { id: 'alerts', label: 'Alerts', icon: <AlertTriangle className="w-4 h-4" /> },
+    { id: 'system', label: 'System', icon: <Server className="w-4 h-4" /> },
+  ];
 
   return (
-    <div 
-  className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" 
-  onClick={onClose}
-  role="dialog"
-  aria-modal="true"
-  aria-label="Notification center"
->
-      <div 
+    <div
+      className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4"
+      onClick={onClose}
+      role="dialog"
+      aria-modal="true"
+      aria-label="Notification center"
+    >
+      <div
         className="bg-base-100 rounded-lg shadow-2xl w-full max-w-2xl max-h-[80vh] overflow-hidden flex flex-col"
         onClick={e => e.stopPropagation()}
       >
-        {/* Header */}
         <div className="p-4 border-b border-base-300 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="relative">
@@ -161,65 +143,51 @@ export function NotificationCenter({ onClose }: NotificationCenterProps) {
             </div>
           </div>
           <div className="flex items-center gap-2">
-            <button 
-        onClick={markAllAsRead} 
-        className="btn btn-sm btn-ghost gap-1"
-        aria-label="Mark all notifications as read"
-      >
+            <button
+              onClick={markAllAsRead}
+              className="btn btn-sm btn-ghost gap-1"
+              aria-label="Mark all notifications as read"
+              disabled={unreadCount === 0}
+            >
               <CheckCheck className="w-4 h-4" />
               Mark all read
             </button>
             {onClose && (
-              <button 
-        onClick={onClose} 
-        className="btn btn-sm btn-ghost btn-circle"
-        aria-label="Close notification center"
-      >
+              <button
+                onClick={onClose}
+                className="btn btn-sm btn-ghost btn-circle"
+                aria-label="Close notification center"
+              >
                 <X className="w-5 h-5" />
               </button>
             )}
           </div>
         </div>
 
-        {/* Filters */}
-        <div className="p-3 border-b border-base-300 flex gap-2 cb-table-scroll touch-pan-x">
-          <select
-            value={filter}
-            onChange={e => setFilter(e.target.value as 'all' | 'unread' | 'read')}
-            className="select select-bordered select-sm"
-            aria-label="Filter by read status"
-          >
-            <option value="all">All</option>
-            <option value="unread">Unread</option>
-            <option value="read">Read</option>
-          </select>
-          <select
-            value={selectedType}
-            onChange={e => setSelectedType(e.target.value)}
-            className="select select-bordered select-sm"
-            aria-label="Filter by notification type"
-          >
-            <option value="all">All Types</option>
-            <option value="info">Info</option>
-            <option value="success">Success</option>
-            <option value="warning">Warning</option>
-            <option value="error">Error</option>
-            <option value="alert">Alert</option>
-          </select>
+        <div className="p-3 border-b border-base-300 flex gap-2">
+          {tabs.map(tab => (
+            <button
+              key={tab.id}
+              onClick={() => setActiveTab(tab.id)}
+              className={`btn btn-sm gap-1 ${activeTab === tab.id ? 'btn-primary' : 'btn-ghost'}`}
+            >
+              {tab.icon}
+              {tab.label}
+            </button>
+          ))}
           <div className="flex-1" />
           <button className="btn btn-sm btn-ghost" aria-label="Notification settings">
             <Settings className="w-4 h-4" />
-            Settings
           </button>
         </div>
 
-        {/* Notifications List */}
-        <div 
-        className="flex-1 overflow-y-auto" 
-        role="list"
-        aria-label="Notifications list"
-      >
-          {filteredNotifications.length === 0 ? (
+        <div className="flex-1 overflow-y-auto" role="list" aria-label="Notifications list">
+          {isLoading ? (
+            <div className="p-8 text-center text-gray-500">
+              <span className="loading loading-spinner loading-md" />
+              <p className="mt-2">Loading notifications...</p>
+            </div>
+          ) : filteredNotifications.length === 0 ? (
             <div className="p-8 text-center text-gray-500">
               <Bell className="w-12 h-12 mx-auto mb-2 opacity-20" />
               <p>No notifications</p>
@@ -228,10 +196,8 @@ export function NotificationCenter({ onClose }: NotificationCenterProps) {
             filteredNotifications.map(notification => (
               <div
                 key={notification.id}
-        role="listitem"
-                className={`p-4 border-b border-base-300 hover:bg-base-200 transition-colors ${
-                  !notification.read ? 'bg-primary/5' : ''
-                }`}
+                role="listitem"
+                className={`p-4 border-b border-base-300 hover:bg-base-200 transition-colors ${!notification.read ? 'bg-primary/5' : ''}`}
               >
                 <div className="flex gap-3">
                   <div className={`w-2 h-2 rounded-full mt-2 ${typeColors[notification.type]}`} />
@@ -239,12 +205,11 @@ export function NotificationCenter({ onClose }: NotificationCenterProps) {
                     <div className="flex items-start justify-between gap-2">
                       <div className="flex-1">
                         <div className="flex items-center gap-2">
-                          <span className="text-lg">{typeIcons[notification.type]}</span>
                           <h3 className={`font-semibold ${!notification.read ? 'text-primary' : ''}`}>
                             {notification.title}
                           </h3>
                         </div>
-                        <p className="text-sm text-gray-500 mt-1">{notification.message}</p>
+                        <p className="text-sm text-gray-500 mt-1">{notification.description}</p>
                         <div className="flex items-center gap-2 mt-2">
                           <span className="text-xs text-gray-400">
                             {new Date(notification.timestamp).toLocaleString()}
@@ -257,9 +222,9 @@ export function NotificationCenter({ onClose }: NotificationCenterProps) {
                         </div>
                       </div>
                       <div className="flex items-center gap-1 flex-shrink-0">
-                        {notification.actionUrl && (
+                        {notification.link && (
                           <a
-                            href={notification.actionUrl}
+                            href={notification.link}
                             className="btn btn-sm btn-primary"
                             onClick={e => e.stopPropagation()}
                           >
@@ -291,7 +256,6 @@ export function NotificationCenter({ onClose }: NotificationCenterProps) {
           )}
         </div>
 
-        {/* Footer */}
         <div className="p-3 border-t border-base-300 text-xs text-gray-500 text-center">
           {filteredNotifications.length} notification{filteredNotifications.length !== 1 ? 's' : ''} displayed
         </div>

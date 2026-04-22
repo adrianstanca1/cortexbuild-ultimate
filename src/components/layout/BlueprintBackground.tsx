@@ -197,6 +197,7 @@ const BlueprintBackgroundComponent = ({ children }: { children?: React.ReactNode
         overflow: 'hidden',
         pointerEvents: 'none',
         backgroundColor: '#0c1220',
+        contain: 'layout paint',
       }}
     >
       {/* ── Animated grid layers with panning ──────────────────────────── */}
@@ -263,16 +264,16 @@ const BlueprintBackgroundComponent = ({ children }: { children?: React.ReactNode
       <HorizontalRuler />
 
       {/* ── Corner crosshairs ───────────────────────────────────────────── */}
-      <div style={{ position: 'absolute', top: 20, left: 20, animation: 'gentlePulse 4s ease-in-out infinite' }}>
+      <div style={{ position: 'absolute', top: 20, left: 20, animation: 'gentlePulse 4s ease-in-out infinite' }} className="corner-crosshair-md">
         <CornerCrosshair />
       </div>
-      <div style={{ position: 'absolute', top: 20, right: 20, animation: 'gentlePulse 4s ease-in-out infinite', animationDelay: '1s' }}>
+      <div style={{ position: 'absolute', top: 20, right: 20, animation: 'gentlePulse 4s ease-in-out infinite', animationDelay: '1s' }} className="corner-crosshair-md">
         <CornerCrosshair />
       </div>
-      <div style={{ position: 'absolute', bottom: 60, left: 20, animation: 'gentlePulse 4s ease-in-out infinite', animationDelay: '2s' }}>
+      <div style={{ position: 'absolute', bottom: 60, left: 20, animation: 'gentlePulse 4s ease-in-out infinite', animationDelay: '2s' }} className="corner-crosshair-md">
         <CornerCrosshair />
       </div>
-      <div style={{ position: 'absolute', bottom: 60, right: 20, animation: 'gentlePulse 4s ease-in-out infinite', animationDelay: '3s' }}>
+      <div style={{ position: 'absolute', bottom: 60, right: 20, animation: 'gentlePulse 4s ease-in-out infinite', animationDelay: '3s' }} className="corner-crosshair-md">
         <CornerCrosshair />
       </div>
 

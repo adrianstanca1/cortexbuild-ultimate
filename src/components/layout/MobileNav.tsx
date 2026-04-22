@@ -6,6 +6,7 @@ import {
   LayoutDashboard, FolderOpen, FileText, AlertTriangle, HardHat,
 } from 'lucide-react';
 import { type Module } from '../../types';
+import { useIsMobile } from '../../hooks/useIsMobile';
 
 interface MobileNavProps {
   activeModule: Module;
@@ -26,6 +27,8 @@ const MOBILE_NAV_ITEMS: {
 ];
 
 export function MobileNav({ activeModule, setModule }: MobileNavProps) {
+  const isMobile = useIsMobile(768);
+  if (!isMobile) return null;
   return (
     <nav
       style={{

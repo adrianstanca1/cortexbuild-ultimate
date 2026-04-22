@@ -257,6 +257,24 @@ router.put('/read-all', async (req, res) => {
   }
 });
 
+// POST /mark-all-read - for consistency with frontend expectations
+router.post('/mark-all-read', async (req, res) => {
+  try {
+    const userId = req.user?.id;
+    const tenantFilter = buildTenantFilter(req, 'AND', null, 2);
+    await pool.query(
+      `UPDATE notifications SET read = true, status = 'read'
+       WHERE (user_id = $1 OR (COALESCE(organization_id, company_id) = $2 AND user_id IS NULL))
+         AND read = false`,
+      [userId, ...tenantFilter.params]
+    );
+    res.json({ message: 'All notifications marked as read' });
+  } catch (err) {
+    console.error('[POST /notifications/mark-all-read]', err.message);
+    res.status(500).json({ message: 'Internal server error' });
+  }
+});
+
 // Bulk mark as read
 router.post('/mark-read-bulk', async (req, res) => {
   try {

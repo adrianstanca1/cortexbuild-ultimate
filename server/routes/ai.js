@@ -184,7 +184,7 @@ router.get('/agent-status', (req, res) => {
 
 function handleUnknown(message) {
   return {
-    reply: `I didn't quite understand "${message}", but here's what I can help you with:\n\n• **Projects** — status, progress, budgets\n• **Invoices / Payments** — outstanding, overdue amounts\n• **Safety** — incidents, hazards, open investigations\n• **Team / Workers / Staff** — headcount, trades, hours\n• **RFIs** — open requests, priorities, deadlines\n• **Tenders / Bids** — pipeline, probabilities\n• **Overdue** — overdue invoices\n• **Budget** — total budget vs spend across all projects\n• **Materials** — stock, deliveries, suppliers\n• **Timesheets** — hours, payroll, overtime\n• **Subcontractors** — trades, CIS, insurance\n• **Equipment** — plant, machinery, hire\n• **Change Orders / Variations** — status, values\n• **Purchase Orders** — procurement, deliveries\n• **Contacts / CRM** — clients, prospects, suppliers\n• **RAMS** — method statements, risk assessments\n• **CIS** — construction industry scheme returns\n• **Daily Reports** — site diary, progress\n• **Risk Register** — hazards, risk scores\n• **Construction Knowledge** — building codes, standards, methods, materials\n\nTry asking something like "Show me all projects" or "What invoices are overdue?"`,
+    reply: `I didn't quite understand "${message}", but here's what I can help you with:\n\n• **Projects** — status, progress, budgets\n• **Invoices / Payments** — outstanding, overdue amounts\n• **Safety** — incidents, hazards, open investigations\n• **Team / Workers / Staff** — headcount, trades, hours\n• **RFIs** — open requests, priorities, deadlines\n• **Tenders / Bids** — pipeline, probabilities\n• **Overdue** — overdue invoices\n• **Budget** — total budget vs spend across all projects\n• **Materials** — stock, deliveries, suppliers\n• **Timesheets** — hours, payroll, overtime\n• **Subcontractors** — trades, CIS, insurance\n• **Equipment** — plant, machinery, hire\n• **Change Orders / Variations** — status, values\n• **Purchase Orders** — procurement, deliveries\n• **Contacts / CRM** — clients, prospects, suppliers\n• **RAMS** — method statements, risk assessments\n• **CIS** — construction industry scheme returns\n• **Daily Reports** — site diary, progress\n• **Risk Register** — hazards, risk scores\n• **Defects / Snags** — punch lists, NCRs, quality control\n• **Contracts** — JCT/NEC review, payment terms, bonds\n• **Valuations** — interim certificates, payment applications, cash flow\n• **Team Management** — workforce, CSCS/CPCS, IR35\n• **Construction Knowledge** — building codes, standards, methods, materials\n\nTry asking something like "Show me all projects" or "What invoices are overdue?"`,
     data: null,
     suggestions: [
       'Show me all projects',
@@ -258,6 +258,10 @@ router.post('/chat', aiChatLimiter, async (req, res) => {
         case 'safety_compliance':
         case 'cost_estimation':
         case 'project_coordinator':
+        case 'defects':
+        case 'contracts':
+        case 'valuations':
+        case 'team_management':
           {
             const agentType = intent;
             try {
@@ -274,6 +278,10 @@ router.post('/chat', aiChatLimiter, async (req, res) => {
                 safety_compliance: ['Review PPE requirements', 'Request hazard analysis', 'Check incident reporting procedures'],
                 cost_estimation: ['Request unit cost breakdown', 'Get labor rate estimates', 'Compare alternative materials'],
                 project_coordinator: ['Review project schedule', 'Check resource allocation', 'Update milestone timeline'],
+                defects: ['Review open defects', 'Check punch list status', 'Request priority scoring'],
+                contracts: ['Review contract clauses', 'Check payment terms', 'Assess bond requirements'],
+                valuations: ['Prepare interim valuation', 'Forecast cash flow', 'Check withholding reasons'],
+                team_management: ['Check CSCS certifications', 'Review workforce allocation', 'Assess headcount'],
               };
               result = { reply: agentResult, data: { agentType }, suggestions: suggestions[agentType] || [] };
             } catch (agentErr) {
@@ -681,7 +689,7 @@ router.post('/chat/stream', aiChatLimiter, async (req, res) => {
   const intents = classify(message.trim());
   const intent = intents[0];
 
-  const agentIntents = ['construction_domain', 'safety_compliance', 'cost_estimation', 'project_coordinator'];
+  const agentIntents = ['construction_domain', 'safety_compliance', 'cost_estimation', 'project_coordinator', 'defects', 'contracts', 'valuations', 'team_management'];
   if (!agentIntents.includes(intent)) {
     return res.status(400).json({ message: 'Streaming is only available for agent queries.' });
   }
@@ -878,6 +886,57 @@ router.post('/execute', aiExecuteLimiter, async (req, res) => {
     console.error('[AI /execute]', err.message);
     res.status(500).json({ success: false, message: 'Action failed' });
   }
+});
+
+// ─── POST /transcribe ─────────────────────────────────────────────────────────
+// Transcribe audio using inference.sh CLI (fallback when browser STT unavailable)
+// Accepts: { audioUrl: string } — returns { text: string }
+router.post('/transcribe', async (req, res) => {
+  const { audioUrl } = req.body;
+  if (!audioUrl || typeof audioUrl !== 'string') {
+    return res.status(400).json({ error: 'audioUrl is required' });
+  }
+
+  const { exec } = require('child_process');
+  const util = require('util');
+  const execPromise = util.promisify(exec);
+
+  // Use fast-whisper-large-v3 via inference.sh CLI
+  const cmd = `infsh app run infsh/fast-whisper-large-v3 --input '${JSON.stringify({ audio_url: audioUrl })}' --no-wait`;
+
+  let taskId;
+  try {
+    const { stdout } = await execPromise(cmd, { timeout: 10000 });
+    const parsed = JSON.parse(stdout);
+    taskId = parsed.task_id;
+    if (!taskId) throw new Error('No task_id returned');
+  } catch (err) {
+    console.error('[AI /transcribe] Failed to start infsh task:', err.message);
+    return res.status(500).json({ error: 'Failed to start transcription. Is infsh CLI installed and logged in?' });
+  }
+
+  // Poll for completion (up to 60s)
+  const maxAttempts = 30;
+  let attempts = 0;
+  while (attempts < maxAttempts) {
+    await new Promise(r => setTimeout(r, 2000));
+    try {
+      const { stdout: statusOut } = await execPromise(`infsh task get ${taskId}`, { timeout: 10000 });
+      const status = JSON.parse(statusOut);
+      if (status.status === 'completed') {
+        const text = status.result?.text || status.output?.text || '';
+        return res.json({ text });
+      }
+      if (status.status === 'failed') {
+        return res.status(500).json({ error: status.error || 'Transcription failed' });
+      }
+    } catch {
+      // Keep polling
+    }
+    attempts++;
+  }
+
+  return res.status(504).json({ error: 'Transcription timed out' });
 });
 
 module.exports = router;

@@ -327,6 +327,7 @@ app.use('/api/activity-feed', require('./routes/activity-feed'));
 app.use('/api/admin/stats',   require('./routes/admin-stats'));
 app.use('/api/ai-vision',      requireFeature('FEATURE_AI_AGENTS'), require('./routes/ai-vision'));
 app.use('/api/ai_vision_logs', makeRouter('ai_vision_logs'));
+app.use('/api/reports', require('./routes/reports'));
 
 // ─── Global error handler ─────────────────────────────────────────────────────
 app.use((err, _req, res, _next) => {

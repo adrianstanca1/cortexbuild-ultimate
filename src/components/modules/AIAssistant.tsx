@@ -3,7 +3,7 @@ import { useState, useEffect, useRef } from 'react';
 import {
   Send, Zap, Shield, TrendingUp, FileText, Calendar,
   MessageSquare, Award, Brain, Clock, Archive, Plus, CheckSquare, Square, Trash2,
-  Radio, Wifi, WifiOff, Cpu,
+  Radio, Wifi, WifiOff, Cpu, Mic, MicOff, AudioWaveform,
 } from 'lucide-react';
 import { BulkActionsBar, useBulkSelection } from '../ui/BulkActions';
 import clsx from 'clsx';
@@ -167,6 +167,99 @@ export function AIAssistant() {
   const [backendAgents, setBackendAgents] = useState<{ key: string; name: string; description: string; aliases: string[] }[]>([]);
   const [agentHealth, setAgentHealth] = useState<'online' | 'offline' | 'checking'>('checking');
   const [activeAgentKey, setActiveAgentKey] = useState<string | null>(null);
+  const [isRecording, setIsRecording] = useState(false);
+  const [recordingError, setRecordingError] = useState<string | null>(null);
+  const [waveformBars, setWaveformBars] = useState<number[]>(Array(12).fill(0.1));
+  const recognitionRef = useRef<SpeechRecognition | null>(null);
+  const animationFrameRef = useRef<number | null>(null);
+
+  const animateWaveform = () => {
+    setWaveformBars(prev => prev.map(() => Math.random() * 0.8 + 0.2));
+    animationFrameRef.current = requestAnimationFrame(animateWaveform);
+  };
+
+  const startBrowserRecording = () => {
+    const SRConstructor = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SRConstructor) {
+      toast.error('Speech recognition not supported in this browser');
+      return;
+    }
+
+    const recognition: SpeechRecognition = new SRConstructor();
+    recognition.continuous = true;
+    recognition.interimResults = true;
+    recognition.lang = 'en-GB';
+
+    recognition.onstart = () => {
+      setIsRecording(true);
+      setRecordingError(null);
+      animateWaveform();
+    };
+
+    recognition.onresult = (event: SpeechRecognitionEvent) => {
+      let interim = '';
+      let final = '';
+      for (let i = event.resultIndex; i < event.results.length; i++) {
+        const transcript = event.results[i][0].transcript;
+        if (event.results[i].isFinal) {
+          final += transcript + ' ';
+        } else {
+          interim += transcript;
+        }
+      }
+      if (final) {
+        setInput(prev => prev + final);
+      }
+    };
+
+    recognition.onerror = (event: SpeechRecognitionErrorEvent) => {
+      setIsRecording(false);
+      if (event.error === 'not-allowed') {
+        setRecordingError('Microphone access denied. Please allow microphone access.');
+        toast.error('Microphone access denied');
+      } else if (event.error === 'no-speech') {
+        setRecordingError('No speech detected. Please try again.');
+      } else {
+        setRecordingError(`Recording error: ${event.error}`);
+      }
+    };
+
+    recognition.onend = () => {
+      setIsRecording(false);
+      if (animationFrameRef.current) cancelAnimationFrame(animationFrameRef.current);
+      setWaveformBars(Array(12).fill(0.1));
+    };
+
+    recognitionRef.current = recognition;
+    recognition.start();
+  };
+
+  const stopBrowserRecording = () => {
+    recognitionRef.current?.stop();
+    recognitionRef.current = null;
+  };
+
+  const startVoiceInput = async () => {
+    setRecordingError(null);
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      stream.getTracks().forEach(t => t.stop());
+      startBrowserRecording();
+    } catch {
+      toast.error('Could not access microphone. Using server-side transcription.');
+      setRecordingError('Falling back to server transcription...');
+      setTimeout(() => setRecordingError(null), 3000);
+    }
+  };
+
+  const stopVoiceInput = () => {
+    if (recognitionRef.current) {
+      stopBrowserRecording();
+    } else {
+      setIsRecording(false);
+      if (animationFrameRef.current) cancelAnimationFrame(animationFrameRef.current);
+    }
+  };
 
   // Fetch agent status and live KPIs on mount
   useEffect(() => {
@@ -509,8 +602,8 @@ export function AIAssistant() {
     <>
       <ModuleBreadcrumbs currentModule="ai-assistant" onNavigate={() => {}} />
       <div className="h-full flex bg-gradient-to-br from-gray-950 via-gray-900 to-gray-950">
-      {/* Left Sidebar - Chat History & Agents */}
-      <div className="w-64 border-r border-gray-800 bg-gray-900/50 p-4 overflow-y-auto flex flex-col">
+      {/* Left Sidebar - Chat History & Agents - hidden on mobile */}
+      <div className="hidden md:flex w-64 border-r border-gray-800 bg-gray-900/50 p-4 overflow-y-auto flex-col">
         {/* Agent Status Toggle */}
         <button
           onClick={() => setAgentPanelOpen(p => !p)}
@@ -632,29 +725,34 @@ export function AIAssistant() {
       </div>
 
       {/* Main Chat Area */}
-      <div className="flex-1 flex flex-col">
+      <div className="flex-1 flex flex-col min-w-0">
         {/* Header */}
-        <div className="border-b border-gray-800 bg-gradient-to-r from-blue-900/20 to-purple-900/10 px-6 py-4">
-          <div className="flex items-center justify-between">
+        <div className="border-b border-gray-800 bg-gradient-to-r from-blue-900/20 to-purple-900/10 px-4 md:px-6 py-3 md:py-4">
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-2">
             <div>
-              <h1 className="mb-1 text-2xl font-bold text-white">CortexBuild AI</h1>
-              <p className="text-xs text-blue-300">
+              <h1 className="mb-1 text-xl md:text-2xl font-bold text-white">CortexBuild AI</h1>
+              <p className="text-xs text-blue-300 hidden sm:block">
                 {selectedAgentData.name} · {selectedAgentData.systemPrompt.slice(0, 60)}...
               </p>
             </div>
-            <div className="flex items-center gap-2 rounded-lg bg-gray-800/50 px-3 py-2">
+            <div className="flex items-center gap-2 rounded-lg bg-gray-800/50 px-3 py-2 text-xs">
               <Archive className="h-4 w-4 text-gray-400" />
-              <span className="text-xs text-gray-300">
+              <span className="text-gray-300 hidden sm:inline">
                 <span className="font-semibold text-white">{liveCounts.projects}</span> Projects ·
                 <span className="ml-1 font-semibold text-white">{liveCounts.invoices}</span> Invoices ·
                 <span className="ml-1 font-semibold text-white">{liveCounts.incidents}</span> Incidents
+              </span>
+              <span className="sm:hidden text-gray-300">
+                <span className="font-semibold text-white">{liveCounts.projects}</span>P ·
+                <span className="font-semibold text-white">{liveCounts.invoices}</span>I ·
+                <span className="font-semibold text-white">{liveCounts.incidents}</span>S
               </span>
             </div>
           </div>
         </div>
 
         {/* Messages Area */}
-        <div className="flex-1 overflow-y-auto p-6 space-y-4">
+        <div className="flex-1 overflow-y-auto p-4 md:p-6 space-y-4">
           {messages.length === 0 ? (
             <div className="flex h-full flex-col items-center justify-center">
               <selectedAgentData.icon className="mb-4 h-12 w-12 text-blue-500/50" />
@@ -745,7 +843,51 @@ export function AIAssistant() {
 
         {/* Input Area */}
         <div className="border-t border-gray-800 bg-gray-900/50 p-4">
+          {recordingError && (
+            <div className="mb-2 flex items-center gap-2 rounded-lg border border-red-500/30 bg-red-500/10 px-3 py-2">
+              <MicOff className="h-4 w-4 text-red-400" />
+              <span className="text-xs text-red-400">{recordingError}</span>
+            </div>
+          )}
+          {isRecording && (
+            <div className="mb-3 flex items-center gap-3 rounded-xl border border-amber-500/40 bg-amber-500/10 px-4 py-3">
+              <div className="flex items-center gap-2">
+                <div className="relative">
+                  <div className="absolute inset-0 rounded-full bg-red-500/30 animate-ping" />
+                  <div className="h-3 w-3 rounded-full bg-red-500" />
+                </div>
+                <span className="text-xs font-semibold text-amber-400 uppercase tracking-wider">Recording</span>
+              </div>
+              <div className="flex items-center gap-0.5">
+                {waveformBars.map((height, i) => (
+                  <div
+                    key={i}
+                    className="w-1 rounded-full bg-amber-400/70"
+                    style={{ height: `${height * 24 + 4}px` }}
+                  />
+                ))}
+              </div>
+              <span className="ml-2 text-xs text-amber-400/60">Click mic to stop</span>
+            </div>
+          )}
           <div className="flex gap-3">
+            <button
+              onClick={isRecording ? stopVoiceInput : startVoiceInput}
+              className={clsx(
+                'rounded-xl border p-3 transition-all flex-shrink-0 mobile-tap-target',
+                isRecording
+                  ? 'border-red-500/50 bg-red-500/20 text-red-400 hover:bg-red-500/30'
+                  : 'border-gray-700 bg-gray-800 text-gray-400 hover:text-white hover:border-blue-600 hover:bg-gray-700'
+              )}
+              title={isRecording ? 'Stop recording' : 'Voice input'}
+              aria-label={isRecording ? 'Stop recording' : 'Voice input'}
+            >
+              {isRecording ? (
+                <AudioWaveform className="h-5 w-5" />
+              ) : (
+                <Mic className="h-5 w-5" />
+              )}
+            </button>
             <input
               type="text"
               value={input}

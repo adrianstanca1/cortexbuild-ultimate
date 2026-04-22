@@ -379,10 +379,11 @@ function AppShell() {
           <main
             id="main-content"
             tabIndex={-1}
-            className="flex-1 overflow-auto pb-20 md:pb-6 outline-none"
+            className="flex-1 overflow-auto outline-none"
             style={{
               backgroundAttachment: 'fixed',
               animation: 'fade-in-up 0.35s var(--ease-out, ease-out) both',
+              paddingBottom: 'calc(72px + env(safe-area-inset-bottom, 0px))',
             }}
           >
             <div className="p-4 md:p-6 stagger-1" style={{ animation: 'fade-in-up 0.4s cubic-bezier(0.0, 0.0, 0.2, 1) both' }}>

@@ -8,47 +8,51 @@
 
 :root {
   /* ── Brand palette ─────────────────────────────────────────── */
-  --cb-bg:          #090b0f;
-  --cb-bg-raised:  #0e1117;
+  --cb-bg: #090b0f;
+  --cb-bg-raised: #0e1117;
   --cb-bg-surface: #141820;
-  --cb-bg-elevated:#1a2130;
+  --cb-bg-elevated: #1a2130;
   --cb-bg-overlay: #1e2738;
 
-  --cb-amber:       #f59e0b;
-  --cb-amber-dim:   #b45309;
-  --cb-amber-glow:  rgba(245,158,11,0.15);
-  --cb-amber-muted: rgba(245,158,11,0.08);
+  --cb-amber: #f59e0b;
+  --cb-amber-dim: #b45309;
+  --cb-amber-glow: rgba(245, 158, 11, 0.15);
+  --cb-amber-muted: rgba(245, 158, 11, 0.08);
 
-  --cb-steel:       #64748b;
+  --cb-steel: #64748b;
   --cb-steel-light: #94a3b8;
-  --cb-steel-dim:   #334155;
+  --cb-steel-dim: #334155;
 
-  --cb-text:        #e2e8f0;
-  --cb-text-muted:  #64748b;
-  --cb-text-sub:    #475569;
+  --cb-text: #e2e8f0;
+  --cb-text-muted: #64748b;
+  --cb-text-sub: #475569;
 
-  --cb-border:      rgba(255,255,255,0.07);
-  --cb-border-soft: rgba(255,255,255,0.04);
+  --cb-border: rgba(255, 255, 255, 0.07);
+  --cb-border-soft: rgba(255, 255, 255, 0.04);
 
-  --cb-green:  #10b981;
-  --cb-red:    #ef4444;
-  --cb-blue:   #3b82f6;
+  --cb-green: #10b981;
+  --cb-red: #ef4444;
+  --cb-blue: #3b82f6;
 
   /* ── Type scale ──────────────────────────────────────────────── */
-  --font-display: 'Bebas Neue', sans-serif;
-  --font-body:    'Instrument Sans', sans-serif;
-  --font-mono:    'Fira Code', monospace;
+  --font-display: "Bebas Neue", sans-serif;
+  --font-body: "Instrument Sans", sans-serif;
+  --font-mono: "Fira Code", monospace;
 
   /* ── Motion ─────────────────────────────────────────────────── */
   --ease-spring: cubic-bezier(0.16, 1, 0.3, 1);
-  --ease-out:    cubic-bezier(0.0, 0.0, 0.2, 1);
+  --ease-out: cubic-bezier(0, 0, 0.2, 1);
   --duration-fast: 150ms;
-  --duration-mid:  250ms;
+  --duration-mid: 250ms;
   --duration-slow: 400ms;
 }
 
 /* ── Base reset ─────────────────────────────────────────────────────────────── */
-*, *::before, *::after { box-sizing: border-box; }
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
 
 html {
   scroll-behavior: smooth;
@@ -67,17 +71,24 @@ body {
 }
 
 ::selection {
-  background: rgba(245,158,11,0.25);
+  background: rgba(245, 158, 11, 0.25);
   color: #fef3c7;
 }
 
-::-webkit-scrollbar { width: 6px; height: 6px; }
-::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
 ::-webkit-scrollbar-thumb {
   background: var(--cb-steel-dim);
   border-radius: 3px;
 }
-::-webkit-scrollbar-thumb:hover { background: var(--cb-steel); }
+::-webkit-scrollbar-thumb:hover {
+  background: var(--cb-steel);
+}
 
 /* ── Focus ─────────────────────────────────────────────────────────────────── */
 :focus-visible {
@@ -102,78 +113,172 @@ body {
   text-decoration: none;
   letter-spacing: 0.02em;
 }
-.skip-link:focus { left: 0.75rem; }
+.skip-link:focus {
+  left: 0.75rem;
+}
 
 /* ── Screen-reader only ──────────────────────────────────────────────────────── */
 .sr-only {
-  position: absolute; width: 1px; height: 1px; padding: 0;
-  margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0);
-  white-space: nowrap; border-width: 0;
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border-width: 0;
 }
-.sr-only:focus, .sr-only:active {
-  position: static; width: auto; height: auto; margin: 0;
-  overflow: visible; clip: auto; white-space: normal;
+.sr-only:focus,
+.sr-only:active {
+  position: static;
+  width: auto;
+  height: auto;
+  margin: 0;
+  overflow: visible;
+  clip: auto;
+  white-space: normal;
 }
 
 /* ── Table scroll ────────────────────────────────────────────────────────────── */
 .cb-table-scroll {
-  max-width: 100%; min-width: 0; overflow-x: auto; -webkit-overflow-scrolling: touch;
+  max-width: 100%;
+  min-width: 0;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
 }
 
 /* ── Animations ─────────────────────────────────────────────────────────────── */
 @keyframes slide-in-left {
-  from { transform: translateX(-100%); opacity: 0.85; }
-  to   { transform: translateX(0);    opacity: 1; }
+  from {
+    transform: translateX(-100%);
+    opacity: 0.85;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
 }
 
 @keyframes fade-in-up {
-  from { opacity: 0; transform: translateY(12px); }
-  to   { opacity: 1; transform: translateY(0); }
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 @keyframes fade-in {
-  from { opacity: 0; }
-  to   { opacity: 1; }
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
 }
 
 @keyframes scale-in {
-  from { opacity: 0; transform: scale(0.95); }
-  to   { opacity: 1; transform: scale(1); }
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
 }
 
 @keyframes pulse-glow {
-  0%, 100% { box-shadow: 0 0 0 0 var(--cb-amber-glow); }
-  50%       { box-shadow: 0 0 12px 4px var(--cb-amber-glow); }
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 var(--cb-amber-glow);
+  }
+  50% {
+    box-shadow: 0 0 12px 4px var(--cb-amber-glow);
+  }
 }
 
 @keyframes spin-slow {
-  from { transform: rotate(0deg); }
-  to   { transform: rotate(360deg); }
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 @keyframes blueprint-grid {
-  0%   { background-position: 0 0; }
-  100% { background-position: 40px 40px; }
+  0% {
+    background-position: 0 0;
+  }
+  100% {
+    background-position: 40px 40px;
+  }
 }
 
 @keyframes shimmer {
-  0%   { background-position: -400px 0; }
-  100% { background-position: 400px 0; }
+  0% {
+    background-position: -400px 0;
+  }
+  100% {
+    background-position: 400px 0;
+  }
 }
 
 /* ── Entrance stagger utility ─────────────────────────────────────────────────── */
-.stagger-1  { animation-delay: 50ms; }
-.stagger-2  { animation-delay: 100ms; }
-.stagger-3  { animation-delay: 150ms; }
-.stagger-4  { animation-delay: 200ms; }
-.stagger-5  { animation-delay: 250ms; }
-.stagger-6  { animation-delay: 300ms; }
+.stagger-1 {
+  animation-delay: 50ms;
+}
+.stagger-2 {
+  animation-delay: 100ms;
+}
+.stagger-3 {
+  animation-delay: 150ms;
+}
+.stagger-4 {
+  animation-delay: 200ms;
+}
+.stagger-5 {
+  animation-delay: 250ms;
+}
+.stagger-6 {
+  animation-delay: 300ms;
+}
 
 /* ── Motion reduced ──────────────────────────────────────────────────────────── */
 @media (prefers-reduced-motion: reduce) {
-  *, *::before, *::after {
+  *,
+  *::before,
+  *::after {
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
   }
+}
+
+/* ── Mobile responsiveness ───────────────────────────────────────────────────── */
+@media (max-width: 767px) {
+  .corner-crosshair-md {
+    display: none !important;
+  }
+  .blueprint-grid-micro-animated,
+  .blueprint-grid-animated {
+    background-size: 24px 24px !important;
+  }
+}
+
+/* ── Blueprint grid overflow prevention ─────────────────────────────────── */
+.blueprint-grid-scroll {
+  overflow-x: auto;
+  overflow-y: hidden;
+  max-width: 100vw;
+}
+
+/* ── Mobile tap targets (44px min) ─────────────────────────────────────────── */
+.mobile-tap-target {
+  min-width: 44px;
+  min-height: 44px;
 }

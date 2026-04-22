@@ -99,3 +99,17 @@ export async function fetchAgentStatus(): Promise<{ agents: AgentStatus[] }> {
   if (!res.ok) throw new Error(`HTTP ${res.status}`)
   return res.json()
 }
+
+export async function transcribeAudio(audioUrl: string): Promise<{ text: string }> {
+  const res = await fetch(`${API_BASE}/ai/transcribe`, {
+    method: 'POST',
+    credentials: 'include',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ audioUrl }),
+  })
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ error: 'Request failed' }))
+    throw new Error(err.error || `HTTP ${res.status}`)
+  }
+  return res.json()
+}
