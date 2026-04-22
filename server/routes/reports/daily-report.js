@@ -1,8 +1,8 @@
-require('dotenv').config({ path: require('path').join(__dirname, '../.env') });
+require('dotenv').config({ path: require('path').join(__dirname, '../../.env') });
 const express = require('express');
 const router = express.Router();
 const pool = require('../../db');
-const authMiddleware = require('../middleware/auth');
+const authMiddleware = require('../../middleware/auth');
 
 router.use(authMiddleware);
 

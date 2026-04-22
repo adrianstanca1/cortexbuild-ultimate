@@ -89,11 +89,20 @@ console.error = (...args: unknown[]) => {
   originalError.call(console, ...args);
 };
 
-// Mock fetch globally
-global.fetch = vi.fn();
+// Mock fetch globally — must return a Thenable; bare `vi.fn()` returns `undefined` and breaks `.then()` in components.
+const defaultFetchResponse = () =>
+  Promise.resolve({
+    ok: true,
+    status: 200,
+    json: async () => [],
+    text: async () => "",
+    headers: new Headers(),
+  } as unknown as Response);
 
-// Clean up after each test
+globalThis.fetch = vi.fn(defaultFetchResponse);
+
+// Clean up after each test (do not `restoreAllMocks()` here — it clears `fetch` and breaks happy-dom + component hooks)
 afterEach(() => {
   vi.clearAllMocks();
-  vi.restoreAllMocks();
+  (globalThis.fetch as ReturnType<typeof vi.fn>).mockImplementation(defaultFetchResponse);
 });
