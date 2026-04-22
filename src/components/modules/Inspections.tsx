@@ -208,7 +208,7 @@ export function Inspections() {
       <div className="p-6 space-y-6 bg-gray-900 min-h-screen">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-white">Inspections</h1>
+          <h1 className="text-2xl font-display text-white">Inspections</h1>
           <p className="text-sm text-gray-400 mt-1">Quality, safety & compliance inspections</p>
         </div>
         <div className="flex gap-2">
@@ -237,7 +237,7 @@ export function Inspections() {
         ].map(kpi=>(
           <div key={kpi.label} className={`${kpi.bg} border ${kpi.border} rounded-xl p-4`}>
             <div className="flex items-center gap-3">
-              <div><p className={`text-xs ${kpi.colour}`}>{kpi.label}</p><p className="text-xl font-bold text-white mt-1">{kpi.value}</p></div>
+              <div><p className={`text-xs ${kpi.colour}`}>{kpi.label}</p><p className="text-xl font-display text-white mt-1">{kpi.value}</p></div>
             </div>
           </div>
         ))}

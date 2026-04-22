@@ -83,7 +83,7 @@ const StatCard = ({ title, value, change, changeType, icon: Icon, color }: {
     <div className="flex items-start justify-between">
       <div>
         <p className="text-xs text-gray-500 uppercase tracking-wider mb-1">{String(title)}</p>
-        <p className="text-2xl font-bold text-white font-display">{fmtCurrency(Number(value))}</p>
+        <p className="text-2xl font-display text-white">{fmtCurrency(Number(value))}</p>
       </div>
       <div className={clsx('p-2 rounded-lg', `bg-${color}-500/20`)}>
         <Icon className={clsx('h-5 w-5', `text-${color}-400`)} />
@@ -183,7 +183,7 @@ export function FinancialReports() {
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <div className="card p-5">
-          <h3 className="text-lg font-bold text-white mb-4">Revenue vs Cost</h3>
+          <h3 className="text-lg font-display text-white mb-4">Revenue vs Cost</h3>
           <div className="h-64">
             <ResponsiveContainer width="100%" height="100%">
               <AreaChart data={[
@@ -213,7 +213,7 @@ export function FinancialReports() {
         </div>
 
         <div className="card p-5">
-          <h3 className="text-lg font-bold text-white mb-4">Gross Margin %</h3>
+          <h3 className="text-lg font-display text-white mb-4">Gross Margin %</h3>
           <div className="h-64">
             <ResponsiveContainer width="100%" height="100%">
               <LineChart data={[
@@ -240,7 +240,7 @@ export function FinancialReports() {
   const PLTab = () => (
     <div className="card">
       <div className="p-4 border-b border-gray-800 flex justify-between items-center">
-        <h3 className="text-lg font-bold text-white">Profit & Loss Statement</h3>
+        <h3 className="text-lg font-display text-white">Profit & Loss Statement</h3>
         <button className="btn btn-secondary text-sm">
           <Download className="h-4 w-4 mr-2" />
           PDF
@@ -249,7 +249,7 @@ export function FinancialReports() {
       <div className="p-6">
         <div className="space-y-4">
           <div className="border-b border-gray-700 pb-4">
-            <h4 className="text-sm text-gray-400 uppercase mb-3 font-bold">Revenue</h4>
+            <h4 className="text-sm font-display text-gray-400 uppercase mb-3">Revenue</h4>
             <div className="space-y-2">
               <div className="flex justify-between p-2">
                 <span className="text-gray-300">Contract Income</span>
@@ -263,7 +263,7 @@ export function FinancialReports() {
           </div>
 
           <div className="border-b border-gray-700 pb-4">
-            <h4 className="text-sm text-gray-400 uppercase mb-3 font-bold">Costs</h4>
+            <h4 className="text-sm font-display text-gray-400 uppercase mb-3">Costs</h4>
             <div className="space-y-2">
               <div className="flex justify-between p-2">
                 <span className="text-gray-300">Labour</span>
@@ -286,8 +286,8 @@ export function FinancialReports() {
 
           <div className="bg-blue-500/10 border border-blue-500/30 rounded-lg p-4">
             <div className="flex justify-between items-center">
-              <span className="text-lg font-bold text-white">Net Profit</span>
-              <span className="text-lg font-bold text-emerald-400">{fmtCurrency(summary?.netProfit || 0)}</span>
+              <span className="text-lg font-display text-white">Net Profit</span>
+              <span className="text-lg font-display text-emerald-400">{fmtCurrency(summary?.netProfit || 0)}</span>
             </div>
           </div>
         </div>
@@ -298,17 +298,17 @@ export function FinancialReports() {
   const ProjectsTab = () => (
     <div className="space-y-6">
       <div className="card p-5">
-        <h3 className="text-lg font-bold text-white mb-4">Project Cost Analysis</h3>
+        <h3 className="text-lg font-display text-white mb-4">Project Cost Analysis</h3>
         <div className="cb-table-scroll touch-pan-x mb-6">
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-gray-800">
                 <th className="w-10"></th>
-                <th className="text-left p-3 text-gray-400 font-medium">Project</th>
-                <th className="text-right p-3 text-gray-400 font-medium">Budget</th>
-                <th className="text-right p-3 text-gray-400 font-medium">Spent</th>
-                <th className="text-right p-3 text-gray-400 font-medium">Variance</th>
-                <th className="text-right p-3 text-gray-400 font-medium">Margin %</th>
+                <th className="text-left p-3 text-xs font-display text-gray-400 tracking-widest uppercase">Project</th>
+                <th className="text-right p-3 text-xs font-display text-gray-400 tracking-widest uppercase">Budget</th>
+                <th className="text-right p-3 text-xs font-display text-gray-400 tracking-widest uppercase">Spent</th>
+                <th className="text-right p-3 text-xs font-display text-gray-400 tracking-widest uppercase">Variance</th>
+                <th className="text-right p-3 text-xs font-display text-gray-400 tracking-widest uppercase">Margin %</th>
               </tr>
             </thead>
             <tbody>
@@ -359,7 +359,7 @@ export function FinancialReports() {
   const CashFlowTab = () => (
     <div className="space-y-6">
       <div className="card p-5">
-        <h3 className="text-lg font-bold text-white mb-4">Monthly Cash Flow</h3>
+        <h3 className="text-lg font-display text-white mb-4">Monthly Cash Flow</h3>
         <div className="h-64">
           <ResponsiveContainer width="100%" height="100%">
             <AreaChart data={cashFlow}>
@@ -384,15 +384,15 @@ export function FinancialReports() {
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <div className="card p-5 text-center">
           <p className="text-xs text-gray-400 uppercase mb-2">Total Income</p>
-          <p className="text-2xl font-bold text-emerald-400">{fmtCurrency(cashFlow.reduce((s, m) => s + m.income, 0))}</p>
+          <p className="text-2xl font-display text-emerald-400">{fmtCurrency(cashFlow.reduce((s, m) => s + m.income, 0))}</p>
         </div>
         <div className="card p-5 text-center">
           <p className="text-xs text-gray-400 uppercase mb-2">Total Expenses</p>
-          <p className="text-2xl font-bold text-red-400">{fmtCurrency(cashFlow.reduce((s, m) => s + m.expenses, 0))}</p>
+          <p className="text-2xl font-display text-red-400">{fmtCurrency(cashFlow.reduce((s, m) => s + m.expenses, 0))}</p>
         </div>
         <div className="card p-5 text-center">
           <p className="text-xs text-gray-400 uppercase mb-2">Net Position</p>
-          <p className="text-2xl font-bold text-blue-400">{fmtCurrency(cashFlow.reduce((s, m) => s + m.net, 0))}</p>
+          <p className="text-2xl font-display text-blue-400">{fmtCurrency(cashFlow.reduce((s, m) => s + m.net, 0))}</p>
         </div>
       </div>
     </div>
@@ -400,7 +400,7 @@ export function FinancialReports() {
 
   const InvoicesTab = () => (
     <div className="card p-5">
-      <h3 className="text-lg font-bold text-white mb-4">Invoice Aging Analysis</h3>
+      <h3 className="text-lg font-display text-white mb-4">Invoice Aging Analysis</h3>
       <div className="grid grid-cols-4 gap-4 mb-6">
         {[
           { label: '0-30 days', value: 145000 },
@@ -410,7 +410,7 @@ export function FinancialReports() {
         ].map((item) => (
           <div key={String(item.label)} className="p-4 bg-gray-800/50 rounded-lg text-center">
             <p className="text-xs text-gray-400 mb-2">{String(item.label)}</p>
-            <p className="text-xl font-bold text-white">{fmtCurrency(item.value)}</p>
+            <p className="text-xl font-display text-white">{fmtCurrency(item.value)}</p>
           </div>
         ))}
       </div>

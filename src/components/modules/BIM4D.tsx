@@ -144,7 +144,7 @@ export function BIM4D() {
               <Box size={20} className="text-indigo-400" />
             </div>
             <div>
-              <h1 className="text-2xl font-bold text-white">4D BIM</h1>
+              <h1 className="text-2xl font-display text-white">4D BIM</h1>
               <p className="text-sm text-gray-400">Time-linked construction sequence viewer</p>
             </div>
           </div>
@@ -393,7 +393,7 @@ export function BIM4D() {
                     <thead className="bg-gray-800/50 border-b border-gray-800">
                       <tr>
                         {['Phase', 'Task Name', 'Start', 'End', 'Duration', 'Elements', 'Progress'].map(h => (
-                          <th key={h} className="text-left px-4 py-2.5 text-xs font-semibold text-gray-500 uppercase">{h}</th>
+                          <th key={h} className="text-left px-4 py-2.5 text-xs font-display text-gray-500 tracking-widest uppercase">{h}</th>
                         ))}
                       </tr>
                     </thead>

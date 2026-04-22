@@ -274,7 +274,7 @@ export function PlantEquipment() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-gray-100">Plant & Equipment</h1>
+          <h1 className="text-3xl font-display text-gray-100">Plant & Equipment</h1>
           <p className="text-sm text-gray-400 mt-1">Fleet management, maintenance tracking & utilisation analytics</p>
         </div>
         <button
@@ -299,7 +299,7 @@ export function PlantEquipment() {
             <div className="flex items-start justify-between">
               <div>
                 <p className="text-xs font-medium text-gray-400 uppercase tracking-wide">{kpi.label}</p>
-                <p className="text-2xl font-bold text-gray-100 mt-2">{kpi.value}</p>
+                <p className="text-2xl font-display text-gray-100 mt-2">{kpi.value}</p>
               </div>
               <div className={`p-2.5 rounded-lg ${kpi.bg}`}>
                 <kpi.icon size={18} className={kpi.color} />
@@ -389,7 +389,7 @@ export function PlantEquipment() {
                         {isSelected ? <CheckSquare size={16} className="text-blue-400"/> : <Square size={16} className="text-gray-500"/>}
                       </button>
                       <div className="flex-1">
-                        <h3 className="font-semibold text-gray-100 text-sm">{String(e.name ?? 'Unknown')}</h3>
+                        <h3 className="font-display text-gray-100 text-sm">{String(e.name ?? 'Unknown')}</h3>
                         <p className="text-xs text-gray-400 mt-0.5">{String(e.type ?? '')}</p>
                       </div>
                       <span className={`text-xs px-2 py-1 rounded font-medium whitespace-nowrap ${statusColor}`}>
@@ -464,7 +464,7 @@ export function PlantEquipment() {
       {subTab === 'service' && (
         <div className="space-y-4">
           <div className="flex items-center justify-between">
-            <h2 className="text-lg font-semibold text-gray-100">Maintenance Timeline</h2>
+            <h2 className="text-lg font-display text-gray-100">Maintenance Timeline</h2>
             <button
               onClick={() => setShowServiceModal(true)}
               className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 text-sm font-medium transition-colors"
@@ -486,7 +486,7 @@ export function PlantEquipment() {
                 <thead className="bg-gray-700/50 border-b border-gray-700">
                   <tr>
                     {['Equipment', 'Type', 'Status', 'Next Service', 'Days Until', 'Mechanic'].map((h) => (
-                      <th key={h} className="text-left px-4 py-3 text-xs font-semibold text-gray-400 uppercase tracking-wide">
+                      <th key={h} className="text-left px-4 py-3 text-xs font-display tracking-widest text-gray-400 uppercase tracking-wide">
                         {h}
                       </th>
                     ))}
@@ -499,7 +499,7 @@ export function PlantEquipment() {
                       (new Date(String(e.nextService ?? '')).getTime() - Date.now()) / 86400000
                     );
                     const urgencyColor = {
-                      overdue: 'text-red-400 font-semibold',
+                      overdue: 'text-red-400 font-display',
                       'due-soon': 'text-amber-400 font-medium',
                       ok: 'text-green-400'
                     }[urgency];
@@ -526,13 +526,13 @@ export function PlantEquipment() {
 
           {/* Service Log Table */}
           <div className="space-y-2 mt-8">
-            <h3 className="text-sm font-semibold text-gray-100">Recent Service Log</h3>
+            <h3 className="text-sm font-display text-gray-100">Recent Service Log</h3>
             <div className="bg-gray-800 rounded-lg border border-gray-700 overflow-hidden">
               <table className="w-full text-sm">
                 <thead className="bg-gray-700/50 border-b border-gray-700">
                   <tr>
                     {['Equipment', 'Date', 'Type', 'Technician', 'Next Due'].map((h) => (
-                      <th key={h} className="text-left px-4 py-3 text-xs font-semibold text-gray-400 uppercase tracking-wide">
+                      <th key={h} className="text-left px-4 py-3 text-xs font-display tracking-widest text-gray-400 uppercase tracking-wide">
                         {h}
                       </th>
                     ))}
@@ -562,7 +562,7 @@ export function PlantEquipment() {
         <div className="space-y-4">
           <div className="flex items-center justify-between">
             <div>
-              <h2 className="text-lg font-semibold text-gray-100">Hired-In Plant</h2>
+              <h2 className="text-lg font-display text-gray-100">Hired-In Plant</h2>
               <p className="text-xs text-gray-400 mt-1">Active hires: {activeHires.length} | Monthly projection: £{totalHireCost.toLocaleString()}</p>
             </div>
             <button
@@ -586,7 +586,7 @@ export function PlantEquipment() {
                 <thead className="bg-gray-700/50 border-b border-gray-700">
                   <tr>
                     {['Equipment', 'Hire Company', 'Daily Rate', 'Start Date', 'End Date', 'Project', 'Status', 'Total Cost'].map((h) => (
-                      <th key={h} className="text-left px-4 py-3 text-xs font-semibold text-gray-400 uppercase tracking-wide">
+                      <th key={h} className="text-left px-4 py-3 text-xs font-display tracking-widest text-gray-400 uppercase tracking-wide">
                         {h}
                       </th>
                     ))}
@@ -615,7 +615,7 @@ export function PlantEquipment() {
                             {String(row.status ?? '')}
                           </span>
                         </td>
-                        <td className="px-4 py-3 text-gray-100 font-semibold">£{totalCost.toLocaleString()}</td>
+                        <td className="px-4 py-3 text-gray-100 font-mono">£{totalCost.toLocaleString()}</td>
                       </tr>
                     );
                   })}
@@ -633,7 +633,7 @@ export function PlantEquipment() {
         <div className="space-y-6">
           {/* Status Distribution Chart */}
           <div className="bg-gray-800 rounded-lg border border-gray-700 p-6">
-            <h3 className="text-lg font-semibold text-gray-100 mb-4">Fleet Status Distribution</h3>
+            <h3 className="text-lg font-display text-gray-100 mb-4">Fleet Status Distribution</h3>
             <ResponsiveContainer width="100%" height={300}>
               <BarChart data={statusDistribution}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
@@ -651,13 +651,13 @@ export function PlantEquipment() {
           {/* Utilisation Table */}
           <div className="bg-gray-800 rounded-lg border border-gray-700 overflow-hidden">
             <div className="px-6 py-4 border-b border-gray-700">
-              <h3 className="text-lg font-semibold text-gray-100">Equipment Utilisation - This Month</h3>
+              <h3 className="text-lg font-display text-gray-100">Equipment Utilisation - This Month</h3>
             </div>
             <table className="w-full text-sm">
               <thead className="bg-gray-700/50 border-b border-gray-700">
                 <tr>
                   {['Equipment', 'On Site Days', 'Idle Days', 'Maintenance Days', 'Utilisation %'].map((h) => (
-                    <th key={h} className="text-left px-6 py-3 text-xs font-semibold text-gray-400 uppercase tracking-wide">
+                    <th key={h} className="text-left px-6 py-3 text-xs font-display tracking-widest text-gray-400 uppercase tracking-wide">
                       {h}
                     </th>
                   ))}
@@ -700,7 +700,7 @@ export function PlantEquipment() {
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
           <div className="bg-gray-800 rounded-xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between p-6 border-b border-gray-700 sticky top-0 bg-gray-800 z-10">
-              <h2 className="text-lg font-semibold text-gray-100">Equipment Details</h2>
+              <h2 className="text-lg font-display text-gray-100">Equipment Details</h2>
               <button
                 onClick={() => setShowDetailModal(false)}
                 className="p-2 hover:bg-gray-700 rounded-lg transition-colors"
@@ -713,7 +713,7 @@ export function PlantEquipment() {
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <p className="text-xs font-medium text-gray-400 uppercase tracking-wide mb-1">Name</p>
-                  <p className="text-gray-100 font-semibold">{String(selectedEquipmentDetail.name ?? '')}</p>
+                  <p className="text-gray-100 font-display">{String(selectedEquipmentDetail.name ?? '')}</p>
                 </div>
                 <div>
                   <p className="text-xs font-medium text-gray-400 uppercase tracking-wide mb-1">Type</p>
@@ -735,7 +735,7 @@ export function PlantEquipment() {
                 </div>
                 <div>
                   <p className="text-xs font-medium text-gray-400 uppercase tracking-wide mb-1">Daily Rate</p>
-                  <p className="text-gray-100 font-semibold">£{Number(selectedEquipmentDetail.dailyRate ?? 0).toLocaleString()}</p>
+                  <p className="text-gray-100 font-display">£{Number(selectedEquipmentDetail.dailyRate ?? 0).toLocaleString()}</p>
                 </div>
                 <div>
                   <p className="text-xs font-medium text-gray-400 uppercase tracking-wide mb-1">Next Service</p>
@@ -745,7 +745,7 @@ export function PlantEquipment() {
 
               {/* Service History */}
               <div className="border-t border-gray-700 pt-6">
-                <h3 className="text-sm font-semibold text-gray-100 mb-4">Service History</h3>
+                <h3 className="text-sm font-display text-gray-100 mb-4">Service History</h3>
                 <div className="space-y-3">
                   {serviceLogs.slice(0, 10).map((item: AnyRow, idx: number) => (
                     <div key={String(item.id ?? idx)} className="flex items-start gap-3 pb-3 border-b border-gray-700">
@@ -790,7 +790,7 @@ export function PlantEquipment() {
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
           <div className="bg-gray-800 rounded-xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between p-6 border-b border-gray-700 sticky top-0 bg-gray-800 z-10">
-              <h2 className="text-lg font-semibold text-gray-100">
+              <h2 className="text-lg font-display text-gray-100">
                 {editingEquipment ? 'Edit Equipment' : 'Add Equipment'}
               </h2>
               <button
@@ -899,7 +899,7 @@ export function PlantEquipment() {
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
           <div className="bg-gray-800 rounded-xl shadow-2xl w-full max-w-2xl">
             <div className="flex items-center justify-between p-6 border-b border-gray-700">
-              <h2 className="text-lg font-semibold text-gray-100">Log Service</h2>
+              <h2 className="text-lg font-display text-gray-100">Log Service</h2>
               <button
                 onClick={() => setShowServiceModal(false)}
                 className="p-2 hover:bg-gray-700 rounded-lg transition-colors"
@@ -999,7 +999,7 @@ export function PlantEquipment() {
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
           <div className="bg-gray-800 rounded-xl shadow-2xl w-full max-w-2xl">
             <div className="flex items-center justify-between p-6 border-b border-gray-700">
-              <h2 className="text-lg font-semibold text-gray-100">Add Hire Record</h2>
+              <h2 className="text-lg font-display text-gray-100">Add Hire Record</h2>
               <button
                 onClick={() => setShowHireModal(false)}
                 className="p-2 hover:bg-gray-700 rounded-lg transition-colors"

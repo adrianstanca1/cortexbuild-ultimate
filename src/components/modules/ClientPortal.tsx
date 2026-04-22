@@ -161,7 +161,7 @@ export function ClientPortal() {
               <Building2 size={20} className="text-orange-400" />
             </div>
             <div>
-              <h1 className="text-2xl font-bold text-white">Client Portal</h1>
+              <h1 className="text-2xl font-display text-white">Client Portal</h1>
               <p className="text-sm text-gray-400">Project progress & documents for clients and owners</p>
             </div>
           </div>
@@ -238,15 +238,15 @@ export function ClientPortal() {
               <div className="grid grid-cols-3 gap-4 text-center">
                 <div>
                   <p className="text-xs text-gray-500">Contract Sum</p>
-                  <p className="text-lg font-bold text-white">{fmt(selectedProject.budget)}</p>
+                  <p className="text-lg font-display text-white">{fmt(selectedProject.budget)}</p>
                 </div>
                 <div>
                   <p className="text-xs text-gray-500">Certified to Date</p>
-                  <p className="text-lg font-bold text-green-400">{fmt(selectedProject.spent)}</p>
+                  <p className="text-lg font-display text-green-400">{fmt(selectedProject.spent)}</p>
                 </div>
                 <div>
                   <p className="text-xs text-gray-500">Remaining</p>
-                  <p className="text-lg font-bold text-orange-400">{fmt((selectedProject.budget ?? 0) - (selectedProject.spent ?? 0))}</p>
+                  <p className="text-lg font-display text-orange-400">{fmt((selectedProject.budget ?? 0) - (selectedProject.spent ?? 0))}</p>
                 </div>
               </div>
             </div>

@@ -101,7 +101,7 @@ export function CarbonEstimating() {
             <Leaf size={20} className="text-green-400" />
           </div>
           <div>
-            <h1 className="text-2xl font-bold text-white">Carbon Estimating</h1>
+            <h1 className="text-2xl font-display text-white">Carbon Estimating</h1>
             <p className="text-sm text-gray-400">UK Net Zero carbon footprint for construction projects (RICS TM65)</p>
           </div>
         </div>
@@ -220,13 +220,13 @@ export function CarbonEstimating() {
                     <div>
                       <p className="text-sm text-gray-500 mb-1">Carbon Rating</p>
                       <div className="flex items-baseline gap-2">
-                        <span className={`text-4xl font-bold ${RATING_LABELS[r?.rating ?? 'D']?.colour}`}>
+                        <span className={`text-4xl font-display ${RATING_LABELS[r?.rating ?? 'D']?.colour}`}>
                           {r?.rating ?? '—'}
                         </span>
                         <span className="text-lg text-gray-400">{RATING_LABELS[r?.rating ?? 'D']?.label}</span>
                       </div>
                     </div>
-                    <div className={`w-16 h-16 rounded-xl flex items-center justify-center text-2xl font-bold ${RATING_LABELS[r?.rating ?? 'D']?.bg} ${RATING_LABELS[r?.rating ?? 'D']?.colour}`}>
+                    <div className={`w-16 h-16 rounded-xl flex items-center justify-center text-2xl font-display ${RATING_LABELS[r?.rating ?? 'D']?.bg} ${RATING_LABELS[r?.rating ?? 'D']?.colour}`}>
                       {r?.rating ?? '—'}
                     </div>
                   </div>
@@ -234,22 +234,22 @@ export function CarbonEstimating() {
                   <div className="grid grid-cols-2 gap-3">
                     <div className="bg-gray-800 rounded-lg p-3">
                       <p className="text-xs text-gray-500 mb-1">Embodied Carbon</p>
-                      <p className="text-lg font-bold text-orange-400">{fmtKg(r?.embodied_kgCO2e ?? 0)}</p>
+                      <p className="text-lg font-display text-orange-400">{fmtKg(r?.embodied_kgCO2e ?? 0)}</p>
                       <p className="text-xs text-gray-500">{r?.embodied_pct ?? 0}% of total</p>
                     </div>
                     <div className="bg-gray-800 rounded-lg p-3">
                       <p className="text-xs text-gray-500 mb-1">Operational (60yr)</p>
-                      <p className="text-lg font-bold text-blue-400">{fmtKg(r?.operational_60yr_kgCO2e ?? 0)}</p>
+                      <p className="text-lg font-display text-blue-400">{fmtKg(r?.operational_60yr_kgCO2e ?? 0)}</p>
                       <p className="text-xs text-gray-500">{r?.operational_pct ?? 0}% of total</p>
                     </div>
                     <div className="bg-gray-800 rounded-lg p-3">
                       <p className="text-xs text-gray-500 mb-1">Total Lifetime</p>
-                      <p className="text-lg font-bold text-white">{fmtKg(r?.total_lifetime_kgCO2e ?? 0)}</p>
+                      <p className="text-lg font-display text-white">{fmtKg(r?.total_lifetime_kgCO2e ?? 0)}</p>
                       <p className="text-xs text-gray-500">Over 60 years</p>
                     </div>
                     <div className="bg-gray-800 rounded-lg p-3">
                       <p className="text-xs text-gray-500 mb-1">Per m² Intensity</p>
-                      <p className="text-lg font-bold text-green-400">{fmtPerM2(r?.kgCO2e_per_m2 ?? 0)}</p>
+                      <p className="text-lg font-display text-green-400">{fmtPerM2(r?.kgCO2e_per_m2 ?? 0)}</p>
                       <p className="text-xs text-gray-500">RICS benchmark: 1000</p>
                     </div>
                   </div>

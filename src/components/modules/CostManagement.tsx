@@ -174,7 +174,7 @@ export function CostManagement() {
       {/* Header */}
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-3xl font-bold text-white flex items-center gap-2">
+          <h1 className="text-3xl font-display text-white flex items-center gap-2">
             <DollarSign className="h-8 w-8 text-emerald-400" />
             Cost Management
           </h1>
@@ -243,7 +243,7 @@ export function CostManagement() {
                   <thead className="bg-gray-900 border-b border-gray-700">
                     <tr>
                       {['Category', 'Budgeted', 'Spent', 'Committed', 'Remaining', 'Variance', 'Status'].map(h => (
-                        <th key={h} className="px-4 py-3 text-left text-xs font-semibold text-gray-400 uppercase">{h}</th>
+                        <th key={h} className="px-4 py-3 text-left text-xs font-display tracking-widest text-gray-400 uppercase">{h}</th>
                       ))}
                     </tr>
                   </thead>

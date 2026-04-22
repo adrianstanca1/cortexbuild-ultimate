@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { User, FileText, AlertTriangle, CheckCircle, Clock } from 'lucide-react';
-import { getToken, API_BASE } from '../../lib/auth-storage';
+import { API_BASE } from '../../lib/auth-storage';
 
 /**
  * ActivityFeed Component
@@ -69,13 +69,9 @@ export function ActivityFeed({ projectId, limit = 10 }: ActivityFeedProps) {
   const [activities, setActivities] = useState<Activity[]>(MOCK_ACTIVITIES.slice(0, limit));
 
   useEffect(() => {
-    const token = getToken();
-    if (!token) return; // Keep mock data when unauthenticated
     const params = new URLSearchParams({ limit: String(limit) });
     if (projectId) params.set('project_id', projectId);
-    fetch(`${API_BASE}/audit?${params}`, {
-      headers: { Authorization: `Bearer ${token}` },
-    })
+    fetch(`${API_BASE}/audit?${params}`, { credentials: 'include' })
       .then(r => r.json())
       .then((rows: Array<{ id: number; action: string; table_name: string; record_id: string; user_id: string; created_at: string }>) => {
         if (!Array.isArray(rows)) return;

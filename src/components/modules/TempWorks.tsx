@@ -191,7 +191,7 @@ export default function TempWorks() {
       <div className="p-6 space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-2xl font-bold text-white" style={{ fontFamily: 'var(--font-display)' }}>
+          <h2 className="text-2xl font-display text-white">
             Temporary Works
           </h2>
           <p className="text-gray-400 text-sm mt-1">Manage temporary works design, approval and installation</p>
@@ -209,7 +209,7 @@ export default function TempWorks() {
             </div>
             <div>
               <p className="text-gray-400 text-xs">In Design</p>
-              <p className="text-2xl font-bold text-white">{rawTempWorks.filter((t: any) => t.status === 'design').length}</p>
+              <p className="text-2xl font-display text-white">{rawTempWorks.filter((t: any) => t.status === 'design').length}</p>
             </div>
           </div>
         </div>
@@ -220,7 +220,7 @@ export default function TempWorks() {
             </div>
             <div>
               <p className="text-gray-400 text-xs">Pending Approval</p>
-              <p className="text-2xl font-bold text-amber-400">{rawTempWorks.filter((t: any) => t.status === 'approval').length}</p>
+              <p className="text-2xl font-display text-amber-400">{rawTempWorks.filter((t: any) => t.status === 'approval').length}</p>
             </div>
           </div>
         </div>
@@ -231,7 +231,7 @@ export default function TempWorks() {
             </div>
             <div>
               <p className="text-gray-400 text-xs">In Use</p>
-              <p className="text-2xl font-bold text-emerald-400">{rawTempWorks.filter((t: any) => t.status === 'in_use').length}</p>
+              <p className="text-2xl font-display text-emerald-400">{rawTempWorks.filter((t: any) => t.status === 'in_use').length}</p>
             </div>
           </div>
         </div>
@@ -343,7 +343,7 @@ export default function TempWorks() {
         <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
           <div className="bg-gray-900 border border-gray-700 rounded-xl w-full max-w-lg">
             <div className="p-6 border-b border-gray-700 flex items-center justify-between">
-              <h3 className="text-xl font-bold text-white">New Temporary Work</h3>
+              <h3 className="text-xl font-display text-white">New Temporary Work</h3>
               <button type="button" onClick={() => setShowCreateModal(false)} className="text-gray-400 hover:text-white"><X size={20} /></button>
             </div>
             <div className="p-6 space-y-4">
@@ -406,7 +406,7 @@ export default function TempWorks() {
         <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
           <div className="bg-gray-900 border border-gray-700 rounded-xl w-full max-w-lg">
             <div className="p-6 border-b border-gray-700 flex items-center justify-between">
-              <h3 className="text-xl font-bold text-white">Edit Temporary Work</h3>
+              <h3 className="text-xl font-display text-white">Edit Temporary Work</h3>
               <button type="button" onClick={() => setEditItem(null)} className="text-gray-400 hover:text-white"><X size={20} /></button>
             </div>
             <div className="p-6 space-y-4">

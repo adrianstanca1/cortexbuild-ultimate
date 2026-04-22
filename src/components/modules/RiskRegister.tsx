@@ -149,7 +149,7 @@ export function RiskRegister() {
       <div className="p-6 space-y-6 bg-gray-950 min-h-screen">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-white">Risk Register</h1>
+          <h1 className="text-3xl font-display text-white">Risk Register</h1>
           <p className="text-sm text-gray-400 mt-1">UK construction project risk identification, assessment & mitigation</p>
         </div>
         <button type="button" onClick={openCreate} className="flex items-center gap-2 px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 text-sm font-medium transition-colors">
@@ -160,7 +160,7 @@ export function RiskRegister() {
       {criticalCount > 0 && (
         <div className="flex items-center gap-3 bg-red-900/30 border border-red-700 rounded-xl px-4 py-3">
           <AlertOctagon size={18} className="text-red-400"/>
-          <p className="text-sm text-red-200"><span className="font-semibold">{criticalCount} critical risk{criticalCount>1?'s':''}</span> — urgent mitigation required</p>
+          <p className="text-sm text-red-200"><span className="font-display">{criticalCount} critical risk{criticalCount>1?'s':''}</span> — urgent mitigation required</p>
         </div>
       )}
 
@@ -176,7 +176,7 @@ export function RiskRegister() {
           return (
             <div key={kpi.label} className="card bg-base-200 p-4 hover:border-gray-600 transition-colors">
               <div className="flex items-start justify-between gap-2">
-                <div><p className="text-xs text-gray-400 mb-1">{kpi.label}</p><p className="text-2xl font-bold text-white">{kpi.value}</p></div>
+                <div><p className="text-xs text-gray-400 mb-1">{kpi.label}</p><p className="text-2xl font-display text-white">{kpi.value}</p></div>
                 <Icon size={20} className="text-gray-500 flex-shrink-0 mt-0.5"/>
               </div>
             </div>
@@ -203,10 +203,10 @@ export function RiskRegister() {
       {subTab==='matrix' && (
         <div className="space-y-6">
           <div className="bg-gray-800 rounded-xl border border-gray-700 p-6 cb-table-scroll touch-pan-x">
-            <h3 className="font-semibold text-white mb-4">5×5 Likelihood-Impact Heat Map</h3>
+            <h3 className="font-display text-white mb-4">5×5 Likelihood-Impact Heat Map</h3>
             <div className="text-xs text-gray-400 mb-2 ml-20">Impact ⟶</div>
             <div className="flex gap-3">
-              <div className="flex flex-col justify-around text-xs text-gray-400 text-right w-20 flex-shrink-0 font-semibold">
+              <div className="flex flex-col justify-around text-xs text-gray-400 text-right w-20 flex-shrink-0 font-display">
                 <div>Almost Certain (5)</div>
                 <div>Likely (4)</div>
                 <div>Possible (3)</div>
@@ -215,7 +215,7 @@ export function RiskRegister() {
               </div>
               <div className="flex flex-col gap-1 flex-1 min-w-0">
                 <div className="flex gap-1 mb-1 px-0.5">
-                  {IMPACT.map((imp, idx) => <div key={imp} className="flex-1 text-center text-xs text-gray-400 font-semibold truncate">({idx+1})<br/>{imp}</div>)}
+                  {IMPACT.map((imp, idx) => <div key={imp} className="flex-1 text-center text-xs text-gray-400 font-display tracking-widest truncate">({idx+1})<br/>{imp}</div>)}
                 </div>
                 {[...LIKELIHOOD].reverse().map(lik=>(
                   <div key={lik} className="flex gap-1">
@@ -235,9 +235,9 @@ export function RiskRegister() {
                           className={`flex-1 h-14 rounded border transition-all ${bgClass} ${isSelected ? 'ring-2 ring-orange-500' : 'border'} flex flex-col items-center justify-center relative group`}
                           title={`${lik}×${imp}: Score ${score}`}
                         >
-                          <span className={`text-sm font-bold ${level.textColour}`}>{score}</span>
+                          <span className="text-sm font-display text-white">{score}</span>
                           {cellRisks.length>0 && (
-                            <span className="absolute -top-2 -right-2 w-6 h-6 bg-orange-500 text-white text-xs rounded-full flex items-center justify-center font-bold">{cellRisks.length}</span>
+                            <span className="absolute -top-2 -right-2 w-6 h-6 bg-orange-500 text-white text-xs rounded-full flex items-center justify-center font-display">{cellRisks.length}</span>
                           )}
                         </button>
                       );
@@ -263,7 +263,7 @@ export function RiskRegister() {
 
           {selectedMatrixCell && (
             <div className="bg-gray-800 rounded-xl border border-gray-700 p-6">
-              <h4 className="font-semibold text-white mb-4">Risks in {selectedMatrixCell.lik} × {selectedMatrixCell.imp} cell (Score: {Number(RATINGS[selectedMatrixCell.lik]??1)*Number(RATINGS[selectedMatrixCell.imp]??1)})</h4>
+              <h4 className="font-display text-white mb-4">Risks in {selectedMatrixCell.lik} × {selectedMatrixCell.imp} cell (Score: {Number(RATINGS[selectedMatrixCell.lik]??1)*Number(RATINGS[selectedMatrixCell.imp]??1)})</h4>
               <div className="space-y-2">
                 {risks.filter(r=>r.likelihood===selectedMatrixCell.lik&&r.impact===selectedMatrixCell.imp).length === 0 ? (
                   <p className="text-gray-400 text-sm">No risks in this cell</p>
@@ -277,7 +277,7 @@ export function RiskRegister() {
                           <p className="text-sm font-medium text-white">{String(r.title??'Untitled')}</p>
                           <p className="text-xs text-gray-400">{String(r.category??'')} • Owner: {String(r.owner??'Unassigned')}</p>
                         </div>
-                        <div className={`px-2 py-1 rounded text-xs font-bold whitespace-nowrap ${level.bg}`}>{level.label}</div>
+                        <div className={`px-2 py-1 rounded text-xs font-display whitespace-nowrap ${level.bg}`}>{level.label}</div>
                       </div>
                     );
                   })
@@ -293,7 +293,7 @@ export function RiskRegister() {
         <div className="bg-gray-800 rounded-xl border border-gray-700 overflow-hidden">
           <div className="p-6 border-b border-gray-700 flex items-center justify-between">
             <div>
-              <h3 className="font-semibold text-white">Mitigation Action Items</h3>
+              <h3 className="font-display text-white">Mitigation Action Items</h3>
               <p className="text-sm text-gray-400 mt-1">Track and manage risk mitigation actions</p>
             </div>
             <button type="button" onClick={openCreate} className="flex items-center gap-2 px-3 py-1.5 bg-orange-600 text-white rounded text-sm font-medium hover:bg-orange-700 transition-colors">
@@ -304,13 +304,13 @@ export function RiskRegister() {
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-gray-700 bg-gray-900/50">
-                  <th className="text-left px-4 py-3 text-gray-400 font-semibold">Risk #</th>
-                  <th className="text-left px-4 py-3 text-gray-400 font-semibold">Title</th>
-                  <th className="text-left px-4 py-3 text-gray-400 font-semibold">Mitigation Action</th>
-                  <th className="text-left px-4 py-3 text-gray-400 font-semibold">Owner</th>
-                  <th className="text-left px-4 py-3 text-gray-400 font-semibold">Due Date</th>
-                  <th className="text-left px-4 py-3 text-gray-400 font-semibold">Status</th>
-                  <th className="text-left px-4 py-3 text-gray-400 font-semibold">Progress</th>
+                  <th className="text-left px-4 py-3 text-gray-400 font-display tracking-widest">Risk #</th>
+                  <th className="text-left px-4 py-3 text-gray-400 font-display tracking-widest">Title</th>
+                  <th className="text-left px-4 py-3 text-gray-400 font-display tracking-widest">Mitigation Action</th>
+                  <th className="text-left px-4 py-3 text-gray-400 font-display tracking-widest">Owner</th>
+                  <th className="text-left px-4 py-3 text-gray-400 font-display tracking-widest">Due Date</th>
+                  <th className="text-left px-4 py-3 text-gray-400 font-display tracking-widest">Status</th>
+                  <th className="text-left px-4 py-3 text-gray-400 font-display tracking-widest">Progress</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-700">
@@ -319,7 +319,7 @@ export function RiskRegister() {
                   const rowClass = isOverdue ? 'bg-red-900/10' : '';
                   return (
                     <tr key={String(action.id??'')} className={`border-b border-gray-700 hover:bg-gray-750 transition-colors ${rowClass}`}>
-                      <td className="px-4 py-3 text-gray-300">#R{String(action.risk_id??'').slice(-3)}</td>
+                      <td className="px-4 py-3 text-gray-300 font-mono">#R{String(action.risk_id??'').slice(-3)}</td>
                       <td className="px-4 py-3 text-gray-300 font-medium text-wrap">{String(action.title??'')}</td>
                       <td className="px-4 py-3 text-gray-400 text-sm max-w-xs truncate">{String(action.title??'')}</td>
                       <td className="px-4 py-3 text-gray-300 flex items-center gap-1">
@@ -372,7 +372,7 @@ export function RiskRegister() {
                   <div className="flex items-center justify-between">
                     <div>
                       <p className="text-xs text-gray-400 mb-1">{kpi.label}</p>
-                      <p className="text-2xl font-bold text-white">{kpi.value}</p>
+<p className="text-2xl font-display text-white">{kpi.value}</p>
                     </div>
                     <Icon size={24} className={`${kpi.color} opacity-50`}/>
                   </div>
@@ -382,7 +382,7 @@ export function RiskRegister() {
           </div>
 
           <div className="card bg-base-200 p-6">
-            <h3 className="font-semibold text-white mb-4 flex items-center gap-2">
+            <h3 className="font-display text-white mb-4 flex items-center gap-2">
               <TrendingUp size={18} className="text-orange-400"/>
               Risk Count by Rating (6-Month Trend)
             </h3>
@@ -412,7 +412,7 @@ export function RiskRegister() {
           </div>
 
           <div className="card bg-base-200 p-6">
-            <h3 className="font-semibold text-white mb-4 flex items-center gap-2">
+            <h3 className="font-display text-white mb-4 flex items-center gap-2">
               <BarChart3 size={18} className="text-blue-400"/>
               Risks by Category
             </h3>
@@ -492,7 +492,7 @@ export function RiskRegister() {
                               {isSelected ? <CheckSquare size={16} className="text-blue-400"/> : <Square size={16} className="text-gray-500"/>}
                             </button>
                             <div className="flex-1 min-w-0">
-                              <p className="font-semibold text-white truncate">{String(r.title??'Untitled')}</p>
+                              <p className="font-display text-white truncate">{String(r.title??'Untitled')}</p>
                               <div className="flex flex-wrap gap-2 mt-1 text-xs text-gray-400">
                                 <span>{String(r.category??'')}</span>
                                 {!!r.owner && <span>•</span>}
@@ -501,7 +501,7 @@ export function RiskRegister() {
                             </div>
                             <div className="flex gap-2 flex-shrink-0">
                               <div className={`px-3 py-2 rounded text-center ${level.bg}`}>
-                                <p className={`text-xs font-bold ${level.colour}`}>{score}</p>
+                                <p className={`text-xs font-display ${level.colour}`}>{score}</p>
                                 <p className={`text-xs ${level.textColour}`}>{level.label}</p>
                               </div>
                               <span className={`text-xs px-2 py-1 rounded font-medium whitespace-nowrap ${statusClass}`}>
@@ -515,15 +515,15 @@ export function RiskRegister() {
                         </div>
                         {isExp && (
                           <div className="px-6 pb-4 bg-gray-900/50 space-y-4 text-sm border-t border-gray-700">
-                            {!!r.description && <div><p className="text-xs font-semibold text-gray-400 mb-1">DESCRIPTION</p><p className="text-gray-300">{String(r.description)}</p></div>}
+                            {!!r.description && <div><p className="text-xs font-display text-gray-400 mb-1 tracking-widest">DESCRIPTION</p><p className="text-gray-300">{String(r.description)}</p></div>}
                             <div className="grid grid-cols-2 gap-4">
                               <div><p className="text-xs text-gray-500 mb-1">Likelihood</p><p className="text-gray-300 font-medium">{String(r.likelihood??'—')}</p></div>
                               <div><p className="text-xs text-gray-500 mb-1">Impact</p><p className="text-gray-300 font-medium">{String(r.impact??'—')}</p></div>
                               <div><p className="text-xs text-gray-500 mb-1">Response Type</p><p className="text-gray-300 font-medium">{String(r.response_type??'—')}</p></div>
                               {!!r.review_date && <div><p className="text-xs text-gray-500 mb-1">Review Date</p><p className="text-gray-300 font-medium">{String(r.review_date)}</p></div>}
                             </div>
-                            {!!r.mitigation && <div><p className="text-xs font-semibold text-yellow-400 mb-1">MITIGATION PLAN</p><p className="text-gray-300">{String(r.mitigation)}</p></div>}
-                            {!!r.contingency && <div><p className="text-xs font-semibold text-blue-400 mb-1">CONTINGENCY PLAN</p><p className="text-gray-300">{String(r.contingency)}</p></div>}
+                            {!!r.mitigation && <div><p className="text-xs font-display text-yellow-400 mb-1 tracking-widest">MITIGATION PLAN</p><p className="text-gray-300">{String(r.mitigation)}</p></div>}
+                            {!!r.contingency && <div><p className="text-xs font-display text-blue-400 mb-1 tracking-widest">CONTINGENCY PLAN</p><p className="text-gray-300">{String(r.contingency)}</p></div>}
                             <div className="flex gap-2 pt-2 border-t border-gray-700">
                               <button type="button" onClick={()=>openEdit(r)} className="flex items-center gap-1 text-xs px-3 py-1.5 bg-orange-900/40 border border-orange-700 text-orange-300 rounded hover:bg-orange-900/60 font-medium transition-colors">
                                 <Edit2 size={14}/><span>Edit</span>
@@ -560,14 +560,14 @@ export function RiskRegister() {
         <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
           <div className="bg-gray-800 rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto border border-gray-700">
             <div className="flex items-center justify-between p-6 border-b border-gray-700 sticky top-0 bg-gray-800 z-10">
-              <h2 className="text-lg font-semibold text-white">{editing?'Edit Risk':'Add Risk'}</h2>
+              <h2 className="text-lg font-display text-white">{editing?'Edit Risk':'Add Risk'}</h2>
               <button type="button" onClick={()=>setShowModal(false)} className="p-2 hover:bg-gray-700 rounded-lg text-gray-400"><X size={18}/></button>
             </div>
             <form onSubmit={handleSubmit} className="p-6 space-y-4">
               {formScore > 0 && (
                 <div className={`rounded-xl px-4 py-3 flex items-center gap-3 ${formLevel.bg} border ${formLevel.colour}`}>
                   <span className={`text-lg font-black ${formLevel.textColour}`}>{formScore}</span>
-                  <div><p className={`text-sm font-semibold ${formLevel.textColour}`}>{formLevel.label} Risk</p><p className="text-xs text-gray-400">Likelihood × Impact = Score</p></div>
+                  <div><p className={`text-sm font-display ${formLevel.textColour}`}>{formLevel.label} Risk</p><p className="text-xs text-gray-400">Likelihood × Impact = Score</p></div>
                 </div>
               )}
               <div className="grid grid-cols-2 gap-4">
@@ -614,7 +614,7 @@ export function RiskRegister() {
                   <input type="date" value={form.review_date} onChange={e=>setForm(f=>({...f,review_date:e.target.value}))} className="w-full border border-gray-600 bg-gray-900 text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500"/>
                 </div>
                 <div className="col-span-2 border-t border-gray-700 pt-4">
-                  <p className="text-xs font-semibold text-gray-400 mb-3">Residual Risk (After Mitigation)</p>
+                  <p className="text-xs font-display text-gray-400 mb-3 tracking-widest">Residual Risk (After Mitigation)</p>
                   <div className="grid grid-cols-2 gap-4">
                     <div>
                       <label className="block text-sm font-medium text-gray-300 mb-1">Residual Likelihood</label>

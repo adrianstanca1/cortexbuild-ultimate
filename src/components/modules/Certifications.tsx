@@ -220,15 +220,15 @@ export default function Certifications() {
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-gray-700">
-                <th className="px-4 py-2 text-left text-gray-400 font-semibold">Cert Type</th>
-                <th className="px-4 py-2 text-left text-gray-400 font-semibold">Holder</th>
-                <th className="px-4 py-2 text-left text-gray-400 font-semibold">Issuing Body</th>
-                <th className="px-4 py-2 text-left text-gray-400 font-semibold">Accreditation No</th>
-                <th className="px-4 py-2 text-left text-gray-400 font-semibold">Grade</th>
-                <th className="px-4 py-2 text-left text-gray-400 font-semibold">Issue Date</th>
-                <th className="px-4 py-2 text-left text-gray-400 font-semibold">Expiry Date</th>
-                <th className="px-4 py-2 text-left text-gray-400 font-semibold">Status</th>
-                <th className="px-4 py-2 text-right text-gray-400 font-semibold">Actions</th>
+                <th className="px-4 py-2 text-left text-gray-400 font-display tracking-widest">Cert Type</th>
+                <th className="px-4 py-2 text-left text-gray-400 font-display tracking-widest">Holder</th>
+                <th className="px-4 py-2 text-left text-gray-400 font-display tracking-widest">Issuing Body</th>
+                <th className="px-4 py-2 text-left text-gray-400 font-display tracking-widest">Accreditation No</th>
+                <th className="px-4 py-2 text-left text-gray-400 font-display tracking-widest">Grade</th>
+                <th className="px-4 py-2 text-left text-gray-400 font-display tracking-widest">Issue Date</th>
+                <th className="px-4 py-2 text-left text-gray-400 font-display tracking-widest">Expiry Date</th>
+                <th className="px-4 py-2 text-left text-gray-400 font-display tracking-widest">Status</th>
+                <th className="px-4 py-2 text-right text-gray-400 font-display tracking-widest">Actions</th>
               </tr>
             </thead>
             <tbody>
@@ -397,10 +397,10 @@ export default function Certifications() {
   const reportsTab = (
     <div className="space-y-6">
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <div className="card p-4"><div className="text-gray-400 text-xs mb-2">Total Certifications</div><div className="text-3xl font-bold text-white">{certificationData.length}</div></div>
-        <div className="card p-4"><div className="text-gray-400 text-xs mb-2">Valid %</div><div className="text-3xl font-bold text-green-400">{certificationData.length > 0 ? Math.round((validCount / certificationData.length) * 100) : 0}%</div></div>
-        <div className="card p-4"><div className="text-gray-400 text-xs mb-2">Expiring Soon</div><div className="text-3xl font-bold text-amber-400">{expiringCount}</div></div>
-        <div className="card p-4"><div className="text-gray-400 text-xs mb-2">Expired</div><div className="text-3xl font-bold text-red-400">{expiredCount}</div></div>
+        <div className="card p-4"><div className="text-gray-400 text-xs mb-2">Total Certifications</div><div className="text-3xl font-display text-white">{certificationData.length}</div></div>
+        <div className="card p-4"><div className="text-gray-400 text-xs mb-2">Valid %</div><div className="text-3xl font-display text-green-400">{certificationData.length > 0 ? Math.round((validCount / certificationData.length) * 100) : 0}%</div></div>
+        <div className="card p-4"><div className="text-gray-400 text-xs mb-2">Expiring Soon</div><div className="text-3xl font-display text-amber-400">{expiringCount}</div></div>
+        <div className="card p-4"><div className="text-gray-400 text-xs mb-2">Expired</div><div className="text-3xl font-display text-red-400">{expiredCount}</div></div>
       </div>
 
       <div className="card p-6">
@@ -468,7 +468,7 @@ export default function Certifications() {
       <div className="p-6 space-y-6">
         <div className="flex items-center justify-between">
           <div>
-            <h2 className="text-2xl font-bold text-white">Certifications & Licenses</h2>
+            <h2 className="text-2xl font-display text-white">Certifications & Licenses</h2>
             <p className="text-gray-400 text-sm mt-1">Manage certifications, compliance and worker qualifications</p>
           </div>
           <button type="button" onClick={() => setShowCreateModal(true)} className="flex items-center gap-2 px-4 py-2 bg-orange-500 hover:bg-orange-600 text-white rounded-lg font-semibold">
@@ -478,10 +478,10 @@ export default function Certifications() {
 
         {activeTab === 'all' && (
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-            <div className="card p-4"><div className="flex items-center gap-3"><div className="w-10 h-10 rounded-lg bg-green-500/10 flex items-center justify-center"><FileCheck className="text-green-400" size={20} /></div><div><p className="text-gray-400 text-xs">Valid</p><p className="text-2xl font-bold text-green-400">{validCount}</p></div></div></div>
-            <div className="card p-4"><div className="flex items-center gap-3"><div className="w-10 h-10 rounded-lg bg-amber-500/10 flex items-center justify-center"><AlertTriangle className="text-amber-400" size={20} /></div><div><p className="text-gray-400 text-xs">Expiring Soon</p><p className="text-2xl font-bold text-amber-400">{expiringCount}</p></div></div></div>
-            <div className="card p-4"><div className="flex items-center gap-3"><div className="w-10 h-10 rounded-lg bg-red-500/10 flex items-center justify-center"><Trash2 className="text-red-400" size={20} /></div><div><p className="text-gray-400 text-xs">Expired</p><p className="text-2xl font-bold text-red-400">{expiredCount}</p></div></div></div>
-            <div className="card p-4"><div className="flex items-center gap-3"><div className="w-10 h-10 rounded-lg bg-blue-500/10 flex items-center justify-center"><Shield className="text-blue-400" size={20} /></div><div><p className="text-gray-400 text-xs">Total</p><p className="text-2xl font-bold text-blue-400">{certificationData.length}</p></div></div></div>
+            <div className="card p-4"><div className="flex items-center gap-3"><div className="w-10 h-10 rounded-lg bg-green-500/10 flex items-center justify-center"><FileCheck className="text-green-400" size={20} /></div><div><p className="text-gray-400 text-xs">Valid</p><p className="text-2xl font-display text-green-400">{validCount}</p></div></div></div>
+            <div className="card p-4"><div className="flex items-center gap-3"><div className="w-10 h-10 rounded-lg bg-amber-500/10 flex items-center justify-center"><AlertTriangle className="text-amber-400" size={20} /></div><div><p className="text-gray-400 text-xs">Expiring Soon</p><p className="text-2xl font-display text-amber-400">{expiringCount}</p></div></div></div>
+            <div className="card p-4"><div className="flex items-center gap-3"><div className="w-10 h-10 rounded-lg bg-red-500/10 flex items-center justify-center"><Trash2 className="text-red-400" size={20} /></div><div><p className="text-gray-400 text-xs">Expired</p><p className="text-2xl font-display text-red-400">{expiredCount}</p></div></div></div>
+            <div className="card p-4"><div className="flex items-center gap-3"><div className="w-10 h-10 rounded-lg bg-blue-500/10 flex items-center justify-center"><Shield className="text-blue-400" size={20} /></div><div><p className="text-gray-400 text-xs">Total</p><p className="text-2xl font-display text-blue-400">{certificationData.length}</p></div></div></div>
           </div>
         )}
 

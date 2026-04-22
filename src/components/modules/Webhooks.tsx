@@ -185,7 +185,7 @@ export function Webhooks() {
       <div className="p-6 space-y-6">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-2xl font-bold text-white">Webhooks</h1>
+            <h1 className="text-2xl font-display text-white">Webhooks</h1>
             <p className="text-sm text-gray-400 mt-1">Manage webhook subscriptions and delivery logs</p>
           </div>
           <button

@@ -108,13 +108,13 @@ export function AuditLog() {
       <div className="space-y-6">
       {/* Header with KPIs */}
       <div>
-        <h2 className="text-2xl font-bold text-white mb-4">Audit & Compliance Log</h2>
+        <h2 className="text-2xl font-display text-white mb-4">Audit & Compliance Log</h2>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           <div className="input input-bordered p-4">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-xs text-gray-400 uppercase">Events Today</p>
-                <p className="text-xl font-bold text-white">{Number(activityToday.length)}</p>
+                <p className="text-xl font-display text-white">{Number(activityToday.length)}</p>
               </div>
               <Activity className="h-6 w-6 text-blue-400" />
             </div>
@@ -123,7 +123,7 @@ export function AuditLog() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-xs text-gray-400 uppercase">Active Users</p>
-                <p className="text-xl font-bold text-white">{Number(stats.active_users)}</p>
+                <p className="text-xl font-display text-white">{Number(stats.active_users)}</p>
               </div>
               <Users className="h-6 w-6 text-cyan-400" />
             </div>
@@ -132,7 +132,7 @@ export function AuditLog() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-xs text-gray-400 uppercase">Security Alerts</p>
-                <p className="text-xl font-bold text-white">{Number(stats.security_alerts)}</p>
+                <p className="text-xl font-display text-white">{Number(stats.security_alerts)}</p>
               </div>
               <AlertTriangle className="h-6 w-6 text-red-400" />
             </div>
@@ -141,7 +141,7 @@ export function AuditLog() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-xs text-gray-400 uppercase">This Week</p>
-                <p className="text-xl font-bold text-white">{Number(stats.week_entries)}</p>
+                <p className="text-xl font-display text-white">{Number(stats.week_entries)}</p>
               </div>
               <TrendingUp className="h-6 w-6 text-emerald-400" />
             </div>
@@ -223,13 +223,13 @@ export function AuditLog() {
                 <table className="w-full text-sm">
                   <thead className="bg-gray-800">
                     <tr>
-                      <th className="text-left px-4 py-3 text-xs font-semibold text-gray-300 w-10"></th>
-                      <th className="text-left px-4 py-3 text-xs font-semibold text-gray-300">Time</th>
-                      <th className="text-left px-4 py-3 text-xs font-semibold text-gray-300">User</th>
-                      <th className="text-left px-4 py-3 text-xs font-semibold text-gray-300">Action</th>
-                      <th className="text-left px-4 py-3 text-xs font-semibold text-gray-300">Module</th>
-                      <th className="text-left px-4 py-3 text-xs font-semibold text-gray-300">Description</th>
-                      <th className="text-left px-4 py-3 text-xs font-semibold text-gray-300">IP Address</th>
+                      <th className="text-left px-4 py-3 text-xs font-display text-gray-300 w-10 tracking-widest uppercase"></th>
+                      <th className="text-left px-4 py-3 text-xs font-display text-gray-300 tracking-widest uppercase">Time</th>
+                      <th className="text-left px-4 py-3 text-xs font-display text-gray-300 tracking-widest uppercase">User</th>
+                      <th className="text-left px-4 py-3 text-xs font-display text-gray-300 tracking-widest uppercase">Action</th>
+                      <th className="text-left px-4 py-3 text-xs font-display text-gray-300 tracking-widest uppercase">Module</th>
+                      <th className="text-left px-4 py-3 text-xs font-display text-gray-300 tracking-widest uppercase">Description</th>
+                      <th className="text-left px-4 py-3 text-xs font-display text-gray-300 tracking-widest uppercase">IP Address</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-800">
@@ -320,25 +320,25 @@ export function AuditLog() {
                   </div>
                   <div className="grid grid-cols-4 gap-2 pt-3 border-t border-gray-800">
                     <div className="text-center">
-                      <p className="text-lg font-bold text-cyan-400">
+                      <p className="text-lg font-display text-cyan-400">
                         {Number(userEntries.filter(e => e.action === 'view').length)}
                       </p>
                       <p className="text-xs text-gray-400">Views</p>
                     </div>
                     <div className="text-center">
-                      <p className="text-lg font-bold text-emerald-400">
+                      <p className="text-lg font-display text-emerald-400">
                         {Number(userEntries.filter(e => e.action === 'create').length)}
                       </p>
                       <p className="text-xs text-gray-400">Created</p>
                     </div>
                     <div className="text-center">
-                      <p className="text-lg font-bold text-blue-400">
+                      <p className="text-lg font-display text-blue-400">
                         {Number(userEntries.filter(e => e.action === 'update').length)}
                       </p>
                       <p className="text-xs text-gray-400">Updated</p>
                     </div>
                     <div className="text-center">
-                      <p className="text-lg font-bold text-red-400">
+                      <p className="text-lg font-display text-red-400">
                         {Number(userEntries.filter(e => e.action === 'delete').length)}
                       </p>
                       <p className="text-xs text-gray-400">Deleted</p>
@@ -409,7 +409,7 @@ export function AuditLog() {
                 <p className="text-xs uppercase mb-1">
                   {item.label}
                 </p>
-                <p className="text-2xl font-bold">{Number(item.value)}</p>
+                <p className="text-2xl font-display">{Number(item.value)}</p>
               </div>
             ))}
           </div>
@@ -420,7 +420,7 @@ export function AuditLog() {
       {subTab === 'export' && (
         <div className="space-y-6">
           <div className="card p-6 max-w-md">
-            <h3 className="text-lg font-bold text-white mb-4">Export Audit Trail</h3>
+            <h3 className="text-lg font-display text-white mb-4">Export Audit Trail</h3>
             <div className="space-y-4">
               <div>
                 <label className="block text-sm text-gray-400 mb-2">Date From</label>

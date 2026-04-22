@@ -252,7 +252,7 @@ export function RAMS() {
       <div className="p-6 space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-white">RAMS</h1>
+          <h1 className="text-2xl font-display text-white">RAMS</h1>
           <p className="text-sm text-gray-400 mt-1">Risk assessments, method statements & approvals</p>
         </div>
         <div className="flex items-center gap-2">
@@ -283,7 +283,7 @@ export function RAMS() {
           <div key={kpi.label} className="bg-gray-900 rounded-xl border border-gray-800 p-4">
             <div className="flex items-center gap-3">
               <div className={`p-2 rounded-lg ${kpi.bg}`}><kpi.icon size={20} className={kpi.colour} /></div>
-              <div><p className="text-xs text-gray-500">{kpi.label}</p><p className="text-xl font-bold text-white">{kpi.value}</p></div>
+              <div><p className="text-xs text-gray-500">{kpi.label}</p><p className="text-xl font-display text-white">{kpi.value}</p></div>
             </div>
           </div>
         ))}
@@ -342,7 +342,7 @@ export function RAMS() {
                       <button type="button" onClick={e => { e.stopPropagation(); toggle(id); }} className="flex-shrink-0">
                         {isSelected ? <CheckSquare size={16} className="text-blue-400"/> : <Square size={16} className="text-gray-500"/>}
                       </button>
-                      <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-purple-500 to-purple-600 flex items-center justify-center text-white flex-shrink-0 text-xs font-bold">
+                      <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-purple-500 to-purple-600 flex items-center justify-center text-white flex-shrink-0 text-xs font-display">
                         {String(r.title ?? '?').slice(0, 2).toUpperCase()}
                       </div>
                       <div className="flex-1 min-w-0">
@@ -503,7 +503,7 @@ export function RAMS() {
           ) : (
             <table className="w-full text-sm">
               <thead className="bg-gray-800/50 border-b border-gray-800">
-                <tr>{['Document', 'Requestor', 'Approval Chain', 'Sign-off', 'Action'].map(h => <th key={h} className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">{h}</th>)}</tr>
+                <tr>{['Document', 'Requestor', 'Approval Chain', 'Sign-off', 'Action'].map(h => <th key={h} className="text-left px-4 py-3 text-xs font-display text-gray-500 uppercase tracking-widest">{h}</th>)}</tr>
               </thead>
               <tbody className="divide-y divide-gray-800">
                 {rams.filter(r => r.status === 'Under Review').map(r => (

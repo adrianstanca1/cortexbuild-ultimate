@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { Send, Users, Hash, Plus, X, Search, Smile, Paperclip, Pin, Trash2 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
-import { getToken, API_BASE } from '../../lib/auth-storage';
+import { API_BASE } from '../../lib/auth-storage';
 import { toast } from 'sonner';
 import { EmptyState } from '../ui/EmptyState';
 import { ModuleBreadcrumbs } from '../ui/Breadcrumbs';
@@ -99,9 +99,8 @@ export default function TeamChat() {
 
   async function loadChannels() {
     try {
-      const token = getToken();
       const res = await fetch(`${API_BASE}/chat/channels`, {
-        headers: { Authorization: `Bearer ${token}` },
+        credentials: 'include',
       });
       if (res.ok) {
         const data = await res.json();
@@ -117,9 +116,8 @@ export default function TeamChat() {
 
   async function loadMessages(channelId: string) {
     try {
-      const token = getToken();
       const res = await fetch(`${API_BASE}/chat/channels/${channelId}/messages`, {
-        headers: { Authorization: `Bearer ${token}` },
+        credentials: 'include',
       });
       if (res.ok) {
         const data = await res.json();
@@ -138,13 +136,10 @@ export default function TeamChat() {
   async function handleSendMessage() {
     if (!newMessage.trim() || !activeChannel || !user) return;
     try {
-      const token = getToken();
       const res = await fetch(`${API_BASE}/chat/channels/${activeChannel.id}/messages`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
-        },
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ content: newMessage.trim() }),
       });
       if (res.ok) {
@@ -169,13 +164,10 @@ export default function TeamChat() {
   async function handleCreateChannel() {
     if (!newChannelName.trim()) return;
     try {
-      const token = getToken();
       const res = await fetch(`${API_BASE}/chat/channels`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
-        },
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           name: newChannelName.trim().toLowerCase().replace(/\s+/g, '-'),
           description: newChannelDesc,
@@ -200,10 +192,9 @@ export default function TeamChat() {
   async function handleDeleteMessage(messageId: string) {
     if (!activeChannel) return;
     try {
-      const token = getToken();
       const res = await fetch(`${API_BASE}/chat/channels/${activeChannel.id}/messages/${messageId}`, {
         method: 'DELETE',
-        headers: { Authorization: `Bearer ${token}` },
+        credentials: 'include',
       });
       if (res.ok) {
         setMessages(prev => prev.filter(m => m.id !== messageId));
@@ -217,10 +208,9 @@ export default function TeamChat() {
   async function handlePinMessage(messageId: string) {
     if (!activeChannel) return;
     try {
-      const token = getToken();
       const res = await fetch(`${API_BASE}/chat/channels/${activeChannel.id}/messages/${messageId}/pin`, {
         method: 'PUT',
-        headers: { Authorization: `Bearer ${token}` },
+        credentials: 'include',
       });
       if (res.ok) {
         setMessages(prev => prev.map(m => m.id === messageId ? { ...m, pinned: true } : m));

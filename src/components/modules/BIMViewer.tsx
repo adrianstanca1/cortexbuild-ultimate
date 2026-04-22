@@ -370,7 +370,7 @@ export const BIMViewer: React.FC = () => {
       {/* Header */}
       <div className="flex justify-between items-center mb-8">
         <div>
-          <h1 className="text-3xl font-bold text-white flex items-center gap-2">
+          <h1 className="text-3xl font-display text-white flex items-center gap-2">
             <Box className="h-8 w-8 text-amber-500" />
             BIM Viewer
           </h1>
@@ -408,7 +408,7 @@ export const BIMViewer: React.FC = () => {
             <div className="card-header flex justify-between items-center">
               <div className="flex items-center gap-2">
                 <Box className="h-5 w-5 text-amber-500" />
-                <h3 className="text-lg font-semibold text-white">3D Model Viewer</h3>
+                <h3 className="text-lg font-display text-white">3D Model Viewer</h3>
               </div>
               <div className="flex gap-2">
                 <button
@@ -476,7 +476,7 @@ export const BIMViewer: React.FC = () => {
         <div className="space-y-4">
           <div className="card bg-base-200 border border-base-300">
             <div className="card-header">
-              <h3 className="text-lg font-semibold text-white">Loaded Models</h3>
+              <h3 className="text-lg font-display text-white">Loaded Models</h3>
             </div>
             <div className="card-content space-y-3">
               {models.map((model) => (
@@ -517,7 +517,7 @@ export const BIMViewer: React.FC = () => {
           <div className="card bg-base-200 border border-base-300">
             <div className="card-header flex items-center gap-2">
               <AlertTriangle className="h-4 w-4 text-orange-500" />
-              <h3 className="text-lg font-semibold text-white">Clash Detection</h3>
+              <h3 className="text-lg font-display text-white">Clash Detection</h3>
             </div>
             <div className="card-content space-y-3">
               {clashes.map((clash) => (
@@ -573,13 +573,13 @@ export const BIMViewer: React.FC = () => {
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <div className="card bg-base-200 border border-base-300 text-center">
           <div className="card-content">
-            <div className="text-2xl font-bold text-blue-400">{models.length}</div>
+            <div className="text-2xl font-display text-blue-400">{models.length}</div>
             <div className="text-sm text-blue-300">Models Loaded</div>
           </div>
         </div>
         <div className="card bg-base-200 border border-base-300 text-center">
           <div className="card-content">
-            <div className="text-2xl font-bold text-green-400">
+            <div className="text-2xl font-display text-green-400">
               {models.reduce((sum, m) => sum + (m.elements || 0), 0).toLocaleString()}
             </div>
             <div className="text-sm text-green-300">Total Elements</div>
@@ -587,7 +587,7 @@ export const BIMViewer: React.FC = () => {
         </div>
         <div className="card bg-base-200 border border-base-300 text-center">
           <div className="card-content">
-            <div className="text-2xl font-bold text-orange-400">
+            <div className="text-2xl font-display text-orange-400">
               {clashes.filter(c => c.status === 'open').length}
             </div>
             <div className="text-sm text-orange-300">Active Clashes</div>
@@ -595,7 +595,7 @@ export const BIMViewer: React.FC = () => {
         </div>
         <div className="card bg-base-200 border border-base-300 text-center">
           <div className="card-content">
-            <div className="text-2xl font-bold text-purple-400">
+            <div className="text-2xl font-display text-purple-400">
               {(models.reduce((sum, m) => sum + m.size, 0) / 1024).toFixed(1)}
             </div>
             <div className="text-sm text-purple-300">Total Size (MB)</div>
@@ -607,7 +607,7 @@ export const BIMViewer: React.FC = () => {
         <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
           <div className="bg-base-200 border border-base-300 rounded-xl w-full max-w-4xl max-h-[80vh] overflow-hidden flex flex-col">
             <div className="p-6 border-b border-base-300 flex items-center justify-between">
-              <h3 className="text-xl font-bold text-white flex items-center gap-2">
+              <h3 className="text-xl font-display text-white flex items-center gap-2">
                 <Layers className="h-5 w-5 text-amber-500" />
                 Model Management
               </h3>
@@ -618,7 +618,7 @@ export const BIMViewer: React.FC = () => {
             <div className="p-6 overflow-y-auto flex-1 space-y-6">
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 <div className="md:col-span-2 space-y-4">
-                  <h4 className="text-white font-semibold mb-2">Available Models</h4>
+                  <h4 className="text-white font-display mb-2">Available Models</h4>
                   <div className="space-y-2">
                     {models.map(model => (
                       <div key={model.id} className="p-3 bg-base-300 rounded-lg border border-base-300 flex justify-between items-center group">
@@ -659,7 +659,7 @@ export const BIMViewer: React.FC = () => {
                   </div>
                 </div>
                 <div className="bg-base-300 p-4 rounded-lg border border-base-300 space-y-4">
-                  <h4 className="text-white font-semibold mb-2">Quick Upload</h4>
+                  <h4 className="text-white font-display mb-2">Quick Upload</h4>
                   <div className="space-y-3">
                     <label className="block w-full p-4 border-2 border-dashed border-base-300 rounded-lg cursor-pointer hover:border-amber-500 transition-colors text-center">
                       <input type="file" className="hidden" accept=".ifc,.gltf,.glb,.obj,.fbx" onChange={handleUploadModel} />

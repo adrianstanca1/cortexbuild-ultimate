@@ -309,14 +309,14 @@ export default function ActivityFeed() {
   const analyticsTab = (
     <div className="space-y-6">
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <div className="card p-4"><div className="text-gray-400 text-xs mb-2">Total Activities</div><div className="text-3xl font-bold text-white">{stats.total}</div></div>
-        <div className="card p-4"><div className="text-gray-400 text-xs mb-2">Today</div><div className="text-3xl font-bold text-green-400">{stats.today}</div></div>
-        <div className="card p-4"><div className="text-gray-400 text-xs mb-2">This Week</div><div className="text-3xl font-bold text-amber-400">{stats.thisWeek}</div></div>
-        <div className="card p-4"><div className="text-gray-400 text-xs mb-2">Active Users</div><div className="text-3xl font-bold text-purple-400">{stats.uniqueUsers}</div></div>
+        <div className="card p-4"><div className="text-gray-400 text-xs mb-2">Total Activities</div><div className="text-3xl font-display text-white">{stats.total}</div></div>
+        <div className="card p-4"><div className="text-gray-400 text-xs mb-2">Today</div><div className="text-3xl font-display text-green-400">{stats.today}</div></div>
+        <div className="card p-4"><div className="text-gray-400 text-xs mb-2">This Week</div><div className="text-3xl font-display text-amber-400">{stats.thisWeek}</div></div>
+        <div className="card p-4"><div className="text-gray-400 text-xs mb-2">Active Users</div><div className="text-3xl font-display text-purple-400">{stats.uniqueUsers}</div></div>
       </div>
 
       <div className="card p-6">
-        <h3 className="text-white font-semibold mb-4">Activity by Category</h3>
+        <h3 className="text-white font-display mb-4">Activity by Category</h3>
         <div className="space-y-3">
           {(() => {
             const categories = new Map<string, number>();
@@ -345,7 +345,7 @@ export default function ActivityFeed() {
       </div>
 
       <div className="card p-6">
-        <h3 className="text-white font-semibold mb-4">Most Active Users</h3>
+        <h3 className="text-white font-display mb-4">Most Active Users</h3>
         <div className="space-y-2">
           {(() => {
             const users = new Map<string, number>();
@@ -369,7 +369,7 @@ export default function ActivityFeed() {
       </div>
 
       <div className="card p-6">
-        <h3 className="text-white font-semibold mb-4">Peak Activity Hours</h3>
+        <h3 className="text-white font-display mb-4">Peak Activity Hours</h3>
         <div className="grid grid-cols-7 gap-1">
           {Array.from({ length: 24 }).map((_, hour) => {
             const intensity = Math.random();
@@ -446,7 +446,7 @@ export default function ActivityFeed() {
       <div className="p-6 space-y-6">
         <div className="flex items-center justify-between">
           <div>
-            <h2 className="text-2xl font-bold text-white">Activity Feed</h2>
+            <h2 className="text-2xl font-display text-white">Activity Feed</h2>
             <p className="text-gray-400 text-sm mt-1">Real-time activity across all modules</p>
           </div>
           <div className="flex items-center gap-2">
@@ -458,10 +458,10 @@ export default function ActivityFeed() {
 
         {activeTab === 'feed' && (
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <div className="card p-4"><div className="flex items-center gap-3"><div className="w-10 h-10 rounded-lg bg-blue-500/10 flex items-center justify-center"><Activity className="text-blue-400" size={20} /></div><div><p className="text-gray-400 text-xs">Total</p><p className="text-2xl font-bold text-white">{stats.total}</p></div></div></div>
-            <div className="card p-4"><div className="flex items-center gap-3"><div className="w-10 h-10 rounded-lg bg-green-500/10 flex items-center justify-center"><Clock className="text-green-400" size={20} /></div><div><p className="text-gray-400 text-xs">Today</p><p className="text-2xl font-bold text-green-400">{stats.today}</p></div></div></div>
-            <div className="card p-4"><div className="flex items-center gap-3"><div className="w-10 h-10 rounded-lg bg-amber-500/10 flex items-center justify-center"><Calendar className="text-amber-400" size={20} /></div><div><p className="text-gray-400 text-xs">This Week</p><p className="text-2xl font-bold text-amber-400">{stats.thisWeek}</p></div></div></div>
-            <div className="card p-4"><div className="flex items-center gap-3"><div className="w-10 h-10 rounded-lg bg-purple-500/10 flex items-center justify-center"><Users className="text-purple-400" size={20} /></div><div><p className="text-gray-400 text-xs">Active Users</p><p className="text-2xl font-bold text-purple-400">{stats.uniqueUsers}</p></div></div></div>
+            <div className="card p-4"><div className="flex items-center gap-3"><div className="w-10 h-10 rounded-lg bg-blue-500/10 flex items-center justify-center"><Activity className="text-blue-400" size={20} /></div><div><p className="text-gray-400 text-xs">Total</p><p className="text-2xl font-display text-white">{stats.total}</p></div></div></div>
+            <div className="card p-4"><div className="flex items-center gap-3"><div className="w-10 h-10 rounded-lg bg-green-500/10 flex items-center justify-center"><Clock className="text-green-400" size={20} /></div><div><p className="text-gray-400 text-xs">Today</p><p className="text-2xl font-display text-green-400">{stats.today}</p></div></div></div>
+            <div className="card p-4"><div className="flex items-center gap-3"><div className="w-10 h-10 rounded-lg bg-amber-500/10 flex items-center justify-center"><Calendar className="text-amber-400" size={20} /></div><div><p className="text-gray-400 text-xs">This Week</p><p className="text-2xl font-display text-amber-400">{stats.thisWeek}</p></div></div></div>
+            <div className="card p-4"><div className="flex items-center gap-3"><div className="w-10 h-10 rounded-lg bg-purple-500/10 flex items-center justify-center"><Users className="text-purple-400" size={20} /></div><div><p className="text-gray-400 text-xs">Active Users</p><p className="text-2xl font-display text-purple-400">{stats.uniqueUsers}</p></div></div></div>
           </div>
         )}
 

@@ -163,7 +163,7 @@ export default function Sustainability() {
       <div className="p-6 space-y-6">
         <div className="flex items-center justify-between">
           <div>
-            <h2 className="text-2xl font-bold text-white">Sustainability & ESG</h2>
+            <h2 className="text-2xl font-display text-white">Sustainability & ESG</h2>
             <p className="text-gray-400 text-sm mt-1">Track carbon emissions, energy and environmental metrics</p>
           </div>
           <button type="button" onClick={() => setShowCreateModal(true)} className="flex items-center gap-2 px-4 py-2 bg-orange-500 hover:bg-orange-600 text-white rounded-lg font-semibold">
@@ -175,25 +175,25 @@ export default function Sustainability() {
           <div className="card p-4">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-lg bg-red-500/10 flex items-center justify-center"><Cloud className="text-red-400" size={20} /></div>
-              <div><p className="text-gray-400 text-xs">Carbon Footprint</p><p className="text-2xl font-bold text-red-400">2,847 tCO2e</p></div>
+              <div><p className="text-gray-400 text-xs">Carbon Footprint</p><p className="text-2xl font-display text-red-400">2,847 tCO2e</p></div>
             </div>
           </div>
           <div className="card p-4">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-lg bg-amber-500/10 flex items-center justify-center"><Factory className="text-amber-400" size={20} /></div>
-              <div><p className="text-gray-400 text-xs">Energy Used</p><p className="text-2xl font-bold text-amber-400">{isLoading ? '...' : `${totalEnergy.toLocaleString()} kWh`}</p></div>
+              <div><p className="text-gray-400 text-xs">Energy Used</p><p className="text-2xl font-display text-amber-400">{isLoading ? '...' : `${totalEnergy.toLocaleString()} kWh`}</p></div>
             </div>
           </div>
           <div className="card p-4">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-lg bg-green-500/10 flex items-center justify-center"><Leaf className="text-green-400" size={20} /></div>
-              <div><p className="text-gray-400 text-xs">Renewable %</p><p className="text-2xl font-bold text-green-400">42%</p></div>
+              <div><p className="text-gray-400 text-xs">Renewable %</p><p className="text-2xl font-display text-green-400">42%</p></div>
             </div>
           </div>
           <div className="card p-4">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-lg bg-blue-500/10 flex items-center justify-center"><Gauge className="text-blue-400" size={20} /></div>
-              <div><p className="text-gray-400 text-xs">BREEAM Score</p><p className="text-2xl font-bold text-blue-400">68/90</p></div>
+              <div><p className="text-gray-400 text-xs">BREEAM Score</p><p className="text-2xl font-display text-blue-400">68/90</p></div>
             </div>
           </div>
         </div>
@@ -236,12 +236,12 @@ export default function Sustainability() {
             <div className="space-y-6">
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 <div>
-                  <h3 className="text-white font-bold mb-4 flex items-center gap-2"><Gauge size={18} className="text-orange-400" /> Project Carbon Footprint</h3>
+                  <h3 className="text-white font-display mb-4 flex items-center gap-2"><Gauge size={18} className="text-orange-400" /> Project Carbon Footprint</h3>
                   <div className="space-y-4">
                     <div className="bg-gray-800/50 rounded-lg p-4">
                       <div className="flex items-center justify-between mb-2">
                         <span className="text-gray-400 text-sm">Current: 2,847 tCO2e</span>
-                        <span className="text-orange-400 font-bold">94.9%</span>
+                        <span className="text-orange-400 font-display">94.9%</span>
                       </div>
                       <div className="w-full bg-gray-700 rounded-full h-4 overflow-hidden">
                         <div className="bg-gradient-to-r from-orange-500 to-orange-400 h-full" style={{ width: '94.9%' }}></div>
@@ -252,7 +252,7 @@ export default function Sustainability() {
                 </div>
 
                 <div>
-                  <h3 className="text-white font-bold mb-4 flex items-center gap-2"><TrendingDown size={18} className="text-green-400" /> Carbon Reduction Actions</h3>
+                  <h3 className="text-white font-display mb-4 flex items-center gap-2"><TrendingDown size={18} className="text-green-400" /> Carbon Reduction Actions</h3>
                   <div className="space-y-2">
                     <label className="flex items-center gap-3 p-2 rounded hover:bg-gray-700/50 cursor-pointer">
                       <input type="checkbox" defaultChecked className="rounded border-gray-600" />
@@ -280,7 +280,7 @@ export default function Sustainability() {
               </div>
 
               <div>
-                <h3 className="text-white font-bold mb-4">Monthly Emissions by Scope</h3>
+                <h3 className="text-white font-display mb-4">Monthly Emissions by Scope</h3>
                 <ResponsiveContainer width="100%" height={300}>
                   <AreaChart data={monthlyEmissionsData}>
                     <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
@@ -296,19 +296,19 @@ export default function Sustainability() {
               </div>
 
               <div className="bg-gradient-to-r from-blue-900/20 to-cyan-900/20 border border-blue-700/30 rounded-lg p-4">
-                <h4 className="text-blue-300 font-bold mb-2">UK EPC/BREEAM Rating</h4>
+                <h4 className="text-blue-300 font-display mb-2">UK EPC/BREEAM Rating</h4>
                 <div className="flex items-end gap-4">
                   <div>
                     <p className="text-gray-400 text-sm">EPC Rating</p>
-                    <p className="text-3xl font-bold text-blue-400">A</p>
+                    <p className="text-3xl font-display text-blue-400">A</p>
                   </div>
                   <div>
                     <p className="text-gray-400 text-sm">BREEAM Rating</p>
-                    <p className="text-3xl font-bold text-green-400">Excellent</p>
+                    <p className="text-3xl font-display text-green-400">Excellent</p>
                   </div>
                   <div>
                     <p className="text-gray-400 text-sm">BREEAM Score</p>
-                    <p className="text-3xl font-bold text-amber-400">75.6%</p>
+                    <p className="text-3xl font-display text-amber-400">75.6%</p>
                   </div>
                 </div>
               </div>
@@ -319,7 +319,7 @@ export default function Sustainability() {
             <div className="space-y-6">
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 <div>
-                  <h3 className="text-white font-bold mb-4">Energy Consumption by Source</h3>
+                  <h3 className="text-white font-display mb-4">Energy Consumption by Source</h3>
                   <ResponsiveContainer width="100%" height={300}>
                     <BarChart data={energySourceData}>
                       <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
@@ -332,7 +332,7 @@ export default function Sustainability() {
                 </div>
 
                 <div>
-                  <h3 className="text-white font-bold mb-4">Daily Usage Trend</h3>
+                  <h3 className="text-white font-display mb-4">Daily Usage Trend</h3>
                   <ResponsiveContainer width="100%" height={300}>
                     <AreaChart data={[
                       { day: 'Mon', usage: 580 },
@@ -356,23 +356,23 @@ export default function Sustainability() {
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div className="bg-emerald-900/20 border border-emerald-700/30 rounded-lg p-4">
                   <p className="text-emerald-300 text-sm mb-2">Renewable Energy %</p>
-                  <p className="text-4xl font-bold text-emerald-400">42%</p>
+                  <p className="text-4xl font-display text-emerald-400">42%</p>
                   <p className="text-gray-400 text-xs mt-2">3,892 kWh from solar</p>
                 </div>
                 <div className="bg-blue-900/20 border border-blue-700/30 rounded-lg p-4">
                   <p className="text-blue-300 text-sm mb-2">Grid Energy Used</p>
-                  <p className="text-4xl font-bold text-blue-400">4,200 kWh</p>
+                  <p className="text-4xl font-display text-blue-400">4,200 kWh</p>
                   <p className="text-gray-400 text-xs mt-2">58% of total consumption</p>
                 </div>
                 <div className="bg-amber-900/20 border border-amber-700/30 rounded-lg p-4">
                   <p className="text-amber-300 text-sm mb-2">Generator Usage</p>
-                  <p className="text-4xl font-bold text-amber-400">900 kWh</p>
+                  <p className="text-4xl font-display text-amber-400">900 kWh</p>
                   <p className="text-gray-400 text-xs mt-2">Emergency backup only</p>
                 </div>
               </div>
 
               <div className="bg-gray-800/50 rounded-lg p-4">
-                <h4 className="text-white font-bold mb-3">Energy Efficiency Tips</h4>
+                <h4 className="text-white font-display mb-3">Energy Efficiency Tips</h4>
                 <ul className="space-y-2 text-sm text-gray-300">
                   <li>• Schedule HVAC maintenance monthly to maintain 95%+ efficiency</li>
                   <li>• Install occupancy sensors in low-traffic areas to reduce lighting load by 20%</li>
@@ -387,7 +387,7 @@ export default function Sustainability() {
             <div className="space-y-6">
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 <div>
-                  <h3 className="text-white font-bold mb-4">Waste Diverted vs Landfill</h3>
+                  <h3 className="text-white font-display mb-4">Waste Diverted vs Landfill</h3>
                   <ResponsiveContainer width="100%" height={300}>
                     <PieChart>
                       <Pie data={wasteData} cx="50%" cy="50%" innerRadius={80} outerRadius={120} paddingAngle={2} dataKey="value">
@@ -401,7 +401,7 @@ export default function Sustainability() {
                 </div>
 
                 <div>
-                  <h3 className="text-white font-bold mb-4">Top 5 Waste Streams (Tonnes)</h3>
+                  <h3 className="text-white font-display mb-4">Top 5 Waste Streams (Tonnes)</h3>
                   <div className="space-y-3">
                     {wasteStreamData.map((stream, idx) => (
                       <div key={idx}>
@@ -419,14 +419,14 @@ export default function Sustainability() {
               </div>
 
               <div className="bg-emerald-900/20 border border-emerald-700/30 rounded-lg p-4">
-                <h4 className="text-emerald-300 font-bold mb-2">Recycling Rate Target</h4>
+                <h4 className="text-emerald-300 font-display mb-2">Recycling Rate Target</h4>
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-5xl font-bold text-emerald-400">72%</p>
+                    <p className="text-5xl font-display text-emerald-400">72%</p>
                     <p className="text-gray-400 text-sm mt-1">Current recycling rate</p>
                   </div>
                   <div className="text-right">
-                    <p className="text-3xl font-bold text-amber-400">90%</p>
+                    <p className="text-3xl font-display text-amber-400">90%</p>
                     <p className="text-gray-400 text-sm mt-1">Target by Q4 2026</p>
                   </div>
                 </div>
@@ -436,7 +436,7 @@ export default function Sustainability() {
 
           {activeTab === 'materials' && (
             <div className="space-y-4">
-              <h3 className="text-white font-bold">Sustainable Materials Tracker</h3>
+              <h3 className="text-white font-display">Sustainable Materials Tracker</h3>
               <div className="cb-table-scroll touch-pan-x">
                 <table className="w-full text-sm">
                   <thead>
@@ -481,13 +481,13 @@ export default function Sustainability() {
             <div className="space-y-6">
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 <div>
-                  <h3 className="text-white font-bold mb-4">BREEAM/LEED Credit Tracker</h3>
+                  <h3 className="text-white font-display mb-4">BREEAM/LEED Credit Tracker</h3>
                   <div className="space-y-3">
                     {breemCreditsData.map((credit, idx) => (
                       <div key={idx} className="border border-gray-700 rounded-lg p-3">
                         <div className="flex justify-between items-center mb-2">
                           <span className="text-gray-300 font-medium">{credit.section}</span>
-                          <span className="text-orange-400 font-bold">{credit.achieved}/{credit.required}</span>
+                          <span className="text-orange-400 font-display">{credit.achieved}/{credit.required}</span>
                         </div>
                         <div className="w-full bg-gray-700 rounded-full h-2 overflow-hidden">
                           <div className="bg-gradient-to-r from-orange-500 to-orange-400 h-full" style={{ width: `${(credit.achieved / credit.required) * 100}%` }}></div>
@@ -498,23 +498,23 @@ export default function Sustainability() {
                 </div>
 
                 <div>
-                  <h3 className="text-white font-bold mb-4">Sustainability KPIs</h3>
+                  <h3 className="text-white font-display mb-4">Sustainability KPIs</h3>
                   <div className="space-y-3">
                     <div className="bg-gray-800/50 rounded-lg p-4">
                       <p className="text-gray-400 text-sm mb-1">Carbon Intensity</p>
-                      <p className="text-2xl font-bold text-red-400">42.8 kg CO2/m²</p>
+                      <p className="text-2xl font-display text-red-400">42.8 kg CO2/m²</p>
                     </div>
                     <div className="bg-gray-800/50 rounded-lg p-4">
                       <p className="text-gray-400 text-sm mb-1">Embodied Carbon (Materials)</p>
-                      <p className="text-2xl font-bold text-amber-400">312 tCO2e</p>
+                      <p className="text-2xl font-display text-amber-400">312 tCO2e</p>
                     </div>
                     <div className="bg-gray-800/50 rounded-lg p-4">
                       <p className="text-gray-400 text-sm mb-1">Energy Use Intensity</p>
-                      <p className="text-2xl font-bold text-blue-400">85.6 kWh/m² p.a.</p>
+                      <p className="text-2xl font-display text-blue-400">85.6 kWh/m² p.a.</p>
                     </div>
                     <div className="bg-gray-800/50 rounded-lg p-4">
                       <p className="text-gray-400 text-sm mb-1">Water Consumption</p>
-                      <p className="text-2xl font-bold text-cyan-400">4,280 m³/year</p>
+                      <p className="text-2xl font-display text-cyan-400">4,280 m³/year</p>
                     </div>
                   </div>
                 </div>
@@ -544,7 +544,7 @@ export default function Sustainability() {
           <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
             <div className="bg-gray-900 border border-gray-700 rounded-xl w-full max-w-lg">
               <div className="p-6 border-b border-gray-700 flex items-center justify-between">
-                <h3 className="text-xl font-bold text-white">Log Sustainability Metric</h3>
+                <h3 className="text-xl font-display text-white">Log Sustainability Metric</h3>
                 <button type="button" onClick={() => setShowCreateModal(false)} className="text-gray-400 hover:text-white"><X size={20} /></button>
               </div>
               <div className="p-6 space-y-4">
@@ -604,7 +604,7 @@ export default function Sustainability() {
           <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
             <div className="bg-gray-900 border border-gray-700 rounded-xl w-full max-w-lg">
               <div className="p-6 border-b border-gray-700 flex items-center justify-between">
-                <h3 className="text-xl font-bold text-white">Edit Sustainability Metric</h3>
+                <h3 className="text-xl font-display text-white">Edit Sustainability Metric</h3>
                 <button type="button" onClick={() => setEditItem(null)} className="text-gray-400 hover:text-white"><X size={20} /></button>
               </div>
               <div className="p-6 space-y-4">

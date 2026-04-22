@@ -297,7 +297,7 @@ export function Procurement() {
       <ModuleBreadcrumbs currentModule="procurement" onNavigate={() => {}} />
       <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-3xl font-bold text-white">Procurement & Purchase Orders</h1>
+        <h1 className="text-3xl font-display text-white">Procurement & Purchase Orders</h1>
         <button type="button" onClick={openCreate} className="flex items-center gap-2 px-4 py-2 btn btn-primary rounded-lg text-white font-medium transition-colors">
           <Plus className="w-4 h-4"/>Raise PO
         </button>
@@ -324,7 +324,7 @@ export function Procurement() {
               <p className="text-xs text-gray-400">{label}</p>
               <Icon className="w-4 h-4 text-gray-500"/>
             </div>
-            <p className={`text-2xl font-bold ${col}`}>{value}</p>
+            <p className={`text-2xl font-display ${col}`}>{value}</p>
           </div>
         ))}
       </div>
@@ -417,12 +417,12 @@ export function Procurement() {
                               {isSelected ? <CheckSquare size={16} className="text-blue-400"/> : <Square size={16} className="text-gray-500"/>}
                             </button>
                           </td>
-                          <td className="px-4 py-3 font-mono text-xs text-blue-400 font-bold">{String(po.po_number??'—')}</td>
+<td className="px-4 py-3 font-mono text-xs text-blue-400">{String(po.po_number??'—')}</td>
                           <td className="px-4 py-3 text-white font-medium">{String(po.supplier??'—')}</td>
                           <td className="px-4 py-3 text-gray-300 max-w-[180px] truncate text-sm">{String(po.description??'—')}</td>
                           <td className="px-4 py-3 text-gray-400 text-xs">{String(po.category??'—')}</td>
                           <td className="px-4 py-3 text-gray-400 text-xs max-w-[120px] truncate">{String(po.project??'—')}</td>
-                          <td className="px-4 py-3 text-white font-bold">{fmt(Number(po.value??0))}</td>
+                          <td className="px-4 py-3 font-mono text-white">{fmt(Number(po.value??0))}</td>
                           <td className="px-4 py-3 text-gray-400 text-xs">{String(po.orderDate ?? '—').substring(0,10)}</td>
                           <td className={`px-4 py-3 text-sm font-medium ${urgency==='overdue'?'text-red-400':urgency==='urgent'?'text-red-400':urgency==='warning'?'text-yellow-400':'text-gray-400'}`}>
                             {delDate ? delDate.substring(0,10) : '—'}
@@ -486,8 +486,8 @@ export function Procurement() {
                 </div>
                 <div className="space-y-2">
                   <p className="text-sm"><span className="text-gray-400">Category:</span> <span className="text-gray-200">{sup.category}</span></p>
-                  <p className="text-sm"><span className="text-gray-400">Total Spend:</span> <span className="text-emerald-400 font-bold">{fmt(sup.spend)}</span></p>
-                  <p className="text-sm"><span className="text-gray-400">PO Count:</span> <span className="text-blue-400 font-bold">{sup.count}</span></p>
+                  <p className="text-sm"><span className="text-gray-400">Total Spend:</span> <span className="text-emerald-400 font-mono">{fmt(sup.spend)}</span></p>
+                  <p className="text-sm"><span className="text-gray-400">PO Count:</span> <span className="text-blue-400 font-mono">{sup.count}</span></p>
                   <p className="text-sm"><span className="text-gray-400">Last Order:</span> <span className="text-gray-300">{sup.lastOrder.substring(0,10) || '—'}</span></p>
                 </div>
                 <button className="mt-4 w-full flex items-center justify-between px-3 py-2 bg-gray-800 hover:bg-gray-700 rounded-lg text-white text-sm font-medium transition-colors">
@@ -569,7 +569,7 @@ export function Procurement() {
                       <tr key={cat.category} className="hover:bg-gray-800/40 transition-colors">
                         <td className="px-6 py-3 font-medium text-white">{cat.category}</td>
                         <td className="px-6 py-3 text-gray-300">{cat.count}</td>
-                        <td className="px-6 py-3 font-bold text-emerald-400">{fmt(cat.value)}</td>
+                        <td className="px-6 py-3 font-mono text-emerald-400">{fmt(cat.value)}</td>
                         <td className="px-6 py-3 text-gray-300">{pctOfTotal}%</td>
                         <td className="px-6 py-3 text-blue-400">{fmt(avgPO)}</td>
                       </tr>
@@ -597,9 +597,9 @@ export function Procurement() {
                     <tr key={sup.name} className="hover:bg-gray-800/40 transition-colors">
                       <td className="px-6 py-3 font-medium text-white">{sup.name}</td>
                       <td className="px-6 py-3 text-gray-300">{sup.category}</td>
-                      <td className="px-6 py-3 font-bold text-emerald-400">{fmt(sup.spend)}</td>
+                      <td className="px-6 py-3 font-mono text-emerald-400">{fmt(sup.spend)}</td>
                       <td className="px-6 py-3 text-blue-400">{sup.count}</td>
-                      <td className="px-6 py-3"><span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-blue-900/30 text-blue-400 text-xs font-bold">#{i+1}</span></td>
+                      <td className="px-6 py-3"><span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-blue-900/30 text-blue-400 text-xs font-mono">#{i+1}</span></td>
                     </tr>
                   ))}
                 </tbody>
@@ -615,19 +615,19 @@ export function Procurement() {
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             <div className="bg-red-900/20 border border-red-900/50 rounded-xl p-4">
               <p className="text-xs text-gray-400 mb-1">Overdue Deliveries</p>
-              <p className="text-2xl font-bold text-red-400">{overdueCount}</p>
+              <p className="text-2xl font-display text-red-400">{overdueCount}</p>
             </div>
             <div className="bg-yellow-900/20 border border-yellow-900/50 rounded-xl p-4">
               <p className="text-xs text-gray-400 mb-1">Due This Week</p>
-              <p className="text-2xl font-bold text-yellow-400">{dueSoonCount}</p>
+              <p className="text-2xl font-display text-yellow-400">{dueSoonCount}</p>
             </div>
             <div className="bg-blue-900/20 border border-blue-900/50 rounded-xl p-4">
               <p className="text-xs text-gray-400 mb-1">Total Outstanding</p>
-              <p className="text-2xl font-bold text-blue-400">{deliverySchedule.length}</p>
+              <p className="text-2xl font-display text-blue-400">{deliverySchedule.length}</p>
             </div>
             <div className="bg-gray-800/40 border border-gray-700 rounded-xl p-4">
               <p className="text-xs text-gray-400 mb-1">On Time Delivery</p>
-              <p className="text-2xl font-bold text-emerald-400">{deliverySchedule.length > 0 ? `${Math.round(((deliverySchedule.length - overdueCount) / deliverySchedule.length) * 100)}%` : '—'}</p>
+              <p className="text-2xl font-display text-emerald-400">{deliverySchedule.length > 0 ? `${Math.round(((deliverySchedule.length - overdueCount) / deliverySchedule.length) * 100)}%` : '—'}</p>
             </div>
           </div>
 
@@ -649,13 +649,13 @@ export function Procurement() {
                     else if (days <= 7) trafficLight = 'bg-yellow-900/30 text-yellow-300';
                     return (
                       <tr key={String(po.id)} className="hover:bg-gray-800/40 transition-colors">
-                        <td className="px-4 py-3 font-mono text-xs text-blue-400 font-bold">{String(po.po_number??'—')}</td>
+                        <td className="px-4 py-3 font-mono text-xs text-blue-400">{String(po.po_number??'—')}</td>
                         <td className="px-4 py-3 text-white font-medium">{String(po.supplier??'—')}</td>
                         <td className="px-4 py-3 text-gray-300 max-w-[180px] truncate text-sm">{String(po.description??'—')}</td>
                         <td className="px-4 py-3 text-gray-400 text-xs max-w-[120px] truncate">{String(po.project??'—')}</td>
                         <td className="px-4 py-3 text-gray-400 text-sm">{delDate ? delDate.substring(0,10) : '—'}</td>
                         <td className="px-4 py-3">
-                          <span className={`px-2 py-1 rounded-full text-xs font-bold ${trafficLight}`}>
+                          <span className={`px-2 py-1 rounded-full text-xs font-display ${trafficLight}`}>
                             {days < 0 ? `${-days}d overdue` : days === 0 ? 'Today' : `${days}d`}
                           </span>
                         </td>
@@ -690,7 +690,7 @@ export function Procurement() {
         <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
           <div className="bg-gray-900 border border-gray-700 rounded-2xl w-full max-w-xl shadow-2xl max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between px-6 py-4 border-b border-gray-800 sticky top-0 bg-gray-900 z-10">
-              <h2 className="text-lg font-bold text-white">{editId?'Edit Purchase Order':'Raise Purchase Order'}</h2>
+              <h2 className="text-lg font-display text-white">{editId?'Edit Purchase Order':'Raise Purchase Order'}</h2>
               <button type="button" onClick={()=>setShowModal(false)} className="text-gray-400 hover:text-white"><X className="w-5 h-5"/></button>
             </div>
             <div className="p-6 space-y-4">
@@ -765,7 +765,7 @@ export function Procurement() {
         <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
           <div className="bg-gray-900 border border-gray-700 rounded-2xl w-full max-w-2xl shadow-2xl max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between px-6 py-4 border-b border-gray-800 sticky top-0 bg-gray-900 z-10">
-              <h2 className="text-lg font-bold text-white">PO Details: {String(selectedPO.po_number??'')}</h2>
+              <h2 className="text-lg font-display text-white">PO Details: {String(selectedPO.po_number??'')}</h2>
               <button type="button" onClick={()=>setShowDetailModal(false)} className="text-gray-400 hover:text-white"><X className="w-5 h-5"/></button>
             </div>
             <div className="p-6 space-y-6">
@@ -798,7 +798,7 @@ export function Procurement() {
                 </div>
                 <div>
                   <p className="text-xs text-gray-400 uppercase font-semibold mb-1">Value</p>
-                  <p className="text-emerald-400 font-bold text-lg">{fmt(Number(selectedPO.value??0))}</p>
+                  <p className="text-emerald-400 font-display text-lg">{fmt(Number(selectedPO.value??0))}</p>
                 </div>
                 <div>
                   <p className="text-xs text-gray-400 uppercase font-semibold mb-1">Order Date</p>
@@ -861,7 +861,7 @@ export function Procurement() {
         <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
           <div className="bg-gray-900 border border-gray-700 rounded-2xl w-full max-w-md shadow-2xl">
             <div className="flex items-center justify-between px-6 py-4 border-b border-gray-800">
-              <h2 className="text-lg font-bold text-white">Add New Supplier</h2>
+              <h2 className="text-lg font-display text-white">Add New Supplier</h2>
               <button type="button" onClick={()=>setShowSupplierModal(false)} className="text-gray-400 hover:text-white"><X className="w-5 h-5"/></button>
             </div>
             <div className="p-6 space-y-4">

@@ -335,9 +335,9 @@ export default function Training() {
   const reportsTab = (
     <div className="space-y-6">
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div className="card p-4"><div className="text-gray-400 text-xs mb-2">Total Training Hours</div><div className="text-3xl font-bold text-white">{Math.round(trainingData.reduce((sum: number, t: TrainingRecord) => sum + (t.duration || 0), 0))}</div></div>
-        <div className="card p-4"><div className="text-gray-400 text-xs mb-2">Completion Rate</div><div className="text-3xl font-bold text-green-400">{Math.round((completedCount / totalCount) * 100)}%</div></div>
-        <div className="card p-4"><div className="text-gray-400 text-xs mb-2">Scheduled</div><div className="text-3xl font-bold text-amber-400">{scheduledCount}</div></div>
+        <div className="card p-4"><div className="text-gray-400 text-xs mb-2">Total Training Hours</div><div className="text-3xl font-display text-white">{Math.round(trainingData.reduce((sum: number, t: TrainingRecord) => sum + (t.duration || 0), 0))}</div></div>
+        <div className="card p-4"><div className="text-gray-400 text-xs mb-2">Completion Rate</div><div className="text-3xl font-display text-green-400">{Math.round((completedCount / totalCount) * 100)}%</div></div>
+        <div className="card p-4"><div className="text-gray-400 text-xs mb-2">Scheduled</div><div className="text-3xl font-display text-amber-400">{scheduledCount}</div></div>
       </div>
 
       <div className="card p-6">
@@ -396,7 +396,7 @@ export default function Training() {
       <div className="p-6 space-y-6">
         <div className="flex items-center justify-between">
           <div>
-            <h2 className="text-2xl font-bold text-white">Training & Certifications</h2>
+            <h2 className="text-2xl font-display text-white">Training & Certifications</h2>
             <p className="text-gray-400 text-sm mt-1">Track workforce training, compliance and development</p>
           </div>
           <div className="flex items-center gap-2">
@@ -412,9 +412,9 @@ export default function Training() {
 
         {activeTab === 'register' && (
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div className="card p-4"><div className="flex items-center gap-3"><div className="w-10 h-10 rounded-lg bg-green-500/10 flex items-center justify-center"><Award className="text-green-400" size={20} /></div><div><p className="text-gray-400 text-xs">Completed</p><p className="text-2xl font-bold text-green-400">{completedCount}</p></div></div></div>
-            <div className="card p-4"><div className="flex items-center gap-3"><div className="w-10 h-10 rounded-lg bg-amber-500/10 flex items-center justify-center"><AlertCircle className="text-amber-400" size={20} /></div><div><p className="text-gray-400 text-xs">Scheduled</p><p className="text-2xl font-bold text-amber-400">{scheduledCount}</p></div></div></div>
-            <div className="card p-4"><div className="flex items-center gap-3"><div className="w-10 h-10 rounded-lg bg-blue-500/10 flex items-center justify-center"><GraduationCap className="text-blue-400" size={20} /></div><div><p className="text-gray-400 text-xs">Total Records</p><p className="text-2xl font-bold text-blue-400">{totalCount}</p></div></div></div>
+            <div className="card p-4"><div className="flex items-center gap-3"><div className="w-10 h-10 rounded-lg bg-green-500/10 flex items-center justify-center"><Award className="text-green-400" size={20} /></div><div><p className="text-gray-400 text-xs">Completed</p><p className="text-2xl font-display text-green-400">{completedCount}</p></div></div></div>
+            <div className="card p-4"><div className="flex items-center gap-3"><div className="w-10 h-10 rounded-lg bg-amber-500/10 flex items-center justify-center"><AlertCircle className="text-amber-400" size={20} /></div><div><p className="text-gray-400 text-xs">Scheduled</p><p className="text-2xl font-display text-amber-400">{scheduledCount}</p></div></div></div>
+            <div className="card p-4"><div className="flex items-center gap-3"><div className="w-10 h-10 rounded-lg bg-blue-500/10 flex items-center justify-center"><GraduationCap className="text-blue-400" size={20} /></div><div><p className="text-gray-400 text-xs">Total Records</p><p className="text-2xl font-display text-blue-400">{totalCount}</p></div></div></div>
           </div>
         )}
 
@@ -458,7 +458,7 @@ export default function Training() {
           <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
             <div className="bg-gray-900 border border-gray-700 rounded-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
               <div className="p-6 border-b border-gray-700 flex items-center justify-between sticky top-0 bg-gray-900">
-                <h3 className="text-xl font-bold text-white">Add Training Record</h3>
+                <h3 className="text-xl font-display text-white">Add Training Record</h3>
                 <button type="button" onClick={() => setShowCreateModal(false)} className="text-gray-400 hover:text-white"><X size={20} /></button>
               </div>
               <div className="p-6 space-y-4">
@@ -543,7 +543,7 @@ export default function Training() {
           <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
             <div className="bg-gray-900 border border-gray-700 rounded-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
               <div className="p-6 border-b border-gray-700 flex items-center justify-between sticky top-0 bg-gray-900">
-                <h3 className="text-xl font-bold text-white">Edit Training Record</h3>
+                <h3 className="text-xl font-display text-white">Edit Training Record</h3>
                 <button type="button" onClick={() => setEditItem(null)} className="text-gray-400 hover:text-white"><X size={20} /></button>
               </div>
               <div className="p-6 space-y-4">

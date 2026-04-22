@@ -224,7 +224,7 @@ export const AIVision: React.FC = () => {
       <div className="flex justify-between items-start">
         <div>
           <div className="flex items-center gap-3">
-            <h1 className="text-3xl font-bold text-white flex items-center gap-2">
+            <h1 className="text-3xl font-display text-white flex items-center gap-2">
               <ScanLine className="h-8 w-8 text-blue-500" />
               AI Vision Analytics
             </h1>
@@ -436,21 +436,21 @@ export const AIVision: React.FC = () => {
                   <>
                     <div className="grid grid-cols-2 gap-3">
                       <div className="text-center p-3 bg-red-900/20 rounded-lg">
-                        <div className="text-2xl font-bold text-red-400">{analysisResults[0].summary.critical}</div>
+                        <div className="text-2xl font-display text-red-400">{analysisResults[0].summary.critical}</div>
                         <div className="text-xs text-red-400 font-medium">Critical</div>
                       </div>
                       <div className="text-center p-3 bg-orange-900/20 rounded-lg">
-                        <div className="text-2xl font-bold text-orange-400">{analysisResults[0].summary.warnings}</div>
+                        <div className="text-2xl font-display text-orange-400">{analysisResults[0].summary.warnings}</div>
                         <div className="text-xs text-orange-400 font-medium">Warnings</div>
                       </div>
                     </div>
                     <div className="grid grid-cols-2 gap-3">
                       <div className="text-center p-3 bg-blue-900/20 rounded-lg">
-                        <div className="text-2xl font-bold text-blue-400">{analysisResults[0].summary.total - analysisResults[0].summary.critical - analysisResults[0].summary.warnings - analysisResults[0].summary.passed}</div>
+                        <div className="text-2xl font-display text-blue-400">{analysisResults[0].summary.total - analysisResults[0].summary.critical - analysisResults[0].summary.warnings - analysisResults[0].summary.passed}</div>
                         <div className="text-xs text-blue-400 font-medium">Info</div>
                       </div>
                       <div className="text-center p-3 bg-green-900/20 rounded-lg">
-                        <div className="text-2xl font-bold text-green-400">{analysisResults[0].summary.passed}</div>
+                        <div className="text-2xl font-display text-green-400">{analysisResults[0].summary.passed}</div>
                         <div className="text-xs text-green-400 font-medium">Passed</div>
                       </div>
                     </div>

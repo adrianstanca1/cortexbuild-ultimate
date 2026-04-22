@@ -228,7 +228,7 @@ export default function Measuring() {
       <div className="p-6 space-y-6">
         <div className="flex items-center justify-between">
           <div>
-            <h2 className="text-2xl font-bold text-white">Measurement & Quantities</h2>
+            <h2 className="text-2xl font-display text-white">Measurement & Quantities</h2>
             <p className="text-gray-400 text-sm mt-1">Manage take-offs, bills of quantities and valuations</p>
           </div>
           <button
@@ -249,7 +249,7 @@ export default function Measuring() {
               </div>
               <div>
                 <p className="text-gray-400 text-xs">Total Items</p>
-                <p className="text-2xl font-bold text-white">{totals.totalItems}</p>
+                <p className="text-2xl font-display text-white">{totals.totalItems}</p>
               </div>
             </div>
           </div>
@@ -260,7 +260,7 @@ export default function Measuring() {
               </div>
               <div>
                 <p className="text-gray-400 text-xs">Measurement %</p>
-                <p className="text-2xl font-bold text-green-400">{totals.measurementPercentage}%</p>
+                <p className="text-2xl font-display text-green-400">{totals.measurementPercentage}%</p>
               </div>
             </div>
           </div>
@@ -271,7 +271,7 @@ export default function Measuring() {
               </div>
               <div>
                 <p className="text-gray-400 text-xs">BQ Total (£)</p>
-                <p className="text-2xl font-bold text-orange-400">£{(totals.costPlanTotal / 1000).toFixed(0)}k</p>
+                <p className="text-2xl font-display text-orange-400">£{(totals.costPlanTotal / 1000).toFixed(0)}k</p>
               </div>
             </div>
           </div>
@@ -282,7 +282,7 @@ export default function Measuring() {
               </div>
               <div>
                 <p className="text-gray-400 text-xs">Take-Off Total (£)</p>
-                <p className="text-2xl font-bold text-purple-400">£{(totals.grandTotal / 1000).toFixed(0)}k</p>
+                <p className="text-2xl font-display text-purple-400">£{(totals.grandTotal / 1000).toFixed(0)}k</p>
               </div>
             </div>
           </div>
@@ -357,7 +357,7 @@ export default function Measuring() {
                           <td className="py-3 px-4 text-center text-gray-400">{m.unit}</td>
                           <td className="py-3 px-4 text-right text-white font-medium">{(m.quantity || 0).toLocaleString()}</td>
                           <td className="py-3 px-4 text-right text-white">{(m.rate || 0).toFixed(2)}</td>
-                          <td className="py-3 px-4 text-right text-white font-bold">
+<td className="py-3 px-4 text-right font-mono text-white">
                             £{((m.quantity || 0) * (m.rate || 0)).toFixed(2)}
                           </td>
                           <td className="py-3 px-4 text-center">
@@ -372,7 +372,7 @@ export default function Measuring() {
                           </td>
                         </tr>
                       ))}
-                      <tr className="border-t-2 border-gray-600 bg-gray-800/50 font-bold">
+                      <tr className="border-t-2 border-gray-600 bg-gray-800/50 font-display">
                         <td colSpan={5} className="py-3 px-4 text-right text-white">
                           TOTAL
                         </td>
@@ -391,7 +391,7 @@ export default function Measuring() {
         {activeTab === 'bq' && (
           <div className="space-y-4">
             <div className="card p-6">
-              <h3 className="text-lg font-bold text-white mb-4">Measurement Summary</h3>
+              <h3 className="text-lg font-display text-white mb-4">Measurement Summary</h3>
               <div className="cb-table-scroll touch-pan-x mb-4">
                 <table className="w-full text-sm">
                   <thead>
@@ -408,16 +408,16 @@ export default function Measuring() {
                         <td className="py-3 px-4 text-gray-300 text-xs">{m.reference}</td>
                         <td className="py-3 px-4 text-gray-300">{m.location}</td>
                         <td className="py-3 px-4 text-center text-gray-400">{m.unit}</td>
-                        <td className="py-3 px-4 text-right text-white font-bold">
+                        <td className="py-3 px-4 text-right font-mono text-white">
                           {(m.total_area || 0).toLocaleString()}
                         </td>
                       </tr>
                     ))}
                     <tr className="border-t border-gray-600 bg-gray-800/30">
-                      <td colSpan={3} className="py-3 px-4 text-right font-bold text-gray-300">
+                      <td colSpan={3} className="py-3 px-4 text-right font-display text-gray-300">
                         Grand Total Area:
                       </td>
-                      <td className="py-3 px-4 text-right font-bold text-amber-400">{totals.grandTotal.toLocaleString()}</td>
+                      <td className="py-3 px-4 text-right font-mono text-amber-400">{totals.grandTotal.toLocaleString()}</td>
                     </tr>
                   </tbody>
                 </table>
@@ -427,7 +427,7 @@ export default function Measuring() {
             <div className="card p-6 bg-gradient-to-r from-orange-500/10 to-amber-500/10 border border-orange-500/30">
               <div className="text-right">
                 <p className="text-gray-400 mb-2">Total Measured Area</p>
-                <p className="text-4xl font-bold text-orange-400">{totals.grandTotal.toLocaleString()} {typedMeasurements[0]?.unit || 'units'}</p>
+                <p className="text-4xl font-display text-orange-400">{totals.grandTotal.toLocaleString()} {typedMeasurements[0]?.unit || 'units'}</p>
               </div>
             </div>
           </div>
@@ -437,7 +437,7 @@ export default function Measuring() {
         {activeTab === 'valuations' && (
           <div className="space-y-4">
             <div className="card p-6">
-              <h3 className="text-lg font-bold text-white mb-6">Monthly Valuations</h3>
+              <h3 className="text-lg font-display text-white mb-6">Monthly Valuations</h3>
               <div className="cb-table-scroll touch-pan-x">
                 <table className="w-full text-sm">
                   <thead>
@@ -457,9 +457,9 @@ export default function Measuring() {
                         <tr key={idx} className="border-b border-gray-700 hover:bg-gray-800/50">
                           <td className="py-3 px-4 font-medium text-white">{v.period}</td>
                           <td className="py-3 px-4 text-right text-white">£{v.amount_certified.toLocaleString()}</td>
-                          <td className="py-3 px-4 text-right font-bold text-blue-400">£{v.cumulative_total.toLocaleString()}</td>
+                          <td className="py-3 px-4 text-right font-mono text-blue-400">£{v.cumulative_total.toLocaleString()}</td>
                           <td className="py-3 px-4 text-right text-orange-400">-£{v.retention_deducted.toLocaleString()}</td>
-                          <td className="py-3 px-4 text-right font-bold text-green-400">£{v.net_payment.toLocaleString()}</td>
+                          <td className="py-3 px-4 text-right font-mono text-green-400">£{v.net_payment.toLocaleString()}</td>
                           <td className="py-3 px-4 text-center">
                             <div className="w-24 h-2 bg-gray-700 rounded-full overflow-hidden mx-auto">
                               <div
@@ -479,7 +479,7 @@ export default function Measuring() {
 
             {/* Running Total Progress */}
             <div className="card p-6">
-              <h3 className="text-lg font-bold text-white mb-6">Valuation Progress</h3>
+              <h3 className="text-lg font-display text-white mb-6">Valuation Progress</h3>
               <div className="space-y-4">
                 {mockValuations.map((v, idx) => {
                   const percentageProgress = (v.cumulative_total / totals.costPlanTotal) * 100;
@@ -487,7 +487,7 @@ export default function Measuring() {
                     <div key={idx}>
                       <div className="flex items-center justify-between mb-2">
                         <span className="text-gray-300 font-medium">{v.period}</span>
-                        <span className="text-white font-bold">£{v.cumulative_total.toLocaleString()} ({percentageProgress.toFixed(1)}%)</span>
+                        <span className="text-white font-mono">£{v.cumulative_total.toLocaleString()} ({percentageProgress.toFixed(1)}%)</span>
                       </div>
                       <div className="w-full h-3 bg-gray-700 rounded-full overflow-hidden">
                         <div
@@ -510,19 +510,19 @@ export default function Measuring() {
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
               <div className="card p-4 bg-blue-500/10 border border-blue-500/30">
                 <p className="text-blue-400 text-sm font-medium mb-2">Total Items</p>
-                <p className="text-3xl font-bold text-blue-400">{totals.totalItems}</p>
+                <p className="text-3xl font-display text-blue-400">{totals.totalItems}</p>
               </div>
               <div className="card p-4 bg-green-500/10 border border-green-500/30">
                 <p className="text-green-400 text-sm font-medium mb-2">Measurement Progress</p>
-                <p className="text-3xl font-bold text-green-400">{totals.measurementPercentage}%</p>
+                <p className="text-3xl font-display text-green-400">{totals.measurementPercentage}%</p>
               </div>
               <div className="card p-4 bg-orange-500/10 border border-orange-500/30">
                 <p className="text-orange-400 text-sm font-medium mb-2">Take-Off Total</p>
-                <p className="text-2xl font-bold text-orange-400">£{(totals.grandTotal / 1000).toFixed(0)}k</p>
+                <p className="text-2xl font-display text-orange-400">£{(totals.grandTotal / 1000).toFixed(0)}k</p>
               </div>
               <div className="card p-4 bg-purple-500/10 border border-purple-500/30">
                 <p className="text-purple-400 text-sm font-medium mb-2">Variance</p>
-                <p className="text-2xl font-bold text-purple-400">
+                <p className="text-2xl font-display text-purple-400">
                   {totals.costPlanTotal !== totals.grandTotal
                     ? `£${Math.abs(totals.grandTotal - totals.costPlanTotal).toLocaleString()}`
                     : 'On Target'}
@@ -532,7 +532,7 @@ export default function Measuring() {
 
             {/* Measurement by Section */}
             <div className="card p-6">
-              <h3 className="text-lg font-bold text-white mb-4">Area Distribution</h3>
+              <h3 className="text-lg font-display text-white mb-4">Area Distribution</h3>
               <div className="space-y-4">
                 {sections.map(section => {
                   const sectionTotal = section.items.reduce((sum, m) => sum + (m.total_area || 0), 0);
@@ -541,7 +541,7 @@ export default function Measuring() {
                     <div key={section.name}>
                       <div className="flex items-center justify-between mb-2">
                         <span className="text-gray-300 font-medium">{section.name}</span>
-                        <span className="text-white font-bold">{sectionTotal.toLocaleString()}</span>
+                        <span className="text-white font-mono">{sectionTotal.toLocaleString()}</span>
                       </div>
                       <div className="w-full h-2 bg-gray-700 rounded-full overflow-hidden">
                         <div
@@ -558,12 +558,12 @@ export default function Measuring() {
 
             {/* Cost Plan vs Take-Off Comparison */}
             <div className="card p-6">
-              <h3 className="text-lg font-bold text-white mb-4">Take-Off vs Target Comparison</h3>
+              <h3 className="text-lg font-display text-white mb-4">Take-Off vs Target Comparison</h3>
               <div className="space-y-4">
                 <div>
                   <div className="flex items-center justify-between mb-2">
                     <span className="text-gray-300">Target Area</span>
-                    <span className="text-white font-bold">{totals.costPlanTotal.toLocaleString()}</span>
+                    <span className="text-white font-mono">{totals.costPlanTotal.toLocaleString()}</span>
                   </div>
                   <div className="w-full h-3 bg-gray-700 rounded-full overflow-hidden">
                     <div className="h-full bg-blue-500 transition-all" style={{ width: '100%' }} />
@@ -572,7 +572,7 @@ export default function Measuring() {
                 <div>
                   <div className="flex items-center justify-between mb-2">
                     <span className="text-gray-300">Measured Area</span>
-                    <span className="text-white font-bold">{totals.grandTotal.toLocaleString()}</span>
+                    <span className="text-white font-mono">{totals.grandTotal.toLocaleString()}</span>
                   </div>
                   <div className="w-full h-3 bg-gray-700 rounded-full overflow-hidden">
                     <div

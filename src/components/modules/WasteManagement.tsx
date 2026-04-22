@@ -177,7 +177,7 @@ export default function WasteManagement() {
       <div className="p-6 space-y-6">
         <div className="flex items-center justify-between">
           <div>
-            <h2 className="text-2xl font-bold text-white">Waste Management</h2>
+            <h2 className="text-2xl font-display text-white">Waste Management</h2>
             <p className="text-gray-400 text-sm mt-1">Track site waste, recycling and environmental compliance</p>
           </div>
           <div className="flex gap-2">
@@ -202,7 +202,7 @@ export default function WasteManagement() {
               </div>
               <div>
                 <p className="text-gray-400 text-xs">Total Recycled</p>
-                <p className="text-2xl font-bold text-emerald-400">{isLoading ? '...' : `${totalRecycling.toFixed(1)}t`}</p>
+                <p className="text-2xl font-display text-emerald-400">{isLoading ? '...' : `${totalRecycling.toFixed(1)}t`}</p>
               </div>
             </div>
           </div>
@@ -213,7 +213,7 @@ export default function WasteManagement() {
               </div>
               <div>
                 <p className="text-gray-400 text-xs">Total Waste</p>
-                <p className="text-2xl font-bold text-amber-400">{isLoading ? '...' : `${totalWaste.toFixed(1)}t`}</p>
+                <p className="text-2xl font-display text-amber-400">{isLoading ? '...' : `${totalWaste.toFixed(1)}t`}</p>
               </div>
             </div>
           </div>
@@ -224,7 +224,7 @@ export default function WasteManagement() {
               </div>
               <div>
                 <p className="text-gray-400 text-xs">Recycling Rate</p>
-                <p className="text-2xl font-bold text-green-400">{isLoading ? '...' : `${recyclingRate}%`}</p>
+                <p className="text-2xl font-display text-green-400">{isLoading ? '...' : `${recyclingRate}%`}</p>
               </div>
             </div>
           </div>
@@ -235,7 +235,7 @@ export default function WasteManagement() {
               </div>
               <div>
                 <p className="text-gray-400 text-xs">Total Cost (6w)</p>
-                <p className="text-2xl font-bold text-blue-400">{totalCost > 0 ? `£${totalCost.toLocaleString()}` : '£0'}</p>
+                <p className="text-2xl font-display text-blue-400">{totalCost > 0 ? `£${totalCost.toLocaleString()}` : '£0'}</p>
               </div>
             </div>
           </div>
@@ -285,21 +285,21 @@ export default function WasteManagement() {
                   <table className="w-full text-sm">
                     <thead>
                       <tr className="border-b border-gray-700">
-                        <th className="text-left py-3 px-4 text-gray-400 font-medium">Date</th>
-                        <th className="text-left py-3 px-4 text-gray-400 font-medium">Waste Type</th>
-                        <th className="text-right py-3 px-4 text-gray-400 font-medium">Volume (tonnes)</th>
-                        <th className="text-left py-3 px-4 text-gray-400 font-medium">Disposal Method</th>
-                        <th className="text-left py-3 px-4 text-gray-400 font-medium">Carrier</th>
-                        <th className="text-right py-3 px-4 text-gray-400 font-medium">Cost</th>
-                        <th className="text-right py-3 px-4 text-gray-400 font-medium">Actions</th>
+                        <th className="text-left py-3 px-4 text-gray-400 font-display tracking-widest">Date</th>
+                        <th className="text-left py-3 px-4 text-gray-400 font-display tracking-widest">Waste Type</th>
+                        <th className="text-right py-3 px-4 text-gray-400 font-display tracking-widest">Volume (tonnes)</th>
+                        <th className="text-left py-3 px-4 text-gray-400 font-display tracking-widest">Disposal Method</th>
+                        <th className="text-left py-3 px-4 text-gray-400 font-display tracking-widest">Carrier</th>
+                        <th className="text-right py-3 px-4 text-gray-400 font-display tracking-widest">Cost</th>
+                        <th className="text-right py-3 px-4 text-gray-400 font-display tracking-widest">Actions</th>
                       </tr>
                     </thead>
                     <tbody>
                       {filtered.map((log) => (
                         <tr key={log.id} className="border-b border-gray-700/50 hover:bg-gray-800/30">
-                          <td className="py-3 px-4 text-gray-300 font-medium">{String(log.collection_date)}</td>
+                          <td className="py-3 px-4 font-mono text-gray-300">{String(log.collection_date)}</td>
                           <td className="py-3 px-4 text-white">{log.waste_type}</td>
-                          <td className="py-3 px-4 text-right text-gray-300 font-medium">{log.quantity}</td>
+                          <td className="py-3 px-4 text-right font-mono text-gray-300">{log.quantity}</td>
                           <td className="py-3 px-4">
                             <span className={`px-2 py-1 rounded text-xs font-medium ${
                               log.disposal_method === 'Recycling' ? 'bg-emerald-500/20 text-emerald-400' :
@@ -311,7 +311,7 @@ export default function WasteManagement() {
                             </span>
                           </td>
                           <td className="py-3 px-4 text-gray-300">{log.carrier}</td>
-                          <td className="py-3 px-4 text-right text-amber-400 font-medium">£{log.cost !== null && log.cost !== undefined ? Number(log.cost) : 0}</td>
+                          <td className="py-3 px-4 text-right font-mono text-amber-400">{log.cost !== null && log.cost !== undefined ? Number(log.cost) : 0}</td>
                           <td className="py-3 px-4 text-right">
                             <div className="flex items-center gap-2 justify-end">
                               <button className="p-1 hover:bg-blue-900/30 rounded" title="Edit" onClick={() => setEditItem(log as unknown as Row)}><Edit size={14} className="text-blue-400" /></button>
@@ -336,14 +336,14 @@ export default function WasteManagement() {
                 <table className="w-full text-sm">
                   <thead>
                     <tr className="border-b border-gray-700">
-                      <th className="text-left py-3 px-4 text-gray-400 font-medium">Manifest No</th>
-                      <th className="text-left py-3 px-4 text-gray-400 font-medium">Date</th>
-                      <th className="text-left py-3 px-4 text-gray-400 font-medium">Waste Type</th>
-                      <th className="text-right py-3 px-4 text-gray-400 font-medium">Quantity</th>
-                      <th className="text-left py-3 px-4 text-gray-400 font-medium">Carrier (License)</th>
-                      <th className="text-left py-3 px-4 text-gray-400 font-medium">Consignee</th>
-                      <th className="text-left py-3 px-4 text-gray-400 font-medium">Status</th>
-                      <th className="text-center py-3 px-4 text-gray-400 font-medium">Actions</th>
+                      <th className="text-left py-3 px-4 text-gray-400 font-display tracking-widest">Manifest No</th>
+                      <th className="text-left py-3 px-4 text-gray-400 font-display tracking-widest">Date</th>
+                      <th className="text-left py-3 px-4 text-gray-400 font-display tracking-widest">Waste Type</th>
+                      <th className="text-right py-3 px-4 text-gray-400 font-display tracking-widest">Quantity</th>
+                      <th className="text-left py-3 px-4 text-gray-400 font-display tracking-widest">Carrier (License)</th>
+                      <th className="text-left py-3 px-4 text-gray-400 font-display tracking-widest">Consignee</th>
+                      <th className="text-left py-3 px-4 text-gray-400 font-display tracking-widest">Status</th>
+                      <th className="text-center py-3 px-4 text-gray-400 font-display tracking-widest">Actions</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -352,7 +352,7 @@ export default function WasteManagement() {
                         <td className="py-3 px-4 font-mono text-orange-400 font-medium">{manifest.id}</td>
                         <td className="py-3 px-4 text-gray-300">{manifest.date}</td>
                         <td className="py-3 px-4 text-white">{manifest.type}</td>
-                        <td className="py-3 px-4 text-right font-medium text-gray-300">{manifest.qty}t</td>
+                        <td className="py-3 px-4 text-right font-mono text-gray-300">{manifest.qty}t</td>
                         <td className="py-3 px-4 text-gray-300 text-xs">{manifest.carrier}</td>
                         <td className="py-3 px-4 text-gray-300">{manifest.consignee}</td>
                         <td className="py-3 px-4">
@@ -378,7 +378,7 @@ export default function WasteManagement() {
           {activeTab === 'recycling' && (
             <div className="space-y-6">
               <div>
-                <h3 className="text-white font-bold mb-4">Recycling Targets vs Actuals</h3>
+                <h3 className="text-white font-display mb-4">Recycling Targets vs Actuals</h3>
                 <ResponsiveContainer width="100%" height={300}>
                   <BarChart data={recyclingTargetsData}>
                     <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
@@ -393,23 +393,23 @@ export default function WasteManagement() {
               </div>
 
               <div>
-                <h3 className="text-white font-bold mb-4">Recycling Rate by Material Type</h3>
+                <h3 className="text-white font-display mb-4">Recycling Rate by Material Type</h3>
                 <div className="cb-table-scroll touch-pan-x">
                   <table className="w-full text-sm">
                     <thead>
                       <tr className="border-b border-gray-700">
-                        <th className="text-left py-3 px-4 text-gray-400 font-medium">Material</th>
-                        <th className="text-right py-3 px-4 text-gray-400 font-medium">Target</th>
-                        <th className="text-right py-3 px-4 text-gray-400 font-medium">Actual</th>
-                        <th className="text-center py-3 px-4 text-gray-400 font-medium">Achievement</th>
+                        <th className="text-left py-3 px-4 text-gray-400 font-display tracking-widest">Material</th>
+                        <th className="text-right py-3 px-4 text-gray-400 font-display tracking-widest">Target</th>
+                        <th className="text-right py-3 px-4 text-gray-400 font-display tracking-widest">Actual</th>
+                        <th className="text-center py-3 px-4 text-gray-400 font-display tracking-widest">Achievement</th>
                       </tr>
                     </thead>
                     <tbody>
                       {recyclingTargetsData.map((item, idx) => (
                         <tr key={idx} className="border-b border-gray-700/50 hover:bg-gray-800/30">
                           <td className="py-3 px-4 text-white font-medium">{item.material}</td>
-                          <td className="py-3 px-4 text-right text-amber-400 font-medium">{item.target}%</td>
-                          <td className="py-3 px-4 text-right text-emerald-400 font-medium">{item.actual}%</td>
+                          <td className="py-3 px-4 font-mono text-amber-400">{item.target}%</td>
+                          <td className="py-3 px-4 font-mono text-emerald-400">{item.actual}%</td>
                           <td className="py-3 px-4 text-center">
                             <span className={`px-2 py-1 rounded text-xs font-medium ${
                               item.actual >= item.target ? 'bg-emerald-500/20 text-emerald-400' :
@@ -427,7 +427,7 @@ export default function WasteManagement() {
               </div>
 
               <div>
-                <h3 className="text-white font-bold mb-4">Recycling Station Locations</h3>
+                <h3 className="text-white font-display mb-4">Recycling Station Locations</h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                   {[
                     { name: 'Main Site Depot', address: 'Zone A, North Compound', materials: 'All types' },
@@ -449,7 +449,7 @@ export default function WasteManagement() {
           {activeTab === 'compliance' && (
             <div className="space-y-6">
               <div>
-                <h3 className="text-white font-bold mb-4">Duty of Care & Compliance Checklist</h3>
+                <h3 className="text-white font-display mb-4">Duty of Care & Compliance Checklist</h3>
                 <div className="space-y-2">
                   {complianceData.map((item, idx) => (
                     <div key={idx} className="border border-gray-700 rounded-lg p-4 flex items-center justify-between">
@@ -479,7 +479,7 @@ export default function WasteManagement() {
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="bg-emerald-900/20 border border-emerald-700/30 rounded-lg p-4">
-                  <h4 className="text-emerald-300 font-bold mb-3">Carrier License Validation</h4>
+                  <h4 className="text-emerald-300 font-display mb-3">Carrier License Validation</h4>
                   <div className="space-y-2">
                     <p className="text-sm text-gray-300 flex items-center gap-2">
                       <CheckCircle size={16} className="text-emerald-400" /> All carriers verified (5/5)
@@ -489,7 +489,7 @@ export default function WasteManagement() {
                 </div>
 
                 <div className="bg-blue-900/20 border border-blue-700/30 rounded-lg p-4">
-                  <h4 className="text-blue-300 font-bold mb-3">Site Waste Management Plan</h4>
+                  <h4 className="text-blue-300 font-display mb-3">Site Waste Management Plan</h4>
                   <div className="space-y-2">
                     <p className="text-sm text-gray-300 flex items-center gap-2">
                       <CheckCircle size={16} className="text-blue-400" /> SWMP Current & Approved
@@ -500,16 +500,16 @@ export default function WasteManagement() {
               </div>
 
               <div>
-                <h3 className="text-white font-bold mb-4">Compliance Score</h3>
+                <h3 className="text-white font-display mb-4">Compliance Score</h3>
                 <div className="bg-gray-800/50 rounded-lg p-6">
                   <div className="flex items-center justify-between">
                     <div>
                       <p className="text-gray-400 text-sm mb-2">Overall Compliance</p>
-                      <p className="text-5xl font-bold text-emerald-400">94%</p>
+                      <p className="text-5xl font-display text-emerald-400">94%</p>
                     </div>
                     <div className="w-32 h-32 rounded-full border-4 border-emerald-400 flex items-center justify-center">
                       <div className="text-center">
-                        <p className="text-2xl font-bold text-emerald-400">47/50</p>
+                        <p className="text-2xl font-display text-emerald-400">47/50</p>
                         <p className="text-xs text-gray-400 mt-1">Items</p>
                       </div>
                     </div>
@@ -518,7 +518,7 @@ export default function WasteManagement() {
               </div>
 
               <div className="bg-amber-900/20 border border-amber-700/30 rounded-lg p-4">
-                <h4 className="text-amber-300 font-bold mb-2">Upcoming Deadlines</h4>
+                <h4 className="text-amber-300 font-display mb-2">Upcoming Deadlines</h4>
                 <ul className="space-y-2 text-sm text-gray-300">
                   <li>• Environmental Permit Renewal - 30 days remaining</li>
                   <li>• Quarterly Waste Audit - Due 2026-04-15</li>
@@ -533,7 +533,7 @@ export default function WasteManagement() {
           <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
             <div className="bg-gray-900 border border-gray-700 rounded-xl w-full max-w-lg max-h-[90vh] overflow-y-auto">
               <div className="p-6 border-b border-gray-700 flex items-center justify-between sticky top-0 bg-gray-900">
-                <h3 className="text-xl font-bold text-white">Log Waste</h3>
+                <h3 className="text-xl font-display text-white">Log Waste</h3>
                 <button type="button" onClick={() => setShowCreateModal(false)} className="text-gray-400 hover:text-white"><X size={20} /></button>
               </div>
               <div className="p-6 space-y-4">
@@ -611,7 +611,7 @@ export default function WasteManagement() {
           <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
             <div className="bg-gray-900 border border-gray-700 rounded-xl w-full max-w-lg">
               <div className="p-6 border-b border-gray-700 flex items-center justify-between">
-                <h3 className="text-xl font-bold text-white">Create Waste Transfer Manifest</h3>
+                <h3 className="text-xl font-display text-white">Create Waste Transfer Manifest</h3>
                 <button type="button" onClick={() => setShowManifestModal(false)} className="text-gray-400 hover:text-white"><X size={20} /></button>
               </div>
               <div className="p-6 space-y-4">

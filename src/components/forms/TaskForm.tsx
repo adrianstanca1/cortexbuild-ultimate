@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { X } from 'lucide-react';
-import { getToken } from '../../lib/supabase';
+import { API_BASE } from '../../lib/auth-storage';
 
 interface TaskFormProps {
   onClose: () => void;
@@ -68,12 +68,10 @@ export function TaskForm({ onClose, onSuccess, projectId }: TaskFormProps) {
 
     setIsSubmitting(true);
     try {
-      const response = await fetch('/api/project-tasks', {
+      const response = await fetch(`${API_BASE}/project-tasks`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${getToken() || ''}`,
-        },
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           title: formData.title,
           description: formData.description || undefined,
@@ -105,7 +103,7 @@ export function TaskForm({ onClose, onSuccess, projectId }: TaskFormProps) {
 
       <div className="relative bg-white rounded-lg shadow-lg w-full max-w-2xl max-h-[90vh] overflow-y-auto">
         <div className="flex items-center justify-between sticky top-0 bg-white border-b border-gray-200 p-6">
-          <h2 className="text-lg font-semibold text-gray-900">Create Task</h2>
+          <h2 className="text-lg font-display font-semibold text-gray-900">Create Task</h2>
           <button
             onClick={onClose}
             className="text-gray-400 hover:text-gray-600 transition-colors"

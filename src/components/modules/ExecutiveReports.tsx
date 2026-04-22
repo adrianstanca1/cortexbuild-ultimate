@@ -206,7 +206,7 @@ export function ExecutiveReports() {
       {/* Header */}
       <div className="flex justify-between items-start">
         <div>
-          <h1 className="text-3xl font-bold text-white font-display">Executive Reports</h1>
+          <h1 className="text-3xl font-display text-white">Executive Reports</h1>
           <p className="text-sm text-gray-400 mt-1">Board-level intelligence and analytics</p>
         </div>
         <div className="flex gap-2">
@@ -254,7 +254,7 @@ export function ExecutiveReports() {
             {kpis.map((kpi) => (
               <div key={String(kpi.label)} className="card p-4">
                 <p className="text-xs text-gray-400 uppercase mb-2">{String(kpi.label)}</p>
-                <p className="text-2xl font-bold text-white mb-2">{String(kpi.value)}</p>
+                <p className="text-2xl font-display text-white mb-2">{String(kpi.value)}</p>
                 <div className="flex items-center justify-between">
                   <span className="text-xs text-gray-500">Target: {String(kpi.target)}</span>
                   <RAGStatus status={kpi.rag} />
@@ -264,7 +264,7 @@ export function ExecutiveReports() {
           </div>
 
           <div className="card p-5">
-            <h3 className="text-lg font-bold text-white mb-4">Project RAG Status</h3>
+            <h3 className="text-lg font-display text-white mb-4">Project RAG Status</h3>
             <div className="space-y-3">
               {projects.map((proj) => (
                 <div key={String(proj.name)} className="p-3 bg-gray-800/50 rounded-lg">
@@ -314,13 +314,13 @@ export function ExecutiveReports() {
                         {isSelected ? <CheckSquare size={16} className="text-blue-400"/> : <Square size={16} className="text-gray-500"/>}
                       </button>
                       <div>
-                        <p className="font-bold text-white">{String(proj.name)}</p>
+                        <p className="font-display text-white">{String(proj.name)}</p>
                         <p className="text-xs text-gray-400">{String(proj.client)}</p>
                       </div>
                     </div>
                     <span className="px-2 py-1 rounded bg-blue-500/20 text-blue-400 text-xs font-medium">{String(proj.phase)}</span>
                   </div>
-                  <p className="text-lg font-bold text-emerald-400 mb-3">{fmtCurrency(proj.value)}</p>
+                  <p className="text-lg font-display text-emerald-400 mb-3">{fmtCurrency(proj.value)}</p>
                   <div className="mb-3">
                     <div className="flex justify-between text-xs mb-1">
                       <span className="text-gray-400">Completion</span>
@@ -337,7 +337,7 @@ export function ExecutiveReports() {
             </div>
 
             <div className="card p-5">
-              <h3 className="text-lg font-bold text-white mb-4">Portfolio by Sector</h3>
+              <h3 className="text-lg font-display text-white mb-4">Portfolio by Sector</h3>
               <div className="h-64">
                 <ResponsiveContainer width="100%" height="100%">
                   <RechartsPie>
@@ -368,7 +368,7 @@ export function ExecutiveReports() {
         <div className="space-y-6">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             <div className="card p-5">
-              <h3 className="text-lg font-bold text-white mb-4">Quarterly Performance</h3>
+              <h3 className="text-lg font-display text-white mb-4">Quarterly Performance</h3>
               <div className="h-64">
                 <ResponsiveContainer width="100%" height="100%">
                   <BarChart data={[
@@ -386,7 +386,7 @@ export function ExecutiveReports() {
             </div>
 
             <div className="card p-5">
-              <h3 className="text-lg font-bold text-white mb-4">Key Financial Ratios</h3>
+              <h3 className="text-lg font-display text-white mb-4">Key Financial Ratios</h3>
               <div className="space-y-4">
                 {[
                   { label: 'Gross Margin', value: '25%', benchmark: '22%' },
@@ -397,7 +397,7 @@ export function ExecutiveReports() {
                   <div key={String(item.label)} className="flex justify-between items-center p-3 bg-gray-800/50 rounded">
                     <span className="text-gray-300 text-sm">{String(item.label)}</span>
                     <div className="text-right">
-                      <p className="font-bold text-white">{String(item.value)}</p>
+                      <p className="font-display text-white">{String(item.value)}</p>
                       <p className="text-xs text-gray-500">vs {String(item.benchmark)}</p>
                     </div>
                   </div>
@@ -407,7 +407,7 @@ export function ExecutiveReports() {
           </div>
 
           <div className="card p-5">
-            <h3 className="text-lg font-bold text-white mb-4">Revenue Pipeline</h3>
+            <h3 className="text-lg font-display text-white mb-4">Revenue Pipeline</h3>
             <div className="h-64">
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={[
@@ -440,14 +440,14 @@ export function ExecutiveReports() {
             ].map((item) => (
               <div key={String(item.label)} className="card p-4">
                 <p className="text-xs text-gray-400 uppercase mb-2">{String(item.label)}</p>
-                <p className="text-2xl font-bold text-white mb-1">{String(item.value)}</p>
+                <p className="text-2xl font-display text-white mb-1">{String(item.value)}</p>
                 <p className="text-xs text-gray-500">{String(item.unit)}</p>
               </div>
             ))}
           </div>
 
           <div className="card p-5">
-            <h3 className="text-lg font-bold text-white mb-4">Incident Frequency Trend</h3>
+            <h3 className="text-lg font-display text-white mb-4">Incident Frequency Trend</h3>
             <div className="h-64">
               <ResponsiveContainer width="100%" height="100%">
                 <AreaChart data={trendData}>
@@ -466,7 +466,7 @@ export function ExecutiveReports() {
       {/* KPIs Tab */}
       {activeTab === 'kpis' && (
         <div className="card p-5">
-          <h3 className="text-lg font-bold text-white mb-4">KPI Scorecard</h3>
+          <h3 className="text-lg font-display text-white mb-4">KPI Scorecard</h3>
           <div className="space-y-3">
             {[
               { category: 'Financial', kpi: 'Gross Margin %', target: '26%', actual: '25%', rag: 'amber' as RAG },
@@ -484,7 +484,7 @@ export function ExecutiveReports() {
                 <div className="flex items-center gap-4">
                   <div className="text-right">
                     <p className="text-xs text-gray-400">Target: {String(item.target)}</p>
-                    <p className="text-sm font-bold text-white">Actual: {String(item.actual)}</p>
+                    <p className="text-sm font-display text-white">Actual: {String(item.actual)}</p>
                   </div>
                   <RAGStatus status={item.rag} />
                 </div>
@@ -498,7 +498,7 @@ export function ExecutiveReports() {
       {activeTab === 'trends' && (
         <div className="space-y-6">
           <div className="card p-5">
-            <h3 className="text-lg font-bold text-white mb-4">12-Month Revenue & Margin Trend</h3>
+            <h3 className="text-lg font-display text-white mb-4">12-Month Revenue & Margin Trend</h3>
             <div className="h-64">
               <ResponsiveContainer width="100%" height="100%">
                 <AreaChart data={trendData}>
@@ -520,7 +520,7 @@ export function ExecutiveReports() {
           </div>
 
           <div className="card p-5">
-            <h3 className="text-lg font-bold text-white mb-4">Headcount Evolution</h3>
+            <h3 className="text-lg font-display text-white mb-4">Headcount Evolution</h3>
             <div className="h-64">
               <ResponsiveContainer width="100%" height="100%">
                 <AreaChart data={trendData}>

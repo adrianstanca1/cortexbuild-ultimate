@@ -162,7 +162,7 @@ export function CIS() {
       <div className="space-y-6 bg-gray-900 min-h-screen p-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-white">CIS Management</h1>
+          <h1 className="text-3xl font-display text-white">CIS Management</h1>
           <p className="text-sm text-gray-400 mt-1">Construction Industry Scheme — tax deduction tracking</p>
         </div>
         {mainTab==='returns' && (
@@ -189,7 +189,7 @@ export function CIS() {
           <div key={kpi.label} className={`border border-gray-700 rounded-xl p-4 ${kpi.bg}`}>
             <div className="flex items-center gap-3">
               <div className="p-2 rounded-lg"><kpi.icon size={20} className={kpi.colour}/></div>
-              <div><p className="text-xs text-gray-400">{kpi.label}</p><p className="text-xl font-bold text-white">{kpi.value}</p></div>
+              <div><p className="text-xs text-gray-400">{kpi.label}</p><p className="text-xl font-display text-white">{kpi.value}</p></div>
             </div>
           </div>
         ))}
@@ -335,7 +335,7 @@ export function CIS() {
       {mainTab==='calculator' && (
         <div className="space-y-6">
           <div className="bg-gradient-to-br from-orange-900/40 to-orange-900/20 border border-orange-700 rounded-xl p-6">
-            <h3 className="text-lg font-bold text-white mb-6">CIS Deduction Calculator</h3>
+            <h3 className="text-lg font-display text-white mb-6">CIS Deduction Calculator</h3>
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
               <div>
@@ -360,23 +360,23 @@ export function CIS() {
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div className="bg-gray-900 rounded-lg p-4 border border-gray-700">
                   <p className="text-xs text-gray-400 mb-2">Payment Subject to Deduction</p>
-                  <p className="text-2xl font-bold text-blue-400">£{calcNetPaymentSubject.toLocaleString()}</p>
+                  <p className="text-2xl font-display text-blue-400">£{calcNetPaymentSubject.toLocaleString()}</p>
                   <p className="text-xs text-gray-500 mt-2">{calcGrossNum.toLocaleString()} - {calcMatNum.toLocaleString()}</p>
                 </div>
                 <div className="bg-red-900/30 border border-red-700 rounded-lg p-4">
                   <p className="text-xs text-gray-400 mb-2">CIS Deduction ({calcRateNum}%)</p>
-                  <p className="text-2xl font-bold text-red-400">£{calcDeductionAmount.toLocaleString('en-GB',{minimumFractionDigits:2,maximumFractionDigits:2})}</p>
+                  <p className="text-2xl font-display text-red-400">£{calcDeductionAmount.toLocaleString('en-GB',{minimumFractionDigits:2,maximumFractionDigits:2})}</p>
                 </div>
                 <div className="bg-green-900/30 border border-green-700 rounded-lg p-4">
                   <p className="text-xs text-gray-400 mb-2">Net Payment to Subcontractor</p>
-                  <p className="text-2xl font-bold text-green-400">£{calcNetPayment.toLocaleString('en-GB',{minimumFractionDigits:2,maximumFractionDigits:2})}</p>
+                  <p className="text-2xl font-display text-green-400">£{calcNetPayment.toLocaleString('en-GB',{minimumFractionDigits:2,maximumFractionDigits:2})}</p>
                 </div>
               </div>
             )}
           </div>
 
           <div className="card bg-base-200 p-6">
-            <h4 className="text-lg font-bold text-white mb-4">Monthly Return Generator</h4>
+            <h4 className="text-lg font-display text-white mb-4">Monthly Return Generator</h4>
             <div className="cb-table-scroll touch-pan-x">
               <table className="w-full text-sm">
                 <thead className="bg-gray-900 border-b border-gray-700">
@@ -395,7 +395,7 @@ export function CIS() {
                         <td className="px-4 py-3 text-blue-400 font-semibold">£{netSubj.toLocaleString()}</td>
                         <td className="px-4 py-3 text-gray-400">{Number(r.cis_rate??20)}%</td>
                         <td className="px-4 py-3 text-red-400 font-semibold">-£{Math.round(ded).toLocaleString()}</td>
-                        <td className="px-4 py-3 text-green-400 font-bold">£{Math.round(net).toLocaleString()}</td>
+                        <td className="px-4 py-3 text-green-400 font-mono">£{Math.round(net).toLocaleString()}</td>
                       </tr>
                     );
                   })}

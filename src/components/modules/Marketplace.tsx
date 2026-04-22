@@ -196,7 +196,7 @@ export function Marketplace() {
       <ModuleBreadcrumbs currentModule="marketplace" onNavigate={() => {}} />
       <div className="space-y-6">
       <div className="flex items-center gap-3">
-        <h1 className="text-3xl font-bold text-white">CortexBuild Marketplace</h1>
+        <h1 className="text-3xl font-display text-white">CortexBuild Marketplace</h1>
       </div>
       <p className="text-gray-400 text-sm">Browse apps, integrations, and templates for your organization</p>
 
@@ -204,15 +204,15 @@ export function Marketplace() {
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <div className="input input-bordered p-4">
           <p className="text-sm text-gray-400 mb-1">Records Indexed</p>
-          <p className="text-2xl font-bold text-white">15.2M</p>
+          <p className="text-2xl font-display text-white">15.2M</p>
         </div>
         <div className="input input-bordered p-4">
           <p className="text-sm text-gray-400 mb-1">Last Indexed</p>
-          <p className="text-2xl font-bold text-white">2 hours ago</p>
+          <p className="text-2xl font-display text-white">2 hours ago</p>
         </div>
         <div className="input input-bordered p-4">
           <p className="text-sm text-gray-400 mb-1">Active Apps</p>
-          <p className="text-2xl font-bold text-white">{Number(installedApps.length)}</p>
+          <p className="text-2xl font-display text-white">{Number(installedApps.length)}</p>
         </div>
       </div>
 
@@ -264,7 +264,7 @@ export function Marketplace() {
                         {isSelected ? <CheckSquare size={16} className="text-blue-400"/> : <Square size={16} className="text-gray-500"/>}
                       </button>
                       <div>
-                        <h4 className="font-bold text-white">{String(app.name)}</h4>
+                        <h4 className="font-display text-white">{String(app.name)}</h4>
                         <p className="text-xs text-blue-400">{String(app.category)}</p>
                       </div>
                     </div>
@@ -328,7 +328,7 @@ export function Marketplace() {
                 <div className="text-3xl flex-shrink-0">🔗</div>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 mb-1">
-                    <h4 className="font-bold text-white">{String(intg.name)}</h4>
+                    <h4 className="font-display text-white">{String(intg.name)}</h4>
                     <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${statusColor(intg.status)}`}>
                       {statusLabel(intg.status)}
                     </span>
@@ -363,7 +363,7 @@ export function Marketplace() {
                   <LayoutTemplate className="h-5 w-5 text-blue-400" />
                 </div>
                 <div className="flex-1 min-w-0">
-                  <h4 className="font-bold text-white mb-0.5">{String(tpl.name)}</h4>
+                  <h4 className="font-display text-white mb-0.5">{String(tpl.name)}</h4>
                   <p className="text-xs text-blue-400 mb-1.5">{String(tpl.category)}</p>
                   <p className="text-sm text-gray-400 mb-3">{String(tpl.desc)}</p>
                   <div className="flex items-center justify-between">
@@ -390,7 +390,7 @@ export function Marketplace() {
                   <p className="text-xs text-blue-400 uppercase font-medium">{String(resource.type)}</p>
                   {Boolean(resource.completed) && <CheckCircle2 className="h-4 w-4 text-green-400" />}
                 </div>
-                <h4 className="font-bold text-white mb-2">{String(resource.title)}</h4>
+                <h4 className="font-display text-white mb-2">{String(resource.title)}</h4>
                 <div className="w-full bg-gray-800 rounded-full h-2 mb-3">
                   <div
                     className={`h-2 rounded-full ${resource.completed ? 'bg-green-500 w-full' : 'bg-blue-500 w-1/3'}`}
@@ -425,7 +425,7 @@ export function Marketplace() {
             </div>
           </div>
           <div className="bg-gray-900 border border-gray-700 rounded-lg p-6">
-            <h3 className="text-lg font-bold text-white mb-4">Submit Support Ticket</h3>
+            <h3 className="text-lg font-display text-white mb-4">Submit Support Ticket</h3>
             <form className="space-y-4">
               <input
                 type="text"

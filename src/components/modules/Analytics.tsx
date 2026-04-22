@@ -293,7 +293,7 @@ export function Analytics() {
       )}
       <div className="h-full overflow-y-auto bg-gray-900 p-6 text-white">
       <div className="mb-6">
-        <h1 className="text-3xl font-bold text-white mb-4">Analytics &amp; Intelligence</h1>
+        <h1 className="text-3xl font-display text-white mb-4">Analytics &amp; Intelligence</h1>
         <div className="flex gap-2 flex-wrap">
           {[
             {id:'overview',label:'Overview'},
@@ -318,39 +318,39 @@ export function Analytics() {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             <div className="rounded-xl border border-gray-700 bg-gray-800 p-5 hover:border-blue-500 transition-colors">
               <p className="text-xs text-gray-400 font-semibold">TOTAL REVENUE YTD</p>
-              <p className="mt-3 text-3xl font-bold text-blue-400">£{(ytdRevenue/1000000).toFixed(2)}M</p>
+              <p className="mt-3 text-3xl font-display text-blue-400">£{(ytdRevenue/1000000).toFixed(2)}M</p>
               <p className="mt-1 text-xs text-gray-500">+12.5% vs prior year</p>
             </div>
             <div className="rounded-xl border border-gray-700 bg-gray-800 p-5 hover:border-green-500 transition-colors">
               <p className="text-xs text-gray-400 font-semibold">GROSS PROFIT %</p>
-              <p className="mt-3 text-3xl font-bold text-green-400">{grossProfitPct.toFixed(1)}%</p>
+              <p className="mt-3 text-3xl font-display text-green-400">{grossProfitPct.toFixed(1)}%</p>
               <p className="mt-1 text-xs text-gray-500">Above target 32%</p>
             </div>
             <div className="rounded-xl border border-gray-700 bg-gray-800 p-5 hover:border-purple-500 transition-colors">
               <p className="text-xs text-gray-400 font-semibold">ACTIVE PROJECTS</p>
-              <p className="mt-3 text-3xl font-bold text-purple-400">{activeProjects.length}</p>
+              <p className="mt-3 text-3xl font-display text-purple-400">{activeProjects.length}</p>
               <p className="mt-1 text-xs text-gray-500">£{(avgProjValue/1000000).toFixed(1)}M avg value</p>
             </div>
             <div className="rounded-xl border border-gray-700 bg-gray-800 p-5 hover:border-orange-500 transition-colors">
               <p className="text-xs text-gray-400 font-semibold">OUTSTANDING INVOICES</p>
-              <p className="mt-3 text-3xl font-bold text-orange-400">£{(outstandingInvoices/1000).toFixed(0)}K</p>
+              <p className="mt-3 text-3xl font-display text-orange-400">£{(outstandingInvoices/1000).toFixed(0)}K</p>
               <p className="mt-1 text-xs text-gray-500">{invoices.filter(i => i.status === 'sent' || i.status === 'draft' || i.status === 'overdue').length} invoices</p>
             </div>
             <div className="rounded-xl border border-gray-700 bg-gray-800 p-5 hover:border-emerald-500 transition-colors">
               <p className="text-xs text-gray-400 font-semibold">DAYS SINCE LAST INCIDENT</p>
-              <p className="mt-3 text-3xl font-bold text-emerald-400">{daysSinceLastIncident}</p>
+              <p className="mt-3 text-3xl font-display text-emerald-400">{daysSinceLastIncident}</p>
               <p className="mt-1 text-xs text-gray-500">Safety score: {safetyScore}/100</p>
             </div>
             <div className="rounded-xl border border-gray-700 bg-gray-800 p-5 hover:border-cyan-500 transition-colors">
               <p className="text-xs text-gray-400 font-semibold">PIPELINE VALUE</p>
-              <p className="mt-3 text-3xl font-bold text-cyan-400">£{(pipelineValue/1000000).toFixed(1)}M</p>
+              <p className="mt-3 text-3xl font-display text-cyan-400">£{(pipelineValue/1000000).toFixed(1)}M</p>
               <p className="mt-1 text-xs text-gray-500">{projects.filter(p => p.status === 'quoted' || p.status === 'tendering').length} opportunities</p>
             </div>
           </div>
 
           {/* Revenue vs Cost vs Profit Chart */}
           <div className="rounded-xl border border-gray-700 bg-gray-800 p-5">
-            <h3 className="mb-4 text-sm font-semibold text-white">Revenue vs Cost vs Profit (7 Months)</h3>
+            <h3 className="mb-4 text-sm font-display text-white">Revenue vs Cost vs Profit (7 Months)</h3>
             <ResponsiveContainer width="100%" height={300}>
               <AreaChart data={revenueTrendData}>
                 <defs>
@@ -381,7 +381,7 @@ export function Analytics() {
 
           {/* Top 3 Projects by Value */}
           <div>
-            <h3 className="mb-3 text-sm font-semibold text-white">Top 3 Projects by Value</h3>
+            <h3 className="mb-3 text-sm font-display text-white">Top 3 Projects by Value</h3>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               {top3Projects.map((proj, idx) => (
                 <div key={idx} className="rounded-xl border border-gray-700 bg-gray-800 p-4">
@@ -389,7 +389,7 @@ export function Analytics() {
                     <p className="text-sm font-medium text-gray-300">{proj.name}</p>
                     <span className="text-xs bg-blue-600 text-white px-2 py-1 rounded">#{idx + 1}</span>
                   </div>
-                  <p className="mt-2 text-2xl font-bold text-blue-400">£{(proj.value/1000000).toFixed(2)}M</p>
+                  <p className="mt-2 text-2xl font-display text-blue-400">£{(proj.value/1000000).toFixed(2)}M</p>
                 </div>
               ))}
             </div>
@@ -404,26 +404,26 @@ export function Analytics() {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
             <div className="rounded-xl border border-gray-700 bg-gray-800 p-4">
               <p className="text-xs text-gray-400">Turnover YTD</p>
-              <p className="mt-2 text-2xl font-bold text-blue-400">£{(ytdRevenue/1000000).toFixed(2)}M</p>
+              <p className="mt-2 text-2xl font-display text-blue-400">£{(ytdRevenue/1000000).toFixed(2)}M</p>
             </div>
             <div className="rounded-xl border border-gray-700 bg-gray-800 p-4">
               <p className="text-xs text-gray-400">Gross Margin</p>
-              <p className="mt-2 text-2xl font-bold text-green-400">{grossProfitPct.toFixed(1)}%</p>
+              <p className="mt-2 text-2xl font-display text-green-400">{grossProfitPct.toFixed(1)}%</p>
             </div>
             <div className="rounded-xl border border-gray-700 bg-gray-800 p-4">
               <p className="text-xs text-gray-400">EBITDA Est.</p>
-              <p className="mt-2 text-2xl font-bold text-purple-400">£{(ytdRevenue*0.17/1000).toFixed(0)}K</p>
+              <p className="mt-2 text-2xl font-display text-purple-400">£{(ytdRevenue*0.17/1000).toFixed(0)}K</p>
             </div>
             <div className="rounded-xl border border-gray-700 bg-gray-800 p-4">
               <p className="text-xs text-gray-400">Outstanding AR</p>
-              <p className="mt-2 text-2xl font-bold text-orange-400">£{(outstandingInvoices/1000).toFixed(0)}K</p>
+              <p className="mt-2 text-2xl font-display text-orange-400">£{(outstandingInvoices/1000).toFixed(0)}K</p>
             </div>
           </div>
 
           {/* Revenue by Type Pie */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             <div className="rounded-xl border border-gray-700 bg-gray-800 p-5">
-              <h3 className="mb-4 text-sm font-semibold text-white">Revenue by Project Type</h3>
+              <h3 className="mb-4 text-sm font-display text-white">Revenue by Project Type</h3>
               <ResponsiveContainer width="100%" height={250}>
                 <PieChart>
                   <Pie data={revenueByProjectData.length > 0 ? revenueByProjectData : REVENUE_BY_TYPE} cx="50%" cy="50%" labelLine={false}
@@ -438,7 +438,7 @@ export function Analytics() {
 
             {/* Cash Flow S-Curve */}
             <div className="rounded-xl border border-gray-700 bg-gray-800 p-5">
-              <h3 className="mb-4 text-sm font-semibold text-white">Cash Flow S-Curve (Cumulative)</h3>
+              <h3 className="mb-4 text-sm font-display text-white">Cash Flow S-Curve (Cumulative)</h3>
               <ResponsiveContainer width="100%" height={250}>
                 <AreaChart data={cashflowData}>
                   <defs>
@@ -466,13 +466,13 @@ export function Analytics() {
           {/* Invoice Aging & Profit Margin */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             <div className="rounded-xl border border-gray-700 bg-gray-800 p-5">
-              <h3 className="mb-4 text-sm font-semibold text-white">Invoice Aging</h3>
+              <h3 className="mb-4 text-sm font-display text-white">Invoice Aging</h3>
               <div className="space-y-4">
                 {INVOICE_AGING.map((item,idx)=>(
                   <div key={idx}>
                     <div className="mb-1 flex justify-between text-xs">
                       <span className="text-gray-400">{item.range}</span>
-                      <span className="font-semibold text-white">£{(item.amount/1000).toFixed(0)}K ({item.percentage}%)</span>
+                      <span className="font-display text-white">£{(item.amount/1000).toFixed(0)}K ({item.percentage}%)</span>
                     </div>
                     <div className="h-2 w-full rounded-full bg-gray-700">
                       <div className="h-full rounded-full bg-gradient-to-r from-amber-500 to-orange-500" style={{width:`${item.percentage}%`}}/>
@@ -483,7 +483,7 @@ export function Analytics() {
             </div>
 
             <div className="rounded-xl border border-gray-700 bg-gray-800 p-5">
-              <h3 className="mb-4 text-sm font-semibold text-white">Profit Margin % by Month</h3>
+              <h3 className="mb-4 text-sm font-display text-white">Profit Margin % by Month</h3>
               <ResponsiveContainer width="100%" height={200}>
                 <LineChart data={revenueTrendData}>
                   <CartesianGrid strokeDasharray="3 3" stroke="#374151"/>
@@ -503,10 +503,10 @@ export function Analytics() {
               <table className="w-full text-sm">
                 <thead>
                   <tr className="border-b border-gray-700">
-                    <th className="px-4 py-3 text-left font-semibold text-gray-400">Quarter</th>
-                    <th className="px-4 py-3 text-left font-semibold text-gray-400">Liability</th>
-                    <th className="px-4 py-3 text-left font-semibold text-gray-400">Paid</th>
-                    <th className="px-4 py-3 text-left font-semibold text-gray-400">Status</th>
+                    <th className="px-4 py-3 text-left font-display tracking-widest text-gray-400">Quarter</th>
+                    <th className="px-4 py-3 text-left font-display tracking-widest text-gray-400">Liability</th>
+                    <th className="px-4 py-3 text-left font-display tracking-widest text-gray-400">Paid</th>
+                    <th className="px-4 py-3 text-left font-display tracking-widest text-gray-400">Status</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -536,7 +536,7 @@ export function Analytics() {
         <div className="space-y-6">
           {/* Project Health Score Cards */}
           <div>
-            <h3 className="mb-3 text-sm font-semibold text-white">Project Health Scores</h3>
+            <h3 className="mb-3 text-sm font-display text-white">Project Health Scores</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {projectHealthScores.map((proj, idx) => (
                 <div key={idx} className={clsx('rounded-xl border p-4 transition-colors',
@@ -549,7 +549,7 @@ export function Analytics() {
                       <p className="text-sm font-medium text-gray-300">{proj.name}</p>
                       <p className="text-xs text-gray-500 mt-1">Progress: {proj.progress}%</p>
                     </div>
-                    <div className={clsx('text-2xl font-bold',
+                    <div className={clsx('text-2xl font-display',
                       proj.status === 'green' ? 'text-green-400' :
                       proj.status === 'amber' ? 'text-amber-400' :
                       'text-red-400'
@@ -574,7 +574,7 @@ export function Analytics() {
 
           {/* Progress vs Budget Scatter */}
           <div className="rounded-xl border border-gray-700 bg-gray-800 p-5">
-            <h3 className="mb-4 text-sm font-semibold text-white">Progress vs Budget Summary</h3>
+            <h3 className="mb-4 text-sm font-display text-white">Progress vs Budget Summary</h3>
             <ResponsiveContainer width="100%" height={300}>
               <ScatterChart margin={{top:20, right:20, bottom:20, left:20}}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#374151"/>
@@ -595,7 +595,7 @@ export function Analytics() {
           {/* On-Time vs Delayed */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             <div className="rounded-xl border border-gray-700 bg-gray-800 p-5">
-              <h3 className="mb-4 text-sm font-semibold text-white">On-Time vs Delayed Split</h3>
+              <h3 className="mb-4 text-sm font-display text-white">On-Time vs Delayed Split</h3>
               <ResponsiveContainer width="100%" height={250}>
                 <PieChart>
                   <Pie data={projectStatusSplit} cx="50%" cy="50%" labelLine={false}
@@ -609,7 +609,7 @@ export function Analytics() {
 
             {/* Budget Variance Table */}
             <div className="rounded-xl border border-gray-700 bg-gray-800 p-5">
-              <h3 className="mb-4 text-sm font-semibold text-white">Budget Variance Analysis</h3>
+              <h3 className="mb-4 text-sm font-display text-white">Budget Variance Analysis</h3>
               <div className="cb-table-scroll touch-pan-x">
                 <table className="w-full text-xs">
                   <thead>
@@ -655,29 +655,29 @@ export function Analytics() {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
             <div className="rounded-xl border border-gray-700 bg-gray-800 p-4">
               <p className="text-xs text-gray-400 font-semibold">SAFETY SCORE</p>
-              <p className="mt-2 text-3xl font-bold text-emerald-400">{safetyScore}</p>
+              <p className="mt-2 text-3xl font-display text-emerald-400">{safetyScore}</p>
               <p className="mt-1 text-xs text-gray-500">/ 100</p>
             </div>
             <div className="rounded-xl border border-gray-700 bg-gray-800 p-4">
               <p className="text-xs text-gray-400 font-semibold">AFR (Accident Frequency Rate)</p>
-              <p className="mt-2 text-3xl font-bold text-orange-400">{afr}</p>
+              <p className="mt-2 text-3xl font-display text-orange-400">{afr}</p>
               <p className="mt-1 text-xs text-gray-500">per 100k hours</p>
             </div>
             <div className="rounded-xl border border-gray-700 bg-gray-800 p-4">
               <p className="text-xs text-gray-400 font-semibold">RIDDOR COUNT</p>
-              <p className="mt-2 text-3xl font-bold text-red-400">{riddorCount}</p>
+              <p className="mt-2 text-3xl font-display text-red-400">{riddorCount}</p>
               <p className="mt-1 text-xs text-gray-500">Reportable incidents</p>
             </div>
             <div className="rounded-xl border border-gray-700 bg-gray-800 p-4">
               <p className="text-xs text-gray-400 font-semibold">COST OF INCIDENTS</p>
-              <p className="mt-2 text-3xl font-bold text-red-400">£{(costOfIncidents/1000).toFixed(0)}K</p>
+              <p className="mt-2 text-3xl font-display text-red-400">£{(costOfIncidents/1000).toFixed(0)}K</p>
               <p className="mt-1 text-xs text-gray-500">{daysLost} days lost</p>
             </div>
           </div>
 
           {/* Safety Trend LineChart */}
           <div className="rounded-xl border border-gray-700 bg-gray-800 p-5">
-            <h3 className="mb-4 text-sm font-semibold text-white">Safety Performance Trends (7 Months)</h3>
+            <h3 className="mb-4 text-sm font-display text-white">Safety Performance Trends (7 Months)</h3>
             <ResponsiveContainer width="100%" height={300}>
               <LineChart data={safetyTrendData}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#374151"/>
@@ -695,7 +695,7 @@ export function Analytics() {
           {/* Incident Types & Summary */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             <div className="rounded-xl border border-gray-700 bg-gray-800 p-5">
-              <h3 className="mb-4 text-sm font-semibold text-white">Incident Types Distribution</h3>
+              <h3 className="mb-4 text-sm font-display text-white">Incident Types Distribution</h3>
               <ResponsiveContainer width="100%" height={250}>
                 <PieChart>
                   <Pie data={incidentTypes} cx="50%" cy="50%" labelLine={false}
@@ -708,7 +708,7 @@ export function Analytics() {
             </div>
 
             <div className="rounded-xl border border-gray-700 bg-gray-800 p-5">
-              <h3 className="mb-4 text-sm font-semibold text-white">Safety Summary</h3>
+              <h3 className="mb-4 text-sm font-display text-white">Safety Summary</h3>
               <div className="space-y-3">
                 <div className="flex justify-between items-center pb-3 border-b border-gray-700">
                   <span className="text-sm text-gray-400">Open Incidents</span>
@@ -737,7 +737,7 @@ export function Analytics() {
         <div className="space-y-6">
           {/* Labour by Trade BarChart */}
           <div className="rounded-xl border border-gray-700 bg-gray-800 p-5">
-            <h3 className="mb-4 text-sm font-semibold text-white">Labour Hours by Trade</h3>
+            <h3 className="mb-4 text-sm font-display text-white">Labour Hours by Trade</h3>
             <ResponsiveContainer width="100%" height={300}>
               <BarChart data={activeProjects.slice(0,6).map(p => ({
                 trade: String(p.name??'').split(' ').slice(0,2).join(' '),
@@ -756,7 +756,7 @@ export function Analytics() {
 
           {/* Labour Cost vs Budget by Project */}
           <div className="rounded-xl border border-gray-700 bg-gray-800 p-5">
-            <h3 className="mb-4 text-sm font-semibold text-white">Labour Cost vs Budget by Project</h3>
+            <h3 className="mb-4 text-sm font-display text-white">Labour Cost vs Budget by Project</h3>
             <ResponsiveContainer width="100%" height={300}>
               <BarChart data={labourByProject}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#374151"/>
@@ -773,7 +773,7 @@ export function Analytics() {
           {/* Headcount & Overtime Trends */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             <div className="rounded-xl border border-gray-700 bg-gray-800 p-5">
-              <h3 className="mb-4 text-sm font-semibold text-white">Headcount Trend by Month</h3>
+              <h3 className="mb-4 text-sm font-display text-white">Headcount Trend by Month</h3>
               <ResponsiveContainer width="100%" height={250}>
                 <LineChart data={headcountData}>
                   <CartesianGrid strokeDasharray="3 3" stroke="#374151"/>
@@ -786,7 +786,7 @@ export function Analytics() {
             </div>
 
             <div className="rounded-xl border border-gray-700 bg-gray-800 p-5">
-              <h3 className="mb-4 text-sm font-semibold text-white">Overtime % Ratio by Month</h3>
+              <h3 className="mb-4 text-sm font-display text-white">Overtime % Ratio by Month</h3>
               <ResponsiveContainer width="100%" height={250}>
                 <LineChart data={overtimeByMonth}>
                   <CartesianGrid strokeDasharray="3 3" stroke="#374151"/>
@@ -801,15 +801,15 @@ export function Analytics() {
 
           {/* Labour Summary Table */}
           <div className="rounded-xl border border-gray-700 bg-gray-800 p-5">
-            <h3 className="mb-4 text-sm font-semibold text-white">Labour Summary by Trade</h3>
+            <h3 className="mb-4 text-sm font-display text-white">Labour Summary by Trade</h3>
             <div className="cb-table-scroll touch-pan-x">
               <table className="w-full text-sm">
                 <thead>
                   <tr className="border-b border-gray-700">
-                    <th className="px-4 py-3 text-left font-semibold text-gray-400">Trade</th>
-                    <th className="px-4 py-3 text-left font-semibold text-gray-400">Hours</th>
-                    <th className="px-4 py-3 text-left font-semibold text-gray-400">Cost</th>
-                    <th className="px-4 py-3 text-left font-semibold text-gray-400">Hourly Rate</th>
+                    <th className="px-4 py-3 text-left font-display tracking-widest text-gray-400">Trade</th>
+                    <th className="px-4 py-3 text-left font-display tracking-widest text-gray-400">Hours</th>
+                    <th className="px-4 py-3 text-left font-display tracking-widest text-gray-400">Cost</th>
+                    <th className="px-4 py-3 text-left font-display tracking-widest text-gray-400">Hourly Rate</th>
                   </tr>
                 </thead>
                 <tbody>

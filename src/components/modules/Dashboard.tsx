@@ -118,8 +118,8 @@ const RAGDonut = React.memo(({ data }: { data: { name: string; value: number; fi
         })}
       </svg>
       <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
-        <span style={{ fontFamily: "'Syne', sans-serif", fontSize: '22px', fontWeight: 800, color: '#f1f5f9', lineHeight: 1 }}>{total}</span>
-        <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: '8px', color: '#475569', letterSpacing: '0.1em', textTransform: 'uppercase' }}>Projects</span>
+        <span style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: '22px', fontWeight: 800, color: '#f1f5f9', lineHeight: 1 }}>{total}</span>
+        <span style={{ fontFamily: "'Fira Code', monospace", fontSize: '8px', color: '#475569', letterSpacing: '0.1em', textTransform: 'uppercase' }}>Projects</span>
       </div>
     </div>
   );
@@ -180,21 +180,21 @@ const ActivityItem = React.memo(({ user, action, module, time, accent, delay = 0
         display: 'flex', alignItems: 'center', justifyContent: 'center',
         flexShrink: 0,
       }}>
-        <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: '9px', fontWeight: 700, color: accent }}>
+        <span style={{ fontFamily: "'Fira Code', monospace", fontSize: '9px', fontWeight: 700, color: accent }}>
           {user.split(' ').map((n: string) => n[0]).join('').slice(0, 2)}
         </span>
       </div>
       <div style={{ flex: 1, minWidth: 0 }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '8px' }}>
           <div>
-            <span style={{ fontFamily: "'DM Sans', sans-serif", fontSize: '12px', fontWeight: 600, color: '#f1f5f9' }}>{user}</span>
-            <span style={{ fontFamily: "'DM Sans', sans-serif", fontSize: '12px', color: '#64748b', marginLeft: '6px' }}>{action}</span>
+            <span style={{ fontFamily: "'Instrument Sans', sans-serif", fontSize: '12px', fontWeight: 600, color: '#f1f5f9' }}>{user}</span>
+            <span style={{ fontFamily: "'Instrument Sans', sans-serif", fontSize: '12px', color: '#64748b', marginLeft: '6px' }}>{action}</span>
           </div>
-          <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: '9px', color: '#475569', whiteSpace: 'nowrap' }}>{time}</span>
+          <span style={{ fontFamily: "'Fira Code', monospace", fontSize: '9px', color: '#475569', whiteSpace: 'nowrap' }}>{time}</span>
         </div>
         <span style={{
           display: 'inline-block', marginTop: '4px',
-          fontFamily: "'JetBrains Mono', monospace", fontSize: '9px', fontWeight: 600,
+          fontFamily: "'Fira Code', monospace", fontSize: '9px', fontWeight: 600,
           color: accent, background: `${accent}10`, border: `1px solid ${accent}25`,
           borderRadius: '4px', padding: '1px 6px', letterSpacing: '0.05em',
         }}>
@@ -409,19 +409,19 @@ function DashboardComponent() {
               animation: 'livePulse 2s ease-in-out infinite',
             }} />
             <span style={{
-              fontFamily: "'JetBrains Mono', monospace", fontSize: '9px',
+              fontFamily: "'Fira Code', monospace", fontSize: '9px',
               color: '#10b981', letterSpacing: '0.15em', textTransform: 'uppercase',
             }}>
               Live Command Center
             </span>
           </div>
           <h1 style={{
-            fontFamily: "'Syne', sans-serif", fontSize: '28px', fontWeight: 800,
+            fontFamily: "'Bebas Neue', sans-serif", fontSize: '28px', fontWeight: 800,
             color: '#f1f5f9', letterSpacing: '-0.04em', lineHeight: 1.1,
           }}>
             Site Overview
           </h1>
-          <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: '13px', color: '#64748b', marginTop: '4px' }}>
+          <p style={{ fontFamily: "'Instrument Sans', sans-serif", fontSize: '13px', color: '#64748b', marginTop: '4px' }}>
             Real-time intelligence across all active projects
           </p>
         </div>
@@ -489,7 +489,7 @@ function DashboardComponent() {
 
               <div style={{ marginBottom: '10px', paddingTop: '2px' }}>
                 <span style={{
-                  fontFamily: "'JetBrains Mono', monospace", fontSize: '9px',
+                  fontFamily: "'Fira Code', monospace", fontSize: '9px',
                   color: '#475569', letterSpacing: '0.1em', textTransform: 'uppercase',
                   lineHeight: 1.4, display: 'block',
                 }}>
@@ -498,7 +498,7 @@ function DashboardComponent() {
               </div>
 
               <div style={{
-                fontFamily: "'Syne', sans-serif", fontSize: '22px', fontWeight: 800,
+                fontFamily: "'Bebas Neue', sans-serif", fontSize: '22px', fontWeight: 800,
                 color: '#f1f5f9', lineHeight: 1, letterSpacing: '-0.03em',
               }}>
                 {kpi.value >= 1000
@@ -509,10 +509,10 @@ function DashboardComponent() {
 
               <div style={{ display: 'flex', alignItems: 'center', gap: '4px', marginTop: '6px' }}>
                 <TrendingUp style={{ width: '10px', height: '10px', color: '#10b981' }} />
-                <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: '9px', color: '#10b981', fontWeight: 600 }}>
+                <span style={{ fontFamily: "'Fira Code', monospace", fontSize: '9px', color: '#10b981', fontWeight: 600 }}>
                   {kpi.trend}
                 </span>
-                <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: '9px', color: '#334155' }}>
+                <span style={{ fontFamily: "'Fira Code', monospace", fontSize: '9px', color: '#334155' }}>
                   vs last month
                 </span>
               </div>
@@ -534,7 +534,7 @@ function DashboardComponent() {
               onClick={() => setActiveTab(tab.id as typeof activeTab)}
               style={{
                 padding: '9px 18px',
-                fontFamily: "'DM Sans', sans-serif",
+                fontFamily: "'Instrument Sans', sans-serif",
                 fontSize: '13px', fontWeight: active ? 600 : 500,
                 color: active ? '#f59e0b' : '#475569',
                 background: 'none', border: 'none',
@@ -565,10 +565,10 @@ function DashboardComponent() {
             }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
                 <div>
-                  <h3 style={{ fontFamily: "'Syne', sans-serif", fontSize: '14px', fontWeight: 700, color: '#f1f5f9' }}>
+                  <h3 style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: '14px', fontWeight: 700, color: '#f1f5f9' }}>
                     Revenue vs Cost
                   </h3>
-                  <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: '9px', color: '#475569', letterSpacing: '0.1em' }}>
+                  <span style={{ fontFamily: "'Fira Code', monospace", fontSize: '9px', color: '#475569', letterSpacing: '0.1em' }}>
                     LAST 6 MONTHS
                   </span>
                 </div>
@@ -576,7 +576,7 @@ function DashboardComponent() {
                   {[['#10b981','Revenue'],['#ef4444','Cost']].map(([c, l]) => (
                     <div key={l} style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
                       <div style={{ width: '8px', height: '8px', borderRadius: '2px', background: c }} />
-                      <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: '9px', color: '#64748b' }}>{l}</span>
+                      <span style={{ fontFamily: "'Fira Code', monospace", fontSize: '9px', color: '#64748b' }}>{l}</span>
                     </div>
                   ))}
                 </div>
@@ -615,10 +615,10 @@ function DashboardComponent() {
               backdropFilter: 'blur(12px)', display: 'flex', flexDirection: 'column', alignItems: 'center',
             }}>
               <div style={{ marginBottom: '12px', textAlign: 'center' }}>
-                <h3 style={{ fontFamily: "'Syne', sans-serif", fontSize: '14px', fontWeight: 700, color: '#f1f5f9' }}>
+                <h3 style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: '14px', fontWeight: 700, color: '#f1f5f9' }}>
                   Project Status
                 </h3>
-                <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: '9px', color: '#475569', letterSpacing: '0.1em' }}>
+                <span style={{ fontFamily: "'Fira Code', monospace", fontSize: '9px', color: '#475569', letterSpacing: '0.1em' }}>
                   LIVE RAG ANALYSIS
                 </span>
               </div>
@@ -628,9 +628,9 @@ function DashboardComponent() {
                   <div key={d.name} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                       <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: d.fill, boxShadow: `0 0 4px ${d.fill}` }} />
-                      <span style={{ fontFamily: "'DM Sans', sans-serif", fontSize: '11px', color: '#94a3b8' }}>{d.name}</span>
+                      <span style={{ fontFamily: "'Instrument Sans', sans-serif", fontSize: '11px', color: '#94a3b8' }}>{d.name}</span>
                     </div>
-                    <span style={{ fontFamily: "'Syne', sans-serif", fontSize: '13px', fontWeight: 700, color: '#f1f5f9' }}>{d.value}</span>
+                    <span style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: '13px', fontWeight: 700, color: '#f1f5f9' }}>{d.value}</span>
                   </div>
                 ))}
               </div>
@@ -643,10 +643,10 @@ function DashboardComponent() {
               backdropFilter: 'blur(12px)',
             }}>
               <div style={{ marginBottom: '14px' }}>
-                <h3 style={{ fontFamily: "'Syne', sans-serif", fontSize: '14px', fontWeight: 700, color: '#f1f5f9' }}>
+                <h3 style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: '14px', fontWeight: 700, color: '#f1f5f9' }}>
                   Active Alerts
                 </h3>
-                <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: '9px', color: '#475569', letterSpacing: '0.1em' }}>
+                <span style={{ fontFamily: "'Fira Code', monospace", fontSize: '9px', color: '#475569', letterSpacing: '0.1em' }}>
                   REQUIRE ATTENTION
                 </span>
               </div>
@@ -661,11 +661,11 @@ function DashboardComponent() {
                   }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '3px' }}>
                       <AlertTriangle style={{ width: '10px', height: '10px', color: a.level === 'red' ? '#ef4444' : '#f59e0b' }} />
-                      <span style={{ fontFamily: "'DM Sans', sans-serif", fontSize: '11px', fontWeight: 600, color: a.level === 'red' ? '#ef4444' : '#f59e0b' }}>
+                      <span style={{ fontFamily: "'Instrument Sans', sans-serif", fontSize: '11px', fontWeight: 600, color: a.level === 'red' ? '#ef4444' : '#f59e0b' }}>
                         {a.title}
                       </span>
                     </div>
-                    <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: '11px', color: '#64748b', margin: 0 }}>
+                    <p style={{ fontFamily: "'Instrument Sans', sans-serif", fontSize: '11px', color: '#64748b', margin: 0 }}>
                       {a.description}
                     </p>
                   </div>
@@ -681,10 +681,10 @@ function DashboardComponent() {
             backdropFilter: 'blur(12px)',
           }}>
             <div style={{ marginBottom: '16px' }}>
-              <h3 style={{ fontFamily: "'Syne', sans-serif", fontSize: '14px', fontWeight: 700, color: '#f1f5f9' }}>
+              <h3 style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: '14px', fontWeight: 700, color: '#f1f5f9' }}>
                 Project Pipeline
               </h3>
-              <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: '9px', color: '#475569', letterSpacing: '0.1em' }}>
+              <span style={{ fontFamily: "'Fira Code', monospace", fontSize: '9px', color: '#475569', letterSpacing: '0.1em' }}>
                 LIVE PROJECT REGISTER
               </span>
             </div>
@@ -716,13 +716,13 @@ function DashboardComponent() {
                   }}
                 >
                   <div>
-                    <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: '12px', fontWeight: 600, color: '#f1f5f9', marginBottom: '2px' }}>{proj.name}</p>
-                    <p style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: '9px', color: '#475569' }}>{proj.client}</p>
+                    <p style={{ fontFamily: "'Instrument Sans', sans-serif", fontSize: '12px', fontWeight: 600, color: '#f1f5f9', marginBottom: '2px' }}>{proj.name}</p>
+                    <p style={{ fontFamily: "'Fira Code', monospace", fontSize: '9px', color: '#475569' }}>{proj.client}</p>
                   </div>
                   <div>
                     <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
-                      <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: '9px', color: '#475569' }}>Progress</span>
-                      <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: '9px', fontWeight: 600, color: '#94a3b8' }}>{proj.progress}%</span>
+                      <span style={{ fontFamily: "'Fira Code', monospace", fontSize: '9px', color: '#475569' }}>Progress</span>
+                      <span style={{ fontFamily: "'Fira Code', monospace", fontSize: '9px', fontWeight: 600, color: '#94a3b8' }}>{proj.progress}%</span>
                     </div>
                     <ProgBar value={proj.progress} color={proj.budgetRAG === 'green' ? '#10b981' : proj.budgetRAG === 'amber' ? '#f59e0b' : '#ef4444'} />
                   </div>
@@ -733,7 +733,7 @@ function DashboardComponent() {
                         background: `${RAG_COLORS[rag as keyof typeof RAG_COLORS]}15`,
                         border: `1px solid ${RAG_COLORS[rag as keyof typeof RAG_COLORS]}40`,
                         display: 'flex', alignItems: 'center', justifyContent: 'center',
-                        fontFamily: "'JetBrains Mono', monospace", fontSize: '8px', fontWeight: 700,
+                        fontFamily: "'Fira Code', monospace", fontSize: '8px', fontWeight: 700,
                         color: RAG_COLORS[rag as keyof typeof RAG_COLORS],
                       }} title={`${l}: ${rag}`}>
                         {l}
@@ -741,15 +741,15 @@ function DashboardComponent() {
                     ))}
                   </div>
                   <div style={{ textAlign: 'right' }}>
-                    <span style={{ fontFamily: "'Syne', sans-serif", fontSize: '12px', fontWeight: 700, color: '#10b981' }}>
+                    <span style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: '12px', fontWeight: 700, color: '#10b981' }}>
                       {proj.daysToCompletion > 0 ? `${proj.daysToCompletion}d` : '—'}
                     </span>
-                    <p style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: '8px', color: '#334155' }}>remaining</p>
+                    <p style={{ fontFamily: "'Fira Code', monospace", fontSize: '8px', color: '#334155' }}>remaining</p>
                   </div>
                 </div>
               ))}
               {projects.length === 0 && (
-                <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: '13px', color: '#475569', textAlign: 'center', padding: '20px' }}>
+                <p style={{ fontFamily: "'Instrument Sans', sans-serif", fontSize: '13px', color: '#475569', textAlign: 'center', padding: '20px' }}>
                   No projects available
                 </p>
               )}
@@ -829,7 +829,7 @@ function DashboardComponent() {
             background: showAIChat ? 'rgba(249,115,22,0.15)' : 'rgba(249,115,22,0.08)',
             border: '1px solid rgba(249,115,22,0.3)',
             borderRadius: '8px', padding: '8px 14px', fontSize: '12px',
-            color: '#f97316', cursor: 'pointer', fontFamily: "'DM Sans', sans-serif",
+            color: '#f97316', cursor: 'pointer', fontFamily: "'Instrument Sans', sans-serif",
           }}
         >
           {showAIChat ? 'Hide AI Assistant' : '🤖 AI Assistant'}
@@ -870,7 +870,7 @@ function DashboardComponent() {
             borderRadius: '16px', padding: '24px',
             backdropFilter: 'blur(12px)',
           }}>
-            <h3 style={{ fontFamily: "'Syne', sans-serif", fontSize: '16px', fontWeight: 700, color: '#f1f5f9', marginBottom: '16px' }}>
+            <h3 style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: '16px', fontWeight: 700, color: '#f1f5f9', marginBottom: '16px' }}>
               Project Health Overview
             </h3>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '14px' }}>
@@ -897,22 +897,22 @@ function DashboardComponent() {
                 >
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '12px' }}>
                     <div>
-                      <p style={{ fontFamily: "'Syne', sans-serif", fontSize: '13px', fontWeight: 700, color: '#f1f5f9', marginBottom: '2px' }}>{proj.name}</p>
-                      <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: '11px', color: '#64748b' }}>{proj.client}</p>
+                      <p style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: '13px', fontWeight: 700, color: '#f1f5f9', marginBottom: '2px' }}>{proj.name}</p>
+                      <p style={{ fontFamily: "'Instrument Sans', sans-serif", fontSize: '11px', color: '#64748b' }}>{proj.client}</p>
                     </div>
                     <div style={{
                       padding: '3px 8px', borderRadius: '6px',
                       background: `${RAG_COLORS[proj.budgetRAG]}15`, border: `1px solid ${RAG_COLORS[proj.budgetRAG]}30`,
                     }}>
-                      <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: '9px', fontWeight: 700, color: RAG_COLORS[proj.budgetRAG] }}>
+                      <span style={{ fontFamily: "'Fira Code', monospace", fontSize: '9px', fontWeight: 700, color: RAG_COLORS[proj.budgetRAG] }}>
                         {proj.budgetRAG.toUpperCase()}
                       </span>
                     </div>
                   </div>
                   <div style={{ marginBottom: '10px' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '5px' }}>
-                      <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: '9px', color: '#475569' }}>Progress</span>
-                      <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: '9px', fontWeight: 600, color: '#94a3b8' }}>{proj.progress}%</span>
+                      <span style={{ fontFamily: "'Fira Code', monospace", fontSize: '9px', color: '#475569' }}>Progress</span>
+                      <span style={{ fontFamily: "'Fira Code', monospace", fontSize: '9px', fontWeight: 600, color: '#94a3b8' }}>{proj.progress}%</span>
                     </div>
                     <ProgBar value={proj.progress} color="#3b82f6" />
                   </div>
@@ -923,23 +923,23 @@ function DashboardComponent() {
                         background: `${RAG_COLORS[rag as keyof typeof RAG_COLORS]}12`,
                         border: `1px solid ${RAG_COLORS[rag as keyof typeof RAG_COLORS]}30`,
                       }}>
-                        <p style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: '7px', color: '#475569', letterSpacing: '0.05em', marginBottom: '2px' }}>{String(l).toUpperCase()}</p>
-                        <p style={{ fontFamily: "'Syne', sans-serif", fontSize: '11px', fontWeight: 700, color: RAG_COLORS[rag as keyof typeof RAG_COLORS] }}>
+                        <p style={{ fontFamily: "'Fira Code', monospace", fontSize: '7px', color: '#475569', letterSpacing: '0.05em', marginBottom: '2px' }}>{String(l).toUpperCase()}</p>
+                        <p style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: '11px', fontWeight: 700, color: RAG_COLORS[rag as keyof typeof RAG_COLORS] }}>
                           {rag === 'green' ? '✓' : rag === 'amber' ? '~' : '!'}
                         </p>
                       </div>
                     ))}
                   </div>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <span style={{ fontFamily: "'Syne', sans-serif", fontSize: '14px', fontWeight: 700, color: '#10b981' }}>{fmtCurrency(proj.value)}</span>
-                    <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: '9px', color: '#475569' }}>
+                    <span style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: '14px', fontWeight: 700, color: '#10b981' }}>{fmtCurrency(proj.value)}</span>
+                    <span style={{ fontFamily: "'Fira Code', monospace", fontSize: '9px', color: '#475569' }}>
                       {proj.daysToCompletion > 0 ? `${proj.daysToCompletion}d left · ` : ''}<span style={{ color: '#f59e0b' }}>{proj.pmInitials}</span>
                     </span>
                   </div>
                 </div>
               ))}
               {projects.length === 0 && (
-                <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: '13px', color: '#475569', textAlign: 'center', padding: '40px' }}>
+                <p style={{ fontFamily: "'Instrument Sans', sans-serif", fontSize: '13px', color: '#475569', textAlign: 'center', padding: '40px' }}>
                   No projects available
                 </p>
               )}
@@ -966,10 +966,10 @@ function DashboardComponent() {
                   animation: `fadeIn 0.4s ease ${i * 0.07}s forwards`, opacity: 0,
                 }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
-                    <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: '9px', color: '#475569', letterSpacing: '0.1em' }}>{item.label.toUpperCase()}</span>
+                    <span style={{ fontFamily: "'Fira Code', monospace", fontSize: '9px', color: '#475569', letterSpacing: '0.1em' }}>{item.label.toUpperCase()}</span>
                     <Icon style={{ width: '14px', height: '14px', color: item.accent }} />
                   </div>
-                  <p style={{ fontFamily: "'Syne', sans-serif", fontSize: '20px', fontWeight: 800, color: '#f1f5f9', letterSpacing: '-0.02em' }}>{item.value}</p>
+                  <p style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: '20px', fontWeight: 800, color: '#f1f5f9', letterSpacing: '-0.02em' }}>{item.value}</p>
                 </div>
               );
             })}
@@ -980,7 +980,7 @@ function DashboardComponent() {
             borderRadius: '16px', padding: '24px',
             backdropFilter: 'blur(12px)',
           }}>
-            <h3 style={{ fontFamily: "'Syne', sans-serif", fontSize: '14px', fontWeight: 700, color: '#f1f5f9', marginBottom: '16px' }}>
+            <h3 style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: '14px', fontWeight: 700, color: '#f1f5f9', marginBottom: '16px' }}>
               Monthly Cash Flow
             </h3>
             <div style={{ height: '220px', minWidth: 0 }}>
@@ -1003,7 +1003,7 @@ function DashboardComponent() {
             borderRadius: '16px', padding: '24px',
             backdropFilter: 'blur(12px)',
           }}>
-            <h3 style={{ fontFamily: "'Syne', sans-serif", fontSize: '14px', fontWeight: 700, color: '#f1f5f9', marginBottom: '16px' }}>
+            <h3 style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: '14px', fontWeight: 700, color: '#f1f5f9', marginBottom: '16px' }}>
               Aged Debt Analysis
             </h3>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '12px' }}>
@@ -1017,8 +1017,8 @@ function DashboardComponent() {
                   padding: '16px', borderRadius: '12px', textAlign: 'center',
                   background: `${item.color}08`, border: `1px solid ${item.color}25`,
                 }}>
-                  <p style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: '8px', color: '#475569', letterSpacing: '0.1em', marginBottom: '6px' }}>{item.label}</p>
-                  <p style={{ fontFamily: "'Syne', sans-serif", fontSize: '18px', fontWeight: 800, color: item.color }}>{fmtCurrency(item.value)}</p>
+                  <p style={{ fontFamily: "'Fira Code', monospace", fontSize: '8px', color: '#475569', letterSpacing: '0.1em', marginBottom: '6px' }}>{item.label}</p>
+                  <p style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: '18px', fontWeight: 800, color: item.color }}>{fmtCurrency(item.value)}</p>
                 </div>
               ))}
             </div>
@@ -1084,16 +1084,16 @@ function DashboardComponent() {
         }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
             <div>
-              <h3 style={{ fontFamily: "'Syne', sans-serif", fontSize: '16px', fontWeight: 700, color: '#f1f5f9' }}>
+              <h3 style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: '16px', fontWeight: 700, color: '#f1f5f9' }}>
                 Live Activity Feed
               </h3>
-              <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: '9px', color: '#475569', letterSpacing: '0.1em' }}>
+              <span style={{ fontFamily: "'Fira Code', monospace", fontSize: '9px', color: '#475569', letterSpacing: '0.1em' }}>
                 REAL-TIME SITE EVENTS
               </span>
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
               <CircleDot style={{ width: '8px', height: '8px', color: '#10b981', animation:'livePulse 2s ease-in-out infinite' }} />
-              <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: '9px', color: '#10b981', letterSpacing: '0.1em' }}>LIVE</span>
+              <span style={{ fontFamily: "'Fira Code', monospace", fontSize: '9px', color: '#10b981', letterSpacing: '0.1em' }}>LIVE</span>
             </div>
           </div>
           <div>
@@ -1101,7 +1101,7 @@ function DashboardComponent() {
               <ActivityItem key={item.id} {...item} accent="#f59e0b" delay={i * 60} />
             ))}
             {activityFeed.length === 0 && (
-              <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: '13px', color: '#475569', textAlign: 'center', padding: '40px' }}>
+              <p style={{ fontFamily: "'Instrument Sans', sans-serif", fontSize: '13px', color: '#475569', textAlign: 'center', padding: '40px' }}>
                 No activity available
               </p>
             )}

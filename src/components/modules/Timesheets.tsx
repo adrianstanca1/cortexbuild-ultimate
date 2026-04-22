@@ -263,7 +263,7 @@ export function Timesheets() {
       <div className="p-6 space-y-6 bg-gray-950 min-h-screen text-gray-100">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-white">Timesheets & Payroll</h1>
+          <h1 className="text-3xl font-display text-white">Timesheets & Payroll</h1>
           <p className="text-sm text-gray-400 mt-1">Construction timesheet tracking, labour costing & payroll management</p>
         </div>
         <button type="button" onClick={openCreate} className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm font-medium">
@@ -285,7 +285,7 @@ export function Timesheets() {
               <div className="p-2 rounded bg-gray-800 flex-shrink-0"><kpi.icon size={18} className={kpi.colour}/></div>
               <div className="flex-1 min-w-0">
                 <p className="text-xs text-gray-400 truncate">{kpi.label}</p>
-                <p className="text-lg font-bold text-white truncate">{kpi.value}</p>
+                <p className="text-lg font-display text-white truncate">{kpi.value}</p>
               </div>
             </div>
           </div>
@@ -355,16 +355,16 @@ export function Timesheets() {
               <table className="w-full text-sm">
                 <thead className="bg-gray-800 border-b border-gray-700">
                   <tr>
-                    <th className="px-4 py-3 text-left text-xs font-semibold text-gray-300 uppercase tracking-wider">Worker</th>
-                    <th className="px-4 py-3 text-left text-xs font-semibold text-gray-300 uppercase">Project</th>
-                    <th className="px-4 py-3 text-center text-xs font-semibold text-gray-300 uppercase">Week</th>
-                    <th className="px-3 py-3 text-center text-xs font-semibold text-gray-300 uppercase">Reg Hrs</th>
-                    <th className="px-3 py-3 text-center text-xs font-semibold text-gray-300 uppercase">OT Hrs</th>
-                    <th className="px-3 py-3 text-center text-xs font-semibold text-gray-300 uppercase">Daywork</th>
-                    <th className="px-3 py-3 text-right text-xs font-semibold text-gray-300 uppercase">Total Pay (£)</th>
-                    <th className="px-3 py-3 text-right text-xs font-semibold text-gray-300 uppercase">CIS (£)</th>
-                    <th className="px-3 py-3 text-center text-xs font-semibold text-gray-300 uppercase">Status</th>
-                    <th className="px-3 py-3 text-xs font-semibold text-gray-300 uppercase">Actions</th>
+                    <th className="px-4 py-3 text-left text-xs font-display text-gray-300 uppercase tracking-widest">Worker</th>
+                    <th className="px-4 py-3 text-left text-xs font-display text-gray-300 uppercase tracking-widest">Project</th>
+                    <th className="px-4 py-3 text-center text-xs font-display text-gray-300 uppercase tracking-widest">Week</th>
+                    <th className="px-3 py-3 text-center text-xs font-display text-gray-300 uppercase tracking-widest">Reg Hrs</th>
+                    <th className="px-3 py-3 text-center text-xs font-display text-gray-300 uppercase tracking-widest">OT Hrs</th>
+                    <th className="px-3 py-3 text-center text-xs font-display text-gray-300 uppercase tracking-widest">Daywork</th>
+                    <th className="px-3 py-3 text-right text-xs font-display text-gray-300 uppercase tracking-widest">Total Pay (£)</th>
+                    <th className="px-3 py-3 text-right text-xs font-display text-gray-300 uppercase tracking-widest">CIS (£)</th>
+                    <th className="px-3 py-3 text-center text-xs font-display text-gray-300 uppercase tracking-widest">Status</th>
+                    <th className="px-3 py-3 text-xs font-display text-gray-300 uppercase tracking-widest">Actions</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-700">
@@ -382,13 +382,13 @@ export function Timesheets() {
                           <button type="button" onClick={e => { e.stopPropagation(); toggle(id); }}>{isSelected ? <CheckSquare size={16} className="text-blue-400"/> : <Square size={16} className="text-gray-500"/>}</button>
                           <span className="ml-2 font-medium text-white">{String(t.worker_name??'—')}</span>
                         </td>
-                        <td className="px-4 py-3 text-gray-300">{String(t.project_id??'—')}</td>
-                        <td className="px-4 py-3 text-center text-gray-300 text-xs">{String(t.week_ending??'—').substring(0,10)}</td>
-                        <td className="px-3 py-3 text-center text-white">{regHrs}h</td>
+                        <td className="px-4 py-3 text-gray-300 font-mono">{String(t.project_id??'—')}</td>
+                        <td className="px-4 py-3 text-center text-gray-300 text-xs font-mono">{String(t.week_ending??'—').substring(0,10)}</td>
+                        <td className="px-3 py-3 text-center text-white font-mono">{regHrs}h</td>
                         <td className="px-3 py-3 text-center text-amber-400 font-medium">{otHrs}h</td>
-                        <td className="px-3 py-3 text-center text-purple-400">{dwHrs}h</td>
-                        <td className="px-3 py-3 text-right font-semibold text-green-400">£{Math.round(pay).toLocaleString()}</td>
-                        <td className="px-3 py-3 text-right text-gray-400">£{Math.round(cis).toLocaleString()}</td>
+                        <td className="px-3 py-3 text-center text-purple-400 font-mono">{dwHrs}h</td>
+                        <td className="px-3 py-3 text-right font-mono text-green-400">£{Math.round(pay).toLocaleString()}</td>
+                        <td className="px-3 py-3 text-right text-gray-400 font-mono">£{Math.round(cis).toLocaleString()}</td>
                         <td className="px-3 py-3">
                           <span className={`text-xs px-2 py-1 rounded-full font-medium ${statusColour[String(t.status??'')] ?? 'bg-gray-800 text-gray-300'}`}>
                             {String(t.status??'').charAt(0).toUpperCase()+String(t.status??'').slice(1)}

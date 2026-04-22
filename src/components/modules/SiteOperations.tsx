@@ -180,7 +180,7 @@ const handleSaveDelay = async () => {
       <ModuleBreadcrumbs currentModule="site-ops" onNavigate={() => {}} />
       <div className="p-6 space-y-6">
       <div>
-        <h1 className="text-2xl font-bold text-gray-100">Site Operations</h1>
+        <h1 className="text-2xl font-display text-gray-100">Site Operations</h1>
         <p className="text-sm text-gray-400 mt-1">Comprehensive site overview, daily reporting, equipment & labour management</p>
       </div>
 
@@ -200,7 +200,7 @@ const handleSaveDelay = async () => {
               </div>
               <div className="flex-1 min-w-0">
                 <p className="text-xs text-gray-400 truncate">{kpi.label}</p>
-                <p className="text-xl font-bold text-gray-100 mt-0.5">{kpi.value}</p>
+                <p className="text-xl font-display text-gray-100 mt-0.5">{kpi.value}</p>
               </div>
             </div>
           </div>

@@ -131,7 +131,7 @@ export function NotificationHistory({
         <div className="flex items-center gap-3">
           <History className="w-5 h-5 text-base-content" />
           <div>
-            <h2 className="text-lg font-bold">Notification History</h2>
+            <h2 className="text-lg font-display">Notification History</h2>
             <p className="text-xs text-base-content/60">
               {notifications.length} notifications found
             </p>

@@ -282,7 +282,7 @@ export function RFIs() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-white">RFIs</h1>
+          <h1 className="text-2xl font-display text-white">RFIs</h1>
           <p className="text-sm text-gray-400 mt-1">Requests for Information — design & technical queries</p>
         </div>
         <button
@@ -312,7 +312,7 @@ export function RFIs() {
           <div key={kpi.label} className={`rounded-xl ${kpi.bg} p-4`}>
             <div className="flex items-center gap-3">
               <div className="p-2 rounded-lg bg-gray-800"><kpi.icon size={20} className={kpi.colour}/></div>
-              <div><p className="text-xs text-gray-400">{kpi.label}</p><p className="text-xl font-bold text-white">{kpi.value}</p></div>
+              <div><p className="text-xs text-gray-400">{kpi.label}</p><p className="text-xl font-display text-white">{kpi.value}</p></div>
             </div>
           </div>
         ))}
@@ -440,7 +440,7 @@ export function RFIs() {
                     {selectedIds.has(id) ? <CheckSquare size={16} className="text-blue-400"/> : <Square size={16} className="text-gray-500"/>}
                   </button>
                   <div className="w-16 flex-shrink-0 text-center">
-                    <p className="text-xs font-bold text-orange-400 font-mono">{String(r.rfi_number??'—')}</p>
+                    <p className="text-xs font-mono tracking-widest text-orange-400">{String(r.rfi_number??'—')}</p>
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="font-semibold text-white truncate">{String(r.title??'Untitled')}</p>
@@ -520,14 +520,14 @@ export function RFIs() {
                     {/* Question Section */}
                     {!!r.question && (
                       <div>
-                        <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-2">Question</p>
+                        <p className="text-xs font-display text-gray-400 uppercase tracking-widest mb-2">Question</p>
                         <p className="text-gray-300 leading-relaxed bg-gray-800/50 rounded p-3 border border-gray-700">{String(r.question)}</p>
                       </div>
                     )}
 
                     {/* Response Thread */}
                     <div className="space-y-3">
-                      <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide">Response Thread</p>
+                      <p className="text-xs font-display text-gray-400 uppercase tracking-widest">Response Thread</p>
                       <div className="space-y-3 bg-gray-800/30 rounded p-3 border border-gray-700">
                         {/* Submitted */}
                         <div className="flex gap-3">
@@ -564,7 +564,7 @@ export function RFIs() {
                     <div className="bg-gradient-to-br from-blue-600/20 to-blue-700/10 border border-blue-600/50 rounded-lg p-4">
                       <div className="flex items-center gap-2 mb-2">
                         <Zap size={14} className="text-blue-300"/>
-                        <p className="text-xs font-semibold text-blue-300 uppercase tracking-wide">AI Suggestion</p>
+                        <p className="text-xs font-display text-blue-300 uppercase tracking-widest">AI Suggestion</p>
                       </div>
                       <p className="text-sm text-blue-100 leading-relaxed">{aiSuggestion}</p>
                     </div>
@@ -572,7 +572,7 @@ export function RFIs() {
                     {/* Notes */}
                     {Boolean(r.notes) && (
                       <div>
-                        <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-2">Notes</p>
+                        <p className="text-xs font-display text-gray-400 uppercase tracking-widest mb-2">Notes</p>
                         <p className="text-gray-300 bg-gray-800/50 rounded p-3 border border-gray-700">{String(r.notes)}</p>
                       </div>
                     )}

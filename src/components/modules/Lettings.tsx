@@ -344,7 +344,7 @@ export default function Lettings() {
       <div className="p-6 space-y-6">
         <div className="flex items-center justify-between">
           <div>
-            <h2 className="text-2xl font-bold text-white">Subcontract Lettings</h2>
+            <h2 className="text-2xl font-display text-white">Subcontract Lettings</h2>
             <p className="text-gray-400 text-sm mt-1">Manage contract packages, tenders and subcontractor awards</p>
           </div>
           <button
@@ -365,7 +365,7 @@ export default function Lettings() {
               </div>
               <div>
                 <p className="text-gray-400 text-xs">Total Packages</p>
-                <p className="text-2xl font-bold text-white">{kpis.totalPackages}</p>
+                <p className="text-2xl font-display text-white">{kpis.totalPackages}</p>
               </div>
             </div>
           </div>
@@ -376,7 +376,7 @@ export default function Lettings() {
               </div>
               <div>
                 <p className="text-gray-400 text-xs">Awarded</p>
-                <p className="text-2xl font-bold text-green-400">{kpis.awardedCount}</p>
+                <p className="text-2xl font-display text-green-400">{kpis.awardedCount}</p>
               </div>
             </div>
           </div>
@@ -387,7 +387,7 @@ export default function Lettings() {
               </div>
               <div>
                 <p className="text-gray-400 text-xs">Outstanding</p>
-                <p className="text-2xl font-bold text-amber-400">{kpis.packagesOutstanding}</p>
+                <p className="text-2xl font-display text-amber-400">{kpis.packagesOutstanding}</p>
               </div>
             </div>
           </div>
@@ -398,7 +398,7 @@ export default function Lettings() {
               </div>
               <div>
                 <p className="text-gray-400 text-xs">Potential Savings</p>
-                <p className="text-2xl font-bold text-emerald-400">£{(kpis.savings / 1000).toFixed(0)}k</p>
+                <p className="text-2xl font-display text-emerald-400">£{(kpis.savings / 1000).toFixed(0)}k</p>
               </div>
             </div>
           </div>
@@ -580,7 +580,7 @@ export default function Lettings() {
                               }`}
                             >
                               <td className="py-3 px-4 text-white font-medium">{tender.contractor}</td>
-                              <td className={`py-3 px-4 text-right font-bold ${isLowest ? 'text-green-400' : 'text-white'}`}>
+                              <td className={`py-3 px-4 text-right font-mono ${isLowest ? 'text-green-400' : 'text-white'}`}>
                                 £{tender.price.toLocaleString()}
                                 {isLowest && <span className="text-green-400 text-xs ml-2">(Lowest)</span>}
                               </td>
@@ -614,19 +614,19 @@ export default function Lettings() {
                   <div className="grid grid-cols-3 gap-4 pt-4">
                     <div className="bg-gray-800/50 p-3 rounded border border-gray-700">
                       <p className="text-gray-400 text-xs mb-1">Total Responses</p>
-                      <p className="text-2xl font-bold text-white">{mockTenders[selectedPackageForAnalysis].length}</p>
+                      <p className="text-2xl font-display text-white">{mockTenders[selectedPackageForAnalysis].length}</p>
                     </div>
                     <div className="bg-blue-500/10 p-3 rounded border border-blue-500/30">
                       <p className="text-blue-400 text-xs mb-1">Average Price</p>
-                      <p className="text-2xl font-bold text-blue-400">
+                      <p className="text-2xl font-display text-blue-400">
                         £{Math.round(mockTenders[selectedPackageForAnalysis].reduce((sum, t) => sum + t.price, 0) / mockTenders[selectedPackageForAnalysis].length).toLocaleString()}
                       </p>
                     </div>
                     <div className="bg-green-500/10 p-3 rounded border border-green-500/30">
                       <p className="text-green-400 text-xs mb-1">Lowest Price</p>
-                      <p className="text-2xl font-bold text-green-400">
-                        £{Math.min(...mockTenders[selectedPackageForAnalysis].map(t => t.price)).toLocaleString()}
-                      </p>
+<p className="text-2xl font-display text-green-400">
+                         £{Math.min(...mockTenders[selectedPackageForAnalysis].map(t => t.price)).toLocaleString()}
+                       </p>
                     </div>
                   </div>
                 </div>
@@ -641,25 +641,25 @@ export default function Lettings() {
         {activeTab === 'awards' && (
           <div className="space-y-4">
             <div className="card p-6">
-              <h3 className="text-lg font-bold text-white mb-4">Award Summary</h3>
+              <h3 className="text-lg font-display text-white mb-4">Award Summary</h3>
               <div className="grid grid-cols-3 gap-4 mb-6">
                 <div className="bg-blue-500/10 p-4 rounded border border-blue-500/30">
                   <p className="text-blue-400 text-sm mb-2">Total Committed</p>
-                  <p className="text-3xl font-bold text-blue-400">£{(kpis.totalCommitted / 1000).toFixed(0)}k</p>
+                  <p className="text-3xl font-display text-blue-400">£{(kpis.totalCommitted / 1000).toFixed(0)}k</p>
                 </div>
                 <div className="bg-emerald-500/10 p-4 rounded border border-emerald-500/30">
                   <p className="text-emerald-400 text-sm mb-2">Projected Savings</p>
-                  <p className="text-3xl font-bold text-emerald-400">£{(kpis.savings / 1000).toFixed(0)}k</p>
+                  <p className="text-3xl font-display text-emerald-400">£{(kpis.savings / 1000).toFixed(0)}k</p>
                 </div>
                 <div className="bg-amber-500/10 p-4 rounded border border-amber-500/30">
                   <p className="text-amber-400 text-sm mb-2">Packages Pending</p>
-                  <p className="text-3xl font-bold text-amber-400">{kpis.packagesOutstanding}</p>
+                  <p className="text-3xl font-display text-amber-400">{kpis.packagesOutstanding}</p>
                 </div>
               </div>
             </div>
 
             <div className="card p-4">
-              <h3 className="text-lg font-bold text-white mb-4">Awarded Subcontracts</h3>
+              <h3 className="text-lg font-display text-white mb-4">Awarded Subcontracts</h3>
               <div className="space-y-3">
                 {typedLettings
                   .filter(p => p.status === 'Awarded')
@@ -667,7 +667,7 @@ export default function Lettings() {
                     <div key={p.id} className="p-4 bg-gray-800/50 border border-gray-700 rounded-lg">
                       <div className="flex items-start justify-between mb-3">
                         <div>
-                          <h4 className="text-white font-bold">{p.package_no}</h4>
+                          <h4 className="text-white font-display">{p.package_no}</h4>
                           <p className="text-gray-400 text-sm">{p.description}</p>
                         </div>
                         <span className="px-3 py-1 bg-green-500/10 text-green-400 rounded text-sm font-medium">Awarded</span>
@@ -704,7 +704,7 @@ export default function Lettings() {
               const packagesInStage = typedLettings.filter(p => p.status === stage);
               return (
                 <div key={stage} className="space-y-3">
-                  <h3 className="text-sm font-bold text-gray-400 uppercase">
+                  <h3 className="text-sm font-display text-gray-400 uppercase tracking-widest">
                     {stage} <span className="ml-2 text-gray-500">({packagesInStage.length})</span>
                   </h3>
                   <div className="space-y-2">
@@ -717,7 +717,7 @@ export default function Lettings() {
                         <div key={p.id} className={`p-4 rounded-lg border-l-4 bg-gray-800/50 border ${getStatusColor(p.status).split(' ')[0]}`}>
                           <div className="flex items-start justify-between">
                             <div className="flex-1">
-                              <h4 className="text-white font-bold">{p.package_no}</h4>
+<h4 className="text-white font-display">{p.package_no}</h4>
                               <p className="text-gray-400 text-sm">{p.description}</p>
                               <div className="flex gap-4 mt-2 text-xs text-gray-500">
                                 <span>Budget: £{(p.budget || 0).toLocaleString()}</span>
@@ -747,7 +747,7 @@ export default function Lettings() {
         <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
           <div className="bg-gray-900 border border-gray-700 rounded-xl w-full max-w-lg max-h-[90vh] overflow-y-auto">
             <div className="p-6 border-b border-gray-700 flex items-center justify-between sticky top-0 bg-gray-900">
-              <h3 className="text-xl font-bold text-white">{showPackageDetail.package_no}</h3>
+              <h3 className="text-xl font-display text-white">{showPackageDetail.package_no}</h3>
               <button onClick={() => setShowPackageDetail(null)} className="text-gray-400 hover:text-white">
                 <X size={20} />
               </button>
@@ -772,7 +772,7 @@ export default function Lettings() {
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <p className="text-gray-400 text-xs mb-1">Budget</p>
-                  <p className="text-white font-bold">£{(showPackageDetail.budget || 0).toLocaleString()}</p>
+                  <p className="text-white font-display">£{(showPackageDetail.budget || 0).toLocaleString()}</p>
                 </div>
                 <div>
                   <p className="text-gray-400 text-xs mb-1">Tender Responses</p>
@@ -787,7 +787,7 @@ export default function Lettings() {
                   </div>
                   <div>
                     <p className="text-gray-400 text-xs mb-1">Contract Value</p>
-                    <p className="text-green-400 font-bold">£{(showPackageDetail.contract_value || 0).toLocaleString()}</p>
+                    <p className="text-green-400 font-display">£{(showPackageDetail.contract_value || 0).toLocaleString()}</p>
                   </div>
                 </div>
               )}
@@ -812,7 +812,7 @@ export default function Lettings() {
         <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
           <div className="bg-gray-900 border border-gray-700 rounded-xl w-full max-w-lg max-h-[90vh] overflow-y-auto">
             <div className="p-6 border-b border-gray-700 flex items-center justify-between sticky top-0 bg-gray-900">
-              <h3 className="text-xl font-bold text-white">{editItem ? 'Edit Package' : 'New Package'}</h3>
+              <h3 className="text-xl font-display text-white">{editItem ? 'Edit Package' : 'New Package'}</h3>
               <button type="button" onClick={() => { setShowCreateModal(false); setEditItem(null); }} className="text-gray-400 hover:text-white">
                 <X size={20} />
               </button>

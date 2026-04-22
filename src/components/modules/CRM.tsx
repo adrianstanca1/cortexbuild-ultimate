@@ -241,7 +241,7 @@ export function CRM() {
       <div className="p-6 space-y-6 bg-gray-900 min-h-screen">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-white">CRM</h1>
+          <h1 className="text-2xl font-display text-white">CRM</h1>
           <p className="text-sm text-gray-400 mt-1">Clients, consultants & supply chain contacts</p>
         </div>
         <button type="button" onClick={openCreate} className="flex items-center gap-2 px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 text-sm font-medium">
@@ -260,7 +260,7 @@ export function CRM() {
           <div key={kpi.label} className="bg-gray-800 border-gray-700 rounded-xl border p-4">
             <div className="flex items-center gap-3">
               <div className={`p-2 rounded-lg ${kpi.bg}`}><kpi.icon size={20} className={kpi.colour}/></div>
-              <div><p className="text-xs text-gray-400">{kpi.label}</p><p className="text-xl font-bold text-white">{kpi.value}</p></div>
+              <div><p className="text-xs text-gray-400">{kpi.label}</p><p className="text-xl font-display text-white">{kpi.value}</p></div>
             </div>
           </div>
         ))}
@@ -433,13 +433,13 @@ export function CRM() {
               {PIPELINE_STAGES.map(stage => (
                 <div key={stage} className="bg-gray-700 border-gray-600 border rounded-lg p-3 text-center">
                   <p className="text-xs text-gray-400 font-medium">{stage}</p>
-                  <p className="text-xl font-bold text-white">{stageCounts[stage] || 0}</p>
+                  <p className="text-xl font-display text-white">{stageCounts[stage] || 0}</p>
                 </div>
               ))}
             </div>
             <div className="mt-4 pt-4 border-t border-gray-700">
               <p className="text-sm text-gray-400 mb-2">Total Weighted Pipeline Value</p>
-              <p className="text-2xl font-bold text-white">${(opportunities.reduce((sum, o) => sum + (Number(o.value) * Number(o.probability) / 100), 0) / 1000).toFixed(1)}k</p>
+              <p className="text-2xl font-display text-white">${(opportunities.reduce((sum, o) => sum + (Number(o.value) * Number(o.probability) / 100), 0) / 1000).toFixed(1)}k</p>
             </div>
           </div>
 
@@ -475,7 +475,7 @@ export function CRM() {
                     </div>
                     <div className="flex justify-between items-center text-sm">
                       <span className="text-gray-400">Weighted Value</span>
-                      <span className="font-bold text-orange-400">${(Number(opp.value) * Number(opp.probability) / 100 / 1000).toFixed(1)}k</span>
+                      <span className="font-display text-orange-400">${(Number(opp.value) * Number(opp.probability) / 100 / 1000).toFixed(1)}k</span>
                     </div>
                   </div>
 

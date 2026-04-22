@@ -237,7 +237,7 @@ export function SiteInspections() {
                         {String(item.status || 'draft')}
                       </span>
                     </td>
-                    <td className="text-sm text-base-content/60">{String(item.due_date || '-')}</td>
+                    <td className="font-mono text-sm text-base-content/60">{String(item.due_date || '-')}</td>
                     <td>
                       <div className="flex gap-1">
                         <button className="btn btn-xs btn-ghost" onClick={() => openEdit(item)}>

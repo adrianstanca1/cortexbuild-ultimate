@@ -205,7 +205,7 @@ export function Calendar() {
       <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-white">Calendar</h1>
+          <h1 className="text-2xl font-display text-white">Calendar</h1>
           <p className="text-sm text-gray-400 mt-1">Meetings, deadlines & resources</p>
         </div>
         <button
@@ -252,7 +252,7 @@ export function Calendar() {
         ].map((kpi, i) => (
           <div key={i} className="bg-gray-900 rounded-xl border border-gray-700 p-4">
             <p className="text-xs text-gray-500 mb-1">{kpi.label}</p>
-            <p className={`text-2xl font-bold ${kpi.colour}`}>{kpi.value}</p>
+            <p className={`text-2xl font-display ${kpi.colour}`}>{kpi.value}</p>
           </div>
         ))}
       </div>
@@ -282,7 +282,7 @@ export function Calendar() {
           {subTab === 'month' && (
             <div className="bg-gray-900 rounded-xl border border-gray-700 p-6">
               <div className="flex items-center justify-between mb-6">
-                <h2 className="text-lg font-semibold text-white">{monthName}</h2>
+                <h2 className="text-lg font-display text-white">{monthName}</h2>
                 <div className="flex gap-2">
                   <button
                     onClick={() => setCurrentDate(new Date(year, month - 1))}
@@ -309,7 +309,7 @@ export function Calendar() {
                 {WEEKDAYS.map((day) => (
                   <div
                     key={day}
-                    className="text-center text-xs font-semibold text-gray-500 py-2"
+                    className="text-center text-xs font-display tracking-widest text-gray-500 py-2"
                   >
                     {day}
                   </div>
@@ -415,7 +415,7 @@ export function Calendar() {
                         </div>
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-2 mb-1">
-                            <h3 className="font-semibold text-white truncate">{String(e.title ?? 'Event')}</h3>
+                            <h3 className="font-display text-white truncate">{String(e.title ?? 'Event')}</h3>
                             <span
                               className={`text-xs px-2 py-0.5 rounded-full whitespace-nowrap ${
                                 EVENT_TYPES[String(e.type ?? '')] || 'bg-gray-800 text-gray-300'
@@ -492,7 +492,7 @@ export function Calendar() {
                     <div key={String(d.id)} className="p-4 hover:bg-gray-800/50">
                       <div className="flex items-start justify-between gap-4">
                         <div>
-                          <p className="font-semibold text-white">{String(d.title ?? 'Deadline')}</p>
+                          <p className="font-display text-white">{String(d.title ?? 'Deadline')}</p>
                           <p className="text-sm text-gray-400 mt-1">
                             Due: {String(d.date ?? '')} · Owner: {String(d.owner ?? '—')}
                           </p>
@@ -519,7 +519,7 @@ export function Calendar() {
                       <div key={String(d.id)} className="p-4 hover:bg-gray-800/50">
                         <div className="flex items-start justify-between gap-4">
                           <div>
-                            <p className="font-semibold text-white">{String(d.title ?? 'Deadline')}</p>
+                            <p className="font-display text-white">{String(d.title ?? 'Deadline')}</p>
                             <p className="text-sm text-gray-400 mt-1">
                               Due: {String(d.date ?? '')} · Owner: {String(d.owner ?? '—')}
                             </p>
@@ -560,27 +560,27 @@ export function Calendar() {
               <div className="bg-gray-900 rounded-xl border border-gray-700 overflow-hidden">
                 <div className="flex items-center gap-2 px-4 py-3 border-b border-gray-700 bg-gray-800/80">
                   <Users className="h-4 w-4 text-blue-400" aria-hidden />
-                  <h2 className="text-sm font-semibold text-white">People — team roster</h2>
+                  <h2 className="text-sm font-display text-white">People — team roster</h2>
                   <span className="text-xs text-gray-500 ml-auto">{teamMembers.length} on file</span>
                 </div>
                 <div className="cb-table-scroll touch-pan-x">
                   <table className="w-full text-sm">
                     <thead className="bg-gray-800 border-b border-gray-700">
                       <tr>
-                        <th scope="col" className="text-left px-4 py-3 text-xs font-semibold text-gray-400 uppercase tracking-wide">
+                        <th scope="col" className="text-left px-4 py-3 text-xs font-display tracking-widest text-gray-400 uppercase tracking-wide">
                           Name
                         </th>
-                        <th scope="col" className="text-left px-4 py-3 text-xs font-semibold text-gray-400 uppercase tracking-wide hidden sm:table-cell">
+                        <th scope="col" className="text-left px-4 py-3 text-xs font-display tracking-widest text-gray-400 uppercase tracking-wide hidden sm:table-cell">
                           Role / trade
                         </th>
-                        <th scope="col" className="text-left px-4 py-3 text-xs font-semibold text-gray-400 uppercase tracking-wide">
+                        <th scope="col" className="text-left px-4 py-3 text-xs font-display tracking-widest text-gray-400 uppercase tracking-wide">
                           Status
                         </th>
                         {workWeekLabels.map((label, idx) => (
                           <th
                             key={workWeekDates[idx]}
                             scope="col"
-                            className="text-center px-2 py-3 text-xs font-semibold text-gray-400 uppercase tracking-wide min-w-[4.5rem]"
+                            className="text-center px-2 py-3 text-xs font-display tracking-widest text-gray-400 uppercase tracking-wide min-w-[4.5rem]"
                           >
                             {label}
                           </th>
@@ -642,27 +642,27 @@ export function Calendar() {
               <div className="bg-gray-900 rounded-xl border border-gray-700 overflow-hidden">
                 <div className="flex items-center gap-2 px-4 py-3 border-b border-gray-700 bg-gray-800/80">
                   <HardHat className="h-4 w-4 text-amber-400" aria-hidden />
-                  <h2 className="text-sm font-semibold text-white">Plant & equipment</h2>
+                  <h2 className="text-sm font-display text-white">Plant & equipment</h2>
                   <span className="text-xs text-gray-500 ml-auto">{equipmentRows.length} items</span>
                 </div>
                 <div className="cb-table-scroll touch-pan-x">
                   <table className="w-full text-sm">
                     <thead className="bg-gray-800 border-b border-gray-700">
                       <tr>
-                        <th scope="col" className="text-left px-4 py-3 text-xs font-semibold text-gray-400 uppercase tracking-wide">
+                        <th scope="col" className="text-left px-4 py-3 text-xs font-display tracking-widest text-gray-400 uppercase tracking-wide">
                           Asset
                         </th>
-                        <th scope="col" className="text-left px-4 py-3 text-xs font-semibold text-gray-400 uppercase tracking-wide hidden md:table-cell">
+                        <th scope="col" className="text-left px-4 py-3 text-xs font-display tracking-widest text-gray-400 uppercase tracking-wide hidden md:table-cell">
                           Type
                         </th>
-                        <th scope="col" className="text-left px-4 py-3 text-xs font-semibold text-gray-400 uppercase tracking-wide">
+                        <th scope="col" className="text-left px-4 py-3 text-xs font-display tracking-widest text-gray-400 uppercase tracking-wide">
                           Status
                         </th>
                         {workWeekLabels.map((label, idx) => (
                           <th
                             key={workWeekDates[idx]}
                             scope="col"
-                            className="text-center px-2 py-3 text-xs font-semibold text-gray-400 uppercase tracking-wide min-w-[4.5rem]"
+                            className="text-center px-2 py-3 text-xs font-display tracking-widest text-gray-400 uppercase tracking-wide min-w-[4.5rem]"
                           >
                             {label}
                           </th>
@@ -728,7 +728,7 @@ export function Calendar() {
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
           <div className="bg-gray-900 rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between p-6 border-b border-gray-700 sticky top-0 bg-gray-900 z-10">
-              <h2 className="text-lg font-semibold text-white">{editing ? 'Edit Event' : 'New Event'}</h2>
+              <h2 className="text-lg font-display text-white">{editing ? 'Edit Event' : 'New Event'}</h2>
               <button
                 onClick={() => setShowModal(false)}
                 className="p-2 hover:bg-gray-800 rounded-lg"

@@ -396,7 +396,7 @@ export function Teams() {
           >
             {isSelected ? <CheckSquare size={16} className="text-blue-400"/> : <Square size={16} className="text-gray-500"/>}
           </button>
-          <div className="w-10 h-10 rounded-full bg-gradient-to-br from-orange-400 to-orange-600 flex items-center justify-center text-white font-bold text-sm flex-shrink-0">
+          <div className="w-10 h-10 rounded-full bg-gradient-to-br from-orange-400 to-orange-600 flex items-center justify-center text-white font-display text-sm flex-shrink-0">
             {String(m.name??'?').split(' ').map((n:string)=>n[0]).slice(0,2).join('')}
           </div>
           <div className="flex-1 min-w-0">
@@ -439,7 +439,7 @@ export function Teams() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-white">Team Management</h1>
+          <h1 className="text-3xl font-display text-white">Team Management</h1>
           <p className="text-sm text-gray-400 mt-1">Site workforce & personnel records</p>
         </div>
         <div className="flex items-center gap-2">
@@ -467,7 +467,7 @@ export function Teams() {
           <div key={kpi.label} className={`rounded-xl border border-gray-700 p-4 ${kpi.bg}`}>
             <div className="flex items-center gap-3">
               <div className="p-2 rounded-lg bg-gray-800"><kpi.icon size={20} className={kpi.colour}/></div>
-              <div><p className="text-xs text-gray-400">{kpi.label}</p><p className="text-xl font-bold text-white">{kpi.value}</p></div>
+              <div><p className="text-xs text-gray-400">{kpi.label}</p><p className="text-xl font-display text-white">{kpi.value}</p></div>
             </div>
           </div>
         ))}
@@ -644,7 +644,7 @@ export function Teams() {
                 <div key={String(m.id)} className={`rounded-xl border border-gray-700 p-5 ${colorClass}`}>
                   <div className="flex items-center justify-between mb-4">
                     <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-full bg-gray-700 flex items-center justify-center font-bold">{String(m.name??'?').split(' ').map((n:string)=>n[0]).slice(0,1).join('')}</div>
+                      <div className="w-10 h-10 rounded-full bg-gray-700 flex items-center justify-center font-display">{String(m.name??'?').split(' ').map((n:string)=>n[0]).slice(0,1).join('')}</div>
                       <div>
                         <p className="font-semibold">{String(m.name??'Unknown')}</p>
                         <p className="text-xs opacity-75">{String(m.role??'')}</p>

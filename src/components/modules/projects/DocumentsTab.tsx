@@ -8,7 +8,7 @@ import { getDocIcon } from './shared';
 import type { AnyRow } from './types';
 import { toast } from 'sonner';
 import { EmptyState } from '../../ui/EmptyState';
-import { getToken } from '../../../lib/auth-storage';
+import { API_BASE } from '../../../lib/auth-storage';
 
 interface DocumentsTabProps {
   projectId: string;
@@ -39,7 +39,6 @@ export function DocumentsTab({ projectId, projectName }: DocumentsTabProps) {
     if (!file) return;
     setUploading(true);
     try {
-      const token = getToken();
       const formData = new FormData();
       formData.append('file', file);
       formData.append('name', uploadForm.name || file.name);
@@ -48,9 +47,9 @@ export function DocumentsTab({ projectId, projectName }: DocumentsTabProps) {
       formData.append('discipline', uploadForm.discipline);
       formData.append('date_issued', uploadForm.date_issued);
       formData.append('author', uploadForm.author);
-      const res = await fetch('/api/files/upload', {
+      const res = await fetch(`${API_BASE}/files/upload`, {
         method: 'POST',
-        headers: { ...(token ? { Authorization: `Bearer ${token}` } : {}) },
+        credentials: 'include',
         body: formData,
       });
       if (!res.ok) {
@@ -71,10 +70,9 @@ export function DocumentsTab({ projectId, projectName }: DocumentsTabProps) {
   const handleDelete = useCallback(async (id: string) => {
     if (!confirm('Delete this document?')) return;
     try {
-      const token = getToken();
-      const res = await fetch(`/api/files/${id}`, {
+      const res = await fetch(`${API_BASE}/files/${id}`, {
         method: 'DELETE',
-        headers: { ...(token ? { Authorization: `Bearer ${token}` } : {}) },
+        credentials: 'include',
       });
       if (!res.ok) {
         const err = await res.json().catch(() => ({ message: 'Delete failed' }));
@@ -90,13 +88,10 @@ export function DocumentsTab({ projectId, projectName }: DocumentsTabProps) {
 
   const handleEdit = useCallback(async (id: string) => {
     try {
-      const token = getToken();
-      const res = await fetch(`/api/files/${id}`, {
+      const res = await fetch(`${API_BASE}/files/${id}`, {
         method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          ...(token ? { Authorization: `Bearer ${token}` } : {}),
-        },
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(editForm),
       });
       if (!res.ok) throw new Error('Update failed');

@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { X } from 'lucide-react';
-import { getToken } from '../../lib/supabase';
+import { API_BASE } from '../../lib/auth-storage';
 
 interface DailyReportFormProps {
   onClose: () => void;
@@ -70,12 +70,10 @@ export function DailyReportForm({ onClose, onSuccess, projectId }: DailyReportFo
 
     setIsSubmitting(true);
     try {
-      const response = await fetch('/api/daily-reports', {
+      const response = await fetch(`${API_BASE}/daily-reports`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${getToken() || ''}`,
-        },
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           date: formData.date,
           weather: formData.weather || undefined,
@@ -107,7 +105,7 @@ export function DailyReportForm({ onClose, onSuccess, projectId }: DailyReportFo
 
       <div className="relative bg-white rounded-lg shadow-lg w-full max-w-2xl max-h-[90vh] overflow-y-auto">
         <div className="flex items-center justify-between sticky top-0 bg-white border-b border-gray-200 p-6">
-          <h2 className="text-lg font-semibold text-gray-900">Submit Daily Report</h2>
+          <h2 className="text-lg font-display font-semibold text-gray-900">Submit Daily Report</h2>
           <button
             onClick={onClose}
             className="text-gray-400 hover:text-gray-600 transition-colors"

@@ -206,7 +206,7 @@ export function Meetings() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-100">Meetings</h1>
+          <h1 className="text-2xl font-display text-gray-100">Meetings</h1>
           <p className="text-sm text-gray-400 mt-1">Manage meetings, minutes & action items</p>
         </div>
         <button type="button" onClick={openCreate} className="flex items-center gap-2 px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 text-sm font-medium transition-colors">
@@ -225,7 +225,7 @@ export function Meetings() {
           <div key={kpi.label} className="bg-gray-800 rounded-xl border border-gray-700 p-4">
             <div className="flex items-center gap-3">
               <div className={`p-2 rounded-lg ${kpi.bg}`}><kpi.icon size={20} className={kpi.colour}/></div>
-              <div><p className="text-xs text-gray-400">{kpi.label}</p><p className="text-2xl font-bold text-gray-100">{kpi.value}</p></div>
+              <div><p className="text-xs text-gray-400">{kpi.label}</p><p className="text-2xl font-display text-gray-100">{kpi.value}</p></div>
             </div>
           </div>
         ))}
@@ -290,7 +290,7 @@ export function Meetings() {
                       </button>
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 mb-2">
-                          <h3 className="font-semibold text-gray-100 truncate">{String(m.title??'Untitled')}</h3>
+                          <h3 className="font-display text-gray-100 truncate">{String(m.title??'Untitled')}</h3>
                           {isToday && <span className="text-xs bg-orange-900/30 text-orange-300 px-2 py-0.5 rounded-full flex-shrink-0">Today</span>}
                         </div>
                         <div className="flex flex-wrap items-center gap-2 text-xs text-gray-400 mb-3">
@@ -355,12 +355,12 @@ export function Meetings() {
               <table className="w-full text-sm">
                 <thead className="border-b border-gray-700 bg-gray-700/50">
                   <tr>
-                    <th className="text-left px-4 py-3 font-semibold text-gray-300">Task</th>
-                    <th className="text-left px-4 py-3 font-semibold text-gray-300">Owner</th>
-                    <th className="text-left px-4 py-3 font-semibold text-gray-300">Meeting</th>
-                    <th className="text-left px-4 py-3 font-semibold text-gray-300">Due</th>
-                    <th className="text-left px-4 py-3 font-semibold text-gray-300">Priority</th>
-                    <th className="text-left px-4 py-3 font-semibold text-gray-300">Status</th>
+                    <th className="text-left px-4 py-3 font-display text-gray-300 tracking-widest">Task</th>
+                    <th className="text-left px-4 py-3 font-display text-gray-300 tracking-widest">Owner</th>
+                    <th className="text-left px-4 py-3 font-display text-gray-300 tracking-widest">Meeting</th>
+                    <th className="text-left px-4 py-3 font-display text-gray-300 tracking-widest">Due</th>
+                    <th className="text-left px-4 py-3 font-display text-gray-300 tracking-widest">Priority</th>
+                    <th className="text-left px-4 py-3 font-display text-gray-300 tracking-widest">Status</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-700">
@@ -404,7 +404,7 @@ export function Meetings() {
       {activeTab === 'calendar' && (
         <div className="bg-gray-800 rounded-xl border border-gray-700 p-6">
           <div className="flex items-center justify-between mb-6">
-            <h3 className="text-lg font-semibold text-gray-100">{calendarMonth.toLocaleString('default',{month:'long',year:'numeric'})}</h3>
+            <h3 className="text-lg font-display text-gray-100">{calendarMonth.toLocaleString('default',{month:'long',year:'numeric'})}</h3>
             <div className="flex gap-2">
               <button type="button" onClick={()=>setCalendarMonth(new Date(calendarMonth.getFullYear(),calendarMonth.getMonth()-1))} className="p-2 hover:bg-gray-700 rounded-lg transition-colors">
                 <ChevronDown size={18} className="text-gray-400"/>

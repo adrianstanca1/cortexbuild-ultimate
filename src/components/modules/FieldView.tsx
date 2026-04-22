@@ -162,7 +162,7 @@ export function FieldView() {
       {/* Header */}
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div>
-          <h1 className="text-3xl font-bold text-white">Field View</h1>
+          <h1 className="text-3xl font-display text-white">Field View</h1>
           <p className="text-sm text-gray-400 mt-1">Live site-by-site overview — {today}</p>
         </div>
         {(subTab === 'live' || subTab === 'weather') && (
@@ -196,7 +196,7 @@ export function FieldView() {
               </div>
               <div>
                 <p className="text-xs text-gray-400">{kpi.label}</p>
-                <p className="text-xl font-bold text-white">{kpi.value}</p>
+                <p className="text-xl font-display text-white">{kpi.value}</p>
               </div>
             </div>
           </div>
@@ -247,7 +247,7 @@ export function FieldView() {
                   <div className="px-5 py-4 flex items-start justify-between border-b border-gray-700">
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 flex-wrap">
-                        <h3 className="font-bold text-white">{String(p.name ?? p.title ?? 'Unnamed')}</h3>
+                        <h3 className="font-display text-white">{String(p.name ?? p.title ?? 'Unnamed')}</h3>
                         <span className={`text-xs px-2 py-1 rounded-full border font-medium ${STATUS_BADGE_COLORS[String(p.status ?? 'Active')] ?? 'bg-gray-600 text-gray-300'}`}>
                           {String(p.status ?? 'Active')}
                         </span>
@@ -309,15 +309,15 @@ export function FieldView() {
                   {/* Stats Grid */}
                   <div className="px-5 py-3 grid grid-cols-3 gap-3 text-center border-b border-gray-700">
                     <div>
-                      <p className="text-lg font-bold text-white">{Number(p.budget ?? 0) > 0 ? `£${(Number(p.budget) / 1000).toFixed(0)}k` : '—'}</p>
+                      <p className="text-lg font-display text-white">{Number(p.budget ?? 0) > 0 ? `£${(Number(p.budget) / 1000).toFixed(0)}k` : '—'}</p>
                       <p className="text-xs text-gray-400">Budget</p>
                     </div>
                     <div>
-                      <p className={`text-lg font-bold ${openInc.length > 0 ? 'text-red-400' : 'text-green-400'}`}>{openInc.length}</p>
+                      <p className={`text-lg font-display ${openInc.length > 0 ? 'text-red-400' : 'text-green-400'}`}>{openInc.length}</p>
                       <p className="text-xs text-gray-400">Incidents</p>
                     </div>
                     <div>
-                      <p className="text-lg font-bold text-white">{p.workers !== null && p.workers !== undefined ? Number(p.workers) : '—'}</p>
+                      <p className="text-lg font-display text-white">{p.workers !== null && p.workers !== undefined ? Number(p.workers) : '—'}</p>
                       <p className="text-xs text-gray-400">Workforce</p>
                     </div>
                   </div>
@@ -410,7 +410,7 @@ export function FieldView() {
                   <WeatherIcon weather={day.weather} />
                 </div>
                 <p className="text-xs text-gray-300 mb-1">{day.weather}</p>
-                <p className="text-lg font-bold text-white mb-1">{day.temp}°C</p>
+                <p className="text-lg font-display text-white mb-1">{day.temp}°C</p>
                 <div className="flex items-center justify-center gap-1 text-xs text-gray-400 mb-2">
                   <Wind size={12} />
                   {day.wind} mph

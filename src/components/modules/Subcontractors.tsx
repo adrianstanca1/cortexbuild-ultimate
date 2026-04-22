@@ -207,7 +207,7 @@ export function Subcontractors() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-100">Subcontractors</h1>
+          <h1 className="text-2xl font-display text-gray-100">Subcontractors</h1>
           <p className="text-sm text-gray-400 mt-1">Manage contractors, compliance & payments</p>
         </div>
         <div className="flex items-center gap-2">
@@ -239,7 +239,7 @@ export function Subcontractors() {
             <div className="flex items-start justify-between">
               <div>
                 <p className="text-xs text-gray-400">{stat.label}</p>
-                <p className="text-2xl font-bold text-gray-100 mt-1">{stat.value}</p>
+                <p className="text-2xl font-display text-gray-100 mt-1">{stat.value}</p>
               </div>
               <div className={`p-2 rounded-lg ${stat.bg}`}>
                 <stat.icon size={18} className={stat.colour} />
@@ -441,7 +441,7 @@ export function Subcontractors() {
               <thead className="bg-gray-700/50 border-b border-gray-700">
                 <tr>
                   {['Company', 'Trade', 'CIS Verified', 'RAMS Approved', 'Insurance Expiry', 'Status', 'Actions'].map((h) => (
-                    <th key={h} className="text-left px-4 py-3 text-xs font-semibold text-gray-300 uppercase tracking-wide">
+                    <th key={h} className="text-left px-4 py-3 text-xs font-display text-gray-300 uppercase tracking-wide">
                       {h}
                     </th>
                   ))}
@@ -554,7 +554,7 @@ export function Subcontractors() {
           {/* Chart - Top 5 by Contract Value */}
           {top5ByValue.length > 0 && (
             <div className="bg-gray-800 rounded-xl border border-gray-700 p-6">
-              <h3 className="font-semibold text-gray-100 mb-4">Top 5 Subcontractors by Contract Value</h3>
+              <h3 className="font-display text-gray-100 mb-4">Top 5 Subcontractors by Contract Value</h3>
               <ResponsiveContainer width="100%" height={300}>
                 <BarChart data={top5ByValue}>
                   <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
@@ -570,13 +570,13 @@ export function Subcontractors() {
           {/* Rating History Table */}
           <div className="bg-gray-800 rounded-xl border border-gray-700 overflow-hidden">
             <div className="px-4 py-3 bg-gray-700/50 border-b border-gray-700">
-              <h3 className="font-semibold text-gray-100">Rating History (Latest Projects)</h3>
+              <h3 className="font-display text-gray-100">Rating History (Latest Projects)</h3>
             </div>
             <table className="w-full text-sm">
               <thead className="bg-gray-700/50 border-b border-gray-700">
                 <tr>
                   {['Company', 'Project', 'Rating'].map((h) => (
-                    <th key={h} className="text-left px-4 py-3 text-xs font-semibold text-gray-300 uppercase">
+                    <th key={h} className="text-left px-4 py-3 text-xs font-display text-gray-300 uppercase tracking-wide">
                       {h}
                     </th>
                   ))}
@@ -636,7 +636,7 @@ export function Subcontractors() {
               <thead className="bg-gray-700/50 border-b border-gray-700">
                 <tr>
                   {['Company', 'Period', 'Payment Due', 'Last Paid', 'CIS Deduction', 'Status', 'Actions'].map((h) => (
-                    <th key={h} className="text-left px-4 py-3 text-xs font-semibold text-gray-300 uppercase whitespace-nowrap">
+                    <th key={h} className="text-left px-4 py-3 text-xs font-display text-gray-300 uppercase tracking-wider whitespace-nowrap">
                       {h}
                     </th>
                   ))}
@@ -683,7 +683,7 @@ export function Subcontractors() {
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
           <div className="bg-gray-800 rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto border border-gray-700">
             <div className="flex items-center justify-between p-6 border-b sticky top-0 bg-gray-800 z-10 border-gray-700">
-              <h2 className="text-lg font-semibold text-gray-100">{editing ? 'Edit Subcontractor' : 'Add Subcontractor'}</h2>
+              <h2 className="text-lg font-display text-gray-100">{editing ? 'Edit Subcontractor' : 'Add Subcontractor'}</h2>
               <button type="button" onClick={() => setShowAddModal(false)} className="p-2 hover:bg-gray-700 rounded-lg">
                 <X size={18} />
               </button>

@@ -340,29 +340,29 @@ export function Safety() {
       {/* Header */}
       <div className="flex items-start justify-between gap-4 flex-wrap">
         <div>
-          <h1 className="text-3xl font-bold text-white">Safety</h1>
+          <h1 className="text-3xl font-display text-white tracking-wide">Safety</h1>
           <p className="text-sm text-gray-400 mt-1">{incidents.length} records · {counts.open} open · {counts.riddor} RIDDOR reportable</p>
         </div>
         <div className="flex gap-2">
           <button type="button" onClick={() => refetch()} className="p-2 rounded-xl bg-gray-800 text-gray-400 hover:text-white"><RefreshCw className="w-4 h-4" /></button>
-          <button type="button" onClick={() => setShowBulkImport(true)} className="flex items-center gap-2 px-3 py-2 bg-gray-700 text-white rounded-lg hover:bg-gray-600 text-sm font-medium">
+           <button type="button" onClick={() => setShowBulkImport(true)} className="flex items-center gap-2 px-3 py-2 bg-gray-700 text-white rounded-lg hover:bg-gray-600 text-sm font-mono">
             <Download size={16}/><span>Import</span>
           </button>
           <ExportButton data={incidents} filename="safety-incidents" />
           {mainTab === 'incidents' && (
-            <button type="button" onClick={openCreate} className="flex items-center gap-2 rounded-xl bg-gradient-to-r from-red-600 to-rose-600 px-4 py-2 text-sm font-semibold text-white hover:from-red-500 transition-all shadow-lg shadow-red-500/20">
+            <button type="button" onClick={openCreate} className="flex items-center gap-2 rounded-xl bg-gradient-to-r from-red-600 to-rose-600 px-4 py-2 text-sm font-display text-white hover:from-red-500 transition-all shadow-lg shadow-red-500/20">
               <Plus className="w-4 h-4" /> Report Incident
             </button>
           )}
           {mainTab === 'permits' && (
             <button type="button" onClick={() => { setPermitForm(defaultPermit); setEditPermitId(null); setShowPermitModal(true); }}
-              className="flex items-center gap-2 rounded-xl bg-gradient-to-r from-blue-600 to-cyan-600 px-4 py-2 text-sm font-semibold text-white hover:from-blue-500 transition-all shadow-lg shadow-blue-500/20">
+              className="flex items-center gap-2 rounded-xl bg-gradient-to-r from-blue-600 to-cyan-600 px-4 py-2 text-sm font-display text-white hover:from-blue-500 transition-all shadow-lg shadow-blue-500/20">
               <Plus className="w-4 h-4" /> New Permit
             </button>
           )}
           {mainTab === 'talks' && (
             <button type="button" onClick={() => { setTalkForm(defaultTalk); setEditTalkId(null); setShowTalkModal(true); }}
-              className="flex items-center gap-2 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 px-4 py-2 text-sm font-semibold text-white hover:from-emerald-500 transition-all shadow-lg shadow-emerald-500/20">
+              className="flex items-center gap-2 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 px-4 py-2 text-sm font-display text-white hover:from-emerald-500 transition-all shadow-lg shadow-emerald-500/20">
               <Plus className="w-4 h-4" /> New Talk
             </button>
           )}
@@ -379,7 +379,7 @@ export function Safety() {
         ].map(({ label, value, color, bg, border, icon: Icon }) => (
           <div key={label} className={clsx('rounded-2xl border bg-gradient-to-br p-5', bg, border)}>
             <div className="flex items-start justify-between">
-              <div><p className="text-xs text-gray-400 mb-1">{label}</p><p className={clsx('text-3xl font-black', color)}>{value}</p></div>
+              <div><p className="text-xs text-gray-400 mb-1">{label}</p><p className={clsx('text-3xl font-display', color)}>{value}</p></div>
               <div className="p-2 rounded-xl bg-gray-800/60"><Icon className={clsx('w-5 h-5', color)} /></div>
             </div>
           </div>
@@ -406,7 +406,7 @@ export function Safety() {
         <div className="space-y-6">
           {/* Trend Chart */}
           <div className="rounded-2xl border border-gray-800 bg-gray-900 p-5">
-            <h3 className="text-sm font-bold text-white mb-0.5">7-Month Safety Trend</h3>
+              <h3 className="text-sm font-display text-white mb-0.5 tracking-wide">7-Month Safety Trend</h3>
             <p className="text-xs text-gray-500 mb-4">Incidents, near misses and toolbox talks</p>
             <ResponsiveContainer width="100%" height={200}>
               <LineChart data={SAFETY_TREND_DATA}>
@@ -492,7 +492,7 @@ export function Safety() {
                       </div>
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 flex-wrap">
-                          <h3 className="font-semibold text-white text-sm">{String(inc.title)}</h3>
+                          <h3 className="font-display text-white text-sm">{String(inc.title)}</h3>
                           {(inc.riddor_reportable || inc.type === 'riddor') && (
                             <span className="rounded-full bg-purple-500/20 border border-purple-600/40 px-2 py-0.5 text-xs font-bold text-purple-400">RIDDOR</span>
                           )}
@@ -608,15 +608,15 @@ export function Safety() {
               <table className="w-full text-sm">
                 <thead>
                   <tr className="border-b border-gray-800 bg-gray-800/50">
-                    <th className="px-4 py-3 text-left text-xs font-bold text-gray-400 uppercase">Permit No.</th>
-                    <th className="px-4 py-3 text-left text-xs font-bold text-gray-400 uppercase">Type</th>
-                    <th className="px-4 py-3 text-left text-xs font-bold text-gray-400 uppercase">Project</th>
-                    <th className="px-4 py-3 text-left text-xs font-bold text-gray-400 uppercase">Location</th>
-                    <th className="px-4 py-3 text-left text-xs font-bold text-gray-400 uppercase">Start Date</th>
-                    <th className="px-4 py-3 text-left text-xs font-bold text-gray-400 uppercase">End Date</th>
-                    <th className="px-4 py-3 text-left text-xs font-bold text-gray-400 uppercase">Issued By</th>
-                    <th className="px-4 py-3 text-left text-xs font-bold text-gray-400 uppercase">Status</th>
-                    <th className="px-4 py-3 text-left text-xs font-bold text-gray-400 uppercase">Actions</th>
+                    <th className="px-4 py-3 text-left text-xs font-display text-gray-400 uppercase tracking-widest">Permit No.</th>
+                    <th className="px-4 py-3 text-left text-xs font-display text-gray-400 uppercase tracking-widest">Type</th>
+                    <th className="px-4 py-3 text-left text-xs font-display text-gray-400 uppercase tracking-widest">Project</th>
+                    <th className="px-4 py-3 text-left text-xs font-display text-gray-400 uppercase tracking-widest">Location</th>
+                    <th className="px-4 py-3 text-left text-xs font-display text-gray-400 uppercase tracking-widest">Start Date</th>
+                    <th className="px-4 py-3 text-left text-xs font-display text-gray-400 uppercase tracking-widest">End Date</th>
+                    <th className="px-4 py-3 text-left text-xs font-display text-gray-400 uppercase tracking-widest">Issued By</th>
+                    <th className="px-4 py-3 text-left text-xs font-display text-gray-400 uppercase tracking-widest">Status</th>
+                    <th className="px-4 py-3 text-left text-xs font-display text-gray-400 uppercase tracking-widest">Actions</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -736,7 +736,7 @@ export function Safety() {
           <div className="w-full max-w-3xl rounded-2xl border border-gray-700 bg-gray-900 shadow-2xl my-4">
             <div className="flex items-center justify-between px-6 pt-6 pb-4 border-b border-gray-800">
               <div>
-                <h2 className="text-xl font-bold text-white">{editId ? 'Edit Incident' : 'Report Incident'}</h2>
+                <h2 className="text-xl font-display text-white tracking-wide">{editId ? 'Edit Incident' : 'Report Incident'}</h2>
                 <p className="text-xs text-gray-400 mt-0.5">Record safety incident with enhanced RIDDOR fields</p>
               </div>
               <button type="button" onClick={() => setShowModal(false)} className="text-gray-400 hover:text-white p-2 rounded-xl hover:bg-gray-800"><X className="w-5 h-5" /></button>
@@ -865,7 +865,7 @@ export function Safety() {
           <div className="w-full max-w-2xl rounded-2xl border border-gray-700 bg-gray-900 shadow-2xl my-4">
             <div className="flex items-center justify-between px-6 pt-6 pb-4 border-b border-gray-800">
               <div>
-                <h2 className="text-xl font-bold text-white">{editPermitId ? 'Edit Permit' : 'New Permit to Work'}</h2>
+                <h2 className="text-xl font-display text-white tracking-wide">{editPermitId ? 'Edit Permit' : 'New Permit to Work'}</h2>
                 <p className="text-xs text-gray-400 mt-0.5">Create or edit a Permit to Work</p>
               </div>
               <button type="button" onClick={() => setShowPermitModal(false)} className="text-gray-400 hover:text-white p-2 rounded-xl hover:bg-gray-800"><X className="w-5 h-5" /></button>
@@ -926,7 +926,7 @@ export function Safety() {
           <div className="w-full max-w-2xl rounded-2xl border border-gray-700 bg-gray-900 shadow-2xl my-4">
             <div className="flex items-center justify-between px-6 pt-6 pb-4 border-b border-gray-800">
               <div>
-                <h2 className="text-xl font-bold text-white">{editTalkId ? 'Edit Toolbox Talk' : 'Record Toolbox Talk'}</h2>
+                <h2 className="text-xl font-display text-white tracking-wide">{editTalkId ? 'Edit Toolbox Talk' : 'Record Toolbox Talk'}</h2>
                 <p className="text-xs text-gray-400 mt-0.5">Log a new toolbox talk or safety briefing</p>
               </div>
               <button type="button" onClick={() => setShowTalkModal(false)} className="text-gray-400 hover:text-white p-2 rounded-xl hover:bg-gray-800"><X className="w-5 h-5" /></button>

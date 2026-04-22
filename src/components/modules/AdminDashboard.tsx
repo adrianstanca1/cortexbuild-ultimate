@@ -64,7 +64,7 @@ export function AdminDashboard() {
         <ModuleBreadcrumbs currentModule="dashboard" onNavigate={() => {}} extraItems={[{ label: 'Admin Dashboard' }]} />
         <div className="flex items-center justify-between mt-4">
           <div>
-            <h1 className="text-2xl font-bold text-white">Admin Dashboard</h1>
+            <h1 className="text-2xl font-display text-white">Admin Dashboard</h1>
             <p className="text-gray-400 mt-1">System administration and oversight</p>
           </div>
           <button onClick={handleRefresh} disabled={refreshing} className="btn btn-secondary flex items-center gap-2">

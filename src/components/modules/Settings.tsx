@@ -192,7 +192,7 @@ export function Settings() {
     <>
       <ModuleBreadcrumbs currentModule="settings" onNavigate={() => {}} />
       <div className="space-y-6">
-      <h1 className="text-3xl font-bold text-white">Settings</h1>
+      <h1 className="text-3xl font-display text-white">Settings</h1>
 
       {/* Tab Nav */}
       <div className="flex gap-1 card bg-base-100 border border-base-300 p-1 cb-table-scroll touch-pan-x">
@@ -211,7 +211,7 @@ export function Settings() {
       {tab==='company' && (
         <div className="space-y-4">
           <div className="card bg-base-100 border border-base-300 p-6">
-            <h3 className="text-base font-bold text-white mb-5 flex items-center gap-2"><Building2 className="w-4 h-4 text-blue-400"/>Company Information</h3>
+            <h3 className="text-base font-display text-white mb-5 flex items-center gap-2"><Building2 className="w-4 h-4 text-blue-400"/>Company Information</h3>
             <div className="grid grid-cols-2 gap-4">
               <div className="col-span-2">
                 <label className="block text-xs font-medium text-gray-400 mb-1">Company Name</label>
@@ -262,7 +262,7 @@ export function Settings() {
           </div>
 
           <div className="card bg-base-100 border border-base-300 p-6">
-            <h3 className="text-base font-bold text-white mb-4">CIS Status</h3>
+            <h3 className="text-base font-display text-white mb-4">CIS Status</h3>
             <div className="grid grid-cols-2 gap-4">
               <label className="flex items-center justify-between bg-gray-800 rounded-xl p-4 cursor-pointer">
                 <div>
@@ -302,7 +302,7 @@ export function Settings() {
           <div className="card bg-base-100 border border-base-300 overflow-hidden">
             <table className="w-full text-sm">
               <thead className="bg-gray-800/60 border-b border-gray-700">
-                <tr>{['User','Email','Role','Status','Last Login',''].map(h=><th key={h} className="px-4 py-3 text-left text-xs font-semibold text-gray-400 uppercase tracking-wide">{h}</th>)}</tr>
+                <tr>{['User','Email','Role','Status','Last Login',''].map(h=><th key={h} className="px-4 py-3 text-left text-xs font-display tracking-widest text-gray-400 uppercase">{h}</th>)}</tr>
               </thead>
               <tbody className="divide-y divide-gray-800">
                 {users.map(u=>{
@@ -385,8 +385,8 @@ export function Settings() {
             {(['Starter','Professional','Enterprise'] as const).map(plan=>(
               <div key={plan} className={`bg-gray-900 border rounded-2xl p-5 relative ${plan===currentPlan?'border-blue-600 ring-1 ring-blue-500/40':'border-gray-800'}`}>
                 {plan===currentPlan && <span className="absolute -top-2.5 left-4 text-xs bg-blue-600 text-white px-2 py-0.5 rounded-full font-semibold">Current Plan</span>}
-                <h3 className="text-lg font-bold text-white mb-1">{plan}</h3>
-                <p className="text-2xl font-bold text-blue-400 mb-3">{plan==='Starter'?'£49':plan==='Professional'?'£149':'Custom'}<span className="text-xs text-gray-400 font-normal">/mo</span></p>
+                <h3 className="text-lg font-display text-white mb-1">{plan}</h3>
+                <p className="text-2xl font-display text-blue-400 mb-3">{plan==='Starter'?'£49':plan==='Professional'?'£149':'Custom'}<span className="text-xs text-gray-400 font-normal">/mo</span></p>
                 <ul className="space-y-1.5 mb-4">
                   {PLAN_FEATURES[plan].map(f=>(
                     <li key={f} className="flex items-center gap-2 text-sm text-gray-300"><Check className="w-3.5 h-3.5 text-green-400 flex-shrink-0"/>{f}</li>
@@ -404,7 +404,7 @@ export function Settings() {
 
           <div className="card bg-base-100 border border-base-300 p-5">
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-base font-bold text-white">Payment Method</h3>
+              <h3 className="text-base font-display text-white">Payment Method</h3>
               <button type="button" onClick={()=>toast.success('Update card details in your billing portal')} className="text-sm text-blue-400 hover:text-blue-300">Update</button>
             </div>
             <div className="flex items-center gap-4 bg-gray-800 rounded-xl p-4">
@@ -418,16 +418,16 @@ export function Settings() {
 
           <div className="card bg-base-100 border border-base-300 overflow-hidden">
             <div className="px-5 py-4 border-b border-gray-800">
-              <h3 className="text-base font-bold text-white">Billing History</h3>
+              <h3 className="text-base font-display text-white">Billing History</h3>
             </div>
             <table className="w-full text-sm">
-              <thead className="bg-gray-800/60"><tr>{['Date','Description','Amount','Status',''].map(h=><th key={h} className="px-4 py-3 text-left text-xs font-semibold text-gray-400 uppercase">{h}</th>)}</tr></thead>
+              <thead className="bg-gray-800/60"><tr>{['Date','Description','Amount','Status',''].map(h=><th key={h} className="px-4 py-3 text-left text-xs font-display tracking-widest text-gray-400 uppercase">{h}</th>)}</tr></thead>
               <tbody className="divide-y divide-gray-800">
                 {billingHistory.map(b=>(
                   <tr key={b.id} className="hover:bg-gray-800/40">
                     <td className="px-4 py-3 text-gray-400 text-xs">{b.date}</td>
                     <td className="px-4 py-3 text-white">{b.desc}</td>
-                    <td className="px-4 py-3 text-white font-bold">£{b.amount}</td>
+                    <td className="px-4 py-3 text-white font-display">£{b.amount}</td>
                     <td className="px-4 py-3"><span className="text-xs px-2 py-0.5 rounded-full bg-green-900/30 text-green-300 font-medium">{b.status}</span></td>
                     <td className="px-4 py-3"><button type="button" onClick={()=>toast.success('Invoice downloaded')} className="text-xs text-blue-400 hover:text-blue-300">Download</button></td>
                   </tr>

@@ -12,9 +12,8 @@ import {
   LineChart, Line
 } from 'recharts';
 
-import { getToken } from '../../lib/auth-storage';
+import { API_BASE } from '../../lib/auth-storage';
 
-const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001';
 
 type AnyRow = Record<string, unknown>;
 
@@ -275,10 +274,8 @@ export function Tenders() {
       const ids = tenders.map(t => String(t.id));
       const res = await fetch(`${API_BASE}/tenders/ai/batch/ai-score`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${getToken() || ''}`,
-        },
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ tenderIds: ids }),
       });
       if (!res.ok) throw new Error('Batch scoring failed');
@@ -307,10 +304,8 @@ export function Tenders() {
     try {
       const res = await fetch(`${API_BASE}/tenders/ai/${id}/ai-score`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${getToken() || ''}`,
-        },
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({}),
       });
       if (!res.ok) throw new Error('Scoring failed');
@@ -331,7 +326,7 @@ export function Tenders() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-white">Tender Pipeline</h1>
+          <h1 className="text-3xl font-display text-white">Tender Pipeline</h1>
           <p className="text-sm text-gray-400 mt-1">Comprehensive bid management & AI-powered pipeline</p>
         </div>
         <button
@@ -388,7 +383,7 @@ export function Tenders() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-xs text-gray-400 uppercase tracking-wide">{stat.label}</p>
-                <p className="text-2xl font-bold text-white mt-2">{stat.value}</p>
+                <p className="text-2xl font-display text-white mt-2">{stat.value}</p>
               </div>
               <div className={`p-3 rounded-lg ${stat.bg}`}>
                 <stat.icon size={24} className={stat.colour} />
@@ -681,7 +676,7 @@ export function Tenders() {
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             {/* Win Rate by Type */}
             <div className="bg-gray-800 rounded-xl border border-gray-700 p-4">
-              <h3 className="text-sm font-semibold text-white mb-4">Win Rate by Project Type</h3>
+              <h3 className="text-sm font-display text-white mb-4">Win Rate by Project Type</h3>
               <ResponsiveContainer width="100%" height={300}>
                 <BarChart data={winRateByType}>
                   <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
@@ -702,7 +697,7 @@ export function Tenders() {
 
             {/* Conversion Funnel */}
             <div className="bg-gray-800 rounded-xl border border-gray-700 p-4">
-              <h3 className="text-sm font-semibold text-white mb-4">Bid Pipeline Funnel</h3>
+              <h3 className="text-sm font-display text-white mb-4">Bid Pipeline Funnel</h3>
               <div className="space-y-3">
                 {funnelData.map(item => {
                   const maxCount = Math.max(...funnelData.map(d => d.count), 1);
@@ -728,7 +723,7 @@ export function Tenders() {
 
           {/* Monthly Trend */}
           <div className="bg-gray-800 rounded-xl border border-gray-700 p-4">
-            <h3 className="text-sm font-semibold text-white mb-4">Monthly Bid Submissions (7 months)</h3>
+            <h3 className="text-sm font-display text-white mb-4">Monthly Bid Submissions (7 months)</h3>
             <ResponsiveContainer width="100%" height={300}>
               <LineChart data={monthlyData}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
@@ -867,7 +862,7 @@ export function Tenders() {
         <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4">
           <div className="bg-gray-800 rounded-xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto border border-gray-700">
             <div className="flex items-center justify-between p-6 border-b border-gray-700 sticky top-0 bg-gray-800 z-10">
-              <h2 className="text-lg font-semibold text-white">
+              <h2 className="text-lg font-display text-white">
                 {editing ? 'Edit Tender' : 'Add Opportunity'}
               </h2>
               <button
@@ -1045,7 +1040,7 @@ export function Tenders() {
         <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4">
           <div className="bg-gray-800 rounded-xl shadow-2xl w-full max-w-xl max-h-[90vh] overflow-y-auto border border-gray-700">
             <div className="flex items-center justify-between p-6 border-b border-gray-700 sticky top-0 bg-gray-800">
-              <h2 className="text-lg font-semibold text-white">Tender Details</h2>
+              <h2 className="text-lg font-display text-white">Tender Details</h2>
               <button
                 onClick={() => setSelectedDetail(null)}
                 className="p-2 hover:bg-gray-700 rounded-lg text-gray-400 hover:text-white transition-colors"
