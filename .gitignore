@@ -50,7 +50,6 @@ logs/
 .agents/
 .jez/
 .qwen/
-agents/
 prisma/
 startup-scripts/
 types/
