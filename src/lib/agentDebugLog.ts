@@ -23,6 +23,14 @@ function agentDebugEligibleHost(): boolean {
   );
 }
 
+let warnedAgentDebugPrimaryOnce = false;
+function warnAgentDebugPrimaryOnce(message: string, detail: string) {
+  if (warnedAgentDebugPrimaryOnce) return;
+  warnedAgentDebugPrimaryOnce = true;
+  if (import.meta.env.DEV || agentDebugEligibleHost())
+    console.warn(`[agent-debug] ${message}`, detail);
+}
+
 export function agentDebugLog(entry: {
   hypothesisId: string;
   location: string;
@@ -56,8 +64,13 @@ export function agentDebugLog(entry: {
         credentials: "include",
       });
       if (r.ok) return;
-    } catch {
-      /* fall through */
+      const text = (await r.text()).slice(0, 200);
+      warnAgentDebugPrimaryOnce("POST /api/agent-debug failed", `${r.status} ${text}`);
+    } catch (e) {
+      warnAgentDebugPrimaryOnce(
+        "POST /api/agent-debug error",
+        e instanceof Error ? e.message : String(e),
+      );
     }
     void Promise.resolve(
       fetch("/__agent-debug", {

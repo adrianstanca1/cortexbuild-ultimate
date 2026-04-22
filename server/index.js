@@ -162,6 +162,36 @@ const agentDebugApiEnabled =
 if (agentDebugApiEnabled) {
   const AGENT_DEBUG_LOG = path.join(__dirname, '..', '.cursor', 'debug-82d802.log');
   const AGENT_DEBUG_MIRROR = path.join(__dirname, '..', 'agent-debug-82d802.ndjson');
+
+  function tailNdjsonFile(filePath, maxLines = 120) {
+    try {
+      if (!fs.existsSync(filePath)) {
+        return { exists: false, byteLength: 0, tailLines: [] };
+      }
+      const raw = fs.readFileSync(filePath, 'utf8');
+      const lines = raw.trim().split('\n').filter(Boolean);
+      return {
+        exists: true,
+        byteLength: Buffer.byteLength(raw, 'utf8'),
+        lineCount: lines.length,
+        tailLines: lines.slice(-maxLines),
+      };
+    } catch (e) {
+      return { exists: false, byteLength: 0, tailLines: [], readError: String(e) };
+    }
+  }
+
+  app.get('/api/agent-debug', (_req, res) => {
+    res.setHeader('Cache-Control', 'no-store');
+    res.json({
+      ok: true,
+      primaryPath: AGENT_DEBUG_LOG,
+      mirrorPath: AGENT_DEBUG_MIRROR,
+      primary: tailNdjsonFile(AGENT_DEBUG_LOG),
+      mirror: tailNdjsonFile(AGENT_DEBUG_MIRROR),
+    });
+  });
+
   app.post('/api/agent-debug', (req, res) => {
     try {
       const line = JSON.stringify(req.body ?? {});
@@ -174,7 +204,7 @@ if (agentDebugApiEnabled) {
       res.status(500).type('text').send(String(e));
     }
   });
-  console.log('[agent-debug] POST /api/agent-debug →', AGENT_DEBUG_LOG);
+  console.log('[agent-debug] POST/GET /api/agent-debug →', AGENT_DEBUG_LOG);
 }
 
 // Rate-limited deploy route (5 requests per hour, Redis-backed)

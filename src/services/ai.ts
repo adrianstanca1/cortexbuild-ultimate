@@ -1,6 +1,4 @@
-import { getToken } from '../lib/auth-storage';
-
-const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001'
+import { API_BASE } from '../lib/auth-storage';
 
 export interface AIChatMessage {
   role: 'user' | 'assistant'
@@ -24,13 +22,10 @@ export async function sendChatMessage(
   context?: Record<string, unknown>,
   sessionId?: string
 ): Promise<AIChatResponse> {
-  const token = getToken()
   const res = await fetch(`${API_BASE}/ai/chat`, {
     method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      ...(token ? { Authorization: `Bearer ${token}` } : {}),
-    },
+    credentials: 'include',
+    headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ message, context, sessionId }),
   })
 
@@ -57,15 +52,11 @@ export async function streamChatMessage(
   onComplete: () => void,
   onError: (error: Error) => void
 ): Promise<void> {
-  const token = getToken()
-
   try {
     const response = await fetch(`${API_BASE}/ai/chat`, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        ...(token ? { Authorization: `Bearer ${token}` } : {}),
-      },
+      credentials: 'include',
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ message, context }),
     })
 
