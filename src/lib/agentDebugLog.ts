@@ -46,9 +46,21 @@ export function agentDebugLog(entry: {
     import.meta.env.VITE_AGENT_DEBUG === "1";
   if (!import.meta.env.DEV && !force && !agentDebugEligibleHost()) return;
   // #region agent log
+  const enriched = {
+    ...entry,
+    data: {
+      ...entry.data,
+      _agentDebug: {
+        baseUrl: import.meta.env.BASE_URL,
+        /** Leading `/` fetch targets origin root (matches Vite `proxy['/api']`). */
+        apiPostPath: "/api/agent-debug",
+        viteFallbackPath: "/__agent-debug",
+      },
+    },
+  };
   const body = JSON.stringify({
     sessionId: SESSION,
-    ...entry,
+    ...enriched,
     timestamp: Date.now(),
   });
   void (async () => {

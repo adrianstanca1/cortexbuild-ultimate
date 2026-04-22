@@ -60,7 +60,8 @@ function attachAgentDebugMiddleware(
 ) {
   server.middlewares.use((req, res, next) => {
     const url = req.url?.split("?")[0] ?? "";
-    if (url !== "/__agent-debug") {
+    const isAgentDebugPath = url === "/__agent-debug";
+    if (!isAgentDebugPath) {
       next();
       return;
     }
