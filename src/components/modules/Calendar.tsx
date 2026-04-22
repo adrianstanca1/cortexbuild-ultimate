@@ -1,8 +1,8 @@
-import React, { useState } from 'react';
-import { useMeetings } from '../../hooks/useData';
+import React, { useMemo, useState } from 'react';
+import { useMeetings, useTeam, useEquipment } from '../../hooks/useData';
 import { toast } from 'sonner';
 import {
-  Plus, X, ChevronLeft, ChevronRight, MapPin, Users, AlertTriangle, Calendar as CalendarIcon, Flag, Zap, CheckSquare, Square, Trash2
+  Plus, X, ChevronLeft, ChevronRight, MapPin, Users, AlertTriangle, Calendar as CalendarIcon, Flag, Zap, CheckSquare, Square, Trash2, HardHat
 } from 'lucide-react';
 import { BulkActionsBar, useBulkSelection } from '../ui/BulkActions';
 import { ModuleBreadcrumbs } from '../ui/Breadcrumbs';
@@ -20,9 +20,59 @@ const EVENT_TYPES: Record<string, string> = {
 const WEEKDAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 const HOURS = Array.from({ length: 13 }, (_, i) => `${7 + i}:00`);
 
+function startOfWeekMonday(d: Date): Date {
+  const x = new Date(d);
+  const day = x.getDay();
+  const diff = day === 0 ? -6 : 1 - day;
+  x.setDate(x.getDate() + diff);
+  x.setHours(0, 0, 0, 0);
+  return x;
+}
+
+function addDays(d: Date, n: number): Date {
+  const x = new Date(d);
+  x.setDate(x.getDate() + n);
+  return x;
+}
+
+function toYMD(d: Date): string {
+  return d.toISOString().split('T')[0];
+}
+
+/** True if this person appears on a calendar entry for the given day (meetings / site visits, not bare deadlines). */
+function personBookedOnDay(personName: string, dayStr: string, meetingRows: AnyRow[]): boolean {
+  const trimmed = personName.trim();
+  if (!trimmed) return false;
+  const full = trimmed.toLowerCase();
+  const tokens = trimmed
+    .toLowerCase()
+    .split(/\s+/)
+    .filter((t) => t.length > 1);
+  return meetingRows.some((e) => {
+    if (String(e.date ?? '') !== dayStr) return false;
+    if (String(e.type ?? '') === 'deadline') return false;
+    const hay = `${e.attendees ?? ''} ${e.title ?? ''} ${e.description ?? ''}`.toLowerCase();
+    if (hay.includes(full)) return true;
+    return tokens.some((t) => hay.includes(t));
+  });
+}
+
+/** True if plant name appears in meeting title, notes, or location that day. */
+function equipmentReferencedOnDay(eqName: string, dayStr: string, meetingRows: AnyRow[]): boolean {
+  const n = eqName.trim().toLowerCase();
+  if (!n) return false;
+  return meetingRows.some((e) => {
+    if (String(e.date ?? '') !== dayStr) return false;
+    const hay = `${e.title ?? ''} ${e.description ?? ''} ${e.location ?? ''}`.toLowerCase();
+    return hay.includes(n);
+  });
+}
+
 export function Calendar() {
   const { useList, useCreate, useUpdate, useDelete } = useMeetings;
-  const { data: raw = [], isLoading } = useList();
+  const { data: raw = [], isLoading: meetingsLoading } = useList();
+  const { data: teamMembers = [], isLoading: teamLoading } = useTeam.useList();
+  const { data: equipmentRows = [], isLoading: equipmentLoading } = useEquipment.useList();
   const events = raw as AnyRow[];
   const createMutation = useCreate();
   const updateMutation = useUpdate();
@@ -96,6 +146,24 @@ export function Calendar() {
     const diff = Math.ceil((target.getTime() - new Date(today).getTime()) / (1000 * 60 * 60 * 24));
     return Math.max(0, diff);
   };
+
+  const workWeekDates = useMemo(() => {
+    const mon = startOfWeekMonday(currentDate);
+    return [0, 1, 2, 3, 4].map((i) => toYMD(addDays(mon, i)));
+  }, [currentDate]);
+
+  const workWeekLabels = useMemo(() => {
+    const mon = startOfWeekMonday(currentDate);
+    return [0, 1, 2, 3, 4].map((i) => {
+      const d = addDays(mon, i);
+      return d.toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' });
+    });
+  }, [currentDate]);
+
+  const tabLoading =
+    subTab === 'resources'
+      ? meetingsLoading || teamLoading || equipmentLoading
+      : meetingsLoading;
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -205,7 +273,7 @@ export function Calendar() {
         ))}
       </div>
 
-      {isLoading ? (
+      {tabLoading ? (
         <div className="flex justify-center py-20">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-600" />
         </div>
@@ -477,50 +545,180 @@ export function Calendar() {
           )}
 
           {subTab === 'resources' && (
-            <div className="bg-gray-900 rounded-xl border border-gray-700 cb-table-scroll touch-pan-x">
-              <table className="w-full text-sm">
-                <thead className="bg-gray-800 border-b border-gray-700">
-                  <tr>
-                    <th className="text-left px-4 py-3 text-xs font-semibold text-gray-400 uppercase tracking-wide">Resource</th>
-                    <th className="text-center px-4 py-3 text-xs font-semibold text-gray-400 uppercase tracking-wide">Mon</th>
-                    <th className="text-center px-4 py-3 text-xs font-semibold text-gray-400 uppercase tracking-wide">Tue</th>
-                    <th className="text-center px-4 py-3 text-xs font-semibold text-gray-400 uppercase tracking-wide">Wed</th>
-                    <th className="text-center px-4 py-3 text-xs font-semibold text-gray-400 uppercase tracking-wide">Thu</th>
-                    <th className="text-center px-4 py-3 text-xs font-semibold text-gray-400 uppercase tracking-wide">Fri</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-700">
-                  {events
-                    .filter((e) => !!e.attendees)
-                    .slice(0, 10)
-                    .map((e, i) => (
-                      <tr key={i} className="hover:bg-gray-800/40">
-                        <td className="px-4 py-3 text-gray-300 font-medium">{String(e.attendees ?? '—')}</td>
-                        <td className="text-center px-4 py-3">
-                          <div className="h-6 bg-blue-500/20 rounded text-xs text-blue-300 flex items-center justify-center">
-                            ✓
-                          </div>
-                        </td>
-                        <td className="text-center px-4 py-3">
-                          <div className="h-6 bg-gray-700 rounded" />
-                        </td>
-                        <td className="text-center px-4 py-3">
-                          <div className="h-6 bg-orange-500/20 rounded text-xs text-orange-300 flex items-center justify-center">
-                            ✓
-                          </div>
-                        </td>
-                        <td className="text-center px-4 py-3">
-                          <div className="h-6 bg-gray-700 rounded" />
-                        </td>
-                        <td className="text-center px-4 py-3">
-                          <div className="h-6 bg-green-500/20 rounded text-xs text-green-300 flex items-center justify-center">
-                            ✓
-                          </div>
-                        </td>
+            <div className="space-y-8">
+              <p className="text-sm text-gray-400">
+                Week of{' '}
+                <span className="text-gray-200 font-medium">
+                  {workWeekLabels[0]} – {workWeekLabels[4]}
+                </span>
+                . People and plant rows use your{' '}
+                <strong className="text-gray-300">Team</strong> and <strong className="text-gray-300">Equipment</strong>{' '}
+                registers; cells show when someone or kit appears on a meeting, site visit, or urgent entry that day
+                (matched from attendees, title, description, or location).
+              </p>
+
+              <div className="bg-gray-900 rounded-xl border border-gray-700 overflow-hidden">
+                <div className="flex items-center gap-2 px-4 py-3 border-b border-gray-700 bg-gray-800/80">
+                  <Users className="h-4 w-4 text-blue-400" aria-hidden />
+                  <h2 className="text-sm font-semibold text-white">People — team roster</h2>
+                  <span className="text-xs text-gray-500 ml-auto">{teamMembers.length} on file</span>
+                </div>
+                <div className="cb-table-scroll touch-pan-x">
+                  <table className="w-full text-sm">
+                    <thead className="bg-gray-800 border-b border-gray-700">
+                      <tr>
+                        <th scope="col" className="text-left px-4 py-3 text-xs font-semibold text-gray-400 uppercase tracking-wide">
+                          Name
+                        </th>
+                        <th scope="col" className="text-left px-4 py-3 text-xs font-semibold text-gray-400 uppercase tracking-wide hidden sm:table-cell">
+                          Role / trade
+                        </th>
+                        <th scope="col" className="text-left px-4 py-3 text-xs font-semibold text-gray-400 uppercase tracking-wide">
+                          Status
+                        </th>
+                        {workWeekLabels.map((label, idx) => (
+                          <th
+                            key={workWeekDates[idx]}
+                            scope="col"
+                            className="text-center px-2 py-3 text-xs font-semibold text-gray-400 uppercase tracking-wide min-w-[4.5rem]"
+                          >
+                            {label}
+                          </th>
+                        ))}
                       </tr>
-                    ))}
-                </tbody>
-              </table>
+                    </thead>
+                    <tbody className="divide-y divide-gray-700">
+                      {teamMembers.length === 0 ? (
+                        <tr>
+                          <td colSpan={8} className="px-4 py-12 text-center text-gray-500">
+                            No team members yet — add people under{' '}
+                            <strong className="text-gray-400">Teams & Labour</strong> to plan labour against the calendar.
+                          </td>
+                        </tr>
+                      ) : (
+                        teamMembers.map((m) => {
+                          const name = String(m.name ?? '—');
+                          const role = [m.role, m.trade].filter(Boolean).join(' · ') || '—';
+                          const status = String(m.status ?? '—');
+                          return (
+                            <tr key={String(m.id)} className="hover:bg-gray-800/40">
+                              <td className="px-4 py-3 text-gray-200 font-medium">{name}</td>
+                              <td className="px-4 py-3 text-gray-400 hidden sm:table-cell">{role}</td>
+                              <td className="px-4 py-3">
+                                <span className="text-xs px-2 py-1 rounded-full bg-gray-700 text-gray-300 capitalize">
+                                  {status.replace(/_/g, ' ')}
+                                </span>
+                              </td>
+                              {workWeekDates.map((dayStr) => {
+                                const booked = personBookedOnDay(name, dayStr, events);
+                                return (
+                                  <td key={dayStr} className="text-center px-2 py-3">
+                                    {booked ? (
+                                      <div
+                                        className="h-6 mx-auto max-w-[3.5rem] bg-blue-500/25 rounded text-xs text-blue-200 flex items-center justify-center"
+                                        aria-label={`${name} booked ${dayStr}`}
+                                        title="On programme this day"
+                                      >
+                                        ✓
+                                      </div>
+                                    ) : (
+                                      <div
+                                        className="h-6 mx-auto max-w-[3.5rem] bg-gray-800/80 rounded"
+                                        aria-label={`${name} free ${dayStr}`}
+                                      />
+                                    )}
+                                  </td>
+                                );
+                              })}
+                            </tr>
+                          );
+                        })
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+
+              <div className="bg-gray-900 rounded-xl border border-gray-700 overflow-hidden">
+                <div className="flex items-center gap-2 px-4 py-3 border-b border-gray-700 bg-gray-800/80">
+                  <HardHat className="h-4 w-4 text-amber-400" aria-hidden />
+                  <h2 className="text-sm font-semibold text-white">Plant & equipment</h2>
+                  <span className="text-xs text-gray-500 ml-auto">{equipmentRows.length} items</span>
+                </div>
+                <div className="cb-table-scroll touch-pan-x">
+                  <table className="w-full text-sm">
+                    <thead className="bg-gray-800 border-b border-gray-700">
+                      <tr>
+                        <th scope="col" className="text-left px-4 py-3 text-xs font-semibold text-gray-400 uppercase tracking-wide">
+                          Asset
+                        </th>
+                        <th scope="col" className="text-left px-4 py-3 text-xs font-semibold text-gray-400 uppercase tracking-wide hidden md:table-cell">
+                          Type
+                        </th>
+                        <th scope="col" className="text-left px-4 py-3 text-xs font-semibold text-gray-400 uppercase tracking-wide">
+                          Status
+                        </th>
+                        {workWeekLabels.map((label, idx) => (
+                          <th
+                            key={workWeekDates[idx]}
+                            scope="col"
+                            className="text-center px-2 py-3 text-xs font-semibold text-gray-400 uppercase tracking-wide min-w-[4.5rem]"
+                          >
+                            {label}
+                          </th>
+                        ))}
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-700">
+                      {equipmentRows.length === 0 ? (
+                        <tr>
+                          <td colSpan={8} className="px-4 py-12 text-center text-gray-500">
+                            No equipment yet — register plant under{' '}
+                            <strong className="text-gray-400">{'Plant & Equipment'}</strong>
+                            {' '}({'Site & Operations'}).
+                          </td>
+                        </tr>
+                      ) : (
+                        equipmentRows.map((eq) => {
+                          const label = String(eq.name ?? '—');
+                          const typ = String(eq.type ?? '—');
+                          const st = String(eq.status ?? '—').replace(/_/g, ' ');
+                          return (
+                            <tr key={String(eq.id)} className="hover:bg-gray-800/40">
+                              <td className="px-4 py-3 text-gray-200 font-medium">{label}</td>
+                              <td className="px-4 py-3 text-gray-400 hidden md:table-cell">{typ}</td>
+                              <td className="px-4 py-3">
+                                <span className="text-xs px-2 py-1 rounded-full bg-gray-700 text-gray-300 capitalize">{st}</span>
+                              </td>
+                              {workWeekDates.map((dayStr) => {
+                                const ref = equipmentReferencedOnDay(label, dayStr, events);
+                                return (
+                                  <td key={dayStr} className="text-center px-2 py-3">
+                                    {ref ? (
+                                      <div
+                                        className="h-6 mx-auto max-w-[3.5rem] bg-amber-500/20 rounded text-xs text-amber-200 flex items-center justify-center"
+                                        aria-label={`${label} referenced ${dayStr}`}
+                                        title="Named on programme this day"
+                                      >
+                                        ✓
+                                      </div>
+                                    ) : (
+                                      <div
+                                        className="h-6 mx-auto max-w-[3.5rem] bg-gray-800/80 rounded"
+                                        aria-label={`${label} not on diary ${dayStr}`}
+                                      />
+                                    )}
+                                  </td>
+                                );
+                              })}
+                            </tr>
+                          );
+                        })
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
             </div>
           )}
         </>
