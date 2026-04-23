@@ -13,16 +13,39 @@ const { blacklistToken, revokeAllUserTokens } = require('../lib/tokenBlacklist')
 const { buildTenantFilter, isSuperAdmin, isCompanyOwner } = require('../middleware/tenantFilter');
 
 const router = express.Router();
+
+/** Cookie SameSite: lax in dev (Vite + OAuth redirects); strict in production. */
+const AUTH_TOKEN_COOKIE_SAMESITE =
+  process.env.AUTH_TOKEN_COOKIE_SAMESITE ||
+  (process.env.NODE_ENV === 'production' ? 'strict' : 'lax');
+
+function setAuthTokenCookie(res, token, maxAgeMs = 7 * 24 * 60 * 60 * 1000) {
+  res.cookie('token', token, {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: AUTH_TOKEN_COOKIE_SAMESITE,
+    maxAge: maxAgeMs,
+    path: '/',
+  });
+}
+
 const SECRET = process.env.JWT_SECRET;
 if (!SECRET) {
   console.error('[SECURITY] JWT_SECRET environment variable is not set!');
   process.exit(1);
 }
 
+function redisConnectionUrl() {
+  if (process.env.REDIS_URL) return process.env.REDIS_URL;
+  const host = process.env.REDIS_HOST || '127.0.0.1';
+  const port = process.env.REDIS_PORT || '6379';
+  return `redis://${host}:${port}`;
+}
+
 const redis = (() => {
   try {
     const { createClient } = require('redis');
-    const client = createClient({ url: process.env.REDIS_URL || 'redis://localhost:6379' });
+    const client = createClient({ url: redisConnectionUrl() });
     client.on('error', () => {});
     return client;
   } catch {
@@ -203,13 +226,7 @@ router.post('/register', registerLimiter, async (req, res) => {
 
     await createUserSession(newUser.id, token, req);
 
-    res.cookie('token', token, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'strict',
-      maxAge: 7 * 24 * 60 * 60 * 1000,
-      path: '/',
-    });
+    setAuthTokenCookie(res, token);
 
     const { password_hash, totp_secret, totp_enabled, ...safeUser } = newUser;
     res.status(201).json({ user: safeUser });
@@ -263,13 +280,7 @@ router.post('/login', loginLimiter, async (req, res) => {
 
     await createUserSession(user.id, token, req);
 
-    res.cookie('token', token, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'strict',
-      maxAge: 7 * 24 * 60 * 60 * 1000,
-      path: '/',
-    });
+    setAuthTokenCookie(res, token);
 
     const { password_hash, totp_secret, totp_enabled, ...safeUser } = user;
     res.json({ user: safeUser });
@@ -383,13 +394,7 @@ router.post('/2fa/validate', async (req, res) => {
 
     await createUserSession(payload.id, token, req);
 
-    res.cookie('token', token, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'strict',
-      maxAge: 7 * 24 * 60 * 60 * 1000,
-      path: '/',
-    });
+    setAuthTokenCookie(res, token);
 
     res.json({ message: '2FA validated successfully' });
   } catch (err) {
@@ -711,13 +716,7 @@ router.post('/invite/accept', async (req, res) => {
 
     await createUserSession(newUser.id, jwtToken, req);
 
-    res.cookie('token', jwtToken, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'strict',
-      maxAge: 7 * 24 * 60 * 60 * 1000,
-      path: '/',
-    });
+    setAuthTokenCookie(res, jwtToken);
 
     logAudit({ auth: { userId: newUser.id, organization_id: newUser.organization_id, company_id: newUser.company_id }, action: 'create', entityType: 'users', entityId: newUser.id, newData: { email: newUser.email, role: newUser.role, name: newUser.name, invited: true } });
 

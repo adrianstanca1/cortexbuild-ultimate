@@ -158,9 +158,23 @@ export default defineConfig({
     allowedHosts: ["localhost", "127.0.0.1"],
     port: 5173,
     proxy: {
-      "/api": { target: "http://localhost:3001", changeOrigin: true },
-      "/ws": { target: "ws://localhost:3001", ws: true },
-      "/uploads": { target: "http://localhost:3001", changeOrigin: true },
+      "/api": {
+        target: "http://127.0.0.1:3001",
+        changeOrigin: true,
+        secure: false,
+        cookieDomainRewrite: "",
+        cookiePathRewrite: "/",
+      },
+      "/ws": {
+        target: "ws://127.0.0.1:3001",
+        ws: true,
+        changeOrigin: true,
+      },
+      "/uploads": {
+        target: "http://127.0.0.1:3001",
+        changeOrigin: true,
+        secure: false,
+      },
     },
   },
   define: {

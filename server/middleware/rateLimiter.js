@@ -4,12 +4,19 @@ const rateLimits = new Map(); // Fallback for non-Redis environments
 const WINDOW_MS = 60 * 1000;
 const MAX_REQUESTS = 100;
 
+function redisUrl() {
+  if (process.env.REDIS_URL) return process.env.REDIS_URL;
+  const host = process.env.REDIS_HOST || '127.0.0.1';
+  const port = process.env.REDIS_PORT || '6379';
+  return `redis://${host}:${port}`;
+}
+
 // Redis client for cluster-safe rate limiting
 let redisClient = null;
-const REDIS_ENABLED = process.env.REDIS_URL;
+const REDIS_ENABLED = process.env.REDIS_URL || process.env.REDIS_HOST;
 
 if (REDIS_ENABLED) {
-  redisClient = Redis.createClient({ url: process.env.REDIS_URL });
+  redisClient = Redis.createClient({ url: redisUrl() });
   redisClient.on('error', (err) => {
     console.error('[Redis] Rate limiter connection error:', err.message);
   });

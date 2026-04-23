@@ -74,8 +74,8 @@ async function main() {
         await runSqlFile(client, path.join(rootDir, 'server/migrations/013_enhanced_projects.sql'));
         await runSqlFile(client, path.join(rootDir, 'server/migrations/014_add_email_templates.sql'));
         await runSqlFile(client, path.join(rootDir, 'server/migrations/035_new_modules_corrected.sql'));
-        await runSqlFile(client, path.join(rootDir, 'server/scripts/seed.sql'));
         await runSqlFile(client, path.join(rootDir, 'server/migrations/016_local_dev_reconcile.sql'));
+        await runSqlFile(client, path.join(rootDir, 'server/scripts/seed.sql'));
         await runSqlFile(client, path.join(rootDir, 'server/migrations/012_seed_audit_log.sql'));
         await runSqlFile(client, path.join(rootDir, 'server/migrations/060_add_invoices_payment_fields.sql'));
 
@@ -85,6 +85,15 @@ async function main() {
         } catch (e) {
             console.log('Warning on 015_add_ai_conversation_indexes.sql:', e.message);
         }
+
+        await runSqlFile(client, path.join(rootDir, 'server/migrations/028_add_bim_processing_queue.sql'));
+        await runSqlFile(client, path.join(rootDir, 'server/migrations/061_add_autoresearch.sql'));
+        await runSqlFile(client, path.join(rootDir, 'server/migrations/062_add_autoimprove.sql'));
+        await runSqlFile(client, path.join(rootDir, 'server/migrations/063_add_autorepair.sql'));
+        await runSqlFile(client, path.join(rootDir, 'server/migrations/064_harden_schema.sql'));
+        await runSqlFile(client, path.join(rootDir, 'server/migrations/065_notification_infrastructure.sql'));
+        await runSqlFile(client, path.join(rootDir, 'server/migrations/066_auth_hardening.sql'));
+        await runSqlFile(client, path.join(rootDir, 'server/migrations/067_add_project_coordinates.sql'));
 
         console.log('Database initialized successfully!');
     } catch (err) {
