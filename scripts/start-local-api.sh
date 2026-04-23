@@ -28,12 +28,24 @@ if ! docker info >/dev/null 2>&1; then
   fi
 fi
 
-export JWT_SECRET="${JWT_SECRET:-$(openssl rand -hex 32)}"
-export SESSION_SECRET="${SESSION_SECRET:-$(openssl rand -hex 32)}"
+SECRETS_FILE="$ROOT/deploy/.local-api-secrets.env"
+if [[ -z "${JWT_SECRET:-}" || -z "${SESSION_SECRET:-}" ]]; then
+  if [[ ! -f "$SECRETS_FILE" ]]; then
+    mkdir -p "$(dirname "$SECRETS_FILE")"
+    umask 077
+    printf 'JWT_SECRET=%s\nSESSION_SECRET=%s\n' "$(openssl rand -hex 32)" "$(openssl rand -hex 32)" >"$SECRETS_FILE"
+  fi
+  set -a
+  # shellcheck disable=SC1090
+  source "$SECRETS_FILE"
+  set +a
+fi
 # POSTGRES_PASSWORD: omit to use compose default (stable across restarts). Set only if you rotate secrets.
 export CORS_ORIGIN="${CORS_ORIGIN:-http://localhost:5173,http://127.0.0.1:5173,http://127.0.0.1:3001}"
 export FRONTEND_URL="${FRONTEND_URL:-http://localhost:5173}"
 export NODE_ENV="${NODE_ENV:-development}"
+
+export PATH="/usr/local/bin:/opt/homebrew/bin:/Applications/Docker.app/Contents/Resources/bin:$PATH"
 
 COMPOSE=(docker compose -f docker-compose.local.yml)
 if ! docker compose version >/dev/null 2>&1; then
@@ -41,7 +53,11 @@ if ! docker compose version >/dev/null 2>&1; then
 fi
 
 echo "Starting local stack (postgres :15432, redis :16379, api :3001)…"
-"${COMPOSE[@]}" up -d --build postgres redis api
+if [[ "${CORTEXBUILD_LOCAL_API_SKIP_BUILD:-}" == "1" ]]; then
+  "${COMPOSE[@]}" up -d postgres redis api
+else
+  "${COMPOSE[@]}" up -d --build postgres redis api
+fi
 
 echo "Waiting for http://127.0.0.1:3001/api/health …"
 for _i in $(seq 1 60); do

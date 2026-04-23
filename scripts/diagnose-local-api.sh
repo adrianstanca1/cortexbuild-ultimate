@@ -31,6 +31,7 @@ echo "=== Quick fix (recommended) ==="
 echo "  1) Start Docker Desktop"
 echo "  2)  cd $(cd "$(dirname "$0")/.." && pwd)"
 echo "  3)  npm run local:api"
+echo "  Or API + Vite together: npm run dev:local"
 echo
 echo "=== Use production API instead (no local port 3001) ==="
 echo "  https://cortexbuildpro.com/api/health"

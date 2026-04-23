@@ -26,6 +26,7 @@ server/doc/
 nginx/ssl/*.pem
 nginx/ssl/*.key
 .env.docker
+deploy/.local-api-secrets.env
 
 # Playwright
 playwright-report/
