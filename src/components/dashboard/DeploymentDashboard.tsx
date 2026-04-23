@@ -196,7 +196,10 @@ export function DeploymentDashboard() {
 
   const fetchHealth = useCallback(async () => {
     try {
-      const res = await fetch('/api/health', { signal: AbortSignal.timeout(5000) });
+      const res = await fetch('/api/health', {
+        credentials: 'include',
+        signal: AbortSignal.timeout(5000),
+      });
       if (res.ok) {
         const data = await res.json();
         setHealth({

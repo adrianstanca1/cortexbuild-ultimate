@@ -16,11 +16,20 @@ export interface ApiResponse<T> {
   error?: ApiErrorResponse;
 }
 
+/** Avoid `/api/api/...` when callers pass paths that already include the `/api` prefix. */
+function normalizeApiEndpoint(endpoint: string): string {
+  const e = endpoint.trim();
+  if (e.startsWith('/api/')) return e.slice(4);
+  if (e.startsWith('api/')) return `/${e.slice(4)}`;
+  return e.startsWith('/') ? e : `/${e}`;
+}
+
 export async function apiRequest<T>(
   endpoint: string,
   options: RequestInit = {}
 ): Promise<ApiResponse<T>> {
-  const url = `/api${endpoint.startsWith('/') ? endpoint : `/${endpoint}`}`;
+  const path = normalizeApiEndpoint(endpoint);
+  const url = `/api${path}`;
 
   try {
     const response = await fetch(url, {
