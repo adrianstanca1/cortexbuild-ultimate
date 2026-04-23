@@ -1,0 +1,65 @@
+import { FileText, AlertTriangle, Camera, Clock, Package, Users } from 'lucide-react';
+import { type Module } from '../../types';
+
+interface QuickAction {
+  label: string;
+  icon: React.ComponentType<{ size?: number; className?: string }>;
+  module: Module;
+  color: string;
+}
+
+const QUICK_ACTIONS: QuickAction[] = [
+  { label: 'Daily Report', icon: FileText,      module: 'daily-reports', color: 'bg-emerald-600' },
+  { label: 'Safety',       icon: AlertTriangle, module: 'safety',        color: 'bg-red-600' },
+  { label: 'Timesheet',    icon: Clock,         module: 'timesheets',    color: 'bg-indigo-600' },
+  { label: 'Materials',    icon: Package,       module: 'procurement',   color: 'bg-amber-600' },
+  { label: 'Team',         icon: Users,         module: 'teams',         color: 'bg-cyan-600' },
+  { label: 'Photos',       icon: Camera,        module: 'documents',     color: 'bg-purple-600' },
+];
+
+interface MobileHomeProps {
+  onNavigate: (module: Module) => void;
+}
+
+export function MobileHome({ onNavigate }: MobileHomeProps) {
+  const today = new Date().toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' });
+
+  return (
+    <div className="p-4 space-y-4">
+      <div className="bg-slate-800 rounded-2xl p-4">
+        <div className="text-slate-400 text-[10px] uppercase tracking-widest mb-3">Today · {today}</div>
+        <div className="grid grid-cols-2 gap-2">
+          {([
+            { label: 'Tasks',   value: '4',  color: 'text-blue-400' },
+            { label: 'Permits', value: '2',  color: 'text-amber-400' },
+            { label: 'Logged',  value: '6h', color: 'text-emerald-400' },
+            { label: 'Defects', value: '1',  color: 'text-red-400' },
+          ] as const).map(({ label, value, color }) => (
+            <div key={label} className="bg-slate-900 rounded-xl p-3 text-center">
+              <div className={`text-2xl font-bold ${color}`}>{value}</div>
+              <div className="text-slate-400 text-xs mt-0.5">{label}</div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <div>
+        <div className="text-slate-400 text-[10px] uppercase tracking-widest mb-2">Quick actions</div>
+        <div className="grid grid-cols-3 gap-2">
+          {QUICK_ACTIONS.map(({ label, icon: Icon, module, color }) => (
+            <button
+              key={module}
+              onClick={() => onNavigate(module)}
+              className="bg-slate-800 rounded-xl p-3 flex flex-col items-center gap-1.5 active:scale-95 transition-transform"
+            >
+              <div className={`w-9 h-9 ${color} rounded-lg flex items-center justify-center`}>
+                <Icon size={18} className="text-white" />
+              </div>
+              <span className="text-slate-300 text-[10px] text-center leading-tight">{label}</span>
+            </button>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}

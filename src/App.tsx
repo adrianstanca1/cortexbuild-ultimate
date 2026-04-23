@@ -1,4 +1,6 @@
 import { useState, lazy, Suspense, useEffect, useCallback } from 'react';
+import { MobileShell } from './components/mobile/MobileShell';
+import { useIsMobile } from './hooks/useIsMobile';
 import { Toaster } from 'sonner';
 import { Sidebar } from './components/layout/Sidebar';
 import { BlueprintBackground } from './components/layout/BlueprintBackground';
@@ -196,6 +198,11 @@ const ModuleLoader = () => (
     <span className="sr-only">Loading module</span>
   </div>
 );
+
+function MobileShellWrapper() {
+  const [activeModule, setActiveModule] = useState<Module>('dashboard');
+  return <MobileShell activeModule={activeModule} setModule={setActiveModule} />;
+}
 
 function AppShell() {
   const { token } = useAuth();
@@ -445,8 +452,11 @@ function AppShell() {
 }
 
 function ThemedApp() {
-  const { isAuthenticated, loading } = useAuth();
+  const { isAuthenticated, loading, user } = useAuth();
   const { resolvedTheme } = useTheme();
+
+  const isMobile = useIsMobile();
+  const showMobile = user?.role === 'field_worker' || isMobile;
 
   useEffect(() => {
     // #region agent log
@@ -551,7 +561,9 @@ function ThemedApp() {
           },
         }}
       />
-      {isAuthenticated ? <AppShell /> : <LoginPage />}
+      {isAuthenticated
+        ? (showMobile ? <MobileShellWrapper /> : <AppShell />)
+        : <LoginPage />}
     </ErrorBoundary>
   );
 }
