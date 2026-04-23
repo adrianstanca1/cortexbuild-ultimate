@@ -112,6 +112,7 @@ export default function MobileDailyReport() {
       <h2 className="text-lg font-bold text-slate-100">Daily Report</h2>
 
       <button
+        type="button"
         onPointerDown={handleVoice}
         onPointerUp={handleVoiceStop}
         onPointerLeave={handleVoiceStop}
@@ -154,7 +155,7 @@ export default function MobileDailyReport() {
               className="w-16 h-16 rounded-lg object-cover flex-shrink-0" />
           ))}
           {photos.length < 5 && (
-            <button onClick={() => fileRef.current?.click()}
+            <button type="button" onClick={() => fileRef.current?.click()}
               className="w-16 h-16 bg-slate-800 border-2 border-dashed border-slate-600 rounded-lg flex items-center justify-center flex-shrink-0">
               <Camera size={20} className="text-slate-500" />
             </button>
@@ -164,7 +165,7 @@ export default function MobileDailyReport() {
           className="hidden" onChange={handlePhoto} />
       </div>
 
-      <button onClick={handleSubmit} disabled={submitting}
+      <button type="button" onClick={handleSubmit} disabled={submitting}
         className="w-full bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 rounded-2xl py-3.5 text-white font-bold flex items-center justify-center gap-2 active:scale-95 transition-all">
         <Send size={16} />
         {submitting ? 'Saving…' : isOnline ? 'Submit Report' : 'Save for Sync'}

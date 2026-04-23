@@ -79,7 +79,7 @@ export default function MobileToolboxTalk() {
         <div className="text-slate-400 text-xs mb-2">Attendance — {present.size}/{TEAM.length}</div>
         <div className="flex flex-wrap gap-2">
           {TEAM.map(init => (
-            <button key={init} onClick={() => togglePresent(init)}
+            <button type="button" key={init} onClick={() => togglePresent(init)}
               className={`w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold transition-all ${
                 sigs[init]        ? 'bg-blue-600 border-2 border-blue-400 text-white'
                 : present.has(init) ? 'bg-blue-700 border-2 border-blue-500 text-white'
@@ -89,7 +89,7 @@ export default function MobileToolboxTalk() {
           ))}
         </div>
         {present.size > 0 && (
-          <button onClick={() => startSign(Array.from(present).find(i => !sigs[i]) ?? '')}
+          <button type="button" onClick={() => startSign(Array.from(present).find(i => !sigs[i]) ?? '')}
             className="mt-3 text-blue-400 text-sm underline">
             ✍️ Capture signatures on screen
           </button>
@@ -106,14 +106,14 @@ export default function MobileToolboxTalk() {
               onPointerLeave={() => { drawing.current = false; }}
               onPointerCancel={() => { drawing.current = false; }} />
             <div className="flex gap-2">
-              <button onClick={saveSig} className="flex-1 bg-blue-600 rounded-xl py-2.5 text-white font-semibold">Save</button>
-              <button onClick={() => setSigning(null)} className="flex-1 bg-slate-700 rounded-xl py-2.5 text-slate-300">Cancel</button>
+              <button type="button" onClick={saveSig} className="flex-1 bg-blue-600 rounded-xl py-2.5 text-white font-semibold">Save</button>
+              <button type="button" onClick={() => setSigning(null)} className="flex-1 bg-slate-700 rounded-xl py-2.5 text-slate-300">Cancel</button>
             </div>
           </div>
         </div>
       )}
 
-      <button onClick={() => void handleSubmit()} disabled={saving}
+      <button type="button" onClick={() => void handleSubmit()} disabled={saving}
         className="w-full bg-cyan-700 hover:bg-cyan-600 disabled:opacity-50 rounded-2xl py-3.5 text-white font-bold active:scale-95 transition-all">
         {saving ? 'Saving…' : 'Close & Submit Briefing'}
       </button>

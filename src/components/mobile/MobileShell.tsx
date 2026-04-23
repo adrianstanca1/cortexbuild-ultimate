@@ -64,11 +64,11 @@ export function MobileShell({ activeModule, setModule }: MobileShellProps) {
             </div>
           </div>
           {!isIos && (
-            <button onClick={install} className="bg-blue-600 text-white text-xs px-3 py-1.5 rounded-lg font-semibold">
+            <button type="button" onClick={install} className="bg-blue-600 text-white text-xs px-3 py-1.5 rounded-lg font-semibold">
               Install
             </button>
           )}
-          <button onClick={dismiss} className="text-slate-500 text-lg leading-none">×</button>
+          <button type="button" onClick={dismiss} className="text-slate-500 text-lg leading-none">×</button>
         </div>
       )}
       <main className="flex-1 overflow-y-auto overscroll-contain">

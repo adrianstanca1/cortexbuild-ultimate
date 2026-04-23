@@ -1,5 +1,7 @@
 import { FileText, AlertTriangle, Camera, Clock, Package, Users } from 'lucide-react';
+import { useQuery } from '@tanstack/react-query';
 import { type Module } from '../../types';
+import { getToken } from '../../lib/supabase';
 
 interface QuickAction {
   label: string;
@@ -21,20 +23,42 @@ interface MobileHomeProps {
   onNavigate: (module: Module) => void;
 }
 
+interface MobileSummary {
+  tasks: number;
+  permits: number;
+  hours: number;
+  defects: number;
+}
+
 export function MobileHome({ onNavigate }: MobileHomeProps) {
   const today = new Date().toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' });
+
+  const { data: summary, isLoading } = useQuery<MobileSummary>({
+    queryKey: ['mobile-summary'],
+    queryFn: async () => {
+      const res = await fetch('/api/mobile/summary', {
+        headers: { Authorization: `Bearer ${getToken() ?? ''}` },
+      });
+      if (!res.ok) throw new Error('Failed to load mobile summary');
+      return res.json() as Promise<MobileSummary>;
+    },
+    staleTime: 60_000,
+    refetchOnWindowFocus: true,
+  });
+
+  const stats = [
+    { label: 'Tasks',   value: isLoading ? '…' : String(summary?.tasks   ?? '—'), color: 'text-blue-400' },
+    { label: 'Permits', value: isLoading ? '…' : String(summary?.permits ?? '—'), color: 'text-amber-400' },
+    { label: 'Logged',  value: isLoading ? '…' : `${summary?.hours ?? 0}h`,       color: 'text-emerald-400' },
+    { label: 'Defects', value: isLoading ? '…' : String(summary?.defects ?? '—'), color: 'text-red-400' },
+  ];
 
   return (
     <div className="p-4 space-y-4">
       <div className="bg-slate-800 rounded-2xl p-4">
         <div className="text-slate-400 text-[10px] uppercase tracking-widest mb-3">Today · {today}</div>
         <div className="grid grid-cols-2 gap-2">
-          {([
-            { label: 'Tasks',   value: '4',  color: 'text-blue-400' },
-            { label: 'Permits', value: '2',  color: 'text-amber-400' },
-            { label: 'Logged',  value: '6h', color: 'text-emerald-400' },
-            { label: 'Defects', value: '1',  color: 'text-red-400' },
-          ] as const).map(({ label, value, color }) => (
+          {stats.map(({ label, value, color }) => (
             <div key={label} className="bg-slate-900 rounded-xl p-3 text-center">
               <div className={`text-2xl font-bold ${color}`}>{value}</div>
               <div className="text-slate-400 text-xs mt-0.5">{label}</div>
@@ -48,6 +72,7 @@ export function MobileHome({ onNavigate }: MobileHomeProps) {
         <div className="grid grid-cols-3 gap-2">
           {QUICK_ACTIONS.map(({ label, icon: Icon, module, color }) => (
             <button
+              type="button"
               key={module}
               onClick={() => onNavigate(module)}
               className="bg-slate-800 rounded-xl p-3 flex flex-col items-center gap-1.5 active:scale-95 transition-transform"

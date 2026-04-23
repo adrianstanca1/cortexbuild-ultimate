@@ -136,17 +136,17 @@ export default function MobileTimesheet() {
 
       {clockedIn ? (
         <div className="space-y-2">
-          <button onClick={() => { setBreak(b => !b); if (!onBreak) setBreaks(b => b + 1); }}
+          <button type="button" onClick={() => { setBreak(b => !b); if (!onBreak) setBreaks(b => b + 1); }}
             className={`w-full rounded-2xl py-3 font-semibold text-sm ${onBreak ? 'bg-amber-600 text-white' : 'bg-slate-700 text-slate-300'}`}>
             {onBreak ? '▶ End Break' : '⏸ Take Break'}
           </button>
-          <button onClick={() => void handleClockOut()}
+          <button type="button" onClick={() => void handleClockOut()}
             className="w-full bg-indigo-700 hover:bg-indigo-600 rounded-2xl py-3.5 text-white font-bold flex items-center justify-center gap-2">
             <Clock size={16} /> Clock Out
           </button>
         </div>
       ) : (
-        <button onClick={() => void handleClockIn()}
+        <button type="button" onClick={() => void handleClockIn()}
           className="w-full bg-emerald-600 hover:bg-emerald-500 rounded-2xl py-4 text-white text-base font-bold flex items-center justify-center gap-2 active:scale-95 transition-all">
           <Clock size={18} /> Clock In
         </button>

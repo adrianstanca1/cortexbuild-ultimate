@@ -1,0 +1,80 @@
+const express = require('express');
+const authMiddleware = require('../middleware/auth');
+const pool = require('../db');
+const router = express.Router();
+
+router.use(authMiddleware);
+
+// GET /api/mobile/summary — stats for MobileHome field worker dashboard
+router.get('/summary', async (req, res) => {
+  try {
+    const userId = req.user?.id;
+    const orgId = req.user?.organization_id || req.user?.company_id;
+
+    const thisWeek = new Date();
+    // Round to start of current ISO week (Monday)
+    const dayOfWeek = thisWeek.getDay(); // 0=Sun
+    const diff = (dayOfWeek === 0 ? -6 : 1 - dayOfWeek);
+    const weekStart = new Date(thisWeek);
+    weekStart.setDate(thisWeek.getDate() + diff);
+    const weekDate = weekStart.toISOString().slice(0, 10); // YYYY-MM-DD
+
+    const [tasksResult, permitsResult, hoursResult, defectsResult] = await Promise.allSettled([
+      // Open tasks for this org (with optional user filter)
+      pool.query(
+        `SELECT COUNT(*) as count FROM project_tasks
+         WHERE status NOT IN ('done','completed','closed')
+         AND (organization_id = $1 OR company_id = $1)`,
+        [orgId]
+      ),
+
+      // Active safety permits for this org
+      pool.query(
+        `SELECT COUNT(*) as count FROM safety_permits
+         WHERE status IN ('active','approved')
+         AND (organization_id = $1 OR company_id = $1)`,
+        [orgId]
+      ).catch(() => ({ rows: [{ count: 0 }] })),
+
+      // Hours logged this week by this worker (timesheets uses worker_id + week)
+      pool.query(
+        `SELECT COALESCE(SUM(regular_hours + overtime_hours + daywork_hours), 0)::numeric(5,1) as hours
+         FROM timesheets
+         WHERE worker_id = $1 AND week = $2`,
+        [userId, weekDate]
+      ).catch(() => ({ rows: [{ hours: 0 }] })),
+
+      // Open defects for this org
+      pool.query(
+        `SELECT COUNT(*) as count FROM defects
+         WHERE status IN ('open','in_progress')
+         AND (organization_id = $1 OR company_id = $1)`,
+        [orgId]
+      ).catch(() => pool.query(
+        `SELECT COUNT(*) as count FROM punch_list
+         WHERE status IN ('open','in_progress')
+         AND (organization_id = $1 OR company_id = $1)`,
+        [orgId]
+      ).catch(() => ({ rows: [{ count: 0 }] }))),
+    ]);
+
+    const getValue = (result, field) => {
+      if (result.status === 'fulfilled') {
+        return result.value?.rows?.[0]?.[field] ?? 0;
+      }
+      return 0;
+    };
+
+    res.json({
+      tasks:   Number(getValue(tasksResult,   'count')),
+      permits: Number(getValue(permitsResult, 'count')),
+      hours:   Number(getValue(hoursResult,   'hours')),
+      defects: Number(getValue(defectsResult, 'count')),
+    });
+  } catch (err) {
+    console.error('[GET /api/mobile/summary]', err.message);
+    res.status(500).json({ error: 'Failed to load summary' });
+  }
+});
+
+module.exports = router;

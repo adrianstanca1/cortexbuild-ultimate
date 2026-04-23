@@ -17,11 +17,12 @@ export function MobileTopBar({ notificationCount = 0, onNotificationsClick }: Mo
       <div>
         <div className="text-slate-400 text-[10px] uppercase tracking-widest">Project</div>
         <div className="text-slate-100 text-sm font-semibold truncate max-w-[180px]">
-          {user?.company ?? 'CortexBuild'} ▾
+          {user?.company ?? 'CortexBuild'}
         </div>
       </div>
       <div className="flex items-center gap-3">
         <button
+          type="button"
           onClick={onNotificationsClick}
           className="relative p-1"
           aria-label="Notifications"

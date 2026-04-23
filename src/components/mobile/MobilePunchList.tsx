@@ -35,7 +35,8 @@ export default function MobilePunchList() {
 
   const addDefect = async () => {
     if (!newTitle.trim()) return;
-    const item: DefectItem = { id: Date.now(), title: newTitle, location: 'New', status: 'open' };
+    const item: DefectItem = { id: Date.now(), // local-only id, collision risk negligible
+      title: newTitle, location: 'New', status: 'open' };
     setItems(p => [item, ...p]);
     await offlineFetch('/api/defects', { method: 'POST', body: JSON.stringify({ title: newTitle, status: 'open' }) });
     setNewTitle(''); setShowAdd(false);
@@ -73,7 +74,7 @@ export default function MobilePunchList() {
             </div>
           </div>
           {item.status !== 'closed'
-            ? <button onClick={() => void swipeClose(item.id)} className="p-1">
+            ? <button type="button" onClick={() => void swipeClose(item.id)} className="p-1">
                 <CheckCircle size={18} className="text-slate-600 hover:text-emerald-400" />
               </button>
             : <RotateCcw size={16} className="text-slate-600 mt-1" />}
@@ -86,12 +87,12 @@ export default function MobilePunchList() {
             placeholder="Defect description…"
             className="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-3 text-slate-100 text-sm" />
           <div className="flex gap-2">
-            <button onClick={() => void addDefect()} className="flex-1 bg-amber-600 rounded-xl py-2.5 text-white text-sm font-semibold">Add</button>
-            <button onClick={() => setShowAdd(false)} className="flex-1 bg-slate-700 rounded-xl py-2.5 text-slate-300 text-sm">Cancel</button>
+            <button type="button" onClick={() => void addDefect()} className="flex-1 bg-amber-600 rounded-xl py-2.5 text-white text-sm font-semibold">Add</button>
+            <button type="button" onClick={() => setShowAdd(false)} className="flex-1 bg-slate-700 rounded-xl py-2.5 text-slate-300 text-sm">Cancel</button>
           </div>
         </div>
       ) : (
-        <button onClick={() => setShowAdd(true)}
+        <button type="button" onClick={() => setShowAdd(true)}
           className="w-full bg-amber-700/30 border border-amber-700 rounded-2xl py-3 flex items-center justify-center gap-2 text-amber-300 font-semibold active:scale-95 transition-all">
           <Plus size={16} /> Add Defect
         </button>

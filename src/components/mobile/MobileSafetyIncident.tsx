@@ -65,7 +65,7 @@ export default function MobileSafetyIncident() {
         <div className="space-y-3">
           <p className="text-slate-400 text-sm">What type of incident?</p>
           {SEVERITIES.map(s => (
-            <button key={s.id} onClick={() => { setSev(s.id); setStep(1); getGPS(); }}
+            <button type="button" key={s.id} onClick={() => { setSev(s.id); setStep(1); getGPS(); }}
               className={`w-full ${s.bg} border-2 ${s.border} rounded-2xl p-4 flex items-center gap-4 active:scale-95 transition-all`}>
               <span className="text-2xl">{s.emoji}</span>
               <span className={`text-lg font-bold ${s.text}`}>{s.label}</span>
@@ -80,11 +80,11 @@ export default function MobileSafetyIncident() {
           <div className="flex gap-2">
             <input value={location} onChange={e => setLoc(e.target.value)} placeholder="Grid ref or description"
               className="flex-1 bg-slate-800 border border-slate-700 rounded-xl px-3 py-3 text-slate-100 text-sm" />
-            <button onClick={getGPS} className="bg-blue-700 rounded-xl px-3 flex items-center" title="Use GPS">
+            <button type="button" onClick={getGPS} className="bg-blue-700 rounded-xl px-3 flex items-center" title="Use GPS">
               <MapPin size={18} className="text-white" />
             </button>
           </div>
-          <button onClick={() => setStep(2)} className="w-full bg-slate-700 rounded-xl py-3 text-slate-200 font-medium">
+          <button type="button" onClick={() => setStep(2)} className="w-full bg-slate-700 rounded-xl py-3 text-slate-200 font-medium">
             Next →
           </button>
         </div>
@@ -100,7 +100,7 @@ export default function MobileSafetyIncident() {
             <input type="file" accept="image/*" capture="environment" className="hidden"
               onChange={e => e.target.files?.[0] && setPhoto(e.target.files[0])} />
           </label>
-          <button onClick={handleSubmit} disabled={saving}
+          <button type="button" onClick={handleSubmit} disabled={saving}
             className="w-full bg-red-600 hover:bg-red-500 disabled:opacity-50 rounded-2xl py-4 text-white text-base font-bold active:scale-95 transition-all">
             {saving ? 'Reporting…' : '🚨 Report Now'}
           </button>
