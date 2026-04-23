@@ -4,6 +4,7 @@ import { MobileTopBar } from './MobileTopBar';
 import { OfflineBanner } from './OfflineBanner';
 import { MobileHome } from './MobileHome';
 import { initSync } from '../../services/syncService';
+import { useInstallPrompt } from '../../hooks/useInstallPrompt';
 
 const MobileBottomNav = lazy(() =>
   import('../layout/MobileBottomNav').then(m => ({ default: m.MobileBottomNav }))
@@ -47,11 +48,29 @@ function renderMobileModule(module: Module, setModule: (m: Module) => void) {
 
 export function MobileShell({ activeModule, setModule }: MobileShellProps) {
   useEffect(() => initSync(), []);
+  const { showBanner, isIos, install, dismiss } = useInstallPrompt();
 
   return (
     <div className="flex flex-col h-dvh bg-slate-900 text-white overflow-hidden">
       <MobileTopBar />
       <OfflineBanner />
+      {showBanner && (
+        <div className="bg-slate-800 border-b border-slate-700 px-4 py-3 flex items-center gap-3">
+          <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center text-sm">🏗️</div>
+          <div className="flex-1 min-w-0">
+            <div className="text-slate-100 text-xs font-semibold">Install CortexBuild</div>
+            <div className="text-slate-400 text-[10px]">
+              {isIos ? 'Tap Share → Add to Home Screen' : 'Add to home screen for offline access'}
+            </div>
+          </div>
+          {!isIos && (
+            <button onClick={install} className="bg-blue-600 text-white text-xs px-3 py-1.5 rounded-lg font-semibold">
+              Install
+            </button>
+          )}
+          <button onClick={dismiss} className="text-slate-500 text-lg leading-none">×</button>
+        </div>
+      )}
       <main className="flex-1 overflow-y-auto overscroll-contain">
         <Suspense fallback={<ModuleLoader />}>
           {activeModule === 'dashboard'
