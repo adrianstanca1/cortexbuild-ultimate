@@ -601,7 +601,8 @@ export const searchApi = {
 /** RAG-augmented AI chat — streams tokens via fetch + ReadableStream */
 export const ragChatApi = {
   stream: (question: string, history: { role: string; content: string }[] = [], tables: string[] = []) => {
-    return fetch(`${import.meta.env.VITE_API_BASE_URL}/api/rag-chat`, {
+    // Same-origin as the SPA (or Vite dev proxy) so httpOnly auth cookies match /api/* routes.
+    return fetch(`${API_BASE}/rag-chat`, {
       method: 'POST',
       credentials: 'include',
       headers: {

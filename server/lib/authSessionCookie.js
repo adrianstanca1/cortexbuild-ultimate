@@ -1,19 +1,21 @@
 const crypto = require('crypto');
 const pool = require('../db');
 
-/** Cookie SameSite: lax in dev (Vite + OAuth redirects); strict in production. */
-const AUTH_TOKEN_COOKIE_SAMESITE =
-  process.env.AUTH_TOKEN_COOKIE_SAMESITE ||
-  (process.env.NODE_ENV === 'production' ? 'strict' : 'lax');
+/** Cookie SameSite: default lax (OAuth returns + same-site /api fetches). Set AUTH_TOKEN_COOKIE_SAMESITE=strict to harden (know your OAuth flows). */
+const AUTH_TOKEN_COOKIE_SAMESITE = process.env.AUTH_TOKEN_COOKIE_SAMESITE || 'lax';
 
 function setAuthTokenCookie(res, token, maxAgeMs = 7 * 24 * 60 * 60 * 1000) {
-  res.cookie('token', token, {
+  const opts = {
     httpOnly: true,
     secure: process.env.NODE_ENV === 'production',
     sameSite: AUTH_TOKEN_COOKIE_SAMESITE,
     maxAge: maxAgeMs,
     path: '/',
-  });
+  };
+  if (process.env.AUTH_TOKEN_COOKIE_DOMAIN) {
+    opts.domain = process.env.AUTH_TOKEN_COOKIE_DOMAIN;
+  }
+  res.cookie('token', token, opts);
 }
 
 async function createUserSession(userId, token, req) {

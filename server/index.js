@@ -57,7 +57,9 @@ app.use(session({
   cookie: {
     secure: process.env.NODE_ENV === 'production',
     httpOnly: true,
-    sameSite: process.env.NODE_ENV === 'production' ? 'strict' : 'lax',
+    // Lax: top-level returns from OAuth providers and normal cross-site navigations still send the cookie.
+    // Strict breaks those flows because the browser treats them as cross-site GETs.
+    sameSite: (process.env.SESSION_COOKIE_SAMESITE || 'lax').toLowerCase(),
     maxAge: 24 * 60 * 60 * 1000 // 24 hours
   }
 }));
