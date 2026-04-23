@@ -59,6 +59,21 @@ describe('API Wrappers (apiGet, apiPost, apiPut, apiDelete)', () => {
         })
       }));
     });
+
+    it('should not double /api when endpoint already includes /api/ prefix', async () => {
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        status: 200,
+        json: async () => ({}),
+      });
+
+      await apiGet('/api/health');
+
+      expect(mockFetch).toHaveBeenCalledWith(
+        '/api/health',
+        expect.objectContaining({ method: 'GET' })
+      );
+    });
   });
 
   describe('apiPost', () => {
