@@ -59,4 +59,7 @@ types/
 .eslintrc.cjs
 Dockerfile
 deploy.sh
-server/security.js
+server/security.js.worktrees
+
+# Git worktrees
+.worktrees/
