@@ -14,7 +14,11 @@ export default function MobileToolboxTalk() {
   const drawing   = useRef(false);
 
   const togglePresent = (init: string) =>
-    setPresent(prev => { const n = new Set(prev); n.has(init) ? n.delete(init) : n.add(init); return n; });
+    setPresent(prev => {
+      const n = new Set(prev);
+      if (n.has(init)) { n.delete(init); } else { n.add(init); }
+      return n;
+    });
 
   const startSign = (init: string) => {
     setSigning(init);

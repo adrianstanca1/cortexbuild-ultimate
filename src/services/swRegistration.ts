@@ -12,7 +12,7 @@ export function initServiceWorker(): void {
       });
     },
     onOfflineReady() {
-      console.info('[PWA] App ready for offline use');
+      toast.success('App ready for offline use');
     },
   });
 }

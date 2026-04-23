@@ -226,8 +226,8 @@ export default defineConfig({
     ],
     exclude: ["@rolldown/binding-linux-arm64-gnu"],
     // Prebuild dependencies for faster dev server startup
-    esbuildOptions: {
-      target: "es2020",
+    rolldownOptions: {
+      output: { target: "es2020" },
     },
   },
   // Preview server configuration
