@@ -6,6 +6,7 @@ import App from './App';
 import { AuthProvider } from './context/AuthContext';
 import { registerServiceWorker } from './hooks/usePWA';
 import { agentDebugLog } from '@/lib/agentDebugLog';
+import { initServiceWorker } from './services/swRegistration';
 
 registerServiceWorker();
 
@@ -27,6 +28,9 @@ createRoot(document.getElementById('root')!).render(
     </QueryClientProvider>
   </StrictMode>,
 );
+
+initServiceWorker();
+
 // #region agent log
 agentDebugLog({
   hypothesisId: 'H3',
