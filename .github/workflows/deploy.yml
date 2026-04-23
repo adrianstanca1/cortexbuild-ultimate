@@ -227,7 +227,7 @@ jobs:
             [ -z "${POSTGRES_PASSWORD:-}" ] && POSTGRES_PASSWORD="${{ secrets.POSTGRES_PASSWORD }}"
             [ -z "${GOOGLE_CLIENT_ID:-}" ] && GOOGLE_CLIENT_ID="${{ secrets.GOOGLE_CLIENT_ID }}"
             [ -z "${GOOGLE_CLIENT_SECRET:-}" ] && GOOGLE_CLIENT_SECRET="${{ secrets.GOOGLE_CLIENT_SECRET }}"
-            [ -z "${GOOGLE_CALLBACK_URL:-}" ] && GOOGLE_CALLBACK_URL="${{ secrets.GOOGLE_CALLBACK_URL }}"
+            [ -z "${GOOGLE_CALLBACK_URL:-}" ] && GOOGLE_CALLBACK_URL="https://www.cortexbuildpro.com/api/auth/google/callback"
 
             # Env vars JWT_SECRET, SESSION_SECRET, POSTGRES_PASSWORD, DB_PASSWORD are set by GitHub Actions env:
             JWT_SECRET="${JWT_SECRET:-}"

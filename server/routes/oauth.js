@@ -21,7 +21,8 @@ function normalizeProviderCallbackUrl(url) {
   if (!url || typeof url !== 'string') return url;
   let u = url.trim();
   while (u.endsWith('/')) u = u.slice(0, -1);
-  u = u.replace('://www.cortexbuildpro.com', '://cortexbuildpro.com');
+  // Keep www. prefix to match Google Cloud Console redirect URIs
+  // u = u.replace('://www.cortexbuildpro.com', '://cortexbuildpro.com');
   return u;
 }
 
