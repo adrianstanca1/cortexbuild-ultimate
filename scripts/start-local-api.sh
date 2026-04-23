@@ -46,9 +46,10 @@ export FRONTEND_URL="${FRONTEND_URL:-http://localhost:5173}"
 export NODE_ENV="${NODE_ENV:-development}"
 
 # Root `.env` often sets production GOOGLE_CALLBACK_URL; shell wins over compose `.env` interpolation.
-# Google Cloud Console → OAuth client → Authorized redirect URIs must include this exact URL.
-export GOOGLE_CALLBACK_URL="http://127.0.0.1:3001/api/auth/google/callback"
-export MICROSOFT_CALLBACK_URL="http://127.0.0.1:3001/api/auth/microsoft/callback"
+# Use **localhost** (not 127.0.0.1): Google Cloud "Authorized redirect URIs" usually lists localhost;
+# redirect_uri_mismatch happens if the host does not match character-for-character.
+export GOOGLE_CALLBACK_URL="http://localhost:3001/api/auth/google/callback"
+export MICROSOFT_CALLBACK_URL="http://localhost:3001/api/auth/microsoft/callback"
 
 export PATH="/opt/homebrew/bin:/usr/local/bin:/Applications/Docker.app/Contents/Resources/bin:$PATH"
 

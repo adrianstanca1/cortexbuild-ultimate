@@ -123,6 +123,31 @@ const oauthLimiter = rateLimit({
   legacyHeaders: false,
 });
 
+/** Copy-paste helper when Google shows `redirect_uri_mismatch` (no secrets). */
+router.get('/oauth-redirect-help', (_req, res) => {
+  res.set('Cache-Control', 'no-store');
+  const g = (process.env.GOOGLE_CALLBACK_URL || '').trim();
+  const m = (process.env.MICROSOFT_CALLBACK_URL || '').trim();
+  const flipHost = (u) => {
+    if (!u) return null;
+    if (u.includes('127.0.0.1')) return u.replace(/127\.0\.0\.1/g, 'localhost');
+    if (u.includes('localhost')) return u.replace(/localhost/g, '127.0.0.1');
+    return null;
+  };
+  res.json({
+    error: 'redirect_uri_mismatch',
+    explanation:
+      'Google compares the redirect_uri parameter to your OAuth client’s "Authorized redirect URIs" with an exact string match (http vs https, localhost vs 127.0.0.1, path, and trailing slash all count).',
+    google_redirect_uri_this_server_sends: g || null,
+    also_try_registering_this_alternate_host: flipHost(g),
+    microsoft_redirect_uri_this_server_sends: m || null,
+    also_try_registering_this_alternate_host_microsoft: flipHost(m),
+    where_to_add:
+      'Google Cloud Console → APIs & Services → Credentials → OAuth 2.0 Client IDs → your Web client → Authorized redirect URIs',
+    verify_endpoint: '/api/auth/oauth-redirect-help',
+  });
+});
+
 // Configure Google OAuth strategy
 if (process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET) {
   passport.use(new GoogleStrategy({
@@ -192,6 +217,10 @@ if (process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET) {
       done(err);
     }
   }));
+  console.log(
+    '[OAuth] Google OAuth callbackURL (must match Google Console redirect URI exactly):',
+    normalizeProviderCallbackUrl(process.env.GOOGLE_CALLBACK_URL)
+  );
 }
 
 // Configure Microsoft OAuth strategy

@@ -14,7 +14,7 @@ export function OAuthButton({ provider, onClick, className = '' }: OAuthButtonPr
     const apiOrigin = (import.meta.env.VITE_OAUTH_API_ORIGIN || '').replace(/\/$/, '');
     const base =
       apiOrigin ||
-      (import.meta.env.DEV ? 'http://127.0.0.1:3001' : window.location.origin);
+      (import.meta.env.DEV ? 'http://localhost:3001' : window.location.origin);
     const returnOrigin = encodeURIComponent(window.location.origin);
     window.location.href = `${base}/api/auth/${provider}?return_origin=${returnOrigin}`;
     onClick?.();

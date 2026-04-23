@@ -182,10 +182,10 @@ export default defineConfig({
           ? "https://www.cortexbuildpro.com"
           : "http://localhost:3001"),
     ),
-    /** Browser hits this origin for OAuth start so session + provider callback stay on :3001. */
+    /** Browser hits this origin for OAuth start (must match GOOGLE_CALLBACK_URL host, usually localhost:3001). */
     "import.meta.env.VITE_OAUTH_API_ORIGIN": JSON.stringify(
       process.env.VITE_OAUTH_API_ORIGIN ||
-        (process.env.NODE_ENV === "production" ? "" : "http://127.0.0.1:3001"),
+        (process.env.NODE_ENV === "production" ? "" : "http://localhost:3001"),
     ),
   },
   build: {
