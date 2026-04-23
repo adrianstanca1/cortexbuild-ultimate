@@ -45,6 +45,11 @@ export CORS_ORIGIN="${CORS_ORIGIN:-http://localhost:5173,http://127.0.0.1:5173,h
 export FRONTEND_URL="${FRONTEND_URL:-http://localhost:5173}"
 export NODE_ENV="${NODE_ENV:-development}"
 
+# Root `.env` often sets production GOOGLE_CALLBACK_URL; shell wins over compose `.env` interpolation.
+# Google Cloud Console → OAuth client → Authorized redirect URIs must include this exact URL.
+export GOOGLE_CALLBACK_URL="http://127.0.0.1:3001/api/auth/google/callback"
+export MICROSOFT_CALLBACK_URL="http://127.0.0.1:3001/api/auth/microsoft/callback"
+
 export PATH="/opt/homebrew/bin:/usr/local/bin:/Applications/Docker.app/Contents/Resources/bin:$PATH"
 
 COMPOSE=(docker compose -f docker-compose.local.yml)
