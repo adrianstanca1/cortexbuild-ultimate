@@ -52,11 +52,11 @@ log_success(){ log "${GREEN}SUCCESS${NC}" "$1"; }
 resolve_project_dir() {
     local candidate
     local patterns=(
+        "/root/cortexbuild-ultimate"
         "/var/www/cortexbuild-ultimate"
         "/var/www/cortexbuild-work"
         "/var/www/html/cortexbuild-ultimate"
         "/root/cortexbuild-work"
-        "/root/cortexbuild-ultimate"
         "$HOME/cortexbuild-work"
         "$HOME/cortexbuild-ultimate"
     )

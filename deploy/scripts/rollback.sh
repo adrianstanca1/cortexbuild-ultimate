@@ -9,9 +9,16 @@
 
 set -euo pipefail
 
-readonly VPS_HOST="root@72.62.132.43"
-readonly VPS_PATH="/var/www/cortexbuild-ultimate"
-readonly SSH_KEY="${SSH_KEY:-$HOME/.ssh/id_ed25519_vps}"
+readonly VPS_HOST="${VPS_HOST:-root@72.62.132.43}"
+readonly VPS_PATH="${VPS_PATH:-/root/cortexbuild-ultimate}"
+if [[ -z "${SSH_KEY:-}" ]]; then
+    if [[ -f "$HOME/.ssh/gh_actions_ed25519" ]]; then
+        SSH_KEY="$HOME/.ssh/gh_actions_ed25519"
+    else
+        SSH_KEY="$HOME/.ssh/id_ed25519_vps"
+    fi
+fi
+readonly SSH_KEY
 readonly SSH_OPTS="-o ConnectTimeout=10 -o StrictHostKeyChecking=accept-new -o IdentitiesOnly=yes -i $SSH_KEY"
 
 # Colors
