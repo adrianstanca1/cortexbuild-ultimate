@@ -86,6 +86,7 @@ async function main() {
             console.log('Warning on 015_add_ai_conversation_indexes.sql:', e.message);
         }
 
+        await runSqlFile(client, path.join(rootDir, 'server/migrations/025_add_bim_models.sql'));
         await runSqlFile(client, path.join(rootDir, 'server/migrations/028_add_bim_processing_queue.sql'));
         await runSqlFile(client, path.join(rootDir, 'server/migrations/061_add_autoresearch.sql'));
         await runSqlFile(client, path.join(rootDir, 'server/migrations/062_add_autoimprove.sql'));

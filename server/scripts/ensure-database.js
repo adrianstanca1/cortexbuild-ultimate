@@ -67,12 +67,17 @@ async function runSqlFile(client, filePath) {
 
 async function isBootstrapped(client) {
   const r = await client.query(`
-    SELECT EXISTS (
-      SELECT 1 FROM information_schema.columns
-      WHERE table_schema = 'public' AND table_name = 'users' AND column_name = 'organization_id'
-    ) AS ok;
+    SELECT
+      EXISTS (
+        SELECT 1 FROM information_schema.columns
+        WHERE table_schema = 'public' AND table_name = 'users' AND column_name = 'totp_enabled'
+      ) AS auth_cols,
+      EXISTS (
+        SELECT 1 FROM information_schema.tables
+        WHERE table_schema = 'public' AND table_name = 'autoresearch_jobs'
+      ) AS worker_tables;
   `);
-  return Boolean(r.rows[0]?.ok);
+  return Boolean(r.rows[0]?.auth_cols && r.rows[0]?.worker_tables);
 }
 
 async function main() {
@@ -82,7 +87,7 @@ async function main() {
   console.log('[ensure-database] Connected to Postgres');
 
   if (await isBootstrapped(client)) {
-    console.log('[ensure-database] Schema already present (users.organization_id). Skipping.');
+    console.log('[ensure-database] Schema already present (auth + worker tables). Skipping.');
     await client.end();
     return;
   }
@@ -125,6 +130,7 @@ async function main() {
   }
 
   // Worker + auth tables expected by runtime (workers poll; /auth/me reads totp_enabled).
+  await runSqlFile(client, paths.mig('025_add_bim_models.sql'));
   await runSqlFile(client, paths.mig('028_add_bim_processing_queue.sql'));
   await runSqlFile(client, paths.mig('061_add_autoresearch.sql'));
   await runSqlFile(client, paths.mig('062_add_autoimprove.sql'));
