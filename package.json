@@ -59,6 +59,10 @@
     "web-ifc": "^0.0.77",
     "web-ifc-three": "^0.0.126",
     "web-push": "^3.6.7",
+    "workbox-expiration": "^7.4.0",
+    "workbox-precaching": "^7.4.0",
+    "workbox-routing": "^7.4.0",
+    "workbox-strategies": "^7.4.0",
     "workbox-window": "^7.4.0",
     "zod": "^4.3.6",
     "zustand": "^5.0.12"
