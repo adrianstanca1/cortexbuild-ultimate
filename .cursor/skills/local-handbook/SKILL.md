@@ -14,10 +14,12 @@ Companion files turn generic model behavior into **repeatable, verifiable** work
 
 ## Files
 
-| File        | Read for                                                           |
-| ----------- | ------------------------------------------------------------------ |
-| `logic.md`  | Reasoning, verification gates, safety, git/MCP habits.             |
-| `memory.md` | Facts that should survive across sessions (paths, remotes, prefs). |
+| File                              | Read for                                                                             |
+| --------------------------------- | ------------------------------------------------------------------------------------ |
+| `logic.md`                        | Reasoning, verification gates, safety, git/MCP habits.                               |
+| `memory.md`                       | Facts that should survive across sessions (paths, remotes, prefs).                   |
+| `config/`                         | Versioned **MCP** + **Cursor** settings snapshots; see `config/README.md`.           |
+| `scripts/apply-machine-config.sh` | Copies `config/mcp*.json` to `~/.claude` and refreshes `~/.cursor/mcp.json` symlink. |
 
 ## When this skill applies
 
