@@ -1,4 +1,3 @@
-const Redis = require('redis');
 const rateLimits = new Map(); // Fallback for non-Redis environments
 
 const WINDOW_MS = 60 * 1000;
@@ -11,17 +10,22 @@ function redisUrl() {
   return `redis://${host}:${port}`;
 }
 
-// Redis client for cluster-safe rate limiting
+// Redis client for cluster-safe rate limiting (optional: lives in server/package.json only)
 let redisClient = null;
 const REDIS_ENABLED = process.env.REDIS_URL || process.env.REDIS_HOST;
 
 if (REDIS_ENABLED) {
-  redisClient = Redis.createClient({ url: redisUrl() });
-  redisClient.on('error', (err) => {
-    console.error('[Redis] Rate limiter connection error:', err.message);
-  });
-  // Fire-and-forget connection - don't block server startup
-  redisClient.connect().catch(() => {});
+  try {
+    const Redis = require('redis');
+    redisClient = Redis.createClient({ url: redisUrl() });
+    redisClient.on('error', (err) => {
+      console.error('[Redis] Rate limiter connection error:', err.message);
+    });
+    redisClient.connect().catch(() => {});
+  } catch (e) {
+    console.warn('[Redis] Rate limiter skipped (redis package missing):', e?.message || e);
+    redisClient = null;
+  }
 }
 
 function getClientKey(req) {
