@@ -212,8 +212,11 @@ function StatCard({ label, value, unit, icon, color, trend, sparkData, invertTre
   );
 }
 
-// ─── Safety Status Banner ────────────────────────────────────────────────────
-function SafetyStatusBanner({ status = 'GREEN', lastCheck = '02:29 GMT' }: { status?: 'GREEN' | 'AMBER' | 'RED'; lastCheck?: string }) {
+// ─── Pulsing Dot Component ───────────────────────────────────────────────────
+// ⚡ Bolt Performance Optimization:
+// Extracted high-frequency state update (setInterval pulse) into a dedicated leaf component.
+// This prevents the entire <SafetyStatusBanner> from needlessly re-rendering every 1.2s.
+function PulsingDot({ dotColor }: { dotColor: string }) {
   const [pulse, setPulse] = useState(false);
 
   useEffect(() => {
@@ -221,6 +224,22 @@ function SafetyStatusBanner({ status = 'GREEN', lastCheck = '02:29 GMT' }: { sta
     return () => clearInterval(id);
   }, []);
 
+  return (
+    <div className="relative flex items-center justify-center">
+      <div
+        className={`absolute w-4 h-4 rounded-full ${dotColor} ${pulse ? 'opacity-100' : 'opacity-30'}`}
+        style={{
+          animation: pulse ? 'ping 1.2s cubic-bezier(0,0,0.2,1)' : 'none',
+          boxShadow: `0 0 0 0 ${dotColor.replace('bg-', 'rgba(').replace('400)', ',0.5)')}`,
+        }}
+      />
+      <div className={`relative w-3 h-3 rounded-full ${dotColor}`} />
+    </div>
+  );
+}
+
+// ─── Safety Status Banner ────────────────────────────────────────────────────
+function SafetyStatusBanner({ status = 'GREEN', lastCheck = '02:29 GMT' }: { status?: 'GREEN' | 'AMBER' | 'RED'; lastCheck?: string }) {
   const statusConfig = {
     GREEN: {
       label: 'SITE STATUS: SAFE',
@@ -275,16 +294,7 @@ function SafetyStatusBanner({ status = 'GREEN', lastCheck = '02:29 GMT' }: { sta
         {/* Left: Status */}
         <div className="flex items-center gap-4">
           {/* Pulsing indicator */}
-          <div className="relative flex items-center justify-center">
-            <div
-              className={`absolute w-4 h-4 rounded-full ${cfg.dotColor} ${pulse ? 'opacity-100' : 'opacity-30'}`}
-              style={{
-                animation: pulse ? 'ping 1.2s cubic-bezier(0,0,0.2,1)' : 'none',
-                boxShadow: `0 0 0 0 ${cfg.dotColor.replace('bg-', 'rgba(').replace('400)', ',0.5)')}`,
-              }}
-            />
-            <div className={`relative w-3 h-3 rounded-full ${cfg.dotColor}`} />
-          </div>
+          <PulsingDot dotColor={cfg.dotColor} />
 
           <h2
             className={`text-lg md:text-xl font-black tracking-widest ${cfg.color}`}
