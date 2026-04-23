@@ -119,6 +119,11 @@ export default defineConfig({
       filename: 'sw.ts',
       strategies: 'injectManifest',
       injectRegister: false,
+      injectManifest: {
+        // IFCLoader is ~2.6MB (heavy 3D library, lazy-loaded) — exclude from SW precache
+        globIgnores: ['**/IFCLoader-*.js'],
+        maximumFileSizeToCacheInBytes: 3 * 1024 * 1024,
+      },
       manifest: {
         name: 'CortexBuild',
         short_name: 'CortexBuild',
