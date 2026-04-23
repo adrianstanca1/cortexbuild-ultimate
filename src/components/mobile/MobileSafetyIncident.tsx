@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { MapPin, Camera, AlertTriangle } from 'lucide-react';
 import { toast } from 'sonner';
 import { offlineFetch } from '../../services/offlineFetch';
@@ -16,7 +16,16 @@ export default function MobileSafetyIncident() {
   const [severity, setSev]   = useState<Severity | null>(null);
   const [location, setLoc]   = useState('');
   const [photo,    setPhoto] = useState<File | null>(null);
+  const [photoUrl, setPhotoUrl] = useState<string | null>(null);
   const [saving,   setSaving] = useState(false);
+
+  // Fix 5: Create blob URL in effect to avoid leaking a new URL on every render
+  useEffect(() => {
+    if (!photo) { setPhotoUrl(null); return; }
+    const url = URL.createObjectURL(photo);
+    setPhotoUrl(url);
+    return () => URL.revokeObjectURL(url);
+  }, [photo]);
 
   const getGPS = () => {
     navigator.geolocation.getCurrentPosition(
@@ -85,8 +94,8 @@ export default function MobileSafetyIncident() {
         <div className="space-y-3">
           <p className="text-slate-400 text-sm">Add photo evidence (optional)</p>
           <label className="block bg-slate-800 border-2 border-dashed border-slate-600 rounded-2xl p-6 text-center cursor-pointer">
-            {photo
-              ? <img src={URL.createObjectURL(photo)} alt="" className="mx-auto max-h-32 rounded-lg object-cover" />
+            {photoUrl
+              ? <img src={photoUrl} alt="" className="mx-auto max-h-32 rounded-lg object-cover" />
               : <><Camera size={28} className="mx-auto text-slate-500 mb-2" /><span className="text-slate-400 text-sm">Tap to add photo</span></>}
             <input type="file" accept="image/*" capture="environment" className="hidden"
               onChange={e => e.target.files?.[0] && setPhoto(e.target.files[0])} />

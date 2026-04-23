@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { countPending } from '../services/offlineQueue';
 
 interface PWAState {
   isOnline: boolean;
@@ -32,29 +33,13 @@ export function usePWA(): PWAState {
     };
   }, []);
 
-  // Function to check pending requests - declared before use
+  // Function to check pending requests - reads from the current sync_queue store (DB v2)
   async function checkPendingRequests() {
-    if ('indexedDB' in window) {
-      const DB_NAME = 'cortexbuild-offline';
-      const STORE_NAME = 'pending-requests';
-      
-      try {
-        const request = indexedDB.open(DB_NAME, 1);
-        request.onsuccess = () => {
-          const db = request.result;
-          const transaction = db.transaction(STORE_NAME, 'readonly');
-          const store = transaction.objectStore(STORE_NAME);
-          const countRequest = store.count();
-          countRequest.onsuccess = () => {
-            setPendingCount(countRequest.result);
-          };
-        };
-        request.onerror = () => {
-          console.error('Error opening IndexedDB');
-        };
-      } catch (error) {
-        console.error('Error checking pending requests:', error);
-      }
+    try {
+      const count = await countPending();
+      setPendingCount(count);
+    } catch (error) {
+      console.error('Error checking pending requests:', error);
     }
   }
 

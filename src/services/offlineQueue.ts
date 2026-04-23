@@ -78,6 +78,13 @@ export async function incrementRetries(id: number): Promise<number> {
   return retries;
 }
 
+export async function markSyncing(id: number): Promise<void> {
+  const db = await getDb();
+  const entry = await db.get(STORE, id) as QueueEntry | undefined;
+  if (!entry) return;
+  await db.put(STORE, { ...entry, status: 'syncing' });
+}
+
 export async function clearQueue(): Promise<void> {
   const db = await getDb();
   await db.clear(STORE);

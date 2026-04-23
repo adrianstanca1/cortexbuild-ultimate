@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { Mic, Camera, Send, CloudOff } from 'lucide-react';
 import { toast } from 'sonner';
 import { offlineFetch } from '../../services/offlineFetch';
@@ -16,15 +16,31 @@ export default function MobileDailyReport() {
   const [form, setForm]      = useState<ReportForm>({ workers: '', progress: '', notes: '', weather: '' });
   const [recording, setRec]  = useState(false);
   const [photos, setPhotos]  = useState<File[]>([]);
+  const [photoUrls, setPhotoUrls] = useState<string[]>([]);
   const [submitting, setSub] = useState(false);
   const fileRef              = useRef<HTMLInputElement>(null);
+  const recRef               = useRef<MediaRecorder | null>(null);
 
   const set = (field: keyof ReportForm) =>
     (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) =>
       setForm(f => ({ ...f, [field]: e.target.value }));
 
+  // Fix 5: Create blob URLs in effect to avoid leaking a new URL on every render
+  useEffect(() => {
+    const urls = photos.map(f => URL.createObjectURL(f));
+    setPhotoUrls(urls);
+    return () => urls.forEach(url => URL.revokeObjectURL(url));
+  }, [photos]);
+
   const handlePhoto = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files) setPhotos(p => [...p, ...Array.from(e.target.files!)].slice(0, 5));
+  };
+
+  // Fix 4: Stop recording when pointer leaves or is released
+  const handleVoiceStop = () => {
+    if (recRef.current && recRef.current.state === 'recording') {
+      recRef.current.stop();
+    }
   };
 
   const handleVoice = async () => {
@@ -33,6 +49,7 @@ export default function MobileDailyReport() {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       const rec = new MediaRecorder(stream);
+      recRef.current = rec;
       const chunks: BlobPart[] = [];
       rec.ondataavailable = e => chunks.push(e.data);
       rec.onstop = async () => {
@@ -57,7 +74,8 @@ export default function MobileDailyReport() {
         setRec(false);
       };
       rec.start();
-      setTimeout(() => rec.stop(), 30000);
+      // Max 30s fallback timeout; hold-to-record stops via handleVoiceStop
+      setTimeout(() => { if (rec.state === 'recording') rec.stop(); }, 30000);
     } catch { toast.error('Microphone access denied'); setRec(false); }
   };
 
@@ -95,6 +113,8 @@ export default function MobileDailyReport() {
 
       <button
         onPointerDown={handleVoice}
+        onPointerUp={handleVoiceStop}
+        onPointerLeave={handleVoiceStop}
         disabled={recording}
         className={`w-full rounded-2xl p-4 flex flex-col items-center gap-2 transition-all active:scale-95 ${
           recording ? 'bg-blue-700 animate-pulse' : 'bg-slate-800 border border-slate-700'
@@ -129,8 +149,8 @@ export default function MobileDailyReport() {
       <div>
         <label className="text-slate-400 text-xs mb-2 block">Photos ({photos.length}/5)</label>
         <div className="flex gap-2 overflow-x-auto pb-1">
-          {photos.map((f, i) => (
-            <img key={i} src={URL.createObjectURL(f)} alt=""
+          {photoUrls.map((url, i) => (
+            <img key={i} src={url} alt=""
               className="w-16 h-16 rounded-lg object-cover flex-shrink-0" />
           ))}
           {photos.length < 5 && (

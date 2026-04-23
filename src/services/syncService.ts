@@ -1,4 +1,4 @@
-import { dequeueAll, markSynced, markFailed, incrementRetries } from './offlineQueue';
+import { dequeueAll, markSynced, markFailed, markSyncing, incrementRetries } from './offlineQueue';
 import { toast } from 'sonner';
 
 let running = false;
@@ -10,6 +10,7 @@ export async function runSync(): Promise<void> {
     const entries = await dequeueAll();
     for (const entry of entries) {
       try {
+        await markSyncing(entry.id!);
         const res = await fetch(entry.url, {
           method: entry.method,
           headers: { 'Content-Type': 'application/json', ...entry.headers },
@@ -19,11 +20,17 @@ export async function runSync(): Promise<void> {
           await markSynced(entry.id!);
         } else if (res.status === 409) {
           await markFailed(entry.id!);
-          toast.error('Sync conflict — tap to resolve', { duration: 0 });
+          toast.error('Sync conflict — tap to resolve', {
+            duration: 8000,
+            action: { label: 'Dismiss', onClick: () => {} },
+          });
         } else {
           const retries = await incrementRetries(entry.id!);
           if (retries >= 5) {
-            toast.error('Report failed to sync after 5 attempts — tap to retry', { duration: 0 });
+            toast.error('Report failed to sync after 5 attempts — tap to retry', {
+              duration: 10000,
+              action: { label: 'Dismiss', onClick: () => {} },
+            });
           }
         }
       } catch {
