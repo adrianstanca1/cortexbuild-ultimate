@@ -20,7 +20,6 @@ export default defineConfig({
     exclude: [
       "node_modules",
       "dist",
-      "src/test/rateLimiter.test.ts",
       "coverage",
     ],
     // Coverage configuration

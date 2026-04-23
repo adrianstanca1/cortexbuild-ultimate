@@ -1,4 +1,14 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
+
+// Use in-memory limiter only: fake timers do not advance real Redis TTLs (would flake when REDIS_URL is set).
+vi.mock('redis', () => ({
+  createClient: () => ({
+    connect: () => Promise.resolve(),
+    on: () => {},
+    isOpen: false,
+  }),
+}));
+
 import rateLimiter, { RATE_LIMITER_MAX, RATE_LIMITER_WINDOW_MS } from '../../server/middleware/rateLimiter';
 
 function createMockReq(path: string, token = 'Bearer test-token-12345') {
@@ -18,7 +28,8 @@ function createMockRes() {
 
 describe('rateLimiter middleware', () => {
   beforeEach(() => {
-    vi.useFakeTimers();
+    // Global vitest config only fakes setTimeout/interval; rateLimiter uses Date.now() for windows.
+    vi.useFakeTimers({ toFake: ['Date', 'setTimeout', 'setInterval'] });
   });
 
   afterEach(() => {
@@ -34,6 +45,18 @@ describe('rateLimiter middleware', () => {
 
     expect(next).toHaveBeenCalled();
     expect(res.statusCode).toBeUndefined();
+  });
+
+  it('skips global rate limit for health, agent-debug, and metrics', () => {
+    const paths = ['/api/health', '/api/agent-debug', '/api/metrics', '/api/metrics/foo'];
+    for (const path of paths) {
+      const req = createMockReq(path);
+      const res = createMockRes();
+      const next = vi.fn();
+      rateLimiter(req, res, next);
+      expect(next).toHaveBeenCalledTimes(1);
+      expect(res.statusCode).toBeUndefined();
+    }
   });
 
   it('blocks requests exceeding rate limit', () => {

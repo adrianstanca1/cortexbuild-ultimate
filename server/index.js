@@ -110,7 +110,7 @@ app.use(cors({
   },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Debug-Session-Id', 'X-Requested-With'],
 }));
 app.set('trust proxy', 1);
 app.use(express.json({ limit: '10mb' }));

@@ -40,7 +40,20 @@ function cleanExpired(map) {
   }
 }
 
+/** High-frequency or monitoring paths — do not count toward global IP limits. */
+function shouldSkipGlobalRateLimit(req) {
+  const p = req.path || '';
+  if (p === '/api/health') return true;
+  if (p === '/api/agent-debug') return true;
+  if (p.startsWith('/api/metrics')) return true;
+  return false;
+}
+
 module.exports = function rateLimiter(req, res, next) {
+  if (shouldSkipGlobalRateLimit(req)) {
+    return next();
+  }
+
   const key = getClientKey(req);
   const now = Date.now();
 

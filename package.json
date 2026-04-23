@@ -30,6 +30,7 @@
     "local:api:stop": "bash scripts/stop-local-api.sh",
     "dev:local": "bash scripts/dev-with-local-api.sh",
     "doctor:local-api": "bash scripts/diagnose-local-api.sh",
+    "doctor": "bash scripts/full-stack-doctor.sh",
     "server:build": "cd server && npm run build",
     "format": "prettier --write \"src/**/*.{ts,tsx,json,css,md}\"",
     "format:check": "prettier --check \"src/**/*.{ts,tsx,json,css,md}\""
