@@ -69,11 +69,13 @@ services:
       FRONTEND_URL: ${FRONTEND_URL:-http://localhost:5173}
       GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
       GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET:-}
-      GOOGLE_CALLBACK_URL: ${GOOGLE_CALLBACK_URL:-http://localhost:5173/api/auth/google/callback}
+      # Browser + Google must hit the same host the API used to start OAuth (session cookie).
+      # Register this exact URI in Google Cloud Console → Credentials → Authorized redirect URIs.
+      GOOGLE_CALLBACK_URL: ${GOOGLE_CALLBACK_URL:-http://127.0.0.1:3001/api/auth/google/callback}
       MICROSOFT_CLIENT_ID: ${MICROSOFT_CLIENT_ID:-}
       MICROSOFT_CLIENT_SECRET: ${MICROSOFT_CLIENT_SECRET:-}
       MICROSOFT_TENANT: ${MICROSOFT_TENANT:-common}
-      MICROSOFT_CALLBACK_URL: ${MICROSOFT_CALLBACK_URL:-http://localhost:5173/api/auth/microsoft/callback}
+      MICROSOFT_CALLBACK_URL: ${MICROSOFT_CALLBACK_URL:-http://127.0.0.1:3001/api/auth/microsoft/callback}
     ports:
       - "127.0.0.1:3001:3001"
     networks:

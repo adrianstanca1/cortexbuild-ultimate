@@ -7,15 +7,16 @@ interface OAuthButtonProps {
 }
 
 export function OAuthButton({ provider, onClick, className = '' }: OAuthButtonProps) {
-  const baseUrl = import.meta.env.VITE_API_BASE_URL || window.location.origin;
-
   const handleOAuthClick = () => {
-    // SECURITY: Generate and store state parameter for CSRF protection
-    const state = crypto.randomUUID();
-    sessionStorage.setItem('oauth_state', state);
-    
-    // Redirect to OAuth provider with state parameter
-    window.location.href = `${baseUrl}/api/auth/${provider}?state=${state}`;
+    // Full-page navigation to the API host so the OAuth session cookie matches
+    // GOOGLE_CALLBACK_URL / MICROSOFT_CALLBACK_URL (see docker-compose / .env).
+    // return_origin lets the server redirect back to this Vite port after sign-in.
+    const apiOrigin = (import.meta.env.VITE_OAUTH_API_ORIGIN || '').replace(/\/$/, '');
+    const base =
+      apiOrigin ||
+      (import.meta.env.DEV ? 'http://127.0.0.1:3001' : window.location.origin);
+    const returnOrigin = encodeURIComponent(window.location.origin);
+    window.location.href = `${base}/api/auth/${provider}?return_origin=${returnOrigin}`;
     onClick?.();
   };
 

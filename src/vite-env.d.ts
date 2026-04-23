@@ -2,6 +2,8 @@
 
 interface ImportMetaEnv {
   readonly VITE_API_BASE_URL: string;
+  /** Dev: http://127.0.0.1:3001 — OAuth start URL; production: empty (same origin as the SPA). */
+  readonly VITE_OAUTH_API_ORIGIN?: string;
   readonly VITE_USE_MOCK_DATA: string;
   /** Set `true` in `.env.local` to force agent debug POSTs on any host (e.g. tunnel URLs). */
   readonly VITE_AGENT_DEBUG?: string;
