@@ -3,7 +3,7 @@
 set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$ROOT"
-export PATH="/usr/local/bin:/opt/homebrew/bin:/Applications/Docker.app/Contents/Resources/bin:$PATH"
+export PATH="/opt/homebrew/bin:/usr/local/bin:/Applications/Docker.app/Contents/Resources/bin:$PATH"
 export CORTEXBUILD_LOCAL_API_SKIP_BUILD="${CORTEXBUILD_LOCAL_API_SKIP_BUILD:-1}"
 bash "$ROOT/scripts/start-local-api.sh"
 exec npm run dev

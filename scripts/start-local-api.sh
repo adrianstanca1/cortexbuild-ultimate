@@ -45,7 +45,7 @@ export CORS_ORIGIN="${CORS_ORIGIN:-http://localhost:5173,http://127.0.0.1:5173,h
 export FRONTEND_URL="${FRONTEND_URL:-http://localhost:5173}"
 export NODE_ENV="${NODE_ENV:-development}"
 
-export PATH="/usr/local/bin:/opt/homebrew/bin:/Applications/Docker.app/Contents/Resources/bin:$PATH"
+export PATH="/opt/homebrew/bin:/usr/local/bin:/Applications/Docker.app/Contents/Resources/bin:$PATH"
 
 COMPOSE=(docker compose -f docker-compose.local.yml)
 if ! docker compose version >/dev/null 2>&1; then
