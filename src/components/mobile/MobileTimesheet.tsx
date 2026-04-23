@@ -1,69 +1,125 @@
-/**
- * CortexBuild Ultimate — Mobile Timesheet
- * Lightweight clock-in/clock-out interface for mobile PWA.
- * Triggers push notification subscription on first clock-in.
- */
-import React, { useState } from 'react';
-import { Clock } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { Clock, MapPin } from 'lucide-react';
+import { toast } from 'sonner';
+import { offlineFetch } from '../../services/offlineFetch';
 import { usePushNotifications } from '../../hooks/usePushNotifications';
 
-export function MobileTimesheet() {
-  const [clockedIn, setClockedIn] = useState(false);
-  const [clockInTime, setClockInTime] = useState<Date | null>(null);
+export default function MobileTimesheet() {
+  const [clockedIn,   setIn]      = useState(false);
+  const [clockInTime, setInTime]  = useState<Date | null>(null);
+  const [elapsed,     setElapsed] = useState('00:00:00');
+  const [onBreak,     setBreak]   = useState(false);
+  const [breaks,      setBreaks]  = useState(0);
+  const [costCode,    setCode]    = useState('03.20 · Concrete works');
+  const [gpsOk,       setGpsOk]  = useState<boolean | null>(null);
 
-  // Register push subscription after user clocks in (high-intent moment)
   usePushNotifications(clockedIn);
 
-  function handleClockIn() {
-    setClockedIn(true);
-    setClockInTime(new Date());
-  }
+  useEffect(() => {
+    if (!clockedIn || !clockInTime) return;
+    const id = setInterval(() => {
+      const secs = Math.floor((Date.now() - clockInTime.getTime()) / 1000);
+      const h = String(Math.floor(secs / 3600)).padStart(2, '0');
+      const m = String(Math.floor((secs % 3600) / 60)).padStart(2, '0');
+      const s = String(secs % 60).padStart(2, '0');
+      setElapsed(`${h}:${m}:${s}`);
+    }, 1000);
+    return () => clearInterval(id);
+  }, [clockedIn, clockInTime]);
 
-  function handleClockOut() {
-    setClockedIn(false);
-    setClockInTime(null);
-  }
+  const checkGPS = (): Promise<boolean> =>
+    new Promise(resolve =>
+      navigator.geolocation.getCurrentPosition(
+        () => { setGpsOk(true); resolve(true); },
+        () => { setGpsOk(false); resolve(false); },
+        { timeout: 5000 }
+      )
+    );
+
+  const handleClockIn = async () => {
+    const ok = await checkGPS();
+    if (!ok && !window.confirm('You appear to be off-site. Clock in anyway?')) return;
+    const now = new Date();
+    setIn(true); setInTime(now);
+    await offlineFetch('/api/timesheets/clock-in', {
+      method: 'POST',
+      body: JSON.stringify({ clocked_in_at: now.toISOString(), cost_code: costCode }),
+    });
+    toast.success('Clocked in');
+  };
+
+  const handleClockOut = async () => {
+    setIn(false); setInTime(null); setElapsed('00:00:00');
+    await offlineFetch('/api/timesheets/clock-out', {
+      method: 'POST',
+      body: JSON.stringify({ clocked_out_at: new Date().toISOString(), breaks_count: breaks }),
+    });
+    toast.success('Clocked out');
+  };
+
+  const billableHours = clockInTime
+    ? Math.max(0, (Date.now() - clockInTime.getTime()) / 3600000 - breaks * 0.25).toFixed(1)
+    : '0.0';
 
   return (
-    <div className="flex flex-col items-center justify-center min-h-screen bg-gray-950 text-white p-6">
-      <div className="w-full max-w-sm space-y-6">
-        <div className="text-center">
-          <Clock className="mx-auto mb-2 text-blue-400" size={48} />
-          <h1 className="text-2xl font-bold">Timesheet</h1>
-          {clockedIn && clockInTime && (
-            <p className="mt-1 text-sm text-gray-400">
-              Clocked in at {clockInTime.toLocaleTimeString()}
-            </p>
-          )}
-        </div>
+    <div className="p-4 max-w-lg mx-auto space-y-4">
+      <h2 className="text-lg font-bold text-slate-100">Timesheet</h2>
 
-        <div className="rounded-2xl bg-gray-900 p-6 text-center">
-          <p className="text-lg font-semibold mb-1">
-            {clockedIn ? 'You are clocked in' : 'You are clocked out'}
-          </p>
-          <div
-            className={`mt-1 h-3 w-3 rounded-full mx-auto ${
-              clockedIn ? 'bg-green-400 animate-pulse' : 'bg-gray-600'
-            }`}
-          />
+      <div className="bg-gradient-to-br from-indigo-900 to-indigo-800 rounded-2xl p-5 text-center border border-indigo-700">
+        <div className="text-indigo-300 text-[10px] uppercase tracking-widest mb-1">
+          {clockedIn ? 'Time on site' : 'Ready to start'}
         </div>
-
-        {clockedIn ? (
-          <button
-            onClick={handleClockOut}
-            className="w-full rounded-xl bg-red-600 py-4 text-lg font-bold hover:bg-red-700 active:scale-95 transition-transform"
-          >
-            Clock Out
-          </button>
-        ) : (
-          <button
-            onClick={handleClockIn}
-            className="w-full rounded-xl bg-blue-600 py-4 text-lg font-bold hover:bg-blue-700 active:scale-95 transition-transform"
-          >
-            Clock In
-          </button>
-        )}
+        <div className="text-5xl font-bold text-indigo-100 font-mono tracking-wider my-3">{elapsed}</div>
+        {clockedIn && <div className="text-indigo-400 text-sm">{costCode}</div>}
       </div>
+
+      <div className="grid grid-cols-2 gap-3">
+        <div className="bg-slate-800 rounded-xl p-3 text-center">
+          <div className="text-slate-400 text-xs">Breaks</div>
+          <div className="text-white text-xl font-bold">{breaks} × 15m</div>
+        </div>
+        <div className="bg-slate-800 rounded-xl p-3 text-center">
+          <div className="text-slate-400 text-xs">Billable hrs</div>
+          <div className="text-indigo-300 text-xl font-bold">{billableHours}h</div>
+        </div>
+      </div>
+
+      {gpsOk !== null && (
+        <div className={`flex items-center gap-2 text-xs px-3 py-2 rounded-lg ${
+          gpsOk ? 'bg-emerald-900/40 text-emerald-300' : 'bg-amber-900/40 text-amber-300'}`}>
+          <MapPin size={12} />
+          {gpsOk ? 'On site ✓' : 'Off-site (overridden)'}
+        </div>
+      )}
+
+      <div className="bg-slate-800 rounded-xl px-4 py-3">
+        <div className="text-slate-400 text-xs mb-1">Cost code</div>
+        <select value={costCode} onChange={e => setCode(e.target.value)}
+          className="w-full bg-transparent text-slate-100 text-sm">
+          <option>03.20 · Concrete works</option>
+          <option>04.10 · Brickwork</option>
+          <option>05.30 · Steel frame</option>
+          <option>07.10 · Roofing</option>
+        </select>
+      </div>
+
+      {clockedIn ? (
+        <div className="space-y-2">
+          <button onClick={() => { setBreak(b => !b); if (!onBreak) setBreaks(b => b + 1); }}
+            className={`w-full rounded-2xl py-3 font-semibold text-sm ${onBreak ? 'bg-amber-600 text-white' : 'bg-slate-700 text-slate-300'}`}>
+            {onBreak ? '▶ End Break' : '⏸ Take Break'}
+          </button>
+          <button onClick={() => void handleClockOut()}
+            className="w-full bg-indigo-700 hover:bg-indigo-600 rounded-2xl py-3.5 text-white font-bold flex items-center justify-center gap-2">
+            <Clock size={16} /> Clock Out
+          </button>
+        </div>
+      ) : (
+        <button onClick={() => void handleClockIn()}
+          className="w-full bg-emerald-600 hover:bg-emerald-500 rounded-2xl py-4 text-white text-base font-bold flex items-center justify-center gap-2 active:scale-95 transition-all">
+          <Clock size={18} /> Clock In
+        </button>
+      )}
     </div>
   );
 }
