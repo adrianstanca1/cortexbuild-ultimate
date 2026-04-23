@@ -27,6 +27,7 @@
     "db:reset": "cd server && npm run db:reset:local",
     "server:dev": "cd server && npm run dev",
     "local:api": "bash scripts/start-local-api.sh",
+    "doctor:local-api": "bash scripts/diagnose-local-api.sh",
     "server:build": "cd server && npm run build",
     "format": "prettier --write \"src/**/*.{ts,tsx,json,css,md}\"",
     "format:check": "prettier --check \"src/**/*.{ts,tsx,json,css,md}\""
