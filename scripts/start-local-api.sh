@@ -30,7 +30,7 @@ fi
 
 export JWT_SECRET="${JWT_SECRET:-$(openssl rand -hex 32)}"
 export SESSION_SECRET="${SESSION_SECRET:-$(openssl rand -hex 32)}"
-export POSTGRES_PASSWORD="${POSTGRES_PASSWORD:-cortexbuild_local_$(openssl rand -hex 8)}"
+# POSTGRES_PASSWORD: omit to use compose default (stable across restarts). Set only if you rotate secrets.
 export CORS_ORIGIN="${CORS_ORIGIN:-http://localhost:5173,http://127.0.0.1:5173,http://127.0.0.1:3001}"
 export FRONTEND_URL="${FRONTEND_URL:-http://localhost:5173}"
 export NODE_ENV="${NODE_ENV:-development}"
