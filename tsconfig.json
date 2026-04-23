@@ -29,7 +29,8 @@
     "paths": {
       "@/*": ["src/*"],
       "~patterns/*": ["/Users/adrianstanca/patterns/src/*"]
-    }
+    },
+    "ignoreDeprecations": "6.0"
   },
   "include": ["src"],
   "exclude": ["node_modules", "../node_modules", "src/test"]
