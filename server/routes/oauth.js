@@ -14,9 +14,10 @@ const router     = express.Router();
 
 /**
  * OAuth redirect URIs must match the provider console exactly (scheme + host + path).
- * Trailing slashes are stripped. For cortexbuildpro.com, production uses the apex
- * host for API callbacks (see docker-compose / deploy workflows); normalizing www → apex
- * avoids redirect_uri_mismatch when env files still used the historical www host.
+ * Trailing slashes are stripped. Production defaults use https://www.cortexbuildpro.com
+ * for GOOGLE_CALLBACK_URL / MICROSOFT_CALLBACK_URL (see deploy workflows and .env examples).
+ * Register that exact URI in Google Cloud / Entra; add the apex URL too if you ever
+ * point callbacks at cortexbuildpro.com without www.
  */
 function normalizeProviderCallbackUrl(url) {
   if (!url || typeof url !== 'string') return url;

@@ -217,8 +217,8 @@ rollback() {
             -e OLLAMA_HOST="${OLLAMA_HOST:-http://cortexbuild-ollama:11434}" \
             -e OLLAMA_MODEL="${OLLAMA_MODEL:-qwen3.5:latest}" \
             -e EMBEDDING_MODEL="${EMBEDDING_MODEL:-nomic-embed-text:latest}" \
-            -e CORS_ORIGIN="${CORS_ORIGIN:-https://cortexbuildpro.com}" \
-            -e FRONTEND_URL="${FRONTEND_URL:-https://cortexbuildpro.com}" \
+            -e CORS_ORIGIN="${CORS_ORIGIN:-https://www.cortexbuildpro.com,https://cortexbuildpro.com}" \
+            -e FRONTEND_URL="${FRONTEND_URL:-https://www.cortexbuildpro.com}" \
             "$backup_image"
         
         log_success "Rollback complete"
@@ -358,15 +358,15 @@ main() {
         -e OLLAMA_HOST="${OLLAMA_HOST:-http://cortexbuild-ollama:11434}" \
         -e OLLAMA_MODEL="${OLLAMA_MODEL:-qwen3.5:latest}" \
         -e EMBEDDING_MODEL="${EMBEDDING_MODEL:-nomic-embed-text:latest}" \
-        -e CORS_ORIGIN="${CORS_ORIGIN:-https://cortexbuildpro.com}" \
-        -e FRONTEND_URL="${FRONTEND_URL:-https://cortexbuildpro.com}" \
+        -e CORS_ORIGIN="${CORS_ORIGIN:-https://www.cortexbuildpro.com,https://cortexbuildpro.com}" \
+        -e FRONTEND_URL="${FRONTEND_URL:-https://www.cortexbuildpro.com}" \
         -e GOOGLE_CLIENT_ID="${GOOGLE_CLIENT_ID:-}" \
         -e GOOGLE_CLIENT_SECRET="${GOOGLE_CLIENT_SECRET:-}" \
-        -e GOOGLE_CALLBACK_URL="${GOOGLE_CALLBACK_URL:-https://cortexbuildpro.com/api/auth/google/callback}" \
+        -e GOOGLE_CALLBACK_URL="${GOOGLE_CALLBACK_URL:-https://www.cortexbuildpro.com/api/auth/google/callback}" \
         -e MICROSOFT_CLIENT_ID="${MICROSOFT_CLIENT_ID:-}" \
         -e MICROSOFT_CLIENT_SECRET="${MICROSOFT_CLIENT_SECRET:-}" \
         -e MICROSOFT_TENANT="${MICROSOFT_TENANT:-common}" \
-        -e MICROSOFT_CALLBACK_URL="${MICROSOFT_CALLBACK_URL:-https://cortexbuildpro.com/api/auth/microsoft/callback}" \
+        -e MICROSOFT_CALLBACK_URL="${MICROSOFT_CALLBACK_URL:-https://www.cortexbuildpro.com/api/auth/microsoft/callback}" \
         "$IMAGE_NAME"
     
     log_success "Container started: $CONTAINER_NAME"

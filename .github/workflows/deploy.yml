@@ -346,7 +346,7 @@ jobs:
               -e FRONTEND_URL=https://www.cortexbuildpro.com \
               -e GOOGLE_CLIENT_ID="$GOOGLE_CLIENT_ID" \
               -e GOOGLE_CLIENT_SECRET="$GOOGLE_CLIENT_SECRET" \
-              -e GOOGLE_CALLBACK_URL="https://cortexbuildpro.com/api/auth/google/callback" \
+              -e GOOGLE_CALLBACK_URL="$GOOGLE_CALLBACK_URL" \
               "$IMAGE_NAME"
             echo "Waiting for API health..."
             check_cortex_health() {

@@ -127,14 +127,14 @@ services:
       OLLAMA_HOST: ${OLLAMA_HOST:-http://ollama:11434}
       OLLAMA_MODEL: ${OLLAMA_MODEL:-qwen3.5:latest}
       CORS_ORIGIN: ${CORS_ORIGIN:?CORS_ORIGIN must be set for production}
-      FRONTEND_URL: ${FRONTEND_URL:-https://cortexbuildpro.com}
+      FRONTEND_URL: ${FRONTEND_URL:-https://www.cortexbuildpro.com}
       GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
       GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET:-}
       GOOGLE_CALLBACK_URL: ${GOOGLE_CALLBACK_URL:-https://www.cortexbuildpro.com/api/auth/google/callback}
       MICROSOFT_CLIENT_ID: ${MICROSOFT_CLIENT_ID:-}
       MICROSOFT_CLIENT_SECRET: ${MICROSOFT_CLIENT_SECRET:-}
       MICROSOFT_TENANT: ${MICROSOFT_TENANT:-common}
-      MICROSOFT_CALLBACK_URL: ${MICROSOFT_CALLBACK_URL:-https://cortexbuildpro.com/api/auth/microsoft/callback}
+      MICROSOFT_CALLBACK_URL: ${MICROSOFT_CALLBACK_URL:-https://www.cortexbuildpro.com/api/auth/microsoft/callback}
     ports:
       - "127.0.0.1:3001:3001"
     networks:
