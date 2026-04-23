@@ -95,14 +95,19 @@ const validateAfterUpload = async (req, res, next) => {
 
     if (!validation.valid) {
       // Delete the uploaded file
-      await fs.promises.unlink(req.file.path);
+      try {
+        await fs.promises.unlink(req.file.path);
+      } catch (unlinkErr) {
+        console.error('[upload.js validateAfterUpload] Failed to delete invalid file:', unlinkErr.message);
+      }
       return res.status(400).json({ message: validation.message });
     }
 
     next();
   } catch (err) {
     console.error('[upload.js validateAfterUpload]', err);
-    next(err);
+    // Don't pass err to next() - already handled the file deletion
+    return res.status(500).json({ message: 'Internal server error during upload validation' });
   }
 };
 

@@ -369,6 +369,8 @@ router.put('/:id', authMiddleware, async (req, res) => {
       entityType: 'submittals',
       entityId: req.params.id,
       newData: { status, reviewer_id: reviewerId }
+    }).catch(err => {
+      console.error('[submittals PUT] logAudit error:', err.message);
     });
 
     res.json(rows[0]);

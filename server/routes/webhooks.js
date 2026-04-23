@@ -154,13 +154,23 @@ function scheduleRetry(webhook, event, payload, attempt) {
   }
   const delay = RETRY_DELAYS[attempt] || RETRY_DELAYS[RETRY_DELAYS.length - 1];
   setTimeout(() => {
-    // Re-fetch webhook in case it was disabled
-    pool.query('SELECT id, url, secret, headers, active FROM webhooks WHERE id = $1 AND active = true', [webhook.id])
-      .then(({ rows }) => {
-        if (rows.length) deliverWebhook(rows[0], event, payload);
-      })
-      .catch(() => {});
+    scheduleRetryInternal(webhook, event, payload, delay);
   }, delay);
+}
+
+function scheduleRetryInternal(webhook, event, payload, delay) {
+  pool.query(
+    'SELECT id, url, secret, headers, active FROM webhooks WHERE id = $1 AND active = true',
+    [webhook.id]
+  )
+    .then(({ rows }) => {
+      if (rows.length) {
+        deliverWebhook(rows[0], event, payload);
+      }
+    })
+    .catch((err) => {
+      console.error(`[Webhook] scheduleRetry failed for ${webhook.id}:`, err.message);
+    });
 }
 
 // ─── Emit an event (call this from mutation routes) ───────────────────────────
