@@ -77,4 +77,26 @@ router.get('/summary', async (req, res) => {
   }
 });
 
+// GET /api/mobile/project-location?project_id=UUID
+// Returns lat/lon for the GPS radius check on clock-in
+router.get('/project-location', async (req, res) => {
+  try {
+    const { project_id } = req.query;
+    if (!project_id) return res.json({ latitude: null, longitude: null });
+
+    const result = await pool.query(
+      'SELECT latitude, longitude FROM projects WHERE id = $1 LIMIT 1',
+      [project_id]
+    );
+    const row = result.rows[0];
+    res.json({
+      latitude:  row?.latitude  ?? null,
+      longitude: row?.longitude ?? null,
+    });
+  } catch (err) {
+    console.error('[GET /api/mobile/project-location]', err.message);
+    res.json({ latitude: null, longitude: null }); // non-fatal: GPS check gracefully skips
+  }
+});
+
 module.exports = router;

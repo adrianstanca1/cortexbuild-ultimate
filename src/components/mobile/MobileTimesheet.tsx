@@ -3,6 +3,7 @@ import { Clock, MapPin } from 'lucide-react';
 import { toast } from 'sonner';
 import { offlineFetch } from '../../services/offlineFetch';
 import { usePushNotifications } from '../../hooks/usePushNotifications';
+import { getToken } from '../../lib/supabase';
 
 function haversineMeters(lat1: number, lon1: number, lat2: number, lon2: number): number {
   const R = 6371000;
@@ -22,8 +23,33 @@ export default function MobileTimesheet() {
   const [breaks,      setBreaks]  = useState(0);
   const [costCode,    setCode]    = useState('03.20 · Concrete works');
   const [gpsOk,       setGpsOk]  = useState<boolean | null>(null);
+  const [siteCoords, setSiteCoords] = useState<{ lat: number; lon: number } | null>(null);
 
   usePushNotifications(clockedIn);
+
+  useEffect(() => {
+    // Try to get project coords — use first project in org if no specific project set
+    fetch('/api/generic/projects?limit=1', {
+      headers: { Authorization: `Bearer ${getToken() ?? ''}` },
+    })
+      .then(r => r.json())
+      .then((data: unknown) => {
+        // data may be array or { data: [...] } depending on generic route shape
+        const arr = Array.isArray(data) ? data : (data as { data?: unknown[] })?.data ?? [];
+        const project = (arr as Array<{ id: string }>)[0];
+        if (!project?.id) return;
+        return fetch(`/api/mobile/project-location?project_id=${project.id}`, {
+          headers: { Authorization: `Bearer ${getToken() ?? ''}` },
+        }).then(r => r.json());
+      })
+      .then((coords: unknown) => {
+        const c = coords as { latitude?: number; longitude?: number } | null;
+        if (c?.latitude != null && c?.longitude != null) {
+          setSiteCoords({ lat: c.latitude, lon: c.longitude });
+        }
+      })
+      .catch(() => {}); // non-fatal
+  }, []);
 
   useEffect(() => {
     if (!clockedIn || !clockInTime) return;
@@ -37,35 +63,36 @@ export default function MobileTimesheet() {
     return () => clearInterval(id);
   }, [clockedIn, clockInTime]);
 
-  const checkGPS = (): Promise<boolean> =>
-    new Promise(resolve =>
+  const checkGPS = async (): Promise<boolean> => {
+    return new Promise(resolve => {
+      if (!navigator.geolocation) { resolve(true); return; }
       navigator.geolocation.getCurrentPosition(
-        (pos) => {
-          const SITE_LAT = 0; // TODO: pull from project context
-          const SITE_LON = 0;
-          const RADIUS_M = 200;
-
-          // Skip radius check when no project coordinates are available
-          if (SITE_LAT === 0 && SITE_LON === 0) {
+        pos => {
+          if (!siteCoords) {
+            // No project coordinates configured — skip radius check, allow clock-in
             setGpsOk(true);
             resolve(true);
             return;
           }
-
-          const dist = haversineMeters(pos.coords.latitude, pos.coords.longitude, SITE_LAT, SITE_LON);
-          if (dist > RADIUS_M) {
+          const dist = haversineMeters(
+            pos.coords.latitude, pos.coords.longitude,
+            siteCoords.lat, siteCoords.lon
+          );
+          if (dist > 200) {
             setGpsOk(false);
-            const proceed = window.confirm(`You appear to be ${Math.round(dist)}m from site. Clock in anyway?`);
+            const proceed = window.confirm(
+              `You appear to be ${Math.round(dist)}m from site. Clock in anyway?`
+            );
             resolve(proceed);
           } else {
             setGpsOk(true);
             resolve(true);
           }
         },
-        () => { setGpsOk(false); resolve(false); },
-        { timeout: 5000 }
-      )
-    );
+        () => resolve(true) // GPS unavailable → allow clock-in
+      );
+    });
+  };
 
   const handleClockIn = async () => {
     const ok = await checkGPS();
