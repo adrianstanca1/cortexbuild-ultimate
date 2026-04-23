@@ -271,7 +271,8 @@ main() {
     fi
     log_info "Using project directory: $PROJECT_DIR"
     cd "$PROJECT_DIR"
-    
+    git config --global --add safe.directory "$PROJECT_DIR" 2>/dev/null || true
+
     # Load environment
     load_env_files "$PROJECT_DIR"
     

@@ -236,7 +236,8 @@ main() {
     fi
     log_info "Using project directory: $PROJECT_DIR"
     cd "$PROJECT_DIR"
-    
+    git config --global --add safe.directory "$PROJECT_DIR" 2>/dev/null || true
+
     # Step 1: Pull latest code
     log_info "Step 1/6: Pulling latest code..."
     git fetch origin main

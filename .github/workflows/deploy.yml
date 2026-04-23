@@ -119,6 +119,7 @@ jobs:
             fi
             echo "Using project dir: $PROJECT_DIR"
             cd "$PROJECT_DIR"
+            git config --global --add safe.directory "$PROJECT_DIR" || true
             git fetch origin
             git reset --hard origin/main
             npm ci --ignore-scripts
@@ -181,6 +182,7 @@ jobs:
             CONTAINER_NAME="cortexbuild-api"
             IMAGE_NAME="cortexbuild-ultimate-api:latest"
             cd "$PROJECT_DIR"
+            git config --global --add safe.directory "$PROJECT_DIR" || true
 
             git pull origin main
 
