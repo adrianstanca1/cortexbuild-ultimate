@@ -40,7 +40,11 @@ async function isTokenBlacklisted(jti) {
     return result === '1';
   } catch (err) {
     console.error('[Auth] Failed to check blacklist:', err.message);
-    return false; // Fail open — don't block on Redis errors
+    // Production: fail closed (treat as revoked) unless explicitly opted out.
+    if (process.env.NODE_ENV === 'production' && process.env.TOKEN_BLACKLIST_FAIL_OPEN !== 'true') {
+      return true;
+    }
+    return false;
   }
 }
 

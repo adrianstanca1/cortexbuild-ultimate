@@ -92,7 +92,11 @@ const corsOrigins = (process.env.CORS_ORIGIN || '')
   .map((origin) => origin.trim())
   .filter(Boolean);
 if (!corsOrigins.length) {
-  console.warn('[CORS] CORS_ORIGIN not set — restrict to specific origins for production');
+  if (process.env.NODE_ENV === 'production') {
+    console.error('[FATAL] CORS_ORIGIN must list at least one comma-separated browser origin in production');
+    process.exit(1);
+  }
+  console.warn('[CORS] CORS_ORIGIN not set — credentialed browser calls need localhost origins or set CORS_ORIGIN');
 }
 const LOCAL_DEV_ORIGIN_RE =
   /^https?:\/\/(localhost|127\.0\.0\.1|\[::1\])(:\d+)?$/i;

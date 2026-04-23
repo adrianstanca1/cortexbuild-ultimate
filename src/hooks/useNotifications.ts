@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { apiGet, apiPut, apiDelete } from '@/lib/api';
 import { validateNotification } from '@/lib/validateNotification';
+import { buildWebSocketUrl } from '@/lib/wsUrl';
 
 export interface Notification {
   id: string | number;
@@ -112,8 +113,7 @@ export function useNotifications(
     if (!isLegacyMode || !authToken) return;
 
     try {
-      const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-      const wsUrl = `${protocol}//${window.location.host}/ws`;
+      const wsUrl = buildWebSocketUrl('/ws');
 
       ws.current = new WebSocket(wsUrl);
 
@@ -315,8 +315,7 @@ export function useRealtimeNotifications(
     if (!enabledRef.current) return;
 
     try {
-      const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-      const wsUrl = `${protocol}//${window.location.host}/ws`;
+      const wsUrl = buildWebSocketUrl('/ws');
 
       const socket = new WebSocket(wsUrl);
 
@@ -331,8 +330,7 @@ export function useRealtimeNotifications(
           if (enabledRef.current && socketRef.current === null) {
             // Re-create WebSocket connection directly
             try {
-              const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-              const wsUrl = `${protocol}//${window.location.host}/ws`;
+              const wsUrl = buildWebSocketUrl('/ws');
               const newSocket = new WebSocket(wsUrl);
               newSocket.onopen = () => setIsConnected(true);
               newSocket.onclose = () => setIsConnected(false);

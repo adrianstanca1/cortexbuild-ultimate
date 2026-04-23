@@ -1,4 +1,5 @@
 import React, { useEffect, useState, useRef } from 'react';
+import { buildWebSocketUrl } from '../../lib/wsUrl';
 
 type ConnectionStatus = 'connected' | 'connecting' | 'disconnected' | 'disabled';
 
@@ -17,8 +18,7 @@ export function WebSocketStatus({ url = '/ws', onStatusChange }: WebSocketStatus
     let wasEverOpen = false;
 
     const connect = () => {
-      const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-      const wsUrl = `${protocol}//${window.location.host}${url}`;
+      const wsUrl = buildWebSocketUrl(url);
 
       setStatus('connecting');
       wasEverOpen = false;

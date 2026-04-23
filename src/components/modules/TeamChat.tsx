@@ -2,6 +2,7 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { Send, Users, Hash, Plus, X, Search, Smile, Paperclip, Pin, Trash2 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { API_BASE } from '../../lib/auth-storage';
+import { buildWebSocketUrl } from '../../lib/wsUrl';
 import { toast } from 'sonner';
 import { EmptyState } from '../ui/EmptyState';
 import { ModuleBreadcrumbs } from '../ui/Breadcrumbs';
@@ -65,8 +66,7 @@ export default function TeamChat() {
   }, [messages, scrollToBottom]);
 
   useEffect(() => {
-    const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-    const wsUrl = `${protocol}//${window.location.host}/ws`;
+    const wsUrl = buildWebSocketUrl('/ws');
     const ws = new WebSocket(wsUrl);
     wsRef.current = ws;
 

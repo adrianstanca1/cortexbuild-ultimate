@@ -6,6 +6,7 @@
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { apiGet, apiPut, apiPost, apiDelete } from '@/lib/api';
 import { eventBus } from '@/lib/eventBus';
+import { buildWebSocketUrl } from '@/lib/wsUrl';
 import {
   validateNotification,
   validateNotificationsResponse,
@@ -360,8 +361,7 @@ export function useNotificationCenter(
     setWsStatus((prev) => ({ ...prev, reconnecting: true, reconnectAttempt: reconnectAttemptRef.current + 1 }));
 
     try {
-      const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-      const wsUrl = `${protocol}//${window.location.host}/ws`;
+      const wsUrl = buildWebSocketUrl('/ws');
 
       const ws = new WebSocket(wsUrl);
       let wasEverOpen = false;

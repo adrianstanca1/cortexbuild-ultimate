@@ -187,6 +187,8 @@ export default defineConfig({
       process.env.VITE_OAUTH_API_ORIGIN ||
         (process.env.NODE_ENV === "production" ? "" : "http://localhost:3001"),
     ),
+    /** Optional override when WebSocket is not same-origin as the SPA (see `src/lib/wsUrl.ts`). */
+    "import.meta.env.VITE_WS_URL": JSON.stringify(process.env.VITE_WS_URL || ""),
   },
   build: {
     emptyOutDir: true,
