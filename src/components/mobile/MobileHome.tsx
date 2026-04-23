@@ -36,8 +36,10 @@ export function MobileHome({ onNavigate }: MobileHomeProps) {
   const { data: summary, isLoading } = useQuery<MobileSummary>({
     queryKey: ['mobile-summary'],
     queryFn: async () => {
+      const token = getToken();
       const res = await fetch('/api/mobile/summary', {
-        headers: { Authorization: `Bearer ${getToken() ?? ''}` },
+        credentials: 'include',
+        headers: { ...(token ? { Authorization: `Bearer ${token}` } : {}) },
       });
       if (!res.ok) throw new Error('Failed to load mobile summary');
       return res.json() as Promise<MobileSummary>;

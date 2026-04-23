@@ -33,7 +33,8 @@ export function ReportPreviewModal({ reportType, reportId, reportLabel, onClose 
         const token = getToken();
         const endpoint = endpointMap[reportType];
         const response = await fetch(`${endpoint}/${reportId}/pdf`, {
-          headers: { Authorization: `Bearer ${token}` },
+          credentials: 'include',
+          headers: { ...(token ? { Authorization: `Bearer ${token}` } : {}) },
         });
 
         if (!response.ok) throw new Error(`HTTP ${response.status}`);
@@ -55,7 +56,8 @@ export function ReportPreviewModal({ reportType, reportId, reportLabel, onClose 
       const token = getToken();
       const endpoint = endpointMap[reportType];
       const response = await fetch(`${endpoint}/${reportId}/pdf`, {
-        headers: { Authorization: `Bearer ${token}` },
+        credentials: 'include',
+        headers: { ...(token ? { Authorization: `Bearer ${token}` } : {}) },
       });
 
       if (!response.ok) throw new Error(`HTTP ${response.status}`);

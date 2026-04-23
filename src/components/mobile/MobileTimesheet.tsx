@@ -29,8 +29,10 @@ export default function MobileTimesheet() {
 
   useEffect(() => {
     // Try to get project coords — use first project in org if no specific project set
+    const t0 = getToken();
     fetch('/api/generic/projects?limit=1', {
-      headers: { Authorization: `Bearer ${getToken() ?? ''}` },
+      credentials: 'include',
+      headers: { ...(t0 ? { Authorization: `Bearer ${t0}` } : {}) },
     })
       .then(r => r.json())
       .then((data: unknown) => {
@@ -38,8 +40,10 @@ export default function MobileTimesheet() {
         const arr = Array.isArray(data) ? data : (data as { data?: unknown[] })?.data ?? [];
         const project = (arr as Array<{ id: string }>)[0];
         if (!project?.id) return;
+        const t1 = getToken();
         return fetch(`/api/mobile/project-location?project_id=${project.id}`, {
-          headers: { Authorization: `Bearer ${getToken() ?? ''}` },
+          credentials: 'include',
+          headers: { ...(t1 ? { Authorization: `Bearer ${t1}` } : {}) },
         }).then(r => r.json());
       })
       .then((coords: unknown) => {

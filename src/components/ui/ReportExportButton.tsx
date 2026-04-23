@@ -52,8 +52,9 @@ export function ReportExportButton({
       const url = `${endpoint}/${reportId}/pdf`;
 
       const response = await fetch(url, {
+        credentials: 'include',
         headers: {
-          Authorization: `Bearer ${token}`,
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
         },
       });
 
@@ -143,7 +144,8 @@ export function ReportExportDropdown({ reportId, projectName, className }: Expor
       const url = `${endpoint}/${reportId}/pdf`;
 
       const response = await fetch(url, {
-        headers: { Authorization: `Bearer ${token}` },
+        credentials: 'include',
+        headers: { ...(token ? { Authorization: `Bearer ${token}` } : {}) },
       });
 
       if (!response.ok) throw new Error(`HTTP ${response.status}`);

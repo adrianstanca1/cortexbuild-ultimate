@@ -1,7 +1,7 @@
 /// <reference lib="webworker" />
 import { precacheAndRoute, cleanupOutdatedCaches } from 'workbox-precaching';
 import { registerRoute, NavigationRoute } from 'workbox-routing';
-import { NetworkFirst, CacheFirst, StaleWhileRevalidate } from 'workbox-strategies';
+import { NetworkOnly, CacheFirst, StaleWhileRevalidate } from 'workbox-strategies';
 import { ExpirationPlugin } from 'workbox-expiration';
 import { createHandlerBoundToURL } from 'workbox-precaching';
 
@@ -11,14 +11,10 @@ cleanupOutdatedCaches();
 // @ts-ignore — __WB_MANIFEST is injected by vite-plugin-pwa at build time
 precacheAndRoute(self.__WB_MANIFEST);
 
-// API GETs: network first with 3s timeout, 5min TTL
+// API: never cache (avoids stale / user-specific JSON and broken auth after cookie login)
 registerRoute(
   ({ url, request }) => url.pathname.startsWith('/api/') && request.method === 'GET',
-  new NetworkFirst({
-    cacheName: 'api-cache',
-    networkTimeoutSeconds: 3,
-    plugins: [new ExpirationPlugin({ maxAgeSeconds: 300, maxEntries: 100 })],
-  })
+  new NetworkOnly()
 );
 
 // Static assets: stale while revalidate

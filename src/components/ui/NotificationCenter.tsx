@@ -29,9 +29,9 @@ export function NotificationCenter({ onClose }: NotificationCenterProps) {
   const fetchNotifications = useCallback(async () => {
     try {
       const token = getToken();
-      if (!token) return;
       const response = await fetch('/api/notifications?pageSize=50', {
-        headers: { Authorization: `Bearer ${token}` },
+        credentials: 'include',
+        headers: { ...(token ? { Authorization: `Bearer ${token}` } : {}) },
       });
       if (response.ok) {
         const data = await response.json();
@@ -53,7 +53,8 @@ export function NotificationCenter({ onClose }: NotificationCenterProps) {
       const token = getToken();
       await fetch(`/api/notifications/${id}/read`, {
         method: 'PUT',
-        headers: { Authorization: `Bearer ${token}` },
+        credentials: 'include',
+        headers: { ...(token ? { Authorization: `Bearer ${token}` } : {}) },
       });
       setNotifications(prev =>
         prev.map(n => (n.id === id ? { ...n, read: true } : n))
@@ -68,7 +69,8 @@ export function NotificationCenter({ onClose }: NotificationCenterProps) {
       const token = getToken();
       await fetch('/api/notifications/read-all', {
         method: 'PUT',
-        headers: { Authorization: `Bearer ${token}` },
+        credentials: 'include',
+        headers: { ...(token ? { Authorization: `Bearer ${token}` } : {}) },
       });
       setNotifications(prev => prev.map(n => ({ ...n, read: true })));
       toast.success('All notifications marked as read');
@@ -82,7 +84,8 @@ export function NotificationCenter({ onClose }: NotificationCenterProps) {
       const token = getToken();
       await fetch(`/api/notifications/${id}`, {
         method: 'DELETE',
-        headers: { Authorization: `Bearer ${token}` },
+        credentials: 'include',
+        headers: { ...(token ? { Authorization: `Bearer ${token}` } : {}) },
       });
       setNotifications(prev => prev.filter(n => n.id !== id));
       toast.success('Notification deleted');

@@ -25,7 +25,7 @@ export function usePushNotifications(isClockIn: boolean) {
 async function subscribe(): Promise<void> {
   try {
     const reg = await navigator.serviceWorker.ready;
-    const res = await fetch('/api/push/vapid-public-key');
+    const res = await fetch('/api/push/vapid-public-key', { credentials: 'include' });
     const { key } = (await res.json()) as { key: string };
 
     if (!key) {
@@ -43,6 +43,7 @@ async function subscribe(): Promise<void> {
 
     await fetch('/api/push/subscribe', {
       method: 'POST',
+      credentials: 'include',
       headers: {
         'Content-Type': 'application/json',
         ...(token ? { Authorization: `Bearer ${token}` } : {}),

@@ -16,6 +16,7 @@ export async function offlineFetch(
     const url = path.startsWith('/api') ? path : `/api${path.startsWith('/') ? path : '/' + path}`;
     const res = await fetch(url, {
       ...options,
+      credentials: 'include',
       headers: { 'Content-Type': 'application/json', ...authHeader, ...(options.headers as Record<string, string> ?? {}) },
     });
     if (!res.ok) {

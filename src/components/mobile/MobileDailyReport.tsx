@@ -3,6 +3,7 @@ import { Mic, Camera, Send, CloudOff } from 'lucide-react';
 import { toast } from 'sonner';
 import { offlineFetch } from '../../services/offlineFetch';
 import { useNetworkStatus } from '../../hooks/useNetworkStatus';
+import { getToken } from '../../lib/supabase';
 
 interface ReportForm {
   workers: string;
@@ -58,9 +59,11 @@ export default function MobileDailyReport() {
         try {
           const fd = new FormData();
           fd.append('audio', blob, 'recording.webm');
+          const tok = getToken();
           const res = await fetch('/api/ai/transcribe', {
             method: 'POST',
-            headers: { Authorization: `Bearer ${localStorage.getItem('cortexbuild_token') ?? ''}` },
+            credentials: 'include',
+            headers: { ...(tok ? { Authorization: `Bearer ${tok}` } : {}) },
             body: fd,
           });
           if (res.ok) {

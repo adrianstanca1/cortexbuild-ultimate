@@ -3,21 +3,33 @@
  * Uploads are expensive operations (I/O, storage, processing)
  * Limit: 20 requests per minute per user
  */
-const Redis = require('redis');
 const rateLimits = new Map();
 
 const WINDOW_MS = 60 * 1000;
 const MAX_REQUESTS = 20; // Stricter limit for uploads
 
+function redisUrl() {
+  if (process.env.REDIS_URL) return process.env.REDIS_URL;
+  const host = process.env.REDIS_HOST || '127.0.0.1';
+  const port = process.env.REDIS_PORT || '6379';
+  return `redis://${host}:${port}`;
+}
+
 let redisClient = null;
-const REDIS_ENABLED = process.env.REDIS_URL;
+const REDIS_ENABLED = process.env.REDIS_URL || process.env.REDIS_HOST;
 
 if (REDIS_ENABLED) {
-  redisClient = Redis.createClient({ url: process.env.REDIS_URL });
-  redisClient.on('error', (err) => {
-    console.error('[Redis] Upload rate limiter connection error:', err.message);
-  });
-  redisClient.connect().catch(() => {});
+  try {
+    const Redis = require('redis');
+    redisClient = Redis.createClient({ url: redisUrl() });
+    redisClient.on('error', (err) => {
+      console.error('[Redis] Upload rate limiter connection error:', err.message);
+    });
+    redisClient.connect().catch(() => {});
+  } catch (e) {
+    console.warn('[Redis] Upload rate limiter skipped (redis package missing):', e?.message || e);
+    redisClient = null;
+  }
 }
 
 function getClientKey(req) {
@@ -35,7 +47,6 @@ function cleanExpired(map) {
 
 module.exports = function uploadRateLimiter(req, res, next) {
   const key = getClientKey(req);
-  const now = Date.now();
 
   if (redisClient && redisClient.isOpen) {
     return redisClient
@@ -63,7 +74,7 @@ module.exports = function uploadRateLimiter(req, res, next) {
   }
 
   fallbackRateLimiter(req, res, next);
-}
+};
 
 function fallbackRateLimiter(req, res, next) {
   cleanExpired(rateLimits);
@@ -88,6 +99,3 @@ function fallbackRateLimiter(req, res, next) {
   record.count++;
   next();
 }
-
-module.exports.UPLOAD_RATE_LIMIT_MAX = MAX_REQUESTS;
-module.exports.UPLOAD_RATE_LIMIT_WINDOW_MS = WINDOW_MS;

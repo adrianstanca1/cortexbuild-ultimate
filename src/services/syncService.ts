@@ -13,6 +13,7 @@ export async function runSync(): Promise<void> {
         await markSyncing(entry.id!);
         const res = await fetch(entry.url, {
           method: entry.method,
+          credentials: 'include',
           headers: { 'Content-Type': 'application/json', ...entry.headers },
           body: entry.body,
         });
