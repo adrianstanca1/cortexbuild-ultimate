@@ -14,7 +14,11 @@ export default function MobileToolboxTalk() {
   const drawing   = useRef(false);
 
   const togglePresent = (init: string) =>
-    setPresent(prev => { const n = new Set(prev); n.has(init) ? n.delete(init) : n.add(init); return n; });
+    setPresent(prev => {
+      const n = new Set(prev);
+      if (n.has(init)) { n.delete(init); } else { n.add(init); }
+      return n;
+    });
 
   const startSign = (init: string) => {
     setSigning(init);
@@ -98,7 +102,9 @@ export default function MobileToolboxTalk() {
             <div className="text-slate-100 font-semibold text-center">Sign here — {signing}</div>
             <canvas ref={canvasRef} width={320} height={160}
               className="bg-slate-900 rounded-xl w-full touch-none"
-              onPointerDown={canvasDraw} onPointerMove={canvasDraw} onPointerUp={canvasDraw} />
+              onPointerDown={canvasDraw} onPointerMove={canvasDraw} onPointerUp={canvasDraw}
+              onPointerLeave={() => { drawing.current = false; }}
+              onPointerCancel={() => { drawing.current = false; }} />
             <div className="flex gap-2">
               <button onClick={saveSig} className="flex-1 bg-blue-600 rounded-xl py-2.5 text-white font-semibold">Save</button>
               <button onClick={() => setSigning(null)} className="flex-1 bg-slate-700 rounded-xl py-2.5 text-slate-300">Cancel</button>

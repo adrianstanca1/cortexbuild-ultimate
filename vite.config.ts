@@ -128,15 +128,15 @@ export default defineConfig({
         name: 'CortexBuild',
         short_name: 'CortexBuild',
         description: 'Construction site management — works offline',
-        start_url: '/m/home',
+        start_url: '/',
         display: 'standalone',
         orientation: 'portrait',
         theme_color: '#1e293b',
         background_color: '#0f172a',
         categories: ['productivity', 'business'],
         icons: [
-          { src: '/icons/icon-192.png', sizes: '192x192', type: 'image/png' },
-          { src: '/icons/icon-512.png', sizes: '512x512', type: 'image/png', purpose: 'any maskable' },
+          { src: '/icons/icon-192x192.png', sizes: '192x192', type: 'image/png' },
+          { src: '/icons/icon-512x512.png', sizes: '512x512', type: 'image/png', purpose: 'any maskable' },
         ],
       },
       devOptions: { enabled: false },
@@ -226,8 +226,8 @@ export default defineConfig({
     ],
     exclude: ["@rolldown/binding-linux-arm64-gnu"],
     // Prebuild dependencies for faster dev server startup
-    esbuildOptions: {
-      target: "es2020",
+    rolldownOptions: {
+      output: { target: "es2020" },
     },
   },
   // Preview server configuration

@@ -4,6 +4,16 @@ import { toast } from 'sonner';
 import { offlineFetch } from '../../services/offlineFetch';
 import { usePushNotifications } from '../../hooks/usePushNotifications';
 
+function haversineMeters(lat1: number, lon1: number, lat2: number, lon2: number): number {
+  const R = 6371000;
+  const φ1 = lat1 * Math.PI / 180;
+  const φ2 = lat2 * Math.PI / 180;
+  const Δφ = (lat2 - lat1) * Math.PI / 180;
+  const Δλ = (lon2 - lon1) * Math.PI / 180;
+  const a = Math.sin(Δφ / 2) ** 2 + Math.cos(φ1) * Math.cos(φ2) * Math.sin(Δλ / 2) ** 2;
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+}
+
 export default function MobileTimesheet() {
   const [clockedIn,   setIn]      = useState(false);
   const [clockInTime, setInTime]  = useState<Date | null>(null);
@@ -30,7 +40,28 @@ export default function MobileTimesheet() {
   const checkGPS = (): Promise<boolean> =>
     new Promise(resolve =>
       navigator.geolocation.getCurrentPosition(
-        () => { setGpsOk(true); resolve(true); },
+        (pos) => {
+          const SITE_LAT = 0; // TODO: pull from project context
+          const SITE_LON = 0;
+          const RADIUS_M = 200;
+
+          // Skip radius check when no project coordinates are available
+          if (SITE_LAT === 0 && SITE_LON === 0) {
+            setGpsOk(true);
+            resolve(true);
+            return;
+          }
+
+          const dist = haversineMeters(pos.coords.latitude, pos.coords.longitude, SITE_LAT, SITE_LON);
+          if (dist > RADIUS_M) {
+            setGpsOk(false);
+            const proceed = window.confirm(`You appear to be ${Math.round(dist)}m from site. Clock in anyway?`);
+            resolve(proceed);
+          } else {
+            setGpsOk(true);
+            resolve(true);
+          }
+        },
         () => { setGpsOk(false); resolve(false); },
         { timeout: 5000 }
       )
@@ -38,7 +69,7 @@ export default function MobileTimesheet() {
 
   const handleClockIn = async () => {
     const ok = await checkGPS();
-    if (!ok && !window.confirm('You appear to be off-site. Clock in anyway?')) return;
+    if (!ok) return;
     const now = new Date();
     setIn(true); setInTime(now);
     await offlineFetch('/api/timesheets/clock-in', {

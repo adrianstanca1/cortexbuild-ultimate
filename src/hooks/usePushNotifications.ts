@@ -28,6 +28,11 @@ async function subscribe(): Promise<void> {
     const res = await fetch('/api/push/vapid-public-key');
     const { key } = (await res.json()) as { key: string };
 
+    if (!key) {
+      console.warn('[Push] VAPID public key not configured');
+      return;
+    }
+
     const sub = await reg.pushManager.subscribe({
       userVisibleOnly: true,
       applicationServerKey: urlBase64ToUint8Array(key).buffer as ArrayBuffer,
