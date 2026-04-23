@@ -2,11 +2,13 @@ const express = require('express');
 const webpush = require('web-push');
 const router = express.Router();
 
-webpush.setVapidDetails(
-  process.env.VAPID_EMAIL || 'mailto:admin@cortexbuildpro.com',
-  process.env.VAPID_PUBLIC_KEY || '',
-  process.env.VAPID_PRIVATE_KEY || ''
-);
+if (process.env.VAPID_PUBLIC_KEY && process.env.VAPID_PRIVATE_KEY) {
+  webpush.setVapidDetails(
+    process.env.VAPID_EMAIL || 'mailto:admin@cortexbuildpro.com',
+    process.env.VAPID_PUBLIC_KEY,
+    process.env.VAPID_PRIVATE_KEY
+  );
+}
 
 // In-memory store (replace with DB column in production)
 const subscriptions = new Map(); // userId → PushSubscription

@@ -289,6 +289,7 @@ app.use('/api/prequalification',   makeRouter('prequalification'));
 app.use('/api/lettings',            makeRouter('lettings'));
 app.use('/api/measuring',          makeRouter('measuring'));
 app.use('/api/notifications',   require('./routes/notifications'));
+app.use('/api/push',            require('./routes/push'));
 app.use('/api/team-member-data', require('./routes/team-member-data'));
 app.use('/api/site-permits',         makeRouter('site_permits'));
 app.use('/api/equipment-service-logs', makeRouter('equipment_service_logs'));
