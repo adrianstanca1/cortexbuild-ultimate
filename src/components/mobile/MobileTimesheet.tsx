@@ -44,8 +44,8 @@ export default function MobileTimesheet() {
       })
       .then((coords: unknown) => {
         const c = coords as { latitude?: number; longitude?: number } | null;
-        if (c?.latitude != null && c?.longitude != null) {
-          setSiteCoords({ lat: c.latitude, lon: c.longitude });
+        if (Number.isFinite(c?.latitude) && Number.isFinite(c?.longitude)) {
+          setSiteCoords({ lat: c.latitude as number, lon: c.longitude as number });
         }
       })
       .catch(() => {}); // non-fatal
