@@ -43,9 +43,16 @@ export default function MobileTimesheet() {
         }).then(r => r.json());
       })
       .then((coords: unknown) => {
-        const c = coords as { latitude?: number; longitude?: number } | null;
-        if (Number.isFinite(c?.latitude) && Number.isFinite(c?.longitude)) {
-          setSiteCoords({ lat: c.latitude as number, lon: c.longitude as number });
+        const c = coords as { latitude?: number; longitude?: number } | null | undefined;
+        if (c === null || c === undefined) return;
+        const { latitude: lat, longitude: lon } = c;
+        if (
+          typeof lat === 'number' &&
+          typeof lon === 'number' &&
+          Number.isFinite(lat) &&
+          Number.isFinite(lon)
+        ) {
+          setSiteCoords({ lat, lon });
         }
       })
       .catch(() => {}); // non-fatal
