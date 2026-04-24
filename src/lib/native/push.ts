@@ -61,10 +61,11 @@ export async function requestPushPermissionAndToken(): Promise<string | null> {
       await PushNotifications.register();
 
       let resolved = false;
-      const handle = await PushNotifications.addListener('registration', (token) => {
+      const regHandle = await PushNotifications.addListener('registration', (token) => {
         if (!resolved) {
           resolved = true;
-          void handle.remove();
+          void regHandle.remove();
+          void errHandle.remove();  // ADD THIS
           resolve(token.value);
         }
       });
@@ -72,6 +73,7 @@ export async function requestPushPermissionAndToken(): Promise<string | null> {
       const errHandle = await PushNotifications.addListener('registrationError', () => {
         if (!resolved) {
           resolved = true;
+          void regHandle.remove();  // ADD THIS
           void errHandle.remove();
           resolve(null);
         }
