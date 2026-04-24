@@ -1,39 +1,27 @@
 /**
  * Capacitor platform utilities.
- * All imports from @capacitor/core are guarded so the web build never breaks
- * if @capacitor/core is tree-shaken or the platform bridge is unavailable.
+ *
+ * @capacitor/core is safe to import in web builds — it returns 'web' /
+ * isNativePlatform()=false when running outside a native shell.
  */
-
-// Lazy-loaded to avoid importing in SSR/test environments
-let _cap: typeof import('@capacitor/core').Capacitor | null = null;
-
-function getCap() {
-  if (_cap !== null) return _cap;
-  try {
-    // eslint-disable-next-line @typescript-eslint/no-require-imports
-    _cap = (require('@capacitor/core') as { Capacitor: typeof import('@capacitor/core').Capacitor }).Capacitor;
-  } catch {
-    _cap = null;
-  }
-  return _cap;
-}
+import { Capacitor } from '@capacitor/core';
 
 /** Returns true when running inside a Capacitor native shell (iOS or Android). */
 export function isNative(): boolean {
-  return getCap()?.isNativePlatform() ?? false;
+  return Capacitor.isNativePlatform();
 }
 
 /** Returns 'ios' | 'android' | 'web' */
 export function getPlatform(): string {
-  return getCap()?.getPlatform() ?? 'web';
+  return Capacitor.getPlatform();
 }
 
 /** Returns true when running in iOS Capacitor shell. */
 export function isIOS(): boolean {
-  return getPlatform() === 'ios';
+  return Capacitor.getPlatform() === 'ios';
 }
 
 /** Returns true when running in Android Capacitor shell. */
 export function isAndroid(): boolean {
-  return getPlatform() === 'android';
+  return Capacitor.getPlatform() === 'android';
 }
