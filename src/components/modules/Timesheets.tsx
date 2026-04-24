@@ -259,7 +259,7 @@ export function Timesheets() {
 
   return (
     <>
-      <ModuleBreadcrumbs currentModule="timesheets" onNavigate={() => {}} />
+      <ModuleBreadcrumbs currentModule="timesheets" />
       <div className="p-6 space-y-6 bg-gray-950 min-h-screen text-gray-100">
       <div className="flex items-center justify-between">
         <div>

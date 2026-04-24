@@ -134,7 +134,7 @@ function ApprovalTimeline({ status }: { status: string }) {
 
   return (
     <>
-      <ModuleBreadcrumbs currentModule="change-orders" onNavigate={() => {}} />
+      <ModuleBreadcrumbs currentModule="change-orders" />
       <div className="flex items-center justify-between mb-6 p-4 bg-gray-700/50 rounded-lg">
       {steps.map((step, idx) => (
         <div key={step.label} className="flex flex-col items-center flex-1">

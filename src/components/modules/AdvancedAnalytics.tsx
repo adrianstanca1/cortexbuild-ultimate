@@ -249,7 +249,7 @@ export function AdvancedAnalytics() {
   return (
     <div className="space-y-6">
       {/* Breadcrumbs */}
-      <ModuleBreadcrumbs currentModule="advanced-analytics" onNavigate={() => {}} />
+      <ModuleBreadcrumbs currentModule="advanced-analytics" />
 
       {/* Header */}
       <div className="flex justify-between items-start">

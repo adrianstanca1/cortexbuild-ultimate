@@ -8,7 +8,7 @@ Guide for AI coding agents working on CortexBuild Ultimate.
 - **Import alias**: `@` → `src/` in frontend code
 - **State**: React Context (Auth, Theme) + TanStack Query via `useData.ts` hooks. Zustand is a dependency but NOT used.
 - **DB**: Raw SQL migrations in `server/migrations/`, NOT Prisma. The `prisma/` directory is reference only.
-- **Auth**: JWT in localStorage (`cortexbuild_token` key). Use `getToken()` from `src/lib/supabase.ts` — NOT direct localStorage access.
+- **Auth**: JWT in localStorage (`cortexbuild_token` key). Use `getToken()` from `src/lib/auth-storage.ts` — NOT direct localStorage access.
 
 ## Critical Rules
 

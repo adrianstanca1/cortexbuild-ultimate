@@ -372,7 +372,7 @@ export function Insights() {
 
   return (
     <>
-      <ModuleBreadcrumbs currentModule="insights" onNavigate={() => {}} />
+      <ModuleBreadcrumbs currentModule="insights" />
       <div className="space-y-6">
         {/* Header */}
         <div className="flex justify-between items-start">

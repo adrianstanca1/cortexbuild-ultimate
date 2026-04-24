@@ -1,5 +1,5 @@
 // Module: FinancialReports — CortexBuild Ultimate Enhanced
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { TrendingUp, DollarSign, Download, RefreshCw, ArrowUpRight,
   ArrowDownRight, CreditCard, AlertCircle, Trash2,
   CheckSquare, Square,
@@ -7,6 +7,7 @@ import { TrendingUp, DollarSign, Download, RefreshCw, ArrowUpRight,
 import { BulkActionsBar, useBulkSelection } from '../../components/ui/BulkActions';
 import { financialReportsApi } from '../../services/api';
 import { toast } from 'sonner';
+import { ModuleBreadcrumbs } from '../ui/Breadcrumbs';
 import clsx from 'clsx';
 import {
   AreaChart, Area, BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer,
@@ -129,23 +130,33 @@ export function FinancialReports() {
 
   const _deleteMutation = { mutateAsync: async () => {} };
 
-  useEffect(() => {
-    Promise.all([
-      financialReportsApi.getSummary(),
-      financialReportsApi.getProjectFinancials(),
-      financialReportsApi.getCashFlow(),
-    ]).then(([summaryData, projData, cashFlowData]) => {
+  const loadFinancialData = useCallback(async (opts?: { silent?: boolean }) => {
+    if (!opts?.silent) setLoading(true);
+    try {
+      const [summaryData, projData, cashFlowData] = await Promise.all([
+        financialReportsApi.getSummary(),
+        financialReportsApi.getProjectFinancials(),
+        financialReportsApi.getCashFlow(),
+      ]);
       setSummary(summaryData as FinancialSummary);
       setProjectFinancials(projData as unknown as ProjectFinancial[]);
       setCashFlow(cashFlowData as unknown as CashFlow[]);
-    }).catch(err => {
+      if (opts?.silent) toast.success('Financial data refreshed');
+    } catch (err) {
       console.warn('[FinancialReports] fetch failed, using zero defaults:', err);
       setSummary({
         totalRevenue: 0, totalCosts: 0, grossProfit: 0, netProfit: 0,
         outstandingInvoices: 0, overdueAmount: 0, monthlyBurn: 0,
       });
-    }).finally(() => setLoading(false));
+      if (opts?.silent) toast.error('Could not refresh financial data');
+    } finally {
+      setLoading(false);
+    }
   }, []);
+
+  useEffect(() => {
+    void loadFinancialData();
+  }, [loadFinancialData]);
 
   const ReportTabs = () => (
     <div className="flex gap-2 mb-6 border-b border-gray-800">
@@ -435,14 +446,18 @@ export function FinancialReports() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-64">
-        <RefreshCw className="h-8 w-8 text-orange-500 animate-spin" />
+      <div className="space-y-6">
+        <ModuleBreadcrumbs currentModule="financial-reports" onNavigate={() => {}} />
+        <div className="flex items-center justify-center h-64">
+          <RefreshCw className="h-8 w-8 text-orange-500 animate-spin" />
+        </div>
       </div>
     );
   }
 
   return (
     <div className="space-y-6">
+      <ModuleBreadcrumbs currentModule="financial-reports" onNavigate={() => {}} />
       <div className="flex justify-between items-center">
         <div>
           <h1 className="text-2xl font-bold text-white font-display">Financial Reports</h1>
@@ -459,8 +474,13 @@ export function FinancialReports() {
             <option value="this_quarter">This Quarter</option>
             <option value="this_year">This Year</option>
           </select>
-          <button type="button" onClick={() => {}} className="btn btn-secondary">
-            <RefreshCw className="h-4 w-4 mr-2" />
+          <button
+            type="button"
+            onClick={() => void loadFinancialData({ silent: true })}
+            disabled={loading}
+            className="btn btn-secondary disabled:opacity-50"
+          >
+            <RefreshCw className={`h-4 w-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
             Refresh
           </button>
         </div>

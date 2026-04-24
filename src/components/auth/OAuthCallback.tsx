@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Loader2, CheckCircle, XCircle } from 'lucide-react';
-import { setToken, setStoredUser } from '../../lib/supabase';
+import { setToken, setStoredUser } from '../../lib/auth-storage';
 import { apiFetch } from '../../services/api';
 
 export function OAuthCallback() {

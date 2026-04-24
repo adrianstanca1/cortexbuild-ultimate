@@ -277,7 +277,7 @@ export function RFIs() {
 
   return (
     <>
-      <ModuleBreadcrumbs currentModule="rfis" onNavigate={() => {}} />
+      <ModuleBreadcrumbs currentModule="rfis" />
       <div className="min-h-screen bg-gray-900 p-6 space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">

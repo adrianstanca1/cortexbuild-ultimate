@@ -3,6 +3,7 @@ import {
   Terminal, Play, AlertCircle, CheckCircle, 
   Activity, Code, Settings, X, Upload, Download, RefreshCw, Copy, FileText
 } from 'lucide-react';
+import { ModuleBreadcrumbs } from '../ui/Breadcrumbs';
 
 interface LogEntry {
   timestamp: string;
@@ -147,6 +148,7 @@ export const DevSandbox: React.FC = () => {
 
   return (
     <div className="p-6 space-y-6 bg-gray-950 min-h-screen">
+      <ModuleBreadcrumbs currentModule="dev-sandbox" />
       {/* Header */}
       <div className="flex justify-between items-center mb-8">
         <div>

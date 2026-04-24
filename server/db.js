@@ -1,41 +1,14 @@
 require('dotenv').config({ path: require('path').join(__dirname, '.env') });
 const { Pool } = require('pg');
-
-/**
- * Remote Postgres (Neon, Supabase, RDS, Render, etc.) requires TLS even when
- * NODE_ENV is development. Local URLs should stay non-TLS unless sslmode says otherwise.
- */
-function databaseUrlWantsSsl(connectionString) {
-  if (!connectionString) return process.env.NODE_ENV === 'production';
-  const lower = connectionString.toLowerCase();
-  if (lower.includes('sslmode=disable')) return false;
-  if (
-    lower.includes('sslmode=require') ||
-    lower.includes('sslmode=verify-full') ||
-    lower.includes('sslmode=no-verify') ||
-    lower.includes('sslmode=prefer')
-  ) {
-    return true;
-  }
-  if (process.env.DATABASE_SSL === 'true' || process.env.DATABASE_SSL === '1') return true;
-  if (process.env.NODE_ENV === 'production') return true;
-  // Typical managed hosts that reject non-SSL connections
-  if (
-    /\.(neon\.tech|supabase\.co|railway\.app|pooler\.supabase\.com|amazonaws\.com|render\.com)\b/i.test(
-      connectionString,
-    )
-  ) {
-    return true;
-  }
-  return false;
-}
+const { databaseUrlWantsSsl, effectiveDatabaseUrl } = require('./lib/pgConnectionEnv');
 
 let poolConfig;
 
-if (process.env.DATABASE_URL) {
-  const useSsl = databaseUrlWantsSsl(process.env.DATABASE_URL);
+const databaseUrl = effectiveDatabaseUrl();
+if (databaseUrl) {
+  const useSsl = databaseUrlWantsSsl(databaseUrl);
   poolConfig = {
-    connectionString: process.env.DATABASE_URL,
+    connectionString: databaseUrl,
     ssl: useSsl
       ? {
           // Default false matches prior production config; set DATABASE_SSL_REJECT_UNAUTHORIZED=true for strict verify

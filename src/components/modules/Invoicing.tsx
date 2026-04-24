@@ -310,7 +310,7 @@ export function Invoicing() {
   return (
     <div className="min-h-full">
       {/* Breadcrumbs */}
-      <ModuleBreadcrumbs currentModule="invoicing" onNavigate={() => {}} />
+      <ModuleBreadcrumbs currentModule="invoicing" />
 
       {/* Header */}
       <div className="mb-6 flex items-center justify-between">

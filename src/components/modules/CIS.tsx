@@ -158,7 +158,7 @@ export function CIS() {
 
   return (
     <>
-      <ModuleBreadcrumbs currentModule="cis" onNavigate={() => {}} />
+      <ModuleBreadcrumbs currentModule="cis" />
       <div className="space-y-6 bg-gray-900 min-h-screen p-6">
       <div className="flex items-center justify-between">
         <div>

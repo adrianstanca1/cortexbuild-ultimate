@@ -2,12 +2,12 @@
 import { useState, useEffect, useRef } from 'react';
 import {
   Send, Zap, Shield, TrendingUp, FileText, Calendar,
-  MessageSquare, Award, Brain, Clock, Archive, Plus, CheckSquare, Square, Trash2,
-  Radio, Wifi, WifiOff, Cpu, Mic, MicOff, AudioWaveform,
+  MessageSquare, Award, Brain, Clock, Archive, CheckSquare, Square, Trash2,
+  Radio, WifiOff, Cpu, Mic, MicOff, AudioWaveform,
 } from 'lucide-react';
 import { BulkActionsBar, useBulkSelection } from '../ui/BulkActions';
 import clsx from 'clsx';
-import { sendChatMessage, streamChatMessage, fetchAgentStatus } from '../../services/ai';
+import { streamChatMessage, fetchAgentStatus } from '../../services/ai';
 import { aiConversationsApi, dashboardApi } from '../../services/api';
 import { toast } from 'sonner';
 import { ModuleBreadcrumbs } from '../ui/Breadcrumbs';
@@ -166,7 +166,7 @@ export function AIAssistant() {
   const [agentPanelOpen, setAgentPanelOpen] = useState(false);
   const [backendAgents, setBackendAgents] = useState<{ key: string; name: string; description: string; aliases: string[] }[]>([]);
   const [agentHealth, setAgentHealth] = useState<'online' | 'offline' | 'checking'>('checking');
-  const [activeAgentKey, setActiveAgentKey] = useState<string | null>(null);
+  const [_activeAgentKey, setActiveAgentKey] = useState<string | null>(null);
   const [isRecording, setIsRecording] = useState(false);
   const [recordingError, setRecordingError] = useState<string | null>(null);
   const [waveformBars, setWaveformBars] = useState<number[]>(Array(12).fill(0.1));
@@ -197,14 +197,11 @@ export function AIAssistant() {
     };
 
     recognition.onresult = (event: SpeechRecognitionEvent) => {
-      let interim = '';
       let final = '';
       for (let i = event.resultIndex; i < event.results.length; i++) {
         const transcript = event.results[i][0].transcript;
         if (event.results[i].isFinal) {
           final += transcript + ' ';
-        } else {
-          interim += transcript;
         }
       }
       if (final) {
@@ -600,7 +597,7 @@ export function AIAssistant() {
 
   return (
     <>
-      <ModuleBreadcrumbs currentModule="ai-assistant" onNavigate={() => {}} />
+      <ModuleBreadcrumbs currentModule="ai-assistant" />
       <div className="h-full flex bg-gradient-to-br from-gray-950 via-gray-900 to-gray-950">
       {/* Left Sidebar - Chat History & Agents - hidden on mobile */}
       <div className="hidden md:flex w-64 border-r border-gray-800 bg-gray-900/50 p-4 overflow-y-auto flex-col">

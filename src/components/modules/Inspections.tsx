@@ -204,7 +204,7 @@ export function Inspections() {
 
   return (
     <>
-      <ModuleBreadcrumbs currentModule="inspections" onNavigate={() => {}} />
+      <ModuleBreadcrumbs currentModule="inspections" />
       <div className="p-6 space-y-6 bg-gray-900 min-h-screen">
       <div className="flex items-center justify-between">
         <div>

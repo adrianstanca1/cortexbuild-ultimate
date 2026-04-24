@@ -94,7 +94,7 @@ export function CarbonEstimating() {
 
   return (
     <>
-      <ModuleBreadcrumbs currentModule="carbon-estimating" onNavigate={() => {}} />
+      <ModuleBreadcrumbs currentModule="carbon-estimating" />
       <div className="p-6 space-y-6">
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 rounded-lg bg-green-500/20 flex items-center justify-center">

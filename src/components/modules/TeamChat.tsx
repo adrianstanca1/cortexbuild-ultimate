@@ -244,7 +244,7 @@ export default function TeamChat() {
 
   return (
     <>
-      <ModuleBreadcrumbs currentModule="team-chat" onNavigate={() => {}} />
+      <ModuleBreadcrumbs currentModule="team-chat" />
       <div className="flex h-[calc(100vh-80px)]">
         {/* Sidebar */}
         <div className="w-64 bg-gray-900 border-r border-gray-800 flex flex-col">

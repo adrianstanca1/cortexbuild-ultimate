@@ -7,6 +7,7 @@
 const { Client } = require('pg');
 const fs = require('fs');
 const path = require('path');
+const { databaseUrlWantsSsl, effectiveDatabaseUrl } = require('../lib/pgConnectionEnv');
 
 function resolveSqlPaths() {
   const repoRoot = path.join(__dirname, '..', '..');
@@ -29,12 +30,13 @@ function resolveSqlPaths() {
 }
 
 function pgClientConfig() {
-  if (process.env.DATABASE_URL) {
-    const ssl =
-      process.env.NODE_ENV === 'production'
-        ? { rejectUnauthorized: process.env.DATABASE_SSL_REJECT_UNAUTHORIZED === 'true' }
-        : false;
-    return { connectionString: process.env.DATABASE_URL, ssl };
+  const databaseUrl = effectiveDatabaseUrl();
+  if (databaseUrl) {
+    const useSsl = databaseUrlWantsSsl(databaseUrl);
+    const ssl = useSsl
+      ? { rejectUnauthorized: process.env.DATABASE_SSL_REJECT_UNAUTHORIZED === 'true' }
+      : false;
+    return { connectionString: databaseUrl, ssl };
   }
   const password = process.env.DB_PASSWORD;
   if (!password) {

@@ -163,7 +163,7 @@ export function CostManagement() {
 
   return (
     <div className="space-y-6 bg-gray-900 min-h-screen p-6">
-      <ModuleBreadcrumbs currentModule="cost-management" onNavigate={() => {}} />
+      <ModuleBreadcrumbs currentModule="cost-management" />
       {loading ? (
         <div className="flex items-center justify-center h-64">
           <Loader2 className="w-8 h-8 animate-spin text-orange-500" />

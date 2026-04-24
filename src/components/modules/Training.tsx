@@ -392,7 +392,7 @@ export default function Training() {
 
   return (
     <>
-      <ModuleBreadcrumbs currentModule="training" onNavigate={() => {}} />
+      <ModuleBreadcrumbs currentModule="training" />
       <div className="p-6 space-y-6">
         <div className="flex items-center justify-between">
           <div>

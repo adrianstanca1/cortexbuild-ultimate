@@ -260,7 +260,7 @@ export function PredictiveAnalytics() {
 
   return (
     <>
-      <ModuleBreadcrumbs currentModule="predictive-analytics" onNavigate={() => {}} />
+      <ModuleBreadcrumbs currentModule="predictive-analytics" />
       <div className="space-y-6">
       {/* Header */}
       <div className="flex justify-between items-start">

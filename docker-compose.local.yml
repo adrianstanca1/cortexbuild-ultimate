@@ -52,6 +52,8 @@ services:
     container_name: cortexbuild-local-api
     restart: unless-stopped
     environment:
+      # Use discrete DB_* from this file — do not inherit a host DATABASE_URL (Neon/Render/Vercel).
+      DATABASE_URL: null
       DB_HOST: postgres
       DB_PORT: 5432
       DB_NAME: ${POSTGRES_DB:-cortexbuild}

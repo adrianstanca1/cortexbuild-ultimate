@@ -13,6 +13,7 @@ import {
 } from 'lucide-react';
 import { submittalsApi } from '../../services/api';
 import { toast } from 'sonner';
+import { ModuleBreadcrumbs } from '../ui/Breadcrumbs';
 
 interface Submittal {
   id: string;
@@ -242,6 +243,7 @@ export const SubmittalManagement: React.FC = () => {
 
   return (
     <div className="p-6 space-y-6 bg-gray-50 min-h-screen">
+      <ModuleBreadcrumbs currentModule="submittal-management" />
       {/* Header */}
       <div className="flex justify-between items-center mb-8">
         <div>
