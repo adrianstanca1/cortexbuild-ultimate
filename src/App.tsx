@@ -393,7 +393,7 @@ function AppShell() {
               paddingBottom: 'calc(72px + env(safe-area-inset-bottom, 0px))',
             }}
           >
-            <div className="p-4 md:p-6 stagger-1" style={{ animation: 'fade-in-up 0.4s cubic-bezier(0.0, 0.0, 0.2, 1) both' }}>
+            <div className="mx-auto w-full max-w-[1920px] p-5 md:p-8 stagger-1" style={{ animation: 'fade-in-up 0.4s cubic-bezier(0.0, 0.0, 0.2, 1) both' }}>
               <Suspense fallback={<ModuleLoader />}>
                 {renderModule()}
               </Suspense>
