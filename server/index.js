@@ -237,7 +237,10 @@ if (agentDebugApiEnabled) {
     }
   }
 
-  app.get("/api/agent-debug", (_req, res) => {
+  // Require auth on debug endpoints — they expose internal log data and allow
+  // arbitrary file writes. In production they are already gated by
+  // ENABLE_AGENT_DEBUG_API, but auth prevents abuse even when enabled.
+  app.get("/api/agent-debug", authMiddleware, (_req, res) => {
     res.setHeader("Cache-Control", "no-store");
     res.json({
       ok: true,
@@ -248,7 +251,7 @@ if (agentDebugApiEnabled) {
     });
   });
 
-  app.post("/api/agent-debug", (req, res) => {
+  app.post("/api/agent-debug", authMiddleware, (req, res) => {
     try {
       const line = JSON.stringify(req.body ?? {});
       JSON.parse(line);
@@ -257,7 +260,8 @@ if (agentDebugApiEnabled) {
       fs.appendFileSync(AGENT_DEBUG_MIRROR, `${line}\n`);
       res.status(204).end();
     } catch (e) {
-      res.status(500).type("text").send(String(e));
+      console.error("[Agent Debug] Write failed:", e);
+      res.status(500).json({ message: "Internal server error" });
     }
   });
   console.log("[agent-debug] POST/GET /api/agent-debug →", AGENT_DEBUG_LOG);

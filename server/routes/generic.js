@@ -836,11 +836,11 @@ function makeRouter(tableName, orderCol = "created_at") {
     if (scope === "deny") return { filter: " WHERE 1=0", params: [] };
     if (scope === "company")
       return {
-        filter: " WHERE COALESCE(organization_id, company_id) = $1",
+        filter: " WHERE company_id = $1",
         params: [req.user.company_id],
       };
     return {
-      filter: " WHERE COALESCE(organization_id, company_id) = $1",
+      filter: " WHERE organization_id = $1",
       params: [req.user.organization_id],
     };
   }
@@ -863,12 +863,12 @@ function makeRouter(tableName, orderCol = "created_at") {
     const idPl = nextParamIndex + 1;
     if (scope === "company") {
       return {
-        filter: ` WHERE COALESCE(organization_id, company_id) = $${tenantPl} AND id = $${idPl}`,
+        filter: ` WHERE company_id = $${tenantPl} AND id = $${idPl}`,
         params: [req.user.company_id, req.params.id],
       };
     }
     return {
-      filter: ` WHERE COALESCE(organization_id, company_id) = $${tenantPl} AND id = $${idPl}`,
+      filter: ` WHERE organization_id = $${tenantPl} AND id = $${idPl}`,
       params: [req.user.organization_id, req.params.id],
     };
   }

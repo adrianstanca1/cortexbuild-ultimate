@@ -301,6 +301,29 @@ router.post("/", checkPermission("settings", "create"), async (req, res) => {
       return res.status(400).json({ message: "URL must be http or https" });
     }
 
+    // SSRF protection: block internal/private IP ranges and localhost
+    function isInternalHostname(hostname) {
+      return (
+        /^localhost$/i.test(hostname) ||
+        /^127\./.test(hostname) ||
+        /^10\./.test(hostname) ||
+        /^172\.(1[6-9]|2\d|3[01])\./.test(hostname) ||
+        /^192\.168\./.test(hostname) ||
+        /^169\.254\./.test(hostname) ||
+        /^0\./.test(hostname) ||
+        /^::1$/i.test(hostname) ||
+        /^fc00:/i.test(hostname) ||
+        /^fe80:/i.test(hostname)
+      );
+    }
+    if (isInternalHostname(parsedUrl.hostname)) {
+      return res
+        .status(400)
+        .json({
+          message: "URL must not point to internal or private addresses",
+        });
+    }
+
     const orgId = req.user?.organization_id;
     const companyId = req.user?.company_id;
 

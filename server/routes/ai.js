@@ -1046,12 +1046,28 @@ router.post("/chat/stream", aiChatLimiter, async (req, res) => {
   res.end();
 });
 // Action execution: { action, params } → { success, message, data }
+// Restricted to admin-level roles — prevents clients/field_workers from creating
+// projects, updating invoices, adding team members, etc. via AI.
+const AI_EXECUTE_ALLOWED_ROLES = new Set([
+  "super_admin",
+  "company_owner",
+  "admin",
+  "project_manager",
+]);
+
 router.post("/execute", aiExecuteLimiter, async (req, res) => {
   const { action, params = {} } = req.body;
   if (!action)
     return res
       .status(400)
       .json({ success: false, message: "action is required" });
+
+  if (!AI_EXECUTE_ALLOWED_ROLES.has(req.user?.role)) {
+    return res.status(403).json({
+      success: false,
+      message: "Insufficient permissions to execute AI actions",
+    });
+  }
 
   try {
     // Require either organization_id or company_id for all write actions
@@ -1121,7 +1137,9 @@ router.post("/execute", aiExecuteLimiter, async (req, res) => {
         const companyId = req.user?.company_id;
         const orgFilter =
           tenantId || companyId
-            ? "COALESCE(organization_id, company_id) = $3"
+            ? req.user?.organization_id
+              ? "organization_id = $3"
+              : "company_id = $3"
             : "1=0";
         const { rows } = await pool.query(
           `UPDATE projects SET status=$1 WHERE id=$2 AND ${orgFilter} RETURNING id,name,status`,
@@ -1169,7 +1187,9 @@ router.post("/execute", aiExecuteLimiter, async (req, res) => {
         const companyId = req.user?.company_id;
         const orgFilter =
           tenantId || companyId
-            ? "COALESCE(organization_id, company_id) = $3"
+            ? req.user?.organization_id
+              ? "organization_id = $3"
+              : "company_id = $3"
             : "1=0";
         const { rows } = await pool.query(
           `UPDATE invoices SET status=$1 WHERE id=$2 AND ${orgFilter} RETURNING id,number,status`,
@@ -1311,7 +1331,9 @@ router.post("/execute", aiExecuteLimiter, async (req, res) => {
         const companyId = req.user?.company_id;
         const orgFilter =
           tenantId || companyId
-            ? "COALESCE(organization_id, company_id) = $3"
+            ? req.user?.organization_id
+              ? "organization_id = $3"
+              : "company_id = $3"
             : "1=0";
         const { rows } = await pool.query(
           `UPDATE rfis SET status=$1 WHERE id=$2 AND ${orgFilter} RETURNING id,number,status`,
@@ -1414,16 +1436,39 @@ router.post("/transcribe", async (req, res) => {
     return res.status(400).json({ error: "audioUrl is required" });
   }
 
-  const { exec } = require("child_process");
-  const util = require("util");
-  const execPromise = util.promisify(exec);
+  const { spawn } = require("child_process");
 
-  // Use fast-whisper-large-v3 via inference.sh CLI
-  const cmd = `infsh app run infsh/fast-whisper-large-v3 --input '${JSON.stringify({ audio_url: audioUrl })}' --no-wait`;
+  // Helper: run a command with array args (no shell interpolation)
+  function runCmd(bin, args, timeoutMs = 10000) {
+    return new Promise((resolve, reject) => {
+      const child = spawn(bin, args, { timeout: timeoutMs });
+      let stdout = "";
+      let stderr = "";
+      child.stdout.on("data", (d) => {
+        stdout += d;
+      });
+      child.stderr.on("data", (d) => {
+        stderr += d;
+      });
+      child.on("error", reject);
+      child.on("close", (code) => {
+        if (code !== 0) reject(new Error(stderr || `exit ${code}`));
+        else resolve(stdout);
+      });
+    });
+  }
 
+  // Use fast-whisper-large-v3 via inference.sh CLI — args passed as array
   let taskId;
   try {
-    const { stdout } = await execPromise(cmd, { timeout: 10000 });
+    const stdout = await runCmd("infsh", [
+      "app",
+      "run",
+      "infsh/fast-whisper-large-v3",
+      "--input",
+      JSON.stringify({ audio_url: audioUrl }),
+      "--no-wait",
+    ]);
     const parsed = JSON.parse(stdout);
     taskId = parsed.task_id;
     if (!taskId) throw new Error("No task_id returned");
@@ -1441,10 +1486,7 @@ router.post("/transcribe", async (req, res) => {
   while (attempts < maxAttempts) {
     await new Promise((r) => setTimeout(r, 2000));
     try {
-      const { stdout: statusOut } = await execPromise(
-        `infsh task get ${taskId}`,
-        { timeout: 10000 },
-      );
+      const statusOut = await runCmd("infsh", ["task", "get", taskId]);
       const status = JSON.parse(statusOut);
       if (status.status === "completed") {
         const text = status.result?.text || status.output?.text || "";
