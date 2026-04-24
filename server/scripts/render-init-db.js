@@ -36,6 +36,10 @@ async function main() {
     } catch(e) {}
     console.log(`[render-init-db] Target hostname: ${hostname}`);
 
+    // Remove query params from connection string (pg may not handle them well)
+    const cleanConnectionString = connectionString.split('?')[0];
+    console.log(`[render-init-db] Clean connection string length: ${cleanConnectionString.length}`);
+
     // Render Postgres requires SSL. Try different SSL configs.
     const sslConfigs = [
         { rejectUnauthorized: false },
@@ -50,7 +54,7 @@ async function main() {
         try {
             console.log(`[render-init-db] Trying SSL config: ${JSON.stringify(sslConfig)}`);
             client = new Client({
-                connectionString,
+                connectionString: cleanConnectionString,
                 ssl: sslConfig,
                 connectionTimeoutMillis: 15000
             });
