@@ -1,5 +1,10 @@
 node_modules/
 dist/
+coverage/
+
+# Ephemeral agent / session artifacts (do not commit)
+memory/.dreams/
+memory/dreaming/
 .env
 .env.local
 .env.production
@@ -47,6 +52,9 @@ logs/
 .remember/
 .logs/
 
+# Local git worktrees (agent / dev scratch)
+.worktrees/
+
 # Removed dead directories (prevent re-addition)
 .agents/
 .jez/
@@ -60,14 +68,3 @@ types/
 Dockerfile
 deploy.sh
 server/security.js
-
-# Git worktrees
-.worktrees/
-
-# Capacitor iOS generated files
-ios/Pods/
-ios/*.xcworkspace
-!ios/App.xcworkspace
-
-# Allow iOS plist files (overrides *.plist above)
-!ios/**/*.plist

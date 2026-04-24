@@ -10,6 +10,7 @@ import {
   X,
 } from 'lucide-react';
 import { apiFetch } from '../../services/api';
+import { ModuleBreadcrumbs } from '../ui/Breadcrumbs';
 
 interface CalendarEvent {
   id: string;
@@ -427,6 +428,7 @@ export function ProjectCalendar() {
 
   return (
     <div className="space-y-6 p-6 bg-gray-900 min-h-screen">
+      <ModuleBreadcrumbs currentModule="project-calendar" />
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">

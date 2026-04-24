@@ -7,7 +7,6 @@
 const express = require('express');
 const pool    = require('../db');
 const auth    = require('../middleware/auth');
-const { buildTenantFilter } = require('../middleware/tenantFilter');
 
 const router = express.Router();
 router.use(auth);

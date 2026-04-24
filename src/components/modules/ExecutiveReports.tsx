@@ -36,7 +36,7 @@ const RAGStatus = ({ status }: { status: RAG }) => {
   };
   return (
     <>
-      <ModuleBreadcrumbs currentModule="executive-reports" onNavigate={() => {}} />
+      <ModuleBreadcrumbs currentModule="executive-reports" />
       <div className={`w-3 h-3 rounded-full ${colors[status]}`} />
     </>
   );

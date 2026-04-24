@@ -1,5 +1,6 @@
 import { lazy, Suspense, useEffect } from 'react';
 import { type Module } from '../../types';
+import { ModuleNavigationProvider } from '../../context/ModuleNavigationContext';
 import { MobileTopBar } from './MobileTopBar';
 import { OfflineBanner } from './OfflineBanner';
 import { MobileHome } from './MobileHome';
@@ -72,11 +73,13 @@ export function MobileShell({ activeModule, setModule }: MobileShellProps) {
         </div>
       )}
       <main className="flex-1 overflow-y-auto overscroll-contain">
-        <Suspense fallback={<ModuleLoader />}>
-          {activeModule === 'dashboard'
-            ? <MobileHome onNavigate={setModule} />
-            : renderMobileModule(activeModule, setModule)}
-        </Suspense>
+        <ModuleNavigationProvider navigate={setModule}>
+          <Suspense fallback={<ModuleLoader />}>
+            {activeModule === 'dashboard'
+              ? <MobileHome onNavigate={setModule} />
+              : renderMobileModule(activeModule, setModule)}
+          </Suspense>
+        </ModuleNavigationProvider>
       </main>
       <Suspense fallback={null}>
         <MobileBottomNav

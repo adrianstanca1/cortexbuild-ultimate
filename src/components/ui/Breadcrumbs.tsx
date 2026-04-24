@@ -4,6 +4,7 @@
  */
 import { ChevronRight, Home } from 'lucide-react';
 import { type Module } from '../../types';
+import { useModuleNavigation } from '../../context/ModuleNavigationContext';
 
 interface BreadcrumbItem {
   label: string;
@@ -91,8 +92,12 @@ const MODULE_LABELS: Record<Module, string> = {
 
 export function Breadcrumbs({ items, onNavigate }: BreadcrumbsProps) {
   return (
-    <nav className="flex items-center text-sm text-slate-400 mb-4" aria-label="Breadcrumb">
-      <ol className="flex items-center gap-2">
+    <div
+      className="module-bc-shell mb-6 rounded-2xl border border-white/[0.08] bg-[rgba(13,17,23,0.45)] px-4 py-3 shadow-[0_8px_32px_rgba(0,0,0,0.22)] backdrop-blur-md"
+      data-module-chrome="breadcrumbs"
+    >
+      <nav className="flex items-center text-sm text-slate-400" aria-label="Breadcrumb">
+      <ol className="flex flex-wrap items-center gap-2">
         {/* Home link */}
         <li>
           <button
@@ -125,7 +130,8 @@ export function Breadcrumbs({ items, onNavigate }: BreadcrumbsProps) {
           </li>
         ))}
       </ol>
-    </nav>
+      </nav>
+    </div>
   );
 }
 
@@ -134,15 +140,18 @@ export function Breadcrumbs({ items, onNavigate }: BreadcrumbsProps) {
  */
 interface ModuleBreadcrumbsProps {
   currentModule: Module;
-  onNavigate: (module: Module) => void;
+  /** When omitted, uses {@link useModuleNavigation} from the nearest {@link ModuleNavigationProvider}. */
+  onNavigate?: (module: Module) => void;
   extraItems?: { label: string; href?: string }[];
 }
 
 export function ModuleBreadcrumbs({ currentModule, onNavigate, extraItems = [] }: ModuleBreadcrumbsProps) {
+  const fromContext = useModuleNavigation();
+  const navigate = onNavigate ?? fromContext;
   const items = [
     { label: MODULE_LABELS[currentModule] || currentModule, module: currentModule },
     ...extraItems,
   ];
 
-  return <Breadcrumbs items={items} onNavigate={onNavigate} />;
+  return <Breadcrumbs items={items} onNavigate={navigate} />;
 }

@@ -365,7 +365,7 @@ export const BIMViewer: React.FC = () => {
   return (
     <div className="p-6 space-y-6 bg-base-300 min-h-screen">
       {/* Breadcrumbs */}
-      <ModuleBreadcrumbs currentModule="bim-viewer" onNavigate={() => {}} />
+      <ModuleBreadcrumbs currentModule="bim-viewer" />
 
       {/* Header */}
       <div className="flex justify-between items-center mb-8">

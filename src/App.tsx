@@ -6,6 +6,7 @@ import { Sidebar } from './components/layout/Sidebar';
 import { BlueprintBackground } from './components/layout/BlueprintBackground';
 import { Header } from './components/layout/Header';
 import { ThemeProvider } from './context/ThemeContext';
+import { ModuleNavigationProvider } from './context/ModuleNavigationContext';
 import { type Module } from './types';
 import { useAuth } from './context/AuthContext';
 import { useTheme } from './context/ThemeContext';
@@ -394,9 +395,13 @@ function AppShell() {
             }}
           >
             <div className="mx-auto w-full max-w-[1920px] p-5 md:p-8 stagger-1" style={{ animation: 'fade-in-up 0.4s cubic-bezier(0.0, 0.0, 0.2, 1) both' }}>
-              <Suspense fallback={<ModuleLoader />}>
-                {renderModule()}
-              </Suspense>
+              <div className="module-stage mx-auto w-full max-w-[1680px] min-w-0 space-y-1">
+                <ModuleNavigationProvider navigate={setActiveModule}>
+                  <Suspense fallback={<ModuleLoader />}>
+                    {renderModule()}
+                  </Suspense>
+                </ModuleNavigationProvider>
+              </div>
             </div>
           </main>
         </div>
@@ -478,7 +483,6 @@ function ThemedApp() {
   }
 
   if (loading) {
-    const dark = isDarkChromeTheme(resolvedTheme);
     return (
       <div
         style={{

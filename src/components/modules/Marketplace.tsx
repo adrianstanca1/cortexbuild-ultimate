@@ -193,7 +193,7 @@ export function Marketplace() {
 
   return (
     <>
-      <ModuleBreadcrumbs currentModule="marketplace" onNavigate={() => {}} />
+      <ModuleBreadcrumbs currentModule="marketplace" />
       <div className="space-y-6">
       <div className="flex items-center gap-3">
         <h1 className="text-3xl font-display text-white">CortexBuild Marketplace</h1>

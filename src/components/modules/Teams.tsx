@@ -42,6 +42,12 @@ const statusColour: Record<string,string> = {
 
 const emptyForm = { name:'',role:'',trade_type:'',email:'',phone:'',daily_rate:'',cscs_card:'',cscs_expiry:'',cscs_type:'Gold',status:'Active',notes:'' };
 
+/** Site-check QR: encodes app-scoped CSCS label (not a password). Image from public QR API. */
+function cscsSiteCheckQrSrc(cardNo: string, holderName: string): string {
+  const payload = `cortexbuild:cscs|v1|${String(cardNo).trim()}|${String(holderName).trim().slice(0, 80)}`;
+  return `https://api.qrserver.com/v1/create-qr-code/?size=180x180&margin=1&data=${encodeURIComponent(payload)}`;
+}
+
 type Skill = { id: string; skill_name: string; status: 'yes' | 'no' | 'expired' };
 type Induction = { id: string; project: string; date: string; next_due?: string; status: 'current' | 'due_soon' | 'overdue' };
 type Availability = { id: string; project: string; status: 'onsite' | 'office' | 'off' | 'sick' };
@@ -434,7 +440,7 @@ export function Teams() {
   return (
     <div className="p-6 space-y-6 bg-gray-950 min-h-screen text-gray-100">
       {/* Breadcrumbs */}
-      <ModuleBreadcrumbs currentModule="teams" onNavigate={() => {}} />
+      <ModuleBreadcrumbs currentModule="teams" />
 
       {/* Header */}
       <div className="flex items-center justify-between">
@@ -681,7 +687,21 @@ export function Teams() {
                     )}
                   </div>
 
-                  <div className="w-full h-24 bg-gray-700 rounded-lg mt-4 flex items-center justify-center text-xs opacity-50">QR Code Placeholder</div>
+                  <div className="w-full min-h-[7.5rem] mt-4 rounded-lg bg-white flex items-center justify-center p-2 border border-gray-600">
+                    {m.cscs_card ? (
+                      <img
+                        src={cscsSiteCheckQrSrc(String(m.cscs_card), String(m.name ?? ''))}
+                        alt={`CSCS site-check QR for ${String(m.name ?? 'member')}`}
+                        width={112}
+                        height={112}
+                        className="object-contain"
+                        loading="lazy"
+                        referrerPolicy="no-referrer"
+                      />
+                    ) : (
+                      <span className="text-xs text-gray-600 text-center px-2">Add a card number to show a site-check QR</span>
+                    )}
+                  </div>
 
                   {Boolean(m.cscs_card) && isExpiring && (
                     <button type="button" onClick={()=>renewCSCS(String(m.id))} className="w-full mt-4 px-3 py-2 bg-gray-800/20 hover:bg-gray-800/30 rounded-lg text-sm font-medium transition-colors">

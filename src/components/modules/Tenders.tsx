@@ -321,7 +321,7 @@ export function Tenders() {
 
   return (
     <>
-      <ModuleBreadcrumbs currentModule="tenders" onNavigate={() => {}} />
+      <ModuleBreadcrumbs currentModule="tenders" />
       <div className="p-6 space-y-6 bg-gradient-to-br from-gray-950 via-gray-900 to-gray-950 min-h-screen">
       {/* Header */}
       <div className="flex items-center justify-between">

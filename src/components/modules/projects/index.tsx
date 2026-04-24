@@ -635,7 +635,7 @@ export function Projects() {
   return (
     <div className="space-y-6">
       {/* Breadcrumbs */}
-      <ModuleBreadcrumbs currentModule="projects" onNavigate={() => { }} />
+      <ModuleBreadcrumbs currentModule="projects" />
 
       {/* Header */}
       <div className="flex items-center justify-between">

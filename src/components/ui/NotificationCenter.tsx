@@ -59,7 +59,7 @@ export function NotificationCenter({ onClose }: NotificationCenterProps) {
       setNotifications(prev =>
         prev.map(n => (n.id === id ? { ...n, read: true } : n))
       );
-    } catch (err) {
+    } catch (_err) {
       toast.error('Failed to mark as read');
     }
   };
@@ -74,7 +74,7 @@ export function NotificationCenter({ onClose }: NotificationCenterProps) {
       });
       setNotifications(prev => prev.map(n => ({ ...n, read: true })));
       toast.success('All notifications marked as read');
-    } catch (err) {
+    } catch (_err) {
       toast.error('Failed to mark all as read');
     }
   };
@@ -89,7 +89,7 @@ export function NotificationCenter({ onClose }: NotificationCenterProps) {
       });
       setNotifications(prev => prev.filter(n => n.id !== id));
       toast.success('Notification deleted');
-    } catch (err) {
+    } catch (_err) {
       toast.error('Failed to delete notification');
     }
   };

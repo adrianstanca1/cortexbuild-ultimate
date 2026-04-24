@@ -335,7 +335,7 @@ export function Safety() {
   return (
     <div className="min-h-full space-y-6">
       {/* Breadcrumbs */}
-      <ModuleBreadcrumbs currentModule="safety" onNavigate={() => {}} />
+      <ModuleBreadcrumbs currentModule="safety" />
 
       {/* Header */}
       <div className="flex items-start justify-between gap-4 flex-wrap">

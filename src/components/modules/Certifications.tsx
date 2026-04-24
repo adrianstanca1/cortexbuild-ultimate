@@ -464,7 +464,7 @@ export default function Certifications() {
 
   return (
     <>
-      <ModuleBreadcrumbs currentModule="certifications" onNavigate={() => {}} />
+      <ModuleBreadcrumbs currentModule="certifications" />
       <div className="p-6 space-y-6">
         <div className="flex items-center justify-between">
           <div>

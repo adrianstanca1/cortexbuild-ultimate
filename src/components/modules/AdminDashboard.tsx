@@ -61,7 +61,7 @@ export function AdminDashboard() {
   return (
     <div className="p-6 max-w-[1800px] mx-auto">
       <div className="mb-6">
-        <ModuleBreadcrumbs currentModule="dashboard" onNavigate={() => {}} extraItems={[{ label: 'Admin Dashboard' }]} />
+        <ModuleBreadcrumbs currentModule="dashboard" extraItems={[{ label: 'Admin Dashboard' }]} />
         <div className="flex items-center justify-between mt-4">
           <div>
             <h1 className="text-2xl font-display text-white">Admin Dashboard</h1>

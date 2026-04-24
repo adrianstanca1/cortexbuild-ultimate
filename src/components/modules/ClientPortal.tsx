@@ -1,6 +1,6 @@
 /**
  * ClientPortal — read-only Client/Owner Portal for UK construction projects.
- * Accessed via portal token (stub auth check for now).
+ * Reads optional `?token=` for UX / future portal-token auth; API calls use the logged-in session (see server/routes/client-portal.js).
  * Uses portalApi from services/api.ts.
  */
 import { useState, useEffect } from 'react';
@@ -71,7 +71,6 @@ export function ClientPortal() {
   const [reportsExpanded, setReportsExpanded] = useState(false);
   const [valuationsExpanded, setValuationsExpanded] = useState(false);
 
-  // Stub: in production, extract portal token from URL param ?token=xxx
   const portalToken = new URLSearchParams(window.location.search).get('token');
 
   useEffect(() => {
@@ -152,7 +151,7 @@ export function ClientPortal() {
 
   return (
     <>
-      <ModuleBreadcrumbs currentModule="client-portal" onNavigate={() => {}} />
+      <ModuleBreadcrumbs currentModule="client-portal" />
       <div className="p-6 space-y-6">
         {/* Header */}
         <div className="flex items-center justify-between">

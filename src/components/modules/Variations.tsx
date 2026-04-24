@@ -168,7 +168,7 @@ export default function Variations() {
 
   return (
     <>
-      <ModuleBreadcrumbs currentModule="variations" onNavigate={() => {}} />
+      <ModuleBreadcrumbs currentModule="variations" />
       <div className="p-6 space-y-6">
       <div className="flex items-center justify-between">
         <div>

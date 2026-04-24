@@ -104,7 +104,7 @@ export function AuditLog() {
 
   return (
     <>
-      <ModuleBreadcrumbs currentModule="audit-log" onNavigate={() => {}} />
+      <ModuleBreadcrumbs currentModule="audit-log" />
       <div className="space-y-6">
       {/* Header with KPIs */}
       <div>

@@ -161,7 +161,7 @@ export function PermissionsManager() {
 
   return (
     <>
-      <ModuleBreadcrumbs currentModule="permissions" onNavigate={() => {}} />
+      <ModuleBreadcrumbs currentModule="permissions" />
       <div className="space-y-6">
       <div className="flex justify-between items-center">
         <h1 className="text-2xl font-bold text-white">Permissions & Access Control</h1>

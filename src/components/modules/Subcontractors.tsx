@@ -202,7 +202,7 @@ export function Subcontractors() {
 
   return (
     <>
-      <ModuleBreadcrumbs currentModule="subcontractors" onNavigate={() => {}} />
+      <ModuleBreadcrumbs currentModule="subcontractors" />
       <div className="p-6 space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">

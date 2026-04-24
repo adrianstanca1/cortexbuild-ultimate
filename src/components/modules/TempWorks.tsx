@@ -187,7 +187,7 @@ export default function TempWorks() {
 
   return (
     <>
-      <ModuleBreadcrumbs currentModule="temp-works" onNavigate={() => {}} />
+      <ModuleBreadcrumbs currentModule="temp-works" />
       <div className="p-6 space-y-6">
       <div className="flex items-center justify-between">
         <div>

@@ -95,7 +95,7 @@ export function EmailHistory() {
 
   return (
     <>
-      <ModuleBreadcrumbs currentModule="email-history" onNavigate={() => {}} />
+      <ModuleBreadcrumbs currentModule="email-history" />
       <div className="p-6 space-y-6">
       <div className="flex items-center justify-between">
         <div>

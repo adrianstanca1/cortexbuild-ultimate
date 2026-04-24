@@ -393,9 +393,9 @@ function DashboardComponent() {
   ];
 
   return (
-    <div className="mx-auto max-w-[1680px] space-y-6 pb-2">
+    <div className="w-full min-w-0 space-y-6 pb-2">
       {/* ── Breadcrumbs ────────────────────────────────────────────── */}
-      <ModuleBreadcrumbs currentModule="dashboard" onNavigate={() => {}} />
+      <ModuleBreadcrumbs currentModule="dashboard" />
 
       {/* ── Site Status Banner ─────────────────────────────────────── */}
       <SiteStatusBanner />

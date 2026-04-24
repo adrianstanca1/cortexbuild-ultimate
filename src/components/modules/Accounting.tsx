@@ -166,7 +166,7 @@ export function Accounting() {
 
   return (
     <>
-      <ModuleBreadcrumbs currentModule="accounting" onNavigate={() => {}} />
+      <ModuleBreadcrumbs currentModule="accounting" />
       <div className="space-y-6 bg-gray-900 min-h-screen p-6">
       <div className="flex items-center justify-between">
         <h1 className="text-3xl font-display text-white">Accounting &amp; Finance</h1>

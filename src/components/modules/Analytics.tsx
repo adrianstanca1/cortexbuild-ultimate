@@ -285,7 +285,7 @@ export function Analytics() {
 
   return (
     <>
-      <ModuleBreadcrumbs currentModule="analytics" onNavigate={() => {}} />
+      <ModuleBreadcrumbs currentModule="analytics" />
       {(projectsError || safetyError || invoicesError) && (
         <div className="bg-red-900/30 border border-red-700 rounded-xl px-4 py-3 text-red-300 mb-4">
           Failed to load data: {projectsErr?.message || safetyErr?.message || invoicesErr?.message}
