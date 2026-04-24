@@ -24,11 +24,13 @@ async function runSqlFile(client, filePath) {
 }
 
 async function main() {
+    console.log(`[render-init-db] DATABASE_URL length: ${connectionString.length}`);
+    console.log(`[render-init-db] DATABASE_URL prefix: ${connectionString.split('@')[0]}@...`);
     console.log(`[render-init-db] Connecting to database...`);
 
     const client = new Client({
         connectionString,
-        ssl: { rejectUnauthorized: false }
+        ssl: true
     });
 
     try {
