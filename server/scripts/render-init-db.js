@@ -1,13 +1,12 @@
 const { Client } = require('pg');
 const fs = require('fs');
 const path = require('path');
-const { databaseUrlWantsSsl, effectiveDatabaseUrl } = require('../lib/pgConnectionEnv');
 
-const connectionString = effectiveDatabaseUrl();
+const connectionString = process.env.DATABASE_URL;
 
 if (!connectionString) {
-    console.error('DATABASE_URL environment variable is required for Render DB initialization.');
-    process.exit(1);
+  console.error('DATABASE_URL environment variable is required for Render DB initialization.');
+  process.exit(1);
 }
 
 async function runSqlFile(client, filePath) {
@@ -24,44 +23,16 @@ async function runSqlFile(client, filePath) {
     }
 }
 
-async function connectWithRetry(connectionString, maxRetries = 3) {
-    const useSsl = databaseUrlWantsSsl(connectionString);
-    // Render Postgres always requires SSL; force it if the host looks managed
-    const forceSsl = useSsl || /\.render\.(com|internal)\b/i.test(connectionString);
-    const sslConfig = forceSsl
-        ? { rejectUnauthorized: false }
-        : false;
-
-    let lastError;
-    for (let attempt = 1; attempt <= maxRetries; attempt++) {
-        const client = new Client({
-            connectionString,
-            ssl: sslConfig,
-            connectionTimeoutMillis: 10000,
-        });
-        try {
-            console.log(`[render-init-db] Connection attempt ${attempt}/${maxRetries}...`);
-            await client.connect();
-            console.log('[render-init-db] Connected successfully');
-            return client;
-        } catch (err) {
-            lastError = err;
-            console.error(`[render-init-db] Connection attempt ${attempt} failed: ${err.message}`);
-            try { await client.end(); } catch (_) {}
-            if (attempt < maxRetries) {
-                const delay = Math.min(1000 * Math.pow(2, attempt - 1), 5000);
-                console.log(`[render-init-db] Retrying in ${delay}ms...`);
-                await new Promise(r => setTimeout(r, delay));
-            }
-        }
-    }
-    throw lastError;
-}
-
 async function main() {
-    let client;
+    console.log(`[render-init-db] Connecting to database...`);
+
+    const client = new Client({
+        connectionString,
+        ssl: { rejectUnauthorized: false }
+    });
+
     try {
-        client = await connectWithRetry(connectionString);
+        await client.connect();
         console.log('Connected to database for initialization');
 
         // Check if database is already initialized by looking for a core table
