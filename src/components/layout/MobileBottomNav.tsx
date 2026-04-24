@@ -21,6 +21,7 @@ import {
 } from 'lucide-react';
 import { type Module } from '../../types';
 import { useIsMobile } from '../../hooks/useIsMobile';
+import { hapticImpact } from '../../lib/native/haptics';
 
 // ── Types ──────────────────────────────────────────────────────────────────────
 interface NavItem {
@@ -208,9 +209,7 @@ export function MobileBottomNav({
         y: rect.top - 10,
         module,
       });
-      if (navigator.vibrate) {
-        navigator.vibrate(50);
-      }
+      void hapticImpact('medium');
     }, 500);
   }, []);
 
@@ -230,7 +229,7 @@ export function MobileBottomNav({
       accent: '#3b82f6',
       onClick: () => {
         setQuickActionsOpen(false);
-        if (navigator.vibrate) navigator.vibrate(30);
+        void hapticImpact('light');
       },
     },
     {
@@ -240,7 +239,7 @@ export function MobileBottomNav({
       accent: '#f59e0b',
       onClick: () => {
         setQuickActionsOpen(false);
-        if (navigator.vibrate) navigator.vibrate(30);
+        void hapticImpact('light');
       },
     },
     {
@@ -250,7 +249,7 @@ export function MobileBottomNav({
       accent: '#ef4444',
       onClick: () => {
         setQuickActionsOpen(false);
-        if (navigator.vibrate) navigator.vibrate(30);
+        void hapticImpact('light');
       },
     },
     {
@@ -260,7 +259,7 @@ export function MobileBottomNav({
       accent: '#10b981',
       onClick: () => {
         setQuickActionsOpen(false);
-        if (navigator.vibrate) navigator.vibrate(30);
+        void hapticImpact('light');
       },
     },
     {
@@ -270,7 +269,7 @@ export function MobileBottomNav({
       accent: '#8b5cf6',
       onClick: () => {
         setQuickActionsOpen(false);
-        if (navigator.vibrate) navigator.vibrate(30);
+        void hapticImpact('light');
       },
     },
   ];
@@ -551,7 +550,7 @@ export function MobileBottomNav({
                 key={item.module}
                 onClick={() => {
                   onModuleChange(item.module);
-                  if (navigator.vibrate) navigator.vibrate(15);
+                  void hapticImpact('light');
                 }}
                 onTouchStart={(e) => handleLongPressStart(e, item.module)}
                 onTouchEnd={handleLongPressEnd}
@@ -690,7 +689,7 @@ export function MobileBottomNav({
                     animation: `fadeInScale 0.2s cubic-bezier(0.16, 1, 0.3, 1) ${index * 0.05}s both`,
                   }}
                   onTouchStart={() => {
-                    if (navigator.vibrate) navigator.vibrate(10);
+                    void hapticImpact('light');
                   }}
                 >
                   <div
@@ -728,7 +727,7 @@ export function MobileBottomNav({
         <button
           onClick={() => {
             setQuickActionsOpen(prev => !prev);
-            if (navigator.vibrate) navigator.vibrate(20);
+            void hapticImpact('light');
           }}
           aria-label="Quick actions"
           aria-expanded={quickActionsOpen}
