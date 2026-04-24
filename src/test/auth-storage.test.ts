@@ -1,10 +1,10 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { getToken, setToken, clearToken, getStoredUser, setStoredUser, API_BASE } from '../lib/supabase';
+import { getToken, setToken, clearToken, getStoredUser, setStoredUser, API_BASE } from '../lib/auth-storage';
 
 const TOKEN_KEY = 'cortexbuild_token';
-const USER_KEY  = 'cortexbuild_user';
+const USER_KEY = 'cortexbuild_user';
 
-describe('supabase auth helpers (local storage)', () => {
+describe('auth-storage (local JWT + user in localStorage)', () => {
   beforeEach(() => {
     localStorage.clear();
     vi.restoreAllMocks();
@@ -59,10 +59,8 @@ describe('supabase auth helpers (local storage)', () => {
     });
 
     it('getStoredUser should return null if stored JSON is invalid', () => {
-      // Inject invalid JSON
       localStorage.setItem(USER_KEY, '{invalid-json: "test"');
 
-      // Should not throw, but return null
       expect(getStoredUser()).toBeNull();
     });
   });

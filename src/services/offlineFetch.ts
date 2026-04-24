@@ -1,4 +1,4 @@
-import { getToken } from '../lib/supabase';
+import { getToken } from '../lib/auth-storage';
 import { enqueue } from './offlineQueue';
 
 const WRITE_METHODS = new Set(['POST', 'PUT', 'PATCH', 'DELETE']);

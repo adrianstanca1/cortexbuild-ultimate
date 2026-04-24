@@ -3,8 +3,7 @@ import { Clock, MapPin } from 'lucide-react';
 import { toast } from 'sonner';
 import { offlineFetch } from '../../services/offlineFetch';
 import { usePushNotifications } from '../../hooks/usePushNotifications';
-import { getToken } from '../../lib/supabase';
-import { getCurrentPosition } from '../../lib/native/geolocation';
+import { getToken } from '../../lib/auth-storage';
 
 function haversineMeters(lat1: number, lon1: number, lat2: number, lon2: number): number {
   const R = 6371000;
@@ -76,30 +75,34 @@ export default function MobileTimesheet() {
   }, [clockedIn, clockInTime]);
 
   const checkGPS = async (): Promise<boolean> => {
-    try {
-      if (!siteCoords) return true; // no site coords configured → skip check
-      const pos = await getCurrentPosition();
-      const dist = haversineMeters(
-        pos.latitude,
-        pos.longitude,
-        siteCoords.lat,
-        siteCoords.lon,
-      );
-      if (dist > 200) {
-        setGpsOk(false);
-        return new Promise((resolve) => {
-          if (window.confirm(`You appear to be ${Math.round(dist)}m from the site. Continue?`)) {
+    return new Promise(resolve => {
+      if (!navigator.geolocation) { resolve(true); return; }
+      navigator.geolocation.getCurrentPosition(
+        pos => {
+          if (!siteCoords) {
+            // No project coordinates configured — skip radius check, allow clock-in
+            setGpsOk(true);
             resolve(true);
-          } else {
-            resolve(false);
+            return;
           }
-        });
-      }
-      setGpsOk(true);
-      return true;
-    } catch {
-      return true; // GPS unavailable → don't block
-    }
+          const dist = haversineMeters(
+            pos.coords.latitude, pos.coords.longitude,
+            siteCoords.lat, siteCoords.lon
+          );
+          if (dist > 200) {
+            setGpsOk(false);
+            const proceed = window.confirm(
+              `You appear to be ${Math.round(dist)}m from site. Clock in anyway?`
+            );
+            resolve(proceed);
+          } else {
+            setGpsOk(true);
+            resolve(true);
+          }
+        },
+        () => resolve(true) // GPS unavailable → allow clock-in
+      );
+    });
   };
 
   const handleClockIn = async () => {
