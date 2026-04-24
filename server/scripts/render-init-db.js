@@ -27,9 +27,9 @@ async function runSqlFile(client, filePath) {
 async function connectWithRetry(connectionString, maxRetries = 3) {
     const useSsl = databaseUrlWantsSsl(connectionString);
     // Render Postgres always requires SSL; force it if the host looks managed
-    const forceSsl = useSsl || /\.render\.com\b/i.test(connectionString);
+    const forceSsl = useSsl || /\.render\.(com|internal)\b/i.test(connectionString);
     const sslConfig = forceSsl
-        ? { rejectUnauthorized: process.env.DATABASE_SSL_REJECT_UNAUTHORIZED === 'true' }
+        ? { rejectUnauthorized: false }
         : false;
 
     let lastError;
