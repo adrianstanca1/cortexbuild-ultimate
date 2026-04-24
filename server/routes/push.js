@@ -26,6 +26,20 @@ router.post('/subscribe', (req, res) => {
   res.json({ ok: true });
 });
 
+// POST /subscribe-native — store APNs device token from iOS Capacitor app
+router.post('/subscribe-native', async (req, res) => {
+  const { deviceToken, platform } = req.body;
+  if (!deviceToken || platform !== 'apns') {
+    return res.status(400).json({ error: 'deviceToken and platform=apns required' });
+  }
+  const userId = req.user?.id;
+  if (!userId) return res.status(401).json({ error: 'Unauthorized' });
+
+  subscriptions.set(`apns:${userId}`, { deviceToken, platform: 'apns', userId });
+  console.log(`[Push] APNs device token registered for user ${userId}`);
+  res.status(204).end();
+});
+
 // GET /api/push/vapid-public-key — return VAPID public key for client
 router.get('/vapid-public-key', (_req, res) => {
   res.json({ key: process.env.VAPID_PUBLIC_KEY || '' });
