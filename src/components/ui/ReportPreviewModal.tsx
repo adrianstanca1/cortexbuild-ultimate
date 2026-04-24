@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { X, Download, FileText, Loader2, Eye } from 'lucide-react';
-import { getToken } from '../../lib/supabase';
+import { getToken } from '../../lib/auth-storage';
 
 interface ReportPreviewModalProps {
   reportType: 'invoice' | 'rfi' | 'daily-report' | 'safety-incident' | 'project';

@@ -1,5 +1,5 @@
 /**
- * NotificationCenter component tests (fetch + Supabase token flow).
+ * NotificationCenter component tests (fetch + auth token flow).
  */
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
@@ -14,7 +14,7 @@ vi.mock('sonner', () => ({
   },
 }));
 
-vi.mock('@/lib/supabase', () => ({
+vi.mock('@/lib/auth-storage', () => ({
   getToken: vi.fn(() => 'test-token'),
 }));
 

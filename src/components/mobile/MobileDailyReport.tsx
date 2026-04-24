@@ -3,7 +3,7 @@ import { Mic, Camera, Send, CloudOff } from 'lucide-react';
 import { toast } from 'sonner';
 import { offlineFetch } from '../../services/offlineFetch';
 import { useNetworkStatus } from '../../hooks/useNetworkStatus';
-import { getToken } from '../../lib/supabase';
+import { getToken } from '../../lib/auth-storage';
 
 interface ReportForm {
   workers: string;

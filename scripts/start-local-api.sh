@@ -59,6 +59,7 @@ if ! docker compose version >/dev/null 2>&1; then
 fi
 
 echo "Starting local stack (postgres :15432, redis :16379, api :3001)…"
+echo "Tip: run API on the host with  cp server/env.local.template server/.env  (same DB/Redis ports)."
 if [[ "${CORTEXBUILD_LOCAL_API_SKIP_BUILD:-}" == "1" ]]; then
   "${COMPOSE[@]}" up -d postgres redis api
 else

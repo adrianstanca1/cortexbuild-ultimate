@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Bell, Check, CheckCheck, X, Settings, AtSign, AlertTriangle, Server } from 'lucide-react';
 import { toast } from 'sonner';
-import { getToken } from '@/lib/supabase';
+import { getToken } from '@/lib/auth-storage';
 
 type TabFilter = 'all' | 'mentions' | 'alerts' | 'system';
 
