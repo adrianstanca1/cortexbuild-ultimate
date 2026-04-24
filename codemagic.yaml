@@ -37,6 +37,7 @@ workflows:
 
       - name: Resolve Swift packages
         script: |
+          set -euo pipefail
           cd ios/App
           xcodebuild -resolvePackageDependencies \
             -workspace App.xcworkspace \
@@ -44,12 +45,24 @@ workflows:
 
       - name: Increment build number
         script: |
+          set -euo pipefail
           cd ios/App
-          LATEST=$(app-store-connect get-latest-testflight-build-number "$BUNDLE_ID" 2>/dev/null || echo 0)
+          set +e
+          OUT=$(app-store-connect get-latest-testflight-build-number "$BUNDLE_ID" 2>&1)
+          STATUS=$?
+          set -e
+          if [ "$STATUS" -ne 0 ]; then
+            echo "app-store-connect get-latest-testflight-build-number failed (exit $STATUS):" >&2
+            echo "$OUT" >&2
+            exit 1
+          fi
+          LATEST="$OUT"
+          if [ -z "$LATEST" ]; then LATEST=0; fi
           agvtool new-version -all $((LATEST + 1))
 
       - name: Archive for App Store
         script: |
+          set -o pipefail
           cd ios/App
           xcodebuild \
             -workspace App.xcworkspace \
@@ -60,8 +73,21 @@ workflows:
             archive \
             | xcpretty
 
+      - name: Patch ExportOptions team ID
+        script: |
+          set -euo pipefail
+          cd ios/App
+          TEAM="${TEAM_ID:-}"
+          if [ -z "$TEAM" ]; then
+            echo "TEAM_ID is not set (add Team ID to apple_credentials group in Codemagic)." >&2
+            exit 1
+          fi
+          sed -i.bak "s/__TEAM_ID__/${TEAM}/g" ExportOptions.plist
+          rm -f ExportOptions.plist.bak
+
       - name: Export IPA
         script: |
+          set -o pipefail
           cd ios/App
           xcodebuild \
             -exportArchive \
@@ -118,6 +144,7 @@ workflows:
 
       - name: Build for simulator
         script: |
+          set -o pipefail
           cd ios/App
           xcodebuild \
             -workspace App.xcworkspace \
@@ -130,4 +157,4 @@ workflows:
             | xcpretty
 
     artifacts:
-      - ios/App/DerivedData/**/CortexBuild.app
+      - ios/App/DerivedData/**/Build/Products/Debug-iphonesimulator/App.app

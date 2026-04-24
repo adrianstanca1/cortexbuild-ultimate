@@ -4,15 +4,11 @@
 <dict>
     <key>method</key>
     <string>app-store</string>
-    <!-- Set APPLE_TEAM_ID in your environment or replace before local builds -->
+    <!-- Replaced by Codemagic / CI from TEAM_ID before xcodebuild -exportArchive -->
     <key>teamID</key>
-    <string>$(APPLE_TEAM_ID)</string>
-    <key>uploadBitcode</key>
-    <false/>
+    <string>__TEAM_ID__</string>
     <key>uploadSymbols</key>
     <true/>
-    <key>compileBitcode</key>
-    <false/>
     <key>destination</key>
     <string>upload</string>
     <key>signingStyle</key>
