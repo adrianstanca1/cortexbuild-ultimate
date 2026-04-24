@@ -61,6 +61,7 @@ jobs:
           username: ${{ secrets.SSH_USERNAME }}
           key: ${{ secrets.VPS_SSH_KEY }}
           passphrase: ""
+          timeout: 3m
           command_timeout: 120m
           script: |
             set -e
@@ -184,7 +185,8 @@ jobs:
             cd "$PROJECT_DIR"
             git config --global --add safe.directory "$PROJECT_DIR" || true
 
-            git pull origin main
+            git fetch origin
+            git reset --hard origin/main
 
             # Load environment variables BEFORE docker commands
             set +u

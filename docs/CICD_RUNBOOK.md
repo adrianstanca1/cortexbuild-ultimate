@@ -79,6 +79,19 @@ Use repo scripts (there is no tracked root `deploy.sh`):
 
 Workflow: `.github/workflows/deploy.yml` — **Test & Build** then **Deploy to VPS** on push to `main` (or `workflow_dispatch`).
 
+### HTTPS canary (no SSH)
+
+Workflow: `.github/workflows/vps-https-canary.yml` — runs on a schedule (every 6 hours) and on **workflow_dispatch**. It only `curl`s `https://www.cortexbuildpro.com/api/health` and the apex domain, asserting the same JSON contract as CI. Use it to confirm the site stays up when **Deploy to VPS** fails with `dial tcp …:22: i/o timeout` (VPS firewall, provider network, or SSH not reachable from GitHub).
+
+### Local sync (`deploy/vps-sync.sh`) and SSH agent
+
+If Actions cannot SSH in, sync from a trusted machine that can reach the VPS:
+
+1. Load your deploy key: `eval "$(ssh-agent -s)"` then `ssh-add ~/.ssh/id_ed25519_vps` (or `~/.ssh/gh_actions_ed25519` if that is what the server trusts).
+2. Run `bash deploy/vps-sync.sh` (optional: `VPS_HOST` / `VPS_PATH` if your layout differs from defaults in the script).
+
+Docker on the VPS should use **`--restart always`** for `cortexbuild-api` and Ollama (the embedded deploy script already sets this for the API).
+
 ---
 
 ## VPS Management
