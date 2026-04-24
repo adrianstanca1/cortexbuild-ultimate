@@ -59,7 +59,9 @@ async function connectWithRetry(connectionString, maxRetries = 3) {
 }
 
 async function main() {
-    const client = await connectWithRetry(connectionString);
+    let client;
+    try {
+        client = await connectWithRetry(connectionString);
         console.log('Connected to database for initialization');
 
         // Check if database is already initialized by looking for a core table
