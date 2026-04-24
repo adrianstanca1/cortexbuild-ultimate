@@ -1,84 +1,103 @@
-import { useState, useEffect } from 'react';
-import { Clock, MapPin } from 'lucide-react';
-import { toast } from 'sonner';
-import { offlineFetch } from '../../services/offlineFetch';
-import { usePushNotifications } from '../../hooks/usePushNotifications';
-import { getToken } from '../../lib/auth-storage';
+import { useState, useEffect } from "react";
+import { Clock, MapPin } from "lucide-react";
+import { toast } from "sonner";
+import { offlineFetch } from "../../services/offlineFetch";
+import { usePushNotifications } from "../../hooks/usePushNotifications";
+import { getToken } from "../../lib/auth-storage";
 
-function haversineMeters(lat1: number, lon1: number, lat2: number, lon2: number): number {
+function haversineMeters(
+  lat1: number,
+  lon1: number,
+  lat2: number,
+  lon2: number,
+): number {
   const R = 6371000;
-  const φ1 = lat1 * Math.PI / 180;
-  const φ2 = lat2 * Math.PI / 180;
-  const Δφ = (lat2 - lat1) * Math.PI / 180;
-  const Δλ = (lon2 - lon1) * Math.PI / 180;
-  const a = Math.sin(Δφ / 2) ** 2 + Math.cos(φ1) * Math.cos(φ2) * Math.sin(Δλ / 2) ** 2;
+  const φ1 = (lat1 * Math.PI) / 180;
+  const φ2 = (lat2 * Math.PI) / 180;
+  const Δφ = ((lat2 - lat1) * Math.PI) / 180;
+  const Δλ = ((lon2 - lon1) * Math.PI) / 180;
+  const a =
+    Math.sin(Δφ / 2) ** 2 + Math.cos(φ1) * Math.cos(φ2) * Math.sin(Δλ / 2) ** 2;
   return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 }
 
 export default function MobileTimesheet() {
-  const [clockedIn,   setIn]      = useState(false);
-  const [clockInTime, setInTime]  = useState<Date | null>(null);
-  const [elapsed,     setElapsed] = useState('00:00:00');
-  const [onBreak,     setBreak]   = useState(false);
-  const [breaks,      setBreaks]  = useState(0);
-  const [costCode,    setCode]    = useState('03.20 · Concrete works');
-  const [gpsOk,       setGpsOk]  = useState<boolean | null>(null);
-  const [siteCoords, setSiteCoords] = useState<{ lat: number; lon: number } | null>(null);
+  const [clockedIn, setIn] = useState(false);
+  const [clockInTime, setInTime] = useState<Date | null>(null);
+  const [elapsed, setElapsed] = useState("00:00:00");
+  const [onBreak, setBreak] = useState(false);
+  const [breaks, setBreaks] = useState(0);
+  const [costCode, setCode] = useState("03.20 · Concrete works");
+  const [gpsOk, setGpsOk] = useState<boolean | null>(null);
+  const [siteCoords, setSiteCoords] = useState<{
+    lat: number;
+    lon: number;
+  } | null>(null);
 
   usePushNotifications(clockedIn);
 
   useEffect(() => {
     // Try to get project coords — use first project in org if no specific project set
     const t0 = getToken();
-    fetch('/api/generic/projects?limit=1', {
-      credentials: 'include',
+    fetch("/api/generic/projects?limit=1", {
+      credentials: "include",
       headers: { ...(t0 ? { Authorization: `Bearer ${t0}` } : {}) },
     })
-      .then(r => r.json())
+      .then((r) => r.json())
       .then((data: unknown) => {
         // data may be array or { data: [...] } depending on generic route shape
-        const arr = Array.isArray(data) ? data : (data as { data?: unknown[] })?.data ?? [];
+        const arr = Array.isArray(data)
+          ? data
+          : ((data as { data?: unknown[] })?.data ?? []);
         const project = (arr as Array<{ id: string }>)[0];
         if (!project?.id) return;
         const t1 = getToken();
         return fetch(`/api/mobile/project-location?project_id=${project.id}`, {
-          credentials: 'include',
+          credentials: "include",
           headers: { ...(t1 ? { Authorization: `Bearer ${t1}` } : {}) },
-        }).then(r => r.json());
+        }).then((r) => r.json());
       })
       .then((coords: unknown) => {
-        const c = coords as { latitude?: number; longitude?: number } | null | undefined;
+        const c = coords as
+          | { latitude?: number; longitude?: number }
+          | null
+          | undefined;
         if (c === null || c === undefined) return;
         const { latitude: lat, longitude: lon } = c;
         if (
-          typeof lat === 'number' &&
-          typeof lon === 'number' &&
+          typeof lat === "number" &&
+          typeof lon === "number" &&
           Number.isFinite(lat) &&
           Number.isFinite(lon)
         ) {
           setSiteCoords({ lat, lon });
         }
       })
-      .catch(() => {}); // non-fatal
+      .catch((err) => {
+        console.warn("[MobileTimesheet] Geolocation error:", err);
+      });
   }, []);
 
   useEffect(() => {
     if (!clockedIn || !clockInTime) return;
     const id = setInterval(() => {
       const secs = Math.floor((Date.now() - clockInTime.getTime()) / 1000);
-      const h = String(Math.floor(secs / 3600)).padStart(2, '0');
-      const m = String(Math.floor((secs % 3600) / 60)).padStart(2, '0');
-      const s = String(secs % 60).padStart(2, '0');
+      const h = String(Math.floor(secs / 3600)).padStart(2, "0");
+      const m = String(Math.floor((secs % 3600) / 60)).padStart(2, "0");
+      const s = String(secs % 60).padStart(2, "0");
       setElapsed(`${h}:${m}:${s}`);
     }, 1000);
     return () => clearInterval(id);
   }, [clockedIn, clockInTime]);
 
   const checkGPS = async (): Promise<boolean> => {
-    return new Promise(resolve => {
-      if (!navigator.geolocation) { resolve(true); return; }
+    return new Promise((resolve) => {
+      if (!navigator.geolocation) {
+        resolve(true);
+        return;
+      }
       navigator.geolocation.getCurrentPosition(
-        pos => {
+        (pos) => {
           if (!siteCoords) {
             // No project coordinates configured — skip radius check, allow clock-in
             setGpsOk(true);
@@ -86,13 +105,15 @@ export default function MobileTimesheet() {
             return;
           }
           const dist = haversineMeters(
-            pos.coords.latitude, pos.coords.longitude,
-            siteCoords.lat, siteCoords.lon
+            pos.coords.latitude,
+            pos.coords.longitude,
+            siteCoords.lat,
+            siteCoords.lon,
           );
           if (dist > 200) {
             setGpsOk(false);
             const proceed = window.confirm(
-              `You appear to be ${Math.round(dist)}m from site. Clock in anyway?`
+              `You appear to be ${Math.round(dist)}m from site. Clock in anyway?`,
             );
             resolve(proceed);
           } else {
@@ -100,7 +121,7 @@ export default function MobileTimesheet() {
             resolve(true);
           }
         },
-        () => resolve(true) // GPS unavailable → allow clock-in
+        () => resolve(true), // GPS unavailable → allow clock-in
       );
     });
   };
@@ -109,26 +130,38 @@ export default function MobileTimesheet() {
     const ok = await checkGPS();
     if (!ok) return;
     const now = new Date();
-    setIn(true); setInTime(now);
-    await offlineFetch('/api/timesheets/clock-in', {
-      method: 'POST',
-      body: JSON.stringify({ clocked_in_at: now.toISOString(), cost_code: costCode }),
+    setIn(true);
+    setInTime(now);
+    await offlineFetch("/api/timesheets/clock-in", {
+      method: "POST",
+      body: JSON.stringify({
+        clocked_in_at: now.toISOString(),
+        cost_code: costCode,
+      }),
     });
-    toast.success('Clocked in');
+    toast.success("Clocked in");
   };
 
   const handleClockOut = async () => {
-    setIn(false); setInTime(null); setElapsed('00:00:00');
-    await offlineFetch('/api/timesheets/clock-out', {
-      method: 'POST',
-      body: JSON.stringify({ clocked_out_at: new Date().toISOString(), breaks_count: breaks }),
+    setIn(false);
+    setInTime(null);
+    setElapsed("00:00:00");
+    await offlineFetch("/api/timesheets/clock-out", {
+      method: "POST",
+      body: JSON.stringify({
+        clocked_out_at: new Date().toISOString(),
+        breaks_count: breaks,
+      }),
     });
-    toast.success('Clocked out');
+    toast.success("Clocked out");
   };
 
   const billableHours = clockInTime
-    ? Math.max(0, (Date.now() - clockInTime.getTime()) / 3600000 - breaks * 0.25).toFixed(1)
-    : '0.0';
+    ? Math.max(
+        0,
+        (Date.now() - clockInTime.getTime()) / 3600000 - breaks * 0.25,
+      ).toFixed(1)
+    : "0.0";
 
   return (
     <div className="p-4 max-w-lg mx-auto space-y-4">
@@ -136,9 +169,11 @@ export default function MobileTimesheet() {
 
       <div className="bg-gradient-to-br from-indigo-900 to-indigo-800 rounded-2xl p-5 text-center border border-indigo-700">
         <div className="text-indigo-300 text-[10px] uppercase tracking-widest mb-1">
-          {clockedIn ? 'Time on site' : 'Ready to start'}
+          {clockedIn ? "Time on site" : "Ready to start"}
         </div>
-        <div className="text-5xl font-bold text-indigo-100 font-mono tracking-wider my-3">{elapsed}</div>
+        <div className="text-5xl font-bold text-indigo-100 font-mono tracking-wider my-3">
+          {elapsed}
+        </div>
         {clockedIn && <div className="text-indigo-400 text-sm">{costCode}</div>}
       </div>
 
@@ -149,22 +184,32 @@ export default function MobileTimesheet() {
         </div>
         <div className="bg-slate-800 rounded-xl p-3 text-center">
           <div className="text-slate-400 text-xs">Billable hrs</div>
-          <div className="text-indigo-300 text-xl font-bold">{billableHours}h</div>
+          <div className="text-indigo-300 text-xl font-bold">
+            {billableHours}h
+          </div>
         </div>
       </div>
 
       {gpsOk !== null && (
-        <div className={`flex items-center gap-2 text-xs px-3 py-2 rounded-lg ${
-          gpsOk ? 'bg-emerald-900/40 text-emerald-300' : 'bg-amber-900/40 text-amber-300'}`}>
+        <div
+          className={`flex items-center gap-2 text-xs px-3 py-2 rounded-lg ${
+            gpsOk
+              ? "bg-emerald-900/40 text-emerald-300"
+              : "bg-amber-900/40 text-amber-300"
+          }`}
+        >
           <MapPin size={12} />
-          {gpsOk ? 'On site ✓' : 'Off-site (overridden)'}
+          {gpsOk ? "On site ✓" : "Off-site (overridden)"}
         </div>
       )}
 
       <div className="bg-slate-800 rounded-xl px-4 py-3">
         <div className="text-slate-400 text-xs mb-1">Cost code</div>
-        <select value={costCode} onChange={e => setCode(e.target.value)}
-          className="w-full bg-transparent text-slate-100 text-sm">
+        <select
+          value={costCode}
+          onChange={(e) => setCode(e.target.value)}
+          className="w-full bg-transparent text-slate-100 text-sm"
+        >
           <option>03.20 · Concrete works</option>
           <option>04.10 · Brickwork</option>
           <option>05.30 · Steel frame</option>
@@ -174,18 +219,30 @@ export default function MobileTimesheet() {
 
       {clockedIn ? (
         <div className="space-y-2">
-          <button type="button" onClick={() => { setBreak(b => !b); if (!onBreak) setBreaks(b => b + 1); }}
-            className={`w-full rounded-2xl py-3 font-semibold text-sm ${onBreak ? 'bg-amber-600 text-white' : 'bg-slate-700 text-slate-300'}`}>
-            {onBreak ? '▶ End Break' : '⏸ Take Break'}
+          <button
+            type="button"
+            onClick={() => {
+              setBreak((b) => !b);
+              if (!onBreak) setBreaks((b) => b + 1);
+            }}
+            className={`w-full rounded-2xl py-3 font-semibold text-sm ${onBreak ? "bg-amber-600 text-white" : "bg-slate-700 text-slate-300"}`}
+          >
+            {onBreak ? "▶ End Break" : "⏸ Take Break"}
           </button>
-          <button type="button" onClick={() => void handleClockOut()}
-            className="w-full bg-indigo-700 hover:bg-indigo-600 rounded-2xl py-3.5 text-white font-bold flex items-center justify-center gap-2">
+          <button
+            type="button"
+            onClick={() => void handleClockOut()}
+            className="w-full bg-indigo-700 hover:bg-indigo-600 rounded-2xl py-3.5 text-white font-bold flex items-center justify-center gap-2"
+          >
             <Clock size={16} /> Clock Out
           </button>
         </div>
       ) : (
-        <button type="button" onClick={() => void handleClockIn()}
-          className="w-full bg-emerald-600 hover:bg-emerald-500 rounded-2xl py-4 text-white text-base font-bold flex items-center justify-center gap-2 active:scale-95 transition-all">
+        <button
+          type="button"
+          onClick={() => void handleClockIn()}
+          className="w-full bg-emerald-600 hover:bg-emerald-500 rounded-2xl py-4 text-white text-base font-bold flex items-center justify-center gap-2 active:scale-95 transition-all"
+        >
           <Clock size={18} /> Clock In
         </button>
       )}

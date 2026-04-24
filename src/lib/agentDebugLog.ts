@@ -77,7 +77,10 @@ export function agentDebugLog(entry: {
       });
       if (r.ok) return;
       const text = (await r.text()).slice(0, 200);
-      warnAgentDebugPrimaryOnce("POST /api/agent-debug failed", `${r.status} ${text}`);
+      warnAgentDebugPrimaryOnce(
+        "POST /api/agent-debug failed",
+        `${r.status} ${text}`,
+      );
     } catch (e) {
       warnAgentDebugPrimaryOnce(
         "POST /api/agent-debug error",
@@ -93,7 +96,9 @@ export function agentDebugLog(entry: {
         },
         body,
       }),
-    ).catch(() => {});
+    ).catch((err) => {
+      console.error("[agentDebugLog] Debug log delivery failed:", err);
+    });
   })();
   // #endregion
 }

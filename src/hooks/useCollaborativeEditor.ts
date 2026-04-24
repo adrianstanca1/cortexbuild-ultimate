@@ -1,4 +1,5 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback } from "react";
+import { apiGet, apiPost } from "@/lib/api";
 
 interface DocumentVersion {
   id: string;
@@ -8,59 +9,111 @@ interface DocumentVersion {
   timestamp: string;
 }
 
-export function useCollaborativeEditor(documentId: string) {
-  const [content, setContent] = useState('');
+interface UseCollaborativeEditorResult {
+  content: string;
+  updateContent: (newContent: string) => void;
+  versions: DocumentVersion[];
+  saveVersion: () => Promise<void>;
+  isEditing: boolean;
+  setIsEditing: (editing: boolean) => void;
+  collaborators: string[];
+  loading: boolean;
+  error: Error | null;
+}
+
+/**
+ * Collaborative document editor hook.
+ *
+ * **Current state**: Loads/saves via REST API. Real-time collaboration
+ * (cursor positions, live cursors, operational transforms) is planned
+ * but not yet wired to the WebSocket layer. When enabled, the hook
+ * will switch from REST polling to WebSocket events.
+ */
+export function useCollaborativeEditor(
+  documentId: string,
+): UseCollaborativeEditorResult {
+  const [content, setContent] = useState("");
   const [versions, setVersions] = useState<DocumentVersion[]>([]);
   const [isEditing, setIsEditing] = useState(false);
-  const [collaborators, setCollaborators] = useState<string[]>([]);
+  const [collaborators] = useState<string[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<Error | null>(null);
 
-  // Load document
+  // Load document content and version history
   useEffect(() => {
-    // Simulate loading document
-    setContent('# Project Document\n\nStart editing...');
-    setVersions([
-      {
-        id: '1',
-        content: 'Initial version',
-        userId: 'user1',
-        userName: 'Sarah Chen',
-        timestamp: new Date().toISOString(),
-      },
-    ]);
+    if (!documentId) return;
+    let cancelled = false;
+
+    const load = async () => {
+      setLoading(true);
+      setError(null);
+      try {
+        const doc = await apiGet<{
+          content: string;
+          versions: DocumentVersion[];
+        }>(`/documents/${documentId}`);
+        if (cancelled) return;
+        setContent(doc.content ?? "");
+        setVersions(doc.versions ?? []);
+      } catch (err) {
+        if (cancelled) return;
+        setError(
+          err instanceof Error ? err : new Error("Failed to load document"),
+        );
+        console.error("[useCollaborativeEditor] Load failed:", err);
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    };
+
+    load();
+    return () => {
+      cancelled = true;
+    };
   }, [documentId]);
 
-  // Simulate collaborators
+  // WebSocket collaboration (placeholder — enable when backend supports it)
   useEffect(() => {
-    const interval = setInterval(() => {
-      setCollaborators(prev => {
-        if (prev.length < 3 && Math.random() > 0.7) {
-          return [...prev, `User${Date.now()}`];
-        }
-        if (prev.length > 0 && Math.random() > 0.8) {
-          return prev.slice(0, -1);
-        }
-        return prev;
-      });
-    }, 5000);
+    if (!documentId || process.env.NODE_ENV === "test") return;
 
-    return () => clearInterval(interval);
-  }, []);
+    // TODO: Connect to /ws/documents/:id when real-time collaboration is ready
+    // const ws = new WebSocket(buildWebSocketUrl(`/documents/${documentId}`));
+    // ws.onmessage = (event) => { ...handle cursor positions, remote edits... };
+    // wsRef.current = ws;
+    // return () => { ws.close(); wsRef.current = null; };
+
+    return undefined;
+  }, [documentId]);
 
   const updateContent = useCallback((newContent: string) => {
     setContent(newContent);
-    // Debounced save would go here
+    // Debounced auto-save can be added here
   }, []);
 
-  const saveVersion = useCallback(() => {
-    const newVersion: DocumentVersion = {
-      id: Date.now().toString(),
-      content: content.substring(0, 50) + '...',
-      userId: 'current-user',
-      userName: 'You',
-      timestamp: new Date().toISOString(),
-    };
-    setVersions(prev => [newVersion, ...prev]);
-  }, [content]);
+  const saveVersion = useCallback(async () => {
+    if (!documentId || !content.trim()) return;
+    try {
+      const version: DocumentVersion = {
+        id: crypto.randomUUID?.() ?? Date.now().toString(),
+        content: content.substring(0, 200),
+        userId: "current-user",
+        userName: "You",
+        timestamp: new Date().toISOString(),
+      };
+
+      await apiPost(`/documents/${documentId}/versions`, {
+        content: version.content,
+        fullContent: content,
+      });
+
+      setVersions((prev) => [version, ...prev]);
+    } catch (err) {
+      console.error("[useCollaborativeEditor] Save failed:", err);
+      throw err instanceof Error
+        ? err
+        : new Error("Failed to save document version");
+    }
+  }, [documentId, content]);
 
   return {
     content,
@@ -70,5 +123,7 @@ export function useCollaborativeEditor(documentId: string) {
     isEditing,
     setIsEditing,
     collaborators,
+    loading,
+    error,
   };
 }
