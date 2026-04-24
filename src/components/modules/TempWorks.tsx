@@ -209,7 +209,7 @@ export default function TempWorks() {
             </div>
             <div>
               <p className="text-gray-400 text-xs">In Design</p>
-              <p className="text-2xl font-display text-white">{rawTempWorks.filter((t: any) => t.status === 'design').length}</p>
+              <p className="text-2xl font-display text-white">{rawTempWorks.filter((t: TempWork) => t.status === 'design').length}</p>
             </div>
           </div>
         </div>
@@ -220,7 +220,7 @@ export default function TempWorks() {
             </div>
             <div>
               <p className="text-gray-400 text-xs">Pending Approval</p>
-              <p className="text-2xl font-display text-amber-400">{rawTempWorks.filter((t: any) => t.status === 'approval').length}</p>
+              <p className="text-2xl font-display text-amber-400">{rawTempWorks.filter((t: TempWork) => t.status === 'approval').length}</p>
             </div>
           </div>
         </div>
@@ -231,7 +231,7 @@ export default function TempWorks() {
             </div>
             <div>
               <p className="text-gray-400 text-xs">In Use</p>
-              <p className="text-2xl font-display text-emerald-400">{rawTempWorks.filter((t: any) => t.status === 'in_use').length}</p>
+              <p className="text-2xl font-display text-emerald-400">{rawTempWorks.filter((t: TempWork) => t.status === 'in_use').length}</p>
             </div>
           </div>
         </div>

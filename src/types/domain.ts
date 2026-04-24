@@ -79,13 +79,16 @@ export interface TenderRow extends Row {
 
 export interface CertificationRow extends Row {
   id: string;
-  name: string;
-  issuer?: string;
+  certification_type?: string;
+  holder?: string;
+  company?: string;
+  body?: string;
+  accreditation_number?: string;
+  grade?: string;
   issue_date?: string;
   expiry_date?: string;
   status?: string;
-  description?: string;
-  certificate_url?: string;
+  document_name?: string | null;
   created_at?: string;
   updated_at?: string;
 }
@@ -112,9 +115,10 @@ export interface PrequalificationRow extends Row {
 
 export interface SustainabilityRow extends Row {
   id: string;
-  category?: string;
-  metric?: string;
-  value?: number;
+  metric_type?: string;
+  project?: string;
+  period?: string;
+  actual?: number;
   target?: number;
   unit?: string;
   status?: string;
