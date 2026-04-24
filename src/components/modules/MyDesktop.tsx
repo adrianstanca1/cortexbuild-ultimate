@@ -5,6 +5,7 @@ import {
   Wifi, Battery, Volume2, Grid,
   MessageSquare, HardHat, Layers, Shield
 } from 'lucide-react';
+import { ModuleBreadcrumbs } from '../ui/Breadcrumbs';
 interface AppInfo {
   id: string;
   name: string;
@@ -348,6 +349,9 @@ export const MyDesktop: React.FC = () => {
       className="h-screen bg-gradient-to-br from-slate-800 via-slate-900 to-black relative overflow-hidden"
       onClick={() => setStartMenuOpen(false)}
     >
+      <div className="absolute top-10 left-4 right-4 z-40 max-w-[1680px] mx-auto pointer-events-auto">
+        <ModuleBreadcrumbs currentModule="my-desktop" />
+      </div>
       {/* Demo Banner */}
       <div className="absolute top-0 left-0 right-0 z-50 bg-amber-500/20 border-b border-amber-500/30 px-4 py-1.5 flex items-center justify-center gap-2">
         <span className="px-2 py-0.5 rounded text-xs font-medium bg-amber-500/30 text-amber-300 border border-amber-500/40">EXPERIMENTAL</span>
@@ -363,8 +367,8 @@ export const MyDesktop: React.FC = () => {
         </div>
       </div>
 
-      {/* Desktop Icons */}
-      <div className="absolute top-4 left-4 grid gap-4">
+      {/* Desktop Icons — below demo strip + module breadcrumbs */}
+      <div className="absolute top-28 left-4 grid gap-4">
         {[
           { icon: Folder, name: 'Documents', color: 'text-yellow-400' },
           { icon: Terminal, name: 'Terminal', color: 'text-green-400' },

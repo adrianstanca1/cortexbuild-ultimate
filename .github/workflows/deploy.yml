@@ -55,13 +55,16 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Deploy to VPS
-        uses: appleboy/ssh-action@v1.0.3
+        uses: appleboy/ssh-action@v1.2.5
         with:
-          host: ${{ secrets.SSH_HOST }}
-          username: ${{ secrets.SSH_USERNAME }}
+          # Prefer SSH_HOST; fall back to VPS_HOST (used by cd.yml) so one misnamed secret does not brick deploys.
+          host: ${{ secrets.SSH_HOST || secrets.VPS_HOST }}
+          username: ${{ secrets.SSH_USERNAME || 'root' }}
+          port: 22
           key: ${{ secrets.VPS_SSH_KEY }}
           passphrase: ""
-          timeout: 3m
+          # Dial can be slow across regions / noisy networks; remote script still has command_timeout.
+          timeout: 15m
           command_timeout: 120m
           script: |
             set -e

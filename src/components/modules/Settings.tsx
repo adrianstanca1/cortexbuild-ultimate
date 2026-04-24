@@ -190,7 +190,7 @@ export function Settings() {
 
   return (
     <>
-      <ModuleBreadcrumbs currentModule="settings" onNavigate={() => {}} />
+      <ModuleBreadcrumbs currentModule="settings" />
       <div className="space-y-6">
       <h1 className="text-3xl font-display text-white">Settings</h1>
 

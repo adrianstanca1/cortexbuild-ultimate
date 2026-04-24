@@ -186,7 +186,7 @@ export function Materials() {
 
   return (
     <>
-      <ModuleBreadcrumbs currentModule="materials" onNavigate={() => {}} />
+      <ModuleBreadcrumbs currentModule="materials" />
       <div className="p-6 space-y-6 min-h-screen bg-gray-950">
       <div className="flex items-center justify-between">
         <div>

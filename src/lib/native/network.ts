@@ -1,3 +1,4 @@
+import type { ConnectionStatus } from '@capacitor/network';
 import { isNative } from '../capacitor';
 
 export interface NetworkStatus {
@@ -26,7 +27,7 @@ export async function addNetworkListener(
 ): Promise<() => void> {
   if (isNative()) {
     const { Network } = await import('@capacitor/network');
-    const handle = await Network.addListener('networkStatusChange', (status) => {
+    const handle = await Network.addListener('networkStatusChange', (status: ConnectionStatus) => {
       handler({ connected: status.connected, connectionType: status.connectionType });
     });
     return () => { void handle.remove(); };

@@ -1,59 +1,28 @@
 /**
  * CortexBuild Ultimate — Push Notifications Hook
- * iOS native: APNs device token via @capacitor/push-notifications
- * Web: VAPID push subscription
+ * Subscribes to VAPID push notifications after the user first clocks in (high-intent moment).
  */
 import { useEffect } from 'react';
-import { isNative } from '@/lib/capacitor';
-import { requestPushPermissionAndToken } from '@/lib/native/push';
-import { getToken } from '@/lib/supabase';
+import { getToken } from '@/lib/auth-storage';
 
 export function usePushNotifications(isClockIn: boolean) {
   useEffect(() => {
     if (!isClockIn) return;
+    if (!('Notification' in window) || !('serviceWorker' in navigator)) return;
 
-    if (isNative()) {
-      void subscribeNative();
-    } else {
-      void subscribeWeb();
+    if (Notification.permission === 'granted') {
+      void subscribe();
+      return;
+    }
+    if (Notification.permission !== 'denied') {
+      Notification.requestPermission().then(p => {
+        if (p === 'granted') void subscribe();
+      });
     }
   }, [isClockIn]);
 }
 
-async function subscribeNative(): Promise<void> {
-  try {
-    const deviceToken = await requestPushPermissionAndToken();
-    if (!deviceToken) return;
-
-    const token = getToken() ?? '';
-    await fetch('/api/push/subscribe-native', {
-      method: 'POST',
-      credentials: 'include',
-      headers: {
-        'Content-Type': 'application/json',
-        ...(token ? { Authorization: `Bearer ${token}` } : {}),
-      },
-      body: JSON.stringify({ deviceToken, platform: 'apns' }),
-    });
-  } catch (err) {
-    console.warn('[Push] Native subscription failed:', err);
-  }
-}
-
-async function subscribeWeb(): Promise<void> {
-  if (!('Notification' in window) || !('serviceWorker' in navigator)) return;
-
-  if (Notification.permission === 'granted') {
-    void subscribeVapid();
-    return;
-  }
-  if (Notification.permission !== 'denied') {
-    const p = await Notification.requestPermission();
-    if (p === 'granted') void subscribeVapid();
-  }
-}
-
-async function subscribeVapid(): Promise<void> {
+async function subscribe(): Promise<void> {
   try {
     const reg = await navigator.serviceWorker.ready;
     const res = await fetch('/api/push/vapid-public-key', { credentials: 'include' });
@@ -69,7 +38,9 @@ async function subscribeVapid(): Promise<void> {
       applicationServerKey: urlBase64ToUint8Array(key).buffer as ArrayBuffer,
     });
 
+    // Use getToken() which reads localStorage key 'cortexbuild_token'
     const token = getToken() ?? '';
+
     await fetch('/api/push/subscribe', {
       method: 'POST',
       credentials: 'include',
@@ -80,7 +51,7 @@ async function subscribeVapid(): Promise<void> {
       body: JSON.stringify({ subscription: sub }),
     });
   } catch (err) {
-    console.warn('[Push] VAPID subscription failed:', err);
+    console.warn('[Push] Subscription failed:', err);
   }
 }
 

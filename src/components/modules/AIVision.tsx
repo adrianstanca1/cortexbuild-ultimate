@@ -218,7 +218,7 @@ export const AIVision: React.FC = () => {
       />
 
       {/* Breadcrumbs */}
-      <ModuleBreadcrumbs currentModule="ai-vision" onNavigate={() => {}} />
+      <ModuleBreadcrumbs currentModule="ai-vision" />
 
       {/* Header */}
       <div className="flex justify-between items-start">

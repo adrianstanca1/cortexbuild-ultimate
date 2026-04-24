@@ -145,7 +145,7 @@ export function RiskRegister() {
 
   return (
     <>
-      <ModuleBreadcrumbs currentModule="risk-register" onNavigate={() => {}} />
+      <ModuleBreadcrumbs currentModule="risk-register" />
       <div className="p-6 space-y-6 bg-gray-950 min-h-screen">
       <div className="flex items-center justify-between">
         <div>
@@ -221,7 +221,6 @@ export function RiskRegister() {
                   <div key={lik} className="flex gap-1">
                     {IMPACT.map(imp=>{
                       const score = Number(RATINGS[lik]??1)*Number(RATINGS[imp]??1);
-                      const level = riskLevel(score);
                       const cellRisks = risks.filter(r=>r.likelihood===lik&&r.impact===imp);
                       const bgClass = score >= 15 ? 'bg-red-900/40 border-red-700 cursor-pointer hover:bg-red-900/60'
                         : score >= 9 ? 'bg-orange-900/40 border-orange-700 cursor-pointer hover:bg-orange-900/60'

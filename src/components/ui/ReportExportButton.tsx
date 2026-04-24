@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Download, Loader2, FileText } from 'lucide-react';
-import { getToken } from '../../lib/supabase';
+import { getToken } from '../../lib/auth-storage';
 
 interface ReportExportButtonProps {
   reportType: 'invoice' | 'rfi' | 'daily-report' | 'safety-incident' | 'project';

@@ -177,7 +177,7 @@ const handleSaveDelay = async () => {
 
   return (
     <>
-      <ModuleBreadcrumbs currentModule="site-ops" onNavigate={() => {}} />
+      <ModuleBreadcrumbs currentModule="site-ops" />
       <div className="p-6 space-y-6">
       <div>
         <h1 className="text-2xl font-display text-gray-100">Site Operations</h1>

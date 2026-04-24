@@ -1,6 +1,6 @@
 /**
  * Global setup for E2E tests
- * Logs in via API (same contract as AuthContext) and seeds localStorage keys from src/lib/supabase.ts.
+ * Logs in via API (same contract as AuthContext) and seeds localStorage keys from src/lib/auth-storage.ts.
  */
 
 import { chromium, type FullConfig } from '@playwright/test';

@@ -248,9 +248,10 @@ app.use('/api/work-packages',   require('./routes/work-packages'));
 
 // ─── AI routes ────────────────────────────────────────────────────────────────
 app.use('/api/ai', requireFeature('FEATURE_AI_AGENTS'), require('./routes/ai'));
-app.use('/api/autoresearch', require('./routes/autoresearch'));
-app.use('/api/autoimprove', require('./routes/autoimprove'));
-app.use('/api/autorepair', require('./routes/autorepair'));
+// Autonomous surfaces share the same kill-switch as interactive AI agents.
+app.use('/api/autoresearch', requireFeature('FEATURE_AI_AGENTS'), require('./routes/autoresearch'));
+app.use('/api/autoimprove', requireFeature('FEATURE_AI_AGENTS'), require('./routes/autoimprove'));
+app.use('/api/autorepair', requireFeature('FEATURE_AI_AGENTS'), require('./routes/autorepair'));
 
 app.use('/api/ai-conversations', requireFeature('FEATURE_AI_AGENTS'), require('./routes/ai-conversations'));
 app.use('/api/ai-predictive', requireFeature('FEATURE_AI_AGENTS'), require('./routes/ai-predictive'));

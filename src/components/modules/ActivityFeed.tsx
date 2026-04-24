@@ -442,7 +442,7 @@ export default function ActivityFeed() {
 
   return (
     <>
-      <ModuleBreadcrumbs currentModule="activity-feed" onNavigate={() => {}} />
+      <ModuleBreadcrumbs currentModule="activity-feed" />
       <div className="p-6 space-y-6">
         <div className="flex items-center justify-between">
           <div>

@@ -93,7 +93,7 @@ export function ReportTemplates() {
 
   return (
     <>
-      <ModuleBreadcrumbs currentModule="report-templates" onNavigate={() => {}} />
+      <ModuleBreadcrumbs currentModule="report-templates" />
       <div className="space-y-6">
       <div className="flex justify-between items-center">
         <h1 className="text-2xl font-display text-white">Report Templates</h1>

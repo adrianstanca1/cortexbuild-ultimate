@@ -237,7 +237,7 @@ export function Documents() {
 
   return (
     <>
-      <ModuleBreadcrumbs currentModule="documents" onNavigate={() => {}} />
+      <ModuleBreadcrumbs currentModule="documents" />
       <div className="min-h-screen bg-slate-950 p-6 space-y-6">
       <div className="flex items-center justify-between flex-wrap gap-4">
         <div><h1 className="text-3xl font-display text-white">Documents</h1><p className="text-sm text-slate-400 mt-1">{documents.length} files</p></div>

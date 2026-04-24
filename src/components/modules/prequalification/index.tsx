@@ -262,7 +262,7 @@ export default function Prequalification() {
 
   return (
     <>
-      <ModuleBreadcrumbs currentModule="prequalification" onNavigate={() => {}} />
+      <ModuleBreadcrumbs currentModule="prequalification" />
       <div className="p-6 space-y-6 bg-gray-900 min-h-screen">
         {/* Header */}
         <div className="flex items-center justify-between">

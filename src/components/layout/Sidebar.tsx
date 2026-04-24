@@ -48,6 +48,8 @@ const NAV_GROUPS: { id: string; label: string; accent: string; items: NavItem[] 
       { id: 'ai-assistant',          label: 'AI Assistant',        icon: Bot,               badge: 'AI' },
       { id: 'insights',              label: 'AI Insights',         icon: Brain,             badge: 'NEW' },
       { id: 'predictive-analytics',  label: 'Predictive Analytics', icon: TrendingUpIcon,   badge: 'NEW' },
+      { id: 'team-chat',               label: 'Team Chat',            icon: MessageSquare,    badge: 'NEW' },
+      { id: 'activity-feed',          label: 'Activity Feed',        icon: Activity,         badge: 'NEW' },
     ],
   },
   {
@@ -145,22 +147,6 @@ const NAV_GROUPS: { id: string; label: string; accent: string; items: NavItem[] 
       { id: 'ai-vision',      label: 'AI Vision',      icon: Eye,            badge: 'NEW' },
       { id: 'dev-sandbox',    label: 'Dev Sandbox',   icon: Bot,            badge: 'DEV' },
       { id: 'my-desktop',     label: 'My Desktop',    icon: LayoutDashboard, badge: 'BETA' },
-    ],
-  },
-  {
-    id: 'collaboration',
-    label: 'Collaboration',
-    accent: '#10b981', // green
-    items: [
-      { id: 'team-chat',      label: 'Team Chat',       icon: MessageSquare,  badge: 'NEW' },
-    ],
-  },
-  {
-    id: 'intelligence',
-    label: 'Intelligence',
-    accent: '#06b6d4', // cyan
-    items: [
-      { id: 'activity-feed',  label: 'Activity Feed',   icon: Activity,       badge: 'NEW' },
     ],
   },
 ];

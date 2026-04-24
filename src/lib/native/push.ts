@@ -1,3 +1,4 @@
+import type { RegistrationError, Token } from '@capacitor/push-notifications';
 import { isNative } from '../capacitor';
 
 export interface PushRegistration {
@@ -26,11 +27,11 @@ export async function registerPushNotifications(
 
     await PushNotifications.register();
 
-    const regHandle = await PushNotifications.addListener('registration', (token) => {
+    const regHandle = await PushNotifications.addListener('registration', (token: Token) => {
       onToken({ token: token.value, platform: 'apns' });
     });
 
-    const errHandle = await PushNotifications.addListener('registrationError', (err) => {
+    const errHandle = await PushNotifications.addListener('registrationError', (err: RegistrationError) => {
       onError(err.error);
     });
 
@@ -61,7 +62,7 @@ export async function requestPushPermissionAndToken(): Promise<string | null> {
       await PushNotifications.register();
 
       let resolved = false;
-      const handle = await PushNotifications.addListener('registration', (token) => {
+      const handle = await PushNotifications.addListener('registration', (token: Token) => {
         if (!resolved) {
           resolved = true;
           void handle.remove();

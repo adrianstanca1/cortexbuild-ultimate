@@ -218,7 +218,11 @@ function DashboardComponent() {
   const [projects, setProjects] = useState<Project[]>([]);
   const [activityFeed, setActivityFeed] = useState<{id: string; user: string; action: string; module: string; time: string}[]>([]);
   const [alerts, setAlerts] = useState<{id: string; level: 'amber'|'red'; title: string; description: string}[]>([]);
-  const [mounted] = useState(false);
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => {
+    const t = requestAnimationFrame(() => setMounted(true));
+    return () => cancelAnimationFrame(t);
+  }, []);
   const [showAIChat, setShowAIChat] = useState(false);
 
   // Live data hooks — real API data
@@ -389,18 +393,21 @@ function DashboardComponent() {
   ];
 
   return (
-    <div className="space-y-5">
+    <div className="w-full min-w-0 space-y-6 pb-2">
       {/* ── Breadcrumbs ────────────────────────────────────────────── */}
-      <ModuleBreadcrumbs currentModule="dashboard" onNavigate={() => {}} />
+      <ModuleBreadcrumbs currentModule="dashboard" />
 
       {/* ── Site Status Banner ─────────────────────────────────────── */}
       <SiteStatusBanner />
 
       {/* ── Header ─────────────────────────────────────────────────── */}
-      <div className="dashboard-title-row" style={{
-        display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start',
-        animation: mounted ? 'fadeSlideDown 0.5s ease forwards' : 'none', opacity: mounted ? 1 : 0,
-      }}>
+      <div
+        className="dashboard-title-row flex flex-col gap-4 rounded-2xl border border-white/[0.07] bg-[rgba(13,17,23,0.55)] p-5 shadow-[0_12px_40px_rgba(0,0,0,0.35)] backdrop-blur-md md:flex-row md:items-start md:justify-between md:gap-6"
+        style={{
+          animation: mounted ? 'fadeSlideDown 0.5s ease forwards' : 'none',
+          opacity: mounted ? 1 : 0,
+        }}
+      >
         <div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '4px' }}>
             <div style={{
@@ -425,7 +432,7 @@ function DashboardComponent() {
             Real-time intelligence across all active projects
           </p>
         </div>
-        <div style={{ display: 'flex', gap: '8px' }}>
+        <div className="flex shrink-0 flex-wrap gap-2 md:justify-end">
           <button className="btn btn-secondary flex items-center gap-2" style={{ fontSize: '12px', padding: '8px 14px' }}>
             <Download style={{ width: '13px', height: '13px' }} />
             Export
@@ -438,13 +445,13 @@ function DashboardComponent() {
       </div>
 
       {/* ── KPI Bar ───────────────────────────────────────────────── */}
-      <div className="kpi-grid" style={{
-        display: 'grid',
-        gridTemplateColumns: 'repeat(6, 1fr)',
-        gap: '10px',
-        animation: mounted ? 'fadeSlideDown 0.5s ease 0.1s forwards' : 'none',
-        opacity: mounted ? 1 : 0,
-      }}>
+      <div
+        className="kpi-grid grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6"
+        style={{
+          animation: mounted ? 'fadeSlideDown 0.5s ease 0.1s forwards' : 'none',
+          opacity: mounted ? 1 : 0,
+        }}
+      >
         {kpis.map((kpi, idx) => {
           const Icon = kpi.icon;
           return (
@@ -522,28 +529,38 @@ function DashboardComponent() {
       </div>
 
       {/* ── Sub-tabs ───────────────────────────────────────────────── */}
-      <div className="dashboard-tabs" style={{
-        display: 'flex', gap: '2px',
-        borderBottom: '1px solid rgba(255,255,255,0.05)',
-      }}>
+      <div
+        className="dashboard-tabs flex flex-wrap gap-1 rounded-xl border border-white/[0.06] bg-[rgba(13,17,23,0.45)] p-1"
+        role="tablist"
+        aria-label="Dashboard sections"
+      >
         {tabs.map(tab => {
           const active = activeTab === tab.id;
           return (
             <button
               key={tab.id}
+              type="button"
+              role="tab"
+              aria-selected={active}
               onClick={() => setActiveTab(tab.id as typeof activeTab)}
+              className="rounded-lg px-4 py-2 text-[13px] transition-all duration-200"
               style={{
-                padding: '9px 18px',
                 fontFamily: "'Instrument Sans', sans-serif",
-                fontSize: '13px', fontWeight: active ? 600 : 500,
-                color: active ? '#f59e0b' : '#475569',
-                background: 'none', border: 'none',
-                borderBottom: active ? '2px solid #f59e0b' : '2px solid transparent',
-                cursor: 'pointer', transition: 'all 0.2s',
-                marginBottom: '-1px',
+                fontWeight: active ? 600 : 500,
+                color: active ? '#0f172a' : '#64748b',
+                background: active
+                  ? 'linear-gradient(135deg, rgba(245,158,11,0.95), rgba(251,191,36,0.88))'
+                  : 'transparent',
+                border: active ? '1px solid rgba(245,158,11,0.35)' : '1px solid transparent',
+                cursor: 'pointer',
+                boxShadow: active ? '0 4px 14px rgba(245,158,11,0.2)' : 'none',
               }}
-              onMouseEnter={e => { if (!active) (e.currentTarget as HTMLButtonElement).style.color = '#94a3b8'; }}
-              onMouseLeave={e => { if (!active) (e.currentTarget as HTMLButtonElement).style.color = '#475569'; }}
+              onMouseEnter={e => {
+                if (!active) (e.currentTarget as HTMLButtonElement).style.color = '#94a3b8';
+              }}
+              onMouseLeave={e => {
+                if (!active) (e.currentTarget as HTMLButtonElement).style.color = '#64748b';
+              }}
             >
               {tab.label}
             </button>
@@ -555,7 +572,7 @@ function DashboardComponent() {
       {activeTab === 'overview' && (
         <div className="space-y-5">
           {/* Row 1: Revenue Chart + RAG Donut + Alerts */}
-          <div className="dashboard-overview-row" style={{ display: 'grid', gridTemplateColumns: '1fr 260px 300px', gap: '14px', minWidth: 0 }}>
+          <div className="dashboard-overview-row grid min-w-0 grid-cols-1 gap-4 xl:grid-cols-[minmax(0,1fr)_260px_300px]">
 
             {/* Revenue Area Chart */}
             <div style={{
@@ -759,7 +776,7 @@ function DashboardComponent() {
       )}
 
       {/* ── LIVE INTEL ROW (always visible below tabs) ─────────────── */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '14px', minWidth: 0 }}>
+      <div className="grid min-w-0 grid-cols-1 gap-4 lg:grid-cols-3">
         <QuickStats />
         <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
           <RFITimeline

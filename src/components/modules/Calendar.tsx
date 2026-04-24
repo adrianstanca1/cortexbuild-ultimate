@@ -201,7 +201,7 @@ export function Calendar() {
 
   return (
     <>
-      <ModuleBreadcrumbs currentModule="calendar" onNavigate={() => {}} />
+      <ModuleBreadcrumbs currentModule="calendar" />
       <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
@@ -329,7 +329,22 @@ export function Calendar() {
                   return (
                     <button
                       key={day}
-                      onClick={() => {}}
+                      type="button"
+                      onClick={() => {
+                        setEditing(null);
+                        setForm({
+                          title: '',
+                          type: 'meeting',
+                          date: dateStr,
+                          start_time: '09:00',
+                          end_time: '10:00',
+                          location: '',
+                          attendees: '',
+                          description: '',
+                          recurring: false,
+                        });
+                        setShowModal(true);
+                      }}
                       className={`aspect-square rounded-lg border p-1 text-xs font-medium transition-colors ${
                         isToday
                           ? 'bg-orange-500/20 border-orange-500 text-orange-300'

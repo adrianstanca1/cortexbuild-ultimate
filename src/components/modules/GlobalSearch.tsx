@@ -18,6 +18,7 @@ import {
   Brain,
 } from 'lucide-react';
 import { searchApi } from '../../services/api';
+import { toast } from 'sonner';
 import { EmptyState } from '../ui/EmptyState';
 import clsx from 'clsx';
 import { ModuleBreadcrumbs } from '../ui/Breadcrumbs';
@@ -115,8 +116,12 @@ export function GlobalSearch({
         setResults((data.results || {}) as SearchResult);
         setSemanticResults((data.semanticResults || []) as SemanticMatch[]);
         setSearchMode(data.searchMode || 'text');
-      } catch {
-        console.error('Search error');
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : 'Search failed';
+        console.error('Search error', err);
+        toast.error(msg);
+        setResults(null);
+        setSemanticResults([]);
       } finally {
         setLoading(false);
       }
@@ -186,7 +191,7 @@ export function GlobalSearch({
 
   return (
     <>
-      <ModuleBreadcrumbs currentModule="search" onNavigate={() => {}} />
+      <ModuleBreadcrumbs currentModule="search" />
       <div className={shellClass} onClick={embedded ? undefined : onClose} role={embedded ? undefined : 'presentation'}>
       <div
         className={panelClass}

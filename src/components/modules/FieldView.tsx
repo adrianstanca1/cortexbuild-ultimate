@@ -157,7 +157,7 @@ export function FieldView() {
 
   return (
     <>
-      <ModuleBreadcrumbs currentModule="field-view" onNavigate={() => {}} />
+      <ModuleBreadcrumbs currentModule="field-view" />
       <div className="p-6 space-y-6 bg-gray-900 min-h-screen">
       {/* Header */}
       <div className="flex items-center justify-between flex-wrap gap-3">
