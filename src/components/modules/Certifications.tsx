@@ -535,8 +535,8 @@ export default function Certifications() {
         className="w-full px-4 py-2 input input-bordered text-white"
       />
       {(() => {
-        const grouped = new Map<string, any[]>();
-        (certificationData as any[]).forEach((c) => {
+        const grouped = new Map<string, Certification[]>();
+        (certificationData as Certification[]).forEach((c) => {
           const holder = c.holder || "Unassigned";
           if (!grouped.has(holder)) grouped.set(holder, []);
           grouped.get(holder)!.push(c);
@@ -624,7 +624,7 @@ export default function Certifications() {
   const expiringTab = (
     <div className="space-y-3">
       {(() => {
-        const expiring = (certificationData as any[])
+        const expiring = (certificationData as Certification[])
           .filter((c) => {
             const days = getDaysUntilExpiry(c.expiry_date);
             return days >= 0 && days <= 90;
