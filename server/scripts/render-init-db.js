@@ -28,15 +28,48 @@ async function main() {
     console.log(`[render-init-db] DATABASE_URL prefix: ${connectionString.split('@')[0]}@...`);
     console.log(`[render-init-db] Connecting to database...`);
 
-    const client = new Client({
-        connectionString,
-        ssl: true
-    });
+    // Parse hostname from DATABASE_URL for debugging
+    let hostname = 'unknown';
+    try {
+        const match = connectionString.match(/@([^:/]+)/);
+        if (match) hostname = match[1];
+    } catch(e) {}
+    console.log(`[render-init-db] Target hostname: ${hostname}`);
+
+    // Render Postgres requires SSL. Try different SSL configs.
+    const sslConfigs = [
+        { rejectUnauthorized: false },
+        true,
+        { rejectUnauthorized: false, sslmode: 'require' }
+    ];
+
+    let client;
+    let lastError;
+
+    for (const sslConfig of sslConfigs) {
+        try {
+            console.log(`[render-init-db] Trying SSL config: ${JSON.stringify(sslConfig)}`);
+            client = new Client({
+                connectionString,
+                ssl: sslConfig,
+                connectionTimeoutMillis: 15000
+            });
+            await client.connect();
+            console.log(`[render-init-db] Connected successfully with SSL config: ${JSON.stringify(sslConfig)}`);
+            break;
+        } catch (err) {
+            lastError = err;
+            console.log(`[render-init-db] SSL config ${JSON.stringify(sslConfig)} failed: ${err.message}`);
+            try { await client.end(); } catch(_) {}
+        }
+    }
+
+    if (!client || lastError) {
+        console.error(`[render-init-db] All SSL configs failed. Last error: ${lastError.message}`);
+        throw lastError;
+    }
 
     try {
-        await client.connect();
-        console.log('Connected to database for initialization');
-
         // Check if database is already initialized by looking for a core table
         const checkRes = await client.query(`
             SELECT EXISTS (
