@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { MapPin, Camera, AlertTriangle } from 'lucide-react';
 import { toast } from 'sonner';
 import { offlineFetch } from '../../services/offlineFetch';
+import { getCurrentPosition } from '../../lib/native/geolocation';
 
 type Severity = 'near-miss' | 'injury' | 'critical';
 
@@ -27,11 +28,13 @@ export default function MobileSafetyIncident() {
     return () => URL.revokeObjectURL(url);
   }, [photo]);
 
-  const getGPS = () => {
-    navigator.geolocation.getCurrentPosition(
-      pos => setLoc(`GPS ${pos.coords.latitude.toFixed(4)}, ${pos.coords.longitude.toFixed(4)}`),
-      ()  => setLoc('Location unavailable — enter manually')
-    );
+  const getGPS = async () => {
+    try {
+      const pos = await getCurrentPosition();
+      setLoc(`GPS ${pos.latitude.toFixed(4)}, ${pos.longitude.toFixed(4)}`);
+    } catch {
+      // GPS unavailable — location stays null
+    }
   };
 
   const handleSubmit = async () => {

@@ -1,7 +1,5 @@
 import type { CapacitorConfig } from '@capacitor/cli';
 
-const isDev = process.env.NODE_ENV !== 'production';
-
 const config: CapacitorConfig = {
   appId: 'com.cortexbuildpro.app',
   appName: 'CortexBuild',

@@ -62,18 +62,25 @@ export async function requestPushPermissionAndToken(): Promise<string | null> {
       await PushNotifications.register();
 
       let resolved = false;
-      const handle = await PushNotifications.addListener('registration', (token: Token) => {
+      const listeners: {
+        reg?: { remove: () => Promise<void> };
+        err?: { remove: () => Promise<void> };
+      } = {};
+
+      listeners.reg = await PushNotifications.addListener('registration', (token: Token) => {
         if (!resolved) {
           resolved = true;
-          void handle.remove();
+          void listeners.reg?.remove();
+          void listeners.err?.remove();
           resolve(token.value);
         }
       });
 
-      const errHandle = await PushNotifications.addListener('registrationError', () => {
+      listeners.err = await PushNotifications.addListener('registrationError', () => {
         if (!resolved) {
           resolved = true;
-          void errHandle.remove();
+          void listeners.reg?.remove();
+          void listeners.err?.remove();
           resolve(null);
         }
       });
