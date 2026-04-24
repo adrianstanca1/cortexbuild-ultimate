@@ -69,7 +69,8 @@ function emitWebhookEvent(orgId, companyId, tableName, action, record) {
           importErr.message,
         );
       });
-  } catch (_) {
+  } catch (err) {
+    console.error("[Generic] Webhook emission failed:", err.message);
     // Never let webhook emission affect HTTP response
   }
 }

@@ -128,10 +128,15 @@ async function pollQueue() {
 
     await client.query("COMMIT");
   } catch (err) {
-    if (client)
-      await client.query("ROLLBACK").catch((rbErr) => {
+    if (client) {
+      try {
+        await client.query("ROLLBACK");
+      } catch (rbErr) {
         console.error("[autoresearch-worker] ROLLBACK failed:", rbErr.message);
-      });
+        client.release(rbErr); // Remove poisoned connection from pool
+        client = null;
+      }
+    }
     console.error("[autoresearch-worker] Polling error:", err.message);
     return; // Schedule next poll without throwing
   } finally {

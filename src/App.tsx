@@ -409,14 +409,6 @@ function AppShell() {
   }, [activeModule]);
 
   const renderModule = () => {
-    // #region agent log
-    agentDebugLog({
-      hypothesisId: "H2",
-      location: "App.tsx:renderModule",
-      message: "render module",
-      data: { activeModule },
-    });
-    // #endregion
     switch (activeModule) {
       case "dashboard":
         return <Dashboard />;

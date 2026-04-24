@@ -172,13 +172,15 @@ async function checkHealth() {
     const pool = require("./db");
     await pool.query("SELECT 1");
     checks.postgres = true;
-  } catch {
+  } catch (err) {
+    console.error("[Health] PostgreSQL check failed:", err.message);
     checks.postgres = false;
   }
   try {
     await redisClient.ping();
     checks.redis = true;
-  } catch {
+  } catch (err) {
+    console.error("[Health] Redis check failed:", err.message);
     checks.redis = false;
   }
   checks.status = checks.postgres && checks.redis ? "ok" : "degraded";
