@@ -60,3 +60,11 @@ types/
 Dockerfile
 deploy.sh
 server/security.js
+
+# Capacitor iOS generated files
+ios/Pods/
+ios/*.xcworkspace
+!ios/App.xcworkspace
+
+# Allow iOS plist files (overrides *.plist above)
+!ios/**/*.plist
