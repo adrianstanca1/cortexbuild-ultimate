@@ -4,8 +4,9 @@
 <dict>
     <key>method</key>
     <string>app-store</string>
+    <!-- Set APPLE_TEAM_ID in your environment or replace before local builds -->
     <key>teamID</key>
-    <string>YOUR_TEAM_ID</string>
+    <string>$(APPLE_TEAM_ID)</string>
     <key>uploadBitcode</key>
     <false/>
     <key>uploadSymbols</key>
