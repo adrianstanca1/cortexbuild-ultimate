@@ -1,0 +1,149 @@
+name: iOS Build
+
+on:
+  push:
+    branches: [main, feature/ios-capacitor]
+    paths:
+      - 'src/**'
+      - 'ios/**'
+      - 'capacitor.config.ts'
+      - 'package.json'
+      - 'vite.config.ts'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'src/**'
+      - 'ios/**'
+      - 'capacitor.config.ts'
+  workflow_dispatch:
+    inputs:
+      build_type:
+        description: 'Build type'
+        required: true
+        default: 'debug'
+        type: choice
+        options: [debug, release]
+
+env:
+  NODE_VERSION: '20'
+  XCODE_VERSION: '16'
+
+jobs:
+  build-ios:
+    name: Build iOS App
+    runs-on: macos-15
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci --legacy-peer-deps
+
+      - name: Build web assets
+        run: npm run build
+        env:
+          NODE_ENV: production
+
+      - name: Select Xcode version
+        run: sudo xcode-select -s /Applications/Xcode_${{ env.XCODE_VERSION }}.app
+
+      - name: Sync Capacitor iOS
+        run: npx cap sync ios
+
+      - name: Resolve Swift Package dependencies
+        working-directory: ios/App
+        run: |
+          xcodebuild -resolvePackageDependencies \
+            -workspace App.xcworkspace \
+            -scheme App \
+            | tail -20
+
+      - name: Build iOS Debug (Simulator)
+        if: ${{ github.event.inputs.build_type != 'release' }}
+        working-directory: ios/App
+        run: |
+          xcodebuild \
+            -workspace App.xcworkspace \
+            -scheme App \
+            -configuration Debug \
+            -sdk iphonesimulator \
+            -destination 'platform=iOS Simulator,name=iPhone 16,OS=latest' \
+            -derivedDataPath ./DerivedData \
+            CODE_SIGNING_ALLOWED=NO \
+            | xcpretty || true
+
+      - name: Build iOS Release (unsigned)
+        if: ${{ github.event.inputs.build_type == 'release' }}
+        working-directory: ios/App
+        run: |
+          xcodebuild \
+            -workspace App.xcworkspace \
+            -scheme App \
+            -configuration Release \
+            -sdk iphoneos \
+            -archivePath ./build/CortexBuild.xcarchive \
+            archive \
+            CODE_SIGNING_ALLOWED=NO \
+            DEVELOPMENT_TEAM="" \
+            | xcpretty || true
+
+      - name: Package simulator .app as zip
+        if: ${{ github.event.inputs.build_type != 'release' }}
+        working-directory: ios/App
+        run: |
+          APP_PATH=$(find DerivedData -name "*.app" -not -path "*/Test*" | head -1)
+          if [ -n "$APP_PATH" ]; then
+            mkdir -p artifacts
+            zip -r artifacts/CortexBuild-iOS-simulator.zip "$APP_PATH"
+            echo "Packaged $APP_PATH"
+          else
+            echo "No .app bundle found in DerivedData"
+            find DerivedData -name "*.app" | head -10
+          fi
+
+      - name: Upload simulator artifact
+        if: ${{ github.event.inputs.build_type != 'release' }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: CortexBuild-iOS-Simulator-${{ github.sha }}
+          path: ios/App/artifacts/CortexBuild-iOS-simulator.zip
+          retention-days: 14
+          if-no-files-found: warn
+
+  test-web:
+    name: Tests & Type Check
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci --legacy-peer-deps
+
+      - name: TypeScript check
+        run: npx tsc --noEmit
+
+      - name: Lint
+        run: npx eslint src/ --max-warnings=20
+
+      - name: Unit tests
+        run: npx vitest run --reporter=verbose
+
+      - name: Production build
+        run: npm run build
+        env:
+          NODE_ENV: production

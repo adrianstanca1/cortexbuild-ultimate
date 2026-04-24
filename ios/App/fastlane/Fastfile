@@ -1,0 +1,71 @@
+default_platform(:ios)
+
+platform :ios do
+
+  desc "Run tests on simulator"
+  lane :test do
+    run_tests(
+      workspace: "App.xcworkspace",
+      scheme: "App",
+      devices: ["iPhone 16"]
+    )
+  end
+
+  desc "Build debug IPA for simulator (no signing)"
+  lane :build_debug do
+    build_app(
+      workspace: "App.xcworkspace",
+      scheme: "App",
+      configuration: "Debug",
+      sdk: "iphonesimulator",
+      skip_codesigning: true,
+      output_directory: "./build",
+      output_name: "CortexBuild-debug.app"
+    )
+  end
+
+  desc "Build and upload to TestFlight"
+  lane :beta do
+    # Sync certificates and provisioning profiles via match
+    # match(type: "appstore", app_identifier: "com.cortexbuildpro.app")
+
+    increment_build_number(xcodeproj: "App.xcodeproj")
+
+    build_app(
+      workspace: "App.xcworkspace",
+      scheme: "App",
+      configuration: "Release",
+      export_method: "app-store",
+      output_directory: "./build",
+      output_name: "CortexBuild.ipa",
+      include_symbols: true,
+      include_bitcode: false
+    )
+
+    upload_to_testflight(
+      skip_waiting_for_build_processing: true,
+      changelog: "Latest CortexBuild update"
+    )
+  end
+
+  desc "Build and submit to App Store"
+  lane :release do
+    # match(type: "appstore", app_identifier: "com.cortexbuildpro.app")
+
+    increment_build_number(xcodeproj: "App.xcodeproj")
+
+    build_app(
+      workspace: "App.xcworkspace",
+      scheme: "App",
+      configuration: "Release",
+      export_method: "app-store",
+      output_directory: "./build",
+      output_name: "CortexBuild.ipa"
+    )
+
+    upload_to_app_store(
+      submit_for_review: false,
+      automatic_release: false
+    )
+  end
+end

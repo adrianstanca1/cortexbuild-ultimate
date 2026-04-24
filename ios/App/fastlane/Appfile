@@ -1,0 +1,4 @@
+app_identifier("com.cortexbuildpro.app")
+apple_id("admin@cortexbuildpro.com")
+itc_team_id("")  # App Store Connect Team ID — fill in after Apple Developer enrolment
+team_id("")      # Developer Portal Team ID — fill in after Apple Developer enrolment
