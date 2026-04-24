@@ -16,7 +16,10 @@ function databaseUrlWantsSsl(connectionString) {
   }
   if (process.env.DATABASE_SSL === 'true' || process.env.DATABASE_SSL === '1') return true;
   if (process.env.NODE_ENV === 'production') return true;
-  if (/\.(neon\.tech|railway\.app|amazonaws\.com|render\.com)\b/i.test(connectionString)) {
+  if (/\.(neon\.tech|railway\.app|amazonaws\.com|render\.com|render\.internal)\b/i.test(connectionString)) {
+    return true;
+  }
+  if (/render/i.test(connectionString) && /postgres|\.internal\b/i.test(connectionString)) {
     return true;
   }
   return false;
