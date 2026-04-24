@@ -189,6 +189,10 @@ export default defineConfig({
     ),
     /** Optional override when WebSocket is not same-origin as the SPA (see `src/lib/wsUrl.ts`). */
     "import.meta.env.VITE_WS_URL": JSON.stringify(process.env.VITE_WS_URL || ""),
+    /** Optional mock-data mode (see `.env.example`). */
+    "import.meta.env.VITE_USE_MOCK_DATA": JSON.stringify(
+      process.env.VITE_USE_MOCK_DATA || "",
+    ),
   },
   build: {
     emptyOutDir: true,
@@ -244,10 +248,6 @@ export default defineConfig({
       "sonner",
     ],
     exclude: ["@rolldown/binding-linux-arm64-gnu"],
-    // Prebuild dependencies for faster dev server startup
-    rolldownOptions: {
-      output: { target: "es2020" },
-    },
   },
   // Preview server configuration
   preview: {
