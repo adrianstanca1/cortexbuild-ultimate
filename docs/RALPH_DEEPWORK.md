@@ -1,61 +1,59 @@
-# Ralph `/deepwork` triple review (oh-my-claude)
+# Ralph /deepwork triple-review (local)
 
-The **triple review** gate is defined in the **oh-my-claude** plugin’s `/deepwork` command. It is **not** a single npm script in this repository. It runs inside **Claude Code** (or a compatible client) with the plugin installed, because it depends on **Task subagents** and **plugin MCP tools**.
+This repository’s production checks run in **GitHub Actions** via `actions/setup-node` and `.nvmrc` (see `.github/workflows/ci.yml`). The **/deepwork** flow is defined by the **Oh My Claude** plugin for Claude Code / Cursor, not by `npm` scripts in this repo.
 
-## What “triple review” means
+## What /deepwork expects
 
-All **three** reviewers must score the work **≥ 9.5 / 10** before the loop may complete. They are intended to run **in parallel**:
+1. **Call tracking** — start and report hooks (plugin-relative paths):
 
-| Reviewer                 | Mechanism (per plugin `deepwork.md`)                                                                                          |
-| ------------------------ | ----------------------------------------------------------------------------------------------------------------------------- |
-| GPT‑5.2 (high reasoning) | MCP: `mcp__plugin_oh-my-claude_gpt-as-mcp__codex` with `model: "gpt-5.2"` and `config: { "model_reasoning_effort": "xhigh" }` |
-| Gemini 3 Pro preview     | MCP: `mcp__plugin_oh-my-claude_gemini-as-mcp__gemini` with `model: "gemini-3-pro-preview"`                                    |
-| Opus-style reviewer      | `Task` tool with `subagent_type: "oh-my-claude:reviewer"`                                                                     |
+   ```bash
+   "${CLAUDE_PLUGIN_ROOT}/hooks/call-tracker.sh" start
+   # … work …
+   "${CLAUDE_PLUGIN_ROOT}/hooks/call-tracker.sh" report
+   ```
 
-The orchestration rules (delegate to agents, use MCP **only** in the review phase, etc.) live in the plugin file:
+2. **Ralph loop init** (optional messaging / loop bootstrap):
 
-- `${CLAUDE_PLUGIN_ROOT}/prompts/orchestrator-workflow.md` (included from `/deepwork`)
+   ```bash
+   "${CLAUDE_PLUGIN_ROOT}/scripts/start-ralph-loop.sh" /path/to/cortexbuild-ultimate
+   ```
 
-Replace `CLAUDE_PLUGIN_ROOT` with your installed plugin root, e.g. under `~/.claude/plugins/cache/oh-my-claude/.../`.
+3. **Triple AI gate (≥ 9.5 each)** — from the plugin’s `deepwork.md`:
 
-## Prerequisites (cannot be satisfied from repo root alone)
+   - GPT reviewer via MCP: `mcp__plugin_ohmyclaude_gpt-as-mcp__codex` (model `gpt-5.2`, high reasoning).
+   - Gemini reviewer via MCP: `mcp__plugin_ohmyclaude_gemini-as-mcp__gemini` (e.g. `gemini-3-pro-preview`).
+   - Opus reviewer: `Task` subagent `oh-my-claude:reviewer` (Opus 4.5).
 
-1. **Claude Code** (or equivalent) with the **oh-my-claude** plugin enabled.
-2. **MCP servers** bundled with or configured for that plugin (`gpt-as-mcp`, `gemini-as-mcp`), with whatever **API keys / auth** the plugin documentation requires (typically OpenAI- and Google-compatible credentials configured in the client, not in this repo).
-3. **`jq`** on `PATH` for `call-tracker.sh` (used for hook JSON parsing).
-4. Optional but recommended: plugin **hooks** enabled so PreToolUse/PostToolUse logging populates `/tmp/claude-calls/`.
+   All three must run **in parallel**, scores collected, and any score below 9.5 triggers a fix/re-review cycle.
 
-There is **no** non-interactive “run triple review from `npm`” path unless you replicate those MCP calls yourself.
+4. **Completion** — only after builds/tests pass **and** the three reviews pass **and** `call-tracker.sh report` has been run, output exactly:
 
-## Call tracking (`call-tracker.sh`)
+   ```text
+   <promise>COMPLETE</promise>
+   ```
 
-The workflow expects you to **start** tracking at the beginning of a session and **`report`** before emitting the completion token.
+## Running this outside the plugin
 
-From a shell, after `cd` to the repo you are reviewing (optional for the script itself; the script uses `/tmp` logs):
+You **cannot** fully automate the triple gate from this repo alone: it depends on **Oh My Claude** MCP servers and subagents configured in your Claude Code / Cursor environment.
+
+**Minimal local substitute:** run the same evidence the gate expects, then do a single human or single-model review:
 
 ```bash
-export CLAUDE_PLUGIN_ROOT="/path/to/oh-my-claude/plugin/root"
-"$CLAUDE_PLUGIN_ROOT/hooks/call-tracker.sh" start
-# … do work in Claude Code with hooks firing …
-"$CLAUDE_PLUGIN_ROOT/hooks/call-tracker.sh" report
+export PATH="/usr/local/bin:/opt/homebrew/bin:$PATH"   # macOS: ensure node/npm exist
+cd /path/to/cortexbuild-ultimate
+npm ci
+npm run typecheck && npm run lint && npm test && npm run build
+cd server && npm ci && node --check index.js
 ```
 
-Other actions (from `orchestrator-workflow.md`): `list`, `reset`, and `report <session_id>`.
+## macOS PATH (developer machines)
 
-**Note:** `start`/`report` are meaningful when hooks are feeding the tracker; a manual `start` without hook-driven `pre`/`post` may produce sparse logs.
+If `npm: command not found` in a fresh terminal, install Node 20+ (see `.nvmrc`) and ensure its `bin` directory is on `PATH` (e.g. Homebrew `opt/node@20/bin` or `nvm use`).
 
-## How to run the full loop locally (intended path)
+## Plugin paths (reference)
 
-1. Open this repository in **Claude Code** with **oh-my-claude** installed.
-2. Invoke the slash command **`/deepwork`** (or the command that maps to `deepwork.md` in your setup).
-3. Follow the phases in the command body: todos, implementation, then **parallel** triple review with the review prompt template (task, changes, evidence, score).
-4. Iterate until **all three** scores are ≥ **9.5**.
-5. Run **`call-tracker.sh report`** then output exactly:
+If `CLAUDE_PLUGIN_ROOT` is unset, the Oh My Claude plugin cache is often under:
 
-   `<promise>COMPLETE</promise>`
+`~/.claude/plugins/cache/oh-my-claude/oh-my-claude/<version>/`
 
-   only when every checklist item in the command (including all reviewer scores and the call report) is satisfied.
-
-## Why this doc exists
-
-CI and app builds are reproducible here with **Node** from **`.nvmrc`** and GitHub Actions **`actions/setup-node`**. The Ralph `/deepwork` triple review is **client- and plugin-bound**; this file records the **exact expectations and commands** so contributors can align local quality gates with the plugin without adding secrets to the repo.
+Use the version directory that contains `hooks/call-tracker.sh` and `scripts/start-ralph-loop.sh`.
