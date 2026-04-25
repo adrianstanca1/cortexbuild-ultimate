@@ -3,7 +3,7 @@ import tseslint from 'typescript-eslint';
 import reactHooks from 'eslint-plugin-react-hooks';
 
 export default tseslint.config(
-  { ignores: ['dist', 'node_modules', '*.config.js', '*.config.cjs', '*.config.ts', '.eslintrc.*', 'vite.config.ts', 'playwright.config.ts', 'server/**', 'public/**', 'types/**', 'e2e/**', 'prisma/**', '.agents/**'] },
+  { ignores: ['dist', 'node_modules', '*.config.js', '*.config.cjs', '*.config.ts', '.eslintrc.*', 'vite.config.ts', 'playwright.config.ts', 'server/**', 'public/**', 'types/**', 'e2e/**', 'prisma/**', '.agents/**', 'ios/**', '.remember/**', 'benchmarks/**', 'benchmark.cjs', 'coverage/**'] },
   js.configs.recommended,
   ...tseslint.configs.recommended,
   {
