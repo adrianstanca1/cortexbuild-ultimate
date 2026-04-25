@@ -859,7 +859,7 @@ export function MobileBottomNav({
           from { transform: rotate(0deg); }
           to { transform: rotate(360deg); }
         }
-
+        
         @keyframes slideInUp {
           from {
             opacity: 0;
@@ -870,7 +870,7 @@ export function MobileBottomNav({
             transform: translateY(0);
           }
         }
-
+        
         @keyframes fadeInScale {
           from {
             opacity: 0;
@@ -881,7 +881,7 @@ export function MobileBottomNav({
             transform: scale(1);
           }
         }
-
+        
         @keyframes scaleIn {
           from {
             opacity: 0;
@@ -892,15 +892,7 @@ export function MobileBottomNav({
             transform: translate(-50%, -100%) scale(1);
           }
         }
-
-        @media (prefers-reduced-motion: reduce) {
-          *, *::before, *::after {
-            animation-duration: 0.01ms !important;
-            animation-iteration-count: 1 !important;
-            transition-duration: 0.01ms !important;
-            transform: none !important;
-          }
-        }
+        
       `}</style>
     </div>
   );

@@ -2,40 +2,23 @@ name: Deploy to Production
 
 on:
   push:
-    branches: [main]
-  workflow_dispatch:
+    branches: [ main ]
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       - name: Deploy via SSH
-        uses: appleboy/ssh-action@v1.2.5
+        uses: appleboy/ssh-action@master
         with:
           host: ${{ secrets.VPS_HOST }}
           username: root
           key: ${{ secrets.VPS_SSH_KEY }}
-          timeout: 2m
-          command_timeout: 10m
           script: |
-            set -euo pipefail
-            PROJECT_DIR=/root/cortexbuild-ultimate
-            
-            cd "$PROJECT_DIR"
-            git fetch origin
-            git reset --hard origin/main
-            
-            docker build -t cortexbuild-ultimate-api:latest -f Dockerfile.api .
-            docker rm -f cortexbuild-api 2>/dev/null || true
-            docker-compose up -d api
-            
-            for i in $(seq 1 30); do
-              curl -fsS http://localhost:3001/api/health >/dev/null 2>&1 && break
-              sleep 2
-            done
-            
-            curl -fsS http://localhost:3001/api/health || { echo "Health failed"; exit 1; }
-            systemctl reload nginx 2>/dev/null || true
-            echo "Deploy complete"
+            cd /root/cortexbuild-work
+            git pull origin main
+            bash deploy/deploy-api.sh
+            bash deploy/deploy-frontend.sh
+            bash deploy/scripts/verify-deployment.sh

@@ -23,104 +23,93 @@ export interface SiteBrief {
 }
 
 export function buildAISiteBrief(input: {
-  openRfis?: number;
-  overdueRfis?: number;
-  blockedTasks?: number;
-  redBudgetProjects?: number;
-  amberProgrammeProjects?: number;
-  openSafetyItems?: number;
-  activeProjects?: number;
+  openRfis: number;
+  overdueRfis: number;
+  blockedTasks: number;
+  redBudgetProjects: number;
+  amberProgrammeProjects: number;
+  openSafetyItems: number;
+  activeProjects: number;
   /** Mobile / lightweight summary: outstanding tasks from field API */
   mobileOutstandingTasks?: number;
   /** Mobile: open defects count */
   mobileOpenDefects?: number;
 }): SiteBrief {
-  const {
-    openRfis = 0,
-    overdueRfis = 0,
-    blockedTasks = 0,
-    redBudgetProjects = 0,
-    amberProgrammeProjects = 0,
-    openSafetyItems = 0,
-    activeProjects = 0,
-    mobileOutstandingTasks,
-    mobileOpenDefects,
-  } = input;
   const signals: BriefSignal[] = [];
 
-  if (mobileOpenDefects !== undefined && mobileOpenDefects > 0) {
+  if (input.mobileOpenDefects != null && input.mobileOpenDefects > 0) {
     signals.push({
       id: 'mobile-defects',
       title: 'Open defects',
-      detail: `${mobileOpenDefects} open defect(s) on the summary feed — close the loop on site.`,
-      severity: mobileOpenDefects >= 5 ? 'critical' : 'attention',
+      detail: `${input.mobileOpenDefects} open defect(s) on the summary feed — close the loop on site.`,
+      severity: input.mobileOpenDefects >= 5 ? 'critical' : 'attention',
       navigateTo: 'defects',
     });
   }
 
-  if (mobileOutstandingTasks !== undefined && mobileOutstandingTasks > 0) {
+  if (input.mobileOutstandingTasks != null && input.mobileOutstandingTasks > 0) {
     signals.push({
       id: 'mobile-tasks',
       title: 'Your task queue',
-      detail: `${mobileOutstandingTasks} item(s) on today's mobile summary — work the list top-down.`,
+      detail: `${input.mobileOutstandingTasks} item(s) on today's mobile summary — work the list top-down.`,
       severity: 'info',
       navigateTo: 'daily-reports',
     });
   }
 
-  if (redBudgetProjects > 0) {
+  if (input.redBudgetProjects > 0) {
     signals.push({
       id: 'budget-rag',
       title: 'Budget pressure',
-      detail: `${redBudgetProjects} project(s) on red budget RAG — review valuations and change orders.`,
+      detail: `${input.redBudgetProjects} project(s) on red budget RAG — review valuations and change orders.`,
       severity: 'critical',
       navigateTo: 'cost-management',
     });
   }
 
-  if (overdueRfis > 0) {
+  if (input.overdueRfis > 0) {
     signals.push({
       id: 'rfi-overdue',
       title: 'RFI response risk',
-      detail: `${overdueRfis} RFI(s) look overdue — programme exposure until answered.`,
+      detail: `${input.overdueRfis} RFI(s) look overdue — programme exposure until answered.`,
       severity: 'critical',
       navigateTo: 'rfis',
     });
-  } else if (openRfis > 0) {
+  } else if (input.openRfis > 0) {
     signals.push({
       id: 'rfi-open',
       title: 'Open RFIs',
-      detail: `${openRfis} open RFI(s) — keep the design record tight.`,
+      detail: `${input.openRfis} open RFI(s) — keep the design record tight.`,
       severity: 'attention',
       navigateTo: 'rfis',
     });
   }
 
-  if (openSafetyItems > 0) {
+  if (input.openSafetyItems > 0) {
     signals.push({
       id: 'safety-open',
       title: 'Safety follow-up',
-      detail: `${openSafetyItems} open incident / observation record(s).`,
-      severity: openSafetyItems >= 3 ? 'critical' : 'attention',
+      detail: `${input.openSafetyItems} open incident / observation record(s).`,
+      severity: input.openSafetyItems >= 3 ? 'critical' : 'attention',
       navigateTo: 'safety',
     });
   }
 
-  if (blockedTasks > 0) {
+  if (input.blockedTasks > 0) {
     signals.push({
       id: 'tasks-blocked',
       title: 'Blocked work',
-      detail: `${blockedTasks} blocked task(s) — unblock or re-sequence.`,
+      detail: `${input.blockedTasks} blocked task(s) — unblock or re-sequence.`,
       severity: 'attention',
       navigateTo: 'projects',
     });
   }
 
-  if (amberProgrammeProjects > 0 && redBudgetProjects === 0) {
+  if (input.amberProgrammeProjects > 0 && input.redBudgetProjects === 0) {
     signals.push({
       id: 'programme-amber',
       title: 'Programme drift',
-      detail: `${amberProgrammeProjects} project(s) on amber programme — tighten lookahead.`,
+      detail: `${input.amberProgrammeProjects} project(s) on amber programme — tighten lookahead.`,
       severity: 'info',
       navigateTo: 'project-calendar',
     });
@@ -131,8 +120,8 @@ export function buildAISiteBrief(input: {
       id: 'nominal',
       title: 'Systems nominal',
       detail:
-        activeProjects > 0
-          ? `${activeProjects} active project(s) — no critical triage signals from live data.`
+        input.activeProjects > 0
+          ? `${input.activeProjects} active project(s) — no critical triage signals from live data.`
           : 'No active projects yet — seed programmes or connect integrations.',
       severity: 'info',
       navigateTo: 'dashboard',
