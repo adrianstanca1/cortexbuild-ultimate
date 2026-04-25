@@ -424,7 +424,7 @@ app.use("/api/training", makeRouter("training"));
 app.use("/api/certifications", makeRouter("certifications"));
 app.use("/api/prequalification", makeRouter("prequalification"));
 app.use("/api/lettings", require("./routes/lettings"));
-app.use('/api', require('./routes/measuring'));
+app.use('/api/measuring', require('./routes/measuring'));
 app.use("/api/notifications", require("./routes/notifications"));
 app.use("/api/push", require("./routes/push"));
 app.use("/api/team-member-data", require("./routes/team-member-data"));

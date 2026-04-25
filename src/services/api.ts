@@ -737,11 +737,11 @@ export const defectsApi = {
 };
 
 export const valuationsApi = {
-  getAll: () => fetchAll<Row>('valuations'),
-  getById: (id: string) => apiFetch(`/valuations/${id}`),
-  create: (data: Row) => insertRow('valuations', data),
-  update: (id: string, data: Row) => updateRow('valuations', id, data),
-  delete: (id: string) => deleteRow('valuations', id),
+  getAll: () => apiFetch<{ data: Row[] }>('/measuring/valuations').then(r => r.data ?? []),
+  getById: (id: string) => apiFetch<Row>(`/measuring/valuations/${id}`),
+  create: (data: Row) => apiFetch<Row>('/measuring/valuations', { method: 'POST', body: JSON.stringify(data) }),
+  update: (id: string, data: Row) => apiFetch<Row>(`/measuring/valuations/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+  delete: (id: string) => apiFetch(`/measuring/valuations/${id}`, { method: 'DELETE' }).then(() => {}),
 };
 
 export const specificationsApi = {

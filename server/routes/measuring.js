@@ -65,7 +65,199 @@ function safeFloatZero(val) {
 })();
 
 // ═══════════════════════════════════════════════════════════════════════════════
-// Measurements
+// Root aliases (mounted at /api/measuring)
+// ═══════════════════════════════════════════════════════════════════════════════
+
+// ─── GET /api/measuring ──────────────────────────────────────────────────────
+router.get('/', async (req, res) => {
+  try {
+    const { rows } = await pool.query(
+      `SELECT m.*, p.name as project_name
+       FROM measurements m
+       LEFT JOIN projects p ON m.project_id = p.id
+       WHERE COALESCE(m.organization_id, m.company_id) = $1
+       ORDER BY m.updated_at DESC`,
+      [req.user.company_id]
+    );
+    res.json(rows);
+  } catch (err) {
+    console.error('[measuring GET /]', err);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
+// ─── POST /api/measuring ───────────────────────────────────────────────────────
+router.post('/', async (req, res) => {
+  const {
+    project_id, reference, item_no, survey_type, location,
+    surveyor, measurement_date, quantity, unit, rate, total,
+    status, notes
+  } = req.body;
+
+  const quantityVal = safeFloat(quantity);
+  const rateVal = safeFloat(rate);
+  const totalVal = safeFloat(total);
+
+  if ((quantityVal !== null && quantityVal < 0) ||
+      (rateVal !== null && rateVal < 0) ||
+      (totalVal !== null && totalVal < 0)) {
+    return res.status(400).json({ message: 'Numeric values cannot be negative' });
+  }
+
+  try {
+    const { rows } = await pool.query(
+      `INSERT INTO measurements (
+        project_id, reference, item_no, survey_type, location,
+        surveyor, measurement_date, quantity, unit, rate, total,
+        status, notes, organization_id, company_id
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)
+      RETURNING *`,
+      [
+        project_id || null,
+        reference || null,
+        item_no || null,
+        survey_type || null,
+        location || null,
+        surveyor || null,
+        measurement_date || null,
+        quantityVal,
+        unit || null,
+        rateVal,
+        totalVal,
+        status || 'draft',
+        notes || null,
+        req.user.organization_id,
+        req.user.company_id
+      ]
+    );
+
+    logAudit({
+      auth: req.user,
+      action: 'create',
+      entityType: 'measurements',
+      entityId: rows[0].id,
+      newData: rows[0]
+    });
+
+    res.status(201).json(rows[0]);
+  } catch (err) {
+    console.error('[measuring POST /]', err);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
+// ─── GET /api/measuring/:id ──────────────────────────────────────────────────
+router.get('/:id', async (req, res) => {
+  try {
+    const { rows } = await pool.query(
+      `SELECT m.*, p.name as project_name
+       FROM measurements m
+       LEFT JOIN projects p ON m.project_id = p.id
+       WHERE m.id = $1 AND COALESCE(m.organization_id, m.company_id) = $2`,
+      [req.params.id, req.user.company_id]
+    );
+    if (!rows.length) {
+      return res.status(404).json({ message: 'Measurement not found' });
+    }
+    res.json(rows[0]);
+  } catch (err) {
+    console.error('[measuring GET /:id]', err);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
+// ─── PUT /api/measuring/:id ────────────────────────────────────────────────────
+router.put('/:id', async (req, res) => {
+  const {
+    project_id, reference, item_no, survey_type, location,
+    surveyor, measurement_date, quantity, unit, rate, total,
+    status, notes
+  } = req.body;
+
+  const quantityVal = safeFloat(quantity);
+  const rateVal = safeFloat(rate);
+  const totalVal = safeFloat(total);
+
+  if ((quantityVal !== null && quantityVal < 0) ||
+      (rateVal !== null && rateVal < 0) ||
+      (totalVal !== null && totalVal < 0)) {
+    return res.status(400).json({ message: 'Numeric values cannot be negative' });
+  }
+
+  try {
+    const { rows } = await pool.query(
+      `UPDATE measurements SET
+        project_id = COALESCE($1, project_id),
+        reference = COALESCE($2, reference),
+        item_no = COALESCE($3, item_no),
+        survey_type = COALESCE($4, survey_type),
+        location = COALESCE($5, location),
+        surveyor = COALESCE($6, surveyor),
+        measurement_date = COALESCE($7, measurement_date),
+        quantity = COALESCE($8, quantity),
+        unit = COALESCE($9, unit),
+        rate = COALESCE($10, rate),
+        total = COALESCE($11, total),
+        status = COALESCE($12, status),
+        notes = COALESCE($13, notes),
+        updated_at = NOW()
+       WHERE id = $14 AND COALESCE(organization_id, company_id) = $15
+       RETURNING *`,
+      [
+        project_id, reference, item_no, survey_type, location,
+        surveyor, measurement_date, quantityVal, unit, rateVal, totalVal,
+        status, notes,
+        req.params.id, req.user.company_id
+      ]
+    );
+
+    if (!rows.length) {
+      return res.status(404).json({ message: 'Measurement not found' });
+    }
+
+    logAudit({
+      auth: req.user,
+      action: 'update',
+      entityType: 'measurements',
+      entityId: req.params.id,
+      newData: rows[0]
+    });
+
+    res.json(rows[0]);
+  } catch (err) {
+    console.error('[measuring PUT /:id]', err);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
+// ─── DELETE /api/measuring/:id ─────────────────────────────────────────────────
+router.delete('/:id', async (req, res) => {
+  try {
+    const { rowCount } = await pool.query(
+      `DELETE FROM measurements
+       WHERE id = $1 AND COALESCE(organization_id, company_id) = $2`,
+      [req.params.id, req.user.company_id]
+    );
+    if (!rowCount) {
+      return res.status(404).json({ message: 'Measurement not found' });
+    }
+
+    logAudit({
+      auth: req.user,
+      action: 'delete',
+      entityType: 'measurements',
+      entityId: req.params.id
+    });
+
+    res.json({ message: 'Measurement deleted' });
+  } catch (err) {
+    console.error('[measuring DELETE /:id]', err);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// Measurements (explicit paths for compatibility)
 // ═══════════════════════════════════════════════════════════════════════════════
 
 // ─── GET /api/measurements ───────────────────────────────────────────────────
