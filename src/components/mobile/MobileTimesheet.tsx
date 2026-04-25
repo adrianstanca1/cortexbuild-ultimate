@@ -21,10 +21,34 @@ function haversineMeters(
   return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 }
 
+
+// ⚡ Bolt Performance Optimization:
+// Extracted high-frequency state update (setInterval clock) into a dedicated leaf component.
+// This prevents the entire <MobileTimesheet> from needlessly re-rendering every second.
+function TimerDisplay({ clockedIn, clockInTime }: { clockedIn: boolean, clockInTime: Date | null }) {
+  const [elapsed, setElapsed] = useState("00:00:00");
+
+  useEffect(() => {
+    if (!clockedIn || !clockInTime) {
+      setElapsed("00:00:00");
+      return;
+    }
+    const id = setInterval(() => {
+      const secs = Math.floor((Date.now() - clockInTime.getTime()) / 1000);
+      const h = String(Math.floor(secs / 3600)).padStart(2, "0");
+      const m = String(Math.floor((secs % 3600) / 60)).padStart(2, "0");
+      const s = String(secs % 60).padStart(2, "0");
+      setElapsed(`${h}:${m}:${s}`);
+    }, 1000);
+    return () => clearInterval(id);
+  }, [clockedIn, clockInTime]);
+
+  return <>{elapsed}</>;
+}
+
 export default function MobileTimesheet() {
   const [clockedIn, setIn] = useState(false);
   const [clockInTime, setInTime] = useState<Date | null>(null);
-  const [elapsed, setElapsed] = useState("00:00:00");
   const [onBreak, setBreak] = useState(false);
   const [breaks, setBreaks] = useState(0);
   const [costCode, setCode] = useState("03.20 · Concrete works");
@@ -78,17 +102,6 @@ export default function MobileTimesheet() {
       });
   }, []);
 
-  useEffect(() => {
-    if (!clockedIn || !clockInTime) return;
-    const id = setInterval(() => {
-      const secs = Math.floor((Date.now() - clockInTime.getTime()) / 1000);
-      const h = String(Math.floor(secs / 3600)).padStart(2, "0");
-      const m = String(Math.floor((secs % 3600) / 60)).padStart(2, "0");
-      const s = String(secs % 60).padStart(2, "0");
-      setElapsed(`${h}:${m}:${s}`);
-    }, 1000);
-    return () => clearInterval(id);
-  }, [clockedIn, clockInTime]);
 
   const checkGPS = async (): Promise<boolean> => {
     return new Promise((resolve) => {
@@ -145,7 +158,6 @@ export default function MobileTimesheet() {
   const handleClockOut = async () => {
     setIn(false);
     setInTime(null);
-    setElapsed("00:00:00");
     await offlineFetch("/api/timesheets/clock-out", {
       method: "POST",
       body: JSON.stringify({
@@ -172,7 +184,7 @@ export default function MobileTimesheet() {
           {clockedIn ? "Time on site" : "Ready to start"}
         </div>
         <div className="text-5xl font-bold text-indigo-100 font-mono tracking-wider my-3">
-          {elapsed}
+          <TimerDisplay clockedIn={clockedIn} clockInTime={clockInTime} />
         </div>
         {clockedIn && <div className="text-indigo-400 text-sm">{costCode}</div>}
       </div>
