@@ -55,7 +55,10 @@ jobs:
             git reset --hard origin/main
             
             docker build -t cortexbuild-ultimate-api:latest -f Dockerfile.api .
-            docker-compose stop api 2>/dev/null || true
+            
+            # Clean up old container if exists (from previous manual deploys)
+            docker rm -f cortexbuild-api 2>/dev/null || true
+            
             docker-compose up -d api
             
             for i in $(seq 1 30); do
