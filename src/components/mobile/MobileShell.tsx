@@ -52,7 +52,7 @@ export function MobileShell({ activeModule, setModule }: MobileShellProps) {
   const { showBanner, isIos, install, dismiss } = useInstallPrompt();
 
   return (
-    <div className="flex flex-col h-dvh bg-slate-900 text-white overflow-hidden">
+    <div className="flex min-h-0 flex-col h-dvh bg-slate-900 text-white overflow-hidden">
       <MobileTopBar />
       <OfflineBanner />
       {showBanner && (
@@ -72,7 +72,7 @@ export function MobileShell({ activeModule, setModule }: MobileShellProps) {
           <button type="button" onClick={dismiss} className="text-slate-500 text-lg leading-none">×</button>
         </div>
       )}
-      <main className="flex-1 overflow-y-auto overscroll-contain">
+      <main className="min-h-0 flex-1 overflow-y-auto overscroll-contain">
         <ModuleNavigationProvider navigate={setModule}>
           <Suspense fallback={<ModuleLoader />}>
             {activeModule === 'dashboard'
