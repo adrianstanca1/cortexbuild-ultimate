@@ -13,6 +13,7 @@
   },
   "dependencies": {
     "@google/genai": "^1.50.1",
+    "@sendgrid/mail": "^8.1.4",
     "bcrypt": "^6.0.0",
     "connect-redis": "^9.0.0",
     "cookie-parser": "^1.4.7",
@@ -42,6 +43,7 @@
     "uuid": "^14.0.0",
     "web-ifc": "^0.0.77",
     "web-push": "^3.6.7",
-    "ws": "^8.20.0"
+    "ws": "^8.20.0",
+    "zod": "^3.24.0"
   }
 }

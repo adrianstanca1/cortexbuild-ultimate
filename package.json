@@ -2,6 +2,9 @@
   "name": "cortexbuild-ultimate",
   "private": true,
   "version": "3.0.0",
+  "engines": {
+    "node": ">=20"
+  },
   "description": "CortexBuild Ultimate — AI-Powered Unified Construction Management Platform for UK Contractors",
   "type": "module",
   "scripts": {
