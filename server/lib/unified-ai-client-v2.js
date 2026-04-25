@@ -584,10 +584,10 @@ async function smartQuery(prompt, options = {}) {
 }
 
 const { detectAgentType, buildAgenticPrompt, getAgentSystemPrompt } = require('./agents/agent-orchestrator');
-
-async function agenticQuery(userQuery, options = {}) {
+async function agenticQuery(options = {}) {
   const {
-    agentType: overrideAgentType,
+    userQuery,
+    overrideAgentType,
     context = {},
     preferredProvider = 'openrouter',
     model,
@@ -601,6 +601,22 @@ async function agenticQuery(userQuery, options = {}) {
   return smartQuery(prompt, { preferredProvider, model, temperature, maxTokens });
 }
 
+const EMBEDDING_MODEL = process.env.EMBEDDING_MODEL || "nomic-embed-text";
+
+async function summarizeText(text, options = {}) {
+  const { model, maxTokens = 500, temperature = 0.3 } = options;
+  try {
+    const result = await smartQuery(
+      `Please summarize the following text concisely, preserving key facts and decisions:\n\n${text}`,
+      { model: model || LLM_MODEL, temperature, maxTokens }
+    );
+    return result?.text || result || '';
+  } catch (err) {
+    console.error('[summarizeText] failed:', err.message);
+    return text.split('\n').slice(0, 5).join('\n');
+  }
+}
+
 module.exports = {
   queryOllama,
   queryGemini,
@@ -611,6 +627,8 @@ module.exports = {
   agenticQuery,
   streamSmartQuery,
   streamAgenticQuery,
+  EMBEDDING_MODEL,
+  summarizeText,
   __test__: {
     embeddingCache,
     ollamaCircuitBreaker,
