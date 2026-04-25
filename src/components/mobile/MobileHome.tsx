@@ -1,7 +1,8 @@
-import { FileText, AlertTriangle, Camera, Clock, Package, Users } from 'lucide-react';
+import { FileText, AlertTriangle, Camera, Clock, Package, Users, Sparkles } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { type Module } from '../../types';
 import { getToken } from '../../lib/auth-storage';
+import { buildAISiteBrief } from '../../lib/aiSiteBrief';
 
 interface QuickAction {
   label: string;

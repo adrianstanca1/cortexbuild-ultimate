@@ -1,23 +1,17 @@
 // Module: Settings — CortexBuild Ultimate (Full Subpages)
 import React, { useState, useEffect } from 'react';
 import {
-  Save, Bell, Shield, CreditCard, Users, Building2, Plug, Check,
+  Save, Bell, Shield, Users, Building2, Plug, Check,
   AlertTriangle, Trash2,
   Plus, RefreshCw, Lock, Eye, EyeOff, X, CheckCircle2,
-  CheckSquare, Square, Loader2,
+  CheckSquare, Square, Loader2, Sparkles, Layers,
 } from 'lucide-react';
 import { BulkActionsBar, useBulkSelection } from '../ui/BulkActions';
 import { ModuleBreadcrumbs } from '../ui/Breadcrumbs';
 import { settingsApi, usersApi, companyApi } from '../../services/api';
 import { toast } from 'sonner';
 
-type Tab = 'company'|'users'|'billing'|'notifications'|'integrations'|'security';
-
-const PLAN_FEATURES: Record<string, string[]> = {
-  Starter:       ['Up to 3 projects','5 users','Basic reports','Email support'],
-  Professional:  ['Up to 20 projects','25 users','Advanced analytics','CIS module','Priority support','API access'],
-  Enterprise:    ['Unlimited projects','Unlimited users','Custom integrations','Dedicated CSM','SLA guarantee','White-label option'],
-};
+type Tab = 'company'|'users'|'workspace'|'notifications'|'integrations'|'security';
 
 // ─── Notification toggle item ───────────────────────────────────────────────
 function Toggle({ on, onToggle }: { on: boolean; onToggle: () => void }) {
@@ -155,16 +149,6 @@ export function Settings() {
     }
   }
 
-  // ── Billing state ─────────────────────────────────────────────────────────
-  const [currentPlan] = useState('Professional');
-  const billingHistory = [
-    { id:'b1', date:'2026-03-01', desc:'Professional — Monthly',  amount:149, status:'paid'   },
-    { id:'b2', date:'2026-02-01', desc:'Professional — Monthly',  amount:149, status:'paid'   },
-    { id:'b3', date:'2026-01-01', desc:'Professional — Monthly',  amount:149, status:'paid'   },
-    { id:'b4', date:'2025-12-01', desc:'Professional — Monthly',  amount:149, status:'paid'   },
-    { id:'b5', date:'2025-11-01', desc:'Starter → Pro Upgrade',   amount:89,  status:'paid'   },
-  ];
-
   // ── Notification state ────────────────────────────────────────────────────
   const [notifs, setNotifs] = useState({
     safety_incidents: true,  rfis_raised: true,     change_orders: true,
@@ -197,7 +181,7 @@ export function Settings() {
   const TABS: { id: Tab; label: string; icon: typeof Save }[] = [
     { id:'company',       label:'Company',       icon:Building2     },
     { id:'users',         label:'Users',         icon:Users         },
-    { id:'billing',       label:'Billing',       icon:CreditCard    },
+    { id:'workspace',     label:'Workspace',     icon:Layers         },
     { id:'notifications', label:'Notifications', icon:Bell          },
     { id:'integrations',  label:'Integrations',  icon:Plug          },
     { id:'security',      label:'Security',      icon:Shield        },
@@ -401,62 +385,65 @@ export function Settings() {
         </div>
       )}
 
-      {/* ── BILLING ─────────────────────────────────────────────────────── */}
-      {tab==='billing' && (
+      {/* ── WORKSPACE (free product) ─────────────────────────────────────── */}
+      {tab==='workspace' && (
         <div className="space-y-4">
-          <div className="grid grid-cols-3 gap-4">
-            {(['Starter','Professional','Enterprise'] as const).map(plan=>(
-              <div key={plan} className={`bg-gray-900 border rounded-2xl p-5 relative ${plan===currentPlan?'border-blue-600 ring-1 ring-blue-500/40':'border-gray-800'}`}>
-                {plan===currentPlan && <span className="absolute -top-2.5 left-4 text-xs bg-blue-600 text-white px-2 py-0.5 rounded-full font-semibold">Current Plan</span>}
-                <h3 className="text-lg font-display text-white mb-1">{plan}</h3>
-                <p className="text-2xl font-display text-blue-400 mb-3">{plan==='Starter'?'£49':plan==='Professional'?'£149':'Custom'}<span className="text-xs text-gray-400 font-normal">/mo</span></p>
-                <ul className="space-y-1.5 mb-4">
-                  {PLAN_FEATURES[plan].map(f=>(
-                    <li key={f} className="flex items-center gap-2 text-sm text-gray-300"><Check className="w-3.5 h-3.5 text-green-400 flex-shrink-0"/>{f}</li>
-                  ))}
-                </ul>
-                {plan!==currentPlan && (
-                  <button type="button" onClick={()=>toast.success(`Contact sales to switch to ${plan}`)}
-                    className="w-full py-2 rounded-lg text-sm font-medium btn btn-ghost transition-colors">
-                    {plan==='Enterprise'?'Contact Sales':'Upgrade'}
-                  </button>
-                )}
+          <div className="card bg-base-100 border border-emerald-700/40 p-6 bg-gradient-to-br from-emerald-950/40 to-gray-900">
+            <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
+              <div className="flex items-start gap-3">
+                <span className="inline-flex h-11 w-11 items-center justify-center rounded-xl bg-emerald-500/15 text-emerald-400 ring-1 ring-emerald-500/30">
+                  <Sparkles className="w-6 h-6" />
+                </span>
+                <div>
+                  <h3 className="text-lg font-display text-white">CortexBuild Ultimate — included</h3>
+                  <p className="text-sm text-gray-400 mt-1 max-w-xl">
+                    Your organisation runs on the full construction intelligence stack: projects, commercial, safety,
+                    field, BIM, AI assistant, and automations. There is no subscription tier and no in-app payments for the platform.
+                  </p>
+                </div>
               </div>
-            ))}
-          </div>
-
-          <div className="card bg-base-100 border border-base-300 p-5">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-base font-display text-white">Payment Method</h3>
-              <button type="button" onClick={()=>toast.success('Update card details in your billing portal')} className="text-sm text-blue-400 hover:text-blue-300">Update</button>
-            </div>
-            <div className="flex items-center gap-4 bg-gray-800 rounded-xl p-4">
-              <CreditCard className="w-8 h-8 text-blue-400"/>
-              <div>
-                <p className="text-white font-medium">Visa ending 4242</p>
-                <p className="text-gray-400 text-xs">Expires 09/2027 · Next charge: £149 on 01 Apr 2026</p>
-              </div>
+              <span className="shrink-0 rounded-full bg-emerald-600/20 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-emerald-300 ring-1 ring-emerald-500/40">
+                Free · full access
+              </span>
             </div>
           </div>
 
-          <div className="card bg-base-100 border border-base-300 overflow-hidden">
-            <div className="px-5 py-4 border-b border-gray-800">
-              <h3 className="text-base font-display text-white">Billing History</h3>
-            </div>
-            <table className="w-full text-sm">
-              <thead className="bg-gray-800/60"><tr>{['Date','Description','Amount','Status',''].map(h=><th key={h} className="px-4 py-3 text-left text-xs font-display tracking-widest text-gray-400 uppercase">{h}</th>)}</tr></thead>
-              <tbody className="divide-y divide-gray-800">
-                {billingHistory.map(b=>(
-                  <tr key={b.id} className="hover:bg-gray-800/40">
-                    <td className="px-4 py-3 text-gray-400 text-xs">{b.date}</td>
-                    <td className="px-4 py-3 text-white">{b.desc}</td>
-                    <td className="px-4 py-3 text-white font-display">£{b.amount}</td>
-                    <td className="px-4 py-3"><span className="text-xs px-2 py-0.5 rounded-full bg-green-900/30 text-green-300 font-medium">{b.status}</span></td>
-                    <td className="px-4 py-3"><button type="button" onClick={()=>toast.success('Invoice downloaded')} className="text-xs text-blue-400 hover:text-blue-300">Download</button></td>
-                  </tr>
+          <div className="grid gap-4 md:grid-cols-2">
+            <div className="card bg-base-100 border border-base-300 p-5">
+              <h4 className="text-sm font-display text-white mb-3 flex items-center gap-2">
+                <Layers className="w-4 h-4 text-amber-400" /> What you get
+              </h4>
+              <ul className="space-y-2 text-sm text-gray-300">
+                {[
+                  'Unlimited projects and users for your tenant (fair use)',
+                  'AI assistant, insights, predictive analytics, and marketplace connectors',
+                  'Offline-first mobile shell, webhooks, and audit-grade activity trails',
+                  'UK-first modules: CIS, RAMS, valuations, and subcontractor compliance',
+                ].map((line) => (
+                  <li key={line} className="flex gap-2">
+                    <Check className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />
+                    <span>{line}</span>
+                  </li>
                 ))}
-              </tbody>
-            </table>
+              </ul>
+            </div>
+            <div className="card bg-base-100 border border-base-300 p-5">
+              <h4 className="text-sm font-display text-white mb-3 flex items-center gap-2">
+                <Shield className="w-4 h-4 text-blue-400" /> AI & data posture
+              </h4>
+              <p className="text-sm text-gray-400 leading-relaxed">
+                Prefer on-prem or private inference later — today the app optimises for transparent, construction-native
+                signals (RFIs, RAG, safety, programme) before any model call. Tune notification and integration policies
+                in the tabs beside this panel.
+              </p>
+              <button
+                type="button"
+                className="mt-4 btn btn-secondary btn-sm"
+                onClick={() => { setTab('integrations'); }}
+              >
+                Review integrations
+              </button>
+            </div>
           </div>
         </div>
       )}

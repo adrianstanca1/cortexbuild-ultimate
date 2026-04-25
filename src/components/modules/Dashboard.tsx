@@ -26,6 +26,7 @@ import { useProjectTasks } from '../../hooks/useData';
 import { useProjects as useProjectsData } from '../../hooks/useData';
 import { ModuleBreadcrumbs } from '../ui/Breadcrumbs';
 import { ActivityFeed } from '../ui/ActivityFeed';
+import { AISiteBriefPanel } from '../dashboard/AISiteBriefPanel';
 
 type AnyRow = Record<string, unknown>;
 type SafetyRow = AnyRow & { status?: string; severity?: string };
@@ -236,6 +237,53 @@ function DashboardComponent() {
   const { data: liveProjectsRaw = [] } = useProjectsData.useList();
   const liveProjects = liveProjectsRaw as AnyRow[];
 
+  const aiBriefStats = useMemo(() => {
+    const openRfis = rfis.filter((r) => {
+      const s = String(r.status ?? '').toUpperCase();
+      return s === 'OPEN' || s === 'OVERDUE';
+    }).length;
+    const overdueRfis = rfis.filter((r) => {
+      const s = String(r.status ?? '').toUpperCase();
+      if (s === 'OVERDUE') return true;
+      if (s === 'CLOSED' || s === 'ANSWERED') return false;
+      const due = r.dueDate ?? r.due_date;
+      if (!due) return false;
+      try {
+        return new Date(String(due)).getTime() < Date.now();
+      } catch {
+        return false;
+      }
+    }).length;
+    const blockedTasks = tasks.filter(
+      (t) => String(t.status ?? '').toUpperCase() === 'BLOCKED',
+    ).length;
+    const projRows =
+      liveProjects.length > 0 ? liveProjects : (projects as unknown as AnyRow[]);
+    let redBudgetProjects = 0;
+    let amberProgrammeProjects = 0;
+    for (const row of projRows) {
+      const b = String(row.budgetRAG ?? '').toLowerCase();
+      const pr = String(row.programmeRAG ?? row.programme_rag ?? '').toLowerCase();
+      if (b === 'red') redBudgetProjects++;
+      if (pr === 'amber') amberProgrammeProjects++;
+    }
+    const openSafetyItems = safetyList.filter((s) => {
+      const st = String(s.status ?? '').toLowerCase();
+      return st !== 'closed' && st !== 'resolved' && st !== 'complete';
+    }).length;
+    const activeProjects =
+      liveProjects.length > 0 ? liveProjects.length : projects.length;
+    return {
+      openRfis,
+      overdueRfis,
+      blockedTasks,
+      redBudgetProjects,
+      amberProgrammeProjects,
+      openSafetyItems,
+      activeProjects,
+    };
+  }, [rfis, tasks, liveProjects, projects, safetyList]);
+
   // Debounce ref for WS refresh
   const refreshTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -399,6 +447,16 @@ function DashboardComponent() {
 
       {/* ── Site Status Banner ─────────────────────────────────────── */}
       <SiteStatusBanner />
+
+      <AISiteBriefPanel
+        openRfis={aiBriefStats.openRfis}
+        overdueRfis={aiBriefStats.overdueRfis}
+        blockedTasks={aiBriefStats.blockedTasks}
+        redBudgetProjects={aiBriefStats.redBudgetProjects}
+        amberProgrammeProjects={aiBriefStats.amberProgrammeProjects}
+        openSafetyItems={aiBriefStats.openSafetyItems}
+        activeProjects={aiBriefStats.activeProjects}
+      />
 
       {/* ── Header ─────────────────────────────────────────────────── */}
       <div
