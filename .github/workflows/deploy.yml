@@ -408,8 +408,8 @@ jobs:
         run: |
           set -euo pipefail
 
-          # Rely on HTTPS + /api/health only. openssl s_client checks were flaky on
-          # ubuntu-latest runners (false negatives) while curl to the same host succeeded.
+          # Rely on HTTPS + /api/health. Retry full verification a few times: nginx/DNS
+          # can be briefly inconsistent right after a deploy even when the API is healthy.
           check_https_health_contract() {
             local domain="$1"
             local attempts=36
@@ -426,5 +426,14 @@ jobs:
             return 1
           }
 
-          check_https_health_contract cortexbuildpro.com
-          check_https_health_contract www.cortexbuildpro.com
+          for round in 1 2 3; do
+            echo "=== Post-deploy verify round ${round}/3 ==="
+            if check_https_health_contract cortexbuildpro.com && check_https_health_contract www.cortexbuildpro.com; then
+              echo "✅ All external health checks passed"
+              exit 0
+            fi
+            echo "Round ${round} failed; waiting 45s before retry..."
+            sleep 45
+          done
+          echo "❌ Post-deploy verify failed after 3 rounds"
+          exit 1
