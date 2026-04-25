@@ -35,10 +35,10 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v5
+        uses: actions/checkout@v4
 
       - name: Setup Node.js
-        uses: actions/setup-node@v5
+        uses: actions/setup-node@v4
         with:
           node-version-file: '.nvmrc'
           cache: 'npm'
@@ -114,7 +114,7 @@ jobs:
 
       - name: Upload simulator artifact
         if: ${{ github.event.inputs.build_type != 'release' }}
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v4
         with:
           name: CortexBuild-iOS-Simulator-${{ github.sha }}
           path: ios/App/artifacts/CortexBuild-iOS-simulator.zip
@@ -123,7 +123,7 @@ jobs:
 
       - name: Upload release archive artifact
         if: ${{ github.event.inputs.build_type == 'release' }}
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v4
         with:
           name: CortexBuild-xcarchive-${{ github.sha }}
           path: ios/App/build/CortexBuild.xcarchive
@@ -136,10 +136,10 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v5
+        uses: actions/checkout@v4
 
       - name: Setup Node.js
-        uses: actions/setup-node@v5
+        uses: actions/setup-node@v4
         with:
           node-version-file: '.nvmrc'
           cache: 'npm'
