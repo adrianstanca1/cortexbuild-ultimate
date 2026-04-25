@@ -59,7 +59,7 @@
     "idb": "^8.0.3",
     "jspdf": "^4.2.1",
     "jspdf-autotable": "^5.0.7",
-    "lucide-react": "^1.8.0",
+    "lucide-react": "^1.11.0",
     "nodemailer": "^8.0.6",
     "pg": "^8.20.0",
     "prom-client": "^15.1.3",
