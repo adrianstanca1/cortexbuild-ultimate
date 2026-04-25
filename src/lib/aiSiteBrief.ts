@@ -37,7 +37,11 @@ export function buildAISiteBrief(input: {
 }): SiteBrief {
   const signals: BriefSignal[] = [];
 
-  if (input.mobileOpenDefects !== undefined && input.mobileOpenDefects !== null && input.mobileOpenDefects > 0) {
+  if (
+    input.mobileOpenDefects !== undefined &&
+    input.mobileOpenDefects !== null &&
+    input.mobileOpenDefects > 0
+  ) {
     signals.push({
       id: 'mobile-defects',
       title: 'Open defects',
@@ -47,7 +51,11 @@ export function buildAISiteBrief(input: {
     });
   }
 
-  if (input.mobileOutstandingTasks !== undefined && input.mobileOutstandingTasks !== null && input.mobileOutstandingTasks > 0) {
+  if (
+    input.mobileOutstandingTasks !== undefined &&
+    input.mobileOutstandingTasks !== null &&
+    input.mobileOutstandingTasks > 0
+  ) {
     signals.push({
       id: 'mobile-tasks',
       title: 'Your task queue',
