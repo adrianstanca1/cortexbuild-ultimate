@@ -38,7 +38,12 @@ const redisHost = process.env.REDIS_HOST || "localhost";
 const redisClient = redis.createClient({
   url: process.env.REDIS_URL || `redis://${redisHost}:6379`,
 });
-redisClient.connect().catch((err) => console.error("[Redis]", err.message));
+redisClient.on("error", (err) => console.error("[Redis] connection error:", err.message));
+redisClient.on("connect", () => console.log("[Redis] connected"));
+redisClient.on("reconnecting", () => console.log("[Redis] reconnecting..."));
+redisClient.on("ready", () => console.log("[Redis] ready"));
+redisClient.on("end", () => console.log("[Redis] connection closed"));
+redisClient.connect().catch((err) => console.error("[Redis] initial connection failed:", err.message));
 
 // Initialize WebSocket server (gated by feature flag — skips server creation when disabled)
 initWebSocket(server, { enabled: isFeatureEnabled("FEATURE_WEBSOCKET") });
