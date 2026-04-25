@@ -811,6 +811,7 @@ export const prequalificationApi = {
 export const lettingsApi = {
   getAll: () => fetchAll<Row>('lettings'),
   getById: (id: string) => apiFetch(`/lettings/${id}`),
+  getTenders: () => fetchAll<Row>('tenders'),
   create: (data: Row) => insertRow('lettings', data),
   update: (id: string, data: Row) => updateRow('lettings', id, data),
   delete: (id: string) => deleteRow('lettings', id),
@@ -823,6 +824,11 @@ export const measuringApi = {
   update: (id: string, data: Row) => updateRow('measuring', id, data),
   delete: (id: string) => deleteRow('measuring', id),
 };
+
+// ─── Shorthand aliases (used by some frontend modules) ────────────────────
+export const lettings = lettingsApi;
+export const signage = signageApi;
+export const valuations = valuationsApi;
 
 export const backupApi = {
   getTables: () => apiFetch<{ tables: string[] }>('/backup/tables'),
