@@ -103,6 +103,7 @@ export function Documents() {
 
   const { user } = useAuth();
 
+  // Intentionally key off document id only — avoid refetch when the same row is re-selected with a new object identity.
   useEffect(() => {
     if (!selectedDoc) {
       setDocIntel(null);
@@ -110,10 +111,11 @@ export function Documents() {
     }
     setDocIntel(null);
     let cancelled = false;
+    const docId = String(selectedDoc.id);
     (async () => {
       setIntelLoading(true);
       try {
-        const r = await analyzeDocument(String(selectedDoc.id), { useCache: true });
+        const r = await analyzeDocument(docId, { useCache: true });
         if (!cancelled) setDocIntel(r);
       } catch (err) {
         if (!cancelled) toast.error((err as Error).message || 'Could not load document intelligence');
@@ -122,6 +124,7 @@ export function Documents() {
       }
     })();
     return () => { cancelled = true; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- selectedDoc.id is the stable key; full selectedDoc would over-trigger
   }, [selectedDoc?.id]);
 
   const runDocAnalysisRefresh = async () => {

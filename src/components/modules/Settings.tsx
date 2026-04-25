@@ -31,7 +31,7 @@ export function Settings() {
   const [_loadingUsers, setLoadingUsers]       = useState(false);
   const [savingNotifs, setSavingNotifs]       = useState(false);
   const [savingIntegrations, setSavingIntegrations] = useState(false);
-  const [savingSecurity, setSavingSecurity]   = useState(false);
+  const [_savingSecurity, setSavingSecurity]   = useState(false);
 
   // ── Company state ──────────────────────────────────────────────────────────
   const [company, setCompany] = useState({
