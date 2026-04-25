@@ -25,7 +25,6 @@ on:
         options: [debug, release]
 
 env:
-  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
   NODE_VERSION: '20'
   XCODE_VERSION: '16.2'
 
@@ -36,10 +35,10 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v5
         with:
           node-version-file: '.nvmrc'
           cache: 'npm'
@@ -115,7 +114,7 @@ jobs:
 
       - name: Upload simulator artifact
         if: ${{ github.event.inputs.build_type != 'release' }}
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: CortexBuild-iOS-Simulator-${{ github.sha }}
           path: ios/App/artifacts/CortexBuild-iOS-simulator.zip
@@ -124,7 +123,7 @@ jobs:
 
       - name: Upload release archive artifact
         if: ${{ github.event.inputs.build_type == 'release' }}
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: CortexBuild-xcarchive-${{ github.sha }}
           path: ios/App/build/CortexBuild.xcarchive
@@ -137,10 +136,10 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v5
         with:
           node-version-file: '.nvmrc'
           cache: 'npm'
