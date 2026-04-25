@@ -1,4 +1,5 @@
-import { API_BASE } from '../lib/auth-storage';
+import { API_BASE } from '../lib/auth-storage'
+import type { BriefSignal } from '../lib/aiSiteBrief'
 
 export interface AIChatMessage {
   role: 'user' | 'assistant'
@@ -110,6 +111,72 @@ export async function transcribeAudio(audioUrl: string): Promise<{ text: string 
   if (!res.ok) {
     const err = await res.json().catch(() => ({ error: 'Request failed' }))
     throw new Error(err.error || `HTTP ${res.status}`)
+  }
+  return res.json()
+}
+
+/** Payload for POST /api/ai/enrich-site-brief */
+export interface EnrichSiteBriefPayload {
+  headline: string
+  subline?: string
+  signals?: BriefSignal[]
+  playbooks?: string[]
+  stats?: Record<string, number | string | boolean | null | undefined>
+}
+
+export interface EnrichSiteBriefResponse {
+  headline: string
+  subline: string
+  source?: 'ai' | 'heuristic'
+  fallback?: boolean
+}
+
+export async function enrichSiteBrief(
+  payload: EnrichSiteBriefPayload
+): Promise<EnrichSiteBriefResponse> {
+  const res = await fetch(`${API_BASE}/ai/enrich-site-brief`, {
+    method: 'POST',
+    credentials: 'include',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  })
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ message: 'Request failed' }))
+    throw new Error((err as { message?: string }).message || `HTTP ${res.status}`)
+  }
+  return res.json()
+}
+
+export interface AnalyzeDocumentResponse {
+  summary: string
+  commercialRisks: string[]
+  suggestedActions: string[]
+  rfiSuggestions: string[]
+  keyEntities: string[]
+  confidence?: string
+  extractedChars?: number
+  source?: string
+  documentId?: string
+}
+
+export async function analyzeDocument(
+  documentId: string,
+  options?: { useCache?: boolean }
+): Promise<AnalyzeDocumentResponse> {
+  const res = await fetch(`${API_BASE}/ai/analyze-document`, {
+    method: 'POST',
+    credentials: 'include',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      documentId,
+      useCache: options?.useCache !== false,
+    }),
+  })
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ message: 'Request failed' }))
+    throw new Error((err as { message?: string; error?: string }).message
+      || (err as { error?: string }).error
+      || `HTTP ${res.status}`)
   }
   return res.json()
 }

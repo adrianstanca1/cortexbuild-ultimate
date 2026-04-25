@@ -32,7 +32,13 @@ const manifest = {
     getOrgId: r => r.organization_id || r.company_id,
   },
   documents: {
-    textify: r => `Document: ${r.name || ''} | Type: ${r.type || ''} | Category: ${r.category || ''} | Project: ${r.project || ''} | Status: ${r.status || ''} | Uploaded by: ${r.uploaded_by || ''} | Version: ${r.version || ''} | Date Issued: ${r.date_issued || ''} | ${r.description || ''}`,
+    textify: r => {
+      const base = `Document: ${r.name || ''} | Type: ${r.type || ''} | Category: ${r.category || ''} | Project: ${r.project || ''} | Status: ${r.status || ''} | Uploaded by: ${r.uploaded_by || ''} | Version: ${r.version || ''} | Date Issued: ${r.date_issued || ''} | ${r.description || ''}`;
+      const snip = r.ai_extracted_snippet
+        ? ` | Text excerpt: ${String(r.ai_extracted_snippet).slice(0, 2500)}`
+        : "";
+      return base + snip;
+    },
     getOrgId: r => r.organization_id || r.company_id,
   },
   timesheets: {

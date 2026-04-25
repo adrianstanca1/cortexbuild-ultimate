@@ -73,38 +73,6 @@ services:
         max-size: "50m"
         max-file: "3"
 
-  ollama:
-    image: ollama/ollama:latest
-    container_name: cortexbuild-ollama
-    restart: unless-stopped
-    environment:
-      OLLAMA_NUM_PARALLEL: "2"
-      OLLAMA_MAX_LOADED_MODELS: "1"
-      OLLAMA_KEEP_ALIVE: "15m"
-    volumes:
-      - ollama_data:/root/.ollama
-    ports:
-      - "127.0.0.1:11434:11434"
-    networks:
-      - cortexbuild
-    healthcheck:
-      test: ["CMD-SHELL", "curl -f http://localhost:11434/api/tags || exit 1"]
-      interval: 30s
-      timeout: 15s
-      retries: 3
-      start_period: 60s
-    deploy:
-      resources:
-        limits:
-          memory: 8G
-        reservations:
-          memory: 2G
-    logging:
-      driver: json-file
-      options:
-        max-size: "200m"
-        max-file: "2"
-
   api:
     build:
       context: .
@@ -124,7 +92,7 @@ services:
       REDIS_URL: ${REDIS_URL:-redis://redis:6379}
       PORT: ${PORT:-3001}
       NODE_ENV: ${NODE_ENV:-production}
-      OLLAMA_HOST: ${OLLAMA_HOST:-http://ollama:11434}
+      OLLAMA_HOST: ${OLLAMA_HOST:-http://172.18.0.1:11434}
       OLLAMA_MODEL: ${OLLAMA_MODEL:-qwen3.5:latest}
       CORS_ORIGIN: ${CORS_ORIGIN:?CORS_ORIGIN must be set for production}
       FRONTEND_URL: ${FRONTEND_URL:-https://www.cortexbuildpro.com}
@@ -144,12 +112,10 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
-      ollama:
-        condition: service_healthy
     volumes:
       - ./server/uploads:/app/uploads
     healthcheck:
-      test: ["CMD", "curl", "-sf", "http://localhost:3001/api/health"]
+      test: ["CMD-SHELL", "wget -qO- http://localhost:3001/api/health || exit 1"]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -168,62 +134,6 @@ services:
     mem_limit: 1g
     memswap_limit: 1g
 
-  # Note: nginx container removed — host nginx handles SSL/proxy on ports 80/443
-
-  prometheus:
-    image: prom/prometheus:latest
-    container_name: cortexbuild-prometheus
-    restart: unless-stopped
-    volumes:
-      - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml:ro
-      - prometheus_data:/prometheus
-    ports:
-      - "127.0.0.1:9090:9090"
-    networks:
-      - cortexbuild
-    command:
-      - '--config.file=/etc/prometheus/prometheus.yml'
-      - '--storage.tsdb.path=/prometheus'
-      - '--storage.tsdb.retention.time=15d'
-      - '--query.max-concurrency=10'
-    healthcheck:
-      test: ["CMD", "wget", "-q", "--spider", "http://localhost:9090/-/healthy"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-    logging:
-      driver: json-file
-      options:
-        max-size: "100m"
-        max-file: "3"
-
-  grafana:
-    image: grafana/grafana:latest
-    container_name: cortexbuild-grafana
-    restart: unless-stopped
-    environment:
-      GF_SECURITY_ADMIN_PASSWORD: ${GF_SECURITY_ADMIN_PASSWORD:-cortexbuild_dev_grafana}
-      GF_SERVER_ROOT_URL: ${GRAFANA_ROOT_URL:-http://localhost:3002}
-      GF_ALERTING_ENABLED: "true"
-    volumes:
-      - grafana_data:/var/lib/grafana
-    ports:
-      - "127.0.0.1:3002:3000"
-    networks:
-      - cortexbuild
-    depends_on:
-      - prometheus
-    healthcheck:
-      test: ["CMD", "wget", "-q", "--spider", "http://localhost:3000/api/health"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-    logging:
-      driver: json-file
-      options:
-        max-size: "100m"
-        max-file: "3"
-
 networks:
   cortexbuild:
     driver: bridge
@@ -234,6 +144,3 @@ networks:
 volumes:
   postgres_data:
   redis_data:
-  ollama_data:
-  prometheus_data:
-  grafana_data:

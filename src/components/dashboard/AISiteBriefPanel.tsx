@@ -1,8 +1,10 @@
-import { useMemo } from 'react';
-import { Sparkles, ArrowRight, ShieldAlert, ClipboardList } from 'lucide-react';
+import { useEffect, useMemo, useState } from 'react';
+import { Sparkles, ArrowRight, ShieldAlert, ClipboardList, Wand2, Loader2 } from 'lucide-react';
+import { toast } from 'sonner';
 import { buildAISiteBrief, type BriefSeverity } from '../../lib/aiSiteBrief';
 import type { Module } from '../../types';
 import { useModuleNavigation } from '../../context/ModuleNavigationContext';
+import { enrichSiteBrief } from '../../services/ai';
 
 function severityStyles(s: BriefSeverity): { border: string; accent: string; bg: string } {
   switch (s) {
@@ -47,6 +49,8 @@ export function AISiteBriefPanel({
   activeProjects,
 }: AISiteBriefPanelProps) {
   const navigate = useModuleNavigation();
+  const [polished, setPolished] = useState<{ headline: string; subline: string } | null>(null);
+  const [enriching, setEnriching] = useState(false);
 
   const brief = useMemo(
     () =>
@@ -70,6 +74,53 @@ export function AISiteBriefPanel({
     ],
   );
 
+  useEffect(() => {
+    setPolished(null);
+  }, [
+    openRfis,
+    overdueRfis,
+    blockedTasks,
+    redBudgetProjects,
+    amberProgrammeProjects,
+    openSafetyItems,
+    activeProjects,
+  ]);
+
+  const headline = polished?.headline ?? brief.headline;
+  const subline = polished?.subline ?? brief.subline;
+
+  async function handlePolishWithAi() {
+    setEnriching(true);
+    try {
+      const stats = {
+        openRfis,
+        overdueRfis,
+        blockedTasks,
+        redBudgetProjects,
+        amberProgrammeProjects,
+        openSafetyItems,
+        activeProjects,
+      };
+      const out = await enrichSiteBrief({
+        headline: brief.headline,
+        subline: brief.subline,
+        signals: brief.signals,
+        playbooks: brief.playbooks,
+        stats,
+      });
+      setPolished({ headline: out.headline, subline: out.subline });
+      if (out.source === 'ai' && !out.fallback) {
+        toast.success('Brief polished with AI');
+      } else {
+        toast.message('Brief unchanged', { description: 'AI returned heuristic copy — check API keys or try again.' });
+      }
+    } catch (e) {
+      toast.error((e as Error).message || 'Could not polish brief');
+    } finally {
+      setEnriching(false);
+    }
+  }
+
   return (
     <section
       className="rounded-2xl border border-white/[0.08] bg-gradient-to-br from-[rgba(15,23,42,0.92)] via-[rgba(13,17,23,0.88)] to-[rgba(15,23,42,0.75)] p-5 shadow-[0_16px_48px_rgba(0,0,0,0.45)] backdrop-blur-md"
@@ -89,11 +140,25 @@ export function AISiteBriefPanel({
             id="ai-site-brief-heading"
             className="font-display text-xl font-bold tracking-tight text-slate-100 md:text-2xl"
           >
-            {brief.headline}
+            {headline}
           </h2>
-          <p className="max-w-3xl text-sm leading-relaxed text-slate-400">{brief.subline}</p>
+          <p className="max-w-3xl text-sm leading-relaxed text-slate-400">{subline}</p>
         </div>
         <div className="flex shrink-0 flex-wrap gap-2 md:justify-end">
+          <button
+            type="button"
+            className="btn btn-secondary inline-flex items-center gap-2 text-xs"
+            disabled={enriching}
+            onClick={() => void handlePolishWithAi()}
+            title="Sharpen headline and subline with your configured AI providers"
+          >
+            {enriching ? (
+              <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden />
+            ) : (
+              <Wand2 className="h-3.5 w-3.5" aria-hidden />
+            )}
+            Polish with AI
+          </button>
           <button
             type="button"
             className="btn btn-secondary inline-flex items-center gap-2 text-xs"
