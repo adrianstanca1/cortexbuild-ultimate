@@ -1,4 +1,15 @@
 require("dotenv").config({ path: require("path").join(__dirname, ".env") });
+
+// Global error handlers — prevent crashes from Redis or other async errors
+process.on("unhandledRejection", (reason, promise) => {
+  console.error("[UnhandledRejection] Unhandled promise rejection:", reason);
+  // Keep process alive — let express handle it
+});
+process.on("uncaughtException", (err) => {
+  console.error("[UncaughtException]", err);
+  // Attempt graceful shutdown
+  process.exit(1);
+});
 const express = require("express");
 const cors = require("cors");
 const helmet = require("helmet");
@@ -33,17 +44,35 @@ const app = express();
 const server = http.createServer(app);
 const PORT = process.env.PORT || 3001;
 
-// Redis client for rate limiting and distributed state
-const redisHost = process.env.REDIS_HOST || "localhost";
-const redisClient = redis.createClient({
-  url: process.env.REDIS_URL || `redis://${redisHost}:6379`,
-});
-redisClient.on("error", (err) => console.error("[Redis] connection error:", err.message));
-redisClient.on("connect", () => console.log("[Redis] connected"));
-redisClient.on("reconnecting", () => console.log("[Redis] reconnecting..."));
-redisClient.on("ready", () => console.log("[Redis] ready"));
-redisClient.on("end", () => console.log("[Redis] connection closed"));
-redisClient.connect().catch((err) => console.error("[Redis] initial connection failed:", err.message));
+// Redis client for rate limiting and distributed state (optional — skips if REDIS_URL is not set)
+let redisClient = null;
+let redisAvailable = false;
+
+const redisUrl = process.env.REDIS_URL || process.env.REDIS_HOST ? `redis://${process.env.REDIS_HOST || "localhost"}:6379` : null;
+
+if (redisUrl) {
+  redisClient = redis.createClient({ url: redisUrl });
+  redisClient.on("error", (err) => {
+    console.error("[Redis] connection error:", err.message);
+    redisAvailable = false;
+  });
+  redisClient.on("connect", () => {
+    console.log("[Redis] connected");
+    redisAvailable = true;
+  });
+  redisClient.on("reconnecting", () => console.log("[Redis] reconnecting..."));
+  redisClient.on("ready", () => console.log("[Redis] ready"));
+  redisClient.on("end", () => {
+    console.log("[Redis] connection closed");
+    redisAvailable = false;
+  });
+  redisClient.connect().catch((err) => {
+    console.error("[Redis] initial connection failed:", err.message);
+    redisAvailable = false;
+  });
+} else {
+  console.log("[Redis] REDIS_URL not set — skipping Redis connection");
+}
 
 // Initialize WebSocket server (gated by feature flag — skips server creation when disabled)
 initWebSocket(server, { enabled: isFeatureEnabled("FEATURE_WEBSOCKET") });
@@ -63,9 +92,14 @@ if (sessionSecret.length < 32) {
   process.exit(1);
 }
 
+// Session store — use Redis if available, otherwise MemoryStore for development
+const sessionStore = redisAvailable
+  ? new RedisSessionStore({ client: redisClient, prefix: "sess:" })
+  : new session.MemoryStore();
+
 app.use(
   session({
-    store: new RedisSessionStore({ client: redisClient, prefix: "sess:" }),
+    store: sessionStore,
     secret: sessionSecret,
     resave: false,
     saveUninitialized: false,
@@ -182,8 +216,12 @@ async function checkHealth() {
     checks.postgres = false;
   }
   try {
-    await redisClient.ping();
-    checks.redis = true;
+    if (redisAvailable && redisClient) {
+      await redisClient.ping();
+      checks.redis = true;
+    } else {
+      checks.redis = false;
+    }
   } catch (err) {
     console.error("[Health] Redis check failed:", err.message);
     checks.redis = false;
@@ -272,13 +310,16 @@ if (agentDebugApiEnabled) {
   console.log("[agent-debug] POST/GET /api/agent-debug →", AGENT_DEBUG_LOG);
 }
 
-// Rate-limited deploy route (5 requests per hour, Redis-backed)
-// Protected by DEPLOY_SECRET bearer token (see routes/deploy.js)
+// Rate-limited deploy route (5 requests per hour, Redis-backed if available, otherwise memory)
+const deployLimiterStore = redisAvailable
+  ? new RateLimitRedisStore({
+      sendCommand: (...args) => redisClient.sendCommand(args),
+      prefix: "rl:deploy:",
+    })
+  : undefined; // undefined = memory store (default)
+
 const deployLimiter = rateLimit({
-  store: new RateLimitRedisStore({
-    sendCommand: (...args) => redisClient.sendCommand(args),
-    prefix: "rl:deploy:",
-  }),
+  store: deployLimiterStore,
   windowMs: 60 * 60 * 1000, // 1 hour
   max: 5,
   message: { error: "Too many deploy attempts, try again later" },
@@ -476,8 +517,10 @@ function gracefulShutdown(signal) {
       console.error("[PostgreSQL] Error closing pool:", e.message);
     }
     try {
-      await redisClient.quit();
-      console.log("[Redis] Client closed");
+      if (redisAvailable && redisClient) {
+        await redisClient.quit();
+        console.log("[Redis] Client closed");
+      }
     } catch (e) {
       console.error("[Redis] Error closing client:", e.message);
     }
