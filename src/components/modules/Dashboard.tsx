@@ -262,7 +262,7 @@ function DashboardComponent() {
     let redBudgetProjects = 0;
     let amberProgrammeProjects = 0;
     for (const row of projRows) {
-      const b = String(row.budgetRAG ?? '').toLowerCase();
+      const b = String(row.budgetRAG ?? row.budget_rag ?? '').toLowerCase();
       const pr = String(row.programmeRAG ?? row.programme_rag ?? '').toLowerCase();
       if (b === 'red') redBudgetProjects++;
       if (pr === 'amber') amberProgrammeProjects++;

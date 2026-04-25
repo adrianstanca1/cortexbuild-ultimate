@@ -59,13 +59,6 @@ export function MobileHome({ onNavigate }: MobileHomeProps) {
   const mobileBrief =
     !isLoading && summary
       ? buildAISiteBrief({
-          openRfis: 0,
-          overdueRfis: 0,
-          blockedTasks: 0,
-          redBudgetProjects: 0,
-          amberProgrammeProjects: 0,
-          openSafetyItems: 0,
-          activeProjects: 1,
           mobileOutstandingTasks: summary.tasks,
           mobileOpenDefects: summary.defects,
         })
