@@ -44,6 +44,7 @@ interface _Valuation {
 
 interface MeasurementFormData {
   reference: string;
+  item_no: string;
   survey_type: string;
   location: string;
   surveyor: string;
@@ -57,6 +58,13 @@ interface MeasurementFormData {
   notes: string;
 }
 
+const mockValuations = [
+  { period: 'Jan 2026', amount_certified: 125000, cumulative_total: 125000, retention_deducted: 6250, net_payment: 118750 },
+  { period: 'Feb 2026', amount_certified: 98000, cumulative_total: 223000, retention_deducted: 4900, net_payment: 93100 },
+  { period: 'Mar 2026', amount_certified: 142000, cumulative_total: 365000, retention_deducted: 7100, net_payment: 134900 },
+  { period: 'Apr 2026', amount_certified: 110000, cumulative_total: 475000, retention_deducted: 5500, net_payment: 104500 },
+];
+
 export default function Measuring() {
   const [activeTab, setActiveTab] = useState<'takeoff' | 'bq' | 'valuations' | 'reports'>('takeoff');
   const [searchTerm, setSearchTerm] = useState('');
@@ -65,6 +73,7 @@ export default function Measuring() {
   const [editItem, setEditItem] = useState<Measurement | null>(null);
   const [form, setForm] = useState<MeasurementFormData>({
     reference: '',
+    item_no: '',
     survey_type: 'General',
     location: '',
     surveyor: '',
@@ -427,7 +436,7 @@ export default function Measuring() {
             <div className="card p-6 bg-gradient-to-r from-orange-500/10 to-amber-500/10 border border-orange-500/30">
               <div className="text-right">
                 <p className="text-gray-400 mb-2">Total Measured Area</p>
-                <p className="text-4xl font-display text-orange-400">{totals.grandTotal.toLocaleString()} {typedMeasurements[0]?.unit || 'units'}</p>
+                <p className="text-4xl font-display text-orange-400">{totals.grandTotal.toLocaleString()} {filtered[0]?.unit || 'units'}</p>
               </div>
             </div>
           </div>
