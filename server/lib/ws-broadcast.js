@@ -22,6 +22,8 @@ const DASHBOARD_TABLES = new Set([
   'team_members',
   'daily_reports',
   'change_orders',
+  'measurements',
+  'signage',
 ]);
 
 // Maps table name → which KPI key(s) it affects
@@ -33,6 +35,8 @@ const TABLE_TO_KPI = {
   team_members:       ['workforce'],
   daily_reports:      ['workforce'],
   change_orders:      ['totalRevenue'],
+  measurements:       ['totalRevenue', 'activeProjects'],
+  signage:            ['activeProjects'],
 };
 
 /**

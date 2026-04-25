@@ -3,6 +3,7 @@ const pool = require('../db');
 const authMiddleware = require('../middleware/auth');
 const { logAudit } = require('./audit-helper');
 
+const { broadcastDashboardUpdate } = require('../lib/ws-broadcast');
 const router = express.Router();
 
 router.use(authMiddleware);
@@ -42,6 +43,10 @@ function safeFloatZero(val) {
         updated_at TIMESTAMP DEFAULT NOW()
       )
     `);
+    // Schema drift fixes
+    await pool.query(`ALTER TABLE measurements ADD COLUMN IF NOT EXISTS total_area NUMERIC(12,2)`);
+    await pool.query(`ALTER TABLE measurements ADD COLUMN IF NOT EXISTS section TEXT`);
+    await pool.query(`ALTER TABLE measurements ADD COLUMN IF NOT EXISTS description TEXT`);
     await pool.query(`
       CREATE TABLE IF NOT EXISTS valuations (
         id SERIAL PRIMARY KEY,
@@ -90,13 +95,14 @@ router.get('/', async (req, res) => {
 router.post('/', async (req, res) => {
   const {
     project_id, reference, item_no, survey_type, location,
-    surveyor, measurement_date, quantity, unit, rate, total,
-    status, notes
+    surveyor, measurement_date, survey_date, quantity, unit, rate, total,
+    status, notes, total_area, section, description
   } = req.body;
 
   const quantityVal = safeFloat(quantity);
   const rateVal = safeFloat(rate);
   const totalVal = safeFloat(total);
+  const totalAreaVal = safeFloat(total_area);
 
   if ((quantityVal !== null && quantityVal < 0) ||
       (rateVal !== null && rateVal < 0) ||
@@ -109,8 +115,9 @@ router.post('/', async (req, res) => {
       `INSERT INTO measurements (
         project_id, reference, item_no, survey_type, location,
         surveyor, measurement_date, quantity, unit, rate, total,
-        status, notes, organization_id, company_id
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)
+        status, notes, total_area, section, description,
+        organization_id, company_id
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18)
       RETURNING *`,
       [
         project_id || null,
@@ -119,13 +126,16 @@ router.post('/', async (req, res) => {
         survey_type || null,
         location || null,
         surveyor || null,
-        measurement_date || null,
+        measurement_date || survey_date || null,
         quantityVal,
         unit || null,
         rateVal,
         totalVal,
         status || 'draft',
         notes || null,
+        totalAreaVal,
+        section || null,
+        description || null,
         req.user.organization_id,
         req.user.company_id
       ]
@@ -138,6 +148,8 @@ router.post('/', async (req, res) => {
       entityId: rows[0].id,
       newData: rows[0]
     });
+
+    broadcastDashboardUpdate('create', 'measurements', rows[0]);
 
     res.status(201).json(rows[0]);
   } catch (err) {
@@ -170,13 +182,14 @@ router.get('/:id', async (req, res) => {
 router.put('/:id', async (req, res) => {
   const {
     project_id, reference, item_no, survey_type, location,
-    surveyor, measurement_date, quantity, unit, rate, total,
-    status, notes
+    surveyor, measurement_date, survey_date, quantity, unit, rate, total,
+    status, notes, total_area, section, description
   } = req.body;
 
   const quantityVal = safeFloat(quantity);
   const rateVal = safeFloat(rate);
   const totalVal = safeFloat(total);
+  const totalAreaVal = safeFloat(total_area);
 
   if ((quantityVal !== null && quantityVal < 0) ||
       (rateVal !== null && rateVal < 0) ||
@@ -200,13 +213,16 @@ router.put('/:id', async (req, res) => {
         total = COALESCE($11, total),
         status = COALESCE($12, status),
         notes = COALESCE($13, notes),
+        total_area = COALESCE($14, total_area),
+        section = COALESCE($15, section),
+        description = COALESCE($16, description),
         updated_at = NOW()
-       WHERE id = $14 AND COALESCE(organization_id, company_id) = $15
+       WHERE id = $17 AND COALESCE(organization_id, company_id) = $18
        RETURNING *`,
       [
         project_id, reference, item_no, survey_type, location,
-        surveyor, measurement_date, quantityVal, unit, rateVal, totalVal,
-        status, notes,
+        surveyor, measurement_date || survey_date, quantityVal, unit, rateVal, totalVal,
+        status, notes, totalAreaVal, section || null, description || null,
         req.params.id, req.user.company_id
       ]
     );
@@ -222,6 +238,8 @@ router.put('/:id', async (req, res) => {
       entityId: req.params.id,
       newData: rows[0]
     });
+
+    broadcastDashboardUpdate('update', 'measurements', rows[0]);
 
     res.json(rows[0]);
   } catch (err) {
@@ -248,6 +266,8 @@ router.delete('/:id', async (req, res) => {
       entityType: 'measurements',
       entityId: req.params.id
     });
+
+    broadcastDashboardUpdate('delete', 'measurements', { id: req.params.id });
 
     res.json({ message: 'Measurement deleted' });
   } catch (err) {

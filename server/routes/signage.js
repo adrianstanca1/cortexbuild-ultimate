@@ -3,6 +3,7 @@ const pool = require('../db');
 const authMiddleware = require('../middleware/auth');
 const { logAudit } = require('./audit-helper');
 
+const { broadcastDashboardUpdate } = require('../lib/ws-broadcast');
 const router = express.Router();
 
 router.use(authMiddleware);
@@ -40,6 +41,13 @@ function safeInt(val, fallback = null) {
         updated_at TIMESTAMP DEFAULT NOW()
       )
     `);
+    // Schema drift fixes: add columns introduced by frontend
+    await pool.query(`ALTER TABLE signage ADD COLUMN IF NOT EXISTS description TEXT`);
+    await pool.query(`ALTER TABLE signage ADD COLUMN IF NOT EXISTS required_date DATE`);
+    await pool.query(`ALTER TABLE signage ADD COLUMN IF NOT EXISTS installed_by TEXT`);
+    await pool.query(`ALTER TABLE signage ADD COLUMN IF NOT EXISTS last_inspected DATE`);
+    await pool.query(`ALTER TABLE signage ADD COLUMN IF NOT EXISTS next_inspection DATE`);
+    await pool.query(`ALTER TABLE signage ADD COLUMN IF NOT EXISTS inspection_interval INTEGER DEFAULT 30`);
     console.log('[signage] Table ensured');
   } catch (err) {
     console.error('[signage] Failed to ensure table:', err.message);
@@ -68,10 +76,13 @@ router.get('/', async (req, res) => {
 router.post('/', async (req, res) => {
   const {
     project_id, type, location, size, material,
-    quantity, status, installation_date, notes
+    quantity, status, installation_date, installed_date,
+    notes, description, required_date, installed_by,
+    last_inspected, next_inspection, inspection_interval
   } = req.body;
 
   const quantityVal = safeInt(quantity, 1);
+  const intervalVal = safeInt(inspection_interval, 30);
   if (quantityVal !== null && quantityVal < 0) {
     return res.status(400).json({ message: 'Quantity cannot be negative' });
   }
@@ -81,8 +92,10 @@ router.post('/', async (req, res) => {
       `INSERT INTO signage (
         project_id, type, location, size, material,
         quantity, status, installation_date, notes,
+        description, required_date, installed_by,
+        last_inspected, next_inspection, inspection_interval,
         organization_id, company_id
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17)
       RETURNING *`,
       [
         project_id || null,
@@ -92,8 +105,14 @@ router.post('/', async (req, res) => {
         material || null,
         quantityVal,
         status || 'pending',
-        installation_date || null,
+        installation_date || installed_date || null,
         notes || null,
+        description || null,
+        required_date || null,
+        installed_by || null,
+        last_inspected || null,
+        next_inspection || null,
+        intervalVal,
         req.user.organization_id,
         req.user.company_id
       ]
@@ -106,6 +125,8 @@ router.post('/', async (req, res) => {
       entityId: rows[0].id,
       newData: rows[0]
     });
+
+    broadcastDashboardUpdate('create', 'signage', rows[0]);
 
     res.status(201).json(rows[0]);
   } catch (err) {
@@ -138,10 +159,13 @@ router.get('/:id', async (req, res) => {
 router.put('/:id', async (req, res) => {
   const {
     project_id, type, location, size, material,
-    quantity, status, installation_date, notes
+    quantity, status, installation_date, installed_date,
+    notes, description, required_date, installed_by,
+    last_inspected, next_inspection, inspection_interval
   } = req.body;
 
   const quantityVal = safeInt(quantity);
+  const intervalVal = safeInt(inspection_interval);
   if (quantityVal !== null && quantityVal < 0) {
     return res.status(400).json({ message: 'Quantity cannot be negative' });
   }
@@ -158,12 +182,20 @@ router.put('/:id', async (req, res) => {
         status = COALESCE($7, status),
         installation_date = COALESCE($8, installation_date),
         notes = COALESCE($9, notes),
+        description = COALESCE($10, description),
+        required_date = COALESCE($11, required_date),
+        installed_by = COALESCE($12, installed_by),
+        last_inspected = COALESCE($13, last_inspected),
+        next_inspection = COALESCE($14, next_inspection),
+        inspection_interval = COALESCE($15, inspection_interval),
         updated_at = NOW()
-       WHERE id = $10 AND COALESCE(organization_id, company_id) = $11
+       WHERE id = $16 AND COALESCE(organization_id, company_id) = $17
        RETURNING *`,
       [
         project_id, type, location, size, material,
-        quantityVal, status, installation_date, notes,
+        quantityVal, status, installation_date || installed_date, notes,
+        description, required_date, installed_by,
+        last_inspected, next_inspection, intervalVal,
         req.params.id, req.user.company_id
       ]
     );
@@ -179,6 +211,8 @@ router.put('/:id', async (req, res) => {
       entityId: req.params.id,
       newData: rows[0]
     });
+
+    broadcastDashboardUpdate('update', 'signage', rows[0]);
 
     res.json(rows[0]);
   } catch (err) {
@@ -205,6 +239,8 @@ router.delete('/:id', async (req, res) => {
       entityType: 'signage',
       entityId: req.params.id
     });
+
+    broadcastDashboardUpdate('delete', 'signage', { id: req.params.id });
 
     res.json({ message: 'Signage item deleted' });
   } catch (err) {
