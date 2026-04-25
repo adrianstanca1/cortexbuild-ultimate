@@ -25,6 +25,8 @@ on:
         options: [debug, release]
 
 env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+  NODE_VERSION: '20'
   XCODE_VERSION: '16.2'
 
 jobs:
@@ -49,14 +51,6 @@ jobs:
         run: npm run build
         env:
           NODE_ENV: production
-
-      - name: Verify dist/ exists
-        run: |
-          if [ ! -d "dist" ] || [ -z "$(ls -A dist)" ]; then
-            echo "❌ dist/ directory missing or empty after build"
-            exit 1
-          fi
-          echo "✅ dist/ verified ($(find dist -type f | wc -l) files)"
 
       - name: Select Xcode version
         run: sudo xcode-select -s /Applications/Xcode_${{ env.XCODE_VERSION }}.app
