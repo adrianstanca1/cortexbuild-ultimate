@@ -4,6 +4,7 @@ const pool = require("../db");
 const { logAudit } = require("./audit-helper");
 const { broadcastDashboardUpdate } = require("../lib/ws-broadcast");
 const { validateRequiredFields } = require("./validation");
+const { safeParse, buildCrudPayloadSchema } = require("../lib/zod-validation");
 
 // Map table name → webhook event name
 const WEBHOOK_EVENT_MAP = {
@@ -933,12 +934,20 @@ function makeRouter(tableName, orderCol = "created_at") {
       body.ai_score = body.aiScore;
       delete body.aiScore;
     }
-    const keys = filterKeys(body);
+
+    // Zod validate payload (strips unknown keys, type-checks values)
+    const payloadValidation = safeParse(buildCrudPayloadSchema(allowed), body);
+    if (!payloadValidation.valid) {
+      return res.status(400).json({ message: payloadValidation.error });
+    }
+    const validatedBody = payloadValidation.data;
+
+    const keys = filterKeys(validatedBody);
     if (!keys.length)
       return res.status(400).json({ message: "No valid fields provided" });
 
     // Validate required fields
-    const { valid, missing } = validateRequiredFields(tableName, body);
+    const { valid, missing } = validateRequiredFields(tableName, validatedBody);
     if (!valid) {
       return res.status(400).json({
         message: `Missing required fields: ${missing.join(", ")}`,
@@ -955,7 +964,7 @@ function makeRouter(tableName, orderCol = "created_at") {
 
     const cols = keys.join(", ");
     const placeholders = keys.map((_, i) => `$${i + 1}`).join(", ");
-    const values = keys.map((k) => body[k]);
+    const values = keys.map((k) => validatedBody[k]);
 
     // Auto-inject tenant columns on insert
     let colSuffix = "";
@@ -1002,12 +1011,19 @@ function makeRouter(tableName, orderCol = "created_at") {
 
   // PUT /:id — update
   router.put("/:id", async (req, res) => {
-    const keys = filterKeys(req.body);
+    // Zod validate payload (strips unknown keys, type-checks values)
+    const payloadValidation = safeParse(buildCrudPayloadSchema(allowed), req.body);
+    if (!payloadValidation.valid) {
+      return res.status(400).json({ message: payloadValidation.error });
+    }
+    const validatedBody = payloadValidation.data;
+
+    const keys = filterKeys(validatedBody);
     if (!keys.length)
       return res.status(400).json({ message: "No valid fields provided" });
 
     const setClause = keys.map((k, i) => `${k} = $${i + 1}`).join(", ");
-    const values = [...keys.map((k) => req.body[k])];
+    const values = [...keys.map((k) => validatedBody[k])];
 
     const { filter, params: filterParams } = buildFilterWithId(
       req,

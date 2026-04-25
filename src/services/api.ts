@@ -475,6 +475,8 @@ export interface AppSettings {
   dashboard?: Record<string, unknown>;
   alerts?: Record<string, boolean>;
   reports?: Record<string, unknown>;
+  integrations?: Record<string, { connected: boolean; status: string }>;
+  security?: { twoFA?: boolean };
 }
 
 export const settingsApi = {

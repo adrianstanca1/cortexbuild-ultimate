@@ -2,6 +2,12 @@ const express = require('express');
 const pool = require('../db');
 const authMiddleware = require('../middleware/auth');
 const { logAudit } = require('./audit-helper');
+const {
+  safeParse,
+  companyUpdateSchema,
+  companyCreateUserSchema,
+  companyUpdateUserSchema,
+} = require('../lib/zod-validation');
 
 const router = express.Router();
 
@@ -41,12 +47,17 @@ router.put('/', authMiddleware, async (req, res) => {
     return res.status(403).json({ message: 'Insufficient permissions' });
   }
 
+  const validation = safeParse(companyUpdateSchema, req.body);
+  if (!validation.valid) {
+    return res.status(400).json({ message: validation.error });
+  }
+
   const {
     name, registered_address, city, country, postal_code,
     phone, email, website, companies_house_number, vat_number,
     utr_number, hmrc_office, cis_contractor, cis_subcontractor,
     logo_url, insurance_expiry, tax_reference
-  } = req.body;
+  } = validation.data;
 
   try {
     const { rows } = await pool.query(
@@ -132,10 +143,15 @@ router.post('/users', authMiddleware, async (req, res) => {
     return res.status(403).json({ message: 'Insufficient permissions' });
   }
 
-  const { email, name, firstName, lastName, role, phone, password } = req.body;
+  const validation = safeParse(companyCreateUserSchema, req.body);
+  if (!validation.valid) {
+    return res.status(400).json({ message: validation.error });
+  }
+
+  const { email, name, firstName, lastName, role, phone, password } = validation.data;
   const fullName = name || (firstName && lastName ? `${firstName.trim()} ${lastName.trim()}` : null);
 
-  if (!email || !fullName) {
+  if (!fullName) {
     return res.status(400).json({ message: 'Email and name are required' });
   }
 
@@ -255,7 +271,12 @@ router.put('/users/:id', authMiddleware, async (req, res) => {
     return res.status(403).json({ message: 'Insufficient permissions' });
   }
 
-  const { role, phone, is_active } = req.body;
+  const validation = safeParse(companyUpdateUserSchema, req.body);
+  if (!validation.valid) {
+    return res.status(400).json({ message: validation.error });
+  }
+
+  const { role, phone, is_active } = validation.data;
 
   // SECURITY: Restrict assignable roles based on updater's role to prevent privilege escalation
   const ASSIGNABLE_ROLES = {

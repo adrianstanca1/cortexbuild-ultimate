@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Users, Plus, Search, Phone, Mail, Edit2, Trash2, X, ChevronDown, ChevronUp, Shield, Clock, Award, AlertTriangle, PoundSterling, MapPin, CheckCircle2, Calendar, Upload, CheckSquare, Square, Download, Pencil, MessageSquare } from 'lucide-react';
 import { EmptyState } from '../ui/EmptyState';
 import { useTeam } from '../../hooks/useData';
@@ -248,20 +248,50 @@ export function Teams() {
   const [memberSkills, setMemberSkills] = useState<Record<string, Skill[]>>({});
   const [memberInductions, setMemberInductions] = useState<Record<string, Induction[]>>({});
   const [memberAvailability, setMemberAvailability] = useState<Record<string, Availability[]>>({});
+  const [fetchingMemberData, setFetchingMemberData] = useState(false);
+  const fetchedMemberIds = useRef<Set<string>>(new Set());
 
   useEffect(() => {
     if (members.length === 0) return;
-    const memberId = members[0]?.id;
-    if (!memberId) return;
-    Promise.all([
-      teamApi.getMemberSkills(String(memberId)).catch(err => { console.warn('[Teams] skills fetch failed:', err); return []; }),
-      teamApi.getMemberInductions(String(memberId)).catch(err => { console.warn('[Teams] inductions fetch failed:', err); return []; }),
-      teamApi.getMemberAvailability(String(memberId)).catch(err => { console.warn('[Teams] availability fetch failed:', err); return []; }),
-    ]).then(([skills, inductions, availability]) => {
-      setMemberSkills({ [String(memberId)]: skills as Skill[] });
-      setMemberInductions({ [String(memberId)]: inductions as Induction[] });
-      setMemberAvailability({ [String(memberId)]: availability as Availability[] });
+    const unfetched = members.filter(m => m.id && !fetchedMemberIds.current.has(String(m.id)));
+    if (unfetched.length === 0) return;
+
+    let cancelled = false;
+    setFetchingMemberData(true);
+
+    Promise.all(
+      unfetched.map(async (m) => {
+        const memberId = String(m.id);
+        const [skills, inductions, availability] = await Promise.all([
+          teamApi.getMemberSkills(memberId).catch(err => { console.warn('[Teams] skills fetch failed:', err); return []; }),
+          teamApi.getMemberInductions(memberId).catch(err => { console.warn('[Teams] inductions fetch failed:', err); return []; }),
+          teamApi.getMemberAvailability(memberId).catch(err => { console.warn('[Teams] availability fetch failed:', err); return []; }),
+        ]);
+        return { memberId, skills: skills as Skill[], inductions: inductions as Induction[], availability: availability as Availability[] };
+      })
+    ).then(results => {
+      if (cancelled) return;
+      setMemberSkills(prev => {
+        const next = { ...prev };
+        results.forEach(r => { next[r.memberId] = r.skills; });
+        return next;
+      });
+      setMemberInductions(prev => {
+        const next = { ...prev };
+        results.forEach(r => { next[r.memberId] = r.inductions; });
+        return next;
+      });
+      setMemberAvailability(prev => {
+        const next = { ...prev };
+        results.forEach(r => { next[r.memberId] = r.availability; });
+        return next;
+      });
+      results.forEach(r => fetchedMemberIds.current.add(r.memberId));
+    }).finally(() => {
+      if (!cancelled) setFetchingMemberData(false);
     });
+
+    return () => { cancelled = true; };
   }, [members]);
 
   async function handleBulkDelete(ids: string[]) {
@@ -568,6 +598,9 @@ export function Teams() {
       {/* Skills Matrix Tab */}
       {subTab === 'skills' && (
         <div className="bg-gray-900 rounded-xl border border-gray-700 cb-table-scroll touch-pan-x">
+          {fetchingMemberData && (
+            <div className="flex justify-center py-4"><div className="animate-spin rounded-full h-6 w-6 border-b-2 border-orange-600"/></div>
+          )}
           <div className="flex justify-end p-4">
             <button
               type="button"
@@ -739,6 +772,9 @@ export function Teams() {
       {/* Inductions Tab */}
       {subTab === 'inductions' && (
         <div className="bg-gray-900 rounded-xl border border-gray-700 cb-table-scroll touch-pan-x">
+          {fetchingMemberData && (
+            <div className="flex justify-center py-4"><div className="animate-spin rounded-full h-6 w-6 border-b-2 border-orange-600"/></div>
+          )}
           <div className="flex justify-end p-4">
             <button
               type="button"
@@ -797,6 +833,9 @@ export function Teams() {
       {/* On Site Tab */}
       {subTab === 'onsite' && (
         <div className="bg-gray-900 rounded-xl border border-gray-700 cb-table-scroll touch-pan-x">
+          {fetchingMemberData && (
+            <div className="flex justify-center py-4"><div className="animate-spin rounded-full h-6 w-6 border-b-2 border-orange-600"/></div>
+          )}
           <div className="flex justify-end p-4">
             <button
               type="button"

@@ -36,6 +36,8 @@ export function Settings() {
   const [savingCompany, setSavingCompany]   = useState(false);
   const [_loadingUsers, setLoadingUsers]       = useState(false);
   const [savingNotifs, setSavingNotifs]       = useState(false);
+  const [savingIntegrations, setSavingIntegrations] = useState(false);
+  const [savingSecurity, setSavingSecurity]   = useState(false);
 
   // ── Company state ──────────────────────────────────────────────────────────
   const [company, setCompany] = useState({
@@ -86,6 +88,27 @@ export function Settings() {
       }
     }).catch(err => { console.warn('[Settings] users fetch failed:', err); /* use defaults */ })
       .finally(() => setLoadingUsers(false));
+  }, []);
+
+  // ── Load integrations & security settings on mount ─────────────────────────
+  useEffect(() => {
+    settingsApi.getAll().then(data => {
+      if (data?.integrations) {
+        setIntegrations(prev => {
+          const next = { ...prev };
+          Object.entries(data.integrations as Record<string, { connected?: boolean; status?: string }>).forEach(([k, v]) => {
+            const key = k as keyof typeof prev;
+            if (next[key]) {
+              next[key] = { ...next[key], connected: v.connected ?? false, status: v.status ?? (v.connected ? 'Connected' : 'Not connected') };
+            }
+          });
+          return next;
+        });
+      }
+      if (data?.security?.twoFA !== undefined) {
+        setTwoFA(data.security.twoFA as boolean);
+      }
+    }).catch(err => { console.warn('[Settings] settings fetch failed:', err); /* use defaults */ });
   }, []);
 
   async function handleBulkDelete(ids: string[]) {
@@ -518,11 +541,26 @@ export function Settings() {
                 </div>
                 <p className="text-gray-400 text-xs mb-4 leading-relaxed">{int.desc}</p>
                 <button
-                  onClick={()=>{
-                    setIntegrations(prev=>({...prev,[k]:{...prev[k as keyof typeof integrations],connected:!int.connected,status:!int.connected?'Connected':'Not connected'}}));
-                    toast.success(`${int.name} ${int.connected?'disconnected':'connected'}`);
+                  onClick={async ()=>{
+                    const nextConnected = !int.connected;
+                    const nextStatus = nextConnected ? 'Connected' : 'Not connected';
+                    const nextIntegrations = { ...integrations, [k]: { ...integrations[k as keyof typeof integrations], connected: nextConnected, status: nextStatus } };
+                    setIntegrations(nextIntegrations);
+                    toast.success(`${int.name} ${nextConnected ? 'connected' : 'disconnected'}`);
+                    try {
+                      setSavingIntegrations(true);
+                      const payload = Object.fromEntries(
+                        Object.entries(nextIntegrations).map(([ik, iv]) => [ik, { connected: iv.connected, status: iv.status }])
+                      );
+                      await settingsApi.updateSetting('integrations', payload);
+                    } catch {
+                      toast.error('Failed to save integration status');
+                    } finally {
+                      setSavingIntegrations(false);
+                    }
                   }}
-                  className={`w-full py-2 rounded-lg text-sm font-medium transition-colors ${int.connected?'bg-red-900/40 hover:bg-red-900/60 text-red-400 border border-red-800/50':'btn btn-primary'}`}>
+                  disabled={savingIntegrations}
+                  className={`w-full py-2 rounded-lg text-sm font-medium transition-colors ${int.connected?'bg-red-900/40 hover:bg-red-900/60 text-red-400 border border-red-800/50':'btn btn-primary'} disabled:opacity-50`}>
                   {int.connected?'Disconnect':'Connect'}
                 </button>
               </div>
@@ -573,7 +611,19 @@ export function Settings() {
                 <h3 className="text-base font-bold text-white">Two-Factor Authentication</h3>
                 <p className="text-gray-400 text-sm mt-0.5">Add an extra layer of security to your account</p>
               </div>
-              <Toggle on={twoFA} onToggle={()=>{setTwoFA(p=>!p); toast.success(twoFA?'2FA disabled':'2FA setup initiated — check your authenticator app');}}/>
+              <Toggle on={twoFA} onToggle={async ()=>{
+                const nextTwoFA = !twoFA;
+                setTwoFA(nextTwoFA);
+                toast.success(nextTwoFA ? '2FA setup initiated — check your authenticator app' : '2FA disabled');
+                try {
+                  setSavingSecurity(true);
+                  await settingsApi.updateSetting('security', { twoFA: nextTwoFA });
+                } catch {
+                  toast.error('Failed to save security setting');
+                } finally {
+                  setSavingSecurity(false);
+                }
+              }}/>
             </div>
             {twoFA ? (
               <div className="flex items-center gap-3 bg-green-900/20 border border-green-700/40 rounded-xl px-4 py-3">
