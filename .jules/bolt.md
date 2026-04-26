@@ -27,8 +27,3 @@
 
 **Learning:** Setting React state using `setInterval` in layout-level components like `Header.tsx` or `SiteStatusBanner.tsx` to display the current time causes the entire top-level component (and potentially many children) to re-render every second. This creates unnecessary overhead and can degrade perceived performance.
 **Action:** Isolate the clock/timer state into a dedicated leaf component (e.g., `<Clock />`). This ensures that only the tiny text element re-renders every second, preventing the entire layout from updating.
-
-## 2024-05-21 - Re-renders from interval hooks (MobileTimesheet.tsx)
-
-**Learning:** Using `setInterval` in high-level feature components like `MobileTimesheet.tsx` to drive localized states (like `elapsed` or `billableHours`) forces top-level re-renders and degrades app performance.
-**Action:** Always extract high-frequency timers/clocks (e.g., those tracking elapsed time) into dedicated leaf components (`<ElapsedTimer />`, `<LiveBillableHours />`). This limits UI update recalculations to small string DOM nodes rather than the full component subtree.

@@ -5,6 +5,28 @@ import { offlineFetch } from "../../services/offlineFetch";
 import { usePushNotifications } from "../../hooks/usePushNotifications";
 import { getToken } from "../../lib/auth-storage";
 
+/** Leaf component: owns its own 1Hz ticker so only the <span> re-renders. */
+function ElapsedClock({ startedAt }: { startedAt: Date | null }) {
+  const [elapsed, setElapsed] = useState("00:00:00");
+
+  useEffect(() => {
+    if (!startedAt) {
+      setElapsed("00:00:00");
+      return;
+    }
+    const id = setInterval(() => {
+      const secs = Math.floor((Date.now() - startedAt.getTime()) / 1000);
+      const h = String(Math.floor(secs / 3600)).padStart(2, "0");
+      const m = String(Math.floor((secs % 3600) / 60)).padStart(2, "0");
+      const s = String(secs % 60).padStart(2, "0");
+      setElapsed(`${h}:${m}:${s}`);
+    }, 1000);
+    return () => clearInterval(id);
+  }, [startedAt]);
+
+  return <span>{elapsed}</span>;
+}
+
 function haversineMeters(
   lat1: number,
   lon1: number,
@@ -19,59 +41,6 @@ function haversineMeters(
   const a =
     Math.sin(Δφ / 2) ** 2 + Math.cos(φ1) * Math.cos(φ2) * Math.sin(Δλ / 2) ** 2;
   return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-}
-
-// ⚡ Bolt Performance Optimization:
-// Extracted high-frequency state updates (setInterval for elapsed time and billable hours)
-// into dedicated leaf components. This prevents the entire <MobileTimesheet>
-// and its children from needlessly re-rendering every second.
-function ElapsedTimer({ clockedIn, clockInTime }: { clockedIn: boolean, clockInTime: Date | null }) {
-  const [elapsed, setElapsed] = useState("00:00:00");
-
-  useEffect(() => {
-    if (!clockedIn || !clockInTime) {
-      setElapsed("00:00:00");
-      return;
-    }
-    const id = setInterval(() => {
-      const secs = Math.floor((Date.now() - clockInTime.getTime()) / 1000);
-      const h = String(Math.floor(secs / 3600)).padStart(2, "0");
-      const m = String(Math.floor((secs % 3600) / 60)).padStart(2, "0");
-      const s = String(secs % 60).padStart(2, "0");
-      setElapsed(`${h}:${m}:${s}`);
-    }, 1000);
-    return () => clearInterval(id);
-  }, [clockedIn, clockInTime]);
-
-  return <>{elapsed}</>;
-}
-
-function LiveBillableHours({ clockInTime, breaks }: { clockInTime: Date | null, breaks: number }) {
-  const [billableHours, setBillableHours] = useState("0.0");
-
-  useEffect(() => {
-    const calculateHours = () => {
-      if (!clockInTime) {
-        setBillableHours("0.0");
-        return;
-      }
-      const hours = Math.max(
-        0,
-        (Date.now() - clockInTime.getTime()) / 3600000 - breaks * 0.25
-      ).toFixed(1);
-      setBillableHours(hours);
-    };
-
-    calculateHours(); // Initial calculation
-
-    if (!clockInTime) return;
-
-    // Update every minute, since billable hours only show to 1 decimal place (tenths of an hour)
-    const id = setInterval(calculateHours, 60000);
-    return () => clearInterval(id);
-  }, [clockInTime, breaks]);
-
-  return <>{billableHours}</>;
 }
 
 export default function MobileTimesheet() {
@@ -195,6 +164,13 @@ export default function MobileTimesheet() {
     toast.success("Clocked out");
   };
 
+  const billableHours = clockInTime
+    ? Math.max(
+        0,
+        (Date.now() - clockInTime.getTime()) / 3600000 - breaks * 0.25,
+      ).toFixed(1)
+    : "0.0";
+
   return (
     <div className="p-4 max-w-lg mx-auto space-y-4">
       <h2 className="text-lg font-bold text-slate-100">Timesheet</h2>
@@ -204,7 +180,7 @@ export default function MobileTimesheet() {
           {clockedIn ? "Time on site" : "Ready to start"}
         </div>
         <div className="text-5xl font-bold text-indigo-100 font-mono tracking-wider my-3">
-          <ElapsedTimer clockedIn={clockedIn} clockInTime={clockInTime} />
+          <ElapsedClock startedAt={clockInTime} />
         </div>
         {clockedIn && <div className="text-indigo-400 text-sm">{costCode}</div>}
       </div>
@@ -217,7 +193,7 @@ export default function MobileTimesheet() {
         <div className="bg-slate-800 rounded-xl p-3 text-center">
           <div className="text-slate-400 text-xs">Billable hrs</div>
           <div className="text-indigo-300 text-xl font-bold">
-            <LiveBillableHours clockInTime={clockInTime} breaks={breaks} />h
+            {billableHours}h
           </div>
         </div>
       </div>
