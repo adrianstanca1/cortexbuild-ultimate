@@ -29,11 +29,21 @@ export default function MobileSafetyIncident() {
   }, [photo]);
 
   const getGPS = async () => {
+    // Snapshot current location so we don't clobber a manually-typed value
+    // when the async GPS lookup resolves later (race: user starts typing, GPS fails).
+    const before = location;
     try {
       const pos = await getCurrentPosition();
-      setLoc(`GPS ${pos.latitude.toFixed(4)}, ${pos.longitude.toFixed(4)}`);
+      // Only overwrite if user hasn't typed something else in the meantime.
+      setLoc((current) =>
+        current === before || current === '' || current.startsWith('GPS ')
+          ? `GPS ${pos.latitude.toFixed(4)}, ${pos.longitude.toFixed(4)}`
+          : current,
+      );
     } catch {
-      // GPS unavailable — location stays null
+      // GPS unavailable — only show the helper hint if the field is still empty.
+      // Don't overwrite anything the user typed manually.
+      setLoc((current) => (current === '' ? 'Location unavailable — enter manually' : current));
     }
   };
 
