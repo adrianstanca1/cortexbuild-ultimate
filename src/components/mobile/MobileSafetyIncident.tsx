@@ -33,7 +33,8 @@ export default function MobileSafetyIncident() {
       const pos = await getCurrentPosition();
       setLoc(`GPS ${pos.latitude.toFixed(4)}, ${pos.longitude.toFixed(4)}`);
     } catch {
-      // GPS unavailable — location stays null
+      // GPS unavailable — inform user so they can enter location manually
+      setLoc('Location unavailable — enter manually');
     }
   };
 
