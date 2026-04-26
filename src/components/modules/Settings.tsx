@@ -59,9 +59,31 @@ export function Settings() {
 
   // ── Load company settings on mount ────────────────────────────────────────
   useEffect(() => {
-    companyApi.get().then(data => {
-      if (data) setCompany(prev => ({ ...prev, ...data as Record<string, string | boolean> }));
-    }).catch(err => { console.warn('[Settings] company fetch failed:', err); /* use defaults */ });
+    const loadCompanySettings = async () => {
+      try {
+        const data = await companyApi.get();
+        if (data) {
+          setCompany(prev => ({
+            ...prev,
+            name: (data as any).name || prev.name,
+            reg: (data as any).companiesHouseNumber || prev.reg,
+            vat: (data as any).vatNumber || prev.vat,
+            utr: (data as any).utrNumber || prev.utr,
+            hmrc_office: (data as any).hmrcOffice || prev.hmrc_office,
+            address: (data as any).registeredAddress || prev.address,
+            phone: (data as any).phone || prev.phone,
+            email: (data as any).email || prev.email,
+            website: (data as any).website || prev.website,
+            cis_contractor: (data as any).cisContractor !== undefined ? (data as any).cisContractor : prev.cis_contractor,
+            cis_subcontractor: (data as any).cisSubcontractor !== undefined ? (data as any).cisSubcontractor : prev.cis_subcontractor,
+            logo_url: (data as any).logoUrl || prev.logo_url,
+          }));
+        }
+      } catch (err) {
+        console.warn('[Settings] company fetch failed:', err);
+      }
+    };
+    loadCompanySettings();
   }, []);
 
   // ── Load users on mount ───────────────────────────────────────────────────
@@ -120,9 +142,24 @@ export function Settings() {
   async function handleSaveCompany() {
     setSavingCompany(true);
     try {
-      await companyApi.update(company);
+      const payload = {
+        name: company.name,
+        companies_house_number: company.reg,
+        vat_number: company.vat,
+        utr_number: company.utr,
+        hmrc_office: company.hmrc_office,
+        registered_address: company.address,
+        phone: company.phone,
+        email: company.email,
+        website: company.website,
+        cis_contractor: company.cis_contractor,
+        cis_subcontractor: company.cis_subcontractor,
+        logo_url: company.logo_url,
+      };
+      await companyApi.update(payload);
       toast.success('Company settings saved');
-    } catch {
+    } catch (err) {
+      console.error('Save failed:', err);
       toast.error('Failed to save company settings');
     } finally {
       setSavingCompany(false);
