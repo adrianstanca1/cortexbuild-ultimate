@@ -8,6 +8,7 @@ const pool = require('../db');
 const authMiddleware = require('../middleware/auth');
 const { createNotification, createAlert, broadcast } = require('../lib/websocket');
 const { buildTenantFilter, isSuperAdmin } = require('../middleware/tenantFilter');
+const pushRouter = require('./push');
 
 const router = express.Router();
 router.use(authMiddleware);
@@ -467,11 +468,25 @@ router.post('/', async (req, res) => {
       [title, description, severity || 'info', type || 'notification', user_id || null, link || null, orgId, companyId]
     );
 
+    const notification = rows[0];
+
     // Broadcast to all connected clients in this org
     broadcast({
       type: 'notification',
       payload: { title, description, severity: severity || 'info', link: link || null, timestamp: new Date().toISOString() }
     });
+
+    // Send push notification to user if user_id is specified
+    if (user_id) {
+      pushRouter.sendPushToUser(user_id, {
+        title: title || 'Notification',
+        body: description || '',
+        data: { link: link || null, notificationId: notification.id },
+        badge: 1,
+      });
+    }
+
+    res.json(notification);
   } catch (err) {
     console.error('[POST /notifications]', err.message);
     res.status(500).json({ message: 'Internal server error' });
