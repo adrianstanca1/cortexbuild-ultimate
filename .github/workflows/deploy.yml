@@ -124,9 +124,13 @@ jobs:
             git config --global --add safe.directory "$PROJECT_DIR" || true
             git fetch origin
             # Rescue any unpushed local commits before resetting (race-safe vs. parallel SSH deploys)
-            if ! git merge-base --is-ancestor HEAD origin/main 2>/dev/null; then
-              rescue="local-rescue-$(date -u +%Y%m%d-%H%M%S)"
-              git branch "$rescue" HEAD || true
+            if ! git merge-base --is-ancestor HEAD origin/main; then
+              rescue="local-rescue-$(date -u +%Y%m%d-%H%M%S)-$$"
+              if ! git branch "$rescue" HEAD; then
+                echo "ERROR: refusing to reset --hard; could not create rescue branch '$rescue'." >&2
+                git rev-parse HEAD >&2
+                exit 1
+              fi
               echo "WARN: local HEAD diverged from origin/main; saved to branch '$rescue'"
             fi
             git reset --hard origin/main
@@ -194,9 +198,13 @@ jobs:
 
             git fetch origin
             # Rescue any unpushed local commits before resetting (race-safe vs. parallel SSH deploys)
-            if ! git merge-base --is-ancestor HEAD origin/main 2>/dev/null; then
-              rescue="local-rescue-$(date -u +%Y%m%d-%H%M%S)"
-              git branch "$rescue" HEAD || true
+            if ! git merge-base --is-ancestor HEAD origin/main; then
+              rescue="local-rescue-$(date -u +%Y%m%d-%H%M%S)-$$"
+              if ! git branch "$rescue" HEAD; then
+                echo "ERROR: refusing to reset --hard; could not create rescue branch '$rescue'." >&2
+                git rev-parse HEAD >&2
+                exit 1
+              fi
               echo "WARN: local HEAD diverged from origin/main; saved to branch '$rescue'"
             fi
             git reset --hard origin/main
@@ -289,7 +297,7 @@ jobs:
             # Ollama: API uses host's systemd ollama at 127.0.0.1:11434 (works because API runs --network host).
             # A container on --network host would collide on port 11434 and restart-loop forever, so we don't create one.
             # If host ollama isn't responding, fix that with: systemctl status ollama / systemctl restart ollama.
-            if ! ss -tln 2>/dev/null | grep -q ':11434 '; then
+            if ! ss -tln | grep -q ':11434 '; then
               echo "WARN: nothing listening on :11434 — host ollama may be down. Run 'systemctl status ollama'."
             fi
 
