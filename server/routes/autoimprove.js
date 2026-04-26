@@ -160,11 +160,16 @@ router.put('/schedule', async (req, res) => {
       return res.status(403).json({ message: 'No tenant context' });
     }
 
+    const freq = Number(frequency_hours ?? 24);
+    if (!Number.isInteger(freq) || freq < 1 || freq > 8760) {
+      return res.status(400).json({ error: 'frequency_hours must be an integer between 1 and 8760' });
+    }
+
     const fields = [];
     const values = [];
     let idx = 1;
 
-    if (frequency_hours !== undefined) { fields.push(`frequency_hours = $${idx++}`); values.push(frequency_hours); }
+    if (frequency_hours !== undefined) { fields.push(`frequency_hours = $${idx++}`); values.push(freq); }
     if (budget_threshold !== undefined) { fields.push(`budget_threshold = $${idx++}`); values.push(budget_threshold); }
     if (safety_threshold !== undefined) { fields.push(`safety_threshold = $${idx++}`); values.push(safety_threshold); }
     if (defect_threshold !== undefined) { fields.push(`defect_threshold = $${idx++}`); values.push(defect_threshold); }
@@ -175,7 +180,7 @@ router.put('/schedule', async (req, res) => {
     }
 
     fields.push(`next_run_at = NOW() + ($${idx++} || ' hours')::INTERVAL`);
-    values.push(frequency_hours || 24);
+    values.push(freq);
 
     let query;
     if (SUPER_ADMIN_ROLES.has(req.user.role)) {

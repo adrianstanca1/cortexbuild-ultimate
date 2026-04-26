@@ -1,10 +1,6 @@
 require("dotenv").config({ path: require("path").join(__dirname, ".env") });
 
 // Global error handlers — prevent crashes from Redis or other async errors
-process.on("unhandledRejection", (reason, promise) => {
-  console.error("[UnhandledRejection] Unhandled promise rejection:", reason);
-  // Keep process alive — let express handle it
-});
 process.on("uncaughtException", (err) => {
   console.error("[UncaughtException]", err);
   // Attempt graceful shutdown
@@ -417,6 +413,7 @@ app.use(
   requireFeature("FEATURE_AI_AGENTS"),
   require("./routes/workflows"),
 );
+app.use("/api/billing", require("./routes/billing"));
 
 app.use(
   "/api/ai-conversations",
