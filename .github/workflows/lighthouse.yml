@@ -33,7 +33,7 @@ jobs:
           temporaryPublicStorage: true
       
       - name: Upload Lighthouse reports
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         with:
           name: lighthouse-reports
           path: .lighthouseci/
