@@ -123,6 +123,12 @@ jobs:
             cd "$PROJECT_DIR"
             git config --global --add safe.directory "$PROJECT_DIR" || true
             git fetch origin
+            # Rescue any unpushed local commits before resetting (race-safe vs. parallel SSH deploys)
+            if ! git merge-base --is-ancestor HEAD origin/main 2>/dev/null; then
+              rescue="local-rescue-$(date -u +%Y%m%d-%H%M%S)"
+              git branch "$rescue" HEAD || true
+              echo "WARN: local HEAD diverged from origin/main; saved to branch '$rescue'"
+            fi
             git reset --hard origin/main
             npm ci --ignore-scripts
             npm run build
@@ -187,6 +193,12 @@ jobs:
             git config --global --add safe.directory "$PROJECT_DIR" || true
 
             git fetch origin
+            # Rescue any unpushed local commits before resetting (race-safe vs. parallel SSH deploys)
+            if ! git merge-base --is-ancestor HEAD origin/main 2>/dev/null; then
+              rescue="local-rescue-$(date -u +%Y%m%d-%H%M%S)"
+              git branch "$rescue" HEAD || true
+              echo "WARN: local HEAD diverged from origin/main; saved to branch '$rescue'"
+            fi
             git reset --hard origin/main
 
             # Load environment variables BEFORE docker commands
