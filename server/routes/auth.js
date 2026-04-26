@@ -471,9 +471,9 @@ router.post("/mfa/enrol", authMiddleware, async (req, res) => {
 
     const secret = generateSecret();
     const qrDataUrl = await generateQRDataUrl(secret, rows[0].email);
-    const recoveryCodes = generateRecoveryCodes();
 
-    // Store secret unverified; not enabled until verify endpoint is called
+    // Store secret unverified; not enabled until verify endpoint is called.
+    // Recovery codes are generated and returned only at /mfa/verify time.
     await pool.query("UPDATE users SET mfa_secret = $1 WHERE id = $2", [
       secret,
       req.user.id,
@@ -483,7 +483,6 @@ router.post("/mfa/enrol", authMiddleware, async (req, res) => {
       secret,
       qrDataUrl,
       otpauthUrl: `otpauth://totp/CortexBuild:${rows[0].email}?secret=${secret}&issuer=CortexBuild`,
-      recoveryCodes,
     });
   } catch (err) {
     console.error("[auth/mfa/enrol]", err);
@@ -886,7 +885,7 @@ router.post("/2fa/validate", async (req, res) => {
     const token = jwt.sign(
       {
         id: payload.id,
-        jti: payload.jti,
+        jti: crypto.randomUUID(),
         email: payload.email,
         role: payload.role,
         name: payload.name,
