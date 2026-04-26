@@ -58,8 +58,11 @@ describe("useCollaborativeEditor (Real-time)", () => {
     });
   });
 
-  afterEach(() => {
+  afterEach(async () => {
     vi.clearAllMocks();
+    // Wait for any pending microtasks before stopping the server to avoid
+    // "WebSocket is already in CLOSING or CLOSED state" noise in the next test.
+    await new Promise((r) => setTimeout(r, 0));
     server.stop();
     serverSocket = null;
   });
@@ -78,59 +81,59 @@ describe("useCollaborativeEditor (Real-time)", () => {
   it("should send welcome message on connection", async () => {
     const { result } = renderHook(() => useCollaborativeEditor("doc-123"));
 
-    await act(async () => {
-      // Wait for server socket to be established
-      await new Promise((r) => setTimeout(r, 50));
-
-      // Send welcome message from server to client
-      if (serverSocket) {
-        const welcomeMsg = {
-          type: "welcome",
-          clientId: "client-abc123",
-          docId: "doc-123",
-          presence: [],
-          timestamp: Date.now(),
-        };
-        serverSocket.send(JSON.stringify(welcomeMsg));
-      }
-
-      await new Promise((r) => setTimeout(r, 10));
+    // Wait for the server-side socket to be available before sending messages.
+    // Using waitFor() is more reliable than a fixed setTimeout().
+    await waitFor(() => {
+      expect(serverSocket).toBeTruthy();
     });
 
-    expect(result.current.presence).toEqual([]);
+    await act(async () => {
+      const welcomeMsg = {
+        type: "welcome",
+        clientId: "client-abc123",
+        docId: "doc-123",
+        presence: [],
+        timestamp: Date.now(),
+      };
+      serverSocket!.send(JSON.stringify(welcomeMsg));
+    });
+
+    await waitFor(() => {
+      expect(result.current.presence).toEqual([]);
+    });
   });
 
   it("should receive and apply remote operations", async () => {
     const { result } = renderHook(() => useCollaborativeEditor("doc-123"));
 
-    await act(async () => {
-      await new Promise((r) => setTimeout(r, 50));
-
-      if (serverSocket) {
-        // Simulate welcome
-        const welcomeMsg = {
-          type: "welcome",
-          clientId: "client-abc",
-          docId: "doc-123",
-          presence: [],
-          timestamp: Date.now(),
-        };
-        serverSocket.send(JSON.stringify(welcomeMsg));
-
-        // Simulate remote operation
-        const remoteOp = {
-          type: "remote_op",
-          op: { type: "insert", content: "hello", position: 0 },
-          serverTimestamp: Date.now(),
-          clientId: "client-xyz",
-        };
-        serverSocket.send(JSON.stringify(remoteOp));
-      }
-
-      await new Promise((r) => setTimeout(r, 10));
+    await waitFor(() => {
+      expect(serverSocket).toBeTruthy();
     });
 
-    expect(result.current.content).toContain("hello");
+    await act(async () => {
+      // Simulate welcome
+      const welcomeMsg = {
+        type: "welcome",
+        clientId: "client-abc",
+        docId: "doc-123",
+        presence: [],
+        timestamp: Date.now(),
+      };
+      serverSocket!.send(JSON.stringify(welcomeMsg));
+
+      // Simulate remote operation
+      const remoteOp = {
+        type: "remote_op",
+        op: { type: "insert", content: "hello", position: 0 },
+        serverTimestamp: Date.now(),
+        clientId: "client-xyz",
+      };
+      serverSocket!.send(JSON.stringify(remoteOp));
+    });
+
+    await waitFor(() => {
+      expect(result.current.content).toContain("hello");
+    });
   });
 
   it("should handle delete operations", async () => {
@@ -146,80 +149,81 @@ describe("useCollaborativeEditor (Real-time)", () => {
 
     const { result } = renderHook(() => useCollaborativeEditor("doc-123"));
 
-    await act(async () => {
-      await new Promise((r) => setTimeout(r, 50));
-
-      if (serverSocket) {
-        // Set initial content
-        const welcomeMsg = {
-          type: "welcome",
-          clientId: "client-abc",
-          docId: "doc-123",
-          presence: [],
-          timestamp: Date.now(),
-        };
-        serverSocket.send(JSON.stringify(welcomeMsg));
-
-        // Apply insert first
-        const insertOp = {
-          type: "remote_op",
-          op: { type: "insert", content: "hello world", position: 0 },
-          serverTimestamp: Date.now(),
-          clientId: "client-xyz",
-        };
-        serverSocket.send(JSON.stringify(insertOp));
-
-        // Then delete 5 chars
-        const deleteOp = {
-          type: "remote_op",
-          op: { type: "delete", position: 0, length: 5 },
-          serverTimestamp: Date.now(),
-          clientId: "client-xyz",
-        };
-        serverSocket.send(JSON.stringify(deleteOp));
-      }
-
-      await new Promise((r) => setTimeout(r, 10));
+    await waitFor(() => {
+      expect(serverSocket).toBeTruthy();
     });
 
-    expect(result.current.content).toBe(" world");
+    await act(async () => {
+      // Set initial content
+      const welcomeMsg = {
+        type: "welcome",
+        clientId: "client-abc",
+        docId: "doc-123",
+        presence: [],
+        timestamp: Date.now(),
+      };
+      serverSocket!.send(JSON.stringify(welcomeMsg));
+
+      // Apply insert first
+      const insertOp = {
+        type: "remote_op",
+        op: { type: "insert", content: "hello world", position: 0 },
+        serverTimestamp: Date.now(),
+        clientId: "client-xyz",
+      };
+      serverSocket!.send(JSON.stringify(insertOp));
+
+      // Then delete 5 chars
+      const deleteOp = {
+        type: "remote_op",
+        op: { type: "delete", position: 0, length: 5 },
+        serverTimestamp: Date.now(),
+        clientId: "client-xyz",
+      };
+      serverSocket!.send(JSON.stringify(deleteOp));
+    });
+
+    await waitFor(() => {
+      expect(result.current.content).toBe(" world");
+    });
   });
 
   it("should broadcast presence updates", async () => {
     const { result } = renderHook(() => useCollaborativeEditor("doc-123"));
 
-    await act(async () => {
-      await new Promise((r) => setTimeout(r, 50));
-
-      if (serverSocket) {
-        // Simulate presence update with multiple users
-        const presenceMsg = {
-          type: "presence_update",
-          presence: [
-            {
-              clientId: "client-1",
-              userId: "user-1",
-              userName: "Alice",
-              cursorPos: 10,
-              idle: false,
-            },
-            {
-              clientId: "client-2",
-              userId: "user-2",
-              userName: "Bob",
-              cursorPos: 20,
-              idle: false,
-            },
-          ],
-          timestamp: Date.now(),
-        };
-        serverSocket.send(JSON.stringify(presenceMsg));
-      }
-
-      await new Promise((r) => setTimeout(r, 10));
+    await waitFor(() => {
+      expect(serverSocket).toBeTruthy();
     });
 
-    expect(result.current.presence).toHaveLength(2);
+    await act(async () => {
+      // Simulate presence update with multiple users
+      const presenceMsg = {
+        type: "presence_update",
+        presence: [
+          {
+            clientId: "client-1",
+            userId: "user-1",
+            userName: "Alice",
+            cursorPos: 10,
+            idle: false,
+          },
+          {
+            clientId: "client-2",
+            userId: "user-2",
+            userName: "Bob",
+            cursorPos: 20,
+            idle: false,
+          },
+        ],
+        timestamp: Date.now(),
+      };
+      serverSocket!.send(JSON.stringify(presenceMsg));
+    });
+
+    await waitFor(() => {
+      expect(result.current.presence).toHaveLength(2);
+    });
+
     expect(result.current.presence[0].userName).toBe("Alice");
     expect(result.current.presence[1].userName).toBe("Bob");
     expect(result.current.collaborators).toEqual(result.current.presence);
@@ -230,15 +234,16 @@ describe("useCollaborativeEditor (Real-time)", () => {
 
     const sentMessages: string[] = [];
 
-    await act(async () => {
-      await new Promise((r) => setTimeout(r, 50));
+    // Wait for server socket and register message listener before sending ops
+    await waitFor(() => {
+      expect(serverSocket).toBeTruthy();
+    });
 
-      if (serverSocket) {
-        // Capture messages sent from client to server
-        serverSocket.on("message", (data: string) => {
-          sentMessages.push(data);
-        });
-      }
+    await act(async () => {
+      // Capture messages sent from client to server
+      serverSocket!.on("message", (data: string) => {
+        sentMessages.push(data);
+      });
     });
 
     // Update content
@@ -246,13 +251,11 @@ describe("useCollaborativeEditor (Real-time)", () => {
       result.current.updateContent("new content");
     });
 
-    // Wait a bit for message to be sent
-    await act(async () => {
-      await new Promise((r) => setTimeout(r, 10));
+    // Wait for the message to be captured
+    await waitFor(() => {
+      expect(sentMessages.length).toBeGreaterThan(0);
     });
 
-    // Should have sent operation
-    expect(sentMessages.length).toBeGreaterThan(0);
     const sentData = JSON.parse(sentMessages[0]);
     expect(sentData.type).toBe("op");
     expect(sentData.op.content).toBe("new content");
@@ -284,10 +287,11 @@ describe("useCollaborativeEditor (Real-time)", () => {
       if (serverSocket) {
         serverSocket.close();
       }
-      await new Promise((r) => setTimeout(r, 50));
     });
 
-    expect(result.current.connectionStatus).toBe("disconnected");
+    await waitFor(() => {
+      expect(result.current.connectionStatus).toBe("disconnected");
+    });
   });
 
   it("should handle invalid messages gracefully", async () => {
@@ -296,33 +300,43 @@ describe("useCollaborativeEditor (Real-time)", () => {
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const { result } = renderHook(() => useCollaborativeEditor("doc-123"));
 
-    await act(async () => {
-      await new Promise((r) => setTimeout(r, 50));
-
-      if (serverSocket) {
-        // Send invalid JSON
-        serverSocket.send("{invalid json");
-      }
-
-      await new Promise((r) => setTimeout(r, 10));
-    });
-
-    expect(consoleSpy).toHaveBeenCalled();
-    consoleSpy.mockRestore();
-  });
-
-  it("should close WebSocket on unmount", async () => {
-    const { unmount } = renderHook(() => useCollaborativeEditor("doc-123"));
-
     await waitFor(() => {
       expect(serverSocket).toBeTruthy();
     });
 
-    const closeSpy = vi.spyOn(serverSocket, "close");
+    await act(async () => {
+      // Send invalid JSON
+      serverSocket!.send("{invalid json");
+    });
+
+    await waitFor(() => {
+      expect(consoleSpy).toHaveBeenCalled();
+    });
+
+    consoleSpy.mockRestore();
+  });
+
+  it("should close WebSocket on unmount", async () => {
+    // Track close calls on the client WebSocket instance by spying on the
+    // WebSocket prototype before the hook creates its connection.
+    const closeSpy = vi.spyOn(MockWebSocket.prototype, "close");
+
+    const { unmount } = renderHook(() => useCollaborativeEditor("doc-123"));
+
+    // Wait until the connection is fully established before unmounting,
+    // otherwise the hook's cleanup guard (readyState !== OPEN) may skip close().
+    await waitFor(() => {
+      expect(serverSocket).toBeTruthy();
+    });
+
+    await waitFor(() => {
+      expect(closeSpy.mock.calls.length).toBe(0); // no premature close
+    });
 
     unmount();
 
     expect(closeSpy).toHaveBeenCalled();
+    closeSpy.mockRestore();
   });
 
   it("should send heartbeat ping periodically", async () => {
@@ -330,11 +344,6 @@ describe("useCollaborativeEditor (Real-time)", () => {
     const setIntervalSpy = vi.spyOn(global, "setInterval");
 
     const { result } = renderHook(() => useCollaborativeEditor("doc-123"));
-
-    // Let connection establish
-    await act(async () => {
-      await new Promise((r) => setTimeout(r, 100));
-    });
 
     await waitFor(() => {
       expect(result.current.connectionStatus).toBe("connected");
