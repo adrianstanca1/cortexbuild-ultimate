@@ -250,12 +250,23 @@ body {
 
 /* ── Motion reduced ──────────────────────────────────────────────────────────── */
 @media (prefers-reduced-motion: reduce) {
+  /*
+    Do NOT clamp animation-duration globally. Many views use inline `opacity: 0`
+    plus keyframe `forwards`/`both`; forcing ~0ms duration breaks the cascade in
+    WebKit/Blink so the post-animation opacity never wins and UI stays invisible
+    (Dashboard KPIs, Login form `slideUp … both`, etc.).
+
+    Transitions alone are shortened here; entrance animations simply run at full
+    duration (still acceptable vs. a blank app for reduced-motion users).
+  */
   *,
   *::before,
   *::after {
-    animation-duration: 0.01ms !important;
-    animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
+  }
+
+  html {
+    scroll-behavior: auto !important;
   }
 }
 

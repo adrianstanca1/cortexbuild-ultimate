@@ -5,9 +5,6 @@ on:
     branches: [main]
   workflow_dispatch:
 
-env:
-  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
-
 concurrency:
   group: deploy
   cancel-in-progress: false
@@ -17,12 +14,13 @@ jobs:
     name: Test & Build
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v5
         with:
-          node-version: 22
+          node-version-file: '.nvmrc'
           cache: npm
+          cache-dependency-path: package-lock.json
 
       - name: Install dependencies
         run: npm ci
@@ -40,7 +38,7 @@ jobs:
         run: npm run build
 
       - name: Upload build artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: dist
           path: dist/
@@ -52,7 +50,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 180
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       - name: Deploy to VPS
         uses: appleboy/ssh-action@v1.2.5
@@ -410,17 +408,14 @@ jobs:
         run: |
           set -euo pipefail
 
-          check_tls() {
-            local domain="$1"
-            echo | openssl s_client -connect "${domain}:443" -servername "${domain}" -brief >/dev/null 2>&1
-          }
-
+          # Rely on HTTPS + /api/health. Retry full verification a few times: nginx/DNS
+          # can be briefly inconsistent right after a deploy even when the API is healthy.
           check_https_health_contract() {
             local domain="$1"
-            local attempts=30
+            local attempts=36
             local i payload
             for i in $(seq 1 "$attempts"); do
-              payload=$(curl --connect-timeout 5 --max-time 10 -fsS "https://${domain}/api/health" 2>/dev/null || true)
+              payload=$(curl --connect-timeout 8 --max-time 15 -fsS "https://${domain}/api/health" 2>/dev/null || true)
               if [ -n "$payload" ] && python3 -c "import json,sys; d=json.loads(sys.argv[1]); c=d.get('checks') or {}; assert d.get('status')=='ok'; assert c.get('postgres') is True; assert c.get('redis') is True" "$payload" >/dev/null 2>&1; then
                 echo "✅ ${domain} HTTPS API health contract verified"
                 return 0
@@ -431,7 +426,14 @@ jobs:
             return 1
           }
 
-          check_tls cortexbuildpro.com
-          check_tls www.cortexbuildpro.com
-          check_https_health_contract cortexbuildpro.com
-          check_https_health_contract www.cortexbuildpro.com
+          for round in 1 2 3; do
+            echo "=== Post-deploy verify round ${round}/3 ==="
+            if check_https_health_contract cortexbuildpro.com && check_https_health_contract www.cortexbuildpro.com; then
+              echo "✅ All external health checks passed"
+              exit 0
+            fi
+            echo "Round ${round} failed; waiting 45s before retry..."
+            sleep 45
+          done
+          echo "❌ Post-deploy verify failed after 3 rounds"
+          exit 1

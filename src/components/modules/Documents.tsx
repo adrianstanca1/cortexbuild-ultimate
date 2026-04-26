@@ -2,7 +2,7 @@ import React from 'react';
 import { useState, useEffect, useCallback } from 'react';
 import {
   FileText, Search, Download, Eye, Edit2, Trash2, X, Upload, FileCheck, Image, FolderOpen,
-  BarChart3, Grid, List, FileIcon as FileIconDefault, History, UploadCloud, PenLine
+  BarChart3, Grid, List, FileIcon as FileIconDefault, History, UploadCloud, PenLine, Sparkles, Loader2
 } from 'lucide-react';
 import { toast } from 'sonner';
 import clsx from 'clsx';
@@ -13,6 +13,7 @@ import { signaturesApi } from '../../services/api';
 import { SignatureCapture, SignatureDisplay } from '../ui/SignatureCapture';
 import { useAuth } from '../../context/AuthContext';
 import type { Signature } from '../../services/api';
+import { analyzeDocument, type AnalyzeDocumentResponse } from '../../services/ai';
 
 interface DocumentVersion {
   id: string;
@@ -39,6 +40,9 @@ interface Document {
   parent_folder: string;
   created_at: string;
   versions?: DocumentVersion[];
+  ai_extracted_snippet?: string | null;
+  ai_analysis_cache?: AnalyzeDocumentResponse | Record<string, unknown> | null;
+  ai_analysis_at?: string | null;
 }
 
 const CATEGORIES = ['PLANS', 'DRAWINGS', 'PERMITS', 'RAMS', 'CONTRACTS', 'REPORTS', 'SPECS', 'PHOTOS'];
@@ -93,8 +97,49 @@ export function Documents() {
   const [dragOver, setDragOver] = useState(false);
   const [showSignModal, setShowSignModal] = useState(false);
   const [existingSignatures, setExistingSignatures] = useState<Signature[]>([]);
+  const [docIntel, setDocIntel] = useState<AnalyzeDocumentResponse | null>(null);
+  const [intelLoading, setIntelLoading] = useState(false);
+  const [intelRefreshing, setIntelRefreshing] = useState(false);
 
   const { user } = useAuth();
+
+  // Intentionally key off document id only — avoid refetch when the same row is re-selected with a new object identity.
+  useEffect(() => {
+    if (!selectedDoc) {
+      setDocIntel(null);
+      return;
+    }
+    setDocIntel(null);
+    let cancelled = false;
+    const docId = String(selectedDoc.id);
+    (async () => {
+      setIntelLoading(true);
+      try {
+        const r = await analyzeDocument(docId, { useCache: true });
+        if (!cancelled) setDocIntel(r);
+      } catch (err) {
+        if (!cancelled) toast.error((err as Error).message || 'Could not load document intelligence');
+      } finally {
+        if (!cancelled) setIntelLoading(false);
+      }
+    })();
+    return () => { cancelled = true; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- selectedDoc.id is the stable key; full selectedDoc would over-trigger
+  }, [selectedDoc?.id]);
+
+  const runDocAnalysisRefresh = async () => {
+    if (!selectedDoc) return;
+    setIntelRefreshing(true);
+    try {
+      const r = await analyzeDocument(String(selectedDoc.id), { useCache: false });
+      setDocIntel(r);
+      toast.success('AI analysis refreshed');
+    } catch (err) {
+      toast.error((err as Error).message || 'AI analysis failed');
+    } finally {
+      setIntelRefreshing(false);
+    }
+  };
 
   const fetchDocuments = useCallback(async () => {
     try {
@@ -334,6 +379,96 @@ export function Documents() {
                 <button onClick={() => handlePreview(selectedDoc)} className="btn-primary flex-1"><Eye className="w-4 h-4 mr-1" /> Preview</button>
                 <button onClick={() => handleDownload(selectedDoc)} className="btn-secondary flex-1"><Download className="w-4 h-4 mr-1" /> Download</button>
               </div>
+
+              <div className="border-t border-slate-800 pt-4 space-y-3">
+                <div className="flex items-center justify-between gap-2">
+                  <h4 className="text-sm font-semibold text-slate-200 flex items-center gap-2">
+                    <Sparkles className="w-4 h-4 text-amber-400" aria-hidden />
+                    Document intelligence
+                  </h4>
+                  {docIntel?.source && (
+                    <span className="badge bg-slate-700 text-[10px] uppercase tracking-wide text-slate-300">
+                      {docIntel.source}
+                    </span>
+                  )}
+                </div>
+                <button
+                  type="button"
+                  className="w-full btn-secondary inline-flex items-center justify-center gap-2"
+                  disabled={intelRefreshing || intelLoading}
+                  onClick={() => void runDocAnalysisRefresh()}
+                >
+                  {intelRefreshing ? (
+                    <Loader2 className="w-4 h-4 animate-spin" aria-hidden />
+                  ) : (
+                    <Sparkles className="w-4 h-4" aria-hidden />
+                  )}
+                  Run AI analysis
+                </button>
+                {intelLoading && !docIntel && (
+                  <p className="text-xs text-slate-500 flex items-center gap-2">
+                    <Loader2 className="w-3.5 h-3.5 animate-spin shrink-0" aria-hidden />
+                    Loading analysis…
+                  </p>
+                )}
+                {docIntel && (
+                  <div className="space-y-3 text-sm text-slate-300">
+                    {docIntel.confidence && (
+                      <p className="text-xs text-slate-500">
+                        Confidence: <span className="text-slate-400">{docIntel.confidence}</span>
+                        {typeof docIntel.extractedChars === 'number' && (
+                          <span className="ml-2">· {docIntel.extractedChars} chars extracted</span>
+                        )}
+                      </p>
+                    )}
+                    <div>
+                      <p className="text-xs font-mono uppercase tracking-wide text-slate-500 mb-1">Summary</p>
+                      <p className="text-sm leading-relaxed text-slate-300 whitespace-pre-wrap">{docIntel.summary}</p>
+                    </div>
+                    {Array.isArray(docIntel.commercialRisks) && docIntel.commercialRisks.length > 0 && (
+                      <div>
+                        <p className="text-xs font-mono uppercase tracking-wide text-slate-500 mb-1">Commercial risks</p>
+                        <ul className="list-disc pl-4 space-y-1 text-slate-400">
+                          {docIntel.commercialRisks.map((line, i) => (
+                            <li key={`cr-${i}`}>{line}</li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+                    {Array.isArray(docIntel.suggestedActions) && docIntel.suggestedActions.length > 0 && (
+                      <div>
+                        <p className="text-xs font-mono uppercase tracking-wide text-slate-500 mb-1">Suggested actions</p>
+                        <ul className="list-disc pl-4 space-y-1 text-slate-400">
+                          {docIntel.suggestedActions.map((line, i) => (
+                            <li key={`sa-${i}`}>{line}</li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+                    {Array.isArray(docIntel.rfiSuggestions) && docIntel.rfiSuggestions.length > 0 && (
+                      <div>
+                        <p className="text-xs font-mono uppercase tracking-wide text-slate-500 mb-1">RFI suggestions</p>
+                        <ul className="list-disc pl-4 space-y-1 text-slate-400">
+                          {docIntel.rfiSuggestions.map((line, i) => (
+                            <li key={`rfi-${i}`}>{line}</li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+                    {Array.isArray(docIntel.keyEntities) && docIntel.keyEntities.length > 0 && (
+                      <div>
+                        <p className="text-xs font-mono uppercase tracking-wide text-slate-500 mb-1">Key entities</p>
+                        <ul className="list-disc pl-4 space-y-1 text-slate-400">
+                          {docIntel.keyEntities.map((line, i) => (
+                            <li key={`ke-${i}`}>{line}</li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+
               <div className="border-t border-slate-800 pt-4"><button onClick={() => setShowVersionHistory(true)} className="w-full btn-secondary"><History className="w-4 h-4 mr-1" /> Version History</button></div>
               <div className="border-t border-slate-800 pt-4"><button onClick={() => openSignModal()} className="w-full btn-secondary"><PenLine className="w-4 h-4 mr-1" /> Sign Document</button></div>
               <div className="border-t border-slate-800 pt-4"><button onClick={() => setEditingDoc(selectedDoc)} className="w-full btn-secondary"><Edit2 className="w-4 h-4 mr-1" /> Edit Details</button></div>

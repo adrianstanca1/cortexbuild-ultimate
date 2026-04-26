@@ -66,6 +66,7 @@ import {
   LeafyGreen,
   UserCircle,
   CalendarDays,
+  Sparkles,
 } from 'lucide-react';
 import { type Module } from '../../types';
 
@@ -321,6 +322,41 @@ export function CommandPalette({ isOpen, onClose, onNavigate }: CommandPalettePr
 
   const commandItems: CommandItem[] = useMemo(
     () => [
+      {
+        id: 'ai-dash-brief',
+        label: 'AI: Site brief (dashboard)',
+        icon: <Sparkles className={ICON_CLASS} />,
+        module: 'dashboard' as const,
+        category: 'navigation' as const,
+      },
+      {
+        id: 'ai-assistant-quick',
+        label: 'AI Assistant — construction Q&A',
+        icon: <Bot className={ICON_CLASS} />,
+        module: 'ai-assistant' as const,
+        category: 'navigation' as const,
+      },
+      {
+        id: 'ai-insights-quick',
+        label: 'AI Insights — trends & anomalies',
+        icon: <Brain className={ICON_CLASS} />,
+        module: 'insights' as const,
+        category: 'navigation' as const,
+      },
+      {
+        id: 'ai-predictive-quick',
+        label: 'Predictive analytics — lookahead',
+        icon: <TrendingUp className={ICON_CLASS} />,
+        module: 'predictive-analytics' as const,
+        category: 'navigation' as const,
+      },
+      {
+        id: 'ai-marketplace-quick',
+        label: 'AI Marketplace — connectors',
+        icon: <Store className={ICON_CLASS} />,
+        module: 'marketplace' as const,
+        category: 'navigation' as const,
+      },
       ...MODULE_NAV_ORDER.map(module => ({
         id: `nav-${module}`,
         label: MODULE_LABELS[module],

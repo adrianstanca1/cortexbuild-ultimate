@@ -36,142 +36,7 @@ interface Package {
   notes?: string | null;
 }
 
-interface Tender {
-  contractor: string;
-  price: number;
-  notes: string;
-  missing_items?: string[];
-}
 
-const _mockPackages: Package[] = [
-  {
-    id: '1',
-    package_no: 'PKG-001',
-    description: 'Groundworks & Excavation',
-    trade: 'Groundworks',
-    budget: 250000,
-    status: 'Awarded',
-    tender_date: '2026-02-15',
-    awarded_to: 'BuildRight Contractors',
-    contract_value: 240000,
-    tender_count: 4,
-    notes: 'Main contractor preferred',
-    created_at: '2026-01-10',
-  },
-  {
-    id: '2',
-    package_no: 'PKG-002',
-    description: 'Structural Steelwork',
-    trade: 'Steelwork',
-    budget: 450000,
-    status: 'Under Review',
-    tender_date: '2026-03-01',
-    awarded_to: null,
-    contract_value: 0,
-    tender_count: 3,
-    notes: 'Fast track required',
-    created_at: '2026-01-20',
-  },
-  {
-    id: '3',
-    package_no: 'PKG-003',
-    description: 'Mechanical & Electrical Installation',
-    trade: 'Mechanical & Electrical',
-    budget: 680000,
-    status: 'Tendering',
-    tender_date: '2026-03-15',
-    awarded_to: null,
-    contract_value: 0,
-    tender_count: 5,
-    notes: 'Complex M&E requirements',
-    created_at: '2026-02-01',
-  },
-  {
-    id: '4',
-    package_no: 'PKG-004',
-    description: 'Roofing & Weatherproofing',
-    trade: 'Roofing',
-    budget: 180000,
-    status: 'Awarded',
-    tender_date: '2026-02-28',
-    awarded_to: 'Peak Roofing Ltd',
-    contract_value: 175000,
-    tender_count: 2,
-    notes: 'Single pitched roof system',
-    created_at: '2026-01-25',
-  },
-  {
-    id: '5',
-    package_no: 'PKG-005',
-    description: 'Interior Fit-Out',
-    trade: 'Fit-Out',
-    budget: 320000,
-    status: 'Draft',
-    tender_date: '2026-04-15',
-    awarded_to: null,
-    contract_value: 0,
-    tender_count: 0,
-    notes: 'Pending design finalization',
-    created_at: '2026-02-10',
-  },
-  {
-    id: '6',
-    package_no: 'PKG-006',
-    description: 'Drainage & Utilities',
-    trade: 'Drainage',
-    budget: 95000,
-    status: 'Awarded',
-    tender_date: '2026-03-05',
-    awarded_to: 'Aqua Services',
-    contract_value: 92000,
-    tender_count: 3,
-    notes: 'Surface and foul water',
-    created_at: '2026-01-30',
-  },
-  {
-    id: '7',
-    package_no: 'PKG-007',
-    description: 'Concrete & Pavings',
-    trade: 'Concrete',
-    budget: 140000,
-    status: 'Under Review',
-    tender_date: '2026-03-10',
-    awarded_to: null,
-    contract_value: 0,
-    tender_count: 4,
-    notes: 'Including parking areas',
-    created_at: '2026-02-05',
-  },
-  {
-    id: '8',
-    package_no: 'PKG-008',
-    description: 'Timber & Carpentry',
-    trade: 'Carpentry',
-    budget: 85000,
-    status: 'On Hold',
-    tender_date: null,
-    awarded_to: null,
-    contract_value: 0,
-    tender_count: 0,
-    notes: 'Awaiting material availability',
-    created_at: '2026-02-15',
-  },
-];
-
-const mockTenders: Record<string, Tender[]> = {
-  '2': [
-    { contractor: 'Steel Fabricators Ltd', price: 445000, notes: 'Experienced team, fast delivery', missing_items: [] },
-    { contractor: 'Premium Steel Works', price: 455000, notes: 'Quality focus', missing_items: ['Insurance cert'] },
-    { contractor: 'Industrial Steel Co', price: 460000, notes: 'Competitive but longer lead time', missing_items: [] },
-  ],
-  '3': [
-    { contractor: 'ElectroTech Solutions', price: 675000, notes: 'Full design & install', missing_items: [] },
-    { contractor: 'PowerBuild Services', price: 695000, notes: 'BIM coordination included', missing_items: [] },
-    { contractor: 'Modern M&E Ltd', price: 710000, notes: 'Premium service', missing_items: ['References'] },
-    { contractor: 'Efficient Systems', price: 665000, notes: 'Value option', missing_items: ['Insurance cert', 'References'] },
-    { contractor: 'Pro Electrical', price: 680000, notes: 'Established contractor', missing_items: [] },
-  ],
-};
 
 export default function Lettings() {
   const [activeTab, setActiveTab] = useState<'packages' | 'analysis' | 'awards' | 'pipeline'>('packages');
@@ -180,7 +45,6 @@ export default function Lettings() {
   const [showPackageDetail, setShowPackageDetail] = useState<Package | null>(null);
   const [_uploading, setUploading] = useState<string | null>(null);
   const [editItem, setEditItem] = useState<Package | null>(null);
-  const [selectedPackageForAnalysis, setSelectedPackageForAnalysis] = useState<string>('2');
   const [form, setForm] = useState({
     package_name: '',
     trade: '',
@@ -540,99 +404,10 @@ export default function Lettings() {
         {activeTab === 'analysis' && (
           <div className="space-y-4">
             <div className="card p-4">
-              <div className="mb-4">
-                <label className="block text-gray-400 text-sm mb-2">Select Package for Analysis</label>
-                <select
-                  value={selectedPackageForAnalysis}
-                  onChange={(e) => setSelectedPackageForAnalysis(e.target.value)}
-                  className="w-full px-4 py-2 input input-bordered text-white"
-                >
-                  {typedLettings.map(p => (
-                    <option key={p.id} value={p.id}>
-                      {p.package_no} - {p.description}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              {mockTenders[selectedPackageForAnalysis] ? (
-                <div className="space-y-4">
-                  <div className="cb-table-scroll touch-pan-x">
-                    <table className="w-full text-sm">
-                      <thead>
-                        <tr className="border-b border-gray-700">
-                          <th className="text-left py-3 px-4 text-gray-400 font-medium">Contractor</th>
-                          <th className="text-right py-3 px-4 text-gray-400 font-medium">Price</th>
-                          <th className="text-left py-3 px-4 text-gray-400 font-medium">Status</th>
-                          <th className="text-left py-3 px-4 text-gray-400 font-medium">Notes</th>
-                          <th className="text-center py-3 px-4 text-gray-400 font-medium">Missing Info</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {mockTenders[selectedPackageForAnalysis].map((tender, idx) => {
-                          const lowestPrice = Math.min(...mockTenders[selectedPackageForAnalysis].map(t => t.price));
-                          const isLowest = tender.price === lowestPrice;
-                          return (
-                            <tr
-                              key={idx}
-                              className={`border-b border-gray-700 hover:bg-gray-800/50 ${
-                                isLowest ? 'bg-green-500/5' : ''
-                              }`}
-                            >
-                              <td className="py-3 px-4 text-white font-medium">{tender.contractor}</td>
-                              <td className={`py-3 px-4 text-right font-mono ${isLowest ? 'text-green-400' : 'text-white'}`}>
-                                £{tender.price.toLocaleString()}
-                                {isLowest && <span className="text-green-400 text-xs ml-2">(Lowest)</span>}
-                              </td>
-                              <td className="py-3 px-4">
-                                <span
-                                  className={`px-2 py-1 rounded text-xs font-medium ${
-                                    tender.missing_items?.length ? 'bg-amber-500/10 text-amber-400' : 'bg-green-500/10 text-green-400'
-                                  }`}
-                                >
-                                  {tender.missing_items?.length ? 'Incomplete' : 'Complete'}
-                                </span>
-                              </td>
-                              <td className="py-3 px-4 text-gray-400 text-xs">{tender.notes}</td>
-                              <td className="py-3 px-4 text-center">
-                                {tender.missing_items && tender.missing_items.length > 0 ? (
-                                  <span className="px-2 py-1 bg-amber-500/10 text-amber-400 rounded text-xs font-medium">
-                                    {tender.missing_items.length} item(s)
-                                  </span>
-                                ) : (
-                                  <span className="text-green-400">✓</span>
-                                )}
-                              </td>
-                            </tr>
-                          );
-                        })}
-                      </tbody>
-                    </table>
-                  </div>
-
-                  {/* Summary */}
-                  <div className="grid grid-cols-3 gap-4 pt-4">
-                    <div className="bg-gray-800/50 p-3 rounded border border-gray-700">
-                      <p className="text-gray-400 text-xs mb-1">Total Responses</p>
-                      <p className="text-2xl font-display text-white">{mockTenders[selectedPackageForAnalysis].length}</p>
-                    </div>
-                    <div className="bg-blue-500/10 p-3 rounded border border-blue-500/30">
-                      <p className="text-blue-400 text-xs mb-1">Average Price</p>
-                      <p className="text-2xl font-display text-blue-400">
-                        £{Math.round(mockTenders[selectedPackageForAnalysis].reduce((sum, t) => sum + t.price, 0) / mockTenders[selectedPackageForAnalysis].length).toLocaleString()}
-                      </p>
-                    </div>
-                    <div className="bg-green-500/10 p-3 rounded border border-green-500/30">
-                      <p className="text-green-400 text-xs mb-1">Lowest Price</p>
-<p className="text-2xl font-display text-green-400">
-                         £{Math.min(...mockTenders[selectedPackageForAnalysis].map(t => t.price)).toLocaleString()}
-                       </p>
-                    </div>
-                  </div>
-                </div>
-              ) : (
-                <div className="text-center py-8 text-gray-400">No tenders received for this package</div>
-              )}
+              <EmptyState
+                title="Tender Analysis"
+                description="Tender comparison data will appear here once tender responses are recorded."
+              />
             </div>
           </div>
         )}

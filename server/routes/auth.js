@@ -22,6 +22,21 @@ const {
   setAuthTokenCookie,
   createUserSession,
 } = require("../lib/authSessionCookie");
+const {
+  safeParse,
+  loginSchema,
+  registerSchema,
+  twoFactorVerifySchema,
+  twoFactorDisableSchema,
+  twoFactorValidateSchema,
+  updateProfileSchema,
+  updatePasswordSchema,
+  avatarSchema,
+  settingSchema,
+  inviteSchema,
+  inviteAcceptSchema,
+  createUserSchema,
+} = require("../lib/zod-validation");
 
 const router = express.Router();
 
@@ -91,6 +106,16 @@ const registerLimiter = rateLimit({
   legacyHeaders: false,
 });
 
+const resetPasswordLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 5,
+  message: {
+    message: "Too many password reset attempts. Please try again later.",
+  },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
 async function getFailedAttemptsKey(email, ip) {
   if (redis) {
     try {
@@ -106,6 +131,7 @@ async function getFailedAttemptsKey(email, ip) {
 }
 
 async function incrementFailedAttempts(email, ip) {
+  let redisAttempts = null;
   if (redis) {
     try {
       if (!redis.isOpen) await redis.connect();
@@ -114,12 +140,30 @@ async function incrementFailedAttempts(email, ip) {
       if (current === 1) {
         await redis.expire(key, 15 * 60);
       }
-      return current;
+      redisAttempts = current;
     } catch {
-      return null;
+      // Redis failed, fall through to DB-only
     }
   }
-  return null;
+
+  // Always update DB as fallback/primary record
+  try {
+    const { rows } = await pool.query(
+      "UPDATE users SET failed_attempts = failed_attempts + 1 WHERE email = $1 RETURNING failed_attempts",
+      [email.toLowerCase().trim()],
+    );
+    if (rows[0] && rows[0].failed_attempts >= 5) {
+      const lockedUntil = new Date(Date.now() + 15 * 60 * 1000);
+      await pool.query(
+        "UPDATE users SET locked_until = $1 WHERE email = $2",
+        [lockedUntil, email.toLowerCase().trim()],
+      );
+    }
+  } catch (err) {
+    console.error("[incrementFailedAttempts] DB error:", err.message);
+  }
+
+  return redisAttempts;
 }
 
 async function clearFailedAttempts(email, ip) {
@@ -127,11 +171,47 @@ async function clearFailedAttempts(email, ip) {
     try {
       if (!redis.isOpen) await redis.connect();
       await redis.del(`login_fail:${email}:${ip}`);
+      await redis.del(`login_lockout:${email}:${ip}`);
     } catch {}
+  }
+
+  // Always clear DB columns
+  try {
+    await pool.query(
+      "UPDATE users SET failed_attempts = 0, locked_until = NULL WHERE email = $1",
+      [email.toLowerCase().trim()],
+    );
+  } catch (err) {
+    console.error("[clearFailedAttempts] DB error:", err.message);
   }
 }
 
 async function checkLockout(email, ip) {
+  const normalizedEmail = email.toLowerCase().trim();
+
+  // 1. Check DB first (fallback when Redis is down)
+  try {
+    const { rows } = await pool.query(
+      "SELECT failed_attempts, locked_until FROM users WHERE email = $1",
+      [normalizedEmail],
+    );
+    if (rows[0] && rows[0].locked_until) {
+      const lockedUntil = new Date(rows[0].locked_until);
+      if (lockedUntil > new Date()) {
+        const retryAfter = Math.ceil((lockedUntil - Date.now()) / 1000);
+        return { locked: true, retryAfter: Math.max(retryAfter, 1) };
+      }
+      // Lock expired — reset counters so user gets a fresh start (matches Redis TTL expiry)
+      await pool.query(
+        "UPDATE users SET failed_attempts = 0, locked_until = NULL WHERE email = $1",
+        [normalizedEmail],
+      );
+    }
+  } catch (err) {
+    console.error("[checkLockout] DB error:", err.message);
+  }
+
+  // 2. Check Redis (primary)
   if (redis) {
     try {
       if (!redis.isOpen) await redis.connect();
@@ -150,6 +230,23 @@ async function checkLockout(email, ip) {
       }
     } catch {}
   }
+
+  // 3. If no Redis and DB has >= 5 failed_attempts but no locked_until yet, lock now
+  try {
+    const { rows } = await pool.query(
+      "SELECT failed_attempts FROM users WHERE email = $1",
+      [normalizedEmail],
+    );
+    if (rows[0] && rows[0].failed_attempts >= 5) {
+      const lockedUntil = new Date(Date.now() + 15 * 60 * 1000);
+      await pool.query(
+        "UPDATE users SET locked_until = $1 WHERE email = $2",
+        [lockedUntil, normalizedEmail],
+      );
+      return { locked: true, retryAfter: 900 };
+    }
+  } catch {}
+
   return { locked: false };
 }
 
@@ -169,20 +266,11 @@ async function hashToken(token) {
 
 // POST /api/auth/register
 router.post("/register", registerLimiter, async (req, res) => {
-  const { name, email, password, company, phone } = req.body;
-  if (!name || !email || !password || !company) {
-    return res
-      .status(400)
-      .json({ message: "Name, email, password and company are required" });
+  const validation = safeParse(registerSchema, req.body);
+  if (!validation.valid) {
+    return res.status(400).json({ message: validation.error });
   }
-  const passwordError = validatePassword(password);
-  if (passwordError) {
-    return res.status(400).json({ message: passwordError });
-  }
-  const emailRe = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-  if (!emailRe.test(email)) {
-    return res.status(400).json({ message: "Invalid email address" });
-  }
+  const { name, email, password, company, phone } = validation.data;
 
   try {
     const existing = await pool.query("SELECT id FROM users WHERE email = $1", [
@@ -265,9 +353,11 @@ router.post("/register", registerLimiter, async (req, res) => {
 
 // POST /api/auth/login
 router.post("/login", loginLimiter, async (req, res) => {
-  const { email, password } = req.body;
-  if (!email || !password)
-    return res.status(400).json({ message: "Email and password required" });
+  const validation = safeParse(loginSchema, req.body);
+  if (!validation.valid) {
+    return res.status(400).json({ message: validation.error });
+  }
+  const { email, password } = validation.data;
 
   const ip = req.ip || req.connection.remoteAddress || "unknown";
   const lockout = await checkLockout(email, ip);
@@ -377,8 +467,11 @@ router.post("/2fa/setup", authMiddleware, async (req, res) => {
 
 // POST /api/auth/2fa/verify
 router.post("/2fa/verify", authMiddleware, async (req, res) => {
-  const { code } = req.body;
-  if (!code) return res.status(400).json({ message: "TOTP code is required" });
+  const validation = safeParse(twoFactorVerifySchema, req.body);
+  if (!validation.valid) {
+    return res.status(400).json({ message: validation.error });
+  }
+  const { code } = validation.data;
 
   try {
     const { rows } = await pool.query(
@@ -421,11 +514,11 @@ router.post("/2fa/verify", authMiddleware, async (req, res) => {
 
 // POST /api/auth/2fa/disable
 router.post("/2fa/disable", authMiddleware, async (req, res) => {
-  const { password, code } = req.body;
-  if (!password || !code)
-    return res
-      .status(400)
-      .json({ message: "Password and TOTP code are required" });
+  const validation = safeParse(twoFactorDisableSchema, req.body);
+  if (!validation.valid) {
+    return res.status(400).json({ message: validation.error });
+  }
+  const { password, code } = validation.data;
 
   try {
     const { rows } = await pool.query("SELECT * FROM users WHERE id = $1", [
@@ -466,9 +559,11 @@ router.post("/2fa/disable", authMiddleware, async (req, res) => {
 
 // POST /api/auth/2fa/validate
 router.post("/2fa/validate", async (req, res) => {
-  const { tempToken, code } = req.body;
-  if (!tempToken || !code)
-    return res.status(400).json({ message: "tempToken and code are required" });
+  const validation = safeParse(twoFactorValidateSchema, req.body);
+  if (!validation.valid) {
+    return res.status(400).json({ message: validation.error });
+  }
+  const { tempToken, code } = validation.data;
 
   try {
     const payload = jwt.verify(tempToken, SECRET);
@@ -542,7 +637,11 @@ router.get("/me", authMiddleware, async (req, res) => {
 
 // PUT /api/auth/profile
 router.put("/profile", authMiddleware, async (req, res) => {
-  const { name, phone } = req.body;
+  const validation = safeParse(updateProfileSchema, req.body);
+  if (!validation.valid) {
+    return res.status(400).json({ message: validation.error });
+  }
+  const { name, phone } = validation.data;
   try {
     const { rows } = await pool.query(
       "UPDATE users SET name=$1, phone=$2 WHERE id=$3 RETURNING id,name,email,role,phone,avatar,organization_id,company_id",
@@ -557,11 +656,11 @@ router.put("/profile", authMiddleware, async (req, res) => {
 
 // PUT /api/auth/password
 router.put("/password", authMiddleware, async (req, res) => {
-  const { currentPassword, newPassword } = req.body;
-  if (!currentPassword || !newPassword)
-    return res.status(400).json({ message: "Both passwords required" });
-  const passwordError = validatePassword(newPassword);
-  if (passwordError) return res.status(400).json({ message: passwordError });
+  const validation = safeParse(updatePasswordSchema, req.body);
+  if (!validation.valid) {
+    return res.status(400).json({ message: validation.error });
+  }
+  const { currentPassword, newPassword } = validation.data;
 
   try {
     const { rows } = await pool.query("SELECT * FROM users WHERE id = $1", [
@@ -640,13 +739,11 @@ router.post("/users", authMiddleware, async (req, res) => {
   if (!["super_admin", "company_owner", "admin"].includes(req.user.role)) {
     return res.status(403).json({ message: "Insufficient permissions" });
   }
-  const { name, email, password, role = "project_manager", phone } = req.body;
-  if (!name || !email || !password)
-    return res
-      .status(400)
-      .json({ message: "Name, email, and password are required" });
-  const passwordError = validatePassword(password);
-  if (passwordError) return res.status(400).json({ message: passwordError });
+  const validation = safeParse(createUserSchema, req.body);
+  if (!validation.valid) {
+    return res.status(400).json({ message: validation.error });
+  }
+  const { name, email, password, role = "project_manager", phone } = validation.data;
   if (!VALID_ROLES.includes(role))
     return res
       .status(400)
@@ -720,13 +817,11 @@ router.delete("/users/:id", authMiddleware, async (req, res) => {
 
 // PUT /api/auth/avatar
 router.put("/avatar", authMiddleware, async (req, res) => {
-  const { avatar } = req.body;
-  if (!avatar) return res.status(400).json({ message: "Avatar URL required" });
-  if (typeof avatar !== "string" || !avatar.startsWith("https://")) {
-    return res
-      .status(400)
-      .json({ message: "Avatar must be a valid https:// URL" });
+  const validation = safeParse(avatarSchema, req.body);
+  if (!validation.valid) {
+    return res.status(400).json({ message: validation.error });
   }
+  const { avatar } = validation.data;
   try {
     const { rows } = await pool.query(
       "UPDATE users SET avatar=$1 WHERE id=$2 RETURNING id,name,email,role,phone,avatar",
@@ -763,11 +858,16 @@ const VALID_SETTING_KEYS = [
   "dashboard",
   "alerts",
   "reports",
+  "integrations",
+  "security",
 ];
 
 router.put("/settings", authMiddleware, async (req, res) => {
-  const { key, value } = req.body;
-  if (!key) return res.status(400).json({ message: "key required" });
+  const validation = safeParse(settingSchema, req.body);
+  if (!validation.valid) {
+    return res.status(400).json({ message: validation.error });
+  }
+  const { key, value } = validation.data;
   if (!VALID_SETTING_KEYS.includes(key)) {
     return res
       .status(400)
@@ -791,8 +891,11 @@ router.put("/settings", authMiddleware, async (req, res) => {
 
 // POST /api/auth/invite
 router.post("/invite", authMiddleware, async (req, res) => {
-  const { email, role = "project_manager" } = req.body;
-  if (!email) return res.status(400).json({ message: "Email is required" });
+  const validation = safeParse(inviteSchema, req.body);
+  if (!validation.valid) {
+    return res.status(400).json({ message: validation.error });
+  }
+  const { email, role = "project_manager" } = validation.data;
   if (!VALID_ROLES.includes(role))
     return res
       .status(400)
@@ -886,13 +989,11 @@ router.get("/invite/:token", async (req, res) => {
 
 // POST /api/auth/invite/accept
 router.post("/invite/accept", async (req, res) => {
-  const { token, name, password } = req.body;
-  if (!token || !name || !password)
-    return res
-      .status(400)
-      .json({ message: "Token, name, and password are required" });
-  const passwordError = validatePassword(password);
-  if (passwordError) return res.status(400).json({ message: passwordError });
+  const validation = safeParse(inviteAcceptSchema, req.body);
+  if (!validation.valid) {
+    return res.status(400).json({ message: validation.error });
+  }
+  const { token, name, password } = validation.data;
 
   try {
     const { rows } = await pool.query(
@@ -1068,6 +1169,50 @@ router.delete("/sessions", authMiddleware, async (req, res) => {
     res.json({ message: "All other sessions revoked" });
   } catch (err) {
     console.error("[auth/sessions DELETE ALL]", err);
+    res.status(500).json({ message: "Server error" });
+  }
+});
+
+// POST /api/auth/reset-password/:id
+router.post("/reset-password/:id", authMiddleware, resetPasswordLimiter, async (req, res) => {
+  if (!["super_admin", "company_owner", "admin"].includes(req.user.role)) {
+    return res.status(403).json({ message: "Insufficient permissions" });
+  }
+  if (String(req.params.id) === String(req.user.id)) {
+    return res.status(400).json({ message: "Cannot reset your own password here" });
+  }
+
+  try {
+    const { rows } = await pool.query(
+      "SELECT * FROM users WHERE id = $1 AND company_id = $2",
+      [req.params.id, req.user.company_id],
+    );
+    if (!rows[0]) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    const tempPassword = crypto.randomBytes(8).toString("hex");
+    const hash = await bcrypt.hash(tempPassword, 12);
+    await pool.query("UPDATE users SET password_hash = $1 WHERE id = $2", [
+      hash,
+      req.params.id,
+    ]);
+
+    logAudit({
+      auth: req.user,
+      action: "update",
+      entityType: "users",
+      entityId: req.params.id,
+      newData: { password_reset: true },
+    });
+
+    if (process.env.NODE_ENV !== "production") {
+      console.log(`[RESET-PASSWORD] Temp password for ${rows[0].email}: ${tempPassword}`);
+    }
+
+    res.json({ message: `Password reset email sent to ${rows[0].email}` });
+  } catch (err) {
+    console.error("[auth/reset-password]", err);
     res.status(500).json({ message: "Server error" });
   }
 });

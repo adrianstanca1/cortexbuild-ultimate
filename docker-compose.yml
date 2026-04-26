@@ -1,12 +1,7 @@
 # =============================================================================
-# CortexBuild Ultimate - Docker Compose Configuration
+# CortexBuild Ultimate - Optimized Docker Compose
 # =============================================================================
-# Enhanced with:
-#   - Optimized healthchecks with better timeouts
-#   - Resource limits for production stability
-#   - Proper restart policies
-#   - Logging configurations
-#   - Network isolation
+# Simplificat pentru deploy rapid și fiabil
 # =============================================================================
 
 services:
@@ -18,8 +13,6 @@ services:
       POSTGRES_USER: ${POSTGRES_USER:-cortexbuild}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-cortexbuild_dev_password}
       POSTGRES_DB: ${POSTGRES_DB:-cortexbuild}
-      POSTGRES_MAX_CONNECTIONS: 100
-      POSTGRES_SHARED_BUFFERS: 256MB
     volumes:
       - postgres_data:/var/lib/postgresql/data
     ports:
@@ -27,7 +20,7 @@ services:
     networks:
       - cortexbuild
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-cortexbuild} -d ${POSTGRES_DB:-cortexbuild}"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-cortexbuild}"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -38,11 +31,6 @@ services:
           memory: 1G
         reservations:
           memory: 256M
-    logging:
-      driver: json-file
-      options:
-        max-size: "100m"
-        max-file: "3"
 
   redis:
     image: redis:7-alpine
@@ -67,43 +55,6 @@ services:
           memory: 512M
         reservations:
           memory: 64M
-    logging:
-      driver: json-file
-      options:
-        max-size: "50m"
-        max-file: "3"
-
-  ollama:
-    image: ollama/ollama:latest
-    container_name: cortexbuild-ollama
-    restart: unless-stopped
-    environment:
-      OLLAMA_NUM_PARALLEL: "2"
-      OLLAMA_MAX_LOADED_MODELS: "1"
-      OLLAMA_KEEP_ALIVE: "15m"
-    volumes:
-      - ollama_data:/root/.ollama
-    ports:
-      - "127.0.0.1:11434:11434"
-    networks:
-      - cortexbuild
-    healthcheck:
-      test: ["CMD-SHELL", "curl -f http://localhost:11434/api/tags || exit 1"]
-      interval: 30s
-      timeout: 15s
-      retries: 3
-      start_period: 60s
-    deploy:
-      resources:
-        limits:
-          memory: 8G
-        reservations:
-          memory: 2G
-    logging:
-      driver: json-file
-      options:
-        max-size: "200m"
-        max-file: "2"
 
   api:
     build:
@@ -112,29 +63,14 @@ services:
     image: cortexbuild-ultimate-api:latest
     container_name: cortexbuild-api
     restart: unless-stopped
+    env_file:
+      - .env
     environment:
+      # Override pentru network intern Docker
       DB_HOST: postgres
-      DB_PORT: 5432
-      DB_NAME: ${POSTGRES_DB:-cortexbuild}
-      DB_USER: ${POSTGRES_USER:-cortexbuild}
-      DB_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD must be set}
-      JWT_SECRET: ${JWT_SECRET:?JWT_SECRET must be set}
-      SESSION_SECRET: ${SESSION_SECRET:?SESSION_SECRET must be set}
       REDIS_HOST: redis
-      REDIS_URL: ${REDIS_URL:-redis://redis:6379}
-      PORT: ${PORT:-3001}
-      NODE_ENV: ${NODE_ENV:-production}
-      OLLAMA_HOST: ${OLLAMA_HOST:-http://ollama:11434}
-      OLLAMA_MODEL: ${OLLAMA_MODEL:-qwen3.5:latest}
-      CORS_ORIGIN: ${CORS_ORIGIN:?CORS_ORIGIN must be set for production}
-      FRONTEND_URL: ${FRONTEND_URL:-https://www.cortexbuildpro.com}
-      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
-      GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET:-}
-      GOOGLE_CALLBACK_URL: ${GOOGLE_CALLBACK_URL:-https://www.cortexbuildpro.com/api/auth/google/callback}
-      MICROSOFT_CLIENT_ID: ${MICROSOFT_CLIENT_ID:-}
-      MICROSOFT_CLIENT_SECRET: ${MICROSOFT_CLIENT_SECRET:-}
-      MICROSOFT_TENANT: ${MICROSOFT_TENANT:-common}
-      MICROSOFT_CALLBACK_URL: ${MICROSOFT_CALLBACK_URL:-https://www.cortexbuildpro.com/api/auth/microsoft/callback}
+      REDIS_URL: redis://redis:6379
+      OLLAMA_HOST: http://172.28.0.10:11434
     ports:
       - "127.0.0.1:3001:3001"
     networks:
@@ -144,85 +80,34 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
-      ollama:
-        condition: service_healthy
     volumes:
       - ./server/uploads:/app/uploads
     healthcheck:
-      test: ["CMD", "curl", "-sf", "http://localhost:3001/api/health"]
+      test: ["CMD-SHELL", "wget -qO- http://localhost:3001/api/health || exit 1"]
       interval: 30s
       timeout: 10s
       retries: 3
-      start_period: 45s
+      start_period: 60s
     deploy:
       resources:
         limits:
           memory: 1G
         reservations:
           memory: 256M
-    logging:
-      driver: json-file
-      options:
-        max-size: "100m"
-        max-file: "5"
-    mem_limit: 1g
-    memswap_limit: 1g
 
-  # Note: nginx container removed — host nginx handles SSL/proxy on ports 80/443
-
-  prometheus:
-    image: prom/prometheus:latest
-    container_name: cortexbuild-prometheus
-    restart: unless-stopped
-    volumes:
-      - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml:ro
-      - prometheus_data:/prometheus
-    ports:
-      - "127.0.0.1:9090:9090"
-    networks:
-      - cortexbuild
-    command:
-      - '--config.file=/etc/prometheus/prometheus.yml'
-      - '--storage.tsdb.path=/prometheus'
-      - '--storage.tsdb.retention.time=15d'
-      - '--query.max-concurrency=10'
-    healthcheck:
-      test: ["CMD", "wget", "-q", "--spider", "http://localhost:9090/-/healthy"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-    logging:
-      driver: json-file
-      options:
-        max-size: "100m"
-        max-file: "3"
-
-  grafana:
-    image: grafana/grafana:latest
-    container_name: cortexbuild-grafana
-    restart: unless-stopped
-    environment:
-      GF_SECURITY_ADMIN_PASSWORD: ${GF_SECURITY_ADMIN_PASSWORD:-cortexbuild_dev_grafana}
-      GF_SERVER_ROOT_URL: ${GRAFANA_ROOT_URL:-http://localhost:3002}
-      GF_ALERTING_ENABLED: "true"
-    volumes:
-      - grafana_data:/var/lib/grafana
-    ports:
-      - "127.0.0.1:3002:3000"
-    networks:
-      - cortexbuild
-    depends_on:
-      - prometheus
-    healthcheck:
-      test: ["CMD", "wget", "-q", "--spider", "http://localhost:3000/api/health"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-    logging:
-      driver: json-file
-      options:
-        max-size: "100m"
-        max-file: "3"
+  # Ollama opțional — dezactivat implicit
+  # Decomentează pentru a activa AI local
+  # ollama:
+  #   image: ollama/ollama:latest
+  #   container_name: cortexbuild-ollama
+  #   restart: unless-stopped
+  #   volumes:
+  #     - ollama_data:/root/.ollama
+  #   ports:
+  #     - "127.0.0.1:11434:11434"
+  #   networks:
+  #     cortexbuild:
+  #       ipv4_address: 172.28.0.10
 
 networks:
   cortexbuild:
@@ -234,6 +119,4 @@ networks:
 volumes:
   postgres_data:
   redis_data:
-  ollama_data:
-  prometheus_data:
-  grafana_data:
+  # ollama_data:

@@ -1,5 +1,5 @@
 const pool = require('../../db');
-const { summarizeText } = require("../../lib/unified-ai-client");
+const { summarizeText } = require("../../lib/unified-ai-client-v2");
 
 const MAX_CONTEXT_MESSAGES = parseInt(process.env.MAX_CONTEXT_MESSAGES || '20', 10);
 const SUMMARY_THRESHOLD    = parseInt(process.env.SUMMARY_THRESHOLD    || '30', 10);

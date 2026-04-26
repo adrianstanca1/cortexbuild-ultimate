@@ -20,3 +20,4 @@
 
 - **Self-Healing**: `hermes-reliability-optimizer` skill manages gateway stabilization and model-response error recovery.
 - **Monitoring**: All system components are health-checkable via `/api/health`.
+- **Dev handoff**: `SESSION.md` holds dated checkpoints; local `npm`/`node` may need `PATH` including Homebrew or nvm (`export PATH="/usr/local/bin:/opt/homebrew/bin:$PATH"` on macOS).

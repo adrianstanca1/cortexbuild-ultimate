@@ -1,8 +1,12 @@
 const express = require("express");
+const path = require("path");
+const fs = require("fs");
 const pool = require("../db");
 const https = require("https");
 const http = require("http");
 const auth = require("../middleware/auth");
+const { buildTenantFilter } = require("../middleware/tenantFilter");
+const { extractReadableTextFromDocument } = require("../lib/document-text-extract");
 const rateLimit = require("express-rate-limit");
 const {
   broadcastDashboardUpdate,
@@ -56,6 +60,7 @@ const {
 const {
   agenticQuery,
   streamAgenticQuery,
+  smartQuery,
 } = require("../lib/unified-ai-client-v2");
 const { AGENT_DEFINITIONS } = require("../lib/agents/agent-orchestrator");
 
@@ -990,6 +995,237 @@ Format in Markdown.`;
     }
   },
 );
+
+const UPLOADS_FOR_AI = path.join(__dirname, "../uploads");
+
+// ─── POST /enrich-site-brief ─────────────────────────────────────────────────
+// NL polish on top of client heuristic brief (OpenRouter → Ollama → Gemini).
+router.post("/enrich-site-brief", aiSummarizeLimiter, async (req, res) => {
+  const {
+    headline,
+    subline,
+    signals = [],
+    playbooks = [],
+    stats = {},
+  } = req.body || {};
+  if (!headline || typeof headline !== "string") {
+    return res.status(400).json({ message: "headline is required" });
+  }
+
+  const signalsStr = (Array.isArray(signals) ? signals : [])
+    .slice(0, 8)
+    .map((s) => `- [${s.severity || "info"}] ${s.title || ""}: ${s.detail || ""}`)
+    .join("\n");
+
+  const prompt = `You are a UK construction programme director. Polish the site command brief for a control-room dashboard.
+
+Rules:
+- Do not invent facts or counts; only sharpen tone using the given signals and stats.
+- headline: max 100 characters, punchy.
+- subline: max 240 characters, one or two sentences.
+- Return ONLY valid JSON: {"headline":"...","subline":"..."}
+
+Current headline: ${headline}
+Current subline: ${subline || ""}
+Playbooks (hints): ${(playbooks || []).slice(0, 5).join(" | ")}
+Signals:
+${signalsStr || "(none)"}
+Stats JSON: ${JSON.stringify(stats)}`;
+
+  try {
+    const raw = await smartQuery(prompt, {
+      temperature: 0.35,
+      maxTokens: 500,
+      preferredProvider: "openrouter",
+    });
+    const m = typeof raw === "string" ? raw.match(/\{[\s\S]*\}/) : null;
+    const parsed = m ? JSON.parse(m[0]) : null;
+    if (parsed?.headline) {
+      return res.json({
+        headline: String(parsed.headline).slice(0, 160),
+        subline: String(parsed.subline || subline || "").slice(0, 400),
+        source: "ai",
+      });
+    }
+    throw new Error("no json");
+  } catch (e) {
+    console.warn("[AI /enrich-site-brief]", e.message);
+    return res.json({
+      headline,
+      subline: subline || "",
+      source: "heuristic",
+      fallback: true,
+    });
+  }
+});
+
+// ─── POST /analyze-document ──────────────────────────────────────────────────
+// PDF/TXT extraction + structured commercial / RFI intelligence.
+router.post("/analyze-document", aiSummarizeLimiter, async (req, res) => {
+  const { documentId, useCache = true } = req.body || {};
+  if (!documentId) {
+    return res.status(400).json({ message: "documentId is required" });
+  }
+
+  const orgSel = buildTenantFilter(req, "AND", null, 2);
+  const orgUp = buildTenantFilter(req, "AND", null, 3);
+
+  try {
+    const { rows } = await pool.query(
+      `SELECT * FROM documents WHERE id = $1${orgSel.clause}`,
+      [documentId, ...orgSel.params],
+    );
+    if (!rows.length) {
+      return res.status(404).json({ message: "Document not found" });
+    }
+    const doc = rows[0];
+
+    if (
+      useCache &&
+      doc.ai_analysis_cache &&
+      typeof doc.ai_analysis_cache === "object"
+    ) {
+      return res.json({
+        ...doc.ai_analysis_cache,
+        source: "cache",
+        documentId: String(documentId),
+      });
+    }
+
+    if (!doc.file_path) {
+      return res.json({
+        summary: `No file stored for "${doc.name}". Category: ${doc.category}, type: ${doc.type}.`,
+        commercialRisks: [],
+        suggestedActions: [],
+        rfiSuggestions: [],
+        keyEntities: [],
+        confidence: "low",
+        extractedChars: 0,
+        source: "metadata-only",
+        documentId: String(documentId),
+      });
+    }
+
+    const fullPath = path.resolve(UPLOADS_FOR_AI, path.basename(doc.file_path));
+    if (!fullPath.startsWith(path.resolve(UPLOADS_FOR_AI))) {
+      return res.status(403).json({ message: "Invalid file path" });
+    }
+    if (!fs.existsSync(fullPath)) {
+      return res.status(404).json({ message: "File not found on server" });
+    }
+
+    let text = doc.ai_extracted_snippet || "";
+    if (!text || String(text).length < 40) {
+      text = await extractReadableTextFromDocument(fullPath, doc.type || "");
+      if (text && text.length > 80) {
+        await pool
+          .query(
+            `UPDATE documents SET ai_extracted_snippet = $1 WHERE id = $2${orgUp.clause}`,
+            [text.slice(0, 15000), documentId, ...orgUp.params],
+          )
+          .catch(() => {});
+      }
+    }
+
+    const metadataBlock = `Filename: ${doc.name}
+Type: ${doc.type}
+Category: ${doc.category}
+Project ID: ${doc.project_id || "n/a"}
+Access: ${doc.access_level || "n/a"}`;
+
+    if (!text || String(text).length < 30) {
+      return res.json({
+        summary: `No extractable text (try PDF with text layer or .txt). ${metadataBlock.replace(/\n/g, " · ")}`,
+        commercialRisks: [],
+        suggestedActions: [
+          "Export drawings/specs to searchable PDF or paste scope into a TXT attachment for AI review.",
+        ],
+        rfiSuggestions: [],
+        keyEntities: [],
+        confidence: "low",
+        extractedChars: 0,
+        source: "metadata-only",
+        documentId: String(documentId),
+      });
+    }
+
+    const prompt = `You are a senior contracts & delivery manager on a UK construction project.
+
+Analyse this document excerpt (may be partial). Output ONLY valid JSON (no markdown):
+{
+  "summary": "3-5 sentence executive summary",
+  "commercialRisks": ["short bullets: payment, scope, time, compliance, retention, LDs, etc."],
+  "suggestedActions": ["concrete next steps for PM or commercial"],
+  "rfiSuggestions": ["clarifications or RFIs worth raising"],
+  "keyEntities": ["parties, specs, dates, sums to track"],
+  "confidence": "high|medium|low"
+}
+
+METADATA:
+${metadataBlock}
+
+DOCUMENT TEXT:
+${String(text).slice(0, 12000)}`;
+
+    try {
+      const raw = await smartQuery(prompt, {
+        temperature: 0.35,
+        maxTokens: 2800,
+        preferredProvider: "openrouter",
+      });
+      const m = typeof raw === "string" ? raw.match(/\{[\s\S]*\}/) : null;
+      const parsed = m ? JSON.parse(m[0]) : null;
+      const out = {
+        summary:
+          parsed?.summary ||
+          (typeof raw === "string" ? raw.slice(0, 600) : "Analysis incomplete."),
+        commercialRisks: Array.isArray(parsed?.commercialRisks)
+          ? parsed.commercialRisks.slice(0, 14)
+          : [],
+        suggestedActions: Array.isArray(parsed?.suggestedActions)
+          ? parsed.suggestedActions.slice(0, 14)
+          : [],
+        rfiSuggestions: Array.isArray(parsed?.rfiSuggestions)
+          ? parsed.rfiSuggestions.slice(0, 12)
+          : [],
+        keyEntities: Array.isArray(parsed?.keyEntities)
+          ? parsed.keyEntities.slice(0, 16)
+          : [],
+        confidence: parsed?.confidence || "medium",
+        extractedChars: String(text).length,
+        source: "ai",
+        documentId: String(documentId),
+      };
+
+      await pool
+        .query(
+          `UPDATE documents SET ai_analysis_cache = $1::jsonb, ai_analysis_at = NOW() WHERE id = $2${orgUp.clause}`,
+          [JSON.stringify(out), documentId, ...orgUp.params],
+        )
+        .catch(() => {});
+
+      return res.json(out);
+    } catch (llmErr) {
+      console.warn("[AI /analyze-document] LLM:", llmErr.message);
+      return res.json({
+        summary: `Extracted ${String(text).length} characters but AI providers failed. Preview: ${String(text).slice(0, 500)}…`,
+        commercialRisks: [],
+        suggestedActions: [
+          "Set OPENROUTER_API_KEY or start Ollama for full structured analysis.",
+        ],
+        rfiSuggestions: [],
+        keyEntities: [],
+        confidence: "low",
+        extractedChars: String(text).length,
+        source: "extraction-only",
+        documentId: String(documentId),
+      });
+    }
+  } catch (err) {
+    console.error("[AI /analyze-document]", err.message);
+    return res.status(500).json({ error: "Internal server error" });
+  }
+});
 
 // ─── POST /chat/stream ────────────────────────────────────────────────────────
 router.post("/chat/stream", aiChatLimiter, async (req, res) => {

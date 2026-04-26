@@ -44,6 +44,7 @@ interface _Valuation {
 
 interface MeasurementFormData {
   reference: string;
+  item_no: string;
   survey_type: string;
   location: string;
   surveyor: string;
@@ -65,6 +66,7 @@ export default function Measuring() {
   const [editItem, setEditItem] = useState<Measurement | null>(null);
   const [form, setForm] = useState<MeasurementFormData>({
     reference: '',
+    item_no: '',
     survey_type: 'General',
     location: '',
     surveyor: '',
@@ -138,7 +140,7 @@ export default function Measuring() {
       await createMutation.mutateAsync(newMeasurement);
       toast.success('Measurement created successfully');
       setShowCreateModal(false);
-      setForm({ reference: '', survey_type: 'General', location: '', surveyor: '', survey_date: '', total_area: '', unit: 'm²', notes: '' });
+      setForm({ reference: '', item_no: '', survey_type: 'General', location: '', surveyor: '', survey_date: '', total_area: '', unit: 'm²', section: 'Fit-Out', quantity: '', rate: '', description: '', notes: '' });
     } catch (err) {
       toast.error(`Failed to create: ${err instanceof Error ? err.message : 'Unknown error'}`);
     }
@@ -427,7 +429,7 @@ export default function Measuring() {
             <div className="card p-6 bg-gradient-to-r from-orange-500/10 to-amber-500/10 border border-orange-500/30">
               <div className="text-right">
                 <p className="text-gray-400 mb-2">Total Measured Area</p>
-                <p className="text-4xl font-display text-orange-400">{totals.grandTotal.toLocaleString()} {typedMeasurements[0]?.unit || 'units'}</p>
+                <p className="text-4xl font-display text-orange-400">{totals.grandTotal.toLocaleString()} {filtered[0]?.unit || 'units'}</p>
               </div>
             </div>
           </div>
@@ -437,68 +439,10 @@ export default function Measuring() {
         {activeTab === 'valuations' && (
           <div className="space-y-4">
             <div className="card p-6">
-              <h3 className="text-lg font-display text-white mb-6">Monthly Valuations</h3>
-              <div className="cb-table-scroll touch-pan-x">
-                <table className="w-full text-sm">
-                  <thead>
-                    <tr className="border-b border-gray-700">
-                      <th className="text-left py-3 px-4 text-gray-400 font-medium">Period</th>
-                      <th className="text-right py-3 px-4 text-gray-400 font-medium">Amount Certified (£)</th>
-                      <th className="text-right py-3 px-4 text-gray-400 font-medium">Cumulative (£)</th>
-                      <th className="text-right py-3 px-4 text-gray-400 font-medium">Retention 5% (£)</th>
-                      <th className="text-right py-3 px-4 text-gray-400 font-medium">Net Payment (£)</th>
-                      <th className="text-center py-3 px-4 text-gray-400 font-medium">Progress</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {mockValuations.map((v, idx) => {
-                      const percentageProgress = (v.cumulative_total / totals.costPlanTotal) * 100;
-                      return (
-                        <tr key={idx} className="border-b border-gray-700 hover:bg-gray-800/50">
-                          <td className="py-3 px-4 font-medium text-white">{v.period}</td>
-                          <td className="py-3 px-4 text-right text-white">£{v.amount_certified.toLocaleString()}</td>
-                          <td className="py-3 px-4 text-right font-mono text-blue-400">£{v.cumulative_total.toLocaleString()}</td>
-                          <td className="py-3 px-4 text-right text-orange-400">-£{v.retention_deducted.toLocaleString()}</td>
-                          <td className="py-3 px-4 text-right font-mono text-green-400">£{v.net_payment.toLocaleString()}</td>
-                          <td className="py-3 px-4 text-center">
-                            <div className="w-24 h-2 bg-gray-700 rounded-full overflow-hidden mx-auto">
-                              <div
-                                className="h-full bg-gradient-to-r from-green-500 to-emerald-400 transition-all"
-                                style={{ width: `${Math.min(percentageProgress, 100)}%` }}
-                              />
-                            </div>
-                            <p className="text-xs text-gray-400 mt-1">{percentageProgress.toFixed(1)}%</p>
-                          </td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-
-            {/* Running Total Progress */}
-            <div className="card p-6">
-              <h3 className="text-lg font-display text-white mb-6">Valuation Progress</h3>
-              <div className="space-y-4">
-                {mockValuations.map((v, idx) => {
-                  const percentageProgress = (v.cumulative_total / totals.costPlanTotal) * 100;
-                  return (
-                    <div key={idx}>
-                      <div className="flex items-center justify-between mb-2">
-                        <span className="text-gray-300 font-medium">{v.period}</span>
-                        <span className="text-white font-mono">£{v.cumulative_total.toLocaleString()} ({percentageProgress.toFixed(1)}%)</span>
-                      </div>
-                      <div className="w-full h-3 bg-gray-700 rounded-full overflow-hidden">
-                        <div
-                          className="h-full bg-gradient-to-r from-blue-500 to-blue-400 transition-all"
-                          style={{ width: `${Math.min(percentageProgress, 100)}%` }}
-                        />
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
+              <EmptyState
+                title="Monthly Valuations"
+                description="Valuation data will appear here once payment certificates are recorded."
+              />
             </div>
           </div>
         )}

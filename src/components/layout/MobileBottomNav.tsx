@@ -300,7 +300,12 @@ export function MobileBottomNav({
       onTouchEnd={handleSwipeEnd}
       style={{
         position: 'relative',
-        minHeight: '100vh',
+        /* In MobileShell this sits after <main> in a flex column; min-height 100vh
+           forced the scrollable main area to collapse to zero (fixed chrome only). */
+        flexShrink: 0,
+        minHeight: 0,
+        height: 0,
+        overflow: 'visible',
       }}
     >
       {/* Pull to refresh indicator */}
@@ -888,13 +893,6 @@ export function MobileBottomNav({
           }
         }
         
-        @media (prefers-reduced-motion: reduce) {
-          *, *::before, *::after {
-            animation-duration: 0.01ms !important;
-            animation-iteration-count: 1 !important;
-            transition-duration: 0.01ms !important;
-          }
-        }
       `}</style>
     </div>
   );

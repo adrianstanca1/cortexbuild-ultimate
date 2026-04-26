@@ -123,7 +123,7 @@ async function proactiveCheck() {
     // Check RAG embeddings with a probe
     if (ollamaOk) {
       try {
-        const { getEmbedding } = require("../lib/unified-ai-client");
+        const { getEmbedding } = require("../lib/unified-ai-client-v2");
         const probe = await getEmbedding("health check probe");
         if (!probe || probe.length !== 1024) {
           const id = await upsertIncident("rag_embedding_failed", "medium", {

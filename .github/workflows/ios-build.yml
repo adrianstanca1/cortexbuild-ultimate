@@ -35,12 +35,12 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v5
         with:
-          node-version: ${{ env.NODE_VERSION }}
+          node-version-file: '.nvmrc'
           cache: 'npm'
 
       - name: Install dependencies
@@ -53,6 +53,9 @@ jobs:
 
       - name: Select Xcode version
         run: sudo xcode-select -s /Applications/Xcode_${{ env.XCODE_VERSION }}.app
+
+      - name: Install CocoaPods
+        run: gem install cocoapods --no-document
 
       - name: Sync Capacitor iOS
         run: npx cap sync ios
@@ -114,7 +117,7 @@ jobs:
 
       - name: Upload simulator artifact
         if: ${{ github.event.inputs.build_type != 'release' }}
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: CortexBuild-iOS-Simulator-${{ github.sha }}
           path: ios/App/artifacts/CortexBuild-iOS-simulator.zip
@@ -123,7 +126,7 @@ jobs:
 
       - name: Upload release archive artifact
         if: ${{ github.event.inputs.build_type == 'release' }}
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: CortexBuild-xcarchive-${{ github.sha }}
           path: ios/App/build/CortexBuild.xcarchive
@@ -136,12 +139,12 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v5
         with:
-          node-version: ${{ env.NODE_VERSION }}
+          node-version-file: '.nvmrc'
           cache: 'npm'
 
       - name: Install dependencies

@@ -8,15 +8,16 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       - name: Deploy via SSH
-        uses: appleboy/ssh-action@master
+        uses: appleboy/ssh-action@v1.2.5
         with:
           host: ${{ secrets.VPS_HOST }}
           username: root
           key: ${{ secrets.VPS_SSH_KEY }}
           script: |
+            # Repo root on VPS must contain ./deploy/*.sh (see docs/CICD_RUNBOOK.md: /var/www/cortexbuild-ultimate, /root/cortexbuild-ultimate, or /root/cortexbuild-work).
             cd /root/cortexbuild-work
             git pull origin main
             bash deploy/deploy-api.sh

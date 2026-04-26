@@ -4,7 +4,7 @@ import { EmptyState } from '../../ui/EmptyState';
 import { CardSkeleton } from '../../ui/Skeleton';
 import { Modal, StatusBadge } from '../shared';
 import { apiFetch, type Row } from '../../../services/api';
-import { PLAN_COLORS, fmtDate, fmtBytes, type Company } from '../types';
+import { PLAN_COLORS, PLAN_LABELS, fmtDate, fmtBytes, type Company } from '../types';
 
 interface CompaniesTabProps {
   companies?: Company[];
@@ -24,7 +24,7 @@ export default function CompaniesTab({ companies: propCompanies = [], loading: p
           id: String(r.id ?? ''),
           name: String(r.name ?? ''),
           status: 'active' as const,
-          subscriptionPlan: 'professional' as const,
+          subscriptionPlan: 'included' as const,
           userCount: Number(r.user_count ?? 0),
           userLimit: 100,
           projectCount: Number(r.project_count ?? 0),
@@ -40,14 +40,12 @@ export default function CompaniesTab({ companies: propCompanies = [], loading: p
   const companies = propCompanies.length > 0 ? propCompanies : fetchedCompanies;
   const loading = propLoading || fetchLoading;
   const [searchQuery, setSearchQuery] = useState('');
-  const [filterPlan, setFilterPlan] = useState('all');
   const [filterStatus, setFilterStatus] = useState('all');
   const [selectedCompany, setSelectedCompany] = useState<Company | null>(null);
   const [showDetailsModal, setShowDetailsModal] = useState(false);
 
   const filteredCompanies = companies.filter(company => {
     if (searchQuery && !company.name.toLowerCase().includes(searchQuery.toLowerCase())) return false;
-    if (filterPlan !== 'all' && company.subscriptionPlan !== filterPlan) return false;
     if (filterStatus !== 'all' && company.status !== filterStatus) return false;
     return true;
   });
@@ -74,17 +72,6 @@ export default function CompaniesTab({ companies: propCompanies = [], loading: p
             className="w-full pl-10 pr-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-blue-500"
           />
         </div>
-        <select
-          value={filterPlan}
-          onChange={(e) => setFilterPlan(e.target.value)}
-          className="px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white text-sm focus:outline-none focus:border-blue-500"
-        >
-          <option value="all">All Plans</option>
-          <option value="free">Free</option>
-          <option value="starter">Starter</option>
-          <option value="professional">Professional</option>
-          <option value="enterprise">Enterprise</option>
-        </select>
         <select
           value={filterStatus}
           onChange={(e) => setFilterStatus(e.target.value)}
@@ -125,9 +112,9 @@ export default function CompaniesTab({ companies: propCompanies = [], loading: p
 
               <div className="space-y-3">
                 <div className="flex items-center justify-between">
-                  <span className="text-sm text-gray-400">Plan</span>
-                  <span className={`px-2.5 py-1 rounded-full text-xs font-medium ${PLAN_COLORS[company.subscriptionPlan]}`}>
-                    {company.subscriptionPlan.charAt(0).toUpperCase() + company.subscriptionPlan.slice(1)}
+                  <span className="text-sm text-gray-400">Product</span>
+                  <span className={`px-2.5 py-1 rounded-full text-xs font-medium ${PLAN_COLORS[company.subscriptionPlan] ?? PLAN_COLORS.included}`}>
+                    {PLAN_LABELS[company.subscriptionPlan] ?? company.subscriptionPlan}
                   </span>
                 </div>
                 <div className="flex items-center justify-between">
@@ -186,8 +173,8 @@ export default function CompaniesTab({ companies: propCompanies = [], loading: p
 
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
               <div className="p-4 bg-gray-800/50 rounded-lg">
-                <p className="text-xs text-gray-400 mb-1">Subscription</p>
-                <p className="text-lg font-bold text-white capitalize">{selectedCompany.subscriptionPlan}</p>
+                <p className="text-xs text-gray-400 mb-1">Workspace</p>
+                <p className="text-lg font-bold text-white">{PLAN_LABELS[selectedCompany.subscriptionPlan] ?? 'Full access'}</p>
               </div>
               <div className="p-4 bg-gray-800/50 rounded-lg">
                 <p className="text-xs text-gray-400 mb-1">Users</p>
@@ -225,19 +212,19 @@ export default function CompaniesTab({ companies: propCompanies = [], loading: p
             </div>
 
             <div className="p-4 bg-gray-800/50 rounded-lg">
-              <h4 className="font-medium text-white mb-3">Subscription Details</h4>
+              <h4 className="font-medium text-white mb-3">Workspace</h4>
               <div className="space-y-2 text-sm">
                 <div className="flex items-center justify-between">
                   <span className="text-gray-400">Status</span>
                   <StatusBadge status={selectedCompany.status} />
                 </div>
                 <div className="flex items-center justify-between">
-                  <span className="text-gray-400">Plan Started</span>
+                  <span className="text-gray-400">Organisation since</span>
                   <span className="text-white">{fmtDate(selectedCompany.createdAt)}</span>
                 </div>
                 {selectedCompany.expiresAt && (
                   <div className="flex items-center justify-between">
-                    <span className="text-gray-400">Renews On</span>
+                    <span className="text-gray-400">Reference date</span>
                     <span className="text-white">{fmtDate(selectedCompany.expiresAt)}</span>
                   </div>
                 )}

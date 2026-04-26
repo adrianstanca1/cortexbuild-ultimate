@@ -475,6 +475,8 @@ export interface AppSettings {
   dashboard?: Record<string, unknown>;
   alerts?: Record<string, boolean>;
   reports?: Record<string, unknown>;
+  integrations?: Record<string, { connected: boolean; status: string }>;
+  security?: { twoFA?: boolean };
 }
 
 export const settingsApi = {
@@ -735,11 +737,11 @@ export const defectsApi = {
 };
 
 export const valuationsApi = {
-  getAll: () => fetchAll<Row>('valuations'),
-  getById: (id: string) => apiFetch(`/valuations/${id}`),
-  create: (data: Row) => insertRow('valuations', data),
-  update: (id: string, data: Row) => updateRow('valuations', id, data),
-  delete: (id: string) => deleteRow('valuations', id),
+  getAll: () => apiFetch<{ data: Row[] }>('/measuring/valuations').then(r => r.data ?? []),
+  getById: (id: string) => apiFetch<Row>(`/measuring/valuations/${id}`),
+  create: (data: Row) => apiFetch<Row>('/measuring/valuations', { method: 'POST', body: JSON.stringify(data) }),
+  update: (id: string, data: Row) => apiFetch<Row>(`/measuring/valuations/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+  delete: (id: string) => apiFetch(`/measuring/valuations/${id}`, { method: 'DELETE' }).then(() => {}),
 };
 
 export const specificationsApi = {
@@ -809,6 +811,7 @@ export const prequalificationApi = {
 export const lettingsApi = {
   getAll: () => fetchAll<Row>('lettings'),
   getById: (id: string) => apiFetch(`/lettings/${id}`),
+  getTenders: () => fetchAll<Row>('tenders'),
   create: (data: Row) => insertRow('lettings', data),
   update: (id: string, data: Row) => updateRow('lettings', id, data),
   delete: (id: string) => deleteRow('lettings', id),
@@ -821,6 +824,11 @@ export const measuringApi = {
   update: (id: string, data: Row) => updateRow('measuring', id, data),
   delete: (id: string) => deleteRow('measuring', id),
 };
+
+// ─── Shorthand aliases (used by some frontend modules) ────────────────────
+export const lettings = lettingsApi;
+export const signage = signageApi;
+export const valuations = valuationsApi;
 
 export const backupApi = {
   getTables: () => apiFetch<{ tables: string[] }>('/backup/tables'),

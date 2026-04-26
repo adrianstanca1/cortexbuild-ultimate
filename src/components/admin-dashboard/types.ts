@@ -23,7 +23,8 @@ export interface Company {
   id: string;
   name: string;
   status: 'active' | 'suspended' | 'trial';
-  subscriptionPlan: 'free' | 'starter' | 'professional' | 'enterprise';
+  /** `included` = free product, full workspace access (no paid tiers). */
+  subscriptionPlan: 'included' | 'free' | 'starter' | 'professional' | 'enterprise';
   userCount: number;
   userLimit: number;
   projectCount: number;
@@ -96,10 +97,19 @@ export const ROLE_LABELS: Record<UserRole, string> = {
 };
 
 export const PLAN_COLORS: Record<string, string> = {
+  included: 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30',
   free: 'bg-gray-500/20 text-gray-400',
   starter: 'bg-blue-500/20 text-blue-400',
   professional: 'bg-green-500/20 text-green-400',
   enterprise: 'bg-purple-500/20 text-purple-400',
+};
+
+export const PLAN_LABELS: Record<string, string> = {
+  included: 'Full access',
+  free: 'Free',
+  starter: 'Starter',
+  professional: 'Professional',
+  enterprise: 'Enterprise',
 };
 
 export const STATUS_COLORS: Record<string, string> = {

@@ -1,7 +1,8 @@
-import { FileText, AlertTriangle, Camera, Clock, Package, Users } from 'lucide-react';
+import { FileText, AlertTriangle, Camera, Clock, Package, Users, Sparkles } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { type Module } from '../../types';
 import { getToken } from '../../lib/auth-storage';
+import { buildAISiteBrief } from '../../lib/aiSiteBrief';
 
 interface QuickAction {
   label: string;
@@ -55,8 +56,38 @@ export function MobileHome({ onNavigate }: MobileHomeProps) {
     { label: 'Defects', value: isLoading ? '…' : String(summary?.defects ?? '—'), color: 'text-red-400' },
   ];
 
+  const mobileBrief =
+    !isLoading && summary
+      ? buildAISiteBrief({
+          openRfis: 0,
+          overdueRfis: 0,
+          blockedTasks: 0,
+          redBudgetProjects: 0,
+          amberProgrammeProjects: 0,
+          openSafetyItems: 0,
+          activeProjects: 1,
+          mobileOutstandingTasks: summary.tasks,
+          mobileOpenDefects: summary.defects,
+        })
+      : null;
+
   return (
     <div className="p-4 space-y-4">
+      {mobileBrief && (
+        <button
+          type="button"
+          onClick={() => onNavigate(mobileBrief.signals[0]?.navigateTo ?? 'ai-assistant')}
+          className="w-full text-left bg-gradient-to-br from-violet-950/80 to-slate-900 border border-violet-500/25 rounded-2xl p-4 active:scale-[0.99] transition-transform"
+        >
+          <div className="flex items-center gap-2 text-violet-300 text-[10px] uppercase tracking-widest mb-1">
+            <Sparkles className="w-3.5 h-3.5" />
+            AI shift brief
+          </div>
+          <div className="text-white font-semibold text-sm leading-snug">{mobileBrief.headline}</div>
+          <div className="text-slate-400 text-xs mt-1 line-clamp-2">{mobileBrief.signals[0]?.detail ?? mobileBrief.subline}</div>
+        </button>
+      )}
+
       <div className="bg-slate-800 rounded-2xl p-4">
         <div className="text-slate-400 text-[10px] uppercase tracking-widest mb-3">Today · {today}</div>
         <div className="grid grid-cols-2 gap-2">
