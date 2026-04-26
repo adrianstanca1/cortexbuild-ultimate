@@ -16,7 +16,14 @@ const { v4: uuidv4 } = require("uuid");
  */
 function createWebhookRouter(options = {}) {
   const db = options.db || require("../db");
-  const stripe = options.stripe || require("../lib/stripe-client").getStripe();
+
+  // Lazy-resolve Stripe so the server can still boot without STRIPE_SECRET_KEY.
+  // Routes that need Stripe will return 503 at request time if the key is missing.
+  let stripeOverride = options.stripe || null;
+  function getStripeOrError() {
+    if (stripeOverride) return stripeOverride;
+    return require("../lib/stripe-client").getStripe();
+  }
 
   const router = express.Router();
 
@@ -34,6 +41,7 @@ function createWebhookRouter(options = {}) {
       throw new Error("STRIPE_WEBHOOK_SECRET is not set");
     }
 
+    const stripe = getStripeOrError();
     const event = stripe.webhooks.constructEvent(
       req.rawBody, // Raw body is passed by express.raw() middleware
       signature,
@@ -181,7 +189,8 @@ function createWebhookRouter(options = {}) {
       subscriptionId = uuidv4();
     }
 
-    // Fetch subscription details from Stripe
+    // Fetch subscription details from Stripe (lazy-resolves the client)
+    const stripe = getStripeOrError();
     const stripeSubscription = await stripe.subscriptions.retrieve(subscription);
 
     await db.query(
