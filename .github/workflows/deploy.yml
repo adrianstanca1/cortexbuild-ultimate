@@ -123,17 +123,40 @@ jobs:
             cd "$PROJECT_DIR"
             git config --global --add safe.directory "$PROJECT_DIR" || true
             git fetch origin
-            # Rescue any unpushed local commits before resetting (race-safe vs. parallel SSH deploys)
-            if ! git merge-base --is-ancestor HEAD origin/main; then
+            LOCAL_HEAD="$(git rev-parse HEAD 2>/dev/null || echo '')"
+            ORIGIN_HEAD="$(git rev-parse origin/main)"
+            # 1. Rescue any unpushed local commits before resetting; refuse to
+            #    proceed if the rescue branch can't be created (data safety).
+            if [ -n "$LOCAL_HEAD" ] && ! git merge-base --is-ancestor HEAD origin/main 2>/dev/null; then
               rescue="local-rescue-$(date -u +%Y%m%d-%H%M%S)-$$"
               if ! git branch "$rescue" HEAD; then
                 echo "ERROR: refusing to reset --hard; could not create rescue branch '$rescue'." >&2
                 git rev-parse HEAD >&2
                 exit 1
               fi
-              echo "WARN: local HEAD diverged from origin/main; saved to branch '$rescue'"
+              echo "WARN: local HEAD ($LOCAL_HEAD) diverged from origin/main ($ORIGIN_HEAD); saved to '$rescue'"
             fi
-            git reset --hard origin/main
+            # 2. Rescue any uncommitted working-tree drift (manual edits on the VPS)
+            if ! git diff --quiet --ignore-submodules HEAD 2>/dev/null \
+               || [ -n "$(git ls-files --others --exclude-standard 2>/dev/null)" ]; then
+              stash_msg="local-drift-$(date -u +%Y%m%d-%H%M%S)"
+              git stash push --include-untracked -m "$stash_msg" || true
+              echo "WARN: working-tree drift saved to stash '$stash_msg' (inspect with 'git stash list')"
+            fi
+            # 3. Prefer fast-forward; reset --hard only if FF impossible
+            if git merge --ff-only origin/main 2>/dev/null; then
+              echo "Fast-forwarded cleanly to $ORIGIN_HEAD"
+            else
+              echo "FF impossible; resetting hard to $ORIGIN_HEAD (rescue branch + stash preserved above)"
+              git reset --hard origin/main
+            fi
+            # 4. Hint at rescue-branch hygiene so they don't pile up indefinitely
+            stale=$(git for-each-ref --format='%(refname:short)' 'refs/heads/local-rescue-*' \
+                    | head -n -10 | wc -l)
+            if [ "$stale" -gt 0 ]; then
+              echo "INFO: $stale rescue branches older than the last 10 — clean up periodically with: git branch -D \$(git for-each-ref --format='%(refname:short)' 'refs/heads/local-rescue-*' | head -n -10)"
+            fi
+            fi
             npm ci --ignore-scripts
             npm run build
             chown -R www-data:www-data "$PROJECT_DIR/dist"
@@ -197,17 +220,40 @@ jobs:
             git config --global --add safe.directory "$PROJECT_DIR" || true
 
             git fetch origin
-            # Rescue any unpushed local commits before resetting (race-safe vs. parallel SSH deploys)
-            if ! git merge-base --is-ancestor HEAD origin/main; then
+            LOCAL_HEAD="$(git rev-parse HEAD 2>/dev/null || echo '')"
+            ORIGIN_HEAD="$(git rev-parse origin/main)"
+            # 1. Rescue any unpushed local commits before resetting; refuse to
+            #    proceed if the rescue branch can't be created (data safety).
+            if [ -n "$LOCAL_HEAD" ] && ! git merge-base --is-ancestor HEAD origin/main 2>/dev/null; then
               rescue="local-rescue-$(date -u +%Y%m%d-%H%M%S)-$$"
               if ! git branch "$rescue" HEAD; then
                 echo "ERROR: refusing to reset --hard; could not create rescue branch '$rescue'." >&2
                 git rev-parse HEAD >&2
                 exit 1
               fi
-              echo "WARN: local HEAD diverged from origin/main; saved to branch '$rescue'"
+              echo "WARN: local HEAD ($LOCAL_HEAD) diverged from origin/main ($ORIGIN_HEAD); saved to '$rescue'"
             fi
-            git reset --hard origin/main
+            # 2. Rescue any uncommitted working-tree drift (manual edits on the VPS)
+            if ! git diff --quiet --ignore-submodules HEAD 2>/dev/null \
+               || [ -n "$(git ls-files --others --exclude-standard 2>/dev/null)" ]; then
+              stash_msg="local-drift-$(date -u +%Y%m%d-%H%M%S)"
+              git stash push --include-untracked -m "$stash_msg" || true
+              echo "WARN: working-tree drift saved to stash '$stash_msg' (inspect with 'git stash list')"
+            fi
+            # 3. Prefer fast-forward; reset --hard only if FF impossible
+            if git merge --ff-only origin/main 2>/dev/null; then
+              echo "Fast-forwarded cleanly to $ORIGIN_HEAD"
+            else
+              echo "FF impossible; resetting hard to $ORIGIN_HEAD (rescue branch + stash preserved above)"
+              git reset --hard origin/main
+            fi
+            # 4. Hint at rescue-branch hygiene so they don't pile up indefinitely
+            stale=$(git for-each-ref --format='%(refname:short)' 'refs/heads/local-rescue-*' \
+                    | head -n -10 | wc -l)
+            if [ "$stale" -gt 0 ]; then
+              echo "INFO: $stale rescue branches older than the last 10 — clean up periodically with: git branch -D \$(git for-each-ref --format='%(refname:short)' 'refs/heads/local-rescue-*' | head -n -10)"
+            fi
+            fi
 
             # Load environment variables BEFORE docker commands
             set +u
