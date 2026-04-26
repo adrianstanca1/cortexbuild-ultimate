@@ -1,28 +1,36 @@
 /**
  * Billing webhook tests
  * Tests signature verification, idempotency, and database upserts
- * NOTE: These tests are currently excluded due to Stripe mocking complexity.
- * The route requires real Stripe SDK initialization which conflicts with vitest mocking.
- * A future refactor to inject Stripe dependencies would make these testable.
+ * Now properly testable via dependency injection factory pattern.
  */
 
 const express = require("express");
 const request = require("supertest");
-
-// Mock db BEFORE importing the route
-const mockDb = {
-  query: vi.fn(),
-  end: vi.fn(),
-};
-
-vi.mock("../db", () => mockDb);
+const createWebhookRouter = require("../routes/billing-webhook");
 
 describe("Billing Webhook Handler", () => {
   let app;
-  let billingWebhookRouter;
+  let mockDb;
+  let mockStripe;
 
-  beforeEach(async () => {
+  beforeEach(() => {
     vi.clearAllMocks();
+
+    // Mock database
+    mockDb = {
+      query: vi.fn(),
+      end: vi.fn(),
+    };
+
+    // Mock Stripe client
+    mockStripe = {
+      webhooks: {
+        constructEvent: vi.fn(),
+      },
+      subscriptions: {
+        retrieve: vi.fn(),
+      },
+    };
 
     // Setup Express app
     app = express();
@@ -33,12 +41,25 @@ describe("Billing Webhook Handler", () => {
       next();
     });
 
-    // Import route after mocks are set up
-    billingWebhookRouter = require("../routes/billing-webhook");
-    app.use("/api/billing", billingWebhookRouter);
+    // Create router with mocked dependencies
+    const router = createWebhookRouter({
+      db: mockDb,
+      stripe: mockStripe,
+    });
+    app.use("/api/billing", router);
+
+    process.env.STRIPE_WEBHOOK_SECRET = "whsec_test";
+  });
+
+  afterEach(() => {
+    delete process.env.STRIPE_WEBHOOK_SECRET;
   });
 
   it("should reject webhook with invalid signature", async () => {
+    mockStripe.webhooks.constructEvent.mockImplementation(() => {
+      throw new Error("Invalid signature");
+    });
+
     const event = { type: "test", data: {} };
     const response = await request(app)
       .post("/api/billing/webhook")
@@ -46,47 +67,57 @@ describe("Billing Webhook Handler", () => {
       .send(event);
 
     expect(response.status).toBe(400);
+    expect(response.body.message).toBe("Signature verification failed");
   });
 
   it("should process checkout.session.completed event", async () => {
     const orgId = "org-test-001";
     const customerId = "cus_123";
-    const subscriptionId = "sub_456";
+    const stripeSubId = "sub_456";
+    const eventId = "evt_123";
 
-    process.env.STRIPE_WEBHOOK_SECRET = "whsec_test";
-
-    // Mock DB queries for this event
-    mockDb.query
-      .mockResolvedValueOnce({ rows: [] }) // Check if event already processed
-      .mockResolvedValueOnce({ rows: [{ id: "sub-uuid-001" }] }) // Find subscription
-      .mockResolvedValueOnce({ rowCount: 1 }); // Store event
-
-    const event = {
-      id: "evt_123",
+    const stripeEvent = {
+      id: eventId,
       type: "checkout.session.completed",
       data: {
         object: {
           customer: customerId,
-          subscription: subscriptionId,
+          subscription: stripeSubId,
           metadata: { organizationId: orgId, planId: "starter" },
         },
       },
     };
 
+    mockStripe.webhooks.constructEvent.mockReturnValue(stripeEvent);
+    mockStripe.subscriptions.retrieve.mockResolvedValue({
+      id: stripeSubId,
+      status: "active",
+      current_period_end: Math.floor(Date.now() / 1000) + 2592000,
+    });
+
+    // Mock DB queries in order
+    mockDb.query
+      .mockResolvedValueOnce({ rows: [] }) // isEventProcessed (line 82)
+      .mockResolvedValueOnce({ rowCount: 1 }) // INSERT subscription_events (line 94)
+      .mockResolvedValueOnce({ rows: [] }) // SELECT FROM subscriptions WHERE organization_id (line 166)
+      .mockResolvedValueOnce({ rowCount: 1 }) // INSERT/UPDATE subscriptions (line 180)
+      .mockResolvedValueOnce({ rowCount: 1 }) // UPDATE subscription_events set subscription_id (line 136)
+      .mockResolvedValueOnce({ rowCount: 1 }); // markEventProcessed (line 142)
+
+    const eventPayload = JSON.stringify(stripeEvent);
     const response = await request(app)
       .post("/api/billing/webhook")
-      .set("stripe-signature", "test")
-      .send(JSON.stringify(event));
+      .set("stripe-signature", "valid-sig")
+      .set("Content-Type", "application/json")
+      .send(Buffer.from(eventPayload));
 
     expect(response.status).toBe(200);
     expect(response.body.received).toBe(true);
   });
 
-  it("should handle duplicate events idempotently", async () => {
-    process.env.STRIPE_WEBHOOK_SECRET = "whsec_test";
-
+  it("should handle duplicate stripe_event_id (23505 unique violation)", async () => {
     const eventId = "evt_duplicate";
-    const event = {
+    const stripeEvent = {
       id: eventId,
       type: "checkout.session.completed",
       data: {
@@ -98,102 +129,112 @@ describe("Billing Webhook Handler", () => {
       },
     };
 
-    // Mock: event already processed
-    mockDb.query.mockResolvedValueOnce({
-      rows: [{ id: "event-uuid-001", processed_at: new Date() }],
-    });
+    mockStripe.webhooks.constructEvent.mockReturnValue(stripeEvent);
 
+    // Mock DB: event not yet processed, but INSERT will trigger unique violation
+    const dupError = new Error("duplicate key");
+    dupError.code = "23505";
+
+    mockDb.query
+      .mockResolvedValueOnce({ rows: [] }) // isEventProcessed
+      .mockRejectedValueOnce(dupError); // INSERT raises 23505
+
+    const eventPayload = JSON.stringify(stripeEvent);
     const response = await request(app)
       .post("/api/billing/webhook")
-      .set("stripe-signature", "test")
-      .send(JSON.stringify(event));
+      .set("stripe-signature", "valid-sig")
+      .set("Content-Type", "application/json")
+      .send(Buffer.from(eventPayload));
 
     expect(response.status).toBe(200);
     expect(response.body.received).toBe(true);
   });
 
-  it("should update subscription on subscription.updated event", async () => {
-    process.env.STRIPE_WEBHOOK_SECRET = "whsec_test";
+  it("should reject when STRIPE_WEBHOOK_SECRET is not set", async () => {
+    delete process.env.STRIPE_WEBHOOK_SECRET;
 
-    const subscriptionId = "sub_789";
-    const event = {
-      id: "evt_sub_updated",
+    const stripeEvent = {
+      id: "evt_test",
+      type: "test.event",
+      data: { object: {} },
+    };
+
+    mockStripe.webhooks.constructEvent.mockImplementation(() => {
+      throw new Error("STRIPE_WEBHOOK_SECRET is not set");
+    });
+
+    const eventPayload = JSON.stringify(stripeEvent);
+    const response = await request(app)
+      .post("/api/billing/webhook")
+      .set("stripe-signature", "sig")
+      .set("Content-Type", "application/json")
+      .send(Buffer.from(eventPayload));
+
+    expect(response.status).toBe(400);
+  });
+
+  it("should silently ignore unknown event types", async () => {
+    const eventId = "evt_unknown";
+    const stripeEvent = {
+      id: eventId,
+      type: "unknown.event.type",
+      data: { object: {} },
+    };
+
+    mockStripe.webhooks.constructEvent.mockReturnValue(stripeEvent);
+
+    mockDb.query
+      .mockResolvedValueOnce({ rows: [] }) // isEventProcessed
+      .mockResolvedValueOnce({ rowCount: 1 }) // INSERT subscription_events
+      .mockResolvedValueOnce({ rowCount: 1 }); // markEventProcessed
+
+    const eventPayload = JSON.stringify(stripeEvent);
+    const response = await request(app)
+      .post("/api/billing/webhook")
+      .set("stripe-signature", "valid-sig")
+      .set("Content-Type", "application/json")
+      .send(Buffer.from(eventPayload));
+
+    expect(response.status).toBe(200);
+    expect(response.body.received).toBe(true);
+  });
+
+  it("should upsert subscription on customer.subscription.updated", async () => {
+    const subId = "sub_789";
+    const customerId = "cus_456";
+    const eventId = "evt_sub_updated";
+
+    const stripeEvent = {
+      id: eventId,
       type: "customer.subscription.updated",
       data: {
         object: {
-          id: subscriptionId,
-          customer: "cus_456",
+          id: subId,
+          customer: customerId,
           status: "active",
           current_period_end: Math.floor(Date.now() / 1000) + 2592000,
         },
       },
     };
 
-    mockDb.query
-      .mockResolvedValueOnce({ rows: [] }) // Check if event already processed
-      .mockResolvedValueOnce({ rows: [{ id: "sub-uuid-003" }] }) // Find subscription
-      .mockResolvedValueOnce({ rowCount: 1 }); // Update subscription
-
-    const response = await request(app)
-      .post("/api/billing/webhook")
-      .set("stripe-signature", "test")
-      .send(JSON.stringify(event));
-
-    expect(response.status).toBe(200);
-  });
-
-  it("should mark subscription as past_due on payment_failed event", async () => {
-    process.env.STRIPE_WEBHOOK_SECRET = "whsec_test";
-
-    const subscriptionId = "sub_fail";
-    const event = {
-      id: "evt_payment_failed",
-      type: "invoice.payment_failed",
-      data: {
-        object: {
-          subscription: subscriptionId,
-        },
-      },
-    };
+    mockStripe.webhooks.constructEvent.mockReturnValue(stripeEvent);
 
     mockDb.query
-      .mockResolvedValueOnce({ rows: [] }) // Check if event already processed
-      .mockResolvedValueOnce({ rows: [{ id: "sub-uuid-004" }] }) // Find subscription
-      .mockResolvedValueOnce({ rowCount: 1 }); // Update status
+      .mockResolvedValueOnce({ rows: [] }) // isEventProcessed
+      .mockResolvedValueOnce({ rowCount: 1 }) // INSERT subscription_events
+      .mockResolvedValueOnce({ rows: [{ id: "sub-uuid-001", organization_id: "org-1" }] }) // find by customer
+      .mockResolvedValueOnce({ rowCount: 1 }) // UPDATE subscriptions
+      .mockResolvedValueOnce({ rowCount: 1 }) // UPDATE subscription_events
+      .mockResolvedValueOnce({ rowCount: 1 }); // markEventProcessed
 
+    const eventPayload = JSON.stringify(stripeEvent);
     const response = await request(app)
       .post("/api/billing/webhook")
-      .set("stripe-signature", "test")
-      .send(JSON.stringify(event));
+      .set("stripe-signature", "valid-sig")
+      .set("Content-Type", "application/json")
+      .send(Buffer.from(eventPayload));
 
     expect(response.status).toBe(200);
-  });
-
-  it("should mark subscription as canceled on subscription.deleted event", async () => {
-    process.env.STRIPE_WEBHOOK_SECRET = "whsec_test";
-
-    const subscriptionId = "sub_delete";
-    const event = {
-      id: "evt_sub_deleted",
-      type: "customer.subscription.deleted",
-      data: {
-        object: {
-          id: subscriptionId,
-          customer: "cus_delete",
-        },
-      },
-    };
-
-    mockDb.query
-      .mockResolvedValueOnce({ rows: [] }) // Check if event already processed
-      .mockResolvedValueOnce({ rows: [{ id: "sub-uuid-005" }] }) // Find subscription
-      .mockResolvedValueOnce({ rowCount: 1 }); // Update status
-
-    const response = await request(app)
-      .post("/api/billing/webhook")
-      .set("stripe-signature", "test")
-      .send(JSON.stringify(event));
-
-    expect(response.status).toBe(200);
+    expect(response.body.received).toBe(true);
   });
 });

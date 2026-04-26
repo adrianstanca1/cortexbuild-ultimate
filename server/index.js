@@ -197,7 +197,7 @@ app.set("trust proxy", 1);
 app.use(
   "/api/billing/webhook",
   express.raw({ type: "application/json" }),
-  require("./routes/billing-webhook"),
+  require("./routes/billing-webhook")(),
 );
 
 app.use(express.json({ limit: "10mb" }));
@@ -472,7 +472,7 @@ app.use("/api/prequalification", makeRouter("prequalification"));
 app.use("/api/lettings", require("./routes/lettings"));
 app.use('/api/measuring', require('./routes/measuring'));
 app.use("/api/notifications", require("./routes/notifications"));
-app.use("/api/push", require("./routes/push"));
+app.use("/api/push", require("./routes/push")());
 app.use("/api/team-member-data", require("./routes/team-member-data"));
 app.use("/api/site-permits", makeRouter("site_permits"));
 app.use("/api/equipment-service-logs", makeRouter("equipment_service_logs"));
