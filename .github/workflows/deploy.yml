@@ -18,7 +18,7 @@ jobs:
 
       - uses: actions/setup-node@v6
         with:
-          node-version-file: '.nvmrc'
+          node-version-file: ".nvmrc"
           cache: npm
           cache-dependency-path: package-lock.json
 
@@ -274,20 +274,11 @@ jobs:
               docker start cortexbuild-redis 2>&1 || true
             fi
 
-            # Ensure ollama container exists and is running (API uses 127.0.0.1:11434 with --network host)
-            if docker ps --format '{{.Names}}' | grep -Fx cortexbuild-ollama >/dev/null 2>&1; then
-              :
-            elif docker ps -a --format '{{.Names}}' | grep -Fx cortexbuild-ollama >/dev/null 2>&1; then
-              echo "Starting ollama container..."
-              docker start cortexbuild-ollama 2>&1 || true
-            else
-              echo "Creating ollama container..."
-              docker volume create ollama_data >/dev/null 2>&1 || true
-              docker run -d --name cortexbuild-ollama \
-                --restart always \
-                --network host \
-                -v ollama_data:/root/.ollama \
-                ollama/ollama:latest 2>&1 || true
+            # Ollama: API uses host's systemd ollama at 127.0.0.1:11434 (works because API runs --network host).
+            # A container on --network host would collide on port 11434 and restart-loop forever, so we don't create one.
+            # If host ollama isn't responding, fix that with: systemctl status ollama / systemctl restart ollama.
+            if ! ss -tln 2>/dev/null | grep -q ':11434 '; then
+              echo "WARN: nothing listening on :11434 — host ollama may be down. Run 'systemctl status ollama'."
             fi
 
             # Wait for postgres to be ready
