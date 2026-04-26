@@ -86,6 +86,8 @@ const MODULE_LABELS: Record<Module, string> = {
   'carbon-estimating':   'Carbon Estimating',
   'site-inspections':   'Site Inspections',
   'bim-4d':            '4D BIM',
+  'billing':            'Billing & Plans',
+  'settings-mfa':       'Two-Factor Authentication',
 };
 
 // Module accent colors for the breadcrumb bar

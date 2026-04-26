@@ -88,6 +88,8 @@ const MODULE_LABELS: Record<Module, string> = {
   'carbon-estimating': 'Carbon Estimating',
   'site-inspections': 'Site Inspections',
   'bim-4d': '4D BIM',
+  'billing': 'Billing',
+  'settings-mfa': 'Two-Factor Auth',
 };
 
 export function Breadcrumbs({ items, onNavigate }: BreadcrumbsProps) {

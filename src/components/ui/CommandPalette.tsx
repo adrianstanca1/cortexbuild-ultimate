@@ -158,6 +158,8 @@ const MODULE_LABELS: Record<Module, string> = {
   'carbon-estimating': 'Carbon Estimating',
   'site-inspections': 'Site Inspections',
   'bim-4d': 'BIM 4D',
+  'billing': 'Billing',
+  'settings-mfa': 'Two-Factor Auth',
 };
 
 const MODULE_ICON_COMPONENTS: Partial<Record<Module, LucideIcon>> = {

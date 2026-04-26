@@ -345,6 +345,28 @@ app.use("/api/deploy", deployLimiter, require("./routes/deploy"));
 
 // ─── Metrics endpoint (no auth required for Prometheus scraping) ─────────────
 app.use("/api/metrics", require("./routes/metrics").router);
+
+// ─── Public billing plans endpoint (before auth) ──────────────────────────────
+const plansRouter = require("express").Router();
+const { getAllPlans } = require("./lib/billing/plans");
+plansRouter.get("/plans", (req, res) => {
+  try {
+    const plans = getAllPlans();
+    const sanitized = plans.map((p) => ({
+      id: p.id,
+      name: p.name,
+      description: p.description,
+      priceId: p.priceId,
+      features: p.features,
+    }));
+    res.json({ plans: sanitized });
+  } catch (err) {
+    console.error("[billing/plans]", err.message);
+    res.status(500).json({ message: "Failed to fetch plans" });
+  }
+});
+app.use("/api/billing", plansRouter);
+
 app.use("/api", authMiddleware);
 
 // ─── Protected routes ────────────────────────────────────────────────────────
@@ -395,7 +417,6 @@ app.use(
   requireFeature("FEATURE_AI_AGENTS"),
   require("./routes/workflows"),
 );
-app.use("/api/billing", require("./routes/billing"));
 
 app.use(
   "/api/ai-conversations",
@@ -407,6 +428,10 @@ app.use(
   requireFeature("FEATURE_AI_AGENTS"),
   require("./routes/ai-predictive"),
 );
+
+// ─── Protected billing routes (subscription, checkout, portal) ────────────────
+// GET /api/billing/plans is public and mounted before authMiddleware above
+app.use("/api/billing", require("./routes/billing"));
 
 // ─── CRUD routes ─────────────────────────────────────────────────────────────
 app.use("/api/projects", makeRouter("projects"));

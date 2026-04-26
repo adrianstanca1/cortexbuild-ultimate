@@ -143,6 +143,9 @@ const AdminDashboard = lazy(
 );
 const TeamChat = lazy(() => import("./components/modules/TeamChat"));
 const ActivityFeed = lazy(() => import("./components/modules/ActivityFeed"));
+const BillingPage = lazy(() => import("./pages/BillingPage"));
+const SettingsMfa = lazy(() => import("./pages/SettingsMfa").then(m => ({ default: () => <m.SettingsMfa /> })));
+
 /** Themes that use dark chrome for toasts / loading surfaces */
 const DARK_CHROME_THEMES = new Set([
   "dark",
@@ -557,6 +560,10 @@ function AppShell() {
         return <TeamChat />;
       case "activity-feed":
         return <ActivityFeed />;
+      case "billing":
+        return <BillingPage />;
+      case "settings-mfa":
+        return <SettingsMfa />;
       default:
         return <Dashboard />;
     }

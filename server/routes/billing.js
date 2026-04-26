@@ -11,34 +11,14 @@ const { getPlan, getAllPlans } = require("../lib/billing/plans");
 
 const router = express.Router();
 
-/**
- * GET /api/billing/plans
- * Public endpoint: list available plans without auth.
- * Returns plan info and Stripe price IDs if configured.
- */
-router.get("/plans", (req, res) => {
-  try {
-    const plans = getAllPlans();
-    // Filter out null priceIds to keep response clean
-    const sanitized = plans.map((p) => ({
-      id: p.id,
-      name: p.name,
-      description: p.description,
-      priceId: p.priceId,
-      features: p.features,
-    }));
-    res.json({ plans: sanitized });
-  } catch (err) {
-    console.error("[billing/plans]", err.message);
-    res.status(500).json({ message: "Failed to fetch plans" });
-  }
-});
+// GET /api/billing/plans is now a public endpoint mounted before authMiddleware in server/index.js
+// All routes below this require authentication (mounted after authMiddleware in server/index.js)
 
 /**
  * GET /api/billing/subscription
  * Auth required: fetch the current organization's subscription.
  */
-router.get("/subscription", authMiddleware, async (req, res) => {
+router.get("/subscription", async (req, res) => {
   try {
     const organizationId = req.user.organization_id || req.user.company_id;
     if (!organizationId) {
@@ -69,7 +49,7 @@ router.get("/subscription", authMiddleware, async (req, res) => {
  * Auth required: initiate Stripe Checkout for a given plan.
  * Body: { planId, successUrl?, cancelUrl? }
  */
-router.post("/checkout", authMiddleware, async (req, res) => {
+router.post("/checkout", async (req, res) => {
   try {
     const { planId, successUrl, cancelUrl } = req.body;
     const organizationId = req.user.organization_id || req.user.company_id;
@@ -159,7 +139,7 @@ router.post("/checkout", authMiddleware, async (req, res) => {
  * POST /api/billing/portal
  * Auth required: return Stripe Billing Portal URL for subscription management.
  */
-router.post("/portal", authMiddleware, async (req, res) => {
+router.post("/portal", async (req, res) => {
   try {
     const organizationId = req.user.organization_id || req.user.company_id;
     if (!organizationId) {

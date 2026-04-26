@@ -105,7 +105,9 @@ export type Module =
   | 'webhooks'
   | 'carbon-estimating'
   | 'site-inspections'
-  | 'bim-4d';
+  | 'bim-4d'
+  | 'billing'
+  | 'settings-mfa';
 
 export type ProjectStatus = 'planning' | 'active' | 'on_hold' | 'completed' | 'archived';
 export type TaskStatus = 'todo' | 'in_progress' | 'review' | 'done' | 'blocked';
