@@ -54,11 +54,6 @@ jobs:
       - name: Select Xcode version
         run: sudo xcode-select -s /Applications/Xcode_${{ env.XCODE_VERSION }}.app
 
-      - name: Install iOS Simulator runtime
-        # macos-15 runners ship Xcode 16.2 SDK but the iOS 18.2 simulator runtime is a
-        # separate download. Without it, xcodebuild reports zero simulator destinations.
-        run: xcodebuild -downloadPlatform iOS
-
       - name: Sync Capacitor iOS
         run: npx cap sync ios
 
@@ -70,7 +65,7 @@ jobs:
             -project App.xcodeproj \
             -scheme App
 
-      - name: Build iOS Debug (Simulator)
+      - name: Build iOS Debug (compile-only, generic device)
         if: ${{ github.event.inputs.build_type != 'release' }}
         working-directory: ios/App
         run: |
@@ -79,11 +74,12 @@ jobs:
             -project App.xcodeproj \
             -scheme App \
             -configuration Debug \
-            -sdk iphonesimulator \
-            -destination 'platform=iOS Simulator,name=iPhone 16,OS=latest' \
+            -sdk iphoneos \
+            -destination 'generic/platform=iOS' \
             -derivedDataPath ./DerivedData \
             CODE_SIGNING_ALLOWED=NO \
             OTHER_SWIFT_FLAGS='$(inherited) -enable-experimental-feature NonescapableTypes' \
+            build \
             | xcpretty
 
       - name: Build iOS Release (unsigned)
@@ -103,28 +99,28 @@ jobs:
             DEVELOPMENT_TEAM="" \
             | xcpretty
 
-      - name: Package simulator .app as zip
+      - name: Package debug build
         if: ${{ github.event.inputs.build_type != 'release' }}
         working-directory: ios/App
         run: |
           set -euo pipefail
-          APP_PATH=$(find DerivedData -path '*/Build/Products/Debug-iphonesimulator/App.app' -print -quit)
+          APP_PATH=$(find DerivedData -name "*.app" -not -path "*/Test*" | head -1)
           if [ -n "$APP_PATH" ]; then
             mkdir -p artifacts
-            zip -r artifacts/CortexBuild-iOS-simulator.zip "$APP_PATH"
+            zip -r artifacts/CortexBuild-iOS-debug.zip "$APP_PATH"
             echo "Packaged $APP_PATH"
           else
-            echo "No App.app in Debug-iphonesimulator; listing DerivedData:" >&2
-            find DerivedData -name "*.app" | head -20 || true
+            echo "No .app bundle found" >&2
+            find DerivedData -name "*.app" | head -10
             exit 1
           fi
 
-      - name: Upload simulator artifact
+      - name: Upload debug build artifact
         if: ${{ github.event.inputs.build_type != 'release' }}
         uses: actions/upload-artifact@v7
         with:
-          name: CortexBuild-iOS-Simulator-${{ github.sha }}
-          path: ios/App/artifacts/CortexBuild-iOS-simulator.zip
+          name: CortexBuild-iOS-Debug-${{ github.sha }}
+          path: ios/App/artifacts/CortexBuild-iOS-debug.zip
           retention-days: 14
           if-no-files-found: warn
 
