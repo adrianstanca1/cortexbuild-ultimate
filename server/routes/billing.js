@@ -84,7 +84,13 @@ router.post("/checkout", async (req, res) => {
     let stripeCustomerId = subscription.rows[0]?.stripe_customer_id;
 
     if (!stripeCustomerId) {
-      // Create new Stripe customer
+      // Create new Stripe customer. Race-safe persistence pattern:
+      //  1. Create the customer in Stripe.
+      //  2. INSERT … ON CONFLICT (organization_id) DO NOTHING. If two
+      //     concurrent checkouts both got here, only the first row wins.
+      //  3. Re-SELECT to get the canonical customer_id; if ours lost the
+      //     race, the orphaned Stripe customer is harmless (no subscription
+      //     attached) and gets garbage-collected by Stripe's housekeeping.
       const customer = await stripe.customers.create({
         metadata: {
           organizationId,
@@ -92,6 +98,18 @@ router.post("/checkout", async (req, res) => {
         },
       });
       stripeCustomerId = customer.id;
+
+      await db.query(
+        `INSERT INTO subscriptions (id, organization_id, stripe_customer_id, plan_id, status)
+         VALUES ($1, $2, $3, $4, $5)
+         ON CONFLICT (organization_id) DO NOTHING`,
+        [uuidv4(), organizationId, stripeCustomerId, planId, "incomplete"],
+      );
+      const reread = await db.query(
+        `SELECT stripe_customer_id FROM subscriptions WHERE organization_id = $1 LIMIT 1`,
+        [organizationId],
+      );
+      stripeCustomerId = reread.rows[0]?.stripe_customer_id || stripeCustomerId;
     }
 
     // Create Checkout Session
@@ -118,14 +136,16 @@ router.post("/checkout", async (req, res) => {
       },
     });
 
-    // Store or update subscription record with Stripe customer ID
+    // If the row already existed (from a prior checkout), refresh plan_id only.
+    // The customer_id is intentionally NOT overwritten — we resolved it above
+    // and any change would orphan the existing Stripe customer link.
     await db.query(
       `INSERT INTO subscriptions (id, organization_id, stripe_customer_id, plan_id, status)
        VALUES ($1, $2, $3, $4, $5)
        ON CONFLICT (organization_id) DO UPDATE
-       SET stripe_customer_id = $3
-       WHERE subscriptions.organization_id = $2`,
-      [uuidv4(), organizationId, stripeCustomerId, planId, "incomplete"]
+         SET plan_id = EXCLUDED.plan_id
+       WHERE subscriptions.stripe_customer_id = EXCLUDED.stripe_customer_id`,
+      [uuidv4(), organizationId, stripeCustomerId, planId, "incomplete"],
     );
 
     res.json({ url: session.url });
