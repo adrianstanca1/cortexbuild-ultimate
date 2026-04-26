@@ -13,7 +13,6 @@ module.exports = defineConfig({
     exclude: [
       '**/node_modules/**',
       'test/unified-ai-v2.test.js',
-      'test/unified-ai.test.js', // ditto — top-level await + process.exit, not a vitest spec
       'test/condition-evaluator.simple.test.js',
       'test/workflow-runner.simple.test.js',
     ],
