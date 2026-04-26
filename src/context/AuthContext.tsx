@@ -12,16 +12,31 @@ interface Profile {
   avatar?: string;
 }
 
+/**
+ * Outcome of a sign-in attempt.
+ *  - `'ok'`           — session cookie issued; `user` populated.
+ *  - `'mfa_required'` — server demanded a second factor; AuthContext has set
+ *                       `mfaRequired` + `mfaTempToken` for the UI to render the
+ *                       challenge. The promise resolves; it does NOT throw.
+ *
+ * Real auth failures (bad password, network, server error) still throw —
+ * callers can keep their normal try/catch for those.
+ */
+export type SignInResult = 'ok' | 'mfa_required';
+
 interface AuthContextValue {
   user: Profile | null;
   profile: Profile | null;
   token: string | null;
   loading: boolean;
   isAuthenticated: boolean;
-  signIn: (email: string, password: string) => Promise<void>;
+  mfaRequired: boolean;
+  mfaTempToken: string | null;
+  signIn: (email: string, password: string) => Promise<SignInResult>;
   signUp: (email: string, password: string, name: string, company: string) => Promise<void>;
   signOut: () => Promise<void>;
   updateProfile: (updates: Partial<Profile>) => Promise<void>;
+  resetMfaState: () => void;
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null);
@@ -31,6 +46,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [loading, setLoading] = useState(true);
   // token is kept for NotificationsPanel which reads it; cookie handles actual auth
   const [token] = useState<string | null>(null);
+  const [mfaRequired, setMfaRequired] = useState(false);
+  const [mfaTempToken, setMfaTempToken] = useState<string | null>(null);
 
   // On mount, restore session from cookie-backed auth
   useEffect(() => {
@@ -75,7 +92,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     loadUser();
   }, []);
 
-  const signIn = async (email: string, password: string) => {
+  const signIn = async (email: string, password: string): Promise<SignInResult> => {
     const res = await fetch(`${API_BASE}/auth/login`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -84,9 +101,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     });
     const data = await res.json();
     if (!res.ok) throw new Error(data.message || 'Login failed');
-    // Token is now in httpOnly cookie - only store user data
+
+    // MFA gate: server returns a short-lived temp token instead of a session.
+    // We surface this as a structured result rather than an exception so callers
+    // can branch cleanly without inspecting error message strings.
+    if (data.requires2FA || data.mfaRequired) {
+      setMfaRequired(true);
+      setMfaTempToken(data.tempToken || data.mfaToken || null);
+      return 'mfa_required';
+    }
+
+    // Token is now in httpOnly cookie — only store user data
     setStoredUser(data.user);
     setUser(data.user as Profile);
+    return 'ok';
   };
 
   const signUp = async (email: string, password: string, name: string, company: string) => {
@@ -130,6 +158,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setStoredUser(updated);
   };
 
+  const resetMfaState = () => {
+    setMfaRequired(false);
+    setMfaTempToken(null);
+  };
+
   return (
     <AuthContext.Provider value={{
       user,
@@ -137,10 +170,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       token,
       loading,
       isAuthenticated: !!user,
+      mfaRequired,
+      mfaTempToken,
       signIn,
       signUp,
       signOut,
       updateProfile,
+      resetMfaState,
     }}>
       {children}
     </AuthContext.Provider>

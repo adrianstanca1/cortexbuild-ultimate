@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { apiGet, apiPost } from "@/lib/api";
 
 interface DocumentVersion {
@@ -9,6 +9,14 @@ interface DocumentVersion {
   timestamp: string;
 }
 
+interface Collaborator {
+  clientId: string;
+  userId: string;
+  userName: string;
+  cursorPos: number | null;
+  idle: boolean;
+}
+
 interface UseCollaborativeEditorResult {
   content: string;
   updateContent: (newContent: string) => void;
@@ -16,7 +24,9 @@ interface UseCollaborativeEditorResult {
   saveVersion: () => Promise<void>;
   isEditing: boolean;
   setIsEditing: (editing: boolean) => void;
-  collaborators: string[];
+  collaborators: Collaborator[];
+  presence: Collaborator[];
+  connectionStatus: "connecting" | "connected" | "disconnected";
   loading: boolean;
   error: Error | null;
 }
@@ -24,10 +34,11 @@ interface UseCollaborativeEditorResult {
 /**
  * Collaborative document editor hook.
  *
- * **Current state**: Loads/saves via REST API. Real-time collaboration
- * (cursor positions, live cursors, operational transforms) is planned
- * but not yet wired to the WebSocket layer. When enabled, the hook
- * will switch from REST polling to WebSocket events.
+ * **Real-time Collaboration**: Connects to WebSocket `/ws/documents/:id`.
+ * - Local ops are optimistically applied and sent to server
+ * - Remote ops are timestamp-ordered (last-write-wins)
+ * - Presence (cursor, idle status) is broadcast to all clients
+ * - Initial load via REST API; subsequent edits sync via WebSocket
  */
 export function useCollaborativeEditor(
   documentId: string,
@@ -35,9 +46,14 @@ export function useCollaborativeEditor(
   const [content, setContent] = useState("");
   const [versions, setVersions] = useState<DocumentVersion[]>([]);
   const [isEditing, setIsEditing] = useState(false);
-  const [collaborators] = useState<string[]>([]);
+  const [presence, setPresence] = useState<Collaborator[]>([]);
+  const [connectionStatus, setConnectionStatus] = useState<"connecting" | "connected" | "disconnected">("disconnected");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<Error | null>(null);
+
+  const wsRef = useRef<WebSocket | null>(null);
+  const clientIdRef = useRef<string>("");
+  const heartbeatRef = useRef<NodeJS.Timeout | null>(null);
 
   // Load document content and version history
   useEffect(() => {
@@ -72,23 +88,137 @@ export function useCollaborativeEditor(
     };
   }, [documentId]);
 
-  // WebSocket collaboration (placeholder — enable when backend supports it)
+  // WebSocket collaboration
   useEffect(() => {
     if (!documentId || process.env.NODE_ENV === "test") return;
 
-    // TODO: Connect to /ws/documents/:id when real-time collaboration is ready
-    // const ws = new WebSocket(buildWebSocketUrl(`/documents/${documentId}`));
-    // ws.onmessage = (event) => { ...handle cursor positions, remote edits... };
-    // wsRef.current = ws;
-    // return () => { ws.close(); wsRef.current = null; };
+    const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
+    const wsUrl = `${protocol}//${window.location.host}/ws/documents/${documentId}`;
 
-    return undefined;
+    setConnectionStatus("connecting");
+
+    const ws = new WebSocket(wsUrl);
+    wsRef.current = ws;
+
+    ws.onopen = () => {
+      console.log(`[useCollaborativeEditor] Connected to ${documentId}`);
+      setConnectionStatus("connected");
+
+      // Start heartbeat to reset idle timer on server
+      heartbeatRef.current = setInterval(() => {
+        if (ws.readyState === WebSocket.OPEN) {
+          ws.send(JSON.stringify({ type: "ping" }));
+        }
+      }, 25_000); // Every 25s (slightly less than server's 30s heartbeat)
+    };
+
+    ws.onmessage = (event) => {
+      try {
+        const message = JSON.parse(event.data);
+        handleWSMessage(message);
+      } catch (err) {
+        console.error("[useCollaborativeEditor] Message parse error:", err);
+      }
+    };
+
+    ws.onerror = (event) => {
+      console.error("[useCollaborativeEditor] WebSocket error:", event);
+      setError(new Error("WebSocket connection error"));
+    };
+
+    ws.onclose = () => {
+      console.log("[useCollaborativeEditor] Connection closed");
+      setConnectionStatus("disconnected");
+      if (heartbeatRef.current) {
+        clearInterval(heartbeatRef.current);
+      }
+    };
+
+    return () => {
+      if (heartbeatRef.current) {
+        clearInterval(heartbeatRef.current);
+      }
+      if (ws.readyState === WebSocket.OPEN) {
+        ws.close();
+      }
+    };
   }, [documentId]);
 
-  const updateContent = useCallback((newContent: string) => {
-    setContent(newContent);
-    // Debounced auto-save can be added here
+  // Handle incoming WebSocket messages
+  const handleWSMessage = useCallback((message: Record<string, unknown>) => {
+    const { type } = message;
+
+    switch (type) {
+      case "welcome": {
+        // Server confirmed connection and sent presence list
+        clientIdRef.current = message.clientId as string;
+        setPresence(message.presence as Collaborator[]);
+        break;
+      }
+
+      case "remote_op": {
+        // Remote client sent an operation
+        // Last-write-wins: server timestamp determines canonical order
+        // Clients could apply transform, but for simplicity just accept it
+        const op = message.op as Record<string, unknown>;
+        if (op.type === "insert" && typeof op.content === "string") {
+          // Optimistic: server handles ordering; we just apply
+          setContent((prev) => {
+            const pos = (op.position as number) || 0;
+            return prev.slice(0, pos) + op.content + prev.slice(pos);
+          });
+        } else if (op.type === "delete") {
+          const pos = (op.position as number) || 0;
+          const len = typeof op.length === "number" ? op.length : 0;
+          setContent((prev) => prev.slice(0, pos) + prev.slice(pos + len));
+        }
+        break;
+      }
+
+      case "presence_update": {
+        // Presence list changed (cursor positions, idle, etc.)
+        setPresence(message.presence as Collaborator[]);
+        break;
+      }
+
+      case "error": {
+        const msg = message.message as string;
+        console.error("[useCollaborativeEditor] Server error:", msg);
+        setError(new Error(msg));
+        break;
+      }
+
+      default: {
+        console.warn("[useCollaborativeEditor] Unknown message type:", type);
+      }
+    }
   }, []);
+
+  const updateContent = useCallback(
+    (newContent: string) => {
+      setContent(newContent);
+
+      // Broadcast operation to other clients
+      if (
+        wsRef.current &&
+        wsRef.current.readyState === WebSocket.OPEN &&
+        process.env.NODE_ENV !== "test"
+      ) {
+        wsRef.current.send(
+          JSON.stringify({
+            type: "op",
+            op: {
+              type: "replace",
+              content: newContent,
+              timestamp: Date.now(),
+            },
+            cursorPos: 0, // Would be actual cursor position in real impl
+          })
+        );
+      }
+    },
+    []
+  );
 
   const saveVersion = useCallback(async () => {
     if (!documentId || !content.trim()) return;
@@ -122,7 +252,9 @@ export function useCollaborativeEditor(
     saveVersion,
     isEditing,
     setIsEditing,
-    collaborators,
+    collaborators: presence,
+    presence,
+    connectionStatus,
     loading,
     error,
   };

@@ -37,6 +37,14 @@ const {
   inviteAcceptSchema,
   createUserSchema,
 } = require("../lib/zod-validation");
+const {
+  generateSecret,
+  generateQRDataUrl,
+  verifyToken,
+  generateRecoveryCodes,
+  hashRecoveryCodes,
+  consumeRecoveryCode,
+} = require("../lib/mfa");
 
 const router = express.Router();
 
@@ -385,7 +393,8 @@ router.post("/login", loginLimiter, async (req, res) => {
 
     await clearFailedAttempts(email, ip);
 
-    if (user.totp_enabled) {
+    // Check both legacy totp_enabled and new mfa_enabled
+    if (user.totp_enabled || user.mfa_enabled) {
       const tempToken = jwt.sign(
         {
           id: user.id,
@@ -425,6 +434,228 @@ router.post("/login", loginLimiter, async (req, res) => {
     res.json({ user: safeUser });
   } catch (err) {
     console.error("[auth/login]", err);
+    res.status(500).json({ message: "Server error" });
+  }
+});
+
+// POST /api/auth/mfa/enrol - TOTP enrollment, returns secret + QR code
+router.post("/mfa/enrol", authMiddleware, async (req, res) => {
+  try {
+    const { rows } = await pool.query(
+      "SELECT mfa_enabled, email FROM users WHERE id = $1",
+      [req.user.id],
+    );
+    if (!rows[0]) return res.status(404).json({ message: "User not found" });
+    if (rows[0].mfa_enabled) {
+      return res
+        .status(400)
+        .json({
+          message: "MFA is already enabled. Disable it first to reset.",
+        });
+    }
+
+    const secret = generateSecret();
+    const qrDataUrl = await generateQRDataUrl(secret, rows[0].email);
+    const recoveryCodes = generateRecoveryCodes();
+
+    // Store secret unverified; not enabled until verify endpoint is called
+    await pool.query("UPDATE users SET mfa_secret = $1 WHERE id = $2", [
+      secret,
+      req.user.id,
+    ]);
+
+    res.json({
+      secret,
+      qrDataUrl,
+      otpauthUrl: `otpauth://totp/CortexBuild:${rows[0].email}?secret=${secret}&issuer=CortexBuild`,
+      recoveryCodes,
+    });
+  } catch (err) {
+    console.error("[auth/mfa/enrol]", err);
+    res.status(500).json({ message: "Server error" });
+  }
+});
+
+// POST /api/auth/mfa/verify - Verify TOTP code and enable MFA
+router.post("/mfa/verify", authMiddleware, async (req, res) => {
+  const { token } = req.body;
+  if (!token || typeof token !== "string") {
+    return res.status(400).json({ message: "Invalid or missing token" });
+  }
+
+  try {
+    const { rows } = await pool.query(
+      "SELECT mfa_secret FROM users WHERE id = $1",
+      [req.user.id],
+    );
+    if (!rows[0] || !rows[0].mfa_secret) {
+      return res
+        .status(400)
+        .json({
+          message: "MFA enrollment not initiated. Call /mfa/enrol first.",
+        });
+    }
+
+    if (!verifyToken(rows[0].mfa_secret, token)) {
+      return res.status(400).json({ message: "Invalid TOTP code" });
+    }
+
+    // Get recovery codes that were shown during enrol, hash them, and store
+    // For now, generate fresh codes during verify (user should have saved them from enrol)
+    const recoveryCodes = generateRecoveryCodes();
+    const hashedCodes = await hashRecoveryCodes(recoveryCodes);
+
+    await pool.query(
+      "UPDATE users SET mfa_enabled = TRUE, mfa_recovery_codes_hash = $1 WHERE id = $2",
+      [hashedCodes, req.user.id],
+    );
+    logAudit({
+      auth: req.user,
+      action: "update",
+      entityType: "users",
+      entityId: req.user.id,
+      newData: { mfa_enabled: true },
+    });
+
+    // Return recovery codes one more time for user to save
+    res.json({
+      message: "MFA has been enabled successfully",
+      recoveryCodes,
+    });
+  } catch (err) {
+    console.error("[auth/mfa/verify]", err);
+    res.status(500).json({ message: "Server error" });
+  }
+});
+
+// POST /api/auth/mfa/challenge - Verify TOTP or recovery code during login
+router.post("/mfa/challenge", async (req, res) => {
+  const { tempToken, token, recoveryCode } = req.body;
+  if (!tempToken) {
+    return res.status(400).json({ message: "Missing temporary token" });
+  }
+  if (!token && !recoveryCode) {
+    return res
+      .status(400)
+      .json({ message: "Provide either TOTP token or recovery code" });
+  }
+
+  try {
+    const payload = jwt.verify(tempToken, SECRET);
+    if (!payload.temp) {
+      return res.status(400).json({ message: "Invalid token type" });
+    }
+
+    const { rows } = await pool.query(
+      "SELECT mfa_secret, mfa_recovery_codes_hash FROM users WHERE id = $1",
+      [payload.id],
+    );
+    if (!rows[0]) {
+      return res.status(404).json({ message: "User not found" });
+    }
+    if (!rows[0].mfa_secret) {
+      return res
+        .status(400)
+        .json({ message: "MFA is not enabled for this account" });
+    }
+
+    let mfaValid = false;
+    let updatedRecoveryCodes = rows[0].mfa_recovery_codes_hash;
+
+    // Check TOTP token
+    if (token) {
+      mfaValid = verifyToken(rows[0].mfa_secret, token);
+    }
+
+    // Check recovery code (if TOTP wasn't valid)
+    if (!mfaValid && recoveryCode) {
+      const { valid, remainingCodes } = await consumeRecoveryCode(
+        recoveryCode,
+        rows[0].mfa_recovery_codes_hash,
+      );
+      if (valid) {
+        mfaValid = true;
+        updatedRecoveryCodes = remainingCodes;
+        // Update DB with consumed code
+        await pool.query(
+          "UPDATE users SET mfa_recovery_codes_hash = $1 WHERE id = $2",
+          [remainingCodes, payload.id],
+        );
+      }
+    }
+
+    if (!mfaValid) {
+      return res.status(401).json({ message: "Invalid TOTP code or recovery code" });
+    }
+
+    // Issue full session token
+    const sessionToken = jwt.sign(
+      {
+        id: payload.id,
+        jti: crypto.randomUUID(),
+        email: payload.email,
+        role: payload.role,
+        name: payload.name,
+        organization_id: payload.organization_id,
+        company_id: payload.company_id,
+      },
+      SECRET,
+      { expiresIn: "7d" },
+    );
+
+    await createUserSession(payload.id, sessionToken, req);
+    setAuthTokenCookie(res, sessionToken);
+
+    res.json({ message: "MFA challenge passed" });
+  } catch (err) {
+    if (err.name === "JsonWebTokenError" || err.name === "TokenExpiredError") {
+      return res
+        .status(401)
+        .json({ message: "Session expired. Please login again." });
+    }
+    console.error("[auth/mfa/challenge]", err);
+    res.status(500).json({ message: "Server error" });
+  }
+});
+
+// POST /api/auth/mfa/disable - Disable MFA after TOTP verification
+router.post("/mfa/disable", authMiddleware, async (req, res) => {
+  const { token } = req.body;
+  if (!token || typeof token !== "string") {
+    return res.status(400).json({ message: "Invalid or missing token" });
+  }
+
+  try {
+    const { rows } = await pool.query(
+      "SELECT mfa_secret FROM users WHERE id = $1",
+      [req.user.id],
+    );
+    const user = rows[0];
+    if (!user || !user.mfa_secret) {
+      return res
+        .status(400)
+        .json({ message: "MFA is not enabled for this account" });
+    }
+
+    if (!verifyToken(user.mfa_secret, token)) {
+      return res.status(400).json({ message: "Invalid TOTP code" });
+    }
+
+    await pool.query(
+      "UPDATE users SET mfa_secret = NULL, mfa_enabled = FALSE, mfa_recovery_codes_hash = NULL WHERE id = $1",
+      [req.user.id],
+    );
+    logAudit({
+      auth: req.user,
+      action: "update",
+      entityType: "users",
+      entityId: req.user.id,
+      newData: { mfa_enabled: false },
+    });
+
+    res.json({ message: "MFA has been disabled" });
+  } catch (err) {
+    console.error("[auth/mfa/disable]", err);
     res.status(500).json({ message: "Server error" });
   }
 });

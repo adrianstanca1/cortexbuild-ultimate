@@ -30,6 +30,7 @@ const authRoutes = require("./routes/auth");
 const rateLimiter = require("./middleware/rateLimiter");
 const requestLogger = require("./middleware/requestLogger");
 const { initWebSocket } = require("./lib/websocket");
+const { attachDocumentWS } = require("./routes/ws-documents");
 const {
   requireFeature,
   isFeatureEnabled,
@@ -76,6 +77,11 @@ if (redisUrl) {
 
 // Initialize WebSocket server (gated by feature flag — skips server creation when disabled)
 initWebSocket(server, { enabled: isFeatureEnabled("FEATURE_WEBSOCKET") });
+
+// Realtime collaborative document rooms (separate WS upgrade path /ws/documents/:id)
+const docWSHandlers = isFeatureEnabled("FEATURE_WEBSOCKET")
+  ? attachDocumentWS(server)
+  : null;
 
 // ─── Session & Passport middleware for OAuth ─────────────────────────────────
 const sessionSecret = process.env.SESSION_SECRET || process.env.JWT_SECRET;
@@ -185,6 +191,15 @@ app.use(
   }),
 );
 app.set("trust proxy", 1);
+
+// Stripe webhook MUST be mounted before express.json so the handler can verify
+// the signature against the raw request body. Express.raw() preserves it.
+app.use(
+  "/api/billing/webhook",
+  express.raw({ type: "application/json" }),
+  require("./routes/billing-webhook"),
+);
+
 app.use(express.json({ limit: "10mb" }));
 app.use(requestLogger); // Request logging with slow request detection
 app.use(cookieParser());
@@ -375,6 +390,12 @@ app.use(
   requireFeature("FEATURE_AI_AGENTS"),
   require("./routes/autorepair"),
 );
+app.use(
+  "/api/workflows",
+  requireFeature("FEATURE_AI_AGENTS"),
+  require("./routes/workflows"),
+);
+app.use("/api/billing", require("./routes/billing"));
 
 app.use(
   "/api/ai-conversations",
@@ -506,6 +527,9 @@ process.on("unhandledRejection", (reason, promise) => {
 // ─── Graceful shutdown — drain connections before exiting ───────────────────────────
 function gracefulShutdown(signal) {
   console.log(`\n[${signal}] Graceful shutdown initiated...`);
+  if (docWSHandlers) {
+    try { docWSHandlers.cleanup(); } catch (e) { console.error("[ws-documents] cleanup error:", e.message); }
+  }
   server.close(async () => {
     console.log("[HTTP] Server closed");
     try {

@@ -10,6 +10,7 @@
 const express = require('express');
 const pool    = require('../db');
 const auth    = require('../middleware/auth');
+const { dispatch } = require('../lib/workflow/dispatcher');
 
 const router = express.Router();
 router.use(auth);
@@ -71,9 +72,27 @@ router.post('/recommendations/:id/accept', async (req, res) => {
       return res.status(404).json({ message: 'Recommendation not found' });
     }
 
-    // TODO: Execute auto_actions if any (e.g., create_change_order)
     const rec = rows[0];
     console.log(`[autoimprove] Recommendation ${id} accepted by user ${req.user.id}`);
+
+    // Dispatch workflow event: autoimprove.suggestion.executed
+    // If any workflow has a trigger for this event, it will automatically run.
+    // auto_actions from the recommendation are passed as the event payload.
+    const workflowPayload = {
+      recommendation_id: rec.id,
+      auto_actions: rec.auto_actions,
+      accepted_by: req.user.id,
+      timestamp: new Date().toISOString(),
+    };
+
+    dispatch('autoimprove.suggestion.executed', workflowPayload, {
+      pool,
+      user: req.user,
+      organizationId: tid,
+    }).catch((err) => {
+      // Log but don't fail the request if workflow dispatch errors
+      console.error('[autoimprove] Workflow dispatch error:', err.message);
+    });
 
     res.json({ id: rec.id, status: 'accepted' });
   } catch (err) {
