@@ -21,7 +21,7 @@ async function queryOllama(prompt, model = "qwen3.5:latest") {
                 prompt: prompt,
                 stream: false
             }),
-            timeout: 10000 // 10 second timeout
+            timeout: 60000 // 60s — gemma4 (9.6 GB) cold inference can exceed 10s
         });
 
         if (!response.ok) {
