@@ -5,7 +5,7 @@
  */
 
 const pool = require('../../db');
-const { sendApnsNotification } = require('./apns-client');
+const { sendApnsNotification, isApnsConfigured } = require('./apns-client');
 
 /**
  * Send push to a user across all registered devices
@@ -15,6 +15,12 @@ const { sendApnsNotification } = require('./apns-client');
 async function sendPushToUser(userId, payload) {
   if (!userId) {
     console.warn('[Push] sendPushToUser called without userId');
+    return;
+  }
+
+  // No push backend wired up at all? Skip the DB roundtrip and exit silently.
+  // (apns-client warns once on first call so operators see a single hint.)
+  if (!isApnsConfigured()) {
     return;
   }
 

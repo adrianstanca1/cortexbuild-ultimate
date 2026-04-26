@@ -7,6 +7,20 @@
 
 const apn = require('@parse/node-apn');
 let provider = null;
+let warnedNotConfigured = false;
+
+/**
+ * Lightweight check that the APNs env is fully configured. Used to short-circuit
+ * before any I/O so unconfigured deployments don't flood logs with errors.
+ */
+function isApnsConfigured() {
+  return Boolean(
+    process.env.APNS_KEY_ID &&
+    process.env.APNS_TEAM_ID &&
+    process.env.APNS_BUNDLE_ID &&
+    (process.env.APNS_KEY_PATH || process.env.APNS_KEY_CONTENTS)
+  );
+}
 
 function getApnsProvider() {
   if (provider) return provider;
@@ -53,6 +67,16 @@ function getApnsProvider() {
 }
 
 async function sendApnsNotification(token, payload) {
+  // Defensive short-circuit: callers should ideally check isApnsConfigured()
+  // first, but if APNs isn't set up at all we want to no-op cleanly rather
+  // than spam errors per push attempt.
+  if (!isApnsConfigured()) {
+    if (!warnedNotConfigured) {
+      console.warn('[APNs] Not configured — push send is a no-op. Set APNS_* env vars to enable.');
+      warnedNotConfigured = true;
+    }
+    return { ok: false, reason: 'NotConfigured', error: 'APNs env not set' };
+  }
   try {
     const prov = getApnsProvider();
     const notification = new apn.Notification({
@@ -96,4 +120,5 @@ async function sendApnsNotification(token, payload) {
 module.exports = {
   getApnsProvider,
   sendApnsNotification,
+  isApnsConfigured,
 };
