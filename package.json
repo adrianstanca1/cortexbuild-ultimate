@@ -136,7 +136,7 @@
   },
   "overrides": {
     "web-ifc-three": {
-      "three": "^0.183.2"
+      "three": "^0.184.0"
     },
     "serialize-javascript": "7.0.5"
   }
