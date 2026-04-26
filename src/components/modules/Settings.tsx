@@ -61,22 +61,35 @@ export function Settings() {
   useEffect(() => {
     const loadCompanySettings = async () => {
       try {
-        const data = await companyApi.get();
+        const data = (await companyApi.get()) as Partial<{
+          name: string;
+          companiesHouseNumber: string;
+          vatNumber: string;
+          utrNumber: string;
+          hmrcOffice: string;
+          registeredAddress: string;
+          phone: string;
+          email: string;
+          website: string;
+          cisContractor: boolean;
+          cisSubcontractor: boolean;
+          logoUrl: string;
+        }> | null;
         if (data) {
           setCompany(prev => ({
             ...prev,
-            name: (data as any).name || prev.name,
-            reg: (data as any).companiesHouseNumber || prev.reg,
-            vat: (data as any).vatNumber || prev.vat,
-            utr: (data as any).utrNumber || prev.utr,
-            hmrc_office: (data as any).hmrcOffice || prev.hmrc_office,
-            address: (data as any).registeredAddress || prev.address,
-            phone: (data as any).phone || prev.phone,
-            email: (data as any).email || prev.email,
-            website: (data as any).website || prev.website,
-            cis_contractor: (data as any).cisContractor !== undefined ? (data as any).cisContractor : prev.cis_contractor,
-            cis_subcontractor: (data as any).cisSubcontractor !== undefined ? (data as any).cisSubcontractor : prev.cis_subcontractor,
-            logo_url: (data as any).logoUrl || prev.logo_url,
+            name: data.name || prev.name,
+            reg: data.companiesHouseNumber || prev.reg,
+            vat: data.vatNumber || prev.vat,
+            utr: data.utrNumber || prev.utr,
+            hmrc_office: data.hmrcOffice || prev.hmrc_office,
+            address: data.registeredAddress || prev.address,
+            phone: data.phone || prev.phone,
+            email: data.email || prev.email,
+            website: data.website || prev.website,
+            cis_contractor: data.cisContractor !== undefined ? data.cisContractor : prev.cis_contractor,
+            cis_subcontractor: data.cisSubcontractor !== undefined ? data.cisSubcontractor : prev.cis_subcontractor,
+            logo_url: data.logoUrl || prev.logo_url,
           }));
         }
       } catch (err) {

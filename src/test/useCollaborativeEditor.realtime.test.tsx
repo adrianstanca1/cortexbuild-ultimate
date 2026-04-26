@@ -12,9 +12,18 @@ import { useCollaborativeEditor } from "@/hooks/useCollaborativeEditor";
 // Mock global fetch for initial document load
 global.fetch = vi.fn();
 
+// mock-socket's Server.on("connection") hands back its internal socket type
+// which has no public type defs; a small structural alias keeps tests typed
+// without `any`.
+interface MockServerSocket {
+  send: (msg: string) => void;
+  close: () => void;
+  on: (event: string, cb: (data: string) => void) => void;
+}
+
 describe("useCollaborativeEditor (Real-time)", () => {
   let server: Server;
-  let serverSocket: any = null;
+  let serverSocket: MockServerSocket | null = null;
 
   beforeEach(() => {
     // In jsdom, window.location.host defaults to "localhost:3000"
@@ -24,20 +33,22 @@ describe("useCollaborativeEditor (Real-time)", () => {
     // Initialize mock-socket Server
     server = new Server(WS_URL);
 
-    server.on("connection", (socket: any) => {
-      serverSocket = socket;
+    server.on("connection", (socket: unknown) => {
+      serverSocket = socket as MockServerSocket;
 
-      // Optional: handle incoming messages from client
-      socket.on("message", (data: string) => {
-        // Handle client messages if needed
+      // Listener slot retained so the mock emits 'message' without throwing;
+      // we don't currently assert inbound payloads here.
+      serverSocket.on("message", (_data: string) => {
+        /* no-op */
       });
     });
 
-    // Replace global WebSocket with mock-socket
-    (global.WebSocket as any) = MockWebSocket;
+    // Replace global WebSocket with mock-socket via a structural cast.
+    (global as unknown as { WebSocket: typeof WebSocket }).WebSocket =
+      MockWebSocket as unknown as typeof WebSocket;
 
     // Mock fetch for initial document load
-    (global.fetch as any).mockResolvedValue({
+    vi.mocked(global.fetch).mockResolvedValue({
       ok: true,
       status: 200,
       json: async () => ({
@@ -124,7 +135,7 @@ describe("useCollaborativeEditor (Real-time)", () => {
 
   it("should handle delete operations", async () => {
     // Mock fetch to return empty initial content for this test
-    (global.fetch as any).mockResolvedValueOnce({
+    vi.mocked(global.fetch).mockResolvedValueOnce({
       ok: true,
       status: 200,
       json: async () => ({
@@ -281,6 +292,8 @@ describe("useCollaborativeEditor (Real-time)", () => {
 
   it("should handle invalid messages gracefully", async () => {
     const consoleSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+    // result intentionally unused — we assert via consoleSpy + serverSocket
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const { result } = renderHook(() => useCollaborativeEditor("doc-123"));
 
     await act(async () => {
@@ -329,7 +342,7 @@ describe("useCollaborativeEditor (Real-time)", () => {
 
     // Verify setInterval was called with 25_000ms for the heartbeat
     const heartbeatCalls = setIntervalSpy.mock.calls.filter(
-      (call: any) => call[1] === 25_000
+      (call) => call[1] === 25_000,
     );
 
     // The hook sets up a 25-second heartbeat interval on connection

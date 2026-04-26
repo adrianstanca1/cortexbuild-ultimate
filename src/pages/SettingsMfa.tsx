@@ -16,7 +16,7 @@ interface MfaDisableState {
 /**
  * SettingsMfa: Manage TOTP-based MFA enrollment and disablement.
  */
-export function SettingsMfa({ onClose }: { onClose?: () => void }) {
+export function SettingsMfa({ onClose: _onClose }: { onClose?: () => void } = {}) {
   const [mfaEnabled, setMfaEnabled] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');

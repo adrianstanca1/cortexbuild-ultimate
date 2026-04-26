@@ -103,7 +103,6 @@ export function useCollaborativeEditor(
     wsRef.current = ws;
 
     ws.onopen = () => {
-      console.log(`[useCollaborativeEditor] Connected to ${documentId}`);
       setConnectionStatus("connected");
 
       // Start heartbeat to reset idle timer on server
@@ -129,7 +128,6 @@ export function useCollaborativeEditor(
     };
 
     ws.onclose = () => {
-      console.log("[useCollaborativeEditor] Connection closed");
       setConnectionStatus("disconnected");
       if (heartbeatRef.current) {
         clearInterval(heartbeatRef.current);
@@ -144,6 +142,10 @@ export function useCollaborativeEditor(
         ws.close();
       }
     };
+    // handleWSMessage is intentionally excluded — it only calls setState
+    // (stable across renders) and including it would tear down + reopen the
+    // WS on every render, which is not what we want.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [documentId]);
 
   // Handle incoming WebSocket messages

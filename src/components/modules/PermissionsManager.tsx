@@ -87,7 +87,7 @@ export function PermissionsManager() {
     setEditedPermissions((role.permissions as Record<string, string[]>) || {});
   };
 
-  const togglePermission = (module: string, action: string) => {
+  const _togglePermission = (module: string, action: string) => {
     setEditedPermissions(prev => {
       const modulePerms = prev[module] || [];
       if (modulePerms.includes(action)) {
@@ -97,7 +97,7 @@ export function PermissionsManager() {
     });
   };
 
-  const toggleModuleWildcard = (module: string) => {
+  const _toggleModuleWildcard = (module: string) => {
     setEditedPermissions(prev => {
       if (prev[module]?.includes('*')) {
         return { ...prev, [module]: [] };
@@ -106,14 +106,14 @@ export function PermissionsManager() {
     });
   };
 
-  const hasPermission = (module: string, action: string): boolean => {
+  const _hasPermission = (module: string, action: string): boolean => {
     const modulePerms = editedPermissions[module] || [];
     if (modulePerms.includes('*')) return true;
     if (editedPermissions['*']?.includes('*')) return true;
     return modulePerms.includes(action);
   };
 
-  const saveChanges = async () => {
+  const _saveChanges = async () => {
     if (!selectedRole) return;
     if (selectedRole.isSystem) {
       toast.error('Cannot modify system roles');
@@ -131,7 +131,7 @@ export function PermissionsManager() {
     }
   };
 
-  const deleteRole = async (roleId: string | number) => {
+  const _deleteRole = async (roleId: string | number) => {
     if (!window.confirm('Delete this role? This action cannot be undone.')) return;
     try {
       await permissionsApi.deleteRole(String(roleId));
@@ -143,7 +143,7 @@ export function PermissionsManager() {
     }
   };
 
-  const toggleModule = (module: string) => {
+  const _toggleModule = (module: string) => {
     setExpandedModules(prev => {
       const next = new Set(prev);
       if (next.has(module)) next.delete(module);

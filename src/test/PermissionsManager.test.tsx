@@ -41,8 +41,8 @@ describe('PermissionsManager', () => {
   });
 
   it('renders and loads roles + permissions on mount', async () => {
-    (api.permissionsApi.getRoles as any).mockResolvedValue(mockRoles);
-    (api.permissionsApi.getPermissions as any).mockResolvedValue(mockPermissions);
+    vi.mocked(api.permissionsApi.getRoles).mockResolvedValue(mockRoles);
+    vi.mocked(api.permissionsApi.getPermissions).mockResolvedValue(mockPermissions);
 
     render(<PermissionsManager />);
 
@@ -60,8 +60,8 @@ describe('PermissionsManager', () => {
   });
 
   it('selects a role and displays its permissions', async () => {
-    (api.permissionsApi.getRoles as any).mockResolvedValue(mockRoles);
-    (api.permissionsApi.getPermissions as any).mockResolvedValue(mockPermissions);
+    vi.mocked(api.permissionsApi.getRoles).mockResolvedValue(mockRoles);
+    vi.mocked(api.permissionsApi.getPermissions).mockResolvedValue(mockPermissions);
 
     render(<PermissionsManager />);
 
@@ -78,9 +78,9 @@ describe('PermissionsManager', () => {
   });
 
   it('handles bulk delete of custom roles', async () => {
-    (api.permissionsApi.getRoles as any).mockResolvedValue(mockRoles);
-    (api.permissionsApi.getPermissions as any).mockResolvedValue(mockPermissions);
-    (api.permissionsApi.deleteRole as any).mockResolvedValue(undefined);
+    vi.mocked(api.permissionsApi.getRoles).mockResolvedValue(mockRoles);
+    vi.mocked(api.permissionsApi.getPermissions).mockResolvedValue(mockPermissions);
+    vi.mocked(api.permissionsApi.deleteRole).mockResolvedValue(undefined);
 
     render(<PermissionsManager />);
 
@@ -102,8 +102,8 @@ describe('PermissionsManager', () => {
   });
 
   it('shows error when loading fails', async () => {
-    (api.permissionsApi.getRoles as any).mockRejectedValue(new Error('Network error'));
-    (api.permissionsApi.getPermissions as any).mockRejectedValue(new Error('Network error'));
+    vi.mocked(api.permissionsApi.getRoles).mockRejectedValue(new Error('Network error'));
+    vi.mocked(api.permissionsApi.getPermissions).mockRejectedValue(new Error('Network error'));
 
     render(<PermissionsManager />);
 
@@ -114,10 +114,10 @@ describe('PermissionsManager', () => {
   });
 
   it('displays loading spinner while data loads', async () => {
-    (api.permissionsApi.getRoles as any).mockImplementation(
+    vi.mocked(api.permissionsApi.getRoles).mockImplementation(
       () => new Promise(resolve => setTimeout(() => resolve(mockRoles), 100))
     );
-    (api.permissionsApi.getPermissions as any).mockImplementation(
+    vi.mocked(api.permissionsApi.getPermissions).mockImplementation(
       () => new Promise(resolve => setTimeout(() => resolve(mockPermissions), 100))
     );
 
@@ -133,9 +133,9 @@ describe('PermissionsManager', () => {
   });
 
   it('creates a new custom role', async () => {
-    (api.permissionsApi.getRoles as any).mockResolvedValue(mockRoles);
-    (api.permissionsApi.getPermissions as any).mockResolvedValue(mockPermissions);
-    (api.permissionsApi.createRole as any).mockResolvedValue({
+    vi.mocked(api.permissionsApi.getRoles).mockResolvedValue(mockRoles);
+    vi.mocked(api.permissionsApi.getPermissions).mockResolvedValue(mockPermissions);
+    vi.mocked(api.permissionsApi.createRole).mockResolvedValue({
       id: 'custom_2',
       name: 'New Role',
       description: 'Brand new',
@@ -172,8 +172,8 @@ describe('PermissionsManager', () => {
   });
 
   it('prevents modification of system roles', async () => {
-    (api.permissionsApi.getRoles as any).mockResolvedValue(mockRoles);
-    (api.permissionsApi.getPermissions as any).mockResolvedValue(mockPermissions);
+    vi.mocked(api.permissionsApi.getRoles).mockResolvedValue(mockRoles);
+    vi.mocked(api.permissionsApi.getPermissions).mockResolvedValue(mockPermissions);
 
     render(<PermissionsManager />);
 

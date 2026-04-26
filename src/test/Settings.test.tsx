@@ -64,9 +64,9 @@ describe('Settings', () => {
   });
 
   it('renders the Settings component with all tabs', async () => {
-    (api.companyApi.get as any).mockResolvedValue(mockCompanyData);
-    (api.usersApi.getAll as any).mockResolvedValue(mockUsers);
-    (api.settingsApi.getAll as any).mockResolvedValue(mockSettings);
+    vi.mocked(api.companyApi.get).mockResolvedValue(mockCompanyData);
+    vi.mocked(api.usersApi.getAll).mockResolvedValue(mockUsers);
+    vi.mocked(api.settingsApi.getAll).mockResolvedValue(mockSettings);
 
     render(<Settings />);
 
@@ -83,9 +83,9 @@ describe('Settings', () => {
   });
 
   it('loads company settings on mount', async () => {
-    (api.companyApi.get as any).mockResolvedValue(mockCompanyData);
-    (api.usersApi.getAll as any).mockResolvedValue(mockUsers);
-    (api.settingsApi.getAll as any).mockResolvedValue(mockSettings);
+    vi.mocked(api.companyApi.get).mockResolvedValue(mockCompanyData);
+    vi.mocked(api.usersApi.getAll).mockResolvedValue(mockUsers);
+    vi.mocked(api.settingsApi.getAll).mockResolvedValue(mockSettings);
 
     render(<Settings />);
 
@@ -98,9 +98,9 @@ describe('Settings', () => {
   });
 
   it('loads users on mount', async () => {
-    (api.companyApi.get as any).mockResolvedValue(mockCompanyData);
-    (api.usersApi.getAll as any).mockResolvedValue(mockUsers);
-    (api.settingsApi.getAll as any).mockResolvedValue(mockSettings);
+    vi.mocked(api.companyApi.get).mockResolvedValue(mockCompanyData);
+    vi.mocked(api.usersApi.getAll).mockResolvedValue(mockUsers);
+    vi.mocked(api.settingsApi.getAll).mockResolvedValue(mockSettings);
 
     render(<Settings />);
 
@@ -117,9 +117,9 @@ describe('Settings', () => {
   });
 
   it('loads settings on mount', async () => {
-    (api.companyApi.get as any).mockResolvedValue(mockCompanyData);
-    (api.usersApi.getAll as any).mockResolvedValue(mockUsers);
-    (api.settingsApi.getAll as any).mockResolvedValue(mockSettings);
+    vi.mocked(api.companyApi.get).mockResolvedValue(mockCompanyData);
+    vi.mocked(api.usersApi.getAll).mockResolvedValue(mockUsers);
+    vi.mocked(api.settingsApi.getAll).mockResolvedValue(mockSettings);
 
     render(<Settings />);
 
@@ -127,10 +127,10 @@ describe('Settings', () => {
   });
 
   it('saves company settings when Save button is clicked', async () => {
-    (api.companyApi.get as any).mockResolvedValue(mockCompanyData);
-    (api.usersApi.getAll as any).mockResolvedValue(mockUsers);
-    (api.settingsApi.getAll as any).mockResolvedValue(mockSettings);
-    (api.companyApi.update as any).mockResolvedValue(mockCompanyData);
+    vi.mocked(api.companyApi.get).mockResolvedValue(mockCompanyData);
+    vi.mocked(api.usersApi.getAll).mockResolvedValue(mockUsers);
+    vi.mocked(api.settingsApi.getAll).mockResolvedValue(mockSettings);
+    vi.mocked(api.companyApi.update).mockResolvedValue(mockCompanyData);
 
     render(<Settings />);
 
@@ -156,13 +156,13 @@ describe('Settings', () => {
   });
 
   it('displays loading state while fetching data', async () => {
-    (api.companyApi.get as any).mockImplementation(
+    vi.mocked(api.companyApi.get).mockImplementation(
       () => new Promise(resolve => setTimeout(() => resolve(mockCompanyData), 100))
     );
-    (api.usersApi.getAll as any).mockImplementation(
+    vi.mocked(api.usersApi.getAll).mockImplementation(
       () => new Promise(resolve => setTimeout(() => resolve(mockUsers), 100))
     );
-    (api.settingsApi.getAll as any).mockImplementation(
+    vi.mocked(api.settingsApi.getAll).mockImplementation(
       () => new Promise(resolve => setTimeout(() => resolve(mockSettings), 100))
     );
 
@@ -175,9 +175,9 @@ describe('Settings', () => {
   });
 
   it('handles API errors gracefully', async () => {
-    (api.companyApi.get as any).mockRejectedValue(new Error('Network error'));
-    (api.usersApi.getAll as any).mockRejectedValue(new Error('Network error'));
-    (api.settingsApi.getAll as any).mockRejectedValue(new Error('Network error'));
+    vi.mocked(api.companyApi.get).mockRejectedValue(new Error('Network error'));
+    vi.mocked(api.usersApi.getAll).mockRejectedValue(new Error('Network error'));
+    vi.mocked(api.settingsApi.getAll).mockRejectedValue(new Error('Network error'));
 
     const consoleWarnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
 
@@ -192,9 +192,9 @@ describe('Settings', () => {
   });
 
   it('switches between tabs correctly', async () => {
-    (api.companyApi.get as any).mockResolvedValue(mockCompanyData);
-    (api.usersApi.getAll as any).mockResolvedValue(mockUsers);
-    (api.settingsApi.getAll as any).mockResolvedValue(mockSettings);
+    vi.mocked(api.companyApi.get).mockResolvedValue(mockCompanyData);
+    vi.mocked(api.usersApi.getAll).mockResolvedValue(mockUsers);
+    vi.mocked(api.settingsApi.getAll).mockResolvedValue(mockSettings);
 
     render(<Settings />);
 
@@ -219,10 +219,10 @@ describe('Settings', () => {
   });
 
   it('invites a new user', async () => {
-    (api.companyApi.get as any).mockResolvedValue(mockCompanyData);
-    (api.usersApi.getAll as any).mockResolvedValue(mockUsers);
-    (api.settingsApi.getAll as any).mockResolvedValue(mockSettings);
-    (api.usersApi.create as any).mockResolvedValue({
+    vi.mocked(api.companyApi.get).mockResolvedValue(mockCompanyData);
+    vi.mocked(api.usersApi.getAll).mockResolvedValue(mockUsers);
+    vi.mocked(api.settingsApi.getAll).mockResolvedValue(mockSettings);
+    vi.mocked(api.usersApi.create).mockResolvedValue({
       id: 'user_3',
       name: 'New User',
       email: 'newuser@test.com',
@@ -264,10 +264,10 @@ describe('Settings', () => {
   });
 
   it('saves notification preferences', async () => {
-    (api.companyApi.get as any).mockResolvedValue(mockCompanyData);
-    (api.usersApi.getAll as any).mockResolvedValue(mockUsers);
-    (api.settingsApi.getAll as any).mockResolvedValue(mockSettings);
-    (api.settingsApi.updateSetting as any).mockResolvedValue({
+    vi.mocked(api.companyApi.get).mockResolvedValue(mockCompanyData);
+    vi.mocked(api.usersApi.getAll).mockResolvedValue(mockUsers);
+    vi.mocked(api.settingsApi.getAll).mockResolvedValue(mockSettings);
+    vi.mocked(api.settingsApi.updateSetting).mockResolvedValue({
       key: 'notifications',
       value: mockSettings.notifications,
     });
