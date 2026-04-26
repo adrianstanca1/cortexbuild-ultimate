@@ -69,20 +69,21 @@ describe("DocumentRoom", () => {
     expect(presence[0].cursorPos).toBe(42);
   });
 
-  // TODO(test): presence shape exposes idle differently than test expects
-
-
-  it.skip("should track idle status", () => {
+  it("should track idle status", () => {
     vi.useFakeTimers();
 
-    const mockWs = { readyState: 1, send: vi.fn() };
+    const mockWs = { readyState: 1, send: vi.fn(), close: vi.fn() };
     room.addClient("client-1", mockWs, { userId: "user-1", userName: "Alice" });
+
+    // Capture the timer ID and disable the actual eviction
+    vi.clearAllTimers();
 
     let presence = room.getPresenceList();
     expect(presence[0].idle).toBe(false);
 
-    // Advance time past idle timeout
-    vi.advanceTimersByTime(PRESENCE_IDLE_TIMEOUT + 1000);
+    // Manually set lastSeen to past (without triggering eviction timer)
+    const client = room.clients.get("client-1");
+    client.lastSeen = Date.now() - PRESENCE_IDLE_TIMEOUT - 1000;
 
     presence = room.getPresenceList();
     expect(presence[0].idle).toBe(true);

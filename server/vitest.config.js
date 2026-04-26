@@ -18,14 +18,16 @@ module.exports = defineConfig({
       '**/node_modules/**',
       'test/unified-ai-v2.test.js',
       'test/unified-ai.test.js', // ditto — top-level await + process.exit, not a vitest spec
-      'test/push-tokens.test.js',
-      'test/apns-dispatcher.test.js',
       'test/condition-evaluator.simple.test.js',
       'test/workflow-runner.simple.test.js',
-      // billing-webhook spec uses vi.mock("stripe") at module scope which the
-      // current vitest config can't initialise before the route imports stripe
-      // through stripe-client.js. Excluded until the spec is rewritten with
-      // vi.doMock inside beforeEach (see TODO at top of the file).
+      // push-tokens, apns-dispatcher: require auth middleware mocking which is complex
+      // due to how vitest handles module-level mocks and middleware dependencies.
+      // A future refactor to inject the authMiddleware would enable proper testing.
+      'test/push-tokens.test.js',
+      'test/apns-dispatcher.test.js',
+      // billing-webhook: requires Stripe SDK mocking which doesn't work well with vitest's
+      // module-level mocking when the route imports Stripe before the mock is installed.
+      // A future refactor to inject the Stripe client would make this testable.
       'test/billing-webhook.test.js',
     ],
     coverage: {
