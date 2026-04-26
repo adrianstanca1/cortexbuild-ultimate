@@ -8,7 +8,8 @@ const pool = require('../db');
 const authMiddleware = require('../middleware/auth');
 const { createNotification, createAlert, broadcast } = require('../lib/websocket');
 const { buildTenantFilter, isSuperAdmin } = require('../middleware/tenantFilter');
-const pushRouter = require('./push');
+const createPushRouter = require('./push');
+const pushRouter = createPushRouter();
 
 const router = express.Router();
 router.use(authMiddleware);

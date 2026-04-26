@@ -2,15 +2,27 @@
  * Push Notification Routes
  * Manages device token registration, removal, and debugging
  * Integrates with APNs (iOS), FCM (Android, TODO), and VAPID (web, TODO)
+ *
+ * Factory pattern for dependency injection (enables testability)
  */
 
 const express = require('express');
 const webpush = require('web-push');
-const pool = require('../db');
-const authMiddleware = require('../middleware/auth');
-const { sendPushToUser } = require('../lib/push/dispatcher');
 
-const router = express.Router();
+/**
+ * Factory function to create the push router with injected dependencies
+ * @param {Object} options Configuration object
+ * @param {Object} options.db PostgreSQL pool (defaults to require('../db'))
+ * @param {Function} options.authMiddleware Auth middleware (defaults to require('../middleware/auth'))
+ * @param {Object} options.dispatcher Dispatcher with sendPushToUser (defaults to require('../lib/push/dispatcher')())
+ * @returns {express.Router} Configured router
+ */
+function createPushRouter(options = {}) {
+  const db = options.db || require('../db');
+  const authMiddleware = options.authMiddleware || require('../middleware/auth');
+  const dispatcher = options.dispatcher || require('../lib/push/dispatcher')();
+
+  const router = express.Router();
 
 if (process.env.VAPID_PUBLIC_KEY && process.env.VAPID_PRIVATE_KEY) {
   webpush.setVapidDetails(
@@ -48,7 +60,7 @@ router.post('/register', authMiddleware, async (req, res) => {
     }
 
     // Upsert: insert or update if exists
-    const { rows } = await pool.query(
+    const { rows } = await db.query(
       `INSERT INTO push_tokens (user_id, platform, device_token, bundle_id, environment)
        VALUES ($1, $2, $3, $4, $5)
        ON CONFLICT (user_id, device_token) DO UPDATE
@@ -76,7 +88,7 @@ router.delete('/register', authMiddleware, async (req, res) => {
       return res.status(400).json({ error: 'deviceToken required' });
     }
 
-    const { rowCount } = await pool.query(
+    const { rowCount } = await db.query(
       `DELETE FROM push_tokens WHERE user_id = $1 AND device_token = $2`,
       [userId, deviceToken]
     );
@@ -99,7 +111,7 @@ router.get('/tokens', authMiddleware, async (req, res) => {
     const userId = req.user?.id;
     if (!userId) return res.status(401).json({ error: 'Unauthorized' });
 
-    const { rows } = await pool.query(
+    const { rows } = await db.query(
       `SELECT id, platform, bundle_id, environment, last_seen_at, created_at
        FROM push_tokens
        WHERE user_id = $1
@@ -131,21 +143,24 @@ router.post('/subscribe', (req, res) => {
   res.json({ ok: true });
 });
 
-// Internal helper export — send push to user (non-blocking)
-// Used by other routes to trigger push notifications
-router.sendPushToUser = async (userId, payload) => {
-  // Fire-and-forget: catch errors locally so push failures don't break upstream
-  setImmediate(() => {
-    sendPushToUser(userId, payload).catch((err) => {
-      console.error(`[Push] Uncaught error in sendPushToUser: ${err.message}`);
+  // Internal helper export — send push to user (non-blocking)
+  // Used by other routes to trigger push notifications
+  router.sendPushToUser = async (userId, payload) => {
+    // Fire-and-forget: catch errors locally so push failures don't break upstream
+    setImmediate(() => {
+      dispatcher.sendPushToUser(userId, payload).catch((err) => {
+        console.error(`[Push] Uncaught error in sendPushToUser: ${err.message}`);
+      });
     });
-  });
-};
+  };
 
-// Internal helper export — broadcast push to all users
-// TODO: implement efficient broadcast query
-router.broadcastPush = async (payload) => {
-  console.debug('[Push] Broadcast not yet implemented');
-};
+  // Internal helper export — broadcast push to all users
+  // TODO: implement efficient broadcast query
+  router.broadcastPush = async (payload) => {
+    console.debug('[Push] Broadcast not yet implemented');
+  };
 
-module.exports = router;
+  return router;
+}
+
+module.exports = createPushRouter;

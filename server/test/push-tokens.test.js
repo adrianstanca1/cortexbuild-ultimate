@@ -6,34 +6,45 @@
 // Set DATABASE_URL to prevent db.js from calling process.exit
 process.env.DATABASE_URL = 'postgresql://localhost/test';
 
-// Mock the db module
-const mockPool = {
-  query: vi.fn(),
-};
-
-vi.mock('../db', () => ({
-  default: mockPool,
-  ...mockPool,
-}));
-
-// Mock auth middleware - it exports an async function directly
-vi.mock('../middleware/auth', () => (req, res, next) => {
-  req.user = { id: 'user-123' };
-  next();
-});
-
 const express = require('express');
 const request = require('supertest');
-const pushRouter = require('../routes/push');
 
 describe('Push Tokens Endpoints', () => {
   let app;
+  let mockPool;
+  let mockAuthMiddleware;
+  let createPushRouter;
 
   beforeEach(() => {
     vi.clearAllMocks();
+
+    // Mock db
+    mockPool = {
+      query: vi.fn(),
+    };
+
+    // Mock auth middleware - simple middleware that adds user to req
+    mockAuthMiddleware = (req, _res, next) => {
+      req.user = { id: 'user-123' };
+      next();
+    };
+
+    // Import the router factory
+    createPushRouter = require('../routes/push');
+
+    // Create router with mocked dependencies
+    const router = createPushRouter({
+      db: mockPool,
+      authMiddleware: mockAuthMiddleware,
+      dispatcher: {
+        sendPushToUser: vi.fn(),
+      },
+    });
+
+    // Create app and mount router
     app = express();
     app.use(express.json());
-    app.use('/api/push', pushRouter);
+    app.use('/api/push', router);
   });
 
   describe('POST /api/push/register', () => {
@@ -60,10 +71,10 @@ describe('Push Tokens Endpoints', () => {
       expect(res.status).toBe(201);
       expect(res.body.ok).toBe(true);
       expect(res.body.token).toBeDefined();
-      expect(mockPool.query).toHaveBeenCalledWith(
-        expect.stringContaining('INSERT INTO push_tokens'),
-        expect.arrayContaining(['user-123', 'ios', deviceToken])
-      );
+      const calls = mockPool.query.mock.calls;
+      const registerCall = calls.find(c => c[0].includes('INSERT INTO push_tokens'));
+      expect(registerCall).toBeDefined();
+      expect(registerCall[1]).toEqual(['user-123', 'ios', deviceToken, null, 'production']);
     });
 
     it('should reject invalid APNs token format', async () => {
