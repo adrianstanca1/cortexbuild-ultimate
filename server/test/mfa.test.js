@@ -1,4 +1,3 @@
-const { describe, it, expect } = require('vitest');
 const {
   generateSecret,
   generateQRDataUrl,
@@ -7,7 +6,10 @@ const {
   hashRecoveryCodes,
   consumeRecoveryCode,
 } = require('../lib/mfa');
-const { authenticator } = require('otplib');
+const otplib = require('otplib');
+// otplib v13 dropped the v12 `authenticator` namespace; build a tiny shim so
+// the existing test bodies continue to read naturally.
+const authenticator = { generate: (secret) => otplib.generateSync({ secret }) };
 
 describe('MFA Library', () => {
   describe('generateSecret', () => {

@@ -1,4 +1,8 @@
-const { authenticator } = require('otplib');
+// otplib v13 dropped the v12 `authenticator` namespace in favour of a
+// functional API. We use the synchronous helpers because TOTP work is fast
+// and the call sites (auth routes, MFA enrol/verify) are already inside
+// async handlers but don't need the extra Promise hop.
+const otplib = require('otplib');
 const QRCode = require('qrcode');
 const bcrypt = require('bcrypt');
 const crypto = require('crypto');
@@ -8,7 +12,7 @@ const crypto = require('crypto');
  * @returns {string} Base32-encoded secret
  */
 function generateSecret() {
-  return authenticator.generateSecret();
+  return otplib.generateSecret();
 }
 
 /**
@@ -19,7 +23,7 @@ function generateSecret() {
  * @returns {Promise<string>} Data URL of QR code
  */
 async function generateQRDataUrl(secret, email, issuer = 'CortexBuild') {
-  const otpauthUrl = authenticator.keyuri(email, issuer, secret);
+  const otpauthUrl = otplib.generateURI({ secret, label: email, issuer });
   return QRCode.toDataURL(otpauthUrl);
 }
 
@@ -32,11 +36,21 @@ async function generateQRDataUrl(secret, email, issuer = 'CortexBuild') {
  */
 function verifyToken(secret, token) {
   if (!secret || !token) return false;
-  return authenticator.verify({
-    secret,
-    token,
-    window: 1, // Allow ±1 step drift
-  });
+  if (typeof token !== 'string' || !/^\d{6}$/.test(token)) return false;
+  try {
+    // v13 returns { valid: boolean, delta?, epoch?, timeStep? } on success and
+    // { valid: false } on rejection — caller wants a plain boolean.
+    const result = otplib.verifySync({
+      secret,
+      token,
+      window: 1, // Allow ±1 step drift (30s before / 30s after)
+    });
+    return result === true || (result && result.valid === true);
+  } catch (err) {
+    // Library throws TokenLengthError / TokenFormatError on garbage input;
+    // surface as "invalid" rather than crashing the caller.
+    return false;
+  }
 }
 
 /**
