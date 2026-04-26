@@ -83,6 +83,7 @@ jobs:
             -destination 'platform=iOS Simulator,name=iPhone 16,OS=latest' \
             -derivedDataPath ./DerivedData \
             CODE_SIGNING_ALLOWED=NO \
+            OTHER_SWIFT_FLAGS='$(inherited) -enable-experimental-feature NonescapableTypes' \
             | xcpretty
 
       - name: Build iOS Release (unsigned)
@@ -98,6 +99,7 @@ jobs:
             -archivePath ./build/CortexBuild.xcarchive \
             archive \
             CODE_SIGNING_ALLOWED=NO \
+            OTHER_SWIFT_FLAGS='$(inherited) -enable-experimental-feature NonescapableTypes' \
             DEVELOPMENT_TEAM="" \
             | xcpretty
 
