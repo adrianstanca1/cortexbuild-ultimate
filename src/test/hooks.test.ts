@@ -7,6 +7,10 @@ vi.mock("../lib/api", () => ({
   apiPost: vi.fn(),
 }));
 
+vi.mock("../context/AuthContext", () => ({
+  useAuth: () => ({ user: { id: "test-user", name: "Test User", email: "test@example.com" } }),
+}));
+
 /**
  * Unit tests for custom hooks
  * Tests useOptimizedData, useVirtualScroll, and useCollaborativeEditor

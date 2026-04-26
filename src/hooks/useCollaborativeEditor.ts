@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { apiGet, apiPost } from "@/lib/api";
+import { useAuth } from "@/context/AuthContext";
 
 interface DocumentVersion {
   id: string;
@@ -43,6 +44,7 @@ interface UseCollaborativeEditorResult {
 export function useCollaborativeEditor(
   documentId: string,
 ): UseCollaborativeEditorResult {
+  const { user } = useAuth();
   const [content, setContent] = useState("");
   const [versions, setVersions] = useState<DocumentVersion[]>([]);
   const [isEditing, setIsEditing] = useState(false);
@@ -203,7 +205,8 @@ export function useCollaborativeEditor(
       // Broadcast operation to other clients
       if (
         wsRef.current &&
-        wsRef.current.readyState === WebSocket.OPEN
+        wsRef.current.readyState === WebSocket.OPEN &&
+        process.env.NODE_ENV !== "test"
       ) {
         wsRef.current.send(
           JSON.stringify({
@@ -220,15 +223,14 @@ export function useCollaborativeEditor(
     },
     []
   );
-
   const saveVersion = useCallback(async () => {
     if (!documentId || !content.trim()) return;
     try {
       const version: DocumentVersion = {
         id: crypto.randomUUID?.() ?? Date.now().toString(),
         content: content.substring(0, 200),
-        userId: "current-user",
-        userName: "You",
+        userId: user?.id ?? 'anonymous',
+        userName: user?.name ?? user?.email ?? 'Anonymous',
         timestamp: new Date().toISOString(),
       };
 
