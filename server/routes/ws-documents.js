@@ -31,6 +31,65 @@ const JWT_SECRET = process.env.JWT_SECRET;
 const roomManager = new DocumentRoomManager();
 
 /**
+ * Build the allowlist of origins permitted to upgrade to /ws/documents/:id.
+ * Browsers do NOT enforce same-origin on WebSocket upgrades, so a malicious
+ * page could initiate one with the user's cookie attached. We therefore check
+ * the Origin header explicitly against FRONTEND_URL + CORS_ORIGIN.
+ *
+ * In non-production, localhost / 127.0.0.1 / private LAN ranges are allowed
+ * so Vite dev servers on any port can connect during development.
+ */
+function isAllowedOrigin(origin) {
+  if (!origin) {
+    // No Origin header — most browsers always send one; native clients (e.g.
+    // Capacitor mobile) may not. In production, require it; in dev, allow.
+    return process.env.NODE_ENV !== "production";
+  }
+  let parsed;
+  try {
+    parsed = new URL(origin);
+  } catch {
+    return false;
+  }
+  if (parsed.protocol !== "http:" && parsed.protocol !== "https:") return false;
+
+  // Dev: allow localhost / 127.* / private LAN
+  if (process.env.NODE_ENV !== "production") {
+    const h = parsed.hostname.toLowerCase();
+    if (
+      h === "localhost" ||
+      h === "127.0.0.1" ||
+      h === "[::1]" ||
+      /^10\.\d+\.\d+\.\d+$/.test(h) ||
+      /^192\.168\.\d+\.\d+$/.test(h)
+    ) {
+      return true;
+    }
+  }
+
+  // FRONTEND_URL exact match
+  const frontendUrl = (process.env.FRONTEND_URL || "").trim();
+  if (frontendUrl) {
+    try {
+      if (new URL(frontendUrl).origin === parsed.origin) return true;
+    } catch { /* ignore */ }
+  }
+
+  // CORS_ORIGIN allowlist (comma-separated)
+  const corsOrigins = (process.env.CORS_ORIGIN || "")
+    .split(",")
+    .map((s) => s.trim())
+    .filter(Boolean);
+  for (const candidate of corsOrigins) {
+    try {
+      if (new URL(candidate).origin === parsed.origin) return true;
+    } catch { /* ignore */ }
+  }
+
+  return false;
+}
+
+/**
  * Attach WebSocket server for document collaboration.
  * Called from server/index.js with the HTTP server instance.
  *
@@ -45,6 +104,16 @@ function attachDocumentWS(server) {
   server.on("upgrade", (req, socket, head) => {
     if (!req.url.startsWith("/ws/documents/")) {
       return; // Not our route; let other handlers process
+    }
+
+    // Origin allowlist — browsers don't enforce same-origin on WS upgrades.
+    if (!isAllowedOrigin(req.headers.origin)) {
+      console.warn(
+        `[ws-documents] Rejected upgrade from origin: ${req.headers.origin || "(none)"}`,
+      );
+      socket.write("HTTP/1.1 403 Forbidden\r\n\r\n");
+      socket.destroy();
+      return;
     }
 
     // Extract document ID from URL

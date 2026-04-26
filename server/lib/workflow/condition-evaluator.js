@@ -4,19 +4,31 @@
  */
 
 /**
- * Get value from context using dot notation path
- * @param {Object} context - Context object
- * @param {string} path - Dot notation path (e.g. "event.amount", "user.id")
- * @returns {*} The value at path, or undefined if not found
+ * Resolve a dot-path against context. Returns a tuple so callers can tell
+ * "path is missing entirely" apart from "path resolved to undefined/null",
+ * which matters for `exists` and for surfacing misconfigured workflows.
+ *
+ * @param {Object} context
+ * @param {string} path - Dot notation (e.g. "event.amount")
+ * @returns {{ value: *, found: boolean }}
  */
-function getValueAtPath(context, path) {
+function resolvePath(context, path) {
   const parts = path.split('.');
   let current = context;
   for (const part of parts) {
-    if (current == null) return undefined;
+    if (current == null || !Object.prototype.hasOwnProperty.call(current, part)) {
+      return { value: undefined, found: false };
+    }
     current = current[part];
   }
-  return current;
+  return { value: current, found: true };
+}
+
+/**
+ * Backwards-compatible accessor — just returns the resolved value (or undefined).
+ */
+function getValueAtPath(context, path) {
+  return resolvePath(context, path).value;
 }
 
 /**
@@ -27,7 +39,16 @@ function getValueAtPath(context, path) {
  */
 function evaluateCondition(condition, context) {
   const { operator, path, value } = condition;
-  const contextValue = getValueAtPath(context, path);
+  const { value: contextValue, found } = resolvePath(context, path);
+
+  // Surface misconfigured paths once per evaluation so workflow authors can
+  // diagnose silent false-negatives. `exists` legitimately probes for absence,
+  // so don't warn there.
+  if (!found && operator !== 'exists') {
+    console.warn(
+      `[condition-evaluator] Path not found in context: "${path}" (operator=${operator})`,
+    );
+  }
 
   switch (operator) {
     case 'eq':
@@ -135,4 +156,5 @@ module.exports = {
   evaluateCondition,
   evaluateConditionGroup,
   getValueAtPath,
+  resolvePath,
 };

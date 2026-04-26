@@ -114,6 +114,18 @@ const registerLimiter = rateLimit({
   legacyHeaders: false,
 });
 
+const mfaChallengeLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 10, // 10 challenge attempts per 15 min per IP. Generous (room for typos)
+  // but stops 6-digit brute force (1M codes / 10 per 15min => 28+ years).
+  message: {
+    message: "Too many MFA attempts. Please try again in 15 minutes.",
+  },
+  standardHeaders: true,
+  legacyHeaders: false,
+  skipSuccessfulRequests: true,
+});
+
 const resetPasswordLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   max: 5,
@@ -398,7 +410,10 @@ router.post("/login", loginLimiter, async (req, res) => {
       const tempToken = jwt.sign(
         {
           id: user.id,
-          temp: true,
+          // Dedicated claim distinct from session JWTs so a stolen session
+          // token can never be replayed as an MFA temp token, and vice versa.
+          token_type: "mfa_temp",
+          temp: true, // legacy field kept for backwards compat with old SPAs
           jti: crypto.randomUUID(),
           email: user.email,
           role: user.role,
@@ -528,8 +543,35 @@ router.post("/mfa/verify", authMiddleware, async (req, res) => {
   }
 });
 
+/**
+ * Mark an MFA temp token's jti as consumed (single-use).
+ * Backed by Redis when available; falls back to a no-op if Redis is down so
+ * MFA still works during incidents (the rate limiter still caps attempts).
+ */
+async function consumeMfaTempJti(jti) {
+  if (!jti) return;
+  try {
+    if (!redis.isOpen) await redis.connect();
+    // 5min TTL matches the JWT lifetime; key naturally expires
+    await redis.set(`mfa_temp_used:${jti}`, "1", { EX: 300, NX: true });
+  } catch (err) {
+    console.warn("[mfa/challenge] Redis unavailable for jti tracking:", err.message);
+  }
+}
+
+async function isMfaTempJtiConsumed(jti) {
+  if (!jti) return false;
+  try {
+    if (!redis.isOpen) await redis.connect();
+    return Boolean(await redis.get(`mfa_temp_used:${jti}`));
+  } catch (err) {
+    console.warn("[mfa/challenge] Redis unavailable for jti check:", err.message);
+    return false;
+  }
+}
+
 // POST /api/auth/mfa/challenge - Verify TOTP or recovery code during login
-router.post("/mfa/challenge", async (req, res) => {
+router.post("/mfa/challenge", mfaChallengeLimiter, async (req, res) => {
   const { tempToken, token, recoveryCode } = req.body;
   if (!tempToken) {
     return res.status(400).json({ message: "Missing temporary token" });
@@ -542,8 +584,18 @@ router.post("/mfa/challenge", async (req, res) => {
 
   try {
     const payload = jwt.verify(tempToken, SECRET);
-    if (!payload.temp) {
+    // Strict type check: only mfa_temp tokens may be exchanged here. The
+    // legacy `temp: true` flag is accepted for transitional compatibility,
+    // but new tokens always carry token_type.
+    if (payload.token_type !== "mfa_temp" && !payload.temp) {
       return res.status(400).json({ message: "Invalid token type" });
+    }
+
+    // Single-use: reject if this jti has already been spent. Stops replay.
+    if (await isMfaTempJtiConsumed(payload.jti)) {
+      return res
+        .status(401)
+        .json({ message: "This challenge has already been used. Please login again." });
     }
 
     const { rows } = await pool.query(
@@ -560,33 +612,44 @@ router.post("/mfa/challenge", async (req, res) => {
     }
 
     let mfaValid = false;
-    let updatedRecoveryCodes = rows[0].mfa_recovery_codes_hash;
 
     // Check TOTP token
     if (token) {
       mfaValid = verifyToken(rows[0].mfa_secret, token);
     }
 
-    // Check recovery code (if TOTP wasn't valid)
+    // Check recovery code (if TOTP wasn't valid).
+    // Atomicity: consumeRecoveryCode validates against the current array, then
+    // we apply the update with a WHERE-clause guard requiring the array to
+    // still contain the consumed hash. This prevents two concurrent challenges
+    // from both succeeding with the same recovery code.
     if (!mfaValid && recoveryCode) {
-      const { valid, remainingCodes } = await consumeRecoveryCode(
+      const { valid, remainingCodes, consumedHash } = await consumeRecoveryCode(
         recoveryCode,
         rows[0].mfa_recovery_codes_hash,
       );
       if (valid) {
-        mfaValid = true;
-        updatedRecoveryCodes = remainingCodes;
-        // Update DB with consumed code
-        await pool.query(
-          "UPDATE users SET mfa_recovery_codes_hash = $1 WHERE id = $2",
-          [remainingCodes, payload.id],
+        const result = await pool.query(
+          `UPDATE users
+              SET mfa_recovery_codes_hash = $1
+            WHERE id = $2
+              AND $3 = ANY(mfa_recovery_codes_hash)`,
+          [remainingCodes, payload.id, consumedHash],
         );
+        // rowCount=0 means another request already consumed this code.
+        mfaValid = result.rowCount === 1;
       }
     }
 
     if (!mfaValid) {
+      // Failed attempt — still consume the jti so a single tempToken can't
+      // be used as a 6-digit brute-force oracle. User must login again.
+      await consumeMfaTempJti(payload.jti);
       return res.status(401).json({ message: "Invalid TOTP code or recovery code" });
     }
+
+    // Successful challenge — burn the jti so this token can't be replayed.
+    await consumeMfaTempJti(payload.jti);
 
     // Issue full session token
     const sessionToken = jwt.sign(

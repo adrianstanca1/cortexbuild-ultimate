@@ -36,12 +36,17 @@ function verifySignature(req) {
 }
 
 /**
- * Helper: check if event has already been processed
+ * Helper: check if event has already been processed.
+ *
+ * Uses the dedicated stripe_event_id column (migration 074) — the previous
+ * implementation queried payload->>'id', but the payload column stores
+ * event.data (the data envelope), not the top-level event, so payload->>'id'
+ * is NULL for most Stripe events and idempotency was effectively disabled.
  */
 async function isEventProcessed(stripeEventId) {
   const result = await db.query(
     `SELECT id FROM subscription_events
-     WHERE payload->>'id' = $1 AND processed_at IS NOT NULL
+     WHERE stripe_event_id = $1
      LIMIT 1`,
     [stripeEventId]
   );
@@ -81,13 +86,24 @@ router.post("/webhook", async (req, res) => {
 
     const { type, data } = event;
 
-    // Store event in audit table
+    // Store event in audit table. The unique constraint on stripe_event_id
+    // (migration 074) provides race-safe idempotency: if two webhook deliveries
+    // arrive concurrently, the second INSERT fails and we treat it as duplicate.
     const eventId = uuidv4();
-    await db.query(
-      `INSERT INTO subscription_events (id, event_type, payload)
-       VALUES ($1, $2, $3)`,
-      [eventId, type, JSON.stringify(data)]
-    );
+    try {
+      await db.query(
+        `INSERT INTO subscription_events (id, event_type, payload, stripe_event_id)
+         VALUES ($1, $2, $3, $4)`,
+        [eventId, type, JSON.stringify(data), event.id]
+      );
+    } catch (err) {
+      // 23505 = unique_violation — concurrent duplicate delivery
+      if (err && err.code === "23505") {
+        console.log(`[webhook] Event ${event.id} already inserted (race), skipping`);
+        return res.json({ received: true });
+      }
+      throw err;
+    }
 
     let subscriptionId = null;
 

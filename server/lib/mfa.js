@@ -72,13 +72,16 @@ async function hashRecoveryCodes(codes) {
  * Verify and consume a recovery code.
  * @param {string} code - Plaintext recovery code entered by user
  * @param {string[]} hashedCodes - Bcrypt-hashed recovery codes from DB
- * @returns {Promise<{valid: boolean, remainingCodes: string[]}>}
+ * @returns {Promise<{valid: boolean, remainingCodes: string[], consumedHash: string|null}>}
  *  valid: true if code matches one of the hashed codes
  *  remainingCodes: updated array without the matched code
+ *  consumedHash: the hash that was consumed (used by the caller for an
+ *                array_contains guard on the UPDATE so two concurrent
+ *                challenges cannot both succeed with the same code).
  */
 async function consumeRecoveryCode(code, hashedCodes) {
   if (!hashedCodes || !Array.isArray(hashedCodes) || hashedCodes.length === 0) {
-    return { valid: false, remainingCodes: hashedCodes };
+    return { valid: false, remainingCodes: hashedCodes, consumedHash: null };
   }
 
   for (let i = 0; i < hashedCodes.length; i++) {
@@ -86,11 +89,11 @@ async function consumeRecoveryCode(code, hashedCodes) {
     if (matches) {
       // Remove the used code from the array
       const remaining = hashedCodes.slice(0, i).concat(hashedCodes.slice(i + 1));
-      return { valid: true, remainingCodes: remaining };
+      return { valid: true, remainingCodes: remaining, consumedHash: hashedCodes[i] };
     }
   }
 
-  return { valid: false, remainingCodes: hashedCodes };
+  return { valid: false, remainingCodes: hashedCodes, consumedHash: null };
 }
 
 module.exports = {
