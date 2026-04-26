@@ -21,7 +21,9 @@ async function queryOllama(prompt, model = "qwen3.5:latest") {
                 prompt: prompt,
                 stream: false
             }),
-            timeout: 60000 // 60s — gemma4 (9.6 GB) cold inference can exceed 10s
+            // Native fetch ignores `timeout`; use AbortSignal so cold local-LLM
+            // inference (multi-GB models on CPU) can run longer than the default.
+            signal: AbortSignal.timeout(60000)
         });
 
         if (!response.ok) {
