@@ -90,7 +90,9 @@ export function useCollaborativeEditor(
 
   // WebSocket collaboration
   useEffect(() => {
-    if (!documentId || process.env.NODE_ENV === "test") return;
+    if (!documentId) return;
+    // Tests provide a global WebSocket mock; production uses the browser's.
+    if (typeof WebSocket === "undefined") return;
 
     const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
     const wsUrl = `${protocol}//${window.location.host}/ws/documents/${documentId}`;
@@ -201,8 +203,7 @@ export function useCollaborativeEditor(
       // Broadcast operation to other clients
       if (
         wsRef.current &&
-        wsRef.current.readyState === WebSocket.OPEN &&
-        process.env.NODE_ENV !== "test"
+        wsRef.current.readyState === WebSocket.OPEN
       ) {
         wsRef.current.send(
           JSON.stringify({
