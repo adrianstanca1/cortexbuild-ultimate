@@ -1,7 +1,7 @@
 /**
  * CortexBuild Ultimate — Deploy Webhook
  * Called by GitHub Actions on every push to main.
- * Runs: git pull → npm run build → docker restart cortexbuild-nginx
+ * Runs: git pull → npm run build → reload nginx (host reload preferred; docker fallback if present)
  *
  * Protected by DEPLOY_SECRET env var. No JWT auth needed.
  */
@@ -16,7 +16,7 @@ const DEPLOY_SCRIPT = [
   'git pull origin main',
   'npm ci --prefer-offline 2>/dev/null || npm install',
   'npm run build',
-  'docker restart cortexbuild-nginx',
+  '(docker restart cortexbuild-nginx 2>/dev/null) || (systemctl reload nginx 2>/dev/null) || (service nginx reload 2>/dev/null) || (nginx -s reload 2>/dev/null) || true',
 ].join(' && ');
 
 let deploying = false;

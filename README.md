@@ -1,268 +1,214 @@
 # CortexBuild Ultimate
 
-**AI-Powered Unified Construction Management Platform** — Enterprise-grade construction management SaaS
+**AI-Powered Unified Construction Management Platform** — Enterprise-grade construction SaaS for UK contractors
 
 [![Platform Health](https://img.shields.io/badge/Platform%20Health-100%2F100-success)](docs/100_100_ACHIEVEMENT.md)
 [![Tests](https://img.shields.io/badge/Tests-121%2F121%20passing-success)](docs/CODE_REVIEW_REPORT.md)
 [![Version](https://img.shields.io/badge/Version-3.0.0-blue)](CHANGELOG.md)
 [![Accessibility](https://img.shields.io/badge/Accessibility-WCAG%202.1%20AA-success)](docs/ACCESSIBILITY_AUDIT.md)
-[![License](https://img.shields.io/badge/License-Private-blue)](LICENSE)
+[![License](https://img.shields.io/badge/License-Proprietary-red)](LICENSE)
+[![Docker](https://img.shields.io/badge/Docker-Ready-blue)](Dockerfile.api)
 
-## 🚀 Quick Links
+## Build for iPhone / App Store
 
-- **[Documentation Index](docs/README.md)** - Complete documentation
-- **[New Features Guide](docs/NEW_FEATURES_GUIDE.md)** - v3.0.0 features
-- **[API Documentation](docs/API_DOCUMENTATION.md)** - API reference
-- **[Deployment Runbook](DEPLOYMENT_RUNBOOK.md)** - Deployment guide
-- **[Contributing Guide](CONTRIBUTING.md)** - How to contribute
-- **[Code Review Report](docs/CODE_REVIEW_REPORT.md)** - Full code audit
+```bash
+./scripts/prep-ios.sh       # one-shot prep
+open ios/App/App.xcodeproj  # then build/run from Xcode
+```
 
----
-
-## ✨ What's New in v3.0.0
-
-### Major Features
-
-- **NotificationCenter** - Real-time notifications with filtering
-- **NotificationPreferences** - Multi-channel notification settings
-- **TeamChat** - Real-time team messaging
-- **ActivityFeed** - Live activity stream
-- **AdvancedAnalytics** - Business intelligence dashboard
-- **ProjectCalendar** - Project scheduling with Month/Week/Day views
-
-### Platform Achievements
-
-- ✅ **100/100 Platform Health Score**
-- ✅ **121 Tests Passing** (500% increase)
-- ✅ **WCAG 2.1 AA Compliant** (95/100 accessibility)
-- ✅ **10 Zod Validation Schemas** (runtime type safety)
-- ✅ **14 Keyboard Shortcuts** (power user support)
-- ✅ **Lighthouse CI** (performance budgets enforced)
-
----
-
-## Architecture
-
-- **Frontend**: React 18 + TypeScript + Vite + Tailwind CSS
-- **Backend**: Express.js + PostgreSQL + JWT auth
-- **Real-time**: WebSocket for notifications and chat
-- **Testing**: Vitest (unit) + Playwright (E2E)
-- **CI/CD**: GitHub Actions + Lighthouse CI
-- **Deployment**: Docker + VPS (Hostinger)
+See [docs/INSTALL-ON-IPHONE.md](docs/INSTALL-ON-IPHONE.md) for the three install paths and [docs/APPSTORE-DEPLOY.md](docs/APPSTORE-DEPLOY.md) for the full TestFlight pipeline.
 
 ## Quick Start
 
-### 1. Install dependencies
-
 ```bash
-# Frontend
+# 1. Install dependencies
 npm install
-
-# Backend
 cd server && npm install && cd ..
-```
 
-### 2. Configure environment
-
-```bash
-# Copy and edit .env.local
+# 2. Configure environment
 cp .env.example .env.local
-```
+# Edit .env.local with DB_URL, JWT_SECRET, etc.
 
-Required variables:
-- `VITE_API_BASE_URL=http://localhost:3001`
-- `DATABASE_URL=postgresql://...`
-- `JWT_SECRET=your-secret-key`
+# 3. Start database (Docker)
+docker compose up -d
 
-### 3. Reset and bootstrap the local database
+# 4. Reset database
+cd server && npm run db:reset:local && cd ..
 
-```bash
-cd server
-npm run db:reset:local
-```
-
-This rebuilds the local Docker Postgres schema from the repo SQL in a deterministic order,
-including tenant tables, AI conversation storage, notifications, and seed data.
-
-### 4. Start the backend
-
-```bash
+# 5. Start backend
 pm2 start server/index.js --name cortexbuild-api
-```
 
-Server runs on `http://localhost:3001`
-
-### 5. Start the frontend
-
-```bash
+# 6. Start frontend
 npm run dev
 ```
 
-Frontend runs on `http://localhost:5173`
+**Frontend:** http://localhost:5173 | **Backend:** http://localhost:3001
 
-## Development Scripts
+## Tech Stack
+
+| Layer      | Technology                                  |
+| ---------- | ------------------------------------------- |
+| Frontend   | React 19 + TypeScript + Vite + Tailwind CSS |
+| Backend    | Express.js + PostgreSQL 16 + Redis 7        |
+| Auth       | JWT + Passport (OAuth)                      |
+| Real-time  | WebSocket                                   |
+| Testing    | Vitest + Playwright                         |
+| Deployment | Docker + VPS (Hostinger)                    |
+
+## Quick Command Reference
+
+### Development
 
 ```bash
-npm run dev          # Start development server
-npm run build        # Build for production
-npm run lint         # Run ESLint
-npm run lint:fix    # Fix ESLint issues
-npm run test         # Run tests
-npm run test:watch   # Watch mode for tests
-npm run test:coverage # Coverage report
+npm run dev           # Frontend dev server (:5173)
+cd server && npm run dev  # Backend dev server (:3001)
 ```
+
+### Testing
+
+```bash
+npm test                  # All unit tests (Vitest)
+npm run test:watch       # Watch mode
+npm run test:coverage    # Coverage report
+npm run test:e2e         # Playwright E2E
+npm run test:e2e:ui       # E2E with UI
+```
+
+### Build & Deploy
+
+```bash
+npm run build        # Production build
+npm run lint         # ESLint
+npm run lint:fix     # ESLint auto-fix
+npm run verify:all  # Full pre-commit check
+```
+
+### Backend
+
+```bash
+cd server
+npm run db:reset:local   # Rebuild local DB
+npm start                 # Production (node)
+```
+
+## Key Commands
+
+```bash
+npm run dev           # Frontend dev (5173)
+npm test             # Unit tests (Vitest)
+npm run build        # Production build
+npm run lint         # ESLint
+npm run verify:all   # Full pre-commit check
+```
+
+## v3.0.0 Highlights
+
+| Feature                | Description                            |
+| ---------------------- | -------------------------------------- |
+| **NotificationCenter** | Real-time notifications with filtering |
+| **TeamChat**           | Real-time team messaging               |
+| **ActivityFeed**       | Live activity stream                   |
+| **AdvancedAnalytics**  | Business intelligence dashboards       |
+| **ProjectCalendar**    | Month/Week/Day scheduling              |
 
 ## Modules
 
 ### Core Management
-- **Dashboard** — Site Command Center with health radar, weather, AI insights
-- **Projects** — Project tracking with progress, budget, workforce
-- **Invoicing** — Invoice management with revenue tracking
-- **Accounting** — Financial management
-- **Financial Reports** — Summary, Project Costs, Cash Flow, P&L reports
+
+- Dashboard, Projects, Invoicing, Accounting, Financial Reports
 
 ### Operations
-- **Safety** — HSE Intelligence Hub with risk analytics, RIDDOR reporting
-- **Teams** — Workforce management with availability tracking
-- **Timesheets** — Hours tracking
-- **Subcontractors** — Subcontractor management with CIS verification
-- **Plant** — Equipment management
-- **Materials** — Materials tracking & procurement
-- **Daily Reports** — Site diaries
+
+- Safety, Teams, Timesheets, Subcontractors, Plant, Materials, Daily Reports
 
 ### Quality & Compliance
-- **RAMS** — Risk Assessment & Method Statements (UK compliance)
-- **CIS** — Construction Industry Scheme returns (UK)
-- **Inspections** — QA inspections
-- **Risk Register** — Risk management
-- **Punch List** — Snagging / defect tracking
-- **RFIs** — Requests for Information
-- **Change Orders** — Variation management
+
+- RAMS, CIS, Inspections, Risk Register, Punch List, RFIs, Change Orders
 
 ### Collaboration
-- **Documents** — Document control with drag-drop upload
-- **Meetings** — Meeting management with action items
-- **Drawings** — Plan management
-- **Calendar** — Monthly view of projects, meetings, deadlines
-- **CRM** — Client management with deals pipeline
+
+- Documents, Meetings, Drawings, Calendar, CRM
 
 ### Intelligence
-- **AI Assistant** — 8 specialized agents with streaming UI
-- **Analytics** — Business intelligence dashboards
-- **Tenders** — Bids & proposals with AI scoring
-- **Executive Reports** — C-Suite dashboards
-- **Predictive Analytics** — AI-powered forecasting
 
-### Advanced Features
-- **Global Search** — Search across all modules (Ctrl+K)
-- **Audit Log** — Track all data changes
-- **Email Notifications** — Send, schedule, track emails
-- **Report Templates** — Save & reuse report configurations
-- **Permissions Manager** — RBAC with custom roles
-- **Bulk Actions** — Multi-select operations
-- **Export/Import** — CSV, JSON data export/import
-- **Offline Support** — PWA with offline caching
+- AI Assistant (8 agents), Analytics, Tenders, Executive Reports
 
-## Design Features
+## Architecture
 
-- **Dark theme** with slate/amber/emerald color palette
-- **Industrial command center** aesthetic
-- **Responsive** — Mobile nav bar, adaptive layouts
-- **Keyboard shortcuts** — Ctrl+1-4 navigation, Shift+? help
-- **Recharts** for data visualization
-- **Real-time notifications** via WebSocket
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                        Frontend (:5173)                          │
+│   React 19 + TypeScript + Vite + TanStack Query + WebSocket    │
+└──────────────────────────────┬──────────────────────────────────┘
+                               │ REST + WebSocket
+                               ▼
+┌─────────────────────────────────────────────────────────────────┐
+│                      Backend (:3001)                              │
+│              Express.js + Passport + WebSocket                   │
+└──────────────────────────────┬──────────────────────────────────┘
+                               │
+          ┌────────────────────┼────────────────────┐
+          │                    │                    │
+          ▼                    ▼                    ▼
+┌─────────────────┐  ┌─────────────────┐  ┌─────────────────┐
+│   PostgreSQL    │  │     Redis      │  │    Ollama      │
+│   (Database)   │  │   (Sessions)   │  │  (AI Inference) │
+└─────────────────┘  └─────────────────┘  └─────────────────┘
+```
+
+### API Layer
+
+Two modules with different behaviors:
+
+- **`src/services/api.ts`** - Auto camelCase, throws on errors (preferred)
+- **`src/lib/api.ts`** - Raw responses, used by notification center
+
+### Database
+
+Raw SQL migrations in `server/migrations/`. Generic CRUD via `makeRouter(tableName)`.
+
+**Critical:** `company_owner` users have `organization_id = NULL`. Always use `COALESCE(organization_id, company_id)`.
 
 ## Keyboard Shortcuts
 
-| Shortcut | Action |
-|----------|--------|
-| Ctrl+1 | Go to Dashboard |
-| Ctrl+2 | Go to Projects |
-| Ctrl+3 | Go to Invoicing |
-| Ctrl+4 | Go to Safety |
-| Ctrl+K | Global Search |
-| Ctrl+B | Toggle Sidebar |
-| Shift+? | Show Shortcuts |
+| Shortcut   | Action           |
+| ---------- | ---------------- |
+| `Ctrl+1-4` | Navigate modules |
+| `Ctrl+K`   | Global search    |
+| `Ctrl+B`   | Toggle sidebar   |
+| `Shift+?`  | Show shortcuts   |
 
-## API Endpoints
+## Documentation
 
-Base URL: `http://localhost:3001`
-
-### Authentication
-- `POST /api/auth/login` — Authenticate
-- `POST /api/auth/register` — Register
-
-### CRUD Operations
-- `GET /api/:table` — List records (JWT required)
-- `POST /api/:table` — Create record (JWT required)
-- `PUT /api/:table/:id` — Update record (JWT required)
-- `DELETE /api/:table/:id` — Delete record (JWT required)
-
-### Advanced APIs
-- `GET /api/financial-reports/summary` — Financial summary
-- `GET /api/financial-reports/cashflow` — Cash flow data
-- `GET /api/search?q=` — Global search
-- `GET /api/calendar` — Calendar events
-- `GET /api/audit` — Audit log
-- `POST /api/email/send` — Send email
-- `POST /api/email/bulk` — Bulk email
-- `GET /api/report-templates` — Report templates
-- `GET /api/permissions/roles` — Role permissions
-- `POST /api/upload` — File upload
-
-## Database Tables
-
-| Table | Description |
-|-------|-------------|
-| `projects` | Project information |
-| `invoices` | Invoice records |
-| `safety_incidents` | Safety reports |
-| `rfis` | Requests for Information |
-| `change_orders` | Variation orders |
-| `team_members` | Staff records |
-| `equipment` | Plant & equipment |
-| `subcontractors` | Subcontractor data |
-| `documents` | Document metadata |
-| `timesheets` | Hours tracking |
-| `email_logs` | Email history |
-| `scheduled_emails` | Scheduled emails |
-| `email_preferences` | User email settings |
-| `report_templates` | Saved templates |
-| `custom_roles` | Custom RBAC roles |
-| `audit_log` | Change tracking |
+| Document                                               | Purpose                    |
+| ------------------------------------------------------ | -------------------------- |
+| [docs/README.md](docs/README.md)                       | Full documentation index   |
+| [docs/API_DOCUMENTATION.md](docs/API_DOCUMENTATION.md) | API reference              |
+| [DEPLOYMENT_RUNBOOK.md](DEPLOYMENT_RUNBOOK.md)         | Production deployment      |
+| [CONTRIBUTING.md](CONTRIBUTING.md)                     | How to contribute          |
+| [AGENTS.md](AGENTS.md)                                 | Guide for AI coding agents |
+| [CLAUDE.md](CLAUDE.md)                                 | Claude Code instructions   |
 
 ## Security
 
 - JWT authentication on all API routes
-- Role-based access control (RBAC)
-- Column whitelisting for SQL injection prevention
+- RBAC with 6 roles
+- Column whitelisting (SQL injection prevention)
+- Rate limiting on sensitive endpoints
 - XSS protection in email templates
-- Rate limiting on email endpoints
-- Authorization checks on sensitive routes
 
-## Build
+## Troubleshooting
 
 ```bash
-npm run build
+# API health
+curl http://127.0.0.1:3001/api/health
+
+# Container status
+docker ps | grep cortexbuild
+
+# Restart API (no rebuild)
+docker restart cortexbuild-api
+
+# Check logs
+docker logs cortexbuild-api --tail 50
 ```
-
-Output in `dist/` directory.
-
-## Deployment
-
-### Frontend (Vercel)
-
-```bash
-vercel deploy --prod
-```
-
-### Backend (PM2)
-
-```bash
-pm2 start server/index.js --name cortexbuild-api
-pm2 save
-```
-
-## License
-
-© 2026 CortexBuild Ltd. UK Construction Management Platform.

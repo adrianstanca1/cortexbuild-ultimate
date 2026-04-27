@@ -93,34 +93,34 @@ export function ReportTemplates() {
 
   return (
     <>
-      <ModuleBreadcrumbs currentModule="report-templates" onNavigate={() => {}} />
+      <ModuleBreadcrumbs currentModule="report-templates" />
       <div className="space-y-6">
       <div className="flex justify-between items-center">
-        <h1 className="text-2xl font-bold text-white">Report Templates</h1>
+        <h1 className="text-2xl font-display text-white">Report Templates</h1>
       </div>
 
       {/* KPI Stats */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <div className="input input-bordered p-4">
           <p className="text-xs text-gray-400 uppercase mb-1">Total Templates</p>
-          <p className="text-2xl font-bold text-white">{Number(templates.length)}</p>
+          <p className="text-2xl font-display text-white">{Number(templates.length)}</p>
         </div>
         <div className="input input-bordered p-4">
           <p className="text-xs text-gray-400 uppercase mb-1">Scheduled Reports</p>
-          <p className="text-2xl font-bold text-white">12</p>
+          <p className="text-2xl font-display text-white">12</p>
         </div>
         <div className="input input-bordered p-4">
           <p className="text-xs text-gray-400 uppercase mb-1">Generated This Month</p>
-          <p className="text-2xl font-bold text-white">47</p>
+          <p className="text-2xl font-display text-white">47</p>
         </div>
         <div className="input input-bordered p-4">
           <p className="text-xs text-gray-400 uppercase mb-1">Avg Generation Time</p>
-          <p className="text-2xl font-bold text-white">2.3s</p>
+          <p className="text-2xl font-display text-white">2.3s</p>
         </div>
       </div>
 
       {/* Sub-tabs */}
-      <div className="border-b border-gray-700 flex gap-1 overflow-x-auto">
+      <div className="border-b border-gray-700 flex gap-1 cb-table-scroll touch-pan-x">
         {TABS.map(t => {
           const Icon = t.icon;
           return (
@@ -274,7 +274,7 @@ export function ReportTemplates() {
                   {Number(template.id) === expandedId && (
                     <div className="mt-4 ml-12 p-4 bg-gray-800/50 rounded-lg">
                       <h5 className="text-xs text-gray-500 uppercase mb-2">Configuration</h5>
-                      <pre className="text-xs text-gray-400 overflow-x-auto">
+                      <pre className="text-xs text-gray-400 cb-table-scroll touch-pan-x">
                         {JSON.stringify(template.config, null, 2)}
                       </pre>
                     </div>
@@ -290,7 +290,7 @@ export function ReportTemplates() {
       {subTab === 'builder' && (
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
           <div className="bg-gray-900 border border-gray-700 rounded-lg p-4">
-            <h3 className="font-bold text-white mb-3">Add Sections</h3>
+            <h3 className="font-display text-white mb-3">Add Sections</h3>
             <div className="space-y-2">
               {['Summary', 'KPI Metrics', 'Table', 'Chart', 'Image', 'Page Break'].map(section => (
                 <button
@@ -310,7 +310,7 @@ export function ReportTemplates() {
             </div>
           </div>
           <div className="bg-gray-900 border border-gray-700 rounded-lg p-4">
-            <h3 className="font-bold text-white mb-3">Settings</h3>
+            <h3 className="font-display text-white mb-3">Settings</h3>
             <div className="space-y-3 text-sm">
               <div>
                 <label className="block text-gray-400 mb-1">Title</label>
@@ -344,15 +344,15 @@ export function ReportTemplates() {
             Schedule New Report
           </button>
           <div className="bg-gray-900 border border-gray-700 rounded-lg overflow-hidden">
-            <div className="overflow-x-auto">
+            <div className="cb-table-scroll touch-pan-x">
               <table className="w-full text-sm">
                 <thead className="bg-gray-800">
                   <tr>
-                    <th className="text-left px-4 py-3 text-xs font-semibold text-gray-300">Report Name</th>
-                    <th className="text-left px-4 py-3 text-xs font-semibold text-gray-300">Frequency</th>
-                    <th className="text-left px-4 py-3 text-xs font-semibold text-gray-300">Recipients</th>
-                    <th className="text-left px-4 py-3 text-xs font-semibold text-gray-300">Next Run</th>
-                    <th className="text-left px-4 py-3 text-xs font-semibold text-gray-300">Status</th>
+                    <th className="text-left px-4 py-3 text-xs font-display tracking-widest text-gray-300">Report Name</th>
+                    <th className="text-left px-4 py-3 text-xs font-display tracking-widest text-gray-300">Frequency</th>
+                    <th className="text-left px-4 py-3 text-xs font-display tracking-widest text-gray-300">Recipients</th>
+                    <th className="text-left px-4 py-3 text-xs font-display tracking-widest text-gray-300">Next Run</th>
+                    <th className="text-left px-4 py-3 text-xs font-display tracking-widest text-gray-300">Status</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-800">
@@ -382,15 +382,15 @@ export function ReportTemplates() {
       {/* ARCHIVE TAB */}
       {subTab === 'archive' && (
         <div className="bg-gray-900 border border-gray-700 rounded-lg overflow-hidden">
-          <div className="overflow-x-auto">
+          <div className="cb-table-scroll touch-pan-x">
             <table className="w-full text-sm">
               <thead className="bg-gray-800">
                 <tr>
-                  <th className="text-left px-4 py-3 text-xs font-semibold text-gray-300">Report Name</th>
-                  <th className="text-left px-4 py-3 text-xs font-semibold text-gray-300">Generated</th>
-                  <th className="text-left px-4 py-3 text-xs font-semibold text-gray-300">Format</th>
-                  <th className="text-left px-4 py-3 text-xs font-semibold text-gray-300">Size</th>
-                  <th className="text-left px-4 py-3 text-xs font-semibold text-gray-300">Action</th>
+<th className="text-left px-4 py-3 text-xs font-display tracking-widest text-gray-300">Report Name</th>
+                    <th className="text-left px-4 py-3 text-xs font-display tracking-widest text-gray-300">Generated</th>
+                    <th className="text-left px-4 py-3 text-xs font-display tracking-widest text-gray-300">Format</th>
+                    <th className="text-left px-4 py-3 text-xs font-display tracking-widest text-gray-300">Size</th>
+                    <th className="text-left px-4 py-3 text-xs font-display tracking-widest text-gray-300">Action</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-800">
@@ -422,7 +422,7 @@ export function ReportTemplates() {
         <div className="space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="bg-gray-900 border border-gray-700 rounded-lg p-4">
-              <h3 className="font-bold text-white mb-3">Most Used Templates</h3>
+              <h3 className="font-display text-white mb-3">Most Used Templates</h3>
               <div className="space-y-3">
                 {[
                   { name: 'Monthly Financial Report', uses: 127 },
@@ -445,11 +445,11 @@ export function ReportTemplates() {
               </div>
             </div>
             <div className="bg-gray-900 border border-gray-700 rounded-lg p-4">
-              <h3 className="font-bold text-white mb-3 flex items-center gap-2">
+              <h3 className="font-display text-white mb-3 flex items-center gap-2">
                 <TrendingUp className="h-5 w-5 text-emerald-400" />
                 Generation Trend
               </h3>
-              <p className="text-3xl font-bold text-white mb-1">47</p>
+              <p className="text-3xl font-display text-white mb-1">47</p>
               <p className="text-sm text-green-400">↑ 12% from last month</p>
             </div>
           </div>
@@ -518,7 +518,7 @@ function TemplateModal({
         onClick={e => e.stopPropagation()}
       >
         <div className="p-6 border-b border-gray-800">
-          <h3 className="text-lg font-bold text-white">
+          <h3 className="text-lg font-display text-white">
             {template ? 'Edit Template' : 'Create Template'}
           </h3>
         </div>

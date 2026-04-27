@@ -5,6 +5,7 @@ import {
   Wifi, Battery, Volume2, Grid,
   MessageSquare, HardHat, Layers, Shield
 } from 'lucide-react';
+import { ModuleBreadcrumbs } from '../ui/Breadcrumbs';
 interface AppInfo {
   id: string;
   name: string;
@@ -27,18 +28,42 @@ interface WindowState {
   zIndex: number;
 }
 
+
+
+// ⚡ Bolt Performance Optimization:
+// Extracted SystemClock into a standalone component.
+// Previously, currentTime was stored in the parent MyDesktop state and updated via
+// setInterval every second, which caused the entire MyDesktop (and all its windows)
+// to re-render 1x/sec. Isolating this state ensures only the clock UI re-renders.
+const SystemClock: React.FC = () => {
+  const [currentTime, setCurrentTime] = useState(new Date());
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setCurrentTime(new Date());
+    }, 1000);
+    return () => clearInterval(timer);
+  }, []);
+
+  return (
+    <div className="text-white text-sm font-medium flex flex-col items-end">
+      <div>{currentTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</div>
+      <div className="text-xs text-gray-400">{currentTime.toLocaleDateString()}</div>
+    </div>
+  );
+};
+
 export const MyDesktop: React.FC = () => {
   // Desktop State
   const [windows, setWindows] = useState<WindowState[]>([]);
   const [activeWindowId, setActiveWindowId] = useState<string | null>(null);
   const [startMenuOpen, setStartMenuOpen] = useState(false);
-  const [currentTime, setCurrentTime] = useState(new Date());
   const [maxZIndex, setMaxZIndex] = useState(10);
   const [searchQuery, setSearchQuery] = useState('');
   const [showSystemStats, setShowSystemStats] = useState(false);
   
   const desktopRef = useRef<HTMLDivElement>(null);
-  const dragRef = useRef<{ id: string, startX: number, startY: number, initX: number, initY: number } | null>(null);
+  const dragRef = useRef<{ id: string, startX: number, startY: number, initX: number, initY: number, currentX?: number, currentY?: number } | null>(null);
 
   // Available Applications
   const availableApps: AppInfo[] = [
@@ -74,13 +99,6 @@ export const MyDesktop: React.FC = () => {
     return acc;
   }, {} as Record<string, AppInfo[]>);
 
-  // Time update effect
-  useEffect(() => {
-    const timer = setInterval(() => {
-      setCurrentTime(new Date());
-    }, 1000);
-    return () => clearInterval(timer);
-  }, []);
 
   // --- Window Management Callbacks ---
   const focusWindow = useCallback((windowId: string) => {
@@ -170,8 +188,8 @@ export const MyDesktop: React.FC = () => {
           <div className="p-4 bg-gray-100 h-full">
             <div className="bg-black text-white text-right p-3 mb-3 font-mono text-lg">0</div>
             <div className="grid grid-cols-4 gap-2">
-              {[ 'C', '±', '%', '÷', '7', '8', '9', '×', '4', '5', '6', '-', '1', '2', '3', '+', '0', '0', '.', '=' ].map((btn) => (
-                <button key={btn} className="bg-gray-300 hover:bg-gray-400 p-3 rounded text-sm font-medium">
+              {[ 'C', '±', '%', '÷', '7', '8', '9', '×', '4', '5', '6', '-', '1', '2', '3', '+', '0', '0', '.', '=' ].map((btn, index) => (
+                <button key={`${btn}-${index}`} className="bg-gray-300 hover:bg-gray-400 p-3 rounded text-sm font-medium">
                   {btn}
                 </button>
               ))}
@@ -270,26 +288,41 @@ export const MyDesktop: React.FC = () => {
   }, [windows, maxZIndex, focusWindow, toggleMinimize, getAppContent]);
 
   useEffect(() => {
+    let rafId: number;
+
     const handleMouseMove = (e: MouseEvent) => {
       if (!dragRef.current) return;
 
       const deltaX = e.clientX - dragRef.current.startX;
       const deltaY = e.clientY - dragRef.current.startY;
 
-      setWindows(prev => prev.map(w => 
-        w.id === dragRef.current?.id
-          ? {
-              ...w,
-              position: {
-                x: Math.max(0, dragRef.current.initX + deltaX),
-                y: Math.max(0, dragRef.current.initY + deltaY)
-              }
-            }
-          : w
-      ));
+      const newX = Math.max(0, dragRef.current.initX + deltaX);
+      const newY = Math.max(0, dragRef.current.initY + deltaY);
+
+      dragRef.current.currentX = newX;
+      dragRef.current.currentY = newY;
+
+      const windowEl = document.getElementById(dragRef.current.id);
+      if (windowEl) {
+        cancelAnimationFrame(rafId);
+        rafId = requestAnimationFrame(() => {
+          // Direct DOM manipulation to avoid top-level re-renders
+          windowEl.style.left = `${newX}px`;
+          windowEl.style.top = `${newY}px`;
+        });
+      }
     };
 
     const handleMouseUp = () => {
+      if (dragRef.current && dragRef.current.currentX !== undefined && dragRef.current.currentY !== undefined) {
+        // Sync final position to React state
+        const { id, currentX, currentY } = dragRef.current;
+        setWindows(prev => prev.map(w =>
+          w.id === id
+            ? { ...w, position: { x: currentX, y: currentY } }
+            : w
+        ));
+      }
       dragRef.current = null;
     };
 
@@ -299,6 +332,7 @@ export const MyDesktop: React.FC = () => {
     return () => {
       document.removeEventListener('mousemove', handleMouseMove);
       document.removeEventListener('mouseup', handleMouseUp);
+      cancelAnimationFrame(rafId);
     };
   }, []);
 
@@ -315,6 +349,9 @@ export const MyDesktop: React.FC = () => {
       className="h-screen bg-gradient-to-br from-slate-800 via-slate-900 to-black relative overflow-hidden"
       onClick={() => setStartMenuOpen(false)}
     >
+      <div className="absolute top-10 left-4 right-4 z-40 max-w-[1680px] mx-auto pointer-events-auto">
+        <ModuleBreadcrumbs currentModule="my-desktop" />
+      </div>
       {/* Demo Banner */}
       <div className="absolute top-0 left-0 right-0 z-50 bg-amber-500/20 border-b border-amber-500/30 px-4 py-1.5 flex items-center justify-center gap-2">
         <span className="px-2 py-0.5 rounded text-xs font-medium bg-amber-500/30 text-amber-300 border border-amber-500/40">EXPERIMENTAL</span>
@@ -330,8 +367,8 @@ export const MyDesktop: React.FC = () => {
         </div>
       </div>
 
-      {/* Desktop Icons */}
-      <div className="absolute top-4 left-4 grid gap-4">
+      {/* Desktop Icons — below demo strip + module breadcrumbs */}
+      <div className="absolute top-28 left-4 grid gap-4">
         {[
           { icon: Folder, name: 'Documents', color: 'text-yellow-400' },
           { icon: Terminal, name: 'Terminal', color: 'text-green-400' },
@@ -349,6 +386,7 @@ export const MyDesktop: React.FC = () => {
       {windows.map(window => (
         <div
           key={window.id}
+          id={window.id}
           className={`absolute bg-white rounded-lg shadow-2xl overflow-hidden ${window.isMinimized ? 'hidden' : ''}`}
           style={{
             left: window.isMaximized ? 0 : window.position.x,
@@ -467,10 +505,7 @@ export const MyDesktop: React.FC = () => {
             CPU: 12%
           </button>
           
-          <div className="text-white text-sm font-medium">
-            <div>{currentTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</div>
-            <div className="text-xs text-gray-400">{currentTime.toLocaleDateString()}</div>
-          </div>
+          <SystemClock />
         </div>
       </div>
 

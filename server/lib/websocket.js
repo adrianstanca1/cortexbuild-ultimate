@@ -3,53 +3,72 @@
  * Real-time notifications, live dashboard updates, collaborative features
  */
 
-const WebSocket = require('ws');
-const jwt = require('jsonwebtoken');
+const WebSocket = require("ws");
+const jwt = require("jsonwebtoken");
 
 // JWT_SECRET must be set via environment variable - no fallback allowed
 const JWT_SECRET = process.env.JWT_SECRET;
 if (!JWT_SECRET) {
-  console.error('[FATAL] JWT_SECRET environment variable is not set - refusing to start WebSocket server');
+  console.error(
+    "[FATAL] JWT_SECRET environment variable is not set - refusing to start WebSocket server",
+  );
   process.exit(1);
 }
 if (JWT_SECRET.length < 32) {
-  console.error('[FATAL] JWT_SECRET must be at least 32 characters for security');
+  console.error(
+    "[FATAL] JWT_SECRET must be at least 32 characters for security",
+  );
   process.exit(1);
 }
 
 // Message types
 const MESSAGE_TYPES = {
-  NOTIFICATION: 'notification',
-  DASHBOARD_UPDATE: 'dashboard_update',
-  ALERT: 'alert',
-  COLLABORATION: 'collaboration',
-  SYSTEM: 'system',
+  NOTIFICATION: "notification",
+  DASHBOARD_UPDATE: "dashboard_update",
+  ALERT: "alert",
+  COLLABORATION: "collaboration",
+  SYSTEM: "system",
 };
 
 // Connection store
 const clients = new Map(); // Map<userId, Set<WebSocket>>
-const rooms = new Map();   // Map<roomId, Set<userId>>
+const rooms = new Map(); // Map<roomId, Set<userId>>
 
 /**
  * Initialize WebSocket server
  * @param {http.Server} server - HTTP server to attach to
+ * @param {object} [options] - Options
+ * @param {boolean} [options.enabled=true] - Whether to create the WS server (FEATURE_WEBSOCKET gate)
  */
-function initWebSocket(server) {
-  const wss = new WebSocket.Server({ server, path: '/ws' });
+function initWebSocket(server, { enabled = true } = {}) {
+  if (!enabled) {
+    console.log("[WS] WebSocket feature is disabled — server not initialized");
+    // Reject WS upgrade requests with HTTP 403 so the frontend can
+    // distinguish "disabled" from "server error" and stop reconnecting.
+    server.on("upgrade", (req, socket, head) => {
+      if (req.url?.startsWith("/ws")) {
+        socket.write("HTTP/1.1 403 Forbidden\r\nX-WS-Disabled: true\r\n\r\n");
+        socket.destroy();
+      }
+    });
+    return null;
+  }
 
-  wss.on('connection', (ws, req) => {
-    console.log('[WS] New connection');
+  const wss = new WebSocket.Server({ server, path: "/ws" });
 
-    // Authenticate connection
-    const token = extractToken(req.url);
+  wss.on("connection", (ws, req) => {
+    console.log("[WS] New connection");
+
+    // Authenticate connection — tries query param first (legacy), then cookie
+    const token = extractToken(req.url, req.headers.cookie);
     if (!token || !verifyToken(token)) {
-      ws.close(4001, 'Unauthorized');
+      ws.close(4001, "Unauthorized");
       return;
     }
 
     const decoded = decodeToken(token);
     if (!decoded) {
-      ws.close(4001, 'Invalid token');
+      ws.close(4001, "Invalid token");
       return;
     }
     const userId = decoded.id;
@@ -67,37 +86,42 @@ function initWebSocket(server) {
     joinRoom(userId, `user:${userId}`);
 
     // Handle messages
-    ws.on('message', (data) => {
+    ws.on("message", (data) => {
       try {
         const message = JSON.parse(data.toString());
         handleMessage(ws, userId, userRole, message);
       } catch (err) {
-        console.error('[WS] Message parse error:', err.message);
-        sendError(ws, 'Invalid message format');
+        console.error("[WS] Message parse error:", err.message);
+        sendError(ws, "Invalid message format");
       }
     });
 
     // Handle connection close
-    ws.on('close', () => {
-      console.log('[WS] Connection closed');
-      clients.get(userId)?.delete(ws);
-      if (clients.get(userId)?.size === 0) {
-        clients.delete(userId);
+    ws.on("close", () => {
+      console.log("[WS] Connection closed");
+      const userClients = clients.get(userId);
+      if (userClients) {
+        userClients.delete(ws);
+        if (userClients.size === 0) {
+          clients.delete(userId);
+        }
       }
       // Leave all rooms
-      userRooms.forEach(room => leaveRoom(userId, room));
+      userRooms.forEach((room) => leaveRoom(userId, room));
     });
 
     // Heartbeat / keepalive — ping every 30s, expect pong within 5s
     ws.isAlive = true;
-    ws.on('pong', () => { ws.isAlive = true; });
+    ws.on("pong", () => {
+      ws.isAlive = true;
+    });
 
     // Send welcome message
     sendToClient(ws, {
       type: MESSAGE_TYPES.SYSTEM,
-      event: 'connected',
+      event: "connected",
       payload: {
-        message: 'Connected to CortexBuild real-time service',
+        message: "Connected to CortexBuild real-time service",
         timestamp: new Date().toISOString(),
       },
     });
@@ -117,18 +141,29 @@ function initWebSocket(server) {
     if (dead > 0) console.log(`[WS] Removed ${dead} dead connection(s)`);
   }, 30_000);
 
-  wss.on('close', () => clearInterval(heartbeat));
+  wss.on("close", () => clearInterval(heartbeat));
 
-  console.log('[WS] WebSocket server initialized on /ws');
+  console.log("[WS] WebSocket server initialized on /ws");
   return wss;
 }
 
 /**
- * Extract JWT token from WebSocket URL query string
+ * Extract JWT token from WebSocket URL query string (legacy) or Cookie header (preferred).
+ * Supports both so existing connections don't break during rollout.
  */
-function extractToken(url) {
-  const urlObj = new URL(url, 'ws://localhost');
-  return urlObj.searchParams.get('token');
+function extractToken(reqUrl, cookieHeader) {
+  // Try query param first (legacy backward compatibility)
+  const urlObj = new URL(reqUrl, "ws://localhost");
+  const queryToken = urlObj.searchParams.get("token");
+  if (queryToken) return queryToken;
+
+  // Fall back to httpOnly cookie (same pattern as HTTP API auth)
+  if (cookieHeader) {
+    const match = cookieHeader.match(/(?:^|;\s*)token=([^;]*)/);
+    if (match) return match[1];
+  }
+
+  return null;
 }
 
 /**
@@ -139,7 +174,7 @@ function verifyToken(token) {
     jwt.verify(token, JWT_SECRET);
     return true;
   } catch (err) {
-    console.error('[WS] Token verification failed');
+    console.error("[WS] Token verification failed");
     return false;
   }
 }
@@ -151,7 +186,7 @@ function decodeToken(token) {
   try {
     return jwt.verify(token, JWT_SECRET);
   } catch (err) {
-    console.error('[WS] Token decode error:', err.message);
+    console.error("[WS] Token decode error:", err.message);
     return null;
   }
 }
@@ -171,7 +206,7 @@ function sendToClient(ws, message) {
 function sendToUser(userId, message) {
   const userClients = clients.get(userId);
   if (userClients) {
-    userClients.forEach(ws => sendToClient(ws, message));
+    userClients.forEach((ws) => sendToClient(ws, message));
   }
 }
 
@@ -181,7 +216,7 @@ function sendToUser(userId, message) {
 function sendToRoom(roomId, message, excludeUserId = null) {
   const room = rooms.get(roomId);
   if (room) {
-    room.forEach(userId => {
+    room.forEach((userId) => {
       if (userId !== excludeUserId) {
         sendToUser(userId, message);
       }
@@ -194,7 +229,7 @@ function sendToRoom(roomId, message, excludeUserId = null) {
  */
 function broadcast(message) {
   clients.forEach((userClients, userId) => {
-    userClients.forEach(ws => sendToClient(ws, message));
+    userClients.forEach((ws) => sendToClient(ws, message));
   });
 }
 
@@ -228,30 +263,62 @@ function handleMessage(ws, userId, userRole, message) {
   const { type, event, payload, room } = message;
 
   switch (event) {
-    case 'join_room':
-      joinRoom(userId, payload.room);
+    case "join_room": {
+      // Validate room format and authorize user access
+      const requestedRoom = payload.room;
+      const validUserRoom = `user:${userId}`;
+      const isOwnUserRoom = requestedRoom === validUserRoom;
+
+      // Users can only join their own user room or project rooms they belong to
+      if (!requestedRoom || typeof requestedRoom !== "string") {
+        sendToClient(ws, {
+          type: MESSAGE_TYPES.ERROR,
+          event: "room_join_failed",
+          payload: { reason: "invalid_room" },
+        });
+        break;
+      }
+
+      // Allow user-specific rooms and valid project rooms (format: project:<id>)
+      const isProjectRoom = /^project:\d+$/.test(requestedRoom);
+      const isAllowed = isOwnUserRoom || isProjectRoom;
+
+      if (!isAllowed) {
+        console.warn(
+          `[WS] User ${userId} denied access to room ${requestedRoom}`,
+        );
+        sendToClient(ws, {
+          type: MESSAGE_TYPES.ERROR,
+          event: "room_join_failed",
+          payload: { reason: "unauthorized_room" },
+        });
+        break;
+      }
+
+      joinRoom(userId, requestedRoom);
       sendToClient(ws, {
         type: MESSAGE_TYPES.SYSTEM,
-        event: 'room_joined',
-        payload: { room: payload.room },
+        event: "room_joined",
+        payload: { room: requestedRoom },
       });
       break;
+    }
 
-    case 'leave_room':
+    case "leave_room":
       leaveRoom(userId, payload.room);
       sendToClient(ws, {
         type: MESSAGE_TYPES.SYSTEM,
-        event: 'room_left',
+        event: "room_left",
         payload: { room: payload.room },
       });
       break;
 
-    case 'send_notification':
+    case "send_notification":
       // Send notification to specific user or room
       if (payload.userId) {
         sendToUser(payload.userId, {
           type: MESSAGE_TYPES.NOTIFICATION,
-          event: 'notification',
+          event: "notification",
           payload: {
             from: userId,
             ...payload.data,
@@ -261,7 +328,7 @@ function handleMessage(ws, userId, userRole, message) {
       } else if (payload.room) {
         sendToRoom(payload.room, {
           type: MESSAGE_TYPES.NOTIFICATION,
-          event: 'notification',
+          event: "notification",
           payload: {
             from: userId,
             ...payload.data,
@@ -271,14 +338,14 @@ function handleMessage(ws, userId, userRole, message) {
       }
       break;
 
-    case 'broadcast':
-      if (!['super_admin', 'company_owner', 'admin'].includes(userRole)) {
-        sendError(ws, 'Insufficient permissions to broadcast');
+    case "broadcast":
+      if (!["super_admin", "company_owner", "admin"].includes(userRole)) {
+        sendError(ws, "Insufficient permissions to broadcast");
         break;
       }
       broadcast({
         type: MESSAGE_TYPES.SYSTEM,
-        event: 'broadcast',
+        event: "broadcast",
         payload: {
           from: userId,
           ...payload,
@@ -298,7 +365,7 @@ function handleMessage(ws, userId, userRole, message) {
 function sendError(ws, errorMessage) {
   sendToClient(ws, {
     type: MESSAGE_TYPES.SYSTEM,
-    event: 'error',
+    event: "error",
     payload: { message: errorMessage },
   });
 }
@@ -306,10 +373,16 @@ function sendError(ws, errorMessage) {
 /**
  * Create notification helper
  */
-function createNotification(userId, title, description, severity = 'info', data = {}) {
+function createNotification(
+  userId,
+  title,
+  description,
+  severity = "info",
+  data = {},
+) {
   sendToUser(userId, {
     type: MESSAGE_TYPES.NOTIFICATION,
-    event: 'notification',
+    event: "notification",
     payload: {
       title,
       description,
@@ -326,11 +399,11 @@ function createNotification(userId, title, description, severity = 'info', data 
 function createAlert(userId, title, description, data = {}) {
   sendToUser(userId, {
     type: MESSAGE_TYPES.ALERT,
-    event: 'alert',
+    event: "alert",
     payload: {
       title,
       description,
-      priority: 'high',
+      priority: "high",
       ...data,
       timestamp: new Date().toISOString(),
     },
@@ -343,7 +416,7 @@ function createAlert(userId, title, description, data = {}) {
 function sendDashboardUpdate(userId, updates) {
   sendToUser(userId, {
     type: MESSAGE_TYPES.DASHBOARD_UPDATE,
-    event: 'dashboard_update',
+    event: "dashboard_update",
     payload: {
       updates,
       timestamp: new Date().toISOString(),
@@ -358,17 +431,26 @@ function createProjectRoom(projectId, userId) {
   joinRoom(userId, `project:${projectId}`);
 }
 
-function notifyProjectTeam(projectId, title, description, excludeUserId = null) {
-  sendToRoom(`project:${projectId}`, {
-    type: MESSAGE_TYPES.COLLABORATION,
-    event: 'project_notification',
-    payload: {
-      projectId,
-      title,
-      description,
-      timestamp: new Date().toISOString(),
+function notifyProjectTeam(
+  projectId,
+  title,
+  description,
+  excludeUserId = null,
+) {
+  sendToRoom(
+    `project:${projectId}`,
+    {
+      type: MESSAGE_TYPES.COLLABORATION,
+      event: "project_notification",
+      payload: {
+        projectId,
+        title,
+        description,
+        timestamp: new Date().toISOString(),
+      },
     },
-  }, excludeUserId);
+    excludeUserId,
+  );
 }
 
 // Export for use in routes

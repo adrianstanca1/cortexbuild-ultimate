@@ -15,9 +15,6 @@ async function getEvents(req, res) {
     let params = [];
     if (role === 'super_admin') {
       // no filter
-    } else if (role === 'company_owner') {
-      orgFilter = 'AND company_id = $1';
-      params = [req.user.company_id];
     } else {
       orgFilter = 'AND COALESCE(organization_id, company_id) = $1';
       params = [orgId || req.user.company_id];

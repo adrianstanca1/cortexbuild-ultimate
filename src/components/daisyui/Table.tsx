@@ -48,7 +48,7 @@ export const Table: React.FC<TableProps> = ({
   }
 
   return (
-    <div className="overflow-x-auto">
+    <div className="cb-table-scroll touch-pan-x">
       <table className={classes}>
         <thead>
           <tr className={size === 'sm' ? 'text-xs' : size === 'lg' ? 'text-lg' : ''}>

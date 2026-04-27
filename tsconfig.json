@@ -1,12 +1,8 @@
 {
   "compilerOptions": {
-    "target": "ES2020",
+    "target": "ES2022",
     "useDefineForClassFields": true,
-    "lib": [
-      "ES2020",
-      "DOM",
-      "DOM.Iterable"
-    ],
+    "lib": ["ES2022", "DOM", "DOM.Iterable"],
     "module": "ESNext",
     "skipLibCheck": true,
     "moduleResolution": "bundler",
@@ -16,26 +12,25 @@
     "noEmit": true,
     "jsx": "react-jsx",
     "strict": true,
+    "strictNullChecks": true,
+    "strictFunctionTypes": true,
+    "strictBindCallApply": true,
+    "strictPropertyInitialization": true,
+    "noImplicitThis": true,
+    "alwaysStrict": true,
     "noUnusedLocals": false,
     "noUnusedParameters": false,
     "noFallthroughCasesInSwitch": true,
-    "typeRoots": [
-      "./node_modules/@types"
-    ],
+    "noUncheckedIndexedAccess": false,
+    "noImplicitReturns": true,
+    "noImplicitOverride": true,
+    "typeRoots": ["./node_modules/@types"],
     "baseUrl": ".",
     "paths": {
-      "@/*": [
-        "src/*"
-      ]
-    },
-    "ignoreDeprecations": "6.0"
+      "@/*": ["src/*"],
+      "~patterns/*": ["/Users/adrianstanca/patterns/src/*"]
+    }
   },
-  "include": [
-    "src"
-  ],
-  "exclude": [
-    "node_modules",
-    "../node_modules",
-    "src/test"
-  ]
+  "include": ["src"],
+  "exclude": ["node_modules", "../node_modules", "src/test"]
 }

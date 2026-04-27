@@ -96,25 +96,51 @@ echo "✅ Frontend built to dist/"
 # ── 11. Configure nginx ───────────────────────────────────────
 NGINX_CONF="/etc/nginx/sites-available/cortexbuild"
 cat > "$NGINX_CONF" <<'NGINXEOF'
+# Host nginx in front of PM2 / Node on :3001 — timeouts avoid 504 on slow AI/DB routes.
 server {
     listen 80;
     server_name _;
 
+    client_max_body_size 100M;
+
     root /var/www/cortexbuild-ultimate/dist;
     index index.html;
 
-    # API proxy
     location /api/ {
-        proxy_pass http://localhost:3001;
+        proxy_pass http://127.0.0.1:3001;
         proxy_http_version 1.1;
-        proxy_set_header Upgrade $http_upgrade;
-        proxy_set_header Connection 'upgrade';
         proxy_set_header Host $host;
         proxy_set_header X-Real-IP $remote_addr;
-        proxy_cache_bypass $http_upgrade;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_connect_timeout 75s;
+        proxy_send_timeout 300s;
+        proxy_read_timeout 300s;
     }
 
-    # SPA fallback
+    location /ws {
+        proxy_pass http://127.0.0.1:3001;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection "upgrade";
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_read_timeout 7d;
+        proxy_send_timeout 7d;
+    }
+
+    location /uploads/ {
+        proxy_pass http://127.0.0.1:3001;
+        proxy_http_version 1.1;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_read_timeout 300s;
+    }
+
     location / {
         try_files $uri $uri/ /index.html;
     }

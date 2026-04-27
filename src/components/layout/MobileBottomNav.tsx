@@ -21,6 +21,7 @@ import {
 } from 'lucide-react';
 import { type Module } from '../../types';
 import { useIsMobile } from '../../hooks/useIsMobile';
+import { hapticImpact } from '../../lib/native/haptics';
 
 // ── Types ──────────────────────────────────────────────────────────────────────
 interface NavItem {
@@ -85,7 +86,8 @@ export function MobileBottomNav({
   const isMobile = useIsMobile(768);
   const [quickActionsOpen, setQuickActionsOpen] = useState(false);
   const [headerVisible, setHeaderVisible] = useState(true);
-  const [lastScrollY, setLastScrollY] = useState(0);
+  const lastScrollY = useRef(0);
+  const headerVisibleRef = useRef(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [pullDistance, setPullDistance] = useState(0);
   const [contextMenu, setContextMenu] = useState<{
@@ -102,20 +104,34 @@ export function MobileBottomNav({
   const accentColor = MODULE_ACCENTS[activeModule] || '#f59e0b';
 
   // ── Scroll-based header visibility ───────────────────────────────────────────
+  // ⚡ Bolt Performance Optimization:
+  // Replaced lastScrollY useState with useRef.
+  // Storing high-frequency scroll positions in React state causes layout-wide
+  // re-renders on every scroll tick. Using useRef prevents this while still
+  // allowing us to calculate scroll direction. headerVisible state is only
+  // updated when it actually needs to toggle, saving ~60 renders per second during scroll.
   useEffect(() => {
     const handleScroll = () => {
       const currentScrollY = window.scrollY;
-      if (currentScrollY > lastScrollY && currentScrollY > 100) {
+
+      // Determine if header should be hidden
+      const shouldHide = currentScrollY > lastScrollY.current && currentScrollY > 100;
+
+      // Only trigger a React state update if the visibility actually changes
+      if (shouldHide && headerVisibleRef.current) {
+        headerVisibleRef.current = false;
         setHeaderVisible(false);
-      } else {
+      } else if (!shouldHide && !headerVisibleRef.current) {
+        headerVisibleRef.current = true;
         setHeaderVisible(true);
       }
-      setLastScrollY(currentScrollY);
+
+      lastScrollY.current = currentScrollY;
     };
 
     window.addEventListener('scroll', handleScroll, { passive: true });
     return () => window.removeEventListener('scroll', handleScroll);
-  }, [lastScrollY]);
+  }, []);
 
   // ── Pull to refresh handlers ─────────────────────────────────────────────────
   const handleTouchStart = useCallback((e: TouchEvent) => {
@@ -193,9 +209,7 @@ export function MobileBottomNav({
         y: rect.top - 10,
         module,
       });
-      if (navigator.vibrate) {
-        navigator.vibrate(50);
-      }
+      void hapticImpact('medium');
     }, 500);
   }, []);
 
@@ -215,7 +229,7 @@ export function MobileBottomNav({
       accent: '#3b82f6',
       onClick: () => {
         setQuickActionsOpen(false);
-        if (navigator.vibrate) navigator.vibrate(30);
+        void hapticImpact('light');
       },
     },
     {
@@ -225,7 +239,7 @@ export function MobileBottomNav({
       accent: '#f59e0b',
       onClick: () => {
         setQuickActionsOpen(false);
-        if (navigator.vibrate) navigator.vibrate(30);
+        void hapticImpact('light');
       },
     },
     {
@@ -235,7 +249,7 @@ export function MobileBottomNav({
       accent: '#ef4444',
       onClick: () => {
         setQuickActionsOpen(false);
-        if (navigator.vibrate) navigator.vibrate(30);
+        void hapticImpact('light');
       },
     },
     {
@@ -245,7 +259,7 @@ export function MobileBottomNav({
       accent: '#10b981',
       onClick: () => {
         setQuickActionsOpen(false);
-        if (navigator.vibrate) navigator.vibrate(30);
+        void hapticImpact('light');
       },
     },
     {
@@ -255,7 +269,7 @@ export function MobileBottomNav({
       accent: '#8b5cf6',
       onClick: () => {
         setQuickActionsOpen(false);
-        if (navigator.vibrate) navigator.vibrate(30);
+        void hapticImpact('light');
       },
     },
   ];
@@ -286,7 +300,12 @@ export function MobileBottomNav({
       onTouchEnd={handleSwipeEnd}
       style={{
         position: 'relative',
-        minHeight: '100vh',
+        /* In MobileShell this sits after <main> in a flex column; min-height 100vh
+           forced the scrollable main area to collapse to zero (fixed chrome only). */
+        flexShrink: 0,
+        minHeight: 0,
+        height: 0,
+        overflow: 'visible',
       }}
     >
       {/* Pull to refresh indicator */}
@@ -536,7 +555,7 @@ export function MobileBottomNav({
                 key={item.module}
                 onClick={() => {
                   onModuleChange(item.module);
-                  if (navigator.vibrate) navigator.vibrate(15);
+                  void hapticImpact('light');
                 }}
                 onTouchStart={(e) => handleLongPressStart(e, item.module)}
                 onTouchEnd={handleLongPressEnd}
@@ -675,7 +694,7 @@ export function MobileBottomNav({
                     animation: `fadeInScale 0.2s cubic-bezier(0.16, 1, 0.3, 1) ${index * 0.05}s both`,
                   }}
                   onTouchStart={() => {
-                    if (navigator.vibrate) navigator.vibrate(10);
+                    void hapticImpact('light');
                   }}
                 >
                   <div
@@ -713,7 +732,7 @@ export function MobileBottomNav({
         <button
           onClick={() => {
             setQuickActionsOpen(prev => !prev);
-            if (navigator.vibrate) navigator.vibrate(20);
+            void hapticImpact('light');
           }}
           aria-label="Quick actions"
           aria-expanded={quickActionsOpen}
@@ -874,13 +893,6 @@ export function MobileBottomNav({
           }
         }
         
-        @media (prefers-reduced-motion: reduce) {
-          *, *::before, *::after {
-            animation-duration: 0.01ms !important;
-            animation-iteration-count: 1 !important;
-            transition-duration: 0.01ms !important;
-          }
-        }
       `}</style>
     </div>
   );

@@ -6,7 +6,7 @@
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { apiGet, apiPut, apiPost, apiDelete } from '@/lib/api';
 import { eventBus } from '@/lib/eventBus';
-import { getToken } from '@/lib/auth-storage';
+import { buildWebSocketUrl } from '@/lib/wsUrl';
 import {
   validateNotification,
   validateNotificationsResponse,
@@ -106,7 +106,9 @@ const playNotificationSound = () => {
       oscillator.start(ctx.currentTime);
       oscillator.stop(ctx.currentTime + 0.5);
       // SECURITY FIX: Close AudioContext to prevent memory leak
-      ctx.close();
+      oscillator.onended = () => {
+        ctx.close().catch(console.error);
+      };
     });
   } catch {
     // Silent fail if audio not supported
@@ -231,6 +233,7 @@ export function useNotificationCenter(
   const reconnectTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const reconnectAttemptRef = useRef(0);
   const settingsRef = useRef<NotificationSettings>(DEFAULT_SETTINGS);
+  const abortControllerRef = useRef<AbortController | null>(null);
 
   // State
   const [notifications, setNotifications] = useState<Notification[]>([]);
@@ -250,7 +253,7 @@ export function useNotificationCenter(
   const [searchQuery, setSearchQuery] = useState('');
 
   // Fetch notifications from API
-  const fetchNotifications = useCallback(async (query?: NotificationQuery) => {
+  const fetchNotifications = useCallback(async (query?: NotificationQuery, signal?: AbortSignal) => {
     setIsLoading(true);
     setError(null);
 
@@ -271,8 +274,11 @@ export function useNotificationCenter(
       if (query?.sortOrder) params.set('sortOrder', query.sortOrder);
 
       const rawResult = await apiGet<unknown>(
-        `/notifications${params.toString() ? `?${params.toString()}` : ''}`
+        `/notifications${params.toString() ? `?${params.toString()}` : ''}`,
+        { signal }
       );
+
+      if (signal?.aborted) return;
 
       const result = validateNotificationsResponse(rawResult);
 
@@ -294,28 +300,34 @@ export function useNotificationCenter(
       setTotal(result.total);
       setStats(calculateStats(validNotifications, result.unreadCount));
     } catch (err) {
+      if (signal?.aborted) return;
       const error = err instanceof Error ? err : new Error('Failed to fetch notifications');
       setError(error);
       console.error('Failed to fetch notifications:', error);
     } finally {
-      setIsLoading(false);
+      if (!signal?.aborted) {
+        setIsLoading(false);
+      }
     }
   }, []);
 
   // Fetch unread count
-  const fetchUnreadCount = useCallback(async () => {
+  const fetchUnreadCount = useCallback(async (signal?: AbortSignal) => {
     try {
-      const result = await apiGet<UnreadCountResponse>('/notifications/unread-count');
+      const result = await apiGet<UnreadCountResponse>('/notifications/unread-count', { signal });
+      if (signal?.aborted) return;
       setUnreadCount(result.unreadCount);
     } catch (err) {
+      if (signal?.aborted) return;
       console.error('Failed to fetch unread count:', err);
     }
   }, []);
 
   // Fetch settings
-  const fetchSettings = useCallback(async () => {
+  const fetchSettings = useCallback(async (signal?: AbortSignal) => {
     try {
-      const rawResult = await apiGet<unknown>('/notifications/settings');
+      const rawResult = await apiGet<unknown>('/notifications/settings', { signal });
+      if (signal?.aborted) return;
       const result = validateNotificationSettings(rawResult);
 
       if (!result) {
@@ -328,6 +340,7 @@ export function useNotificationCenter(
       setSettings(result);
       settingsRef.current = result;
     } catch (err) {
+      if (signal?.aborted) return;
       console.error('Failed to fetch notification settings:', err);
       // Use defaults if fetch fails
       setSettings(DEFAULT_SETTINGS);
@@ -337,19 +350,24 @@ export function useNotificationCenter(
 
   // Connect to WebSocket
   const connectWebSocket = useCallback(() => {
-    if (wsRef.current?.readyState === WebSocket.OPEN) return;
+    if (
+      wsRef.current?.readyState === WebSocket.OPEN ||
+      wsRef.current?.readyState === WebSocket.CONNECTING
+    ) {
+      return;
+    }
 
     setIsConnecting(true);
     setWsStatus((prev) => ({ ...prev, reconnecting: true, reconnectAttempt: reconnectAttemptRef.current + 1 }));
 
     try {
-      const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-      const authToken = getToken() || '';
-      const wsUrl = `${protocol}//${window.location.host}/ws${authToken ? `?token=${encodeURIComponent(authToken)}` : ''}`;
+      const wsUrl = buildWebSocketUrl('/ws');
 
       const ws = new WebSocket(wsUrl);
+      let wasEverOpen = false;
 
       ws.onopen = () => {
+        wasEverOpen = true;
         setIsConnecting(false);
         setWsStatus({
           isConnected: true,
@@ -423,9 +441,23 @@ export function useNotificationCenter(
         }
       };
 
-      ws.onclose = () => {
+      ws.onclose = (event) => {
         setWsStatus((prev) => ({ ...prev, isConnected: false }));
         eventBus.emit('ws:disconnect', undefined);
+
+        // If connection was never opened (code 1006 = abnormal closure),
+        // the server may have rejected the upgrade because WS is disabled.
+        // Try to detect this by checking if it was never open, and if so
+        // check with a lightweight API call before deciding to reconnect.
+        if (!wasEverOpen && event.code === 1006) {
+          // Server rejected the WS upgrade — likely FEATURE_WEBSOCKET is disabled.
+          // Stop reconnecting after a few attempts; set a disabled-like status.
+          if (reconnectAttemptRef.current >= 3) {
+            console.warn('[WS] Server rejected WebSocket upgrade multiple times — likely disabled. Stopping reconnect.');
+            setWsStatus({ isConnected: false, reconnecting: false, reconnectAttempt: 0, error: 'WebSocket is disabled on the server' });
+            return;
+          }
+        }
 
         // Reconnect with exponential backoff
         const delay = Math.min(1000 * Math.pow(2, reconnectAttemptRef.current), 30000);
@@ -460,12 +492,21 @@ export function useNotificationCenter(
     }
 
     if (wsRef.current) {
+      wsRef.current.onopen = null;
+      wsRef.current.onmessage = null;
+      wsRef.current.onerror = null;
       wsRef.current.onclose = null;
       wsRef.current.close();
       wsRef.current = null;
     }
 
-    setWsStatus((prev) => ({ ...prev, isConnected: false }));
+    setIsConnecting(false);
+    reconnectAttemptRef.current = 0;
+    setWsStatus({
+      isConnected: false,
+      reconnecting: false,
+      reconnectAttempt: 0,
+    });
   }, []);
 
   // Mark notification as read
@@ -552,7 +593,6 @@ export function useNotificationCenter(
         )
       );
 
-      // FIX: Use functional update to avoid stale closure
       setUnreadCount((prev) => {
         // We don't need to check notifications array - just decrement if it was unread
         return prev > 0 ? prev - 1 : prev;
@@ -591,7 +631,6 @@ export function useNotificationCenter(
         )
       );
 
-      // FIX: Use functional update to avoid stale closure
       setUnreadCount((prev) => {
         return prev > 0 ? prev - 1 : prev;
       });
@@ -730,18 +769,23 @@ export function useNotificationCenter(
   }, [fetchNotifications, currentFilter]);
 
   // Load history (archived notifications)
-  const loadHistory = useCallback(async (page = 1) => {
+  const loadHistory = useCallback(async (page = 1, signal?: AbortSignal) => {
     setIsLoading(true);
     try {
       const result = await apiGet<NotificationsResponse>(
-        `/notifications/history?page=${page}&pageSize=50&status=archived`
+        `/notifications/history?page=${page}&pageSize=50&status=archived`,
+        { signal }
       );
+      if (signal?.aborted) return;
       setNotifications(result.notifications);
       setTotal(result.total);
     } catch (err) {
+      if (signal?.aborted) return;
       console.error('Failed to load notification history:', err);
     } finally {
-      setIsLoading(false);
+      if (!signal?.aborted) {
+        setIsLoading(false);
+      }
     }
   }, []);
 
@@ -781,8 +825,11 @@ export function useNotificationCenter(
 
   // Initialize
   useEffect(() => {
-    fetchNotifications({ page: 1, pageSize: maxNotifications });
-    fetchSettings();
+    const controller = new AbortController();
+    abortControllerRef.current = controller;
+
+    fetchNotifications({ page: 1, pageSize: maxNotifications }, controller.signal);
+    fetchSettings(controller.signal);
 
     // Auto-connect WebSocket
     if (autoConnect) {
@@ -791,16 +838,22 @@ export function useNotificationCenter(
 
     // Poll for updates
     const pollInterval = setInterval(() => {
-      fetchUnreadCount();
+      fetchUnreadCount(controller.signal);
     }, pollingInterval);
 
     // SECURITY FIX: Proper cleanup of all resources
     return () => {
+      controller.abort();
+      if (abortControllerRef.current === controller) {
+        abortControllerRef.current = null;
+      }
       clearInterval(pollInterval);
       disconnectWebSocket();
+
       // Clear any pending timeouts
       if (reconnectTimeoutRef.current) {
         clearTimeout(reconnectTimeoutRef.current);
+        reconnectTimeoutRef.current = null;
       }
     };
   }, [

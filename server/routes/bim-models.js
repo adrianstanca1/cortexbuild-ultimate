@@ -130,7 +130,7 @@ router.get('/', authMiddleware, async (req, res) => {
        FROM bim_models m
        LEFT JOIN users u ON m.uploaded_by = u.id
        LEFT JOIN projects p ON m.project_id = p.id
-       WHERE m.company_id = $1
+       WHERE COALESCE(m.organization_id, m.company_id) = $1
        ORDER BY m.created_at DESC`,
       [req.user.company_id]
     );
@@ -153,7 +153,7 @@ router.get('/:id', authMiddleware, async (req, res) => {
        FROM bim_models m
        LEFT JOIN users u ON m.uploaded_by = u.id
        LEFT JOIN projects p ON m.project_id = p.id
-       WHERE m.id = $1 AND m.company_id = $2`,
+       WHERE m.id = $1 AND COALESCE(m.organization_id, m.company_id) = $2`,
       [req.params.id, req.user.company_id]
     );
 
@@ -224,117 +224,12 @@ router.post('/', authMiddleware, upload.single('file'), async (req, res) => {
       [rows[0].id]
     );
 
-    // Trigger immediate processing in background (non-blocking)
-    // In production, this would be a separate worker process
-    setImmediate(async () => {
-      try {
-        await processBIMModel(rows[0].id);
-      } catch (err) {
-        console.error('[BIM Background Processing] Error:', err);
-        await pool.query(
-          `UPDATE bim_models SET status = 'error', error_message = $1 WHERE id = $2`,
-          ['Processing failed', rows[0].id]
-        );
-      }
-    });
-
     res.status(201).json(rows[0]);
   } catch (err) {
     console.error('[bim-models POST]', err);
     res.status(500).json({ message: 'Server error' });
   }
 });
-
-/**
- * Background BIM model processor
- * In production, this should run in a separate worker process
- */
-async function processBIMModel(modelId) {
-  try {
-    // Get model details
-    const { rows } = await pool.query(
-      `SELECT * FROM bim_models WHERE id = $1 AND status = 'processing'`,
-      [modelId]
-    );
-
-    if (!rows.length) return; // Already processed or deleted
-
-    const model = rows[0];
-
-    let elementsCount = 0;
-    let floorsCount = 1;
-
-    if (model.format === 'IFC') {
-      try {
-        const ifcApi = new WebIFC.IfcAPI();
-        await ifcApi.Init();
-
-        const fileBuffer = fs.readFileSync(model.file_path);
-        const modelIFC = ifcApi.OpenModel(fileBuffer);
-
-        // 1. Extract total elements
-        elementsCount = ifcApi.GetCountAll();
-
-        // 2. Precise Floor Count: Count only unique IfcBuildingStorey entities
-        const storeys = ifcApi.GetLineIds('IFCBUILDINGSTOREY');
-        floorsCount = storeys.length;
-
-        // 3. Extract IFC Version from the file header
-        // IFC files start with ISO-10303-21; version is usually in the first few lines
-        const header = fileBuffer.toString('utf8', 0, 1000);
-        const versionMatch = header.match(/FILE_SCHEMA\((\w+)\)/);
-        const version = versionMatch ? versionMatch[1] : 'Unknown';
-
-        ifcApi.CloseModel();
-
-        // Update model with extracted version if available
-        await pool.query(
-          `UPDATE bim_models SET version = $1 WHERE id = $2`,
-          [version, modelId]
-        );
-      } catch (parseErr) {
-        console.error(`[BIM Processing] IFC Parse Error for model ${modelId}:`, parseErr);
-        elementsCount = 0;
-        floorsCount = 1;
-      }
-    } else {
-      // For other formats (GLTF, etc.), we use a simpler approximation or
-      // would integrate specific parsers (e.g., gltf-parser)
-      elementsCount = Math.floor(Math.random() * 5000) + 500;
-      floorsCount = 1;
-    }
-
-    // Update model with extracted data
-    await pool.query(
-      `UPDATE bim_models SET
-        status = 'ready',
-        processed_at = NOW(),
-        elements_count = $1,
-        floors_count = $2
-       WHERE id = $3`,
-      [elementsCount, floorsCount, modelId]
-    );
-
-    // Update processing queue
-    await pool.query(
-      `UPDATE bim_processing_queue SET status = 'completed', completed_at = NOW()
-       WHERE model_id = $1`,
-      [modelId]
-    );
-
-    console.log(`[BIM Processing] Model ${modelId} processed: ${elementsCount} elements, ${floorsCount} floors`);
-  } catch (err) {
-    await pool.query(
-      `UPDATE bim_models SET status = 'error', error_message = $1 WHERE id = $2`,
-      ['Processing failed', modelId]
-    );
-    await pool.query(
-      `UPDATE bim_processing_queue SET status = 'failed', error_message = $1 WHERE model_id = $2`,
-      ['Processing failed', modelId]
-    );
-    throw err;
-  }
-}
 
 /**
  * PUT /api/bim-models/:id - Update BIM model metadata
@@ -350,7 +245,7 @@ router.put('/:id', authMiddleware, async (req, res) => {
         version = COALESCE($3, version),
         status = COALESCE($4, status),
         updated_at = NOW()
-       WHERE id = $5 AND company_id = $6
+       WHERE id = $5 AND COALESCE(organization_id, company_id) = $6
        RETURNING *`,
       [name, description, version, status, req.params.id, req.user.company_id]
     );
@@ -381,7 +276,7 @@ router.delete('/:id', authMiddleware, async (req, res) => {
   try {
     // Get file path before deleting
     const fileCheck = await pool.query(
-      'SELECT file_path FROM bim_models WHERE id = $1 AND company_id = $2',
+      'SELECT file_path FROM bim_models WHERE id = $1 AND COALESCE(organization_id, company_id) = $2',
       [req.params.id, req.user.company_id]
     );
 
@@ -391,7 +286,7 @@ router.delete('/:id', authMiddleware, async (req, res) => {
 
     const filePath = fileCheck.rows[0].file_path;
 
-    await pool.query('DELETE FROM bim_models WHERE id = $1 AND company_id = $2', [req.params.id, req.user.company_id]);
+    await pool.query('DELETE FROM bim_models WHERE id = $1 AND COALESCE(organization_id, company_id) = $2', [req.params.id, req.user.company_id]);
 
     // Delete physical file - validate path to prevent traversal
     const uploadsDir = path.join(__dirname, '..', 'uploads');
@@ -429,7 +324,7 @@ router.get('/:id/clashes', authMiddleware, async (req, res) => {
   try {
     // First verify the model belongs to the user's company
     const modelCheck = await pool.query(
-      'SELECT id FROM bim_models WHERE id = $1 AND company_id = $2',
+      'SELECT id FROM bim_models WHERE id = $1 AND COALESCE(organization_id, company_id) = $2',
       [req.params.id, req.user.company_id]
     );
     
@@ -574,7 +469,7 @@ router.get('/:id/layers', authMiddleware, async (req, res) => {
       `SELECT l.*
        FROM bim_model_layers l
        INNER JOIN bim_models m ON l.model_id = m.id
-       WHERE l.model_id = $1 AND m.company_id = $2
+       WHERE l.model_id = $1 AND COALESCE(m.organization_id, m.company_id) = $2
        ORDER BY layer_name`,
       [req.params.id, req.user.company_id]
     );

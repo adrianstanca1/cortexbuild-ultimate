@@ -1,4 +1,4 @@
-import type { VercelRequest, VercelResponse } from '@vercel/node';
+import type { VercelRequest, VercelResponse } from '../../types/vercel';
 import fetch from 'node-fetch';
 
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY || process.env.API_KEY;

@@ -1,6 +1,7 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
+import { buildWebSocketUrl } from '../../lib/wsUrl';
 
-type ConnectionStatus = 'connected' | 'connecting' | 'disconnected';
+type ConnectionStatus = 'connected' | 'connecting' | 'disconnected' | 'disabled';
 
 interface WebSocketStatusProps {
   url?: string;
@@ -9,26 +10,43 @@ interface WebSocketStatusProps {
 
 export function WebSocketStatus({ url = '/ws', onStatusChange }: WebSocketStatusProps) {
   const [status, setStatus] = useState<ConnectionStatus>('disconnected');
+  const failedAttemptsRef = useRef(0);
 
   useEffect(() => {
     let socket: WebSocket | null = null;
     let reconnectTimeout: ReturnType<typeof setTimeout> | null = null;
+    let wasEverOpen = false;
 
     const connect = () => {
-      const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-      const wsUrl = `${protocol}//${window.location.host}${url}`;
+      const wsUrl = buildWebSocketUrl(url);
 
       setStatus('connecting');
+      wasEverOpen = false;
       socket = new WebSocket(wsUrl);
 
       socket.onopen = () => {
+        wasEverOpen = true;
+        failedAttemptsRef.current = 0;
         setStatus('connected');
         onStatusChange?.('connected');
       };
 
-      socket.onclose = () => {
+      socket.onclose = (event) => {
         setStatus('disconnected');
         onStatusChange?.('disconnected');
+
+        // If the connection was never opened (code 1006 = abnormal closure),
+        // the server likely rejected the WS upgrade because it's disabled.
+        // Stop reconnecting after 3 failed attempts.
+        if (!wasEverOpen && event.code === 1006) {
+          failedAttemptsRef.current++;
+          if (failedAttemptsRef.current >= 3) {
+            setStatus('disabled');
+            onStatusChange?.('disabled');
+            return;
+          }
+        }
+
         reconnectTimeout = setTimeout(connect, 5000);
       };
 
@@ -60,6 +78,11 @@ export function WebSocketStatus({ url = '/ws', onStatusChange }: WebSocketStatus
       color: 'bg-red-500',
       label: 'Disconnected',
       dotColor: 'bg-red-400',
+    },
+    disabled: {
+      color: 'bg-gray-400',
+      label: 'Real-time disabled',
+      dotColor: 'bg-gray-400',
     },
   };
 

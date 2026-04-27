@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef } from 'react';
 
 // Generate SVG data URIs for repeating grid patterns
 const BASE_GRID_SIZE = 40;
@@ -160,28 +160,32 @@ function CornerConstructionMark({ position }: { position: 'tl' | 'tr' | 'bl' | '
   );
 }
 
-export function BlueprintBackground({ children }: { children?: React.ReactNode }) {
+const BlueprintBackgroundComponent = ({ children }: { children?: React.ReactNode }) => {
   const containerRef = useRef<HTMLDivElement>(null);
-  const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
+  const parallaxRef = useRef<HTMLDivElement>(null);
 
   // Mouse parallax effect
   useEffect(() => {
+    let rafId: number;
     const handleMouseMove = (e: MouseEvent) => {
-      if (!containerRef.current) return;
+      if (!containerRef.current || !parallaxRef.current) return;
       const rect = containerRef.current.getBoundingClientRect();
       const x = ((e.clientX - rect.left) / rect.width - 0.5) * 2;
       const y = ((e.clientY - rect.top) / rect.height - 0.5) * 2;
-      setMousePos({ x, y });
+
+      cancelAnimationFrame(rafId);
+      rafId = requestAnimationFrame(() => {
+        if (parallaxRef.current) {
+          parallaxRef.current.style.transform = `translate(${x * 6}px, ${y * 6}px)`;
+        }
+      });
     };
     window.addEventListener('mousemove', handleMouseMove, { passive: true });
-    return () => window.removeEventListener('mousemove', handleMouseMove);
+    return () => {
+      window.removeEventListener('mousemove', handleMouseMove);
+      cancelAnimationFrame(rafId);
+    };
   }, []);
-
-  const parallaxStyle = {
-    transform: `translate(${mousePos.x * 6}px, ${mousePos.y * 6}px)`,
-    transition: 'transform 1.2s cubic-bezier(0.16, 1, 0.3, 1)',
-    willChange: 'transform',
-  };
 
   return (
     <div
@@ -193,6 +197,7 @@ export function BlueprintBackground({ children }: { children?: React.ReactNode }
         overflow: 'hidden',
         pointerEvents: 'none',
         backgroundColor: '#0c1220',
+        contain: 'layout paint',
       }}
     >
       {/* ── Animated grid layers with panning ──────────────────────────── */}
@@ -234,11 +239,13 @@ export function BlueprintBackground({ children }: { children?: React.ReactNode }
 
       {/* Parallax layer - mouse driven */}
       <div
+        ref={parallaxRef}
         style={{
           position: 'absolute',
           inset: '-20px',
           background: `radial-gradient(ellipse at 50% 50%, rgba(245,158,11,0.02) 0%, transparent 60%)`,
-          ...parallaxStyle,
+          transition: 'transform 1.2s cubic-bezier(0.16, 1, 0.3, 1)',
+          willChange: 'transform',
         }}
       />
 
@@ -257,16 +264,16 @@ export function BlueprintBackground({ children }: { children?: React.ReactNode }
       <HorizontalRuler />
 
       {/* ── Corner crosshairs ───────────────────────────────────────────── */}
-      <div style={{ position: 'absolute', top: 20, left: 20, animation: 'gentlePulse 4s ease-in-out infinite' }}>
+      <div style={{ position: 'absolute', top: 20, left: 20, animation: 'gentlePulse 4s ease-in-out infinite' }} className="corner-crosshair-md">
         <CornerCrosshair />
       </div>
-      <div style={{ position: 'absolute', top: 20, right: 20, animation: 'gentlePulse 4s ease-in-out infinite', animationDelay: '1s' }}>
+      <div style={{ position: 'absolute', top: 20, right: 20, animation: 'gentlePulse 4s ease-in-out infinite', animationDelay: '1s' }} className="corner-crosshair-md">
         <CornerCrosshair />
       </div>
-      <div style={{ position: 'absolute', bottom: 60, left: 20, animation: 'gentlePulse 4s ease-in-out infinite', animationDelay: '2s' }}>
+      <div style={{ position: 'absolute', bottom: 60, left: 20, animation: 'gentlePulse 4s ease-in-out infinite', animationDelay: '2s' }} className="corner-crosshair-md">
         <CornerCrosshair />
       </div>
-      <div style={{ position: 'absolute', bottom: 60, right: 20, animation: 'gentlePulse 4s ease-in-out infinite', animationDelay: '3s' }}>
+      <div style={{ position: 'absolute', bottom: 60, right: 20, animation: 'gentlePulse 4s ease-in-out infinite', animationDelay: '3s' }} className="corner-crosshair-md">
         <CornerCrosshair />
       </div>
 
@@ -364,4 +371,6 @@ export function BlueprintBackground({ children }: { children?: React.ReactNode }
       )}
     </div>
   );
-}
+};
+
+export const BlueprintBackground = React.memo(BlueprintBackgroundComponent);

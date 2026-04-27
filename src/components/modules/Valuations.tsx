@@ -1,12 +1,11 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { useState, useRef } from 'react';
+import { useState, useRef, useMemo, useCallback } from 'react';
 import {
   FileText, Plus, Search, Download,
   FileCheck, Eye, Edit, X, CreditCard, Receipt, Trash2,
   CheckSquare, Square, PenLine
 } from 'lucide-react';
 import { uploadFile, signaturesApi } from '../../services/api';
-import { jsPDF } from 'jspdf';
 import { BulkActionsBar, useBulkSelection } from '../ui/BulkActions';
 import { ModuleBreadcrumbs } from '../ui/Breadcrumbs';
 import { toast } from 'sonner';
@@ -49,7 +48,9 @@ const statusConfig: Record<string, { label: string; color: string; bg: string }>
 
 
 // ─── PDF Generation ─────────────────────────────────────────────────────────
-function generateValuationPDF(val: Valuation) {
+async function generateValuationPDF(val: Valuation) {
+  const jsPDFModule = await import('jspdf');
+  const jsPDF = jsPDFModule.default;
   const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
   const GREEN = [34, 197, 94] as [number, number, number];
   const ORANGE = [249, 115, 22] as [number, number, number];
@@ -216,7 +217,7 @@ export default function Valuations() {
 
   const { selectedIds, toggle, clearSelection } = useBulkSelection();
 
-  async function handleBulkDelete(ids: string[]) {
+  const handleBulkDelete = useCallback(async (ids: string[]) => {
     if (!confirm(`Delete ${ids.length} item(s)?`)) return;
     try {
       await Promise.all(ids.map(id => deleteMutation.mutateAsync(id)));
@@ -225,9 +226,9 @@ export default function Valuations() {
     } catch {
       toast.error('Bulk delete failed');
     }
-  }
+  }, [deleteMutation, clearSelection]);
 
-  const handleCreate = async () => {
+  const handleCreate = useCallback(async () => {
     if (!form.project) return;
     try {
       const ref = `VAL-${String(Date.now()).slice(-6)}`;
@@ -250,9 +251,9 @@ export default function Valuations() {
     } catch {
       toast.error('Failed to create valuation');
     }
-  };
+  }, [form, createMutation]);
 
-  const handleUpdate = async () => {
+  const handleUpdate = useCallback(async () => {
     if (!editItem?.id) return;
     try {
       await updateMutation.mutateAsync({
@@ -274,18 +275,18 @@ export default function Valuations() {
     } catch {
       toast.error('Failed to update valuation');
     }
-  };
+  }, [editItem, updateMutation]);
 
-  const handleDelete = async (id: string) => {
+  const handleDelete = useCallback(async (id: string) => {
     if (!confirm('Delete this valuation?')) return;
     try {
       await deleteMutation.mutateAsync(id);
     } catch {
       toast.error('Failed to delete valuation');
     }
-  };
+  }, [deleteMutation]);
 
-  async function openSignModal(val: Valuation) {
+  const openSignModal = useCallback(async (val: Valuation) => {
     setSigningVal(val);
     setShowSignModal(true);
     try {
@@ -294,9 +295,9 @@ export default function Valuations() {
     } catch {
       setExistingSignatures([]);
     }
-  }
+  }, []);
 
-  async function handleSignature(signatureData: string) {
+  const handleSignature = useCallback(async (signatureData: string) => {
     if (!signingVal || !user) return;
     try {
       await signaturesApi.create({
@@ -313,9 +314,9 @@ export default function Valuations() {
     } catch {
       toast.error('Failed to save signature');
     }
-  }
+  }, [signingVal, user]);
 
-  const handleUploadDoc = async (valId: string, file: File) => {
+  const handleUploadDoc = useCallback(async (valId: string, file: File) => {
     setUploading(true);
     setSelectedValId(valId);
     try {
@@ -328,23 +329,23 @@ export default function Valuations() {
       setUploading(false);
       setSelectedValId(null);
     }
-  };
+  }, [queryClient]);
 
-  const filteredValuations = valuations.filter((v: Valuation) => {
+  const filteredValuations = useMemo(() => valuations.filter((v: Valuation) => {
     const matchesSearch = (v.ref || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
       (v.project || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
       (v.contractor || '').toLowerCase().includes(searchTerm.toLowerCase());
     const matchesStatus = filterStatus === 'all' || v.status === filterStatus;
     return matchesSearch && matchesStatus;
-  });
+  }), [valuations, searchTerm, filterStatus]);
 
-  const totalSubmitted = valuations.filter((v: Valuation) => v.status === 'submitted' || v.status === 'valued').reduce((sum: number, v: Valuation) => sum + v.thisApplication, 0);
-  const totalCertified = valuations.filter((v: Valuation) => v.status === 'certified' || v.status === 'paid').reduce((sum: number, v: Valuation) => sum + v.certifiedValue, 0);
-  const totalPaid = valuations.filter((v: Valuation) => v.status === 'paid').reduce((sum: number, v: Valuation) => sum + v.certifiedValue, 0);
+  const totalSubmitted = useMemo(() => valuations.filter((v: Valuation) => v.status === 'submitted' || v.status === 'valued').reduce((sum: number, v: Valuation) => sum + v.thisApplication, 0), [valuations]);
+  const totalCertified = useMemo(() => valuations.filter((v: Valuation) => v.status === 'certified' || v.status === 'paid').reduce((sum: number, v: Valuation) => sum + v.certifiedValue, 0), [valuations]);
+  const totalPaid = useMemo(() => valuations.filter((v: Valuation) => v.status === 'paid').reduce((sum: number, v: Valuation) => sum + v.certifiedValue, 0), [valuations]);
 
   return (
     <>
-      <ModuleBreadcrumbs currentModule="valuations" onNavigate={() => {}} />
+      <ModuleBreadcrumbs currentModule="valuations" />
       <div className="p-6 space-y-6">
       <div className="flex items-center justify-between">
         <div>
@@ -439,7 +440,7 @@ export default function Valuations() {
           </select>
         </div>
 
-        <div className="overflow-x-auto">
+        <div className="cb-table-scroll touch-pan-x">
           <table className="w-full">
             <thead>
               <tr className="text-left text-gray-400 text-xs uppercase tracking-wider border-b border-gray-700">

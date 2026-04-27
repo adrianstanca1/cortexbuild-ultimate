@@ -262,7 +262,7 @@ export default function Prequalification() {
 
   return (
     <>
-      <ModuleBreadcrumbs currentModule="prequalification" onNavigate={() => {}} />
+      <ModuleBreadcrumbs currentModule="prequalification" />
       <div className="p-6 space-y-6 bg-gray-900 min-h-screen">
         {/* Header */}
         <div className="flex items-center justify-between">
@@ -306,7 +306,7 @@ export default function Prequalification() {
         <QuickStats stats={stats} expiringCount={expiringList.length} />
 
         {/* Tabs */}
-        <div className="flex gap-1 bg-gray-800 rounded-lg p-1 border border-gray-700 overflow-x-auto">
+        <div className="flex gap-1 bg-gray-800 rounded-lg p-1 border border-gray-700 cb-table-scroll touch-pan-x">
           {TABS.map((tab) => (
             <button
               key={tab.id}

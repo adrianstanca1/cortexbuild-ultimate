@@ -61,10 +61,10 @@ export function AdminDashboard() {
   return (
     <div className="p-6 max-w-[1800px] mx-auto">
       <div className="mb-6">
-        <ModuleBreadcrumbs currentModule="dashboard" onNavigate={() => {}} extraItems={[{ label: 'Admin Dashboard' }]} />
+        <ModuleBreadcrumbs currentModule="dashboard" extraItems={[{ label: 'Admin Dashboard' }]} />
         <div className="flex items-center justify-between mt-4">
           <div>
-            <h1 className="text-2xl font-bold text-white">Admin Dashboard</h1>
+            <h1 className="text-2xl font-display text-white">Admin Dashboard</h1>
             <p className="text-gray-400 mt-1">System administration and oversight</p>
           </div>
           <button onClick={handleRefresh} disabled={refreshing} className="btn btn-secondary flex items-center gap-2">
@@ -74,7 +74,7 @@ export function AdminDashboard() {
         </div>
       </div>
 
-      <div className="flex gap-2 mb-6 overflow-x-auto pb-2">
+      <div className="flex gap-2 mb-6 cb-table-scroll touch-pan-x pb-2">
         {TABS.map(tab => {
           const Icon = tab.icon;
           return (

@@ -17,8 +17,6 @@ const LLM_MODEL   = process.env.LLM_MODEL  || process.env.OLLAMA_MODEL || 'qwen3
 const router  = express.Router();
 router.use(authMw);
 
-const SUPER_ADMIN_ROLES = new Set(['super_admin', 'company_owner']);
-
 const ALLOWED_TABLES = new Set([
   'projects', 'invoices', 'rfis', 'contacts', 'documents',
   'safety_incidents', 'change_orders', 'team_members',
@@ -28,11 +26,12 @@ const ALLOWED_TABLES = new Set([
 ]);
 
 function tenantFilter(req) {
-  if (!req.user) return { clause: '', params: [] };
-  if (SUPER_ADMIN_ROLES.has(req.user.role)) return { clause: '', params: [] };
-  if (req.user.organization_id) return { clause: ' AND organization_id = $1', params: [req.user.organization_id] };
-  if (req.user.company_id) return { clause: ' AND company_id = $1', params: [req.user.company_id] };
-  return { clause: '', params: [] };
+  if (!req.user) return { clause: ' AND 1=0', params: [] };
+  if (req.user.role === 'super_admin' || req.user.role === 'company_owner') return { clause: '', params: [] };
+  const scope = req.user.organization_id || req.user.company_id;
+  if (scope) return { clause: ' AND COALESCE(organization_id, company_id) = $1', params: [scope] };
+  console.warn('[RAG] tenantFilter: user has no organization_id or company_id:', req.user.id, 'role:', req.user.role);
+  return { clause: ' AND 1=0', params: [] };
 }
 
 function buildContextPrompt(contextItems) {
@@ -50,8 +49,9 @@ function buildContextPrompt(contextItems) {
 }
 
 async function getEmbedding(text) {
-  return new Promise(resolve => {
-    const body = JSON.stringify({ model: process.env.EMBEDDING_MODEL || 'qwen3.5:latest', prompt: text });
+  return new Promise((resolve, reject) => {
+    const model = process.env.EMBEDDING_MODEL || 'nomic-embed-text:latest';
+    const body = JSON.stringify({ model, prompt: text });
     const url    = new URL(OLLAMA_HOST + '/api/embeddings');
     const isHttps = url.protocol === 'https:';
     const lib    = isHttps ? https : http;
@@ -66,18 +66,30 @@ async function getEmbedding(text) {
       let data = '';
       res.on('data', c => data += c);
       res.on('end', () => {
-        try { resolve(JSON.parse(data)?.embedding || null); }
-        catch { resolve(null); }
+        try {
+          const parsed = JSON.parse(data);
+          if (parsed.embedding) return resolve(parsed.embedding);
+          if (parsed.error) return reject(new Error('Ollama error: ' + parsed.error));
+          reject(new Error('Ollama returned no embedding for model ' + model));
+        } catch (e) {
+          reject(new Error('Ollama returned invalid JSON: ' + data.slice(0, 200)));
+        }
       });
     });
-    req.on('error', () => resolve(null));
-    req.on('timeout', () => { req.destroy(); resolve(null); });
+    req.on('error', (err) => reject(new Error('Embedding service unavailable: ' + err.message)));
+    req.on('timeout', () => { req.destroy(); reject(new Error('Embedding service timed out after 30s')); });
     req.write(body); req.end();
   });
 }
 
 async function retrieveContext(question, tables, orgFilter) {
-  const embedding = await getEmbedding(question);
+  let embedding;
+  try {
+    embedding = await getEmbedding(question);
+  } catch (embedErr) {
+    console.error('[RAG] getEmbedding failed:', embedErr.message);
+    throw embedErr;
+  }
   if (!embedding) return [];
 
   const { clause: filterClause, params: filterParams } = orgFilter;
@@ -99,17 +111,26 @@ async function retrieveContext(question, tables, orgFilter) {
       ragParams)
     .catch(err => { console.error('[RAG] retrieveContext: embedding query failed for table "' + table + '":', err.message); return { rows: [] }; });
 
-    for (const r of rows.slice(0, 3)) {
-      const similarity = 1 - parseFloat(r.similarity);
-      if (similarity < 0.5) continue;
+    const validRows = rows.slice(0, 3).filter(r => (1 - parseFloat(r.similarity)) >= 0.5);
+    if (validRows.length === 0) continue;
 
-      const safeTable = table;
-      const dataQueryParams = [r.row_id, ...filterParams];
-      const { rows: dataRows } = await pool.query(
-        `SELECT * FROM ${safeTable} WHERE id = $1${filterClause} LIMIT 1`,
-        dataQueryParams)
-      .catch(err => { console.error('[RAG] retrieveContext: data query failed for table "' + table + '":', err.message); return { rows: [] }; });
-      if (dataRows[0]) context.push({ table, row_id: r.row_id, data: dataRows[0] });
+    const rowIds = validRows.map(r => r.row_id);
+    const safeTable = table;
+    const dataQueryParams = [rowIds, ...filterParams];
+    const { rows: dataRows } = await pool.query(
+      `SELECT * FROM ${safeTable} WHERE id = ANY($1)${filterClause}`,
+      dataQueryParams)
+    .catch(err => { console.error('[RAG] retrieveContext: data query failed for table "' + table + '":', err.message); return { rows: [] }; });
+
+    const dataById = {};
+    for (const row of dataRows) {
+      dataById[row.id] = row;
+    }
+
+    for (const r of validRows) {
+      if (dataById[r.row_id]) {
+        context.push({ table, row_id: r.row_id, data: dataById[r.row_id] });
+      }
     }
   }
   return context;
@@ -131,11 +152,18 @@ router.post('/', async (req, res) => {
 
     const orgFilterObj = tenantFilter(req);
 
-    const contextItems = safeTables.length
-      ? await retrieveContext(question, safeTables, orgFilterObj)
-      : [];
+    let contextItems = [];
+    let embeddingError = null;
+    if (safeTables.length) {
+      try {
+        contextItems = await retrieveContext(question, safeTables, orgFilterObj);
+      } catch (embedErr) {
+        embeddingError = embedErr.message;
+        console.error('[RAG] retrieveContext failed:', embedErr.message);
+      }
+    }
 
-    const systemPrompt = `You are a helpful construction management AI assistant. Answer questions using ONLY the provided context data. If the context doesn't contain enough information to answer, say so clearly. Be specific and reference actual values from the data.`;
+    const systemPrompt = `You are a helpful construction management AI assistant. Answer questions using ONLY the provided context data. If the context doesn't contain enough information to answer, say so clearly. Be specific and reference actual values from the data.${embeddingError ? ' NOTE: The document search service is currently unavailable — the user may not be able to access project data. Mention this politely.' : ''}`;
     const contextPrompt = buildContextPrompt(contextItems);
 
     const messages = [

@@ -8,7 +8,7 @@ router.use(authMiddleware);
 router.get('/', checkPermission('report-templates', 'read'), async (req, res) => {
   try {
     const { type, is_default } = req.query;
-    let query = 'SELECT * FROM report_templates WHERE company_id = $1';
+    let query = 'SELECT * FROM report_templates WHERE COALESCE(organization_id, company_id) = $1';
     const params = [req.user.company_id];
 
     if (type) {
@@ -32,7 +32,7 @@ router.get('/', checkPermission('report-templates', 'read'), async (req, res) =>
 router.get('/:id', checkPermission('report-templates', 'read'), async (req, res) => {
   try {
     const { rows } = await pool.query(
-      'SELECT * FROM report_templates WHERE id = $1 AND company_id = $2',
+      'SELECT * FROM report_templates WHERE id = $1 AND COALESCE(organization_id, company_id) = $2',
       [req.params.id, req.user.company_id]
     );
     if (!rows[0]) return res.status(404).json({ message: 'Template not found' });
@@ -52,7 +52,7 @@ router.post('/', checkPermission('report-templates', 'write'), async (req, res) 
 
     if (is_default) {
       await pool.query(
-        'UPDATE report_templates SET is_default = FALSE WHERE type = $1 AND company_id = $2',
+        'UPDATE report_templates SET is_default = FALSE WHERE type = $1 AND COALESCE(organization_id, company_id) = $2',
         [type, req.user.company_id]
       );
     }
@@ -76,14 +76,14 @@ router.put('/:id', checkPermission('report-templates', 'write'), async (req, res
     const templateId = req.params.id;
 
     const { rows: existing } = await pool.query(
-      'SELECT type FROM report_templates WHERE id = $1 AND company_id = $2',
+      'SELECT type FROM report_templates WHERE id = $1 AND COALESCE(organization_id, company_id) = $2',
       [templateId, req.user.company_id]
     );
     if (!existing[0]) return res.status(404).json({ message: 'Template not found' });
 
     if (is_default) {
       await pool.query(
-        'UPDATE report_templates SET is_default = FALSE WHERE type = $1 AND id != $2 AND company_id = $3',
+        'UPDATE report_templates SET is_default = FALSE WHERE type = $1 AND id != $2 AND COALESCE(organization_id, company_id) = $3',
         [existing[0].type, templateId, req.user.company_id]
       );
     }
@@ -95,7 +95,7 @@ router.put('/:id', checkPermission('report-templates', 'write'), async (req, res
            config = COALESCE($3, config),
            is_default = COALESCE($4, is_default),
            updated_at = CURRENT_TIMESTAMP
-       WHERE id = $5 AND company_id = $6 RETURNING *`,
+       WHERE id = $5 AND COALESCE(organization_id, company_id) = $6 RETURNING *`,
       [name, description, config ? JSON.stringify(config) : null, is_default, templateId, req.user.company_id]
     );
 
@@ -109,7 +109,7 @@ router.put('/:id', checkPermission('report-templates', 'write'), async (req, res
 router.delete('/:id', checkPermission('report-templates', 'write'), async (req, res) => {
   try {
     const { rowCount } = await pool.query(
-      'DELETE FROM report_templates WHERE id = $1 AND company_id = $2',
+      'DELETE FROM report_templates WHERE id = $1 AND COALESCE(organization_id, company_id) = $2',
       [req.params.id, req.user.company_id]
     );
     if (!rowCount) return res.status(404).json({ message: 'Template not found' });
@@ -122,7 +122,7 @@ router.delete('/:id', checkPermission('report-templates', 'write'), async (req, 
 router.post('/:id/duplicate', checkPermission('report-templates', 'write'), async (req, res) => {
   try {
     const { rows: original } = await pool.query(
-      'SELECT * FROM report_templates WHERE id = $1 AND company_id = $2',
+      'SELECT * FROM report_templates WHERE id = $1 AND COALESCE(organization_id, company_id) = $2',
       [req.params.id, req.user.company_id]
     );
     if (!original[0]) return res.status(404).json({ message: 'Template not found' });
@@ -130,7 +130,7 @@ router.post('/:id/duplicate', checkPermission('report-templates', 'write'), asyn
     const { rows } = await pool.query(
       `INSERT INTO report_templates (name, type, description, config, is_default, created_by, company_id, organization_id)
        SELECT name || ' (Copy)', type, description, config, FALSE, $2, company_id, organization_id
-       FROM report_templates WHERE id = $1 AND company_id = $3
+       FROM report_templates WHERE id = $1 AND COALESCE(organization_id, company_id) = $3
        RETURNING *`,
       [
         req.params.id,

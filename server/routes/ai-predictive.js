@@ -16,15 +16,16 @@ router.post('/forecast', async (req, res) => {
   if (!projectId) return res.status(400).json({ error: 'projectId is required' });
 
   const orgId = req.user?.organization_id;
-  const isCompanyOwner = req.user?.role === 'company_owner';
   const isSuper = req.user?.role === 'super_admin';
 
   try {
     // 1. Gather Project Financial Baseline
     let projWhere = 'WHERE id = $1';
     let projParams = [projectId];
-    if (isCompanyOwner) { projWhere += ' AND company_id = $2'; projParams.push(req.user.company_id); }
-    else if (!isSuper && (orgId || req.user.company_id)) { projWhere += ' AND COALESCE(organization_id, company_id) = $2'; projParams.push(orgId || req.user.company_id); }
+    if (!isSuper && (orgId || req.user?.company_id)) {
+      projWhere += ' AND COALESCE(organization_id, company_id) = $2';
+      projParams.push(orgId || req.user?.company_id);
+    }
     const { rows: [project] } = await pool.query(
       `SELECT name, budget, spent, progress, start_date, end_date FROM projects ${projWhere}`,
       projParams
@@ -33,27 +34,32 @@ router.post('/forecast', async (req, res) => {
     if (!project) return res.status(404).json({ error: 'Project not found' });
 
     // 2. Gather Detailed Budget Item Variance
-    const { rows: budgetItems } = await (orgId
-      ? pool.query(
-          `SELECT name, budgeted, spent, variance, variance_percent
-           FROM budget_items WHERE project_id = $1 AND COALESCE(organization_id, company_id) = $2`,
-          [projectId, orgId]
-        )
-      : req.user?.company_id
-        ? pool.query(
-            `SELECT name, budgeted, spent, variance, variance_percent
-             FROM budget_items WHERE project_id = $1 AND company_id = $2`,
-            [projectId, req.user.company_id]
-          )
-        : pool.query(`SELECT name, budgeted, spent, variance, variance_percent FROM budget_items WHERE 1=0`)
-    );
+    let budgetItemsQuery, budgetParams;
+    if (isSuper) {
+      budgetItemsQuery = `SELECT name, budgeted, spent, variance, variance_percent FROM budget_items WHERE project_id = $1`;
+      budgetParams = [projectId];
+    } else if (orgId || req.user?.company_id) {
+      budgetItemsQuery = `SELECT name, budgeted, spent, variance, variance_percent
+       FROM budget_items WHERE project_id = $1 AND COALESCE(organization_id, company_id) = $2`;
+      budgetParams = [projectId, orgId || req.user?.company_id];
+    } else {
+      budgetItemsQuery = `SELECT name, budgeted, spent, variance, variance_percent FROM budget_items WHERE 1=0`;
+      budgetParams = [];
+    }
+    const { rows: budgetItems } = await pool.query(budgetItemsQuery, budgetParams);
 
     // 3. Gather Historical Forecasts to see trend
-    const { rows: forecasts } = await pool.query(
-      `SELECT period_start, projected_cost, actual_cost
-       FROM cost_forecasts WHERE project_id = $1 AND company_id = $2 ORDER BY period_start ASC`,
-      [projectId, req.user.company_id]
-    );
+    let forecastQuery, forecastParams;
+    if (isSuper) {
+      forecastQuery = `SELECT period_start, projected_cost, actual_cost
+       FROM cost_forecasts WHERE project_id = $1 ORDER BY period_start ASC`;
+      forecastParams = [projectId];
+    } else {
+      forecastQuery = `SELECT period_start, projected_cost, actual_cost
+       FROM cost_forecasts WHERE project_id = $1 AND COALESCE(organization_id, company_id) = $2 ORDER BY period_start ASC`;
+      forecastParams = [projectId, orgId || req.user?.company_id];
+    }
+    const { rows: forecasts } = await pool.query(forecastQuery, forecastParams);
 
     // 4. Construct Analysis Context for AI
     const budgetSummary = budgetItems.map(item =>

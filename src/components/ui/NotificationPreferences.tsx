@@ -3,7 +3,7 @@ import { X } from 'lucide-react';
 import { toast } from 'sonner';
 import { PreferenceRow } from './PreferenceRow';
 import { ChannelHeader } from './ChannelHeader';
-import { getToken, API_BASE } from '../../lib/auth-storage';
+import { API_BASE } from '../../lib/auth-storage';
 
 export interface NotificationPreference {
   type: string;
@@ -28,9 +28,8 @@ export function NotificationPreferences({ onClose }: { onClose?: () => void }) {
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
-    const token = getToken();
     fetch(`${API_BASE}/auth/preferences`, {
-      headers: token ? { Authorization: `Bearer ${token}` } : {},
+      credentials: 'include',
     })
       .then(r => r.json())
       .then((data: NotificationPreference[] | null) => {
@@ -48,13 +47,10 @@ export function NotificationPreferences({ onClose }: { onClose?: () => void }) {
   const savePreferences = async () => {
     setSaving(true);
     try {
-      const token = getToken();
       const res = await fetch(`${API_BASE}/auth/preferences`, {
         method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          ...(token ? { Authorization: `Bearer ${token}` } : {}),
-        },
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(preferences),
       });
       if (!res.ok) throw new Error('Save failed');

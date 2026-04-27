@@ -86,6 +86,8 @@ const MODULE_LABELS: Record<Module, string> = {
   'carbon-estimating':   'Carbon Estimating',
   'site-inspections':   'Site Inspections',
   'bim-4d':            '4D BIM',
+  'billing':            'Billing & Plans',
+  'settings-mfa':       'Two-Factor Authentication',
 };
 
 // Module accent colors for the breadcrumb bar
@@ -103,12 +105,29 @@ const MODULE_ACCENTS: Partial<Record<Module, string>> = {
   'settings': '#64748b',
 };
 
+// ⚡ Bolt Performance Optimization:
+// Extracted high-frequency state update (setInterval clock) into a dedicated leaf component.
+// This prevents the entire <Header> and its children from needlessly re-rendering every second.
+function HeaderClock() {
+  const [currentTime, setCurrentTime] = useState(new Date());
+  useEffect(() => {
+    const timer = setInterval(() => setCurrentTime(new Date()), 1000);
+    return () => clearInterval(timer);
+  }, []);
+  return (
+    <>
+      {currentTime.toLocaleDateString('en-GB', { weekday: 'short', day: '2-digit', month: 'short', year: 'numeric' })}
+      {' · '}
+      {currentTime.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
+    </>
+  );
+}
+
 export function Header({ activeModule, onMenuToggle }: { activeModule: Module; onMenuToggle?: () => void }) {
   const [, setIsOnline] = useState(typeof navigator !== 'undefined' ? navigator.onLine : true);
   const [notifOpen, setNotifOpen] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
   const [searchFocused, setSearchFocused] = useState(false);
-  const [currentTime, setCurrentTime] = useState(new Date());
   const [showNotificationCenter, setShowNotificationCenter] = useState(false);
   const [showNotificationPrefs, setShowNotificationPrefs] = useState(false);
   const accent = MODULE_ACCENTS[activeModule] || '#f59e0b';
@@ -120,11 +139,9 @@ export function Header({ activeModule, onMenuToggle }: { activeModule: Module; o
     const handleOffline = () => setIsOnline(false);
     window.addEventListener('online', handleOnline);
     window.addEventListener('offline', handleOffline);
-    const timer = setInterval(() => setCurrentTime(new Date()), 1000);
     return () => {
       window.removeEventListener('online', handleOnline);
       window.removeEventListener('offline', handleOffline);
-      clearInterval(timer);
     };
   }, []);
 
@@ -207,7 +224,7 @@ export function Header({ activeModule, onMenuToggle }: { activeModule: Module; o
         <div style={{ minWidth: 0 }}>
           <div
             style={{
-              fontFamily: "'Syne', sans-serif",
+              fontFamily: "'Bebas Neue', sans-serif",
               fontSize: '14px',
               fontWeight: 700,
               color: '#f1f5f9',
@@ -232,9 +249,7 @@ export function Header({ activeModule, onMenuToggle }: { activeModule: Module; o
               marginTop: '1px',
             }}
           >
-            {currentTime.toLocaleDateString('en-GB', { weekday: 'short', day: '2-digit', month: 'short', year: 'numeric' })}
-            {' · '}
-            {currentTime.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
+            <HeaderClock />
           </div>
         </div>
       </div>
@@ -294,7 +309,7 @@ export function Header({ activeModule, onMenuToggle }: { activeModule: Module; o
               {!searchFocused && (
                 <div
                   style={{
-                    fontFamily: "'JetBrains Mono', monospace",
+              fontFamily: "'Fira Code', monospace",
                     fontSize: '9px',
                     color: '#334155',
                     background: 'rgba(255,255,255,0.05)',
@@ -304,7 +319,7 @@ export function Header({ activeModule, onMenuToggle }: { activeModule: Module; o
                     flexShrink: 0,
                   }}
                 >
-                  ⌘K
+                  ⌘⇧K
                 </div>
               )}
             </div>

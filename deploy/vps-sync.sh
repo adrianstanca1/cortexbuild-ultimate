@@ -6,10 +6,18 @@ set -euo pipefail
 
 readonly SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 readonly PROJECT_ROOT="$(dirname "$SCRIPT_DIR")"
-readonly VPS_HOST="root@72.62.132.43"
-readonly VPS_PATH="/var/www/cortexbuild-ultimate"
+readonly VPS_HOST="${VPS_HOST:-root@72.62.132.43}"
+# Production stack lives under /root on current VPS (override with VPS_PATH=...)
+readonly VPS_PATH="${VPS_PATH:-/root/cortexbuild-ultimate}"
 readonly BACKUP_PATH="/var/backups/cortexbuild-$(date +%Y%m%d_%H%M%S)"
-readonly SSH_KEY="${SSH_KEY:-$HOME/.ssh/id_ed25519_vps}"
+if [[ -z "${SSH_KEY:-}" ]]; then
+    if [[ -f "$HOME/.ssh/gh_actions_ed25519" ]]; then
+        SSH_KEY="$HOME/.ssh/gh_actions_ed25519"
+    else
+        SSH_KEY="$HOME/.ssh/id_ed25519_vps"
+    fi
+fi
+readonly SSH_KEY
 readonly SSH_OPTS="-o ConnectTimeout=10 -o StrictHostKeyChecking=accept-new -o IdentitiesOnly=yes -i $SSH_KEY"
 
 echo "🚀 CortexBuild Ultimate - VPS Deployment"
@@ -47,7 +55,7 @@ cd "$PROJECT_ROOT"
 # Ensure clean build
 if ! npm run build --silent; then
     echo "❌ Build failed. Please fix TypeScript errors first."
-    echo "   Run: npm run type-check"
+    echo "   Run: npm run typecheck"
     exit 1
 fi
 
@@ -59,9 +67,9 @@ if ! docker --version >/dev/null 2>&1; then
     exit 1
 fi
 
-# Create Docker image
+# Create Docker image (matches deploy-api.sh / CI)
 echo "🐳 Building Docker image..."
-docker build -t cortexbuild-ultimate:latest .
+docker build -t cortexbuild-ultimate-api:latest -f Dockerfile.api .
 
 # Create deployment archive
 echo "📦 Creating deployment package..."
@@ -115,23 +123,28 @@ ssh $SSH_OPTS "$VPS_HOST" "
     # Start services
     echo '🚀 Starting services...'
     # Force stop all containers and ensure ports are released
-    docker-compose down -t 10 --remove-orphans || true
+    docker-compose down -t 10 --remove-orphans 2>/dev/null || true
     # Kill anything still holding port 3001
     fuser -k 3001/tcp 2>/dev/null || true
     sleep 3
-    docker-compose up -d --build
+    docker-compose up -d --build 2>/dev/null || {
+        echo '⚠️ docker-compose failed, trying docker run commands...'
+        docker network create cortexbuild 2>/dev/null || true
+        docker rm -f cortexbuild-api 2>/dev/null || true
+        docker run -d --name cortexbuild-api --restart always --network cortexbuild -p 127.0.0.1:3001:3001 --env-file $VPS_PATH/.env cortexbuild-ultimate-api:latest
+    }
 
     # Health check
     echo '🏥 Waiting for services to start...'
     sleep 30
 
-    # Verify deployment
-    if curl -f http://localhost/api/health >/dev/null 2>&1; then
+    # Verify deployment against Cortex API contract on local API port
+    if curl --connect-timeout 2 --max-time 5 -fsS http://127.0.0.1:3001/api/health 2>/dev/null | python3 -c 'import json,sys; d=json.load(sys.stdin); c=d.get("checks") or {}; assert d.get("status")=="ok"; assert c.get("postgres") is True; assert c.get("redis") is True' >/dev/null 2>&1; then
         echo '✅ Deployment successful!'
         echo '🌐 Site available at: https://cortexbuildpro.com'
     else
         echo '⚠️ Service health check failed'
-        echo 'Please check logs: docker-compose logs'
+        echo 'Please check logs: docker logs -f cortexbuild-api'
         exit 1
     fi
 

@@ -1,6 +1,5 @@
--- Migration: 003_embeddings.sql
--- Description: Document embeddings table for semantic search with Ollama
--- Run on VPS: docker exec -i cortexbuild-db psql -U cortexbuild -d cortexbuild < migrations/003_embeddings.sql
+-- Migration: 040_embeddings
+-- Document embeddings (idempotent; same schema as 003_embeddings.sql for migration-order safety)
 
 CREATE TABLE IF NOT EXISTS document_embeddings (
   id SERIAL PRIMARY KEY,

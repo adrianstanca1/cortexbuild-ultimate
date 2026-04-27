@@ -9,7 +9,82 @@ const redis      = require('redis');
 const db         = require('../db');
 const { createOAuthUserWithTenant } = require('../lib/bootstrap-tenant');
 const authMiddleware = require('../middleware/auth');
+const { setAuthTokenCookie, createUserSession } = require('../lib/authSessionCookie');
 const router     = express.Router();
+
+/**
+ * OAuth redirect URIs must match the provider console exactly (scheme + host + path).
+ * Trailing slashes are stripped. Production defaults use https://www.cortexbuildpro.com
+ * for GOOGLE_CALLBACK_URL / MICROSOFT_CALLBACK_URL (see deploy workflows and .env examples).
+ * Register that exact URI in Google Cloud / Entra; add the apex URL too if you ever
+ * point callbacks at cortexbuildpro.com without www.
+ */
+function normalizeProviderCallbackUrl(url) {
+  if (!url || typeof url !== 'string') return url;
+  let u = url.trim();
+  while (u.endsWith('/')) u = u.slice(0, -1);
+  // Keep www. prefix to match Google Cloud Console redirect URIs
+  // u = u.replace('://www.cortexbuildpro.com', '://cortexbuildpro.com');
+  return u;
+}
+
+/**
+ * SPA origin for post-OAuth redirect (/auth/callback). Prefer ?return_origin= from the
+ * browser so any Vite dev port works; validate against FRONTEND_URL / CORS_ORIGIN in production.
+ */
+function resolveFrontendCallbackBase(req) {
+  const raw = req.query.return_origin;
+  if (typeof raw === 'string' && raw.length > 0 && raw.length < 512) {
+    try {
+      const u = new URL(raw);
+      if (u.protocol !== 'http:' && u.protocol !== 'https:') throw new Error('bad protocol');
+      const h = u.hostname.toLowerCase();
+      const isLocal =
+        h === 'localhost' ||
+        h === '127.0.0.1' ||
+        h === '[::1]' ||
+        /^10\.\d+\.\d+\.\d+$/.test(h) ||
+        /^192\.168\.\d+\.\d+$/.test(h);
+      if (process.env.NODE_ENV !== 'production' && isLocal) {
+        return u.origin;
+      }
+      const allow = (process.env.FRONTEND_URL || '').trim();
+      if (allow) {
+        try {
+          if (new URL(allow).origin === u.origin) return u.origin;
+        } catch { /* ignore */ }
+      }
+      const corsList = (process.env.CORS_ORIGIN || '')
+        .split(',')
+        .map((s) => s.trim())
+        .filter(Boolean);
+      for (const c of corsList) {
+        try {
+          if (new URL(c).origin === u.origin) return u.origin;
+        } catch { /* ignore */ }
+      }
+    } catch (e) {
+      console.warn('[OAuth] Ignoring invalid return_origin:', e.message);
+    }
+  }
+  const def = (process.env.FRONTEND_URL || 'http://localhost:5173').trim();
+  try {
+    return new URL(def).origin;
+  } catch {
+    return 'http://localhost:5173';
+  }
+}
+
+/** Prefer SPA origin saved in OAuth state; otherwise FRONTEND_URL / return_origin on req. */
+function loginErrorUrl(storedState, req, errorCode) {
+  const q = encodeURIComponent(errorCode);
+  if (storedState?.redirectUri) {
+    try {
+      return `${new URL(storedState.redirectUri).origin}/login?error=${q}`;
+    } catch { /* ignore */ }
+  }
+  return `${resolveFrontendCallbackBase(req)}/login?error=${q}`;
+}
 
 // Redis client for OAuth state storage (distributed, survives restarts)
 const redisClient = redis.createClient({ url: process.env.REDIS_URL || 'redis://localhost:6379' });
@@ -49,12 +124,37 @@ const oauthLimiter = rateLimit({
   legacyHeaders: false,
 });
 
+/** Copy-paste helper when Google shows `redirect_uri_mismatch` (no secrets). */
+router.get('/oauth-redirect-help', (_req, res) => {
+  res.set('Cache-Control', 'no-store');
+  const g = (process.env.GOOGLE_CALLBACK_URL || '').trim();
+  const m = (process.env.MICROSOFT_CALLBACK_URL || '').trim();
+  const flipHost = (u) => {
+    if (!u) return null;
+    if (u.includes('127.0.0.1')) return u.replace(/127\.0\.0\.1/g, 'localhost');
+    if (u.includes('localhost')) return u.replace(/localhost/g, '127.0.0.1');
+    return null;
+  };
+  res.json({
+    error: 'redirect_uri_mismatch',
+    explanation:
+      'Google compares the redirect_uri parameter to your OAuth client’s "Authorized redirect URIs" with an exact string match (http vs https, localhost vs 127.0.0.1, path, and trailing slash all count).',
+    google_redirect_uri_this_server_sends: g || null,
+    also_try_registering_this_alternate_host: flipHost(g),
+    microsoft_redirect_uri_this_server_sends: m || null,
+    also_try_registering_this_alternate_host_microsoft: flipHost(m),
+    where_to_add:
+      'Google Cloud Console → APIs & Services → Credentials → OAuth 2.0 Client IDs → your Web client → Authorized redirect URIs',
+    verify_endpoint: '/api/auth/oauth-redirect-help',
+  });
+});
+
 // Configure Google OAuth strategy
 if (process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET) {
   passport.use(new GoogleStrategy({
     clientID: process.env.GOOGLE_CLIENT_ID,
     clientSecret: process.env.GOOGLE_CLIENT_SECRET,
-    callbackURL: process.env.GOOGLE_CALLBACK_URL,
+    callbackURL: normalizeProviderCallbackUrl(process.env.GOOGLE_CALLBACK_URL),
     scope: ['profile', 'email'],
     passReqToCallback: true
   }, async (req, accessToken, refreshToken, profile, done) => {
@@ -118,6 +218,10 @@ if (process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET) {
       done(err);
     }
   }));
+  console.log(
+    '[OAuth] Google OAuth callbackURL (must match Google Console redirect URI exactly):',
+    normalizeProviderCallbackUrl(process.env.GOOGLE_CALLBACK_URL)
+  );
 }
 
 // Configure Microsoft OAuth strategy
@@ -125,7 +229,7 @@ if (process.env.MICROSOFT_CLIENT_ID && process.env.MICROSOFT_CLIENT_SECRET) {
   passport.use(new MicrosoftStrategy({
     clientID: process.env.MICROSOFT_CLIENT_ID,
     clientSecret: process.env.MICROSOFT_CLIENT_SECRET,
-    callbackURL: process.env.MICROSOFT_CALLBACK_URL,
+    callbackURL: normalizeProviderCallbackUrl(process.env.MICROSOFT_CALLBACK_URL),
     scope: ['user.read'],
     passReqToCallback: true
   }, async (req, accessToken, refreshToken, profile, done) => {
@@ -210,7 +314,7 @@ router.get('/google', async (req, res, next) => {
   }
   // Generate cryptographically random state for CSRF protection
   const state = crypto.randomBytes(16).toString('hex');
-  const frontendRedirect = `${process.env.FRONTEND_URL || 'http://localhost:5173'}/auth/callback`;
+  const frontendRedirect = `${resolveFrontendCallbackBase(req)}/auth/callback`;
 
   // Store state with expiry (10 minutes) and intended redirect
   await setOAuthState(state, {
@@ -231,13 +335,13 @@ router.get('/google/callback', oauthLimiter, async (req, res, next) => {
   // Validate state parameter (CSRF protection)
   if (!state) {
     console.warn('[OAuth] Invalid or missing state parameter - possible CSRF attack');
-    return res.redirect(`${process.env.FRONTEND_URL || 'http://localhost:5173'}/login?error=invalid_state`);
+    return res.redirect(loginErrorUrl(null, req, 'invalid_state'));
   }
 
   const storedState = await getOAuthState(state);
   if (!storedState) {
     console.warn('[OAuth] Invalid or missing state parameter - possible CSRF attack');
-    return res.redirect(`${process.env.FRONTEND_URL || 'http://localhost:5173'}/login?error=invalid_state`);
+    return res.redirect(loginErrorUrl(null, req, 'invalid_state'));
   }
 
   await deleteOAuthState(state); // One-time use
@@ -245,14 +349,14 @@ router.get('/google/callback', oauthLimiter, async (req, res, next) => {
   // Check if state has expired (10 minute window)
   if (Date.now() - storedState.createdAt > 10 * 60 * 1000) {
     console.warn('[OAuth] State parameter expired');
-    return res.redirect(`${process.env.FRONTEND_URL || 'http://localhost:5173'}/login?error=state_expired`);
+    return res.redirect(loginErrorUrl(storedState, req, 'state_expired'));
   }
 
   passport.authenticate('google', { session: false }, async (err, user, info) => {
     try {
       if (err || !user) {
         console.error('[OAuth] Google callback authentication failed:', err || info);
-        return res.redirect(`${process.env.FRONTEND_URL || 'http://localhost:5173'}/login?error=google_auth_failed`);
+        return res.redirect(loginErrorUrl(storedState, req, 'google_auth_failed'));
       }
 
       // Generate JWT token — include name/company for consistency with regular login
@@ -277,7 +381,7 @@ router.get('/google/callback', oauthLimiter, async (req, res, next) => {
       res.redirect(`${redirectUri}?code=${code}`);
     } catch (e) {
       console.error('[OAuth] Google callback error:', e);
-      res.redirect(`${process.env.FRONTEND_URL || 'http://localhost:5173'}/login?error=google_auth_failed`);
+      res.redirect(loginErrorUrl(storedState, req, 'google_auth_failed'));
     }
   })(req, res, next);
 });
@@ -286,11 +390,11 @@ router.get('/google/callback', oauthLimiter, async (req, res, next) => {
 router.get('/microsoft', async (req, res, next) => {
   // Guard: Microsoft OAuth must be configured
   if (!process.env.MICROSOFT_CLIENT_ID || !process.env.MICROSOFT_CLIENT_SECRET) {
-    return res.redirect(`${process.env.FRONTEND_URL || 'http://localhost:5173'}/login?error=microsoft_not_configured`);
+    return res.redirect(loginErrorUrl(null, req, 'microsoft_not_configured'));
   }
   // Generate cryptographically random state for CSRF protection
   const state = crypto.randomBytes(16).toString('hex');
-  const frontendRedirect = `${process.env.FRONTEND_URL || 'http://localhost:5173'}/auth/callback`;
+  const frontendRedirect = `${resolveFrontendCallbackBase(req)}/auth/callback`;
 
   // Store state with expiry (10 minutes) and intended redirect
   await setOAuthState(state, {
@@ -308,20 +412,20 @@ router.get('/microsoft', async (req, res, next) => {
 router.get('/microsoft/callback', oauthLimiter, async (req, res, next) => {
   // Guard: Microsoft OAuth must be configured
   if (!process.env.MICROSOFT_CLIENT_ID || !process.env.MICROSOFT_CLIENT_SECRET) {
-    return res.redirect(`${process.env.FRONTEND_URL || 'http://localhost:5173'}/login?error=microsoft_not_configured`);
+    return res.redirect(loginErrorUrl(null, req, 'microsoft_not_configured'));
   }
   const { state } = req.query;
 
   // Validate state parameter (CSRF protection)
   if (!state) {
     console.warn('[OAuth] Invalid or missing state parameter - possible CSRF attack');
-    return res.redirect(`${process.env.FRONTEND_URL || 'http://localhost:5173'}/login?error=invalid_state`);
+    return res.redirect(loginErrorUrl(null, req, 'invalid_state'));
   }
 
   const storedState = await getOAuthState(state);
   if (!storedState) {
     console.warn('[OAuth] Invalid or missing state parameter - possible CSRF attack');
-    return res.redirect(`${process.env.FRONTEND_URL || 'http://localhost:5173'}/login?error=invalid_state`);
+    return res.redirect(loginErrorUrl(null, req, 'invalid_state'));
   }
 
   await deleteOAuthState(state); // One-time use
@@ -329,14 +433,14 @@ router.get('/microsoft/callback', oauthLimiter, async (req, res, next) => {
   // Check if state has expired (10 minute window)
   if (Date.now() - storedState.createdAt > 10 * 60 * 1000) {
     console.warn('[OAuth] State parameter expired');
-    return res.redirect(`${process.env.FRONTEND_URL || 'http://localhost:5173'}/login?error=state_expired`);
+    return res.redirect(loginErrorUrl(storedState, req, 'state_expired'));
   }
 
   passport.authenticate('microsoft', { session: false }, async (err, user, info) => {
     try {
       if (err || !user) {
         console.error('[OAuth] Microsoft callback authentication failed:', err || info);
-        return res.redirect(`${process.env.FRONTEND_URL || 'http://localhost:5173'}/login?error=microsoft_auth_failed`);
+        return res.redirect(loginErrorUrl(storedState, req, 'microsoft_auth_failed'));
       }
 
       // Generate JWT token — include name/company for consistency with regular login
@@ -361,7 +465,7 @@ router.get('/microsoft/callback', oauthLimiter, async (req, res, next) => {
       res.redirect(`${redirectUri}?code=${code}`);
     } catch (e) {
       console.error('[OAuth] Microsoft callback error:', e);
-      res.redirect(`${process.env.FRONTEND_URL || 'http://localhost:5173'}/login?error=microsoft_auth_failed`);
+      res.redirect(loginErrorUrl(storedState, req, 'microsoft_auth_failed'));
     }
   })(req, res, next);
 });
@@ -463,6 +567,9 @@ router.get('/exchange', async (req, res) => {
     if (!rows[0]) {
       return res.status(404).json({ error: 'User not found' });
     }
+    await createUserSession(rows[0].id, token, req);
+    setAuthTokenCookie(res, token);
+    // Token also returned for older clients; httpOnly cookie is the primary session for apiFetch.
     res.json({ token, user: rows[0] });
   } catch (err) {
     console.error('[OAuth exchange]', err);

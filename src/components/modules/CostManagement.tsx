@@ -163,7 +163,7 @@ export function CostManagement() {
 
   return (
     <div className="space-y-6 bg-gray-900 min-h-screen p-6">
-      <ModuleBreadcrumbs currentModule="cost-management" onNavigate={() => {}} />
+      <ModuleBreadcrumbs currentModule="cost-management" />
       {loading ? (
         <div className="flex items-center justify-center h-64">
           <Loader2 className="w-8 h-8 animate-spin text-orange-500" />
@@ -174,7 +174,7 @@ export function CostManagement() {
       {/* Header */}
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-3xl font-bold text-white flex items-center gap-2">
+          <h1 className="text-3xl font-display text-white flex items-center gap-2">
             <DollarSign className="h-8 w-8 text-emerald-400" />
             Cost Management
           </h1>
@@ -238,12 +238,12 @@ export function CostManagement() {
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             {/* Budget Table */}
             <div className="card bg-base-200 overflow-hidden lg:col-span-2">
-              <div className="overflow-x-auto">
+              <div className="cb-table-scroll touch-pan-x">
                 <table className="w-full text-sm">
                   <thead className="bg-gray-900 border-b border-gray-700">
                     <tr>
                       {['Category', 'Budgeted', 'Spent', 'Committed', 'Remaining', 'Variance', 'Status'].map(h => (
-                        <th key={h} className="px-4 py-3 text-left text-xs font-semibold text-gray-400 uppercase">{h}</th>
+                        <th key={h} className="px-4 py-3 text-left text-xs font-display tracking-widest text-gray-400 uppercase">{h}</th>
                       ))}
                     </tr>
                   </thead>

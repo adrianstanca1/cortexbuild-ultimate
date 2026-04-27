@@ -95,11 +95,11 @@ export function EmailHistory() {
 
   return (
     <>
-      <ModuleBreadcrumbs currentModule="email-history" onNavigate={() => {}} />
+      <ModuleBreadcrumbs currentModule="email-history" />
       <div className="p-6 space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-white">Email</h1>
+          <h1 className="text-2xl font-display text-white">Email</h1>
           <p className="text-sm text-gray-500 mt-1">Project correspondence & document sharing</p>
         </div>
         <button
@@ -120,12 +120,12 @@ export function EmailHistory() {
         ].map((kpi, i) => (
           <div key={i} className="bg-gray-900 rounded-xl border border-gray-700 p-4">
             <p className="text-xs text-gray-500 mb-1">{kpi.label}</p>
-            <p className={`text-2xl font-bold ${kpi.colour}`}>{kpi.value}</p>
+            <p className={`text-2xl font-display ${kpi.colour}`}>{kpi.value}</p>
           </div>
         ))}
       </div>
 
-      <div className="flex gap-1 border-b border-gray-700 overflow-x-auto">
+      <div className="flex gap-1 border-b border-gray-700 cb-table-scroll touch-pan-x">
         {(['inbox', 'sent', 'threads', 'notifications', 'templates'] as SubTab[]).map((tab) => (
           <button
             key={tab}

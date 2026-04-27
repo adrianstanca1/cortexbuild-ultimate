@@ -260,12 +260,12 @@ export function PredictiveAnalytics() {
 
   return (
     <>
-      <ModuleBreadcrumbs currentModule="predictive-analytics" onNavigate={() => {}} />
+      <ModuleBreadcrumbs currentModule="predictive-analytics" />
       <div className="space-y-6">
       {/* Header */}
       <div className="flex justify-between items-start">
         <div>
-          <h1 className="text-3xl font-bold text-white font-display">Predictive Analytics</h1>
+          <h1 className="text-3xl font-display text-white">Predictive Analytics</h1>
           <p className="text-sm text-gray-400 mt-1">AI-powered forecasting for projects and risk</p>
         </div>
         <button
@@ -282,7 +282,7 @@ export function PredictiveAnalytics() {
       </div>
 
       {/* Sub-tabs */}
-      <div className="flex gap-2 border-b border-gray-800 overflow-x-auto">
+      <div className="flex gap-2 border-b border-gray-800 cb-table-scroll touch-pan-x">
         {tabs.map((tab) => {
           const Icon = tab.icon;
           return (
@@ -322,7 +322,7 @@ export function PredictiveAnalytics() {
                 <div key={String(proj.name)} className="card p-4">
                   <div className="flex items-start justify-between mb-3">
                     <div>
-                      <p className="font-bold text-white">{String(proj.name)}</p>
+                      <p className="font-display text-white">{String(proj.name)}</p>
                       <div className="flex items-center gap-2 mt-1">
                         <div className="flex-1 h-2 bg-gray-700 rounded-full overflow-hidden max-w-xs">
                           <div
@@ -333,12 +333,12 @@ export function PredictiveAnalytics() {
                             }}
                           />
                         </div>
-                        <span className="text-sm font-bold text-white ml-2">{proj.riskScore}</span>
+                        <span className="text-sm font-display text-white ml-2">{proj.riskScore}</span>
                       </div>
                     </div>
                     <div className="text-right">
                       <span
-                        className="text-xs font-bold px-2 py-1 rounded"
+                        className="text-xs font-display px-2 py-1 rounded"
                         style={{
                           backgroundColor: `${riskColor}20`,
                           color: riskColor,
@@ -362,7 +362,7 @@ export function PredictiveAnalytics() {
             </div>
 
             <div className="card p-5">
-              <h3 className="text-lg font-bold text-white mb-4">Risk Dimensions</h3>
+              <h3 className="text-lg font-display text-white mb-4">Risk Dimensions</h3>
               <div className="h-64">
                 <ResponsiveContainer width="100%" height="100%">
                   <RadarChart data={riskDimensions}>
@@ -396,14 +396,14 @@ export function PredictiveAnalytics() {
             ].map((item) => (
               <div key={String(item.label)} className="card p-4">
                 <p className="text-xs text-gray-400 uppercase mb-2">{String(item.label)}</p>
-                <p className="text-2xl font-bold text-white">{String(item.value)}</p>
+                <p className="text-2xl font-display text-white">{String(item.value)}</p>
                 {Boolean(item.change) && <p className="text-xs text-red-400 mt-1">{String(item.change)}</p>}
               </div>
             ))}
           </div>
 
           <div className="card p-5">
-            <h3 className="text-lg font-bold text-white mb-4">Cost Forecast with Confidence Interval</h3>
+            <h3 className="text-lg font-display text-white mb-4">Cost Forecast with Confidence Interval</h3>
             <div className="h-64">
               <ResponsiveContainer width="100%" height="100%">
                 <ComposedChart data={costData}>
@@ -422,7 +422,7 @@ export function PredictiveAnalytics() {
           </div>
 
           <div className="card p-5">
-            <h3 className="text-lg font-bold text-white mb-4">Scenario Analysis</h3>
+            <h3 className="text-lg font-display text-white mb-4">Scenario Analysis</h3>
             <div className="space-y-3">
               {[
                 { label: 'Optimistic (+5% productivity)', finalCost: totalProjectBudget ? fmtCurrency(totalProjectBudget * 0.97) : '—', confidence: '78%' },
@@ -434,7 +434,7 @@ export function PredictiveAnalytics() {
                     <p className="font-medium text-white">{String(scenario.label)}</p>
                   </div>
                   <div className="text-right">
-                    <p className="font-bold text-white">{String(scenario.finalCost)}</p>
+                    <p className="font-display text-white">{String(scenario.finalCost)}</p>
                     <p className="text-xs text-gray-500">Confidence: {String(scenario.confidence)}</p>
                   </div>
                 </div>
@@ -448,7 +448,7 @@ export function PredictiveAnalytics() {
       {activeTab === 'schedule' && (
         <div className="space-y-6">
           <div className="card p-5">
-            <h3 className="text-lg font-bold text-white mb-4">Programme S-Curve: Planned vs Actual vs Predicted</h3>
+            <h3 className="text-lg font-display text-white mb-4">Programme S-Curve: Planned vs Actual vs Predicted</h3>
             <div className="h-64">
               <ResponsiveContainer width="100%" height="100%">
                 <LineChart data={scheduleData}>
@@ -467,7 +467,7 @@ export function PredictiveAnalytics() {
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div className="card p-5">
-              <h3 className="text-lg font-bold text-white mb-4">Delay Probability by Project</h3>
+              <h3 className="text-lg font-display text-white mb-4">Delay Probability by Project</h3>
               <div className="space-y-3">
                 {projectRisks.map((proj) => {
                   const delayPct = proj.riskScore > 60 ? 42 : proj.riskScore > 40 ? 18 : 5;
@@ -475,7 +475,7 @@ export function PredictiveAnalytics() {
                     <div key={String(proj.name)} className="p-3 bg-gray-800/50 rounded">
                       <div className="flex justify-between mb-2">
                         <p className="text-sm font-medium text-white">{String(proj.name)}</p>
-                        <span className="text-sm font-bold text-white">{delayPct}%</span>
+                        <span className="text-sm font-display text-white">{delayPct}%</span>
                       </div>
                       <div className="h-1.5 bg-gray-700 rounded-full overflow-hidden">
                         <div className="h-full bg-orange-500" style={{ width: `${delayPct}%` }} />
@@ -487,7 +487,7 @@ export function PredictiveAnalytics() {
             </div>
 
             <div className="card p-5">
-              <h3 className="text-lg font-bold text-white mb-4">Critical Path Items at Risk</h3>
+              <h3 className="text-lg font-display text-white mb-4">Critical Path Items at Risk</h3>
               <div className="space-y-2 text-sm">
                 {[
                   { item: 'Riverside: Concrete curing', float: '3 days', risk: 'Low' },
@@ -498,7 +498,7 @@ export function PredictiveAnalytics() {
                     <p className="font-medium text-white mb-1">{String(cp.item)}</p>
                     <div className="flex justify-between">
                       <span className="text-gray-400">Float: {String(cp.float)}</span>
-                      <span className={`font-bold ${cp.risk === 'High' ? 'text-red-400' : 'text-emerald-400'}`}>{String(cp.risk)} Risk</span>
+                      <span className={`font-display ${cp.risk === 'High' ? 'text-red-400' : 'text-emerald-400'}`}>{String(cp.risk)} Risk</span>
                     </div>
                   </div>
                 ))}
@@ -512,13 +512,13 @@ export function PredictiveAnalytics() {
       {activeTab === 'weather' && (
         <div className="space-y-6">
           <div className="card p-5">
-            <h3 className="text-lg font-bold text-white mb-4">7-Day Weather Forecast & Activity Impact</h3>
+            <h3 className="text-lg font-display text-white mb-4">7-Day Weather Forecast &amp; Activity Impact</h3>
             {weatherLoading ? (
               <div className="flex items-center justify-center h-32 text-gray-400 text-sm">Loading forecast...</div>
             ) : weatherForecast.length === 0 ? (
               <div className="flex items-center justify-center h-32 text-gray-400 text-sm">No forecast data available.</div>
             ) : (
-              <div className="overflow-x-auto">
+              <div className="cb-table-scroll touch-pan-x">
                 <table className="w-full text-sm">
                   <thead>
                     <tr className="border-b border-gray-800">
@@ -556,7 +556,7 @@ export function PredictiveAnalytics() {
           </div>
 
           <div className="card p-5">
-            <h3 className="text-lg font-bold text-white mb-4">Activity Risk Calendar</h3>
+            <h3 className="text-lg font-display text-white mb-4">Activity Risk Calendar</h3>
             <div className="grid grid-cols-7 gap-2">
               {['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map((day, idx) => {
                 const riskLevel = weatherForecast[idx]?.risk ?? ['Low', 'Medium', 'High', 'Medium', 'Low', 'Low', 'Low'][idx];
@@ -569,7 +569,7 @@ export function PredictiveAnalytics() {
                       border: `1px solid ${riskLevel === 'High' ? '#ef4444' : riskLevel === 'Medium' ? '#f59e0b' : '#10b981'}40`,
                     }}
                   >
-                    <p className="text-sm font-bold text-white">{day}</p>
+                    <p className="text-sm font-display text-white">{day}</p>
                     <p
                       className="text-xs font-medium mt-1"
                       style={{ color: riskLevel === 'High' ? '#ef4444' : riskLevel === 'Medium' ? '#f59e0b' : '#10b981' }}
@@ -598,7 +598,7 @@ export function PredictiveAnalytics() {
                       {isSelected ? <CheckSquare size={18} className="text-blue-400"/> : <Square size={18} className="text-gray-500"/>}
                     </button>
                     <div>
-                      <p className="font-bold text-white">{String(model.name)}</p>
+                      <p className="font-display text-white">{String(model.name)}</p>
                       <p className="text-xs text-gray-500 mt-1">Last trained: {String(model.lastTrained)}</p>
                     </div>
                   </div>
@@ -611,7 +611,7 @@ export function PredictiveAnalytics() {
                   <div>
                     <div className="flex justify-between mb-1">
                       <span className="text-sm text-gray-300">Accuracy</span>
-                      <span className="text-sm font-bold text-white">{Number(model.accuracy)}%</span>
+                      <span className="text-sm font-display text-white">{Number(model.accuracy)}%</span>
                     </div>
                     <div className="h-1.5 bg-gray-700 rounded-full overflow-hidden">
                       <div className="h-full bg-emerald-500" style={{ width: `${model.accuracy}%` }} />
@@ -621,7 +621,7 @@ export function PredictiveAnalytics() {
                   <div>
                     <div className="flex justify-between mb-1">
                       <span className="text-sm text-gray-300">Confidence</span>
-                      <span className="text-sm font-bold text-white">{Number(model.confidence)}%</span>
+                      <span className="text-sm font-display text-white">{Number(model.confidence)}%</span>
                     </div>
                     <div className="h-1.5 bg-gray-700 rounded-full overflow-hidden">
                       <div className="h-full bg-blue-500" style={{ width: `${model.confidence}%` }} />
@@ -636,7 +636,7 @@ export function PredictiveAnalytics() {
           </div>
 
           <div className="card p-5">
-            <h3 className="text-lg font-bold text-white mb-4">Model Performance: Precision vs Recall</h3>
+            <h3 className="text-lg font-display text-white mb-4">Model Performance: Precision vs Recall</h3>
             <div className="h-64">
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={mlModels.map((m) => ({ name: m.name.split(' ')[0], precision: m.accuracy, recall: m.confidence }))}>

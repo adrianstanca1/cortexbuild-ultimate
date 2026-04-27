@@ -340,7 +340,6 @@ router.post('/:id/ai-score', async (req, res) => {
   const { id } = req.params;
   const orgId  = req.user?.organization_id;
   const isSuper = req.user?.role === 'super_admin';
-  const isCompanyOwner = req.user?.role === 'company_owner';
 
   try {
     // ── 1. Resolve tender record ────────────────────────────────────────────
@@ -348,10 +347,7 @@ router.post('/:id/ai-score', async (req, res) => {
     if (!tender || Object.keys(tender).length === 0) {
       let whereClause = 'WHERE id = $1';
       let params = [id];
-      if (isCompanyOwner) {
-        whereClause += ' AND company_id = $2';
-        params.push(req.user.company_id);
-      } else if (!isSuper && (orgId || req.user.company_id)) {
+      if (!isSuper && (orgId || req.user.company_id)) {
         whereClause += ' AND COALESCE(organization_id, company_id) = $2';
         params.push(orgId || req.user.company_id);
       }
@@ -574,15 +570,16 @@ router.post('/batch/ai-score', async (req, res) => {
 
   const orgId  = req.user?.organization_id;
   const isSuper = req.user?.role === 'super_admin';
-  const isCompanyOwner = req.user?.role === 'company_owner';
   const results = [];
 
   for (const id of tenderIds) {
     try {
       let batchWhere = 'WHERE id = $1';
       let batchParams = [id];
-      if (isCompanyOwner) { batchWhere += ' AND company_id = $2'; batchParams.push(req.user.company_id); }
-      else if (!isSuper && (orgId || req.user.company_id)) { batchWhere += ' AND COALESCE(organization_id, company_id) = $2'; batchParams.push(orgId || req.user.company_id); }
+      if (!isSuper && (orgId || req.user.company_id)) {
+        batchWhere += ' AND COALESCE(organization_id, company_id) = $2';
+        batchParams.push(orgId || req.user.company_id);
+      }
       const { rows } = await pool.query(
         `SELECT title, client, value, deadline, status, probability, type, location, notes
          FROM tenders ${batchWhere} LIMIT 1`,

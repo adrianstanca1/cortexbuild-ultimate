@@ -4,6 +4,10 @@ const authMiddleware = require('../middleware/auth');
 const { checkPermission } = require('../middleware/checkPermission');
 const router = express.Router();
 
+// Require nodemailer at module level so missing dependency fails at startup
+let nodemailer;
+try { nodemailer = require('nodemailer'); } catch { nodemailer = null; }
+
 router.use(authMiddleware);
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -44,6 +48,10 @@ function escapeHtml(str) {
     .replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;')
     .replace(/'/g, '&#039;');
+}
+
+function sanitizeSubjectValue(str) {
+  return String(str).replace(/[\r\n]/g, '').replace(/<[^>]*>/g, '');
 }
 
 function escapeAttr(str) {
@@ -109,14 +117,14 @@ const EMAIL_TYPES = {
   },
 };
 
-router.get('/templates', async (req, res) => {
+router.get('/templates', checkPermission('email', 'read'), async (req, res) => {
   try {
-    const orgId = req.user?.organization_id;
+    const tenantId = req.user?.organization_id || req.user?.company_id;
     // Return both system email types and user-created templates from DB
     const { rows: dbTemplates } = await pool.query(
       `SELECT id, name, subject, body, email_type as "emailType", description, variables, is_active as "isActive", created_at as "createdAt", updated_at as "updatedAt"
-       FROM email_templates WHERE is_active = TRUE AND (organization_id = $1 OR organization_id IS NULL) ORDER BY created_at DESC`,
-      [orgId]
+       FROM email_templates WHERE is_active = TRUE AND (COALESCE(organization_id, company_id) = $1 OR organization_id IS NULL) ORDER BY created_at DESC`,
+      [tenantId]
     );
     // Attach DB templates as overrides/extensions to system types
     const systemTypes = Object.entries(EMAIL_TYPES).map(([key, val]) => ({
@@ -139,11 +147,12 @@ router.post('/templates', async (req, res) => {
       return res.status(400).json({ message: 'name, subject, and email_type are required' });
     }
     const orgId = req.user?.organization_id;
+    const companyId = req.user?.company_id;
     const { rows } = await pool.query(
-      `INSERT INTO email_templates (name, subject, body, email_type, description, variables, created_by, organization_id)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+      `INSERT INTO email_templates (name, subject, body, email_type, description, variables, created_by, organization_id, company_id)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
        RETURNING id, name, subject, body, email_type as "emailType", description, variables, is_active as "isActive", created_at as "createdAt", updated_at as "updatedAt"`,
-      [name, subject, body || '', email_type, description || '', JSON.stringify(variables || []), req.user?.id || 'system', orgId]
+      [name, subject, body || '', email_type, description || '', JSON.stringify(variables || []), req.user?.id || 'system', orgId, companyId]
     );
     res.status(201).json({ success: true, template: rows[0] });
   } catch (err) {
@@ -160,8 +169,8 @@ router.put('/templates/:id', async (req, res) => {
     const companyId = req.user?.company_id;
     const { rows } = await pool.query(
       `UPDATE email_templates SET name = COALESCE($1, name), subject = COALESCE($2, subject), body = COALESCE($3, body),
-       description = COALESCE($4, description), variables = COALESCE($5, variables), is_active = COALESCE($6, is_active),
-       updated_at = CURRENT_TIMESTAMP WHERE id = $7 AND COALESCE(organization_id, company_id) = $8
+       description = COALESCE($4, description), variables = COALESCE($5, variables), is_active = COALESCE($6, is_active)
+       WHERE id = $7 AND COALESCE(organization_id, company_id) = $8
        RETURNING id, name, subject, body, email_type as "emailType", description, variables, is_active as "isActive", created_at as "createdAt", updated_at as "updatedAt"`,
       [name, subject, body, description, variables ? JSON.stringify(variables) : null, is_active, id, orgId || companyId]
     );
@@ -179,7 +188,7 @@ router.delete('/templates/:id', async (req, res) => {
     const orgId = req.user?.organization_id;
     const companyId = req.user?.company_id;
     const { rows } = await pool.query(
-      `UPDATE email_templates SET is_active = FALSE, updated_at = CURRENT_TIMESTAMP WHERE id = $1 AND COALESCE(organization_id, company_id) = $2 RETURNING id`,
+      `UPDATE email_templates SET is_active = FALSE WHERE id = $1 AND COALESCE(organization_id, company_id) = $2 RETURNING id`,
       [id, orgId || companyId]
     );
     if (!rows[0]) return res.status(404).json({ message: 'Template not found' });
@@ -190,16 +199,18 @@ router.delete('/templates/:id', async (req, res) => {
   }
 });
 
-router.get('/history', async (req, res) => {
+router.get('/history', checkPermission('email', 'read'), async (req, res) => {
   try {
     const { limit = '50', offset = '0' } = req.query;
-    const orgId = req.user?.organization_id;
-    const userId = req.user?.id;
+    const tenantId = req.user?.organization_id || req.user?.company_id;
+    if (!tenantId) {
+      return res.status(403).json({ message: 'No organization context' });
+    }
     const { rows } = await pool.query(
-      `SELECT * FROM email_logs WHERE created_by = $1 OR organization_id = $2 ORDER BY created_at DESC LIMIT $3 OFFSET $4`,
-      [userId, orgId, parseInt(limit, 10), parseInt(offset, 10)]
+      `SELECT * FROM email_logs WHERE COALESCE(organization_id, company_id) = $1 ORDER BY created_at DESC LIMIT $2 OFFSET $3`,
+      [tenantId, parseInt(limit, 10), parseInt(offset, 10)]
     );
-    const { rows: count } = await pool.query('SELECT COUNT(*) FROM email_logs WHERE created_by = $1 OR organization_id = $2', [userId, orgId]);
+    const { rows: count } = await pool.query('SELECT COUNT(*) FROM email_logs WHERE COALESCE(organization_id, company_id) = $1', [tenantId]);
     res.json({ emails: rows, total: parseInt(count[0].count, 10) });
   } catch (err) {
     console.error('[Email History]', err.message);
@@ -207,7 +218,7 @@ router.get('/history', async (req, res) => {
   }
 });
 
-router.post('/send', async (req, res) => {
+router.post('/send', checkPermission('email', 'send'), async (req, res) => {
   try {
     if (!checkRateLimit(req.user?.id)) {
       return res.status(429).json({ message: 'Rate limit exceeded. Try again later.' });
@@ -230,20 +241,21 @@ router.post('/send', async (req, res) => {
         return res.status(400).json({ message: 'subject and body are required for custom emails' });
       }
       const { rows } = await pool.query(
-        `INSERT INTO email_logs (recipient, subject, body, email_type, status, created_by, organization_id)
-         VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *`,
-        [to, subject, body, 'custom', 'queued', req.user?.id || 'system', orgId]
+        `INSERT INTO email_logs (recipient, subject, body, email_type, status, created_by, organization_id, company_id)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING *`,
+        [to, subject, body, 'custom', 'queued', req.user?.id || 'system', orgId, req.user?.company_id]
       );
       if (process.env.SMTP_HOST) {
         try {
           await sendEmailViaSMTP(to, subject, body, cc, false);
           const { rows: updateRows } = await pool.query(
-            `UPDATE email_logs SET status = 'delivered' WHERE id = $1 AND (created_by = $2 OR organization_id = $3) RETURNING *`,
-            [rows[0].id, req.user?.id || 'system', orgId]
+            `UPDATE email_logs SET status = 'delivered' WHERE id = $1 AND (created_by = $2 OR COALESCE(organization_id, company_id) = $3) RETURNING *`,
+            [rows[0].id, req.user?.id || 'system', orgId || req.user?.company_id]
           );
         } catch (smtpErr) {
-          console.error('[SMTP Error]', 'SMTP delivery failed');
-          await pool.query(`UPDATE email_logs SET status = 'failed', error = $1 WHERE id = $2 AND (created_by = $3 OR organization_id = $4)`, ['SMTP delivery failed', rows[0].id, req.user?.id || 'system', orgId]);
+          const errMsg = smtpErr.message || smtpErr.code || 'SMTP delivery failed';
+          console.error('[SMTP Error]', errMsg);
+          await pool.query(`UPDATE email_logs SET status = 'failed', error = $1 WHERE id = $2 AND (created_by = $3 OR COALESCE(organization_id, company_id) = $4)`, [errMsg, rows[0].id, req.user?.id || 'system', orgId || req.user?.company_id]);
         }
       }
       return res.status(201).json({ success: true, email: rows[0] });
@@ -258,13 +270,13 @@ router.post('/send', async (req, res) => {
     let emailBody = body || generateEmailBody(type, data);
 
     Object.entries(data || {}).forEach(([key, value]) => {
-      emailSubject = emailSubject.replace(`{{${key}}}`, String(value));
+      emailSubject = emailSubject.replace(`{{${key}}}`, sanitizeSubjectValue(value));
     });
 
     const { rows } = await pool.query(
-      `INSERT INTO email_logs (recipient, subject, body, email_type, status, created_by, organization_id)
-       VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *`,
-      [to, emailSubject, emailBody, type, 'sent', req.user?.id || 'system', orgId]
+      `INSERT INTO email_logs (recipient, subject, body, email_type, status, created_by, organization_id, company_id)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING *`,
+      [to, emailSubject, emailBody, type, 'sent', req.user?.id || 'system', orgId, req.user?.company_id]
     );
 
     if (process.env.SMTP_HOST) {
@@ -275,10 +287,11 @@ router.post('/send', async (req, res) => {
           [rows[0].id]
         );
       } catch (smtpErr) {
-        console.error('[SMTP Error]', 'SMTP delivery failed');
+        const errMsg = smtpErr.message || smtpErr.code || 'SMTP delivery failed';
+        console.error('[SMTP Error]', errMsg);
         await pool.query(
           `UPDATE email_logs SET status = 'failed', error = $1 WHERE id = $2`,
-          ['SMTP delivery failed', rows[0].id]
+          [errMsg, rows[0].id]
         );
       }
     }
@@ -290,7 +303,7 @@ router.post('/send', async (req, res) => {
   }
 });
 
-router.post('/bulk', async (req, res) => {
+router.post('/bulk', checkPermission('email', 'send'), async (req, res) => {
   try {
     if (!checkRateLimit(req.user?.id)) {
       return res.status(429).json({ message: 'Rate limit exceeded. Try again later.' });
@@ -315,7 +328,7 @@ router.post('/bulk', async (req, res) => {
     let emailSubject = subject || template.subject;
 
     Object.entries(data || {}).forEach(([key, value]) => {
-      emailSubject = emailSubject.replace(`{{${key}}}`, String(value));
+      emailSubject = emailSubject.replace(`{{${key}}}`, sanitizeSubjectValue(value));
     });
 
     const orgId = req.user?.organization_id;
@@ -324,9 +337,9 @@ router.post('/bulk', async (req, res) => {
     for (const recipient of recipients) {
       try {
         const { rows } = await pool.query(
-          `INSERT INTO email_logs (recipient, subject, body, email_type, status, created_by, organization_id)
-           VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *`,
-          [recipient, emailSubject, body || '', type || 'bulk', 'queued', req.user?.id || 'system', orgId]
+          `INSERT INTO email_logs (recipient, subject, body, email_type, status, created_by, organization_id, company_id)
+           VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING *`,
+          [recipient, emailSubject, body || '', type || 'bulk', 'queued', req.user?.id || 'system', orgId, req.user?.company_id]
         );
         results.push({ recipient, success: true, id: rows[0].id });
       } catch (err) {
@@ -373,13 +386,15 @@ router.post('/schedule', checkPermission('email', 'send'), async (req, res) => {
     let emailSubject = template?.subject || 'Scheduled Email';
 
     Object.entries(data || {}).forEach(([key, value]) => {
-      emailSubject = emailSubject.replace(`{{${key}}}`, String(value));
+      emailSubject = emailSubject.replace(`{{${key}}}`, sanitizeSubjectValue(value));
     });
 
+    const orgId = req.user?.organization_id;
+    const companyId = req.user?.company_id;
     const { rows } = await pool.query(
-      `INSERT INTO scheduled_emails (recipient, subject, email_type, data, scheduled_at, created_by)
-       VALUES ($1, $2, $3, $4, $5, $6) RETURNING *`,
-      [to, emailSubject, type, JSON.stringify(data), scheduledAt, req.user?.id || 'system']
+      `INSERT INTO scheduled_emails (recipient, subject, email_type, data, scheduled_at, created_by, organization_id, company_id)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING *`,
+      [to, emailSubject, type, JSON.stringify(data), scheduledAt, req.user?.id || 'system', orgId, companyId]
     );
 
     res.status(201).json({ success: true, scheduled: rows[0] });
@@ -436,7 +451,9 @@ function generateEmailBody(type, data) {
 }
 
 async function sendEmailViaSMTP(to, subject, body, cc, wrapHtml = true) {
-  const nodemailer = require('nodemailer');
+  if (!nodemailer) {
+    throw new Error('nodemailer module is not installed — cannot send email via SMTP');
+  }
 
   const transporter = nodemailer.createTransport({
     host: process.env.SMTP_HOST,

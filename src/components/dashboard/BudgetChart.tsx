@@ -24,7 +24,9 @@ export default function BudgetChart({ projectId, months = 12, height = 300 }: Bu
   useEffect(() => {
     async function fetchData() {
       try {
-        const response = await fetch(`/api/analytics?action=budget-trends&projectId=${projectId}&months=${months}`);
+        const response = await fetch(`/api/analytics?action=budget-trends&projectId=${projectId}&months=${months}`, {
+          credentials: 'include',
+        });
         if (!response.ok) throw new Error('Failed to fetch budget data');
         const result = await response.json();
         setData(result);

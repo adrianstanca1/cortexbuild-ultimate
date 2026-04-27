@@ -8,6 +8,8 @@ const pool = require('../db');
 const authMiddleware = require('../middleware/auth');
 const { createNotification, createAlert, broadcast } = require('../lib/websocket');
 const { buildTenantFilter, isSuperAdmin } = require('../middleware/tenantFilter');
+const createPushRouter = require('./push');
+const pushRouter = createPushRouter();
 
 const router = express.Router();
 router.use(authMiddleware);
@@ -257,6 +259,24 @@ router.put('/read-all', async (req, res) => {
   }
 });
 
+// POST /mark-all-read - for consistency with frontend expectations
+router.post('/mark-all-read', async (req, res) => {
+  try {
+    const userId = req.user?.id;
+    const tenantFilter = buildTenantFilter(req, 'AND', null, 2);
+    await pool.query(
+      `UPDATE notifications SET read = true, status = 'read'
+       WHERE (user_id = $1 OR (COALESCE(organization_id, company_id) = $2 AND user_id IS NULL))
+         AND read = false`,
+      [userId, ...tenantFilter.params]
+    );
+    res.json({ message: 'All notifications marked as read' });
+  } catch (err) {
+    console.error('[POST /notifications/mark-all-read]', err.message);
+    res.status(500).json({ message: 'Internal server error' });
+  }
+});
+
 // Bulk mark as read
 router.post('/mark-read-bulk', async (req, res) => {
   try {
@@ -449,18 +469,25 @@ router.post('/', async (req, res) => {
       [title, description, severity || 'info', type || 'notification', user_id || null, link || null, orgId, companyId]
     );
 
-    // Send real-time notification via WebSocket
+    const notification = rows[0];
+
+    // Broadcast to all connected clients in this org
+    broadcast({
+      type: 'notification',
+      payload: { title, description, severity: severity || 'info', link: link || null, timestamp: new Date().toISOString() }
+    });
+
+    // Send push notification to user if user_id is specified
     if (user_id) {
-      createNotification(user_id, title, description, severity || 'info', { link });
-    } else {
-      // Broadcast to all connected clients in this org
-      broadcast({
-        type: 'notification',
-        payload: { title, description, severity: severity || 'info', link, timestamp: new Date().toISOString() }
+      pushRouter.sendPushToUser(user_id, {
+        title: title || 'Notification',
+        body: description || '',
+        data: { link: link || null, notificationId: notification.id },
+        badge: 1,
       });
     }
 
-    res.status(201).json(rows[0]);
+    res.json(notification);
   } catch (err) {
     console.error('[POST /notifications]', err.message);
     res.status(500).json({ message: 'Internal server error' });
@@ -520,19 +547,34 @@ router.post('/generate-alerts', async (req, res) => {
     }
 
     // Save and broadcast alerts
-    for (const alert of alerts) {
+    if (alerts.length > 0) {
+      const titles = alerts.map(a => a.title);
+      const descriptions = alerts.map(a => a.description);
+      const severities = alerts.map(a => a.severity);
+      const types = alerts.map(a => a.type);
+      const links = alerts.map(a => a.link);
+      const now = new Date().toISOString();
+
       await pool.query(
         `INSERT INTO notifications (title, description, severity, type, link, organization_id, company_id)
-         VALUES ($1, $2, $3, $4, $5, $6, $7)`,
-        [alert.title, alert.description, alert.severity, alert.type, alert.link, orgId, companyId]
+         SELECT * FROM UNNEST($1::text[], $2::text[], $3::text[], $4::text[], $5::text[], $6::uuid[], $7::uuid[])`,
+        [
+          titles,
+          descriptions,
+          severities,
+          types,
+          links,
+          Array(alerts.length).fill(orgId || null),
+          Array(alerts.length).fill(companyId || null)
+        ]
       );
-    }
 
-    for (const alert of alerts) {
-      broadcast({
-        type: 'alert',
-        payload: { ...alert, timestamp: new Date().toISOString() }
-      });
+      for (const alert of alerts) {
+        broadcast({
+          type: 'alert',
+          payload: { ...alert, timestamp: now }
+        });
+      }
     }
 
     res.json({ generated: alerts.length, alerts });

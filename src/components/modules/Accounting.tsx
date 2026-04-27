@@ -166,10 +166,10 @@ export function Accounting() {
 
   return (
     <>
-      <ModuleBreadcrumbs currentModule="accounting" onNavigate={() => {}} />
+      <ModuleBreadcrumbs currentModule="accounting" />
       <div className="space-y-6 bg-gray-900 min-h-screen p-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-3xl font-bold text-white">Accounting &amp; Finance</h1>
+        <h1 className="text-3xl font-display text-white">Accounting &amp; Finance</h1>
         <button type="button" onClick={openCreate} className="flex items-center gap-2 px-4 py-2 btn btn-primary rounded-lg text-white font-medium transition-colors">
           <Plus className="w-4 h-4"/>New Invoice
         </button>
@@ -194,7 +194,7 @@ export function Accounting() {
               <p className="text-gray-400 text-sm">{label}</p>
               <Icon className={`w-5 h-5 ${col}`}/>
             </div>
-            <p className="text-2xl font-bold text-white">{value}</p>
+            <p className="text-2xl font-display text-white">{value}</p>
           </div>
         ))}
       </div>
@@ -211,7 +211,7 @@ export function Accounting() {
       {tab==='pl' && (
         <div className="space-y-6">
           <div className="card bg-base-200 p-6">
-            <h3 className="text-lg font-bold text-white mb-6">Profit & Loss Statement — 2026 YTD</h3>
+            <h3 className="text-lg font-display text-white mb-6">Profit & Loss Statement — 2026 YTD</h3>
 
             <div className="space-y-6">
               {/* Revenue Section */}
@@ -224,7 +224,7 @@ export function Accounting() {
                       <span className="text-white font-mono">{fmt(item.value)}</span>
                     </div>
                   ))}
-                  <div className="flex justify-between text-sm font-bold border-t border-gray-700 pt-2 mt-2">
+                  <div className="flex justify-between text-sm font-display border-t border-gray-700 pt-2 mt-2">
                     <span className="text-white">Total Revenue</span>
                     <span className="text-green-400 font-mono">{fmt(totalRevenue)}</span>
                   </div>
@@ -241,7 +241,7 @@ export function Accounting() {
                       <span className="text-gray-300 font-mono">{fmt(item.value)}</span>
                     </div>
                   ))}
-                  <div className="flex justify-between text-sm font-bold border-t border-gray-700 pt-2 mt-2">
+                  <div className="flex justify-between text-sm font-display border-t border-gray-700 pt-2 mt-2">
                     <span className="text-gray-300">Total Costs</span>
                     <span className="text-red-400 font-mono">{fmt(totalCosts)}</span>
                   </div>
@@ -252,7 +252,7 @@ export function Accounting() {
               <div className="bg-gray-900 rounded-lg p-4 border border-gray-600">
                 <div className="flex justify-between mb-2">
                   <span className="text-white font-semibold">Gross Profit</span>
-                  <span className="text-blue-400 font-bold font-mono text-lg">{fmt(grossProfit)}</span>
+                  <span className="text-blue-400 font-display font-mono text-lg">{fmt(grossProfit)}</span>
                 </div>
                 <div className="flex justify-between text-sm">
                   <span className="text-gray-400">Gross Margin</span>
@@ -270,7 +270,7 @@ export function Accounting() {
                       <span className="text-gray-300 font-mono">{fmt(item.value)}</span>
                     </div>
                   ))}
-                  <div className="flex justify-between text-sm font-bold border-t border-gray-700 pt-2 mt-2">
+                  <div className="flex justify-between text-sm font-display border-t border-gray-700 pt-2 mt-2">
                     <span className="text-gray-300">Total Overheads</span>
                     <span className="text-red-400 font-mono">{fmt(totalOverheads)}</span>
                   </div>
@@ -281,7 +281,7 @@ export function Accounting() {
               <div className="bg-gradient-to-r from-green-900/40 to-green-900/20 rounded-lg p-4 border border-green-700">
                 <div className="flex justify-between mb-2">
                   <span className="text-white font-semibold">Net Profit</span>
-                  <span className="text-green-400 font-bold font-mono text-lg">{fmt(netProfit)}</span>
+                  <span className="text-green-400 font-display font-mono text-lg">{fmt(netProfit)}</span>
                 </div>
                 <div className="flex justify-between text-sm">
                   <span className="text-gray-400">Net Margin</span>
@@ -295,12 +295,12 @@ export function Accounting() {
 
       {tab==='vat' && (
         <div className="card bg-base-200 p-6">
-          <h3 className="text-lg font-bold text-white mb-4">VAT Return Calculator</h3>
+          <h3 className="text-lg font-display text-white mb-4">VAT Return Calculator</h3>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
             <div className="bg-gray-900 rounded-lg p-4 border border-gray-700">
               <h4 className="text-sm font-semibold text-gray-300 mb-4">Tax Period</h4>
-              <p className="text-2xl font-bold text-white">Jan - Mar 2026</p>
+              <p className="text-2xl font-display text-white">Jan - Mar 2026</p>
               <p className="text-sm text-gray-400 mt-1">Quarter 4 (FY 2025-26)</p>
             </div>
 
@@ -319,7 +319,7 @@ export function Accounting() {
               <div className="flex justify-between items-center">
                 <div>
                   <p className="text-gray-300 text-sm">Sales (Output Tax at 20%)</p>
-                  <p className="text-2xl font-bold text-blue-400 mt-1">{fmt(vatSalesOutputTax)}</p>
+                  <p className="text-2xl font-display text-blue-400 mt-1">{fmt(vatSalesOutputTax)}</p>
                 </div>
                 <div className="text-right">
                   <p className="text-gray-400 text-xs">On sales of</p>
@@ -332,7 +332,7 @@ export function Accounting() {
               <div className="flex justify-between items-center">
                 <div>
                   <p className="text-gray-300 text-sm">Purchases (Input Tax at 20%)</p>
-                  <p className="text-2xl font-bold text-red-400 mt-1">-{fmt(vatPurchasesInputTax)}</p>
+                  <p className="text-2xl font-display text-red-400 mt-1">-{fmt(vatPurchasesInputTax)}</p>
                 </div>
                 <div className="text-right">
                   <p className="text-gray-400 text-xs">On costs of</p>
@@ -343,7 +343,7 @@ export function Accounting() {
 
             <div className="bg-gradient-to-r from-amber-900/40 to-amber-900/20 border border-amber-700 rounded-lg p-4">
               <p className="text-gray-300 text-sm mb-2">Net VAT Payable</p>
-              <p className="text-3xl font-bold text-amber-300">{fmt(vatPayable)}</p>
+              <p className="text-3xl font-display text-amber-300">{fmt(vatPayable)}</p>
               <p className="text-xs text-gray-400 mt-3">Submit to HMRC by 30 April 2026</p>
             </div>
           </div>
@@ -352,24 +352,24 @@ export function Accounting() {
 
       {tab==='bank' && (
         <div className="card bg-base-200 p-6">
-          <h3 className="text-lg font-bold text-white mb-6">Bank Reconciliation</h3>
+          <h3 className="text-lg font-display text-white mb-6">Bank Reconciliation</h3>
 
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
             <div className="bg-gray-900 rounded-lg p-4 border border-gray-700">
               <p className="text-gray-400 text-xs uppercase mb-1">Opening Balance</p>
-              <p className="text-xl font-bold text-white">{fmt(openingBalance)}</p>
+              <p className="text-xl font-display text-white">{fmt(openingBalance)}</p>
             </div>
             <div className="bg-gray-900 rounded-lg p-4 border border-gray-700">
               <p className="text-gray-400 text-xs uppercase mb-1">Receipts In</p>
-              <p className="text-xl font-bold text-green-400">+{fmt(totalReceiptsIn)}</p>
+              <p className="text-xl font-display text-green-400">+{fmt(totalReceiptsIn)}</p>
             </div>
             <div className="bg-gray-900 rounded-lg p-4 border border-gray-700">
               <p className="text-gray-400 text-xs uppercase mb-1">Payments Out</p>
-              <p className="text-xl font-bold text-red-400">-{fmt(totalPaymentsOut)}</p>
+              <p className="text-xl font-display text-red-400">-{fmt(totalPaymentsOut)}</p>
             </div>
             <div className="bg-blue-900/30 border border-blue-700 rounded-lg p-4">
               <p className="text-gray-300 text-xs uppercase mb-1">Closing Balance</p>
-              <p className="text-xl font-bold text-blue-300">{fmt(closingBalance)}</p>
+              <p className="text-xl font-display text-blue-300">{fmt(closingBalance)}</p>
             </div>
           </div>
 
@@ -378,15 +378,15 @@ export function Accounting() {
           </div>
 
           <h4 className="text-sm font-semibold text-gray-300 mb-3">Recent Transactions</h4>
-          <div className="overflow-x-auto">
+          <div className="cb-table-scroll touch-pan-x">
             <table className="w-full text-sm">
               <thead className="bg-gray-900/50 border-b border-gray-700">
                 <tr>
-                  <th className="px-4 py-2 text-left text-xs font-semibold text-gray-400">Date</th>
-                  <th className="px-4 py-2 text-left text-xs font-semibold text-gray-400">Description</th>
-                  <th className="px-4 py-2 text-right text-xs font-semibold text-gray-400">Debit</th>
-                  <th className="px-4 py-2 text-right text-xs font-semibold text-gray-400">Credit</th>
-                  <th className="px-4 py-2 text-right text-xs font-semibold text-gray-400">Balance</th>
+                  <th className="px-4 py-3 text-left text-xs font-display text-gray-400 tracking-widest uppercase">Date</th>
+                  <th className="px-4 py-3 text-left text-xs font-display text-gray-400 tracking-widest uppercase">Description</th>
+                  <th className="px-4 py-3 text-right text-xs font-display text-gray-400 tracking-widest uppercase">Debit</th>
+                  <th className="px-4 py-3 text-right text-xs font-display text-gray-400 tracking-widest uppercase">Credit</th>
+                  <th className="px-4 py-3 text-right text-xs font-display text-gray-400 tracking-widest uppercase">Balance</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-700">
@@ -396,7 +396,7 @@ export function Accounting() {
                     <td className="px-4 py-3 text-gray-300">{t.description}</td>
                     <td className="px-4 py-3 text-right text-green-400 font-mono">{t.type==='debit'?fmt(Number(t.amount)):''}</td>
                     <td className="px-4 py-3 text-right text-red-400 font-mono">{t.type==='credit'?fmt(Math.abs(Number(t.amount))):''}</td>
-                    <td className="px-4 py-3 text-right text-white font-bold font-mono">{fmt(Number(t.balance))}</td>
+                    <td className="px-4 py-3 text-right text-white font-mono">{fmt(Number(t.balance))}</td>
                   </tr>
                 ))}
               </tbody>
@@ -409,11 +409,11 @@ export function Accounting() {
         <>
           <div className="card bg-base-200 overflow-hidden">
             {isLoading ? <div className="p-8 text-center text-gray-400">Loading…</div> : (
-              <div className="overflow-x-auto">
+              <div className="cb-table-scroll touch-pan-x">
                 <table className="w-full text-sm">
                   <thead className="bg-gray-900 border-b border-gray-700">
                     <tr>{['Invoice #','Client','Project','Amount','Status','Due',''].map(h=>(
-                      <th key={h} className="px-4 py-3 text-left text-xs font-semibold text-gray-400 uppercase tracking-wide">{h}</th>
+                      <th key={h} className="px-4 py-3 text-left text-xs font-display text-gray-400 tracking-widest uppercase">{h}</th>
                     ))}</tr>
                   </thead>
                   <tbody className="divide-y divide-gray-700">
@@ -426,10 +426,10 @@ export function Accounting() {
                             {isSelected ? <CheckSquare size={16} className="text-blue-400"/> : <Square size={16} className="text-gray-500"/>}
                           </button>
                         </td>
-                        <td className="px-4 py-3 font-mono text-xs text-blue-400 font-bold">{String(inv.number ?? inv.invoiceNumber ?? '—')}</td>
+                        <td className="px-4 py-3 font-mono text-xs text-blue-400">{String(inv.number ?? inv.invoiceNumber ?? '—')}</td>
                         <td className="px-4 py-3 text-white font-medium">{String(inv.client??'—')}</td>
                         <td className="px-4 py-3 text-gray-400 max-w-[180px] truncate">{String(inv.project??'—')}</td>
-                        <td className="px-4 py-3 text-white font-bold">{fmt(Number(inv.amount??0))}</td>
+                        <td className="px-4 py-3 text-white font-display">{fmt(Number(inv.amount??0))}</td>
                         <td className="px-4 py-3">
                           <span className={`text-xs px-2 py-1 rounded-full font-medium ${STATUS_COLOUR[String(inv.status??'')]??'bg-gray-700 text-gray-300'}`}>
                             {String(inv.status??'')}
@@ -468,7 +468,7 @@ export function Accounting() {
 
       {tab==='cash' && (
         <div className="card bg-base-200 p-6">
-          <h3 className="text-lg font-bold text-white mb-4">Cash Position — Last 7 Months</h3>
+          <h3 className="text-lg font-display text-white mb-4">Cash Position — Last 7 Months</h3>
           <ResponsiveContainer width="100%" height={400}>
             <LineChart data={CASH_DATA}>
               <CartesianGrid strokeDasharray="3 3" stroke="#374151"/>
@@ -487,7 +487,7 @@ export function Accounting() {
       {tab==='budget' && (
         <div className="space-y-6">
           <div className="card bg-base-200 p-6">
-            <h3 className="text-lg font-bold text-white mb-4">Budget vs Actual — By Project</h3>
+            <h3 className="text-lg font-display text-white mb-4">Budget vs Actual — By Project</h3>
             <ResponsiveContainer width="100%" height={360}>
               <BarChart data={BUDGET_CHART_DATA}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#374151"/>
@@ -503,11 +503,11 @@ export function Accounting() {
           </div>
 
           <div className="card bg-base-200 overflow-hidden">
-            <div className="overflow-x-auto">
+            <div className="cb-table-scroll touch-pan-x">
               <table className="w-full text-sm">
                 <thead className="bg-gray-900 border-b border-gray-700">
                   <tr>{['Project','Budget','Spent','Remaining','% Used','Status'].map(h=>(
-                    <th key={h} className="px-5 py-3 text-left text-xs font-semibold text-gray-400 uppercase tracking-wide">{h}</th>
+                    <th key={h} className="px-5 py-3 text-left text-xs font-display text-gray-400 tracking-widest uppercase">{h}</th>
                   ))}</tr>
                 </thead>
                 <tbody className="divide-y divide-gray-700">
@@ -522,7 +522,7 @@ export function Accounting() {
                         <td className="px-5 py-4 font-semibold text-white">{fmt(budget)}</td>
                         <td className="px-5 py-4 text-gray-300">{fmt(spent)}</td>
                         <td className="px-5 py-4 font-semibold text-green-400">{fmt(budget-spent)}</td>
-                        <td className="px-5 py-4 font-bold text-white">{pct.toFixed(1)}%</td>
+                        <td className="px-5 py-4 font-display text-white">{pct.toFixed(1)}%</td>
                         <td className="px-5 py-4">
                           <span className={`text-xs px-2 py-1 rounded-full font-medium ${rag==='green'?'bg-green-900/40 text-green-400':rag==='amber'?'bg-yellow-900/40 text-yellow-400':'bg-red-900/40 text-red-400'}`}>
                             {rag==='green'?'On Budget':rag==='amber'?'Watch':'Over Budget'}
@@ -542,7 +542,7 @@ export function Accounting() {
         <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
           <div className="bg-gray-800 border border-gray-700 rounded-2xl w-full max-w-lg shadow-2xl">
             <div className="flex items-center justify-between px-6 py-4 border-b border-gray-700">
-              <h2 className="text-lg font-bold text-white">{editId?'Edit Invoice':'New Invoice'}</h2>
+              <h2 className="text-lg font-display text-white">{editId?'Edit Invoice':'New Invoice'}</h2>
               <button type="button" onClick={()=>setShowModal(false)} className="text-gray-400 hover:text-white"><X className="w-5 h-5"/></button>
             </div>
             <div className="p-6 space-y-4">

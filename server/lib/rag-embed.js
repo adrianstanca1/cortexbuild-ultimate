@@ -7,7 +7,7 @@
  * Staleness-checked: skips rows whose updated_at is older than the last embed.
  */
 const pool     = require('../db');
-const { getEmbedding, EMBEDDING_MODEL } = require('./ollama');
+const { getEmbedding, EMBEDDING_MODEL } = require("./unified-ai-client-v2");
 const { manifest, SEARCHABLE_TABLES }  = require('./rag-manifest');
 
 const BATCH_SIZE = 20;  // rows per Ollama call batch

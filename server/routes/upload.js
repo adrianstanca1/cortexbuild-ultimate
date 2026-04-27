@@ -95,14 +95,19 @@ const validateAfterUpload = async (req, res, next) => {
 
     if (!validation.valid) {
       // Delete the uploaded file
-      await fs.promises.unlink(req.file.path);
+      try {
+        await fs.promises.unlink(req.file.path);
+      } catch (unlinkErr) {
+        console.error('[upload.js validateAfterUpload] Failed to delete invalid file:', unlinkErr.message);
+      }
       return res.status(400).json({ message: validation.message });
     }
 
     next();
   } catch (err) {
     console.error('[upload.js validateAfterUpload]', err);
-    next(err);
+    // Don't pass err to next() - already handled the file deletion
+    return res.status(500).json({ message: 'Internal server error during upload validation' });
   }
 };
 
@@ -141,11 +146,7 @@ router.post('/', upload.single('file'), validateAfterUpload, async (req, res) =>
 
     res.status(201).json(rows[0]);
   } catch (err) {
-    console.error('[POST /api/upload]', 'Internal server error');
-    // multer file-type error comes through here when fileFilter calls cb(err)
-    if (err.message && err.message.startsWith('File type not allowed')) {
-      return res.status(400).json({ message: 'Upload failed' });
-    }
+    console.error('[POST /api/upload]', err.message);
     res.status(500).json({ message: 'Internal server error' });
   }
 });

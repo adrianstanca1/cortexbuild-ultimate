@@ -1,9 +1,8 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import { useState, useRef } from 'react';
 import { Plus, GraduationCap, Award, AlertCircle, Trash2, X, Edit, Download } from 'lucide-react';
 import { EmptyState } from '../ui/EmptyState';
 import { ModuleBreadcrumbs } from '../ui/Breadcrumbs';
-import { DataImporter, ExportButton } from '../ui/DataImportExport';
+import { DataImporter, ExportButton, ColumnMapping } from '../ui/DataImportExport';
 import { trainingApi, uploadFile } from '../../services/api';
 import { BulkActionsBar, useBulkSelection } from '../ui/BulkActions';
 import { toast } from 'sonner';
@@ -40,7 +39,7 @@ export default function Training() {
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [activeTab, setActiveTab] = useState<'register' | 'schedule' | 'matrix' | 'providers' | 'reports'>('register');
   const [form, setForm] = useState({ title: '', provider: '', type: 'formal_course', status: 'scheduled', scheduledDate: '', completedDate: '', duration: '', location: '', certification: 'no', certName: '', attendees: '' });
-  const [editItem, setEditItem] = useState<TrainingRecord | null>(null);
+  const [editItem, setEditItem] = useState<(TrainingRecord & { scheduledDate?: string; completedDate?: string }) | null>(null);
   const [showBulkImport, setShowBulkImport] = useState(false);
 
   const { selectedIds, clearSelection } = useBulkSelection();
@@ -58,13 +57,13 @@ export default function Training() {
     }
   }
 
-  const filtered = trainingData.filter((t: any) =>
+  const filtered = trainingData.filter((t: TrainingRecord) =>
     (t.title || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
     (t.provider || '').toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  const completedCount = trainingData.filter((t: any) => t.status === 'completed').length;
-  const scheduledCount = trainingData.filter((t: any) => t.status === 'scheduled').length;
+  const completedCount = trainingData.filter((t: TrainingRecord) => t.status === 'completed').length;
+  const scheduledCount = trainingData.filter((t: TrainingRecord) => t.status === 'scheduled').length;
   const totalCount = trainingData.length;
 
   const handleCreate = async () => {
@@ -142,7 +141,7 @@ export default function Training() {
     }
   };
 
-  async function handleBulkImport(data: Record<string, unknown>[], mapping: any[]) {
+  async function handleBulkImport(data: Record<string, unknown>[], mapping: ColumnMapping[]) {
     let failed = 0;
     for (const row of data) {
       const mapped: Record<string, unknown> = {};
@@ -170,7 +169,7 @@ export default function Training() {
       {filtered.length === 0 ? (
         <EmptyState icon={GraduationCap} title="No training records found" description="Add training records to track workforce qualifications." />
       ) : (
-        <div className="overflow-x-auto">
+        <div className="cb-table-scroll touch-pan-x">
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-gray-700">
@@ -186,7 +185,7 @@ export default function Training() {
               </tr>
             </thead>
             <tbody>
-              {filtered.map((t: any) => (
+              {filtered.map((t: TrainingRecord) => (
                 <tr key={t.id} className="border-b border-gray-700 hover:bg-gray-800/50">
                   <td className="px-4 py-3 text-white font-medium">{t.title}</td>
                   <td className="px-4 py-3 text-gray-300">{t.type.replace(/_/g, ' ')}</td>
@@ -213,8 +212,8 @@ export default function Training() {
   const scheduleTab = (
     <div className="space-y-4">
       {(() => {
-        const sorted = [...trainingData].sort((a: any, b: any) => new Date(a.scheduled_date || a.completed_date).getTime() - new Date(b.scheduled_date || b.completed_date).getTime());
-        const grouped = new Map<string, any[]>();
+        const sorted = [...trainingData].sort((a: TrainingRecord, b: TrainingRecord) => new Date(a.scheduled_date || a.completed_date || 0).getTime() - new Date(b.scheduled_date || b.completed_date || 0).getTime());
+        const grouped = new Map<string, TrainingRecord[]>();
 
         sorted.forEach(t => {
           const dateStr = t.scheduled_date || t.completed_date || '';
@@ -262,7 +261,7 @@ export default function Training() {
   // Matrix Tab (Compliance matrix)
   const matrixTab = (
     <div className="space-y-4">
-      <div className="overflow-x-auto">
+      <div className="cb-table-scroll touch-pan-x">
         <table className="w-full text-xs">
           <thead>
             <tr className="border-b border-gray-700 bg-gray-800/50">
@@ -336,9 +335,9 @@ export default function Training() {
   const reportsTab = (
     <div className="space-y-6">
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div className="card p-4"><div className="text-gray-400 text-xs mb-2">Total Training Hours</div><div className="text-3xl font-bold text-white">{Math.round(trainingData.reduce((sum: number, t: any) => sum + (t.duration || 0), 0))}</div></div>
-        <div className="card p-4"><div className="text-gray-400 text-xs mb-2">Completion Rate</div><div className="text-3xl font-bold text-green-400">{Math.round((completedCount / totalCount) * 100)}%</div></div>
-        <div className="card p-4"><div className="text-gray-400 text-xs mb-2">Scheduled</div><div className="text-3xl font-bold text-amber-400">{scheduledCount}</div></div>
+        <div className="card p-4"><div className="text-gray-400 text-xs mb-2">Total Training Hours</div><div className="text-3xl font-display text-white">{Math.round(trainingData.reduce((sum: number, t: TrainingRecord) => sum + (t.duration || 0), 0))}</div></div>
+        <div className="card p-4"><div className="text-gray-400 text-xs mb-2">Completion Rate</div><div className="text-3xl font-display text-green-400">{Math.round((completedCount / totalCount) * 100)}%</div></div>
+        <div className="card p-4"><div className="text-gray-400 text-xs mb-2">Scheduled</div><div className="text-3xl font-display text-amber-400">{scheduledCount}</div></div>
       </div>
 
       <div className="card p-6">
@@ -393,11 +392,11 @@ export default function Training() {
 
   return (
     <>
-      <ModuleBreadcrumbs currentModule="training" onNavigate={() => {}} />
+      <ModuleBreadcrumbs currentModule="training" />
       <div className="p-6 space-y-6">
         <div className="flex items-center justify-between">
           <div>
-            <h2 className="text-2xl font-bold text-white">Training & Certifications</h2>
+            <h2 className="text-2xl font-display text-white">Training & Certifications</h2>
             <p className="text-gray-400 text-sm mt-1">Track workforce training, compliance and development</p>
           </div>
           <div className="flex items-center gap-2">
@@ -413,9 +412,9 @@ export default function Training() {
 
         {activeTab === 'register' && (
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div className="card p-4"><div className="flex items-center gap-3"><div className="w-10 h-10 rounded-lg bg-green-500/10 flex items-center justify-center"><Award className="text-green-400" size={20} /></div><div><p className="text-gray-400 text-xs">Completed</p><p className="text-2xl font-bold text-green-400">{completedCount}</p></div></div></div>
-            <div className="card p-4"><div className="flex items-center gap-3"><div className="w-10 h-10 rounded-lg bg-amber-500/10 flex items-center justify-center"><AlertCircle className="text-amber-400" size={20} /></div><div><p className="text-gray-400 text-xs">Scheduled</p><p className="text-2xl font-bold text-amber-400">{scheduledCount}</p></div></div></div>
-            <div className="card p-4"><div className="flex items-center gap-3"><div className="w-10 h-10 rounded-lg bg-blue-500/10 flex items-center justify-center"><GraduationCap className="text-blue-400" size={20} /></div><div><p className="text-gray-400 text-xs">Total Records</p><p className="text-2xl font-bold text-blue-400">{totalCount}</p></div></div></div>
+            <div className="card p-4"><div className="flex items-center gap-3"><div className="w-10 h-10 rounded-lg bg-green-500/10 flex items-center justify-center"><Award className="text-green-400" size={20} /></div><div><p className="text-gray-400 text-xs">Completed</p><p className="text-2xl font-display text-green-400">{completedCount}</p></div></div></div>
+            <div className="card p-4"><div className="flex items-center gap-3"><div className="w-10 h-10 rounded-lg bg-amber-500/10 flex items-center justify-center"><AlertCircle className="text-amber-400" size={20} /></div><div><p className="text-gray-400 text-xs">Scheduled</p><p className="text-2xl font-display text-amber-400">{scheduledCount}</p></div></div></div>
+            <div className="card p-4"><div className="flex items-center gap-3"><div className="w-10 h-10 rounded-lg bg-blue-500/10 flex items-center justify-center"><GraduationCap className="text-blue-400" size={20} /></div><div><p className="text-gray-400 text-xs">Total Records</p><p className="text-2xl font-display text-blue-400">{totalCount}</p></div></div></div>
           </div>
         )}
 
@@ -459,7 +458,7 @@ export default function Training() {
           <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
             <div className="bg-gray-900 border border-gray-700 rounded-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
               <div className="p-6 border-b border-gray-700 flex items-center justify-between sticky top-0 bg-gray-900">
-                <h3 className="text-xl font-bold text-white">Add Training Record</h3>
+                <h3 className="text-xl font-display text-white">Add Training Record</h3>
                 <button type="button" onClick={() => setShowCreateModal(false)} className="text-gray-400 hover:text-white"><X size={20} /></button>
               </div>
               <div className="p-6 space-y-4">
@@ -544,7 +543,7 @@ export default function Training() {
           <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
             <div className="bg-gray-900 border border-gray-700 rounded-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
               <div className="p-6 border-b border-gray-700 flex items-center justify-between sticky top-0 bg-gray-900">
-                <h3 className="text-xl font-bold text-white">Edit Training Record</h3>
+                <h3 className="text-xl font-display text-white">Edit Training Record</h3>
                 <button type="button" onClick={() => setEditItem(null)} className="text-gray-400 hover:text-white"><X size={20} /></button>
               </div>
               <div className="p-6 space-y-4">

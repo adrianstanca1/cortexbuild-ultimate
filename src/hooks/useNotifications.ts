@@ -1,5 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { apiGet, apiPut, apiDelete } from '@/lib/api';
+import { validateNotification } from '@/lib/validateNotification';
+import { buildWebSocketUrl } from '@/lib/wsUrl';
 
 export interface Notification {
   id: string | number;
@@ -111,8 +113,7 @@ export function useNotifications(
     if (!isLegacyMode || !authToken) return;
 
     try {
-      const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-      const wsUrl = `${protocol}//${window.location.host}/ws?token=${encodeURIComponent(authToken)}`;
+      const wsUrl = buildWebSocketUrl('/ws');
 
       ws.current = new WebSocket(wsUrl);
 
@@ -122,23 +123,23 @@ export function useNotifications(
 
       ws.current.onmessage = (event) => {
         try {
-          const message = JSON.parse(event.data);
-          if (message.type && message.payload) {
+          const raw = JSON.parse(event.data);
+          if (raw.type && raw.payload) {
             const notification: Notification = {
-              id: `${message.type}-${Date.now()}`,
-              type: message.type,
-              title: message.payload.title || message.event || 'Notification',
+              id: `${raw.type}-${Date.now()}`,
+              type: raw.type,
+              title: raw.payload.title || raw.event || 'Notification',
               description:
-                message.payload.description ||
-                message.payload.message ||
+                raw.payload.description ||
+                raw.payload.message ||
                 'No description',
               severity:
-                (message.payload.severity as 'info' | 'success' | 'warning' | 'error' | 'critical' | undefined) ||
+                (raw.payload.severity as 'info' | 'success' | 'warning' | 'error' | 'critical' | undefined) ||
                 'info',
-              timestamp: message.payload.timestamp || new Date().toISOString(),
+              timestamp: raw.payload.timestamp || new Date().toISOString(),
               read: false,
-              link: message.payload.link,
-              data: message.payload,
+              link: raw.payload.link,
+              data: raw.payload,
             };
             setNotifications((prev) => [notification, ...prev]);
             setUnreadCount((prev) => prev + 1);
@@ -314,8 +315,7 @@ export function useRealtimeNotifications(
     if (!enabledRef.current) return;
 
     try {
-      const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-      const wsUrl = `${protocol}//${window.location.host}/ws`;
+      const wsUrl = buildWebSocketUrl('/ws');
 
       const socket = new WebSocket(wsUrl);
 
@@ -330,14 +330,15 @@ export function useRealtimeNotifications(
           if (enabledRef.current && socketRef.current === null) {
             // Re-create WebSocket connection directly
             try {
-              const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-              const wsUrl = `${protocol}//${window.location.host}/ws`;
+              const wsUrl = buildWebSocketUrl('/ws');
               const newSocket = new WebSocket(wsUrl);
               newSocket.onopen = () => setIsConnected(true);
               newSocket.onclose = () => setIsConnected(false);
               newSocket.onmessage = (event) => {
                 try {
-                  const notification = JSON.parse(event.data) as Notification;
+                  const raw = JSON.parse(event.data);
+                  const notification = validateNotification(raw);
+                  if (!notification) return;
                   window.dispatchEvent(new CustomEvent('notification', { detail: notification }));
                 } catch (err) {
                   console.error('Failed to parse WebSocket notification:', err);
@@ -354,7 +355,9 @@ export function useRealtimeNotifications(
 
       socket.onmessage = (event) => {
         try {
-          const notification = JSON.parse(event.data) as Notification;
+          const raw = JSON.parse(event.data);
+          const notification = validateNotification(raw);
+          if (!notification) return; // Drop invalid notifications silently
           // Dispatch custom event that components can listen to
           window.dispatchEvent(
             new CustomEvent('notification', { detail: notification })

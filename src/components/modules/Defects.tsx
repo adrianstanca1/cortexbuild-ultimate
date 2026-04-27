@@ -173,11 +173,11 @@ export default function Defects() {
 
   return (
     <>
-      <ModuleBreadcrumbs currentModule="defects" onNavigate={() => {}} />
+      <ModuleBreadcrumbs currentModule="defects" />
       <div className="p-6 space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-2xl font-bold text-white" style={{ fontFamily: 'var(--font-display)' }}>
+          <h2 className="text-2xl font-display text-white" style={{ fontFamily: 'var(--font-display)' }}>
             Defects Management
           </h2>
           <p className="text-gray-400 text-sm mt-1">Track, assign, and resolve construction defects</p>
@@ -196,7 +196,7 @@ export default function Defects() {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-gray-400 text-xs uppercase tracking-wider">Open Defects</p>
-              <p className="text-2xl font-bold text-white mt-1">{totalOpen}</p>
+              <p className="text-2xl font-display text-white mt-1">{totalOpen}</p>
             </div>
             <div className="w-10 h-10 rounded-lg bg-orange-500/10 flex items-center justify-center">
               <AlertTriangle className="text-orange-400" size={20} />
@@ -207,7 +207,7 @@ export default function Defects() {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-gray-400 text-xs uppercase tracking-wider">Critical</p>
-              <p className="text-2xl font-bold text-red-400 mt-1">{totalCritical}</p>
+              <p className="text-2xl font-display text-red-400 mt-1">{totalCritical}</p>
             </div>
             <div className="w-10 h-10 rounded-lg bg-red-500/10 flex items-center justify-center">
               <XCircle className="text-red-400" size={20} />
@@ -218,7 +218,7 @@ export default function Defects() {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-gray-400 text-xs uppercase tracking-wider">Repair Cost</p>
-              <p className="text-2xl font-bold text-amber-400 mt-1">£{totalCost.toLocaleString()}</p>
+              <p className="text-2xl font-display text-amber-400 mt-1">£{totalCost.toLocaleString()}</p>
             </div>
             <div className="w-10 h-10 rounded-lg bg-amber-500/10 flex items-center justify-center">
               <Wrench className="text-amber-400" size={20} />
@@ -229,7 +229,7 @@ export default function Defects() {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-gray-400 text-xs uppercase tracking-wider">Total Defects</p>
-              <p className="text-2xl font-bold text-white mt-1">{defects.length}</p>
+              <p className="text-2xl font-display text-white mt-1">{defects.length}</p>
             </div>
             <div className="w-10 h-10 rounded-lg bg-blue-500/10 flex items-center justify-center">
               <FileText className="text-blue-400" size={20} />
@@ -490,7 +490,7 @@ export default function Defects() {
         <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
           <div className="bg-gray-900 border border-gray-700 rounded-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
             <div className="p-6 border-b border-gray-700 flex items-center justify-between">
-              <h3 className="text-xl font-bold text-white">Report Defect</h3>
+              <h3 className="text-xl font-display text-white">Report Defect</h3>
               <button type="button" onClick={() => setShowCreateModal(false)} className="text-gray-400 hover:text-white">
                 <X size={20} />
               </button>
@@ -562,7 +562,7 @@ export default function Defects() {
         <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
           <div className="bg-gray-900 border border-gray-700 rounded-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
             <div className="p-6 border-b border-gray-700 flex items-center justify-between">
-              <h3 className="text-xl font-bold text-white">Edit Defect</h3>
+              <h3 className="text-xl font-display text-white">Edit Defect</h3>
               <button type="button" onClick={() => setEditItem(null)} className="text-gray-400 hover:text-white">
                 <X size={20} />
               </button>

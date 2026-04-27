@@ -14,7 +14,7 @@ router.use(authMiddleware);
 router.get('/members/:memberId/skills', async (req, res) => {
   try {
     const { rows } = await pool.query(
-      'SELECT s.* FROM team_member_skills s JOIN team_members m ON s.member_id = m.id WHERE s.member_id = $1 AND m.company_id = $2 ORDER BY skill_name',
+      'SELECT s.* FROM team_member_skills s JOIN team_members m ON s.member_id = m.id WHERE s.member_id = $1 AND COALESCE(m.organization_id, m.company_id) = $2 ORDER BY skill_name',
       [req.params.memberId, req.user.company_id]
     );
     res.json(rows);
@@ -31,7 +31,7 @@ router.post('/members/:memberId/skills', async (req, res) => {
     const { rows } = await pool.query(
       `INSERT INTO team_member_skills (member_id, skill_name, status)
        SELECT $1, $2, $3
-       WHERE EXISTS (SELECT 1 FROM team_members WHERE id = $1 AND company_id = $4)
+       WHERE EXISTS (SELECT 1 FROM team_members WHERE id = $1 AND COALESCE(organization_id, company_id) = $4)
        RETURNING *`,
       [req.params.memberId, skill_name, status, req.user.company_id]
     );
@@ -55,7 +55,7 @@ router.put('/skills/:id', async (req, res) => {
     values.push(req.params.id);
     values.push(req.user.company_id);
     const { rows } = await pool.query(
-      `UPDATE team_member_skills SET ${updates.join(', ')} WHERE id = $${i} AND member_id IN (SELECT id FROM team_members WHERE company_id = $${i + 1}) RETURNING *`,
+      `UPDATE team_member_skills SET ${updates.join(', ')} WHERE id = $${i} AND member_id IN (SELECT id FROM team_members WHERE COALESCE(organization_id, company_id) = $${i + 1}) RETURNING *`,
       values
     );
     if (!rows[0]) return res.status(404).json({ message: 'Not found' });
@@ -69,7 +69,7 @@ router.put('/skills/:id', async (req, res) => {
 router.delete('/skills/:id', async (req, res) => {
   try {
     const { rowCount } = await pool.query(
-      'DELETE FROM team_member_skills WHERE id = $1 AND member_id IN (SELECT id FROM team_members WHERE company_id = $2)',
+      'DELETE FROM team_member_skills WHERE id = $1 AND member_id IN (SELECT id FROM team_members WHERE COALESCE(organization_id, company_id) = $2)',
       [req.params.id, req.user.company_id]
     );
     if (!rowCount) return res.status(404).json({ message: 'Not found' });
@@ -85,7 +85,7 @@ router.delete('/skills/:id', async (req, res) => {
 router.get('/members/:memberId/inductions', async (req, res) => {
   try {
     const { rows } = await pool.query(
-      'SELECT i.* FROM team_member_inductions i JOIN team_members m ON i.member_id = m.id WHERE i.member_id = $1 AND m.company_id = $2 ORDER BY date DESC',
+      'SELECT i.* FROM team_member_inductions i JOIN team_members m ON i.member_id = m.id WHERE i.member_id = $1 AND COALESCE(m.organization_id, m.company_id) = $2 ORDER BY date DESC',
       [req.params.memberId, req.user.company_id]
     );
     res.json(rows);
@@ -102,7 +102,7 @@ router.post('/members/:memberId/inductions', async (req, res) => {
     const { rows } = await pool.query(
       `INSERT INTO team_member_inductions (member_id, project, date, next_due, status)
        SELECT $1, $2, $3, $4, $5
-       WHERE EXISTS (SELECT 1 FROM team_members WHERE id = $1 AND company_id = $6)
+       WHERE EXISTS (SELECT 1 FROM team_members WHERE id = $1 AND COALESCE(organization_id, company_id) = $6)
        RETURNING *`,
       [req.params.memberId, project, date, next_due || null, status, req.user.company_id]
     );
@@ -128,7 +128,7 @@ router.put('/inductions/:id', async (req, res) => {
     values.push(req.params.id);
     values.push(req.user.company_id);
     const { rows } = await pool.query(
-      `UPDATE team_member_inductions SET ${updates.join(', ')} WHERE id = $${i} AND member_id IN (SELECT id FROM team_members WHERE company_id = $${i + 1}) RETURNING *`,
+      `UPDATE team_member_inductions SET ${updates.join(', ')} WHERE id = $${i} AND member_id IN (SELECT id FROM team_members WHERE COALESCE(organization_id, company_id) = $${i + 1}) RETURNING *`,
       values
     );
     if (!rows[0]) return res.status(404).json({ message: 'Not found' });
@@ -142,7 +142,7 @@ router.put('/inductions/:id', async (req, res) => {
 router.delete('/inductions/:id', async (req, res) => {
   try {
     const { rowCount } = await pool.query(
-      'DELETE FROM team_member_inductions WHERE id = $1 AND member_id IN (SELECT id FROM team_members WHERE company_id = $2)',
+      'DELETE FROM team_member_inductions WHERE id = $1 AND member_id IN (SELECT id FROM team_members WHERE COALESCE(organization_id, company_id) = $2)',
       [req.params.id, req.user.company_id]
     );
     if (!rowCount) return res.status(404).json({ message: 'Not found' });
@@ -158,7 +158,7 @@ router.delete('/inductions/:id', async (req, res) => {
 router.get('/members/:memberId/availability', async (req, res) => {
   try {
     const { rows } = await pool.query(
-      'SELECT a.* FROM team_member_availability a JOIN team_members m ON a.member_id = m.id WHERE a.member_id = $1 AND m.company_id = $2 ORDER BY project',
+      'SELECT a.* FROM team_member_availability a JOIN team_members m ON a.member_id = m.id WHERE a.member_id = $1 AND COALESCE(m.organization_id, m.company_id) = $2 ORDER BY project',
       [req.params.memberId, req.user.company_id]
     );
     res.json(rows);
@@ -175,7 +175,7 @@ router.post('/members/:memberId/availability', async (req, res) => {
     const { rows } = await pool.query(
       `INSERT INTO team_member_availability (member_id, project, status)
        SELECT $1, $2, $3
-       WHERE EXISTS (SELECT 1 FROM team_members WHERE id = $1 AND company_id = $4)
+       WHERE EXISTS (SELECT 1 FROM team_members WHERE id = $1 AND COALESCE(organization_id, company_id) = $4)
        ON CONFLICT (member_id, project) DO UPDATE SET status = $3, updated_at = NOW()
        RETURNING *`,
       [req.params.memberId, project, status, req.user.company_id]
@@ -200,7 +200,7 @@ router.put('/availability/:id', async (req, res) => {
     values.push(req.user.company_id);
     const { rows } = await pool.query(
       `UPDATE team_member_availability a SET ${updates.join(', ')}, updated_at = NOW()
-       WHERE a.id = $${i++} AND a.member_id IN (SELECT id FROM team_members WHERE company_id = $${i})
+       WHERE a.id = $${i++} AND a.member_id IN (SELECT id FROM team_members WHERE COALESCE(organization_id, company_id) = $${i})
        RETURNING *`,
       values
     );
@@ -215,7 +215,7 @@ router.put('/availability/:id', async (req, res) => {
 router.delete('/availability/:id', async (req, res) => {
   try {
     const { rowCount } = await pool.query(
-      'DELETE FROM team_member_availability WHERE id = $1 AND member_id IN (SELECT id FROM team_members WHERE company_id = $2)',
+      'DELETE FROM team_member_availability WHERE id = $1 AND member_id IN (SELECT id FROM team_members WHERE COALESCE(organization_id, company_id) = $2)',
       [req.params.id, req.user.company_id]
     );
     if (!rowCount) return res.status(404).json({ message: 'Not found' });

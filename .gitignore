@@ -1,12 +1,19 @@
 node_modules/
 dist/
+coverage/
+
+# Ephemeral agent / session artifacts (do not commit)
+memory/.dreams/
+memory/dreaming/
 .env
 .env.local
 .env.production
 .DS_Store
 *.log
+agent-debug-82d802.ndjson
 .vercel
 tsconfig.tsbuildinfo
+stats.html
 dist_backup_*/
 .next/
 sendgrid.env
@@ -24,6 +31,7 @@ server/doc/
 nginx/ssl/*.pem
 nginx/ssl/*.key
 .env.docker
+deploy/.local-api-secrets.env
 
 # Playwright
 playwright-report/
@@ -44,11 +52,13 @@ logs/
 .remember/
 .logs/
 
+# Local git worktrees (agent / dev scratch)
+.worktrees/
+
 # Removed dead directories (prevent re-addition)
 .agents/
 .jez/
 .qwen/
-agents/
 prisma/
 startup-scripts/
 types/

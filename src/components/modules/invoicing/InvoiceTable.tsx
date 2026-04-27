@@ -40,7 +40,7 @@ export function InvoiceTable({
 }: InvoiceTableProps) {
   return (
     <div className="rounded-2xl border border-gray-800 bg-gray-900 overflow-hidden mb-8">
-      <div className="overflow-x-auto">
+      <div className="cb-table-scroll touch-pan-x">
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b border-gray-800">

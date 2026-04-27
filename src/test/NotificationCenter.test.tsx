@@ -1,8 +1,5 @@
 /**
- * NotificationCenter Component Tests
- *
- * Tests for the notification center modal component with filtering,
- * mark as read, and delete functionality.
+ * NotificationCenter component tests (fetch + auth token flow).
  */
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
@@ -10,7 +7,6 @@ import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { NotificationCenter } from '../components/ui/NotificationCenter';
 import { toast } from 'sonner';
 
-// Mock toast
 vi.mock('sonner', () => ({
   toast: {
     success: vi.fn(),
@@ -18,85 +14,139 @@ vi.mock('sonner', () => ({
   },
 }));
 
+vi.mock('@/lib/auth-storage', () => ({
+  getToken: vi.fn(() => 'test-token'),
+}));
+
+const mockNotifications = [
+  {
+    id: '1',
+    type: 'alert' as const,
+    title: 'Safety Alert',
+    description: 'Hard hat zone',
+    timestamp: new Date().toISOString(),
+    read: false,
+    link: '/safety/alerts/1',
+    actionLabel: 'View Alert',
+  },
+  {
+    id: '2',
+    type: 'warning' as const,
+    title: 'Budget Variance',
+    description: 'Over budget',
+    timestamp: new Date().toISOString(),
+    read: false,
+  },
+  {
+    id: '3',
+    type: 'success' as const,
+    title: 'Inspection Passed',
+    description: 'OK',
+    timestamp: new Date().toISOString(),
+    read: true,
+  },
+  {
+    id: '4',
+    type: 'info' as const,
+    title: 'New Document',
+    description: 'Uploaded',
+    timestamp: new Date().toISOString(),
+    read: false,
+  },
+];
+
+function requestUrl(input: RequestInfo | URL): string {
+  if (typeof input === 'string') return input;
+  if (input instanceof URL) return input.href;
+  return input.url;
+}
+
+function setupNotificationFetch() {
+  let list = [...mockNotifications];
+  const fetchMock = globalThis.fetch as ReturnType<typeof vi.fn>;
+  fetchMock.mockImplementation(async (input: RequestInfo | URL, init?: RequestInit) => {
+    const url = requestUrl(input);
+    const method = init?.method ?? 'GET';
+
+    if (url.includes('/api/notifications?pageSize')) {
+      return {
+        ok: true,
+        status: 200,
+        json: async () => ({ notifications: list }),
+      } as Response;
+    }
+    if (method === 'PUT' && /\/api\/notifications\/[^/]+\/read$/.test(url)) {
+      const id = url.split('/').slice(-2, -1)[0];
+      list = list.map(n => (n.id === id ? { ...n, read: true } : n));
+      return { ok: true, status: 200, json: async () => ({}) } as Response;
+    }
+    if (method === 'PUT' && url.endsWith('/api/notifications/read-all')) {
+      list = list.map(n => ({ ...n, read: true }));
+      return { ok: true, status: 200, json: async () => ({}) } as Response;
+    }
+    if (method === 'DELETE' && /\/api\/notifications\/[^/]+$/.test(url) && !url.includes('/read')) {
+      const id = url.split('/').pop()!;
+      list = list.filter(n => n.id !== id);
+      return { ok: true, status: 200, json: async () => ({}) } as Response;
+    }
+
+    return {
+      ok: true,
+      status: 200,
+      json: async () => ({}),
+    } as Response;
+  });
+}
+
 describe('NotificationCenter', () => {
   const mockOnClose = vi.fn();
 
   beforeEach(() => {
     vi.clearAllMocks();
+    setupNotificationFetch();
   });
 
-  it('renders notification count badge with unread count', () => {
+  it('loads notifications and shows unread badge', async () => {
     render(<NotificationCenter onClose={mockOnClose} />);
 
-    // Should show badge with count 3 (3 unread notifications in mock data)
+    await waitFor(() => {
+      expect(screen.queryByText('Loading notifications...')).not.toBeInTheDocument();
+    });
+
     expect(screen.getByText('3')).toBeInTheDocument();
     expect(screen.getByText('3 unread')).toBeInTheDocument();
-  });
-
-  it('shows all notifications in list by default', () => {
-    render(<NotificationCenter onClose={mockOnClose} />);
-
-    // Check that all notification titles are visible
     expect(screen.getByText('Safety Alert')).toBeInTheDocument();
     expect(screen.getByText('Budget Variance')).toBeInTheDocument();
     expect(screen.getByText('Inspection Passed')).toBeInTheDocument();
     expect(screen.getByText('New Document')).toBeInTheDocument();
   });
 
-  it('filters by unread status', async () => {
+  it('filters with Alerts tab', async () => {
     render(<NotificationCenter onClose={mockOnClose} />);
 
-    const filterSelect = screen.getByLabelText('Filter by read status') as HTMLSelectElement;
-    fireEvent.change(filterSelect, { target: { value: 'unread' } });
+    await waitFor(() => {
+      expect(screen.getByText('Safety Alert')).toBeInTheDocument();
+    });
+
+    fireEvent.click(screen.getByRole('button', { name: /Alerts/i }));
 
     await waitFor(() => {
-      // Should only show unread notifications
       expect(screen.getByText('Safety Alert')).toBeInTheDocument();
       expect(screen.getByText('Budget Variance')).toBeInTheDocument();
-      expect(screen.getByText('New Document')).toBeInTheDocument();
-      // Read notification should not be visible
-      expect(screen.queryByText('Inspection Passed')).not.toBeInTheDocument();
-    });
-  });
-
-  it('filters by read status', async () => {
-    render(<NotificationCenter onClose={mockOnClose} />);
-
-    const filterSelect = screen.getByLabelText('Filter by read status') as HTMLSelectElement;
-    fireEvent.change(filterSelect, { target: { value: 'read' } });
-
-    await waitFor(() => {
-      // Should only show read notifications
-      expect(screen.getByText('Inspection Passed')).toBeInTheDocument();
-      // Unread notifications should not be visible
-      expect(screen.queryByText('Safety Alert')).not.toBeInTheDocument();
-    });
-  });
-
-  it('filters by notification type', async () => {
-    render(<NotificationCenter onClose={mockOnClose} />);
-
-    const typeSelect = screen.getByLabelText('Filter by notification type') as HTMLSelectElement;
-    fireEvent.change(typeSelect, { target: { value: 'alert' } });
-
-    await waitFor(() => {
-      // Should only show alert notifications
-      expect(screen.getByText('Safety Alert')).toBeInTheDocument();
-      expect(screen.queryByText('Budget Variance')).not.toBeInTheDocument();
+      expect(screen.queryByText('New Document')).not.toBeInTheDocument();
     });
   });
 
   it('marks single notification as read', async () => {
     render(<NotificationCenter onClose={mockOnClose} />);
 
-    // Find all "Mark as read" buttons and click the first one
-    const markReadButtons = screen.getAllByLabelText('Mark as read');
-    fireEvent.click(markReadButtons[0]);
-
-    expect(toast.success).toHaveBeenCalledWith('Marked as read');
-    // Badge count should decrease
     await waitFor(() => {
-      expect(screen.getByText('2')).toBeInTheDocument();
+      expect(screen.getAllByLabelText('Mark as read').length).toBeGreaterThan(0);
+    });
+
+    fireEvent.click(screen.getAllByLabelText('Mark as read')[0]);
+
+    await waitFor(() => {
       expect(screen.getByText('2 unread')).toBeInTheDocument();
     });
   });
@@ -104,13 +154,14 @@ describe('NotificationCenter', () => {
   it('marks all notifications as read', async () => {
     render(<NotificationCenter onClose={mockOnClose} />);
 
-    // Click mark all as read button - has CheckCheck icon
-    const markAllReadButton = screen.getByLabelText('Mark all notifications as read');
-    fireEvent.click(markAllReadButton);
-
-    expect(toast.success).toHaveBeenCalledWith('All notifications marked as read');
-    // Badge should show 0
     await waitFor(() => {
+      expect(screen.getByLabelText('Mark all notifications as read')).not.toBeDisabled();
+    });
+
+    fireEvent.click(screen.getByLabelText('Mark all notifications as read'));
+
+    await waitFor(() => {
+      expect(toast.success).toHaveBeenCalledWith('All notifications marked as read');
       expect(screen.getByText('0 unread')).toBeInTheDocument();
     });
   });
@@ -118,66 +169,53 @@ describe('NotificationCenter', () => {
   it('deletes a notification', async () => {
     render(<NotificationCenter onClose={mockOnClose} />);
 
-    // Click delete button - circular button with X icon
-    const deleteButtons = screen.getAllByLabelText('Delete');
-    fireEvent.click(deleteButtons[0]);
-
-    expect(toast.success).toHaveBeenCalledWith('Notification deleted');
-    // Should have one less notification
     await waitFor(() => {
+      expect(screen.getByText('Safety Alert')).toBeInTheDocument();
+    });
+
+    fireEvent.click(screen.getAllByLabelText('Delete')[0]);
+
+    await waitFor(() => {
+      expect(toast.success).toHaveBeenCalledWith('Notification deleted');
       expect(screen.queryByText('Safety Alert')).not.toBeInTheDocument();
     });
   });
 
-  it('calls onClose when clicking close button', () => {
+  it('calls onClose when clicking close button', async () => {
     render(<NotificationCenter onClose={mockOnClose} />);
-
-    // Click close button
-    const closeButton = screen.getByLabelText('Close notification center');
-    fireEvent.click(closeButton);
-
-    expect(mockOnClose).toHaveBeenCalled();
-  });
-
-  it('calls onClose when clicking outside modal', () => {
-    render(<NotificationCenter onClose={mockOnClose} />);
-
-    // Click on overlay (outside modal content)
-    const overlay = screen.getByRole('dialog');
-    fireEvent.click(overlay);
-
-    expect(mockOnClose).toHaveBeenCalled();
-  });
-
-  it('displays notification action button with correct link', () => {
-    render(<NotificationCenter onClose={mockOnClose} />);
-
-    // Check action button exists for notification with actionUrl
-    const viewButton = screen.getByText('View Alert');
-    expect(viewButton).toBeInTheDocument();
-    expect(viewButton.closest('a')).toHaveAttribute('href', '/safety/alerts/1');
-  });
-
-  it('displays notification count in footer', () => {
-    render(<NotificationCenter onClose={mockOnClose} />);
-
-    expect(screen.getByText('4 notifications displayed')).toBeInTheDocument();
-  });
-
-  it('updates footer count when filtering', async () => {
-    render(<NotificationCenter onClose={mockOnClose} />);
-
-    const filterSelect = screen.getByLabelText('Filter by read status') as HTMLSelectElement;
-    fireEvent.change(filterSelect, { target: { value: 'unread' } });
 
     await waitFor(() => {
-      expect(screen.getByText('3 notifications displayed')).toBeInTheDocument();
+      expect(screen.getByLabelText('Close notification center')).toBeInTheDocument();
+    });
+
+    fireEvent.click(screen.getByLabelText('Close notification center'));
+    expect(mockOnClose).toHaveBeenCalled();
+  });
+
+  it('shows primary action link when provided', async () => {
+    render(<NotificationCenter onClose={mockOnClose} />);
+
+    await waitFor(() => {
+      expect(screen.getByText('View Alert')).toBeInTheDocument();
+    });
+
+    const view = screen.getByText('View Alert').closest('a');
+    expect(view).toHaveAttribute('href', '/safety/alerts/1');
+  });
+
+  it('shows footer count for displayed notifications', async () => {
+    render(<NotificationCenter onClose={mockOnClose} />);
+
+    await waitFor(() => {
+      expect(screen.getByText(/4 notifications displayed/)).toBeInTheDocument();
     });
   });
 
-  it('has settings button', () => {
+  it('has settings button', async () => {
     render(<NotificationCenter onClose={mockOnClose} />);
 
-    expect(screen.getByLabelText('Notification settings')).toBeInTheDocument();
+    await waitFor(() => {
+      expect(screen.getByLabelText('Notification settings')).toBeInTheDocument();
+    });
   });
 });

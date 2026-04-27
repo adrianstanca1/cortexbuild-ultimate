@@ -10,7 +10,7 @@ import { EmptyState } from '../ui/EmptyState';
 import { useProjects, useDailyReports } from '../../hooks/useData';
 import { aiSummarizeApi } from '../../services/api';
 import { toast } from 'sonner';
-import { getToken } from '@/lib/supabase';
+import { API_BASE } from '@/lib/auth-storage';
 import { SummaryStatsCards } from './daily-reports/SummaryStatsCards';
 import { DiaryFilters } from './daily-reports/DiaryFilters';
 import { WeatherWidget } from './daily-reports/WeatherWidget';
@@ -223,12 +223,12 @@ export function DailyReports() {
 
   return (
     <>
-      <ModuleBreadcrumbs currentModule="daily-reports" onNavigate={() => {}} />
+      <ModuleBreadcrumbs currentModule="daily-reports" />
       <div className="p-6 space-y-6 bg-gray-900 min-h-screen">
       {/* Header */}
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div>
-          <h1 className="text-3xl font-bold text-white">Daily Site Reports</h1>
+          <h1 className="text-3xl font-display text-white">Daily Site Reports</h1>
           <p className="text-sm text-gray-400 mt-1">Daily progress, weather & site records</p>
         </div>
         <button
@@ -251,7 +251,7 @@ export function DailyReports() {
       />
 
       {/* Main Tabs */}
-      <div className="border-b border-gray-700 flex gap-1 overflow-x-auto">
+      <div className="border-b border-gray-700 flex gap-1 cb-table-scroll touch-pan-x">
         {[
           { key: 'diary' as const, label: 'Site Diary', icon: ClipboardList },
           { key: 'weather' as const, label: 'Weather Log', icon: Cloud },
@@ -278,7 +278,7 @@ export function DailyReports() {
       {mainTab === 'diary' && (
         <>
           {/* Diary Sub Tabs */}
-          <div className="border-b border-gray-700 flex gap-1 overflow-x-auto">
+          <div className="border-b border-gray-700 flex gap-1 cb-table-scroll touch-pan-x">
             {[
               { key: 'today' as const, label: 'Today', count: reports.filter(r => String(r.report_date ?? '') === today).length },
               { key: 'week' as const, label: 'This Week', count: thisWeekCount },
@@ -452,7 +452,7 @@ export function DailyReports() {
                         {isSelected ? <CheckSquare size={16} className="text-blue-400"/> : <Square size={16} className="text-gray-500"/>}
                       </button>
                       <div className="w-24 flex-shrink-0 text-center">
-                        <p className={`text-sm font-bold ${isToday ? 'text-orange-400' : 'text-white'}`}>{reportDate}</p>
+                        <p className={`text-sm font-mono ${isToday ? 'text-orange-400' : 'text-white'}`}>{reportDate}</p>
                         {isToday && <p className="text-xs text-orange-400 mt-0.5">Today</p>}
                       </div>
                       <div className="flex items-center gap-1.5 flex-shrink-0">
@@ -538,31 +538,31 @@ export function DailyReports() {
                       <div className="px-6 pb-4 bg-gray-700/20 space-y-3 text-sm border-t border-gray-700">
                         {!!r.work_carried_out && (
                           <div>
-                            <p className="text-xs font-semibold text-orange-400 uppercase tracking-wide mb-1">Work Carried Out</p>
+                            <p className="text-xs font-display text-orange-400 uppercase tracking-widest mb-1">Work Carried Out</p>
                             <p className="text-gray-300 whitespace-pre-wrap">{String(r.work_carried_out)}</p>
                           </div>
                         )}
                         {!!r.work_planned_tomorrow && (
                           <div>
-                            <p className="text-xs font-semibold text-blue-400 uppercase tracking-wide mb-1">Work Planned Tomorrow</p>
+                            <p className="text-xs font-display text-blue-400 uppercase tracking-widest mb-1">Work Planned Tomorrow</p>
                             <p className="text-gray-300 whitespace-pre-wrap">{String(r.work_planned_tomorrow)}</p>
                           </div>
                         )}
                         {!!r.issues_delays && (
                           <div>
-                            <p className="text-xs font-semibold text-red-400 uppercase tracking-wide mb-1">Issues / Delays</p>
+                            <p className="text-xs font-display text-red-400 uppercase tracking-widest mb-1">Issues / Delays</p>
                             <p className="text-gray-300">{String(r.issues_delays)}</p>
                           </div>
                         )}
                         {!!r.safety_notes && (
                           <div>
-                            <p className="text-xs font-semibold text-green-400 uppercase tracking-wide mb-1">Safety Notes</p>
+                            <p className="text-xs font-display text-green-400 uppercase tracking-widest mb-1">Safety Notes</p>
                             <p className="text-gray-300">{String(r.safety_notes)}</p>
                           </div>
                         )}
                         {!!r.materials_delivered && (
                           <div>
-                            <p className="text-xs font-semibold text-purple-400 uppercase tracking-wide mb-1">Materials Delivered</p>
+                            <p className="text-xs font-display text-purple-400 uppercase tracking-widest mb-1">Materials Delivered</p>
                             <p className="text-gray-300">{String(r.materials_delivered)}</p>
                           </div>
                         )}
@@ -607,7 +607,7 @@ export function DailyReports() {
           ) : (
             <div className="space-y-4">
               <div className="flex items-center justify-between">
-                <h3 className="text-lg font-semibold text-white">
+                <h3 className="text-lg font-display text-white">
                   {reports.reduce((sum, r) => sum + Number(r.photos ?? 0), 0)} Photos
                 </h3>
               </div>
@@ -660,7 +660,7 @@ export function DailyReports() {
           ) : (
             <div className="space-y-4">
               <div className="flex items-center justify-between">
-                <h3 className="text-lg font-semibold text-white">Weekly Summaries</h3>
+                <h3 className="text-lg font-display text-white">Weekly Summaries</h3>
                 <button
                   onClick={async () => {
                     const weekStart = new Date();
@@ -674,11 +674,10 @@ export function DailyReports() {
                     if (!currentWeek.length) { toast.error('No reports this week'); return; }
                     toast.success('Generating AI summary…');
                     try {
-                      const token = getToken();
-                      // Raw fetch — bypasses apiFetch camelization; response keys are snake_case
-                      const res = await fetch('/api/reports/summary', {
+                      const res = await fetch(`${API_BASE}/reports/summary`, {
                         method: 'POST',
-                        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+                        credentials: 'include',
+                        headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({ reports: currentWeek, projectName: projectFilter === 'all' ? 'All Projects' : String(projects.find(p => String(p.id) === projectFilter)?.name ?? 'Project') }),
                       });
                       if (!res.ok) throw new Error();
@@ -725,15 +724,15 @@ export function DailyReports() {
                       <div className="space-y-3 border-t border-gray-700 pt-3">
                         <div>
                           <p className="text-xs font-medium text-gray-400 mb-1">Reports Submitted</p>
-                          <p className="text-lg font-bold text-white">{weekReports.length}</p>
+                          <p className="text-lg font-display text-white">{weekReports.length}</p>
                         </div>
                         <div>
                           <p className="text-xs font-medium text-gray-400 mb-1">Total Worker Days</p>
-                          <p className="text-lg font-bold text-green-400">{totalWorkers}</p>
+                          <p className="text-lg font-display text-green-400">{totalWorkers}</p>
                         </div>
                         <div>
                           <p className="text-xs font-medium text-gray-400 mb-1">Issues Reported</p>
-                          <p className="text-lg font-bold text-red-400">{issuesCount}</p>
+                          <p className="text-lg font-display text-red-400">{issuesCount}</p>
                         </div>
                         <div className="pt-2">
                           <p className="text-xs font-medium text-gray-400 mb-2">Highlights</p>
@@ -1022,7 +1021,7 @@ export function DailyReports() {
             <div className="p-8 space-y-6">
               {/* Header Section */}
               <div className="border-b border-gray-700 pb-6">
-                <h3 className="text-2xl font-bold text-white mb-2">{getProjectName(String(detailView.project_id ?? ''))}</h3>
+                <h3 className="text-2xl font-display text-white mb-2">{getProjectName(String(detailView.project_id ?? ''))}</h3>
                 <div className="flex items-center gap-4 text-sm text-gray-400">
                   <span>Date: {String(detailView.report_date ?? '—')}</span>
                   <span>Reported by: {String(detailView.submitted_by ?? '—')}</span>
@@ -1032,7 +1031,7 @@ export function DailyReports() {
               {/* Site Conditions */}
               <div className="grid grid-cols-3 gap-4">
                 <div className="bg-gray-700/30 rounded-lg p-4 border border-gray-700">
-                  <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-1">Weather</p>
+                  <p className="text-xs font-display text-gray-400 uppercase tracking-widest mb-1">Weather</p>
                   <div className="flex items-center gap-2">
                     {weatherIcon(String(detailView.weather ?? ''))}
                     <p className="text-lg font-medium text-white">{String(detailView.weather ?? '—')}</p>
@@ -1040,11 +1039,11 @@ export function DailyReports() {
                   {Boolean(detailView.temperature) && <p className="text-sm text-gray-400 mt-1">{String(detailView.temperature)}°C</p>}
                 </div>
                 <div className="bg-gray-700/30 rounded-lg p-4 border border-gray-700">
-                  <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-1">Workers</p>
+                  <p className="text-xs font-display text-gray-400 uppercase tracking-widest mb-1">Workers</p>
                   <p className="text-lg font-medium text-white">{String(detailView.workers_on_site ?? '0')}</p>
                 </div>
                 <div className="bg-gray-700/30 rounded-lg p-4 border border-gray-700">
-                  <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-1">Status</p>
+                  <p className="text-xs font-display text-gray-400 uppercase tracking-widest mb-1">Status</p>
                   <span
                     className={`text-xs px-2 py-1 rounded-full font-medium inline-block ${statusColour[String(detailView.status ?? '')] ?? 'bg-gray-600 text-gray-300'}`}
                   >
@@ -1056,56 +1055,56 @@ export function DailyReports() {
               {/* Work Sections */}
               {Boolean(detailView.work_carried_out) && (
                 <div>
-                  <h4 className="text-sm font-semibold text-orange-400 uppercase tracking-wide mb-2">Work Completed Today</h4>
+                  <h4 className="text-sm font-display text-orange-400 uppercase tracking-widest mb-2">Work Completed Today</h4>
                   <p className="text-gray-300 whitespace-pre-wrap">{String(detailView.work_carried_out)}</p>
                 </div>
               )}
 
               {Boolean(detailView.work_planned_tomorrow) && (
                 <div>
-                  <h4 className="text-sm font-semibold text-blue-400 uppercase tracking-wide mb-2">Work Planned Tomorrow</h4>
+                  <h4 className="text-sm font-display text-blue-400 uppercase tracking-widest mb-2">Work Planned Tomorrow</h4>
                   <p className="text-gray-300 whitespace-pre-wrap">{String(detailView.work_planned_tomorrow)}</p>
                 </div>
               )}
 
               {Boolean(detailView.plant_equipment) && (
                 <div>
-                  <h4 className="text-sm font-semibold text-purple-400 uppercase tracking-wide mb-2">Plant & Equipment</h4>
+                  <h4 className="text-sm font-display text-purple-400 uppercase tracking-widest mb-2">Plant & Equipment</h4>
                   <p className="text-gray-300 whitespace-pre-wrap">{String(detailView.plant_equipment)}</p>
                 </div>
               )}
 
               {Boolean(detailView.issues_delays) && (
                 <div className="bg-red-500/10 border border-red-500/30 rounded-lg p-4">
-                  <h4 className="text-sm font-semibold text-red-400 uppercase tracking-wide mb-2">Issues & Delays</h4>
+                  <h4 className="text-sm font-display text-red-400 uppercase tracking-widest mb-2">Issues & Delays</h4>
                   <p className="text-gray-300 whitespace-pre-wrap">{String(detailView.issues_delays)}</p>
                 </div>
               )}
 
               {Boolean(detailView.safety_notes) && (
                 <div className="bg-green-500/10 border border-green-500/30 rounded-lg p-4">
-                  <h4 className="text-sm font-semibold text-green-400 uppercase tracking-wide mb-2">Safety Notes</h4>
+                  <h4 className="text-sm font-display text-green-400 uppercase tracking-widest mb-2">Safety Notes</h4>
                   <p className="text-gray-300 whitespace-pre-wrap">{String(detailView.safety_notes)}</p>
                 </div>
               )}
 
               {Boolean(detailView.materials_delivered) && (
                 <div>
-                  <h4 className="text-sm font-semibold text-yellow-400 uppercase tracking-wide mb-2">Materials Delivered</h4>
+                  <h4 className="text-sm font-display text-yellow-400 uppercase tracking-widest mb-2">Materials Delivered</h4>
                   <p className="text-gray-300 whitespace-pre-wrap">{String(detailView.materials_delivered)}</p>
                 </div>
               )}
 
               {Boolean(detailView.subcontractors) && (
                 <div>
-                  <h4 className="text-sm font-semibold text-cyan-400 uppercase tracking-wide mb-2">Subcontractors</h4>
+                  <h4 className="text-sm font-display text-cyan-400 uppercase tracking-widest mb-2">Subcontractors</h4>
                   <p className="text-gray-300 whitespace-pre-wrap">{String(detailView.subcontractors)}</p>
                 </div>
               )}
 
               {Boolean(detailView.visitors) && (
                 <div>
-                  <h4 className="text-sm font-semibold text-indigo-400 uppercase tracking-wide mb-2">Visitors</h4>
+                  <h4 className="text-sm font-display text-indigo-400 uppercase tracking-widest mb-2">Visitors</h4>
                   <p className="text-gray-300 whitespace-pre-wrap">{String(detailView.visitors)}</p>
                 </div>
               )}
@@ -1135,10 +1134,10 @@ async function handleDailyReportPhotoUpload(files: File[], projectId: string) {
   formData.append('category', 'daily-report');
   files.forEach(f => formData.append('files', f));
   try {
-    const res = await fetch(`${window.location.origin}/api/files/upload`, {
+    const res = await fetch(`${API_BASE}/files/upload`, {
       method: 'POST',
+      credentials: 'include',
       body: formData,
-      headers: { Authorization: `Bearer ${getToken()}` },
     }) as Response;
     if (!res.ok) throw new Error('Upload failed');
     toast.success(`${files.length} photo(s) uploaded`);
@@ -1152,11 +1151,11 @@ async function handleDailyReportPhotoUpload(files: File[], projectId: string) {
 async function exportWeeklyReportsPDF(reports: AnyRow[], projectName: string) {
   if (!reports.length) { toast.error('No reports to export'); return; }
   try {
-    const token = getToken();
     // Raw fetch — bypasses apiFetch camelization; response is a Blob (no key normalization needed)
-    const res = await fetch('/api/reports/weekly-pdf', {
+    const res = await fetch(`${API_BASE}/reports/weekly-pdf`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+      credentials: 'include',
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ reports, projectName }),
     }) as { ok: boolean; blob: () => Promise<Blob> };
     if (!res.ok) throw new Error();

@@ -12,49 +12,45 @@ router.get('/', async (req, res) => {
   try {
     const { table, record_id, user_id, limit = '100', start_date, end_date } = req.query;
     const isSuper = req.user?.role === 'super_admin';
-    const orgId = req.user?.organization_id;
     const params = [];
     let conditions = [];
 
     if (!isSuper) {
-      if (req.user?.role === 'company_owner') {
-        conditions.push(`company_id = $${params.length + 1}`);
-        params.push(req.user.company_id);
-      } else if (!orgId) {
+      const tenantId = req.user?.organization_id || req.user?.company_id;
+      if (!tenantId) {
         return res.status(403).json({ message: 'No organization context' });
-      } else {
-        conditions.push(`organization_id = $${params.length + 1}`);
-        params.push(orgId);
       }
+      conditions.push(`COALESCE(al.organization_id, al.company_id) = $${params.length + 1}`);
+      params.push(tenantId);
     }
     // super_admin: no organization filter — sees everything
 
     if (table) {
       params.push(table);
-      conditions.push(`table_name = $${params.length}`);
+      conditions.push(`al.table_name = $${params.length}`);
     }
     if (record_id) {
       params.push(record_id);
-      conditions.push(`record_id = $${params.length}`);
+      conditions.push(`al.record_id = $${params.length}`);
     }
     if (user_id) {
       params.push(user_id);
-      conditions.push(`user_id = $${params.length}`);
+      conditions.push(`al.user_id = $${params.length}`);
     }
     if (start_date) {
       params.push(start_date);
-      conditions.push(`created_at >= $${params.length}`);
+      conditions.push(`al.created_at >= $${params.length}`);
     }
     if (end_date) {
       params.push(end_date);
-      conditions.push(`created_at <= $${params.length}`);
+      conditions.push(`al.created_at <= $${params.length}`);
     }
 
     params.push(parseInt(limit, 10));
     const where = conditions.length ? `WHERE ${conditions.join(' AND ')}` : '';
     const query = `SELECT al.*, u.name as user_name, u.email as user_email
                   FROM audit_log al
-                  LEFT JOIN users u ON u.id = al.user_id
+                  LEFT JOIN users u ON u.id::text = al.user_id
                   ${where}
                   ORDER BY al.created_at DESC LIMIT $${params.length}`;
 
@@ -76,10 +72,11 @@ router.post('/', async (req, res) => {
     }
 
     const orgId = req.user?.organization_id;
+    const companyId = req.user?.company_id;
     const { rows } = await pool.query(
-      `INSERT INTO audit_log (table_name, record_id, action, changes, user_id, organization_id)
-       VALUES ($1, $2, $3, $4, $5, $6) RETURNING *`,
-      [table_name, record_id, action, changes ? JSON.stringify(changes) : null, user_id, orgId]
+      `INSERT INTO audit_log (table_name, record_id, action, changes, user_id, organization_id, company_id)
+       VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *`,
+      [table_name, record_id, action, changes ? JSON.stringify(changes) : null, user_id, orgId, companyId]
     );
 
     res.status(201).json(rows[0]);
@@ -93,11 +90,10 @@ router.post('/', async (req, res) => {
 router.get('/stats', async (req, res) => {
   try {
     const isSuper = req.user?.role === 'super_admin';
-    const orgId = req.user?.organization_id;
+    const tenantId = req.user?.organization_id || req.user?.company_id;
+    const tenantClause = isSuper ? '' : 'COALESCE(organization_id, company_id) = $1 AND';
+    const tenantParams = isSuper ? [] : [tenantId];
     const dateCond = 'created_at > NOW() - INTERVAL \'7 days\'';
-    const isCompanyOwner = req.user?.role === 'company_owner';
-    const tenantClause = isSuper ? '' : (isCompanyOwner ? 'company_id = $1 AND' : 'organization_id = $1 AND');
-    const tenantParams = isSuper ? [] : [isCompanyOwner ? req.user.company_id : orgId];
 
     const { rows: byAction } = await pool.query(
       `SELECT action, COUNT(*) as count FROM audit_log WHERE ${tenantClause} ${dateCond} GROUP BY action ORDER BY count DESC`,
@@ -129,36 +125,32 @@ router.get('/stats', async (req, res) => {
 router.get('/export', async (req, res) => {
   try {
     const isSuper = req.user?.role === 'super_admin';
-    const orgId = req.user?.organization_id;
     const { table, action, limit = '10000' } = req.query;
     const params = [];
     let conditions = [];
 
     if (!isSuper) {
-      if (req.user?.role === 'company_owner') {
-        conditions.push(`company_id = $${params.length + 1}`);
-        params.push(req.user.company_id);
-      } else if (!orgId) {
+      const tenantId = req.user?.organization_id || req.user?.company_id;
+      if (!tenantId) {
         return res.status(403).json({ message: 'No organization context' });
-      } else {
-        conditions.push(`organization_id = $${params.length + 1}`);
-        params.push(orgId);
       }
+      conditions.push(`COALESCE(al.organization_id, al.company_id) = $${params.length + 1}`);
+      params.push(tenantId);
     }
     if (table) {
       params.push(table);
-      conditions.push(`table_name = $${params.length}`);
+      conditions.push(`al.table_name = $${params.length}`);
     }
     if (action) {
       params.push(action);
-      conditions.push(`action = $${params.length}`);
+      conditions.push(`al.action = $${params.length}`);
     }
 
     params.push(Math.min(parseInt(limit, 10), 50000));
     const where = conditions.length ? `WHERE ${conditions.join(' AND ')}` : '';
     const { rows } = await pool.query(
       `SELECT al.*, u.name as user_name, u.email as user_email
-       FROM audit_log al LEFT JOIN users u ON u.id = al.user_id
+       FROM audit_log al LEFT JOIN users u ON u.id::text = al.user_id
        ${where} ORDER BY al.created_at DESC LIMIT $${params.length}`,
       params
     );

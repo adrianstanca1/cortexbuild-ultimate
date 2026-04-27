@@ -175,7 +175,7 @@ export function PunchList() {
 
   return (
     <>
-      <ModuleBreadcrumbs currentModule="punch-list" onNavigate={() => {}} />
+      <ModuleBreadcrumbs currentModule="punch-list" />
       <div className="p-6 space-y-6 bg-gray-950 min-h-screen">
       {/* Header */}
       <div className="flex items-center justify-between">
@@ -304,7 +304,7 @@ export function PunchList() {
             <EmptyState title="No items match your filters" icon={ClipboardList} />
           ) : (
             <>
-            <div className="overflow-x-auto bg-gray-900 border border-gray-700 rounded-lg">
+            <div className="cb-table-scroll touch-pan-x bg-gray-900 border border-gray-700 rounded-lg">
               <table className="w-full text-sm">
                 <thead>
                   <tr className="border-b border-gray-700 bg-gray-800">

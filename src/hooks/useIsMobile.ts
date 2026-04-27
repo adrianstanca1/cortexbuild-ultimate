@@ -10,10 +10,20 @@ export function useIsMobile(breakpoint = 768): boolean {
   );
 
   useEffect(() => {
-    const mq = window.matchMedia(`(max-width: ${breakpoint - 1}px)`);
-    const handler = (e: MediaQueryListEvent) => setIsMobile(e.matches);
-    mq.addEventListener('change', handler);
-    return () => mq.removeEventListener('change', handler);
+    let cleanup: (() => void) | undefined;
+    // Guard against environments where window.matchMedia is not available (e.g., jsdom)
+    if (typeof window !== 'undefined' && window.matchMedia) {
+      const mq = window.matchMedia(`(max-width: ${breakpoint - 1}px)`);
+      if (mq) {
+        const handler = (e: MediaQueryListEvent) => setIsMobile(e.matches);
+        setIsMobile(window.innerWidth < breakpoint);
+        mq.addEventListener('change', handler);
+        cleanup = () => mq.removeEventListener('change', handler);
+      }
+    }
+    // If matchMedia is not available, we still set the initial state but don't add listeners
+    setIsMobile(typeof window !== 'undefined' ? window.innerWidth < breakpoint : false);
+    return cleanup;
   }, [breakpoint]);
 
   return isMobile;

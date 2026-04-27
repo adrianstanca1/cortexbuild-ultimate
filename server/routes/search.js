@@ -6,7 +6,7 @@ const https = require('https');
 const http = require('http');
 
 const OLLAMA_HOST = process.env.OLLAMA_HOST || 'http://localhost:11434';
-const EMBEDDING_MODEL = process.env.EMBEDDING_MODEL || 'qwen3.5:latest';
+const EMBEDDING_MODEL = process.env.EMBEDDING_MODEL || 'nomic-embed-text:latest';
 
 // Cosine similarity helper
 function cosineSimilarity(a, b) {

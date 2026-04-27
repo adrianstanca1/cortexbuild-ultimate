@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Users, Plus, Search, Phone, Mail, Edit2, Trash2, X, ChevronDown, ChevronUp, Shield, Clock, Award, AlertTriangle, PoundSterling, MapPin, CheckCircle2, Calendar, Upload, CheckSquare, Square, Download, Pencil, MessageSquare } from 'lucide-react';
 import { EmptyState } from '../ui/EmptyState';
 import { useTeam } from '../../hooks/useData';
@@ -41,6 +41,12 @@ const statusColour: Record<string,string> = {
 };
 
 const emptyForm = { name:'',role:'',trade_type:'',email:'',phone:'',daily_rate:'',cscs_card:'',cscs_expiry:'',cscs_type:'Gold',status:'Active',notes:'' };
+
+/** Site-check QR: encodes app-scoped CSCS label (not a password). Image from public QR API. */
+function cscsSiteCheckQrSrc(cardNo: string, holderName: string): string {
+  const payload = `cortexbuild:cscs|v1|${String(cardNo).trim()}|${String(holderName).trim().slice(0, 80)}`;
+  return `https://api.qrserver.com/v1/create-qr-code/?size=180x180&margin=1&data=${encodeURIComponent(payload)}`;
+}
 
 type Skill = { id: string; skill_name: string; status: 'yes' | 'no' | 'expired' };
 type Induction = { id: string; project: string; date: string; next_due?: string; status: 'current' | 'due_soon' | 'overdue' };
@@ -242,20 +248,50 @@ export function Teams() {
   const [memberSkills, setMemberSkills] = useState<Record<string, Skill[]>>({});
   const [memberInductions, setMemberInductions] = useState<Record<string, Induction[]>>({});
   const [memberAvailability, setMemberAvailability] = useState<Record<string, Availability[]>>({});
+  const [fetchingMemberData, setFetchingMemberData] = useState(false);
+  const fetchedMemberIds = useRef<Set<string>>(new Set());
 
   useEffect(() => {
     if (members.length === 0) return;
-    const memberId = members[0]?.id;
-    if (!memberId) return;
-    Promise.all([
-      teamApi.getMemberSkills(String(memberId)).catch(err => { console.warn('[Teams] skills fetch failed:', err); return []; }),
-      teamApi.getMemberInductions(String(memberId)).catch(err => { console.warn('[Teams] inductions fetch failed:', err); return []; }),
-      teamApi.getMemberAvailability(String(memberId)).catch(err => { console.warn('[Teams] availability fetch failed:', err); return []; }),
-    ]).then(([skills, inductions, availability]) => {
-      setMemberSkills({ [String(memberId)]: skills as Skill[] });
-      setMemberInductions({ [String(memberId)]: inductions as Induction[] });
-      setMemberAvailability({ [String(memberId)]: availability as Availability[] });
+    const unfetched = members.filter(m => m.id && !fetchedMemberIds.current.has(String(m.id)));
+    if (unfetched.length === 0) return;
+
+    let cancelled = false;
+    setFetchingMemberData(true);
+
+    Promise.all(
+      unfetched.map(async (m) => {
+        const memberId = String(m.id);
+        const [skills, inductions, availability] = await Promise.all([
+          teamApi.getMemberSkills(memberId).catch(err => { console.warn('[Teams] skills fetch failed:', err); return []; }),
+          teamApi.getMemberInductions(memberId).catch(err => { console.warn('[Teams] inductions fetch failed:', err); return []; }),
+          teamApi.getMemberAvailability(memberId).catch(err => { console.warn('[Teams] availability fetch failed:', err); return []; }),
+        ]);
+        return { memberId, skills: skills as Skill[], inductions: inductions as Induction[], availability: availability as Availability[] };
+      })
+    ).then(results => {
+      if (cancelled) return;
+      setMemberSkills(prev => {
+        const next = { ...prev };
+        results.forEach(r => { next[r.memberId] = r.skills; });
+        return next;
+      });
+      setMemberInductions(prev => {
+        const next = { ...prev };
+        results.forEach(r => { next[r.memberId] = r.inductions; });
+        return next;
+      });
+      setMemberAvailability(prev => {
+        const next = { ...prev };
+        results.forEach(r => { next[r.memberId] = r.availability; });
+        return next;
+      });
+      results.forEach(r => fetchedMemberIds.current.add(r.memberId));
+    }).finally(() => {
+      if (!cancelled) setFetchingMemberData(false);
     });
+
+    return () => { cancelled = true; };
   }, [members]);
 
   async function handleBulkDelete(ids: string[]) {
@@ -396,7 +432,7 @@ export function Teams() {
           >
             {isSelected ? <CheckSquare size={16} className="text-blue-400"/> : <Square size={16} className="text-gray-500"/>}
           </button>
-          <div className="w-10 h-10 rounded-full bg-gradient-to-br from-orange-400 to-orange-600 flex items-center justify-center text-white font-bold text-sm flex-shrink-0">
+          <div className="w-10 h-10 rounded-full bg-gradient-to-br from-orange-400 to-orange-600 flex items-center justify-center text-white font-display text-sm flex-shrink-0">
             {String(m.name??'?').split(' ').map((n:string)=>n[0]).slice(0,2).join('')}
           </div>
           <div className="flex-1 min-w-0">
@@ -434,12 +470,12 @@ export function Teams() {
   return (
     <div className="p-6 space-y-6 bg-gray-950 min-h-screen text-gray-100">
       {/* Breadcrumbs */}
-      <ModuleBreadcrumbs currentModule="teams" onNavigate={() => {}} />
+      <ModuleBreadcrumbs currentModule="teams" />
 
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-white">Team Management</h1>
+          <h1 className="text-3xl font-display text-white">Team Management</h1>
           <p className="text-sm text-gray-400 mt-1">Site workforce & personnel records</p>
         </div>
         <div className="flex items-center gap-2">
@@ -467,7 +503,7 @@ export function Teams() {
           <div key={kpi.label} className={`rounded-xl border border-gray-700 p-4 ${kpi.bg}`}>
             <div className="flex items-center gap-3">
               <div className="p-2 rounded-lg bg-gray-800"><kpi.icon size={20} className={kpi.colour}/></div>
-              <div><p className="text-xs text-gray-400">{kpi.label}</p><p className="text-xl font-bold text-white">{kpi.value}</p></div>
+              <div><p className="text-xs text-gray-400">{kpi.label}</p><p className="text-xl font-display text-white">{kpi.value}</p></div>
             </div>
           </div>
         ))}
@@ -485,7 +521,7 @@ export function Teams() {
       )}
 
       {/* Tabs */}
-      <div className="flex gap-1 border-b border-gray-700 overflow-x-auto">
+      <div className="flex gap-1 border-b border-gray-700 cb-table-scroll touch-pan-x">
         {([
           { key:'members'    as const, label:'Members',     icon:Users },
           { key:'skills'     as const, label:'Skills',      icon:Shield },
@@ -561,7 +597,10 @@ export function Teams() {
 
       {/* Skills Matrix Tab */}
       {subTab === 'skills' && (
-        <div className="bg-gray-900 rounded-xl border border-gray-700 overflow-x-auto">
+        <div className="bg-gray-900 rounded-xl border border-gray-700 cb-table-scroll touch-pan-x">
+          {fetchingMemberData && (
+            <div className="flex justify-center py-4"><div className="animate-spin rounded-full h-6 w-6 border-b-2 border-orange-600"/></div>
+          )}
           <div className="flex justify-end p-4">
             <button
               type="button"
@@ -644,7 +683,7 @@ export function Teams() {
                 <div key={String(m.id)} className={`rounded-xl border border-gray-700 p-5 ${colorClass}`}>
                   <div className="flex items-center justify-between mb-4">
                     <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-full bg-gray-700 flex items-center justify-center font-bold">{String(m.name??'?').split(' ').map((n:string)=>n[0]).slice(0,1).join('')}</div>
+                      <div className="w-10 h-10 rounded-full bg-gray-700 flex items-center justify-center font-display">{String(m.name??'?').split(' ').map((n:string)=>n[0]).slice(0,1).join('')}</div>
                       <div>
                         <p className="font-semibold">{String(m.name??'Unknown')}</p>
                         <p className="text-xs opacity-75">{String(m.role??'')}</p>
@@ -681,7 +720,21 @@ export function Teams() {
                     )}
                   </div>
 
-                  <div className="w-full h-24 bg-gray-700 rounded-lg mt-4 flex items-center justify-center text-xs opacity-50">QR Code Placeholder</div>
+                  <div className="w-full min-h-[7.5rem] mt-4 rounded-lg bg-white flex items-center justify-center p-2 border border-gray-600">
+                    {m.cscs_card ? (
+                      <img
+                        src={cscsSiteCheckQrSrc(String(m.cscs_card), String(m.name ?? ''))}
+                        alt={`CSCS site-check QR for ${String(m.name ?? 'member')}`}
+                        width={112}
+                        height={112}
+                        className="object-contain"
+                        loading="lazy"
+                        referrerPolicy="no-referrer"
+                      />
+                    ) : (
+                      <span className="text-xs text-gray-600 text-center px-2">Add a card number to show a site-check QR</span>
+                    )}
+                  </div>
 
                   {Boolean(m.cscs_card) && isExpiring && (
                     <button type="button" onClick={()=>renewCSCS(String(m.id))} className="w-full mt-4 px-3 py-2 bg-gray-800/20 hover:bg-gray-800/30 rounded-lg text-sm font-medium transition-colors">
@@ -718,7 +771,10 @@ export function Teams() {
 
       {/* Inductions Tab */}
       {subTab === 'inductions' && (
-        <div className="bg-gray-900 rounded-xl border border-gray-700 overflow-x-auto">
+        <div className="bg-gray-900 rounded-xl border border-gray-700 cb-table-scroll touch-pan-x">
+          {fetchingMemberData && (
+            <div className="flex justify-center py-4"><div className="animate-spin rounded-full h-6 w-6 border-b-2 border-orange-600"/></div>
+          )}
           <div className="flex justify-end p-4">
             <button
               type="button"
@@ -776,7 +832,10 @@ export function Teams() {
 
       {/* On Site Tab */}
       {subTab === 'onsite' && (
-        <div className="bg-gray-900 rounded-xl border border-gray-700 overflow-x-auto">
+        <div className="bg-gray-900 rounded-xl border border-gray-700 cb-table-scroll touch-pan-x">
+          {fetchingMemberData && (
+            <div className="flex justify-center py-4"><div className="animate-spin rounded-full h-6 w-6 border-b-2 border-orange-600"/></div>
+          )}
           <div className="flex justify-end p-4">
             <button
               type="button"

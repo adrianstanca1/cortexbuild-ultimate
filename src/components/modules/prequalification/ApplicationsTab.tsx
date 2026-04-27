@@ -32,7 +32,7 @@ export function ApplicationsTab({
           />
         </div>
 
-        <div className="overflow-x-auto">
+        <div className="cb-table-scroll touch-pan-x">
           <table className="w-full">
             <thead>
               <tr className="border-b border-gray-700">

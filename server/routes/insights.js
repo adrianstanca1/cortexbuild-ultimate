@@ -539,7 +539,7 @@ async function generateResourceInsights(orgFilter, params, insights) {
 // ─── Quarter-over-quarter trend insights ──────────────────────────────────────
 
 async function generateTrendInsights(orgFilter, params, insights) {
-  const whereClause = orgFilter ? `${orgFilter} AND` : 'WHERE 1=1 AND';
+  const whereClause = orgFilter || 'WHERE 1=1';
   const p = params;
 
   // Project spend trend: this quarter vs last quarter

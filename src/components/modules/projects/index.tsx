@@ -164,7 +164,7 @@ function ProjectWorkspace({ project, onBack, onEdit }: WorkspaceProps) {
       </div>
 
       {/* Tab bar */}
-      <div className="flex gap-1 mb-4 card bg-base-100 border border-base-300 p-1 overflow-x-auto">
+      <div className="flex gap-1 mb-4 card bg-base-100 border border-base-300 p-1 cb-table-scroll touch-pan-x">
         {TABS.map(t => {
           const Icon = t.icon;
           return (
@@ -251,7 +251,7 @@ function ProjectWorkspace({ project, onBack, onEdit }: WorkspaceProps) {
         <div className="space-y-4">
           <div className="card bg-base-100 border border-base-300 p-6">
             <h3 className="text-sm font-semibold text-white mb-6">Project Timeline — Gantt Chart</h3>
-            <div className="overflow-x-auto pb-4">
+            <div className="cb-table-scroll touch-pan-x pb-4">
               <div className="min-w-[800px]">
                 <div className="flex gap-6 mb-6 text-xs text-gray-400">
                   <div className="flex items-center gap-2"><div className="w-3 h-3 bg-green-500 rounded" /><span>Completed</span></div>
@@ -635,7 +635,7 @@ export function Projects() {
   return (
     <div className="space-y-6">
       {/* Breadcrumbs */}
-      <ModuleBreadcrumbs currentModule="projects" onNavigate={() => { }} />
+      <ModuleBreadcrumbs currentModule="projects" />
 
       {/* Header */}
       <div className="flex items-center justify-between">

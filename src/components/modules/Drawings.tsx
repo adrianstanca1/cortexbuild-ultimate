@@ -275,7 +275,7 @@ export function Drawings() {
 
   return (
     <>
-      <ModuleBreadcrumbs currentModule="drawings" onNavigate={() => {}} />
+      <ModuleBreadcrumbs currentModule="drawings" />
       <div className="min-h-screen bg-gray-950 p-6 space-y-6">
       <div className="flex items-center justify-between">
         <div>

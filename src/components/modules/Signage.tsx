@@ -43,21 +43,6 @@ interface Sign {
   notes?: string | null;
 }
 
-const _mockSigns: Sign[] = [
-  { id: '1', sign_type: 'safety', location: 'Site Entrance', status: 'active', last_inspected: '2026-03-15', next_inspection: '2026-04-15', description: 'Hard Hat Area', installation_date: '2025-06-01', inspection_interval: 30, notes: 'Good condition' },
-  { id: '2', sign_type: 'prohibition', location: 'Scaffolding Area', status: 'active', last_inspected: '2026-03-20', next_inspection: '2026-04-20', description: 'No Entry Without Harness', installation_date: '2025-07-10', inspection_interval: 30, notes: 'Visible and secure' },
-  { id: '3', sign_type: 'mandatory', location: 'Site Office', status: 'active', last_inspected: '2026-03-10', next_inspection: '2026-04-10', description: 'Eye Protection Required', installation_date: '2025-05-20', inspection_interval: 30, notes: 'Recently cleaned' },
-  { id: '4', sign_type: 'fire', location: 'Assembly Point', status: 'active', last_inspected: '2026-02-28', next_inspection: '2026-03-28', description: 'Assembly Point', installation_date: '2025-08-15', inspection_interval: 28, notes: 'Overdue inspection' },
-  { id: '5', sign_type: 'information', location: 'Welfare Block', status: 'active', last_inspected: '2026-03-25', next_inspection: '2026-04-25', description: 'Site Rules Information', installation_date: '2025-09-01', inspection_interval: 30, notes: 'Posted on wall' },
-  { id: '6', sign_type: 'safety', location: 'Excavation Zone', status: 'expired', last_inspected: '2026-02-01', next_inspection: '2026-03-01', description: 'Deep Excavation Warning', installation_date: '2025-03-10', inspection_interval: 60, notes: 'Sign needs replacement' },
-  { id: '7', sign_type: 'directional', location: 'Main Road', status: 'active', last_inspected: '2026-03-22', next_inspection: '2026-04-22', description: 'One Way Traffic', installation_date: '2025-10-05', inspection_interval: 30, notes: 'Clear and visible' },
-  { id: '8', sign_type: 'mandatory', location: 'Lift Access', status: 'damaged', last_inspected: '2026-03-18', next_inspection: '2026-04-18', description: 'Hard Hat Mandatory', installation_date: '2025-07-01', inspection_interval: 30, notes: 'Corner damaged, needs repair' },
-  { id: '9', sign_type: 'safety', location: 'Chemical Storage', status: 'active', last_inspected: '2026-03-21', next_inspection: '2026-04-21', description: 'Hazardous Materials', installation_date: '2025-04-12', inspection_interval: 30, notes: 'Securely mounted' },
-  { id: '10', sign_type: 'prohibition', location: 'Roof Access', status: 'pending', last_inspected: null, next_inspection: '2026-04-08', description: 'No Access Without Permit', installation_date: '2026-04-01', inspection_interval: 30, notes: 'Recently installed' },
-  { id: '11', sign_type: 'fire', location: 'Plant Room', status: 'active', last_inspected: '2026-03-19', next_inspection: '2026-04-19', description: 'Fire Equipment Identification', installation_date: '2025-08-20', inspection_interval: 30, notes: 'All equipment marked' },
-  { id: '12', sign_type: 'information', location: 'Site Gates', status: 'active', last_inspected: '2026-03-23', next_inspection: '2026-04-23', description: 'Contact Information Board', installation_date: '2025-09-15', inspection_interval: 30, notes: 'Contact details current' },
-];
-
 export default function Signage() {
   const [activeTab, setActiveTab] = useState<'active' | 'schedule' | 'compliance' | 'reports'>('active');
   const [searchTerm, setSearchTerm] = useState('');
@@ -247,7 +232,7 @@ export default function Signage() {
 
   return (
     <>
-      <ModuleBreadcrumbs currentModule="signage" onNavigate={() => {}} />
+      <ModuleBreadcrumbs currentModule="signage" />
       <div className="p-6 space-y-6">
         <div className="flex items-center justify-between">
           <div>
@@ -305,7 +290,7 @@ export default function Signage() {
               ) : filtered.length === 0 ? (
                 <EmptyState title="No signage items found" />
               ) : (
-                <div className="overflow-x-auto">
+                <div className="cb-table-scroll touch-pan-x">
                   <table className="w-full text-sm">
                     <thead>
                       <tr className="border-b border-gray-700">

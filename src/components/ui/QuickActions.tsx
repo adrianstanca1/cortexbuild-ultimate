@@ -130,7 +130,7 @@ export function QuickActionsToolbar({ onNavigate, className }: QuickActionsToolb
       id: 'search',
       label: 'Search',
       icon: Search,
-      shortcut: 'Ctrl+K',
+      shortcut: 'Ctrl+Shift+K',
       action: () => { toast.info('Global search would open'); },
       category: 'action',
     },

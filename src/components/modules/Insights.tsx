@@ -251,7 +251,7 @@ export function Insights() {
           </div>
           <div className="flex-1">
             <div className="flex items-center gap-3 mb-2">
-              <span className="font-bold text-white">{String(insight.title)}</span>
+              <span className="font-display text-white">{String(insight.title)}</span>
               <span className="px-2 py-1 rounded text-xs font-medium" style={{ background: cfg.bg, color: cfg.color, border: `1px solid ${cfg.border}` }}>
                 {SEVERITY_CONFIG[insight.severity].label}
               </span>
@@ -262,7 +262,7 @@ export function Insights() {
               <div className="flex items-start gap-2 mb-2">
                 <Lightbulb className="h-4 w-4 text-amber-400 flex-shrink-0 mt-0.5" />
                 <div>
-                  <p className="text-xs text-amber-400 uppercase font-bold mb-1">Recommendation</p>
+                  <p className="text-xs text-amber-400 uppercase font-display mb-1">Recommendation</p>
                   <p className="text-sm text-gray-200">{String(insight.recommendation)}</p>
                 </div>
               </div>
@@ -292,7 +292,7 @@ export function Insights() {
           </div>
           <div className="flex-1">
             <div className="flex items-center gap-3 mb-2">
-              <span className="font-bold text-white">{alert.title}</span>
+              <span className="font-display text-white">{alert.title}</span>
               <span className="px-2 py-1 rounded text-xs font-medium" style={{ background: cfg.color + '20', color: cfg.color }}>
                 {cfg.label}
               </span>
@@ -325,8 +325,8 @@ export function Insights() {
       <div className="card p-5 border border-gray-700 hover:border-amber-500/50 transition-colors">
         <div className="flex items-start justify-between mb-3">
           <div>
-            <p className="text-xs text-amber-400 uppercase font-bold">{rec.category}</p>
-            <h4 className="text-sm font-bold text-white mt-1">{rec.title}</h4>
+            <p className="text-xs text-amber-400 uppercase font-display">{rec.category}</p>
+            <h4 className="text-sm font-display text-white mt-1">{rec.title}</h4>
           </div>
           <span className="px-2 py-1 rounded text-xs font-medium" style={{ background: impactColors[rec.impact] + '20', color: impactColors[rec.impact] }}>
             {rec.impact === 'high' ? 'High' : rec.impact === 'medium' ? 'Medium' : 'Low'} Impact
@@ -334,7 +334,7 @@ export function Insights() {
         </div>
         <p className="text-sm text-gray-300 mb-3">{rec.description}</p>
         <div className="bg-gray-800/50 rounded p-3 mb-4">
-          <p className="text-xs text-emerald-400 font-bold">Estimated Benefit: {rec.estimatedBenefit}</p>
+          <p className="text-xs text-emerald-400 font-display">Estimated Benefit: {rec.estimatedBenefit}</p>
         </div>
         <div className="flex gap-2">
           <button className="flex-1 px-3 py-2 rounded text-xs bg-emerald-500/20 text-emerald-400 hover:bg-emerald-500/30 transition-colors flex items-center justify-center gap-1 font-medium">
@@ -372,12 +372,12 @@ export function Insights() {
 
   return (
     <>
-      <ModuleBreadcrumbs currentModule="insights" onNavigate={() => {}} />
+      <ModuleBreadcrumbs currentModule="insights" />
       <div className="space-y-6">
         {/* Header */}
         <div className="flex justify-between items-start">
           <div>
-            <h1 className="text-3xl font-bold text-white font-display">AI Intelligence Engine</h1>
+            <h1 className="text-3xl font-display text-white">AI Intelligence Engine</h1>
             <p className="text-sm text-gray-400 mt-1">Real-time project intelligence and predictive analytics</p>
           </div>
           <button className="btn btn-secondary">
@@ -387,7 +387,7 @@ export function Insights() {
         </div>
 
         {/* Tab Navigation */}
-        <div className="flex gap-2 border-b border-gray-700 overflow-x-auto">
+        <div className="flex gap-2 border-b border-gray-700 cb-table-scroll touch-pan-x">
           {(['overview', 'alerts', 'recommendations', 'benchmarks', 'actions', 'trends'] as const).map((tab) => (
             <button
               key={tab}
@@ -415,8 +415,8 @@ export function Insights() {
             <div className="card p-8 bg-gradient-to-br from-gray-800 to-gray-900 border border-amber-500/20">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm text-gray-400 uppercase font-bold mb-2">AI Health Score</p>
-                  <div className="text-5xl font-bold text-amber-400">{healthScore}</div>
+                  <p className="text-sm text-gray-400 uppercase font-display mb-2">AI Health Score</p>
+                  <div className="text-5xl font-display text-amber-400">{healthScore}</div>
                   <p className="text-sm text-gray-400 mt-2">Overall system health excellent</p>
                 </div>
                 <div className="relative w-32 h-32 flex items-center justify-center">
@@ -434,7 +434,7 @@ export function Insights() {
                     />
                   </svg>
                   <div className="absolute text-center">
-                    <p className="text-2xl font-bold text-white">{healthScore}%</p>
+                    <p className="text-2xl font-display text-white">{healthScore}%</p>
                   </div>
                 </div>
               </div>
@@ -457,7 +457,7 @@ export function Insights() {
                       </div>
                       <div>
                         <p className="text-xs text-gray-400 uppercase">{String(kpi.label)}</p>
-                        <p className="text-2xl font-bold text-white">{String(kpi.value)}</p>
+                        <p className="text-2xl font-display text-white">{String(kpi.value)}</p>
                       </div>
                     </div>
                   </div>
@@ -468,7 +468,7 @@ export function Insights() {
             {/* Charts Grid */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               <div className="card p-5 border border-gray-700">
-                <h3 className="text-lg font-bold text-white mb-4">Insights by Category</h3>
+                <h3 className="text-lg font-display text-white mb-4">Insights by Category</h3>
                 <div className="h-64">
                   <ResponsiveContainer width="100%" height="100%">
                     <BarChart data={categoryData}>
@@ -486,7 +486,7 @@ export function Insights() {
               </div>
 
               <div className="card p-5 border border-gray-700">
-                <h3 className="text-lg font-bold text-white mb-4">Confidence Distribution</h3>
+                <h3 className="text-lg font-display text-white mb-4">Confidence Distribution</h3>
                 <div className="h-64">
                   <ResponsiveContainer width="100%" height="100%">
                     <RechartsPie>
@@ -504,7 +504,7 @@ export function Insights() {
 
             {/* Activity Feed */}
             <div className="card p-5 border border-gray-700">
-              <h3 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
+              <h3 className="text-lg font-display text-white mb-4 flex items-center gap-2">
                 <Activity className="h-5 w-5 text-amber-400" />
                 Recent AI Actions
               </h3>
@@ -543,7 +543,7 @@ export function Insights() {
           <div className="space-y-6">
             <p className="text-sm text-gray-400">Performance vs UK construction industry benchmarks</p>
             <div className="card p-5 border border-gray-700">
-              <h3 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
+              <h3 className="text-lg font-display text-white mb-4 flex items-center gap-2">
                 <BarChart3 className="h-5 w-5 text-amber-400" />
                 Key Metrics Performance
               </h3>
@@ -577,7 +577,7 @@ export function Insights() {
           <div className="space-y-6">
             <p className="text-sm text-gray-400">AI-detected trends over the last 6 months</p>
             <div className="card p-5 border border-gray-700">
-              <h3 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
+              <h3 className="text-lg font-display text-white mb-4 flex items-center gap-2">
                 <TrendingUp className="h-5 w-5 text-emerald-400" />
                 6-Month Trend Analysis
               </h3>
@@ -604,7 +604,7 @@ export function Insights() {
           <>
             <div className="card p-4 bg-gray-800/50 border border-gray-700">
               <div className="flex flex-wrap gap-4 items-center">
-                <span className="text-sm text-gray-400 uppercase font-bold">Severity:</span>
+                <span className="text-sm text-gray-400 uppercase font-display">Severity:</span>
                 {(['all', 'critical', 'high', 'medium', 'low', 'info'] as const).map((sev) => (
                   <button
                     key={sev}
@@ -621,7 +621,7 @@ export function Insights() {
 
                 <div className="w-px h-6 bg-gray-700" />
 
-                <span className="text-sm text-gray-400 uppercase font-bold">Category:</span>
+                <span className="text-sm text-gray-400 uppercase font-display">Category:</span>
                 {(['all', 'financial', 'safety', 'programme', 'resource', 'quality', 'risk'] as const).map((cat) => (
                   <button
                     key={cat}

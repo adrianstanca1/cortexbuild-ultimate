@@ -161,7 +161,7 @@ export function PermissionsManager() {
 
   return (
     <>
-      <ModuleBreadcrumbs currentModule="permissions" onNavigate={() => {}} />
+      <ModuleBreadcrumbs currentModule="permissions" />
       <div className="space-y-6">
       <div className="flex justify-between items-center">
         <h1 className="text-2xl font-bold text-white">Permissions & Access Control</h1>
@@ -195,7 +195,7 @@ export function PermissionsManager() {
       </div>
 
       {/* Sub-tabs */}
-      <div className="border-b border-gray-700 flex gap-1 overflow-x-auto">
+      <div className="border-b border-gray-700 flex gap-1 cb-table-scroll touch-pan-x">
         {TABS.map(t => {
           const Icon = t.icon;
           return (
@@ -284,7 +284,7 @@ export function PermissionsManager() {
       {/* PERMISSIONS TAB */}
       {subTab === 'permissions' && (
         <div className="bg-gray-900 border border-gray-700 rounded-lg overflow-hidden">
-          <div className="overflow-x-auto">
+          <div className="cb-table-scroll touch-pan-x">
             <table className="w-full text-xs">
               <thead className="bg-gray-800">
                 <tr>
@@ -330,7 +330,7 @@ export function PermissionsManager() {
               Invite User
             </button>
           </div>
-          <div className="overflow-x-auto">
+          <div className="cb-table-scroll touch-pan-x">
             <table className="w-full text-sm">
               <thead className="bg-gray-800">
                 <tr>
@@ -401,7 +401,7 @@ export function PermissionsManager() {
       {/* ACTIVITY TAB */}
       {subTab === 'activity' && (
         <div className="bg-gray-900 border border-gray-700 rounded-lg overflow-hidden">
-          <div className="overflow-x-auto">
+          <div className="cb-table-scroll touch-pan-x">
             <table className="w-full text-sm">
               <thead className="bg-gray-800">
                 <tr>

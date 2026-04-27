@@ -249,18 +249,18 @@ export function AdvancedAnalytics() {
   return (
     <div className="space-y-6">
       {/* Breadcrumbs */}
-      <ModuleBreadcrumbs currentModule="advanced-analytics" onNavigate={() => {}} />
+      <ModuleBreadcrumbs currentModule="advanced-analytics" />
 
       {/* Header */}
       <div className="flex justify-between items-start">
         <div>
-          <h1 className="text-3xl font-bold text-white font-display">Advanced Analytics</h1>
+          <h1 className="text-3xl font-display text-white">Advanced Analytics</h1>
           <p className="text-sm text-gray-400 mt-1">Comprehensive portfolio intelligence and performance analytics</p>
         </div>
       </div>
 
       {/* Tab Navigation */}
-      <div className="flex gap-2 border-b border-gray-700 overflow-x-auto">
+      <div className="flex gap-2 border-b border-gray-700 cb-table-scroll touch-pan-x">
         {(['portfolio', 'financial', 'resource', 'risk', 'reports'] as const).map((tab) => (
           <button
             key={tab}
@@ -289,8 +289,8 @@ export function AdvancedAnalytics() {
               <div key={idx} className="card p-4 border border-gray-700">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-xs text-gray-400 uppercase font-bold">{kpi.label}</p>
-                    <p className="text-2xl font-bold text-white mt-1">{kpi.value}</p>
+                    <p className="text-xs font-display text-gray-400 uppercase tracking-widest">{kpi.label}</p>
+                    <p className="text-2xl font-display text-white mt-1">{kpi.value}</p>
                   </div>
                   <div className={`flex items-center gap-1 text-sm ${kpi.trend === 'up' ? 'text-emerald-400' : 'text-red-400'}`}>
                     {kpi.trend === 'up' ? <TrendingUp className="h-4 w-4" /> : <TrendingDown className="h-4 w-4" />}
@@ -303,16 +303,16 @@ export function AdvancedAnalytics() {
 
           {/* Project Portfolio Heatmap */}
           <div className="card p-5 border border-gray-700">
-            <h3 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
+            <h3 className="text-lg font-display text-white mb-4 flex items-center gap-2">
               <Grid3x3 className="h-5 w-5 text-amber-400" />
               Project Portfolio Health
             </h3>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {projectCards.map((project) => (
                 <div key={project.id} className={`card p-4 border ${healthColors[project.health]}`}>
-                  <h4 className="font-bold text-white mb-2">{project.name}</h4>
+                  <h4 className="font-display text-white mb-2">{project.name}</h4>
                   <div className="flex justify-between items-center mb-3">
-                    <span className={`text-sm font-bold ${healthTextColors[project.health]}`}>
+                    <span className={`text-sm font-display ${healthTextColors[project.health]}`}>
                       {project.health === 'critical' ? 'Critical' : project.health === 'warning' ? 'At Risk' : project.health === 'good' ? 'Good' : 'Excellent'}
                     </span>
                     <span className="text-sm text-gray-400">{project.value}</span>
@@ -333,7 +333,7 @@ export function AdvancedAnalytics() {
 
           {/* Cost vs Schedule Performance */}
           <div className="card p-5 border border-gray-700">
-            <h3 className="text-lg font-bold text-white mb-4">Cost vs Schedule Performance</h3>
+            <h3 className="text-lg font-display text-white mb-4">Cost vs Schedule Performance</h3>
             <div className="h-80">
               <ResponsiveContainer width="100%" height="100%">
                 <ScatterChart margin={{ top: 20, right: 20, bottom: 20, left: 20 }}>
@@ -360,7 +360,7 @@ export function AdvancedAnalytics() {
         <div className="space-y-6">
           {/* EVM Chart */}
           <div className="card p-5 border border-gray-700">
-            <h3 className="text-lg font-bold text-white mb-4">Earned Value Management (EVM)</h3>
+            <h3 className="text-lg font-display text-white mb-4">Earned Value Management (EVM)</h3>
             <div className="h-80">
               <ResponsiveContainer width="100%" height="100%">
                 <AreaChart data={evmData}>
@@ -384,8 +384,8 @@ export function AdvancedAnalytics() {
               { label: 'Cost Performance Index (CPI)', value: cpi.toFixed(3), status: cpi >= 1 ? 'good' : 'caution', details: 'Higher is better' },
             ].map((metric, idx) => (
               <div key={idx} className="card p-6 border border-gray-700">
-                <p className="text-sm text-gray-400 uppercase font-bold mb-2">{metric.label}</p>
-                <div className="text-4xl font-bold text-amber-400 mb-2">{metric.value}</div>
+                <p className="text-sm font-display text-gray-400 uppercase tracking-widest mb-2">{metric.label}</p>
+                <div className="text-4xl font-display text-amber-400 mb-2">{metric.value}</div>
                 <p className={`text-sm font-medium ${metric.status === 'good' ? 'text-emerald-400' : 'text-yellow-400'}`}>
                   {metric.status === 'good' ? 'On Track' : 'Requires Attention'} • {metric.details}
                 </p>
@@ -395,7 +395,7 @@ export function AdvancedAnalytics() {
 
           {/* Cost Breakdown Pie */}
           <div className="card p-5 border border-gray-700">
-            <h3 className="text-lg font-bold text-white mb-4">Cost Breakdown by Category</h3>
+            <h3 className="text-lg font-display text-white mb-4">Cost Breakdown by Category</h3>
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               <div className="h-64">
                 <ResponsiveContainer width="100%" height="100%">
@@ -425,7 +425,7 @@ export function AdvancedAnalytics() {
                       <div className="w-3 h-3 rounded-full" style={{ background: COLORS[idx % COLORS.length] }} />
                       <span className="text-sm text-gray-300">{cat.name}</span>
                     </div>
-                    <span className="text-sm font-bold text-white">{cat.amount}</span>
+                    <span className="text-sm font-display text-white">{cat.amount}</span>
                   </div>
                 ))}
               </div>
@@ -439,7 +439,7 @@ export function AdvancedAnalytics() {
         <div className="space-y-6">
           {/* Team Utilization */}
           <div className="card p-5 border border-gray-700">
-            <h3 className="text-lg font-bold text-white mb-4">Team Utilization by Department</h3>
+            <h3 className="text-lg font-display text-white mb-4">Team Utilization by Department</h3>
             <div className="h-64">
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={utilizationData}>
@@ -457,19 +457,19 @@ export function AdvancedAnalytics() {
 
           {/* Skills Gap Matrix */}
           <div className="card p-5 border border-gray-700">
-            <h3 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
+            <h3 className="text-lg font-display text-white mb-4 flex items-center gap-2">
               <Radar className="h-5 w-5 text-amber-400" />
               Skills Gap Matrix
             </h3>
-            <div className="overflow-x-auto">
+            <div className="cb-table-scroll touch-pan-x">
               <table className="w-full text-sm">
                 <thead>
                   <tr className="border-b border-gray-700">
-                    <th className="text-left py-3 px-4 text-gray-400 font-semibold">Department</th>
-                    <th className="text-center py-3 px-4 text-gray-400 font-semibold">Systems Design</th>
-                    <th className="text-center py-3 px-4 text-gray-400 font-semibold">Project Mgmt</th>
-                    <th className="text-center py-3 px-4 text-gray-400 font-semibold">Safety</th>
-                    <th className="text-center py-3 px-4 text-gray-400 font-semibold">BIM Modeling</th>
+                    <th className="text-left py-3 px-4 text-xs font-display text-gray-400 tracking-widest uppercase">Department</th>
+                    <th className="text-center py-3 px-4 text-xs font-display text-gray-400 tracking-widest uppercase">Systems Design</th>
+                    <th className="text-center py-3 px-4 text-xs font-display text-gray-400 tracking-widest uppercase">Project Mgmt</th>
+                    <th className="text-center py-3 px-4 text-xs font-display text-gray-400 tracking-widest uppercase">Safety</th>
+                    <th className="text-center py-3 px-4 text-xs font-display text-gray-400 tracking-widest uppercase">BIM Modeling</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -482,7 +482,7 @@ export function AdvancedAnalytics() {
                             background: score >= 80 ? '#10b98120' : score >= 60 ? '#f59e0b20' : '#ef444420',
                             color: score >= 80 ? '#10b981' : score >= 60 ? '#f59e0b' : '#ef4444',
                           }}>
-                            <span className="font-bold text-sm">{score}%</span>
+                            <span className="font-display text-sm">{score}%</span>
                           </div>
                         </td>
                       ))}
@@ -501,7 +501,7 @@ export function AdvancedAnalytics() {
         <div className="space-y-6">
           {/* Risk Trend */}
           <div className="card p-5 border border-gray-700">
-            <h3 className="text-lg font-bold text-white mb-4">Risk Score Trend (6 Months)</h3>
+            <h3 className="text-lg font-display text-white mb-4">Risk Score Trend (6 Months)</h3>
             <div className="h-64">
               <ResponsiveContainer width="100%" height="100%">
                 <AreaChart data={riskTrend}>
@@ -519,13 +519,13 @@ export function AdvancedAnalytics() {
 
           {/* Top 5 Risks Table */}
           <div className="card p-5 border border-gray-700">
-            <h3 className="text-lg font-bold text-white mb-4">Top 5 Active Risks</h3>
+            <h3 className="text-lg font-display text-white mb-4">Top 5 Active Risks</h3>
             <div className="space-y-3">
               {topRisks.map((risk) => (
                 <div key={risk.id} className="p-4 bg-gray-800/50 rounded-lg border border-gray-700">
                   <div className="flex items-start justify-between mb-2">
                     <div>
-                      <h4 className="font-bold text-white">{risk.title}</h4>
+                      <h4 className="font-display text-white">{risk.title}</h4>
                       <div className="flex gap-2 mt-1">
                         <span className={`px-2 py-1 rounded text-xs font-medium ${
                           risk.likelihood === 'high' ? 'bg-red-500/20 text-red-400' : risk.likelihood === 'medium' ? 'bg-yellow-500/20 text-yellow-400' : 'bg-blue-500/20 text-blue-400'
@@ -557,7 +557,7 @@ export function AdvancedAnalytics() {
       {activeTab === 'reports' && (
         <div className="space-y-6">
           <div className="card p-6 border border-gray-700">
-            <h3 className="text-lg font-bold text-white mb-6 flex items-center gap-2">
+            <h3 className="text-lg font-display text-white mb-6 flex items-center gap-2">
               <FileText className="h-5 w-5 text-amber-400" />
               Report Builder
             </h3>
@@ -565,7 +565,7 @@ export function AdvancedAnalytics() {
             <div className="space-y-6">
               {/* Data Sources */}
               <div>
-                <label className="block text-sm font-bold text-white mb-3">Select Data Sources</label>
+                <label className="block text-sm font-display text-white mb-3">Select Data Sources</label>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                   {['Portfolio Overview', 'Financial Analysis', 'Resource Analytics', 'Risk Analysis', 'Project Details', 'Compliance Data'].map((source) => (
                     <label key={source} className="flex items-center gap-3 p-3 bg-gray-800/50 rounded-lg cursor-pointer hover:bg-gray-800 transition-colors">
@@ -579,18 +579,18 @@ export function AdvancedAnalytics() {
               {/* Date Range */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
-                  <label className="block text-sm font-bold text-white mb-2">Start Date</label>
+                  <label className="block text-sm font-display text-white mb-2">Start Date</label>
                   <input type="date" className="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded text-gray-300" />
                 </div>
                 <div>
-                  <label className="block text-sm font-bold text-white mb-2">End Date</label>
+                  <label className="block text-sm font-display text-white mb-2">End Date</label>
                   <input type="date" className="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded text-gray-300" />
                 </div>
               </div>
 
               {/* Format */}
               <div>
-                <label className="block text-sm font-bold text-white mb-3">Export Format</label>
+                <label className="block text-sm font-display text-white mb-3">Export Format</label>
                 <div className="flex gap-3">
                   {['pdf', 'excel', 'csv'].map((format) => (
                     <label key={format} className={`flex items-center gap-2 px-4 py-2 rounded-lg cursor-pointer transition-colors ${

@@ -7,7 +7,7 @@
 const express   = require('express');
 const pool      = require('../db');
 const authMw    = require('../middleware/auth');
-const { getEmbedding } = require('../lib/ollama');
+const { getEmbedding } = require('../lib/unified-ai-client-v2');
 const { manifest, SEARCHABLE_TABLES } = require('../lib/rag-manifest');
 const { buildTenantFilter, isSuperAdmin } = require('../middleware/tenantFilter');
 const ALLOWED_RAG_TABLES = new Set(SEARCHABLE_TABLES);
@@ -130,7 +130,7 @@ router.get('/search', async (req, res) => {
       query:      q,
       tables:     tables,
       semantic:   true,
-      model:      'qwen3.5:latest',
+      model:      process.env.EMBEDDING_MODEL || 'nomic-embed-text:latest',
     });
   } catch (err) {
     console.error('[rag/search]', err.message);

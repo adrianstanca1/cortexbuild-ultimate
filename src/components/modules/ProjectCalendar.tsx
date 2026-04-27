@@ -10,6 +10,7 @@ import {
   X,
 } from 'lucide-react';
 import { apiFetch } from '../../services/api';
+import { ModuleBreadcrumbs } from '../ui/Breadcrumbs';
 
 interface CalendarEvent {
   id: string;
@@ -427,10 +428,11 @@ export function ProjectCalendar() {
 
   return (
     <div className="space-y-6 p-6 bg-gray-900 min-h-screen">
+      <ModuleBreadcrumbs currentModule="project-calendar" />
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
-          <h2 className="text-3xl font-bold text-white">
+          <h2 className="text-3xl font-display text-white">
             {view === 'month'
               ? `${monthNames[currentDate.getMonth()]} ${currentDate.getFullYear()}`
               : view === 'week'
@@ -573,7 +575,7 @@ export function ProjectCalendar() {
           )}
 
           {view === 'week' && (
-            <div className="bg-gray-800 rounded-lg border border-gray-700 overflow-x-auto">
+            <div className="bg-gray-800 rounded-lg border border-gray-700 cb-table-scroll touch-pan-x">
               <div className="grid" style={{ gridTemplateColumns: 'auto repeat(7, 1fr)' }}>
                 {/* Time slots header */}
                 <div className="bg-gray-700 p-2 text-xs font-semibold text-gray-300 border-r border-gray-600 min-w-[60px]"></div>
@@ -587,7 +589,7 @@ export function ProjectCalendar() {
                         weekday: 'short',
                       })}
                     </div>
-                    <div className="text-lg font-bold text-white">
+                    <div className="text-lg font-display text-white">
                       {day.getDate()}
                     </div>
                   </div>
@@ -646,7 +648,7 @@ export function ProjectCalendar() {
           )}
 
           {view === 'timeline' && (
-            <div className="bg-gray-800 rounded-lg border border-gray-700 overflow-x-auto p-4">
+            <div className="bg-gray-800 rounded-lg border border-gray-700 cb-table-scroll touch-pan-x p-4">
               <div className="space-y-4">
                 {GANTT_TASKS.map((task) => {
                   const start = new Date(task.startDate);
@@ -696,7 +698,7 @@ export function ProjectCalendar() {
         <div className="space-y-4">
           {/* Quick Stats */}
           <div className="bg-gray-800 rounded-lg border border-gray-700 p-4 space-y-3">
-            <h3 className="text-lg font-bold text-white flex items-center gap-2">
+            <h3 className="text-lg font-display text-white flex items-center gap-2">
               <Flag className="w-4 h-4 text-amber-500" />
               Quick Stats
             </h3>
@@ -718,7 +720,7 @@ export function ProjectCalendar() {
 
           {/* Upcoming Events */}
           <div className="bg-gray-800 rounded-lg border border-gray-700 p-4">
-            <h3 className="text-lg font-bold text-white mb-3 flex items-center gap-2">
+            <h3 className="text-lg font-display text-white mb-3 flex items-center gap-2">
               <Clock className="w-4 h-4 text-blue-500" />
               Next 7 Days
             </h3>
@@ -758,7 +760,7 @@ export function ProjectCalendar() {
 
           {/* Legend */}
           <div className="bg-gray-800 rounded-lg border border-gray-700 p-4">
-            <h3 className="text-sm font-bold text-white mb-3">Event Types</h3>
+            <h3 className="text-sm font-display text-white mb-3">Event Types</h3>
             <div className="space-y-2">
               {Object.entries(TYPE_LABELS).map(([type, label]) => (
                 <div key={type} className="flex items-center gap-2">
@@ -779,7 +781,7 @@ export function ProjectCalendar() {
         <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
           <div className="bg-gray-800 border border-gray-700 rounded-xl w-full max-w-lg max-h-96 overflow-y-auto">
             <div className="p-6 border-b border-gray-700 flex items-center justify-between sticky top-0 bg-gray-800">
-              <h3 className="text-xl font-bold text-white">Add Event</h3>
+              <h3 className="text-xl font-display text-white">Add Event</h3>
               <button
                 onClick={() => setShowAddModal(false)}
                 className="text-gray-400 hover:text-white transition"
@@ -943,7 +945,7 @@ export function ProjectCalendar() {
                   className="w-4 h-4 rounded-full"
                   style={{ backgroundColor: selectedEvent.color }}
                 ></div>
-                <h3 className="text-xl font-bold text-white">
+                <h3 className="text-xl font-display text-white">
                   {selectedEvent.title}
                 </h3>
               </div>

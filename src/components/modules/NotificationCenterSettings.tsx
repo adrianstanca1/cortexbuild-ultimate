@@ -101,7 +101,7 @@ export function NotificationCenterSettings({
       <div className="flex items-center justify-between p-4 border-b border-base-300">
         <div className="flex items-center gap-3">
           <Settings className="w-5 h-5 text-base-content" />
-          <h2 className="text-lg font-bold">Notification Settings</h2>
+          <h2 className="text-lg font-display">Notification Settings</h2>
         </div>
         {onClose && (
           <button onClick={onClose} className="btn btn-sm btn-ghost btn-circle">

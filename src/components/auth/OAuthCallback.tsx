@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Loader2, CheckCircle, XCircle } from 'lucide-react';
-import { setToken, setStoredUser } from '../../lib/supabase';
+import { setToken, setStoredUser } from '../../lib/auth-storage';
 import { apiFetch } from '../../services/api';
 
 export function OAuthCallback() {
@@ -12,7 +12,6 @@ export function OAuthCallback() {
 
   useEffect(() => {
     const errorParam = searchParams.get('error');
-    const stateParam = searchParams.get('state');
     const code = searchParams.get('code');
     const oauthToken = searchParams.get('oauth_token'); // legacy fallback (dev only)
 
@@ -70,18 +69,6 @@ export function OAuthCallback() {
         setError('Failed to process authentication. Please try again.');
       }
       return;
-    }
-
-    // ── CSRF state validation ─────────────────────────────────────────────────
-    if (stateParam) {
-      const storedState = sessionStorage.getItem('oauth_state');
-      if (!storedState || storedState !== stateParam) {
-        setStatus('error');
-        setError('Invalid OAuth state. Please try again.');
-        console.error('[OAuth] State mismatch - possible CSRF attack');
-        return;
-      }
-      sessionStorage.removeItem('oauth_state');
     }
 
     // ── OAuth provider returned an error ───────────────────────────────────────

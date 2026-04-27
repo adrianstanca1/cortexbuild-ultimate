@@ -2,7 +2,7 @@
  * CortexBuild Ultimate — API Service
  * All CRUD operations route to the local Express.js backend.
  */
-import { getToken, API_BASE } from '../lib/auth-storage';
+import { API_BASE } from '../lib/auth-storage';
 
 export type Row = Record<string, unknown>;
 
@@ -39,18 +39,32 @@ export function toSnake<T>(obj: unknown): T {
 
 // ─── Core fetch helper ────────────────────────────────────────────────────────
 
+/** Error thrown when the server rejects a request because a feature flag is disabled. */
+export class FeatureDisabledError extends Error {
+  readonly code = 'FEATURE_DISABLED';
+  readonly feature: string;
+  constructor(message: string, feature: string) {
+    super(message);
+    this.name = 'FeatureDisabledError';
+    this.feature = feature;
+  }
+}
+
 export async function apiFetch<T>(path: string, options?: RequestInit): Promise<T> {
-  const token = getToken();
   const res = await fetch(`${API_BASE}${path}`, {
     ...options,
+    credentials: 'include', // Send httpOnly cookie automatically
     headers: {
       'Content-Type': 'application/json',
-      ...(token ? { Authorization: `Bearer ${token}` } : {}),
       ...options?.headers,
     },
   });
   if (!res.ok) {
     const err = await res.json().catch(() => ({ message: res.statusText }));
+    // Distinguish feature-disabled 403s from authorization 403s
+    if (err.code === 'FEATURE_DISABLED' && err.feature) {
+      throw new FeatureDisabledError(err.message || 'This feature is currently disabled', err.feature);
+    }
     throw new Error(err.message || 'Request failed');
   }
   const data = await res.json();
@@ -84,7 +98,6 @@ async function deleteRow(endpoint: string, id: string): Promise<void> {
 }
 
 async function uploadFile(file: File, category: string, project?: string, projectId?: string): Promise<Record<string, unknown>> {
-  const token = getToken();
   const formData = new FormData();
   formData.append('file', file);
   formData.append('category', category);
@@ -93,16 +106,14 @@ async function uploadFile(file: File, category: string, project?: string, projec
 
   const res = await fetch(`${API_BASE}/files/upload`, {
     method: 'POST',
-    headers: {
-      ...(token ? { Authorization: `Bearer ${token}` } : {}),
-    },
+    credentials: 'include',
     body: formData,
   });
   if (!res.ok) {
     const err = await res.json().catch(() => ({ message: res.statusText }));
     throw new Error(err.message || 'Upload failed');
   }
-  return res.json();
+  return toCamel<Record<string, unknown>>(await res.json());
 }
 
 // ─── Entity APIs ──────────────────────────────────────────────────────────────
@@ -259,7 +270,6 @@ export const documentsApi = {
   getTransmittals: () => fetchAll<Row>('drawing-transmittals'),
   createTransmittal: (data: Row) => insertRow('drawing-transmittals', data),
   uploadFile: async (file: File, options?: { project?: string; projectId?: string; category?: string }): Promise<Row> => {
-    const token = getToken();
     const formData = new FormData();
     formData.append('file', file);
     if (options?.project)    formData.append('project', options.project);
@@ -267,7 +277,7 @@ export const documentsApi = {
     if (options?.category)   formData.append('category', options.category);
     const res = await fetch(`${API_BASE}/files/upload`, {
       method: 'POST',
-      headers: token ? { Authorization: `Bearer ${token}` } : {},
+      credentials: 'include',
       body: formData,
     });
     if (!res.ok) throw new Error('Upload failed');
@@ -465,6 +475,8 @@ export interface AppSettings {
   dashboard?: Record<string, unknown>;
   alerts?: Record<string, boolean>;
   reports?: Record<string, unknown>;
+  integrations?: Record<string, { connected: boolean; status: string }>;
+  security?: { twoFA?: boolean };
 }
 
 export const settingsApi = {
@@ -591,12 +603,12 @@ export const searchApi = {
 /** RAG-augmented AI chat — streams tokens via fetch + ReadableStream */
 export const ragChatApi = {
   stream: (question: string, history: { role: string; content: string }[] = [], tables: string[] = []) => {
-    const token = getToken();
-    return fetch(`${import.meta.env.VITE_API_BASE_URL}/api/rag-chat`, {
+    // Same-origin as the SPA (or Vite dev proxy) so httpOnly auth cookies match /api/* routes.
+    return fetch(`${API_BASE}/rag-chat`, {
       method: 'POST',
+      credentials: 'include',
       headers: {
         'Content-Type': 'application/json',
-        ...(token ? { Authorization: `Bearer ${token}` } : {}),
       },
       body: JSON.stringify({ question, history, tables }),
     });
@@ -725,11 +737,11 @@ export const defectsApi = {
 };
 
 export const valuationsApi = {
-  getAll: () => fetchAll<Row>('valuations'),
-  getById: (id: string) => apiFetch(`/valuations/${id}`),
-  create: (data: Row) => insertRow('valuations', data),
-  update: (id: string, data: Row) => updateRow('valuations', id, data),
-  delete: (id: string) => deleteRow('valuations', id),
+  getAll: () => apiFetch<{ data: Row[] }>('/measuring/valuations').then(r => r.data ?? []),
+  getById: (id: string) => apiFetch<Row>(`/measuring/valuations/${id}`),
+  create: (data: Row) => apiFetch<Row>('/measuring/valuations', { method: 'POST', body: JSON.stringify(data) }),
+  update: (id: string, data: Row) => apiFetch<Row>(`/measuring/valuations/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+  delete: (id: string) => apiFetch(`/measuring/valuations/${id}`, { method: 'DELETE' }).then(() => {}),
 };
 
 export const specificationsApi = {
@@ -799,6 +811,7 @@ export const prequalificationApi = {
 export const lettingsApi = {
   getAll: () => fetchAll<Row>('lettings'),
   getById: (id: string) => apiFetch(`/lettings/${id}`),
+  getTenders: () => fetchAll<Row>('tenders'),
   create: (data: Row) => insertRow('lettings', data),
   update: (id: string, data: Row) => updateRow('lettings', id, data),
   delete: (id: string) => deleteRow('lettings', id),
@@ -812,12 +825,17 @@ export const measuringApi = {
   delete: (id: string) => deleteRow('measuring', id),
 };
 
+// ─── Shorthand aliases (used by some frontend modules) ────────────────────
+export const lettings = lettingsApi;
+export const signage = signageApi;
+export const valuations = valuationsApi;
+
 export const backupApi = {
   getTables: () => apiFetch<{ tables: string[] }>('/backup/tables'),
   exportTable: (table: string, format: 'json' | 'csv' = 'json') => {
     const url = `/backup/export/${table}?format=${format}`;
     return fetch(`${API_BASE}${url}`, {
-      headers: { Authorization: `Bearer ${getToken()}` },
+      credentials: 'include',
     }).then(r => {
       if (!r.ok) throw new Error(`Export failed: ${r.statusText}`);
       if (format === 'csv') return r.text();
@@ -827,7 +845,7 @@ export const backupApi = {
   exportAll: () => {
     const url = '/backup/export-all';
     return fetch(`${API_BASE}${url}`, {
-      headers: { Authorization: `Bearer ${getToken()}` },
+      credentials: 'include',
     }).then(r => {
       if (!r.ok) throw new Error(`Export failed: ${r.statusText}`);
       return r.json();
@@ -1001,7 +1019,6 @@ export const projectImagesApi = {
   update: (id: string, data: Row) => updateRow('project-images', id, data),
   delete: (id: string) => deleteRow('project-images', id),
   uploadImage: async (file: File, projectId: string, caption?: string, category?: string) => {
-    const token = getToken();
     const formData = new FormData();
     formData.append('file', file);
     formData.append('project_id', projectId);
@@ -1009,7 +1026,7 @@ export const projectImagesApi = {
     if (category) formData.append('category', category);
     const res = await fetch(`${API_BASE}/project-images/upload`, {
       method: 'POST',
-      headers: { ...(token ? { Authorization: `Bearer ${token}` } : {}) },
+      credentials: 'include',
       body: formData,
     });
     if (!res.ok) {

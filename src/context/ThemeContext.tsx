@@ -88,7 +88,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
       theme, 
       setTheme, 
       resolvedTheme, 
-      isDark: DARK_THEMES.has(resolvedTheme as any) 
+      isDark: DARK_THEMES.has(resolvedTheme as Theme)
     }}>
       {children}
     </ThemeContext.Provider>

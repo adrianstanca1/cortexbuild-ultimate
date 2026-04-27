@@ -24,7 +24,7 @@ export const MemoizedDataTable = memo(function MemoizedDataTable({ data, columns
   }, [data, columns, onRowClick]);
 
   return (
-    <div className="overflow-x-auto">
+    <div className="cb-table-scroll touch-pan-x">
       <table className="table table-zebra w-full">
         <thead>
           <tr>

@@ -4,6 +4,7 @@
  */
 import { Component, type ErrorInfo, type ReactNode } from 'react';
 import { AlertTriangle, RefreshCw, Bug } from 'lucide-react';
+import { agentDebugLog } from '@/lib/agentDebugLog';
 
 interface Props {
   children: ReactNode;
@@ -17,7 +18,7 @@ interface State {
 }
 
 export class ErrorBoundary extends Component<Props, State> {
-  public state: State = {
+  public override state: State = {
     hasError: false,
     error: undefined,
   };
@@ -26,8 +27,20 @@ export class ErrorBoundary extends Component<Props, State> {
     return { hasError: true, error };
   }
 
-  public componentDidCatch(error: Error, errorInfo: ErrorInfo) {
+  public override componentDidCatch(error: Error, errorInfo: ErrorInfo) {
     console.error('ErrorBoundary caught an error:', error, errorInfo);
+    // #region agent log
+    agentDebugLog({
+      hypothesisId: 'H5',
+      location: 'ErrorBoundary.tsx:componentDidCatch',
+      message: 'error boundary caught',
+      data: {
+        errName: error.name,
+        errMessage: error.message?.slice(0, 200),
+        stackHead: error.stack?.split('\n').slice(0, 3).join(' | ')?.slice(0, 300),
+      },
+    });
+    // #endregion
     this.props.onError?.(error, errorInfo);
   }
 
@@ -36,7 +49,7 @@ export class ErrorBoundary extends Component<Props, State> {
     window.location.reload();
   };
 
-  public render() {
+  public override render() {
     if (this.state.hasError) {
       if (this.props.fallback) {
         return this.props.fallback;

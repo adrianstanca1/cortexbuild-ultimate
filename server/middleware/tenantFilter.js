@@ -34,12 +34,12 @@
  * @returns {'all'|'tenant'|'company'|'deny'}
  */
 function getTenantScope(req) {
-  if (!req.user) return 'deny';
-  if (req.user.role === 'super_admin') return 'all';
-  if (req.user.organization_id) return 'tenant';
+  if (!req.user) return "deny";
+  if (req.user.role === "super_admin") return "all";
+  if (req.user.organization_id) return "tenant";
   // company_owner (or any user) with null organization_id but valid company_id
-  if (req.user.company_id) return 'company';
-  return 'deny';
+  if (req.user.company_id) return "company";
+  return "deny";
 }
 
 /**
@@ -49,8 +49,8 @@ function getTenantScope(req) {
  */
 function getTenantId(req) {
   const scope = getTenantScope(req);
-  if (scope === 'all' || scope === 'deny') return null;
-  if (scope === 'company') return req.user.company_id;
+  if (scope === "all" || scope === "deny") return null;
+  if (scope === "company") return req.user.company_id;
   return req.user.organization_id;
 }
 
@@ -63,22 +63,33 @@ function getTenantId(req) {
  * @param {number} paramIndex - 1-based parameter index (default: 1)
  * @returns {{ clause: string, params: any[] }}
  */
-function buildTenantFilter(req, prefix = 'WHERE', alias = null, paramIndex = 1) {
+function buildTenantFilter(
+  req,
+  prefix = "WHERE",
+  alias = null,
+  paramIndex = 1,
+) {
   const scope = getTenantScope(req);
-  const a = alias ? `${alias}.` : '';
+  const a = alias ? `${alias}.` : "";
   const p = `$${paramIndex}`;
 
-  if (scope === 'all') {
-    return { clause: '', params: [] };
+  if (scope === "all") {
+    return { clause: "", params: [] };
   }
-  if (scope === 'deny') {
+  if (scope === "deny") {
     return { clause: ` ${prefix} 1=0`, params: [] };
   }
-  if (scope === 'company') {
-    return { clause: ` ${prefix} COALESCE(${a}organization_id, ${a}company_id) = ${p}`, params: [req.user.company_id] };
+  if (scope === "company") {
+    return {
+      clause: ` ${prefix} ${a}company_id = ${p}`,
+      params: [req.user.company_id],
+    };
   }
   // scope === 'tenant'
-  return { clause: ` ${prefix} COALESCE(${a}organization_id, ${a}company_id) = ${p}`, params: [req.user.organization_id] };
+  return {
+    clause: ` ${prefix} ${a}organization_id = ${p}`,
+    params: [req.user.organization_id],
+  };
 }
 
 /**
@@ -91,12 +102,21 @@ function buildTenantFilter(req, prefix = 'WHERE', alias = null, paramIndex = 1) 
  */
 function buildTenantJoin(req, alias, paramIndex) {
   const scope = getTenantScope(req);
-  const a = alias ? `${alias}.` : '';
+  const a = alias ? `${alias}.` : "";
   const p = `$${paramIndex}`;
 
-  if (scope === 'all') return { clause: '', params: [] };
-  if (scope === 'deny') return { clause: ' AND 1=0', params: [] };
-  return { clause: ` AND COALESCE(${a}organization_id, ${a}company_id) = ${p}`, params: [scope === 'company' ? req.user.company_id : req.user.organization_id] };
+  if (scope === "all") return { clause: "", params: [] };
+  if (scope === "deny") return { clause: " AND 1=0", params: [] };
+  if (scope === "company") {
+    return {
+      clause: ` AND ${a}company_id = ${p}`,
+      params: [req.user.company_id],
+    };
+  }
+  return {
+    clause: ` AND ${a}organization_id = ${p}`,
+    params: [req.user.organization_id],
+  };
 }
 
 /**
@@ -105,7 +125,7 @@ function buildTenantJoin(req, alias, paramIndex) {
  * @returns {boolean}
  */
 function isCompanyOwner(req) {
-  return req.user?.role === 'company_owner';
+  return req.user?.role === "company_owner";
 }
 
 /**
@@ -114,7 +134,7 @@ function isCompanyOwner(req) {
  * @returns {boolean}
  */
 function isSuperAdmin(req) {
-  return req.user?.role === 'super_admin';
+  return req.user?.role === "super_admin";
 }
 
 module.exports = {

@@ -186,11 +186,11 @@ export function Materials() {
 
   return (
     <>
-      <ModuleBreadcrumbs currentModule="materials" onNavigate={() => {}} />
+      <ModuleBreadcrumbs currentModule="materials" />
       <div className="p-6 space-y-6 min-h-screen bg-gray-950">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-100">Materials Management</h1>
+          <h1 className="text-2xl font-display text-gray-100">Materials Management</h1>
           <p className="text-sm text-gray-400 mt-1">Procurement, deliveries & analytics</p>
         </div>
         <button type="button" onClick={openCreate} className="flex items-center gap-2 px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 text-sm font-medium">
@@ -218,7 +218,7 @@ export function Materials() {
               <div className={`p-2 rounded-lg ${kpi.bg}`}><kpi.icon size={20} className={kpi.colour}/></div>
               <div className="flex-1 min-w-0">
                 <p className="text-xs text-gray-400">{kpi.label}</p>
-                <p className="text-lg font-bold text-gray-100 truncate">{kpi.value}</p>
+                <p className="text-lg font-display text-gray-100 truncate">{kpi.value}</p>
               </div>
             </div>
           </div>
@@ -288,7 +288,7 @@ export function Materials() {
                 <thead className="bg-gray-700/50 border-b border-gray-700">
                   <tr>
                     {(['Name','Category','Project','Supplier','Qty','Unit','Unit Cost','Total Cost','Status','Delivery Date','PO #',''] as const).map(h=>
-                      <th key={h} className="px-4 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider whitespace-nowrap">{h}</th>
+                      <th key={h} className="px-4 py-3 text-left text-xs font-display tracking-widest text-gray-300 uppercase whitespace-nowrap">{h}</th>
                     )}
                   </tr>
                 </thead>
@@ -316,7 +316,7 @@ export function Materials() {
                         <td className="px-4 py-3 text-gray-200 font-medium">{Number(m.quantity??0)}</td>
                         <td className="px-4 py-3 text-gray-400 text-sm">{String(m.unit??'')}</td>
                         <td className="px-4 py-3 text-gray-400">£{Number(m.unit_cost??0).toLocaleString()}</td>
-                        <td className="px-4 py-3 font-semibold text-gray-100">£{Math.round(total).toLocaleString()}</td>
+                        <td className="px-4 py-3 font-mono text-gray-100">£{Math.round(total).toLocaleString()}</td>
                         <td className="px-4 py-3">
                           <span className={`text-xs px-2.5 py-1 rounded-full font-medium ${statusColour[String(m.status??'')] ?? 'bg-gray-700/30 text-gray-300'}`}>
                             {String(m.status??'')}

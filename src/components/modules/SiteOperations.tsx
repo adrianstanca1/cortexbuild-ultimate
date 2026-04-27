@@ -177,10 +177,10 @@ const handleSaveDelay = async () => {
 
   return (
     <>
-      <ModuleBreadcrumbs currentModule="site-ops" onNavigate={() => {}} />
+      <ModuleBreadcrumbs currentModule="site-ops" />
       <div className="p-6 space-y-6">
       <div>
-        <h1 className="text-2xl font-bold text-gray-100">Site Operations</h1>
+        <h1 className="text-2xl font-display text-gray-100">Site Operations</h1>
         <p className="text-sm text-gray-400 mt-1">Comprehensive site overview, daily reporting, equipment & labour management</p>
       </div>
 
@@ -200,7 +200,7 @@ const handleSaveDelay = async () => {
               </div>
               <div className="flex-1 min-w-0">
                 <p className="text-xs text-gray-400 truncate">{kpi.label}</p>
-                <p className="text-xl font-bold text-gray-100 mt-0.5">{kpi.value}</p>
+                <p className="text-xl font-display text-gray-100 mt-0.5">{kpi.value}</p>
               </div>
             </div>
           </div>
@@ -208,7 +208,7 @@ const handleSaveDelay = async () => {
       </div>
 
       {/* Sub-tabs navigation */}
-      <div className="border-b border-gray-700 flex gap-1 overflow-x-auto">
+      <div className="border-b border-gray-700 flex gap-1 cb-table-scroll touch-pan-x">
         {TABS.map(t => {
           const Icon = t.icon;
           return (
@@ -620,7 +620,7 @@ const handleSaveDelay = async () => {
             </div>
           ) : (
             <div className="bg-gray-800 rounded-lg border border-gray-700 overflow-hidden">
-              <div className="overflow-x-auto">
+              <div className="cb-table-scroll touch-pan-x">
                 <table className="w-full text-sm">
                   <thead>
                     <tr className="bg-gray-700/50 border-b border-gray-700">
@@ -704,7 +704,7 @@ const handleSaveDelay = async () => {
           ) : (
             <div className="space-y-4">
               <div className="bg-gray-800 rounded-lg border border-gray-700 overflow-hidden">
-                <div className="overflow-x-auto">
+                <div className="cb-table-scroll touch-pan-x">
                   <table className="w-full text-sm">
                     <thead>
                       <tr className="bg-gray-700/50 border-b border-gray-700">

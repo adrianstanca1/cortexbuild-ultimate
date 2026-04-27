@@ -2,17 +2,18 @@ import React from 'react';
 import { useState, useEffect, useCallback } from 'react';
 import {
   FileText, Search, Download, Eye, Edit2, Trash2, X, Upload, FileCheck, Image, FolderOpen,
-  BarChart3, Grid, List, FileIcon as FileIconDefault, History, UploadCloud, PenLine
+  BarChart3, Grid, List, FileIcon as FileIconDefault, History, UploadCloud, PenLine, Sparkles, Loader2
 } from 'lucide-react';
 import { toast } from 'sonner';
 import clsx from 'clsx';
 import { EmptyState } from '../ui/EmptyState';
 import { ModuleBreadcrumbs } from '../ui/Breadcrumbs';
-import { getToken } from '@/lib/supabase';
+import { API_BASE } from '@/lib/auth-storage';
 import { signaturesApi } from '../../services/api';
 import { SignatureCapture, SignatureDisplay } from '../ui/SignatureCapture';
 import { useAuth } from '../../context/AuthContext';
 import type { Signature } from '../../services/api';
+import { analyzeDocument, type AnalyzeDocumentResponse } from '../../services/ai';
 
 interface DocumentVersion {
   id: string;
@@ -39,6 +40,9 @@ interface Document {
   parent_folder: string;
   created_at: string;
   versions?: DocumentVersion[];
+  ai_extracted_snippet?: string | null;
+  ai_analysis_cache?: AnalyzeDocumentResponse | Record<string, unknown> | null;
+  ai_analysis_at?: string | null;
 }
 
 const CATEGORIES = ['PLANS', 'DRAWINGS', 'PERMITS', 'RAMS', 'CONTRACTS', 'REPORTS', 'SPECS', 'PHOTOS'];
@@ -93,18 +97,58 @@ export function Documents() {
   const [dragOver, setDragOver] = useState(false);
   const [showSignModal, setShowSignModal] = useState(false);
   const [existingSignatures, setExistingSignatures] = useState<Signature[]>([]);
+  const [docIntel, setDocIntel] = useState<AnalyzeDocumentResponse | null>(null);
+  const [intelLoading, setIntelLoading] = useState(false);
+  const [intelRefreshing, setIntelRefreshing] = useState(false);
 
   const { user } = useAuth();
 
+  // Intentionally key off document id only — avoid refetch when the same row is re-selected with a new object identity.
+  useEffect(() => {
+    if (!selectedDoc) {
+      setDocIntel(null);
+      return;
+    }
+    setDocIntel(null);
+    let cancelled = false;
+    const docId = String(selectedDoc.id);
+    (async () => {
+      setIntelLoading(true);
+      try {
+        const r = await analyzeDocument(docId, { useCache: true });
+        if (!cancelled) setDocIntel(r);
+      } catch (err) {
+        if (!cancelled) toast.error((err as Error).message || 'Could not load document intelligence');
+      } finally {
+        if (!cancelled) setIntelLoading(false);
+      }
+    })();
+    return () => { cancelled = true; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- selectedDoc.id is the stable key; full selectedDoc would over-trigger
+  }, [selectedDoc?.id]);
+
+  const runDocAnalysisRefresh = async () => {
+    if (!selectedDoc) return;
+    setIntelRefreshing(true);
+    try {
+      const r = await analyzeDocument(String(selectedDoc.id), { useCache: false });
+      setDocIntel(r);
+      toast.success('AI analysis refreshed');
+    } catch (err) {
+      toast.error((err as Error).message || 'AI analysis failed');
+    } finally {
+      setIntelRefreshing(false);
+    }
+  };
+
   const fetchDocuments = useCallback(async () => {
     try {
-      const token = getToken();
       const params = new URLSearchParams();
       if (categoryFilter !== 'ALL') params.append('category', categoryFilter);
       if (searchQuery) params.append('search', searchQuery);
       params.append('include_versions', 'true');
-      const res = await fetch(`/api/files?${params}`, {
-        headers: { Authorization: `Bearer ${token}` }
+      const res = await fetch(`${API_BASE}/files?${params}`, {
+        credentials: 'include',
       });
       if (!res.ok) throw new Error('Failed to fetch');
       const data = await res.json();
@@ -119,16 +163,15 @@ export function Documents() {
   useEffect(() => { fetchDocuments(); }, [fetchDocuments]);
 
   const handleUpload = async (file: File, category: string, access: string) => {
-    const token = getToken();
     const formData = new FormData();
     formData.append('file', file);
     formData.append('category', category);
     formData.append('access_level', access);
     formData.append('name', file.name);
     try {
-      const res = await fetch('/api/files/upload', {
+      const res = await fetch(`${API_BASE}/files/upload`, {
         method: 'POST',
-        headers: { Authorization: `Bearer ${token}` },
+        credentials: 'include',
         body: formData
       });
       if (!res.ok) { const err = await res.json(); throw new Error(err.message); }
@@ -139,14 +182,13 @@ export function Documents() {
   };
 
   const handleUploadVersion = async (docId: string, file: File, changes: string) => {
-    const token = getToken();
     const formData = new FormData();
     formData.append('file', file);
     formData.append('changes', changes);
     try {
-      const res = await fetch(`/api/files/${docId}/upload-version`, {
+      const res = await fetch(`${API_BASE}/files/${docId}/upload-version`, {
         method: 'POST',
-        headers: { Authorization: `Bearer ${token}` },
+        credentials: 'include',
         body: formData
       });
       if (!res.ok) throw new Error('Upload failed');
@@ -157,10 +199,9 @@ export function Documents() {
   };
 
   const handleDownload = async (doc: Document) => {
-    const token = getToken();
     try {
-      const res = await fetch(`/api/files/${doc.id}/download`, {
-        headers: { Authorization: `Bearer ${token}` }
+      const res = await fetch(`${API_BASE}/files/${doc.id}/download`, {
+        credentials: 'include',
       });
       if (!res.ok) throw new Error('Download failed');
       const blob = await res.blob();
@@ -174,17 +215,16 @@ export function Documents() {
   };
 
   const handlePreview = (doc: Document) => {
-    const token = getToken();
-    const previewUrl = `/api/files/${doc.id}/preview?token=${token}`;
+    const previewUrl = `${API_BASE}/files/${doc.id}/preview`;
     setPreviewDoc({ ...doc, file_path: previewUrl });
   };
 
   const handleUpdate = async (docId: string, updates: Partial<Document>) => {
-    const token = getToken();
     try {
-      const res = await fetch(`/api/files/${docId}`, {
+      const res = await fetch(`${API_BASE}/files/${docId}`, {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(updates)
       });
       if (!res.ok) throw new Error('Update failed');
@@ -195,11 +235,10 @@ export function Documents() {
   };
 
   const handleDelete = async (docId: string) => {
-    const token = getToken();
     try {
-      const res = await fetch(`/api/files/${docId}`, {
+      const res = await fetch(`${API_BASE}/files/${docId}`, {
         method: 'DELETE',
-        headers: { Authorization: `Bearer ${token}` }
+        credentials: 'include',
       });
       if (!res.ok) throw new Error('Delete failed');
       toast.success('Document deleted');
@@ -243,10 +282,10 @@ export function Documents() {
 
   return (
     <>
-      <ModuleBreadcrumbs currentModule="documents" onNavigate={() => {}} />
+      <ModuleBreadcrumbs currentModule="documents" />
       <div className="min-h-screen bg-slate-950 p-6 space-y-6">
       <div className="flex items-center justify-between flex-wrap gap-4">
-        <div><h1 className="text-3xl font-bold text-white">Documents</h1><p className="text-sm text-slate-400 mt-1">{documents.length} files</p></div>
+        <div><h1 className="text-3xl font-display text-white">Documents</h1><p className="text-sm text-slate-400 mt-1">{documents.length} files</p></div>
         <button onClick={() => setShowUploadModal(true)} className="btn-primary flex items-center gap-2"><UploadCloud className="w-4 h-4" /> Upload</button>
       </div>
 
@@ -326,7 +365,7 @@ export function Documents() {
       {selectedDoc && (
         <div className="fixed inset-y-0 right-0 w-full max-w-md bg-slate-900 border-l border-slate-800 z-50 overflow-y-auto">
           <div className="p-6">
-            <div className="flex items-center justify-between mb-6"><h2 className="text-lg font-semibold">Document Details</h2><button onClick={() => setSelectedDoc(null)} className="p-2 hover:bg-slate-800 rounded"><X className="w-5 h-5" /></button></div>
+            <div className="flex items-center justify-between mb-6"><h2 className="text-lg font-display">Document Details</h2><button onClick={() => setSelectedDoc(null)} className="p-2 hover:bg-slate-800 rounded"><X className="w-5 h-5" /></button></div>
             <div className="space-y-4">
               <div className={clsx('w-20 h-20 rounded-lg flex items-center justify-center mx-auto', getTypeColor(selectedDoc.type))}>{React.createElement(getFileIcon(selectedDoc.type), { className: 'w-10 h-10' })}</div>
               <div className="text-center"><h3 className="font-medium text-white break-words">{selectedDoc.name}</h3><p className="text-sm text-slate-500">{selectedDoc.type} - {selectedDoc.size}</p></div>
@@ -340,6 +379,96 @@ export function Documents() {
                 <button onClick={() => handlePreview(selectedDoc)} className="btn-primary flex-1"><Eye className="w-4 h-4 mr-1" /> Preview</button>
                 <button onClick={() => handleDownload(selectedDoc)} className="btn-secondary flex-1"><Download className="w-4 h-4 mr-1" /> Download</button>
               </div>
+
+              <div className="border-t border-slate-800 pt-4 space-y-3">
+                <div className="flex items-center justify-between gap-2">
+                  <h4 className="text-sm font-semibold text-slate-200 flex items-center gap-2">
+                    <Sparkles className="w-4 h-4 text-amber-400" aria-hidden />
+                    Document intelligence
+                  </h4>
+                  {docIntel?.source && (
+                    <span className="badge bg-slate-700 text-[10px] uppercase tracking-wide text-slate-300">
+                      {docIntel.source}
+                    </span>
+                  )}
+                </div>
+                <button
+                  type="button"
+                  className="w-full btn-secondary inline-flex items-center justify-center gap-2"
+                  disabled={intelRefreshing || intelLoading}
+                  onClick={() => void runDocAnalysisRefresh()}
+                >
+                  {intelRefreshing ? (
+                    <Loader2 className="w-4 h-4 animate-spin" aria-hidden />
+                  ) : (
+                    <Sparkles className="w-4 h-4" aria-hidden />
+                  )}
+                  Run AI analysis
+                </button>
+                {intelLoading && !docIntel && (
+                  <p className="text-xs text-slate-500 flex items-center gap-2">
+                    <Loader2 className="w-3.5 h-3.5 animate-spin shrink-0" aria-hidden />
+                    Loading analysis…
+                  </p>
+                )}
+                {docIntel && (
+                  <div className="space-y-3 text-sm text-slate-300">
+                    {docIntel.confidence && (
+                      <p className="text-xs text-slate-500">
+                        Confidence: <span className="text-slate-400">{docIntel.confidence}</span>
+                        {typeof docIntel.extractedChars === 'number' && (
+                          <span className="ml-2">· {docIntel.extractedChars} chars extracted</span>
+                        )}
+                      </p>
+                    )}
+                    <div>
+                      <p className="text-xs font-mono uppercase tracking-wide text-slate-500 mb-1">Summary</p>
+                      <p className="text-sm leading-relaxed text-slate-300 whitespace-pre-wrap">{docIntel.summary}</p>
+                    </div>
+                    {Array.isArray(docIntel.commercialRisks) && docIntel.commercialRisks.length > 0 && (
+                      <div>
+                        <p className="text-xs font-mono uppercase tracking-wide text-slate-500 mb-1">Commercial risks</p>
+                        <ul className="list-disc pl-4 space-y-1 text-slate-400">
+                          {docIntel.commercialRisks.map((line, i) => (
+                            <li key={`cr-${i}`}>{line}</li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+                    {Array.isArray(docIntel.suggestedActions) && docIntel.suggestedActions.length > 0 && (
+                      <div>
+                        <p className="text-xs font-mono uppercase tracking-wide text-slate-500 mb-1">Suggested actions</p>
+                        <ul className="list-disc pl-4 space-y-1 text-slate-400">
+                          {docIntel.suggestedActions.map((line, i) => (
+                            <li key={`sa-${i}`}>{line}</li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+                    {Array.isArray(docIntel.rfiSuggestions) && docIntel.rfiSuggestions.length > 0 && (
+                      <div>
+                        <p className="text-xs font-mono uppercase tracking-wide text-slate-500 mb-1">RFI suggestions</p>
+                        <ul className="list-disc pl-4 space-y-1 text-slate-400">
+                          {docIntel.rfiSuggestions.map((line, i) => (
+                            <li key={`rfi-${i}`}>{line}</li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+                    {Array.isArray(docIntel.keyEntities) && docIntel.keyEntities.length > 0 && (
+                      <div>
+                        <p className="text-xs font-mono uppercase tracking-wide text-slate-500 mb-1">Key entities</p>
+                        <ul className="list-disc pl-4 space-y-1 text-slate-400">
+                          {docIntel.keyEntities.map((line, i) => (
+                            <li key={`ke-${i}`}>{line}</li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+
               <div className="border-t border-slate-800 pt-4"><button onClick={() => setShowVersionHistory(true)} className="w-full btn-secondary"><History className="w-4 h-4 mr-1" /> Version History</button></div>
               <div className="border-t border-slate-800 pt-4"><button onClick={() => openSignModal()} className="w-full btn-secondary"><PenLine className="w-4 h-4 mr-1" /> Sign Document</button></div>
               <div className="border-t border-slate-800 pt-4"><button onClick={() => setEditingDoc(selectedDoc)} className="w-full btn-secondary"><Edit2 className="w-4 h-4 mr-1" /> Edit Details</button></div>
@@ -353,13 +482,13 @@ export function Documents() {
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
           <div className="dialog-overlay absolute inset-0" onClick={() => setShowVersionHistory(false)} />
           <div className="dialog-content p-6 w-full max-w-2xl relative z-10 max-h-[90vh] overflow-y-auto">
-            <div className="flex items-center justify-between mb-4"><h3 className="text-lg font-semibold">Version History - {selectedDoc.name}</h3><button onClick={() => setShowVersionHistory(false)} className="p-2 hover:bg-slate-700 rounded"><X className="w-5 h-5" /></button></div>
+            <div className="flex items-center justify-between mb-4"><h3 className="text-lg font-display">Version History - {selectedDoc.name}</h3><button onClick={() => setShowVersionHistory(false)} className="p-2 hover:bg-slate-700 rounded"><X className="w-5 h-5" /></button></div>
             <div className="bg-slate-800 p-4 rounded-lg border-l-4 border-amber-500 mb-4">
               <div className="flex items-center justify-between"><span className="font-medium text-amber-400">Current: v{selectedDoc.version}</span><span className="text-sm text-slate-500">{formatDateTime(selectedDoc.created_at)}</span></div>
               <p className="text-sm text-slate-400 mt-1">Current version</p>
             </div>
             <div className="mt-4 pt-4 border-t border-slate-800">
-              <h4 className="font-medium mb-3">Upload New Version</h4>
+              <h4 className="font-display mb-3">Upload New Version</h4>
               <div className="flex gap-3">
                 <input type="text" placeholder="Describe changes..." id="versionChanges" className="input flex-1" />
                 <input type="file" id="versionFileInput" className="hidden" onChange={(e) => { const file = e.target.files?.[0]; if (file) handleUploadVersion(selectedDoc.id, file, (document.getElementById('versionChanges') as HTMLInputElement).value || 'Updated'); }} />
@@ -374,7 +503,7 @@ export function Documents() {
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
           <div className="dialog-overlay absolute inset-0" onClick={() => setShowUploadModal(false)} />
           <div className="dialog-content p-6 w-full max-w-lg relative z-10">
-            <h3 className="text-lg font-semibold mb-4">Upload Document</h3>
+            <h3 className="text-lg font-display mb-4">Upload Document</h3>
             <div className={clsx('border-2 border-dashed rounded-xl p-8 text-center cursor-pointer transition-all mb-4', dragOver ? 'border-amber-500 bg-amber-500/10' : 'border-slate-700 hover:border-slate-600')}
               onDragOver={(e) => { e.preventDefault(); setDragOver(true); }} onDragLeave={() => setDragOver(false)}
               onDrop={(e) => { e.preventDefault(); setDragOver(false); const file = e.dataTransfer.files[0]; if (file) handleUpload(file, selectedCategory, selectedAccess); }}
@@ -396,7 +525,7 @@ export function Documents() {
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
           <div className="dialog-overlay absolute inset-0" onClick={() => setEditingDoc(null)} />
           <div className="dialog-content p-6 w-full max-w-md relative z-10">
-            <h3 className="text-lg font-semibold mb-4">Edit Document</h3>
+            <h3 className="text-lg font-display mb-4">Edit Document</h3>
             <div className="space-y-4">
               <div><label className="text-sm text-slate-400 mb-1 block">Name</label><input type="text" defaultValue={editingDoc.name} id="editName" className="input w-full" /></div>
               <div><label className="text-sm text-slate-400 mb-1 block">Category</label><select defaultValue={editingDoc.category} id="editCategory" className="input w-full">{CATEGORIES.map(cat => <option key={cat} value={cat}>{cat}</option>)}</select></div>
@@ -427,7 +556,7 @@ export function Documents() {
           <div className="relative z-10 bg-gray-900 rounded-2xl shadow-2xl w-full max-w-lg border border-gray-700">
             <div className="flex items-center justify-between p-6 border-b border-gray-800">
               <div>
-                <h2 className="text-lg font-semibold text-white">Sign Document</h2>
+                <h2 className="text-lg font-display text-white">Sign Document</h2>
                 <p className="text-sm text-gray-400 mt-0.5">{selectedDoc.name}</p>
               </div>
               <button onClick={() => setShowSignModal(false)} className="p-2 hover:bg-gray-800 rounded-lg text-gray-400"><X className="w-5 h-5" /></button>

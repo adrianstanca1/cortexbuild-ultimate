@@ -1,21 +1,11 @@
-import type { VercelRequest, VercelResponse } from '@vercel/node';
+import type { VercelRequest, VercelResponse } from '../../types/vercel';
+import { resolveAllowedCorsOrigin } from './corsOrigins';
 
 const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID || '';
 const GOOGLE_CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET || '';
 
-// CORS configuration - inline to avoid module resolution issues
-const ALLOWED_ORIGINS = [
-  'https://buildprodeploy.vercel.app',
-  'https://cortexbuildpro.com',
-  'https://www.cortexbuildpro.com',
-  'http://localhost:5173',
-  'http://localhost:3000',
-] as const;
-
 function getAllowedOrigin(req: VercelRequest): string | null {
-  const origin = req.headers.origin;
-  if (!origin) return null;
-  return ALLOWED_ORIGINS.includes(origin as typeof ALLOWED_ORIGINS[number]) ? origin : null;
+  return resolveAllowedCorsOrigin(req);
 }
 
 function setCorsHeaders(req: VercelRequest, res: VercelResponse): boolean {

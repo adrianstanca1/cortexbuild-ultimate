@@ -1,8 +1,14 @@
+# =============================================================================
+# CortexBuild Ultimate - Optimized Docker Compose
+# =============================================================================
+# Simplificat pentru deploy rapid și fiabil
+# =============================================================================
+
 services:
   postgres:
     image: pgvector/pgvector:pg16
     container_name: cortexbuild-db
-    restart: always
+    restart: unless-stopped
     environment:
       POSTGRES_USER: ${POSTGRES_USER:-cortexbuild}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-cortexbuild_dev_password}
@@ -14,43 +20,41 @@ services:
     networks:
       - cortexbuild
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U cortexbuild"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-cortexbuild}"]
       interval: 10s
       timeout: 5s
       retries: 5
+      start_period: 30s
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+        reservations:
+          memory: 256M
 
   redis:
     image: redis:7-alpine
     container_name: cortexbuild-redis
-    restart: always
-    ports:
-      - "127.0.0.1:6379:6379"
+    restart: unless-stopped
+    command: redis-server --appendonly yes --maxmemory 256mb --maxmemory-policy allkeys-lru
     volumes:
       - redis_data:/data
+    ports:
+      - "127.0.0.1:6379:6379"
     networks:
       - cortexbuild
-    command: redis-server --appendonly yes
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 10s
       timeout: 5s
       retries: 3
-
-  ollama:
-    image: ollama/ollama:latest
-    container_name: cortexbuild-ollama
-    restart: always
-    volumes:
-      - ollama_data:/root/.ollama
-    ports:
-      - "127.0.0.1:11434:11434"
-    networks:
-      - cortexbuild
-    healthcheck:
-      test: ["CMD", "curl", "-sf", "http://localhost:11434/api/tags"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
+      start_period: 10s
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+        reservations:
+          memory: 64M
 
   api:
     build:
@@ -58,30 +62,15 @@ services:
       dockerfile: Dockerfile.api
     image: cortexbuild-ultimate-api:latest
     container_name: cortexbuild-api
-    restart: always
+    restart: unless-stopped
+    env_file:
+      - .env
     environment:
-      # App uses DB_* via server/db.js (not DATABASE_URL). Keep password in sync with postgres service.
+      # Override pentru network intern Docker
       DB_HOST: postgres
-      DB_PORT: 5432
-      DB_NAME: ${POSTGRES_DB:-cortexbuild}
-      DB_USER: ${POSTGRES_USER:-cortexbuild}
-      DB_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD must be set}
-      JWT_SECRET: ${JWT_SECRET:?JWT_SECRET must be set}
-      SESSION_SECRET: ${SESSION_SECRET:?SESSION_SECRET must be set}
       REDIS_HOST: redis
-      PORT: ${PORT:-3001}
-      NODE_ENV: ${NODE_ENV:-production}
-      OLLAMA_HOST: ${OLLAMA_HOST:-http://ollama:11434}
-      OLLAMA_MODEL: ${OLLAMA_MODEL:-qwen3.5:latest}
-      CORS_ORIGIN: ${CORS_ORIGIN:?CORS_ORIGIN must be set for production}
-      FRONTEND_URL: ${FRONTEND_URL:-https://www.cortexbuildpro.com}
-      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
-      GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET:-}
-      GOOGLE_CALLBACK_URL: ${GOOGLE_CALLBACK_URL:-https://www.cortexbuildpro.com/api/auth/google/callback}
-      MICROSOFT_CLIENT_ID: ${MICROSOFT_CLIENT_ID:-}
-      MICROSOFT_CLIENT_SECRET: ${MICROSOFT_CLIENT_SECRET:-}
-      MICROSOFT_TENANT: ${MICROSOFT_TENANT:-common}
-      MICROSOFT_CALLBACK_URL: ${MICROSOFT_CALLBACK_URL:-https://www.cortexbuildpro.com/api/auth/microsoft/callback}
+      REDIS_URL: redis://redis:6379
+      OLLAMA_HOST: http://172.28.0.10:11434
     ports:
       - "127.0.0.1:3001:3001"
     networks:
@@ -91,55 +80,43 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
-      ollama:
-        condition: service_healthy
     volumes:
       - ./server/uploads:/app/uploads
     healthcheck:
-      test: ["CMD", "curl", "-sf", "http://localhost:3001/api/health"]
+      test: ["CMD-SHELL", "wget -qO- http://localhost:3001/api/health || exit 1"]
       interval: 30s
       timeout: 10s
       retries: 3
+      start_period: 60s
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+        reservations:
+          memory: 256M
 
-  # Note: nginx container removed — host nginx handles SSL/proxy on ports 80/443
-
-  prometheus:
-    image: prom/prometheus:latest
-    container_name: cortexbuild-prometheus
-    restart: always
-    volumes:
-      - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml:ro
-      - prometheus_data:/prometheus
-    ports:
-      - "127.0.0.1:9090:9090"
-    networks:
-      - cortexbuild
-    command:
-      - '--config.file=/etc/prometheus/prometheus.yml'
-      - '--storage.tsdb.path=/prometheus'
-
-  grafana:
-    image: grafana/grafana:latest
-    container_name: cortexbuild-grafana
-    restart: always
-    environment:
-      GF_SECURITY_ADMIN_PASSWORD: ${GF_SECURITY_ADMIN_PASSWORD:-cortexbuild_dev_grafana}
-    volumes:
-      - grafana_data:/var/lib/grafana
-    ports:
-      - "127.0.0.1:3002:3000"
-    networks:
-      - cortexbuild
-    depends_on:
-      - prometheus
+  # Ollama opțional — dezactivat implicit
+  # Decomentează pentru a activa AI local
+  # ollama:
+  #   image: ollama/ollama:latest
+  #   container_name: cortexbuild-ollama
+  #   restart: unless-stopped
+  #   volumes:
+  #     - ollama_data:/root/.ollama
+  #   ports:
+  #     - "127.0.0.1:11434:11434"
+  #   networks:
+  #     cortexbuild:
+  #       ipv4_address: 172.28.0.10
 
 networks:
   cortexbuild:
     driver: bridge
+    ipam:
+      config:
+        - subnet: 172.28.0.0/16
 
 volumes:
   postgres_data:
   redis_data:
-  ollama_data:
-  prometheus_data:
-  grafana_data:
+  # ollama_data:

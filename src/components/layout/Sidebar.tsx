@@ -48,6 +48,8 @@ const NAV_GROUPS: { id: string; label: string; accent: string; items: NavItem[] 
       { id: 'ai-assistant',          label: 'AI Assistant',        icon: Bot,               badge: 'AI' },
       { id: 'insights',              label: 'AI Insights',         icon: Brain,             badge: 'NEW' },
       { id: 'predictive-analytics',  label: 'Predictive Analytics', icon: TrendingUpIcon,   badge: 'NEW' },
+      { id: 'team-chat',               label: 'Team Chat',            icon: MessageSquare,    badge: 'NEW' },
+      { id: 'activity-feed',          label: 'Activity Feed',        icon: Activity,         badge: 'NEW' },
     ],
   },
   {
@@ -128,8 +130,10 @@ const NAV_GROUPS: { id: string; label: string; accent: string; items: NavItem[] 
       { id: 'email-history',      label: 'Email History',          icon: Mail,           badge: null },
       { id: 'permissions',        label: 'Permissions',            icon: Lock,           badge: null },
       { id: 'report-templates',   label: 'Report Templates',       icon: FileTemplate,   badge: null },
+      { id: 'billing',            label: 'Billing',                icon: DollarSign,     badge: null },
       { id: 'admin-dashboard',    label: 'Admin Dashboard',        icon: ShieldCheck,    badge: 'ADMIN' },
       { id: 'settings',           label: 'Settings',               icon: Settings,       badge: null },
+      { id: 'settings-mfa',       label: 'Two-Factor Auth',        icon: Lock,           badge: null },
       { id: 'signage',            label: 'Signage',                icon: Signpost,       badge: null },
       { id: 'waste-management',    label: 'Waste Management',       icon: Trash2,         badge: null },
       { id: 'sustainability',     label: 'Sustainability',          icon: Leaf,           badge: null },
@@ -145,22 +149,6 @@ const NAV_GROUPS: { id: string; label: string; accent: string; items: NavItem[] 
       { id: 'ai-vision',      label: 'AI Vision',      icon: Eye,            badge: 'NEW' },
       { id: 'dev-sandbox',    label: 'Dev Sandbox',   icon: Bot,            badge: 'DEV' },
       { id: 'my-desktop',     label: 'My Desktop',    icon: LayoutDashboard, badge: 'BETA' },
-    ],
-  },
-  {
-    id: 'collaboration',
-    label: 'Collaboration',
-    accent: '#10b981', // green
-    items: [
-      { id: 'team-chat',      label: 'Team Chat',       icon: MessageSquare,  badge: 'NEW' },
-    ],
-  },
-  {
-    id: 'intelligence',
-    label: 'Intelligence',
-    accent: '#06b6d4', // cyan
-    items: [
-      { id: 'activity-feed',  label: 'Activity Feed',   icon: Activity,       badge: 'NEW' },
     ],
   },
 ];
@@ -263,7 +251,7 @@ function NavItem({
       {!collapsed && (
         <span
           style={{
-            fontFamily: "'DM Sans', sans-serif",
+            fontFamily: "'Instrument Sans', sans-serif",
             fontSize: '13px',
             fontWeight: active ? 600 : 500,
             flex: 1,
@@ -288,7 +276,7 @@ function NavItem({
             background: `${accent}20`,
             color: accent,
             border: `1px solid ${accent}30`,
-            fontFamily: "'JetBrains Mono', monospace",
+            fontFamily: "'Fira Code', monospace",
           }}
         >
           {item.badge}
@@ -326,7 +314,7 @@ function NavGroup({
             border: 'none',
             cursor: 'pointer',
             color: '#475569',
-            fontFamily: "'JetBrains Mono', monospace",
+            fontFamily: "'Fira Code', monospace",
             fontSize: '9px',
             fontWeight: 700,
             letterSpacing: '0.16em',
@@ -478,19 +466,19 @@ export function Sidebar({ activeModule, setModule, collapsed, setCollapsed }: Si
               <div>
                 <div
                   style={{
-                    fontFamily: "'Syne', sans-serif",
-                    fontSize: '15px',
+                    fontFamily: "'Bebas Neue', sans-serif",
+                    fontSize: '16px',
                     fontWeight: 800,
                     color: '#f1f5f9',
                     lineHeight: 1.1,
-                    letterSpacing: '-0.02em',
+                    letterSpacing: '0.04em',
                   }}
                 >
                   CortexBuild
                 </div>
                 <div
                   style={{
-                    fontFamily: "'JetBrains Mono', monospace",
+                    fontFamily: "'Fira Code', monospace",
                     fontSize: '9px',
                     fontWeight: 600,
                     color: '#f59e0b',
@@ -644,7 +632,7 @@ export function Sidebar({ activeModule, setModule, collapsed, setCollapsed }: Si
             <div style={{ flex: 1, minWidth: 0 }}>
               <div
                 style={{
-                  fontFamily: "'DM Sans', sans-serif",
+                  fontFamily: "'Instrument Sans', sans-serif",
                   fontSize: '12px',
                   fontWeight: 600,
                   color: '#e2e8f0',
@@ -657,7 +645,7 @@ export function Sidebar({ activeModule, setModule, collapsed, setCollapsed }: Si
               </div>
               <div
                 style={{
-                  fontFamily: "'JetBrains Mono', monospace",
+                  fontFamily: "'Fira Code', monospace",
                   fontSize: '9px',
                   color: '#475569',
                   letterSpacing: '0.05em',

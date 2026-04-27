@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { format, differenceInDays, isPast, isToday, isFuture } from 'date-fns';
-import { getToken } from '../../lib/supabase';
+import { API_BASE } from '../../lib/auth-storage';
 
 interface Task {
   id: string;
@@ -32,10 +32,9 @@ export default function ProjectTimeline({ projectId, height = 400 }: ProjectTime
   useEffect(() => {
     async function fetchData() {
       try {
-        const authHeader = { Authorization: `Bearer ${getToken() || ''}` };
         const [tasksRes, statsRes] = await Promise.all([
-          fetch(`/api/tasks?projectId=${projectId}`, { headers: authHeader }),
-          fetch(`/api/analytics?action=project-stats&projectId=${projectId}`, { headers: authHeader }),
+          fetch(`${API_BASE}/tasks?projectId=${projectId}`, { credentials: 'include' }),
+          fetch(`${API_BASE}/analytics?action=project-stats&projectId=${projectId}`, { credentials: 'include' }),
         ]);
 
         if (!tasksRes.ok || !statsRes.ok) throw new Error('Failed to fetch timeline data');

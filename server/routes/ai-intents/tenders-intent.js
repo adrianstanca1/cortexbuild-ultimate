@@ -8,8 +8,8 @@ async function handleTenders(user) {
   const orgId = user?.organization_id;
   const companyId = user?.company_id;
   const { rows } = await pool.query(
-    `SELECT title, client, value, status, submission_date, award_date FROM tenders WHERE (organization_id = $1 OR (organization_id IS NULL AND company_id = $2)) ORDER BY created_at DESC`,
-    [orgId, companyId]
+    `SELECT title, client, value, status, submission_date, award_date FROM tenders WHERE COALESCE(organization_id, company_id) = $1 ORDER BY created_at DESC`,
+    [orgId || companyId]
   );
   if (!rows.length) {
     return {
