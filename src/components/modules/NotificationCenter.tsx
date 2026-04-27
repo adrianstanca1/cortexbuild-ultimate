@@ -36,8 +36,16 @@ import {
   Sun,
   Wifi,
   WifiOff,
+  Mail,
+  Smartphone,
+  Activity,
+  TrendingUp,
+  BarChart3,
+  LineChart as LineChartIcon,
+  Send,
 } from 'lucide-react';
 import { toast } from 'sonner';
+import { BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { useNotificationCenter } from '@/hooks/useNotificationCenter';
 import { NotificationItem } from './NotificationItem';
 import { NotificationFilters } from './NotificationFilters';
@@ -46,7 +54,7 @@ import { NotificationHistory } from './NotificationHistory';
 import type { NotificationFilter } from '@/types/notification';
 
 // View modes
-type ViewMode = 'notifications' | 'settings' | 'history';
+type ViewMode = 'notifications' | 'settings' | 'digest' | 'analytics' | 'history';
 
 // Component Props
 interface NotificationCenterProps {
@@ -233,22 +241,411 @@ export function NotificationCenter({
 
   // Render settings view
   if (viewMode === 'settings') {
+    const [emailToggle, setEmailToggle] = useState(true);
+    const [pushToggle, setPushToggle] = useState(true);
+    const [inAppToggle, setInAppToggle] = useState(true);
+    const [smsToggle, setSmsToggle] = useState(false);
+    const [quietHoursEnabled, setQuietHoursEnabled] = useState(false);
+    const [quietFromTime, setQuietFromTime] = useState('22:00');
+    const [quietToTime, setQuietToTime] = useState('08:00');
+    const [timezone, setTimezone] = useState('UTC');
+
+    const handleSavePreferences = () => {
+      toast.success('Notification preferences saved', {
+        description: 'Your settings have been updated',
+      });
+    };
+
     return (
       <>
         {variant === 'modal' && (
           <div className="fixed inset-0 bg-black/50 z-[9998]" onClick={onClose} />
         )}
         <div className={`${positionClasses} ${sizeClasses} m-4`}>
-          <div className="card h-full shadow-2xl border border-base-300">
-            <NotificationCenterSettings
-              settings={settings}
-              onUpdateSettings={updateSettings}
-              onToggleCategory={toggleCategory}
-              onToggleQuietHours={toggleQuietHours}
-              onToggleSoundAlerts={toggleSoundAlerts}
-              onToggleBrowserNotifications={toggleBrowserNotifications}
-              onClose={() => setViewMode('notifications')}
-            />
+          <div className="card h-full shadow-2xl border border-base-300 flex flex-col">
+            <div className="p-4 border-b border-base-300">
+              <div className="flex items-center justify-between">
+                <h3 className="text-lg font-bold">Notification Settings</h3>
+                <button onClick={() => setViewMode('notifications')} className="btn btn-sm btn-ghost btn-circle">
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+            </div>
+
+            <div className="flex-1 overflow-y-auto p-4 space-y-6">
+              {/* Email Notifications */}
+              <div className="space-y-3">
+                <div className="flex items-center gap-2 mb-3">
+                  <Mail className="w-4 h-4 text-primary" />
+                  <h4 className="font-semibold text-sm">Email Notifications</h4>
+                </div>
+                <div className="bg-base-200 rounded-lg p-3 space-y-2">
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input type="checkbox" checked={emailToggle} onChange={(e) => setEmailToggle(e.target.checked)} className="checkbox checkbox-sm" />
+                    <span className="text-sm">New RFI</span>
+                  </label>
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input type="checkbox" defaultChecked className="checkbox checkbox-sm" />
+                    <span className="text-sm">Invoice Overdue</span>
+                  </label>
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input type="checkbox" defaultChecked className="checkbox checkbox-sm" />
+                    <span className="text-sm">Meeting Reminder</span>
+                  </label>
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input type="checkbox" defaultChecked className="checkbox checkbox-sm" />
+                    <span className="text-sm">Safety Incident</span>
+                  </label>
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input type="checkbox" defaultChecked className="checkbox checkbox-sm" />
+                    <span className="text-sm">Document Approval</span>
+                  </label>
+                </div>
+              </div>
+
+              {/* Push Notifications */}
+              <div className="space-y-3">
+                <div className="flex items-center gap-2 mb-3">
+                  <Smartphone className="w-4 h-4 text-info" />
+                  <h4 className="font-semibold text-sm">Push Notifications</h4>
+                </div>
+                <div className="bg-base-200 rounded-lg p-3 space-y-2">
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input type="checkbox" checked={pushToggle} onChange={(e) => setPushToggle(e.target.checked)} className="checkbox checkbox-sm" />
+                    <span className="text-sm">New RFI</span>
+                  </label>
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input type="checkbox" defaultChecked className="checkbox checkbox-sm" />
+                    <span className="text-sm">Urgent Updates</span>
+                  </label>
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input type="checkbox" defaultChecked className="checkbox checkbox-sm" />
+                    <span className="text-sm">Safety Alerts</span>
+                  </label>
+                </div>
+              </div>
+
+              {/* In-App Notifications */}
+              <div className="space-y-3">
+                <div className="flex items-center gap-2 mb-3">
+                  <Bell className="w-4 h-4 text-success" />
+                  <h4 className="font-semibold text-sm">In-App Notifications</h4>
+                </div>
+                <div className="bg-base-200 rounded-lg p-3 space-y-2">
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input type="checkbox" checked={inAppToggle} onChange={(e) => setInAppToggle(e.target.checked)} className="checkbox checkbox-sm" />
+                    <span className="text-sm">All Events</span>
+                  </label>
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input type="checkbox" defaultChecked className="checkbox checkbox-sm" />
+                    <span className="text-sm">Sound Alerts</span>
+                  </label>
+                </div>
+              </div>
+
+              {/* SMS Alerts */}
+              <div className="space-y-3">
+                <div className="flex items-center gap-2 mb-3">
+                  <Smartphone className="w-4 h-4 text-warning" />
+                  <h4 className="font-semibold text-sm">SMS Alerts</h4>
+                </div>
+                <div className="bg-base-200 rounded-lg p-3 space-y-2">
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input type="checkbox" checked={smsToggle} onChange={(e) => setSmsToggle(e.target.checked)} className="checkbox checkbox-sm" />
+                    <span className="text-sm">Critical Incidents Only</span>
+                  </label>
+                </div>
+              </div>
+
+              {/* Quiet Hours */}
+              <div className="space-y-3 border-t border-base-300 pt-4">
+                <div className="flex items-center gap-2 mb-3">
+                  <Moon className="w-4 h-4" />
+                  <h4 className="font-semibold text-sm">Quiet Hours</h4>
+                </div>
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input type="checkbox" checked={quietHoursEnabled} onChange={(e) => setQuietHoursEnabled(e.target.checked)} className="checkbox checkbox-sm" />
+                  <span className="text-sm">Enable Quiet Hours</span>
+                </label>
+                {quietHoursEnabled && (
+                  <div className="bg-base-200 rounded-lg p-3 space-y-3">
+                    <div className="flex gap-3">
+                      <div className="flex-1">
+                        <label className="text-xs font-medium text-base-content/60">From</label>
+                        <input type="time" value={quietFromTime} onChange={(e) => setQuietFromTime(e.target.value)} className="input input-bordered input-sm w-full mt-1" />
+                      </div>
+                      <div className="flex-1">
+                        <label className="text-xs font-medium text-base-content/60">To</label>
+                        <input type="time" value={quietToTime} onChange={(e) => setQuietToTime(e.target.value)} className="input input-bordered input-sm w-full mt-1" />
+                      </div>
+                    </div>
+                    <div>
+                      <label className="text-xs font-medium text-base-content/60">Timezone</label>
+                      <select value={timezone} onChange={(e) => setTimezone(e.target.value)} className="select select-bordered select-sm w-full mt-1">
+                        <option>UTC</option>
+                        <option>GMT</option>
+                        <option>EST</option>
+                        <option>CST</option>
+                        <option>PST</option>
+                      </select>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            <div className="p-4 border-t border-base-300 bg-base-200">
+              <button onClick={handleSavePreferences} className="btn btn-primary w-full gap-2">
+                <Check className="w-4 h-4" />
+                Save Preferences
+              </button>
+            </div>
+          </div>
+        </div>
+      </>
+    );
+  }
+
+  // Render digest view
+  if (viewMode === 'digest') {
+    const [digestFrequency, setDigestFrequency] = useState('daily');
+    const [digestTime, setDigestTime] = useState('09:00');
+    const [digestDay, setDigestDay] = useState('Monday');
+
+    const handleSendTestDigest = () => {
+      toast.success('Test digest sent', {
+        description: 'Check your email for the preview',
+      });
+    };
+
+    const digestHistory = [
+      { date: '2026-04-26', type: 'Daily', status: 'Delivered', itemsCount: 12 },
+      { date: '2026-04-25', type: 'Daily', status: 'Delivered', itemsCount: 8 },
+      { date: '2026-04-22', type: 'Weekly', status: 'Delivered', itemsCount: 24 },
+      { date: '2026-04-19', type: 'Daily', status: 'Delivered', itemsCount: 15 },
+    ];
+
+    return (
+      <>
+        {variant === 'modal' && (
+          <div className="fixed inset-0 bg-black/50 z-[9998]" onClick={onClose} />
+        )}
+        <div className={`${positionClasses} ${sizeClasses} m-4`}>
+          <div className="card h-full shadow-2xl border border-base-300 flex flex-col">
+            <div className="p-4 border-b border-base-300">
+              <div className="flex items-center justify-between">
+                <h3 className="text-lg font-bold">Notification Digest</h3>
+                <button onClick={() => setViewMode('notifications')} className="btn btn-sm btn-ghost btn-circle">
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+            </div>
+
+            <div className="flex-1 overflow-y-auto p-4 space-y-4">
+              {/* Frequency Selection */}
+              <div className="space-y-2">
+                <label className="text-sm font-semibold">Digest Frequency</label>
+                <select value={digestFrequency} onChange={(e) => setDigestFrequency(e.target.value)} className="select select-bordered select-sm w-full">
+                  <option value="immediate">Immediate</option>
+                  <option value="hourly">Hourly</option>
+                  <option value="daily">Daily</option>
+                  <option value="weekly">Weekly</option>
+                </select>
+              </div>
+
+              {/* Time Picker */}
+              {['hourly', 'daily', 'weekly'].includes(digestFrequency) && (
+                <div className="space-y-2 bg-base-200 rounded-lg p-3">
+                  <label className="text-sm font-medium">Send at</label>
+                  <input type="time" value={digestTime} onChange={(e) => setDigestTime(e.target.value)} className="input input-bordered input-sm w-full" />
+                </div>
+              )}
+
+              {/* Day Picker for Weekly */}
+              {digestFrequency === 'weekly' && (
+                <div className="space-y-2 bg-base-200 rounded-lg p-3">
+                  <label className="text-sm font-medium">Day of Week</label>
+                  <select value={digestDay} onChange={(e) => setDigestDay(e.target.value)} className="select select-bordered select-sm w-full">
+                    <option>Monday</option>
+                    <option>Tuesday</option>
+                    <option>Wednesday</option>
+                    <option>Thursday</option>
+                    <option>Friday</option>
+                    <option>Saturday</option>
+                    <option>Sunday</option>
+                  </select>
+                </div>
+              )}
+
+              {/* Digest Preview */}
+              <div className="space-y-2">
+                <label className="text-sm font-semibold">Digest Preview</label>
+                <div className="border border-base-300 rounded-lg p-4 bg-base-100 text-sm space-y-2 max-h-40 overflow-y-auto">
+                  <div className="font-mono text-xs">
+                    <div>Subject: Your {digestFrequency} notification digest</div>
+                    <div className="mt-2">────────────────</div>
+                    <div className="mt-2">Good morning,</div>
+                    <div className="mt-2">Here's your notification digest:</div>
+                    <div className="mt-2">• 3 new RFIs assigned</div>
+                    <div>• 1 invoice overdue</div>
+                    <div>• 2 meeting reminders</div>
+                    <div>• 1 safety incident</div>
+                    <div className="mt-2">────────────────</div>
+                    <div className="mt-2">Manage preferences</div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Send Test Button */}
+              <button onClick={handleSendTestDigest} className="btn btn-outline btn-sm w-full gap-2">
+                <Send className="w-4 h-4" />
+                Send Test Digest
+              </button>
+
+              {/* History */}
+              <div className="space-y-2 border-t border-base-300 pt-4">
+                <label className="text-sm font-semibold">Sent History</label>
+                <div className="space-y-1">
+                  {digestHistory.map((h, idx) => (
+                    <div key={idx} className="flex items-center justify-between text-xs bg-base-200 p-2 rounded">
+                      <div>
+                        <div>{h.date} — {h.type}</div>
+                        <div className="text-base-content/60">{h.itemsCount} items</div>
+                      </div>
+                      <span className="badge badge-success badge-outline">{h.status}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            <div className="p-4 border-t border-base-300 bg-base-200">
+              <button onClick={() => setViewMode('notifications')} className="btn btn-ghost btn-sm w-full">
+                Back
+              </button>
+            </div>
+          </div>
+        </div>
+      </>
+    );
+  }
+
+  // Render analytics view
+  if (viewMode === 'analytics') {
+    const categoryData = [
+      { name: 'Safety', value: 24 },
+      { name: 'Finance', value: 18 },
+      { name: 'Project', value: 32 },
+      { name: 'Admin', value: 14 },
+    ];
+
+    const trendData = [
+      { day: 'Mon', count: 45 },
+      { day: 'Tue', count: 52 },
+      { day: 'Wed', count: 38 },
+      { day: 'Thu', count: 61 },
+      { day: 'Fri', count: 55 },
+      { day: 'Sat', count: 28 },
+      { day: 'Sun', count: 35 },
+    ];
+
+    const topNotifications = [
+      { type: 'New RFI', count: 42, percentage: 18 },
+      { type: 'Invoice Overdue', count: 38, percentage: 16 },
+      { type: 'Meeting Reminder', count: 35, percentage: 15 },
+      { type: 'Safety Incident', count: 28, percentage: 12 },
+      { type: 'Document Approval', count: 24, percentage: 10 },
+    ];
+
+    return (
+      <>
+        {variant === 'modal' && (
+          <div className="fixed inset-0 bg-black/50 z-[9998]" onClick={onClose} />
+        )}
+        <div className={`${positionClasses} max-w-4xl ${sizeClasses} m-4`}>
+          <div className="card h-full shadow-2xl border border-base-300 flex flex-col">
+            <div className="p-4 border-b border-base-300">
+              <div className="flex items-center justify-between">
+                <h3 className="text-lg font-bold">Notification Analytics</h3>
+                <button onClick={() => setViewMode('notifications')} className="btn btn-sm btn-ghost btn-circle">
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+            </div>
+
+            <div className="flex-1 overflow-y-auto p-4 space-y-6">
+              {/* KPI Cards */}
+              <div className="grid grid-cols-4 gap-2">
+                <div className="bg-base-200 rounded-lg p-3">
+                  <div className="text-xs text-base-content/60">Sent Today</div>
+                  <div className="text-2xl font-bold">24</div>
+                </div>
+                <div className="bg-base-200 rounded-lg p-3">
+                  <div className="text-xs text-base-content/60">Read Rate</div>
+                  <div className="text-2xl font-bold">72%</div>
+                </div>
+                <div className="bg-base-200 rounded-lg p-3">
+                  <div className="text-xs text-base-content/60">Avg Response</div>
+                  <div className="text-2xl font-bold">2.3h</div>
+                </div>
+                <div className="bg-base-200 rounded-lg p-3">
+                  <div className="text-xs text-base-content/60">Unsubscribed</div>
+                  <div className="text-2xl font-bold">3</div>
+                </div>
+              </div>
+
+              {/* Category Chart */}
+              <div>
+                <h4 className="text-sm font-semibold mb-2">Notifications by Category</h4>
+                <ResponsiveContainer width="100%" height={250}>
+                  <BarChart data={categoryData}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.1)" />
+                    <XAxis dataKey="name" stroke="rgba(255,255,255,0.5)" />
+                    <YAxis stroke="rgba(255,255,255,0.5)" />
+                    <Tooltip contentStyle={{ backgroundColor: '#1f2937', border: 'none', borderRadius: '8px' }} />
+                    <Bar dataKey="value" fill="#3b82f6" />
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+
+              {/* Trend Chart */}
+              <div>
+                <h4 className="text-sm font-semibold mb-2">Volume Last 30 Days</h4>
+                <ResponsiveContainer width="100%" height={250}>
+                  <LineChart data={trendData}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.1)" />
+                    <XAxis dataKey="day" stroke="rgba(255,255,255,0.5)" />
+                    <YAxis stroke="rgba(255,255,255,0.5)" />
+                    <Tooltip contentStyle={{ backgroundColor: '#1f2937', border: 'none', borderRadius: '8px' }} />
+                    <Line type="monotone" dataKey="count" stroke="#10b981" strokeWidth={2} />
+                  </LineChart>
+                </ResponsiveContainer>
+              </div>
+
+              {/* Top Notifications Table */}
+              <div>
+                <h4 className="text-sm font-semibold mb-2">Most Triggered This Month</h4>
+                <div className="space-y-1">
+                  {topNotifications.map((n, idx) => (
+                    <div key={idx} className="flex items-center justify-between text-xs bg-base-200 p-2 rounded">
+                      <span>{n.type}</span>
+                      <div className="flex items-center gap-2">
+                        <span className="font-medium">{n.count}</span>
+                        <div className="bg-base-300 rounded-full h-2 w-24 overflow-hidden">
+                          <div className="bg-primary h-full" style={{ width: `${n.percentage * 10}%` }} />
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            <div className="p-4 border-t border-base-300 bg-base-200">
+              <button onClick={() => setViewMode('notifications')} className="btn btn-ghost btn-sm w-full">
+                Back
+              </button>
+            </div>
           </div>
         </div>
       </>
@@ -345,6 +742,20 @@ export function NotificationCenter({
                   title="Settings"
                 >
                   <Settings className="w-4 h-4" />
+                </button>
+                <button
+                  onClick={() => setViewMode('digest')}
+                  className="btn btn-sm btn-ghost btn-circle"
+                  title="Digest"
+                >
+                  <Mail className="w-4 h-4" />
+                </button>
+                <button
+                  onClick={() => setViewMode('analytics')}
+                  className="btn btn-sm btn-ghost btn-circle"
+                  title="Analytics"
+                >
+                  <Activity className="w-4 h-4" />
                 </button>
                 <button
                   onClick={() => setViewMode('history')}

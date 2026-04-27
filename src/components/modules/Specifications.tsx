@@ -3,7 +3,7 @@ import { useState } from 'react';
 import {
   FileText, Plus, Search, Download, Clock, Eye, Edit, X, Upload, Trash2,
   CheckSquare, Square, ChevronDown, ChevronRight, CheckCircle, AlertCircle,
-  FileCheck
+  FileCheck, Check, ThumbsUp, ThumbsDown, Archive, FileJson
 } from 'lucide-react';
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer
@@ -27,6 +27,40 @@ interface Specification {
   description: string;
   approvedBy?: string;
   documents?: { name: string; url: string }[];
+}
+
+interface ComplianceItem {
+  id: string;
+  section_number: string;
+  title: string;
+  requirement: string;
+  status: 'Compliant' | 'Non-Compliant' | 'Pending' | 'N/A';
+  evidence: string;
+  verified_by: string;
+  date: string;
+}
+
+interface SubstitutionRequest {
+  id: string;
+  request_number: string;
+  original_spec: string;
+  proposed_substitute: string;
+  requestor: string;
+  date: string;
+  status: 'Pending' | 'Approved' | 'Rejected';
+  technical_justification: string;
+  manufacturer: string;
+}
+
+interface SpecRevision {
+  id: string;
+  spec_ref: string;
+  spec_title: string;
+  rev_number: string;
+  date: string;
+  author: string;
+  description: string;
+  changed_sections: string[];
 }
 
 // Mock NBS data
@@ -80,6 +114,30 @@ export default function Specifications() {
   const [_includeNbs, _setIncludeNbs] = useState<Set<string>>(new Set());
   const [form, setForm] = useState({ title: '', project: '', section: '', discipline: '', description: '' });
   const [editItem, setEditItem] = useState<Record<string, any> | null>(null);
+  const [showComplianceModal, setShowComplianceModal] = useState(false);
+  const [showSubstitutionModal, setShowSubstitutionModal] = useState(false);
+  const [complianceFilterStatus, setComplianceFilterStatus] = useState<string>('all');
+  const [expandedRevision, setExpandedRevision] = useState<string | null>(null);
+  const [historyDateRange, setHistoryDateRange] = useState({ from: '2026-01-01', to: '2026-04-27' });
+  const [selectedRevisionSpec, setSelectedRevisionSpec] = useState<string>('all');
+
+  const mockComplianceItems: ComplianceItem[] = [
+    { id: '1', section_number: 'A10', title: 'Contract Requirements', requirement: 'Standard form of contract to be used', status: 'Compliant', evidence: 'Contract signed 2026-04-15', verified_by: 'Sarah Johnson', date: '2026-04-20' },
+    { id: '2', section_number: 'E10', title: 'Concrete Strength', requirement: 'Minimum C35 concrete for all foundations', status: 'Compliant', evidence: 'Mix design approved, test cubes passing', verified_by: 'John Smith', date: '2026-04-18' },
+    { id: '3', section_number: 'F10', title: 'Masonry Materials', requirement: 'Class B facing bricks per BS 3921', status: 'Non-Compliant', evidence: 'Supplier has changed to Class C bricks', verified_by: 'Mike Davis', date: '2026-04-25' },
+    { id: '4', section_number: 'H30', title: 'Roof Coverings', requirement: 'Tile roof with 50-year warranty', status: 'Pending', evidence: 'Warranty documentation pending from supplier', verified_by: 'Lisa Wong', date: '2026-04-16' },
+  ];
+
+  const mockSubstitutionRequests: SubstitutionRequest[] = [
+    { id: '1', request_number: 'SUB-2026-001', original_spec: 'G10 - Structural Steel Grade S355', proposed_substitute: 'Grade S275 with reinforced sections', requestor: 'Design Team', date: '2026-04-20', status: 'Pending', technical_justification: 'Cost saving of 8% with equivalent load capacity through section redesign', manufacturer: 'ArcelorMittal' },
+    { id: '2', request_number: 'SUB-2026-002', original_spec: 'J40 - DPM - 1200gsm polyethylene', proposed_substitute: 'Modified bitumen membrane 2.5mm thick', requestor: 'Site Manager', date: '2026-04-18', status: 'Approved', technical_justification: 'Better performance in high-moisture areas, easier installation', manufacturer: 'Sika' },
+  ];
+
+  const mockRevisions: SpecRevision[] = [
+    { id: '1', spec_ref: 'SPEC-E10', spec_title: 'In-situ Concrete Foundations', rev_number: '1.2', date: '2026-04-15', author: 'John Smith', description: 'Updated concrete strength requirements post geotechnical survey', changed_sections: ['E10.1', 'E10.3', 'E10.5'] },
+    { id: '2', spec_ref: 'SPEC-F10', spec_title: 'Masonry Materials', rev_number: '1.1', date: '2026-03-22', author: 'Sarah Johnson', description: 'Clarified brick bonding patterns and DPC installation', changed_sections: ['F10.2', 'F10.4'] },
+    { id: '3', spec_ref: 'SPEC-H30', spec_title: 'Roof Coverings', rev_number: '1.0', date: '2026-02-10', author: 'Mike Davis', description: 'Initial specification issue for construction phase', changed_sections: ['H30.1', 'H30.2', 'H30.3', 'H30.4'] },
+  ];
 
   const { useList, useCreate, useUpdate, useDelete } = useSpecifications;
   const { data: rawSpecs = [] } = useList();
@@ -229,6 +287,18 @@ export default function Specifications() {
               className={`px-4 py-3 font-medium transition-colors whitespace-nowrap ${activeTab === 'compliance' ? 'text-orange-400 border-b-2 border-orange-400' : 'text-gray-400 hover:text-gray-300'}`}
             >
               Compliance
+            </button>
+            <button
+              onClick={() => setActiveTab('substitutions')}
+              className={`px-4 py-3 font-medium transition-colors whitespace-nowrap ${activeTab === 'substitutions' ? 'text-orange-400 border-b-2 border-orange-400' : 'text-gray-400 hover:text-gray-300'}`}
+            >
+              Substitutions
+            </button>
+            <button
+              onClick={() => setActiveTab('history')}
+              className={`px-4 py-3 font-medium transition-colors whitespace-nowrap ${activeTab === 'history' ? 'text-orange-400 border-b-2 border-orange-400' : 'text-gray-400 hover:text-gray-300'}`}
+            >
+              History
             </button>
           </div>
 
@@ -456,77 +526,73 @@ export default function Specifications() {
 
           {activeTab === 'compliance' && (
             <div className="space-y-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {complianceKpis.map((kpi, idx) => (
-                  <div key={idx} className="border border-gray-700 rounded-lg p-4 bg-gray-800/20">
-                    <p className="text-gray-400 text-sm mb-2">{kpi.metric}</p>
-                    <div className="flex items-end gap-3">
-                      <div>
-                        <p className="text-4xl font-bold text-orange-400">{kpi.value}</p>
-                        <p className="text-gray-500 text-xs mt-1">/ {kpi.total} {kpi.unit}</p>
-                      </div>
-                      <div className="flex-1 h-16 flex items-end gap-1">
-                        {Array.from({ length: 10 }).map((_, i) => (
-                          <div
-                            key={i}
-                            className={`flex-1 h-full rounded-t ${
-                              i < Math.round((kpi.value / kpi.total) * 10) ? 'bg-gradient-to-t from-orange-500 to-orange-400' : 'bg-gray-700'
-                            }`}
-                          ></div>
-                        ))}
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-
-              <div>
-                <h3 className="text-white font-bold mb-4">Spec Compliance Tracker</h3>
-                <div className="space-y-3">
-                  <div className="border border-gray-700 rounded-lg p-4">
-                    <div className="flex items-center justify-between mb-3">
-                      <span className="text-gray-300 font-medium">Specification Compliance Rate</span>
-                      <span className="text-orange-400 font-bold text-lg">87%</span>
-                    </div>
-                    <div className="w-full bg-gray-700 rounded-full h-3 overflow-hidden">
-                      <div className="bg-gradient-to-r from-orange-500 to-orange-400 h-full" style={{ width: '87%' }}></div>
-                    </div>
-                  </div>
-
-                  <div className="border border-gray-700 rounded-lg p-4">
-                    <div className="flex items-start gap-3">
-                      <AlertCircle className="text-red-400 mt-1 flex-shrink-0" size={20} />
-                      <div className="flex-1">
-                        <p className="text-red-400 font-bold mb-2">3 Non-Compliant Items</p>
-                        <ul className="space-y-1 text-sm text-gray-300">
-                          <li>• Spec C10: Demolition method - pending RFI resolution</li>
-                          <li>• Spec H30: Roof warranty - vendor certification outstanding</li>
-                          <li>• Spec K10: Partition fire rating - requires independent testing</li>
-                        </ul>
-                      </div>
-                    </div>
-                  </div>
+              <div className="flex items-center justify-between mb-4">
+                <div>
+                  <h3 className="text-white font-bold">Specification Compliance Rate</h3>
+                  <p className="text-gray-400 text-xs mt-1">Overall: <span className="text-green-400 font-bold">75%</span> compliant</p>
                 </div>
+                <button
+                  type="button"
+                  className="flex items-center gap-2 px-3 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded text-sm font-medium"
+                >
+                  <Download size={16} /> Export Matrix
+                </button>
               </div>
 
-              <div>
-                <h3 className="text-white font-bold mb-4">Compliance Sign-Off Status</h3>
-                <ResponsiveContainer width="100%" height={250}>
-                  <BarChart data={[
-                    { section: 'Demolition', signoff: 45 },
-                    { section: 'Groundwork', signoff: 92 },
-                    { section: 'In-situ Concrete', signoff: 88 },
-                    { section: 'Masonry', signoff: 76 },
-                    { section: 'Structural Steel', signoff: 100 },
-                    { section: 'Roof', signoff: 65 },
-                  ]}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
-                    <XAxis dataKey="section" angle={-45} textAnchor="end" height={80} stroke="#9ca3af" />
-                    <YAxis stroke="#9ca3af" />
-                    <Tooltip contentStyle={{ backgroundColor: '#1f2937', border: '1px solid #374151' }} />
-                    <Bar dataKey="signoff" fill="#f97316" name="Sign-off %" />
-                  </BarChart>
-                </ResponsiveContainer>
+              <select
+                value={complianceFilterStatus}
+                onChange={(e) => setComplianceFilterStatus(e.target.value)}
+                className="px-3 py-2 input input-bordered text-white mb-4"
+              >
+                <option value="all">All Status</option>
+                <option value="Compliant">Compliant</option>
+                <option value="Non-Compliant">Non-Compliant</option>
+                <option value="Pending">Pending</option>
+                <option value="N/A">N/A</option>
+              </select>
+
+              <div className="cb-table-scroll touch-pan-x">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="border-b border-gray-700">
+                      <th className="text-left py-3 px-4 text-gray-400 font-medium">Section #</th>
+                      <th className="text-left py-3 px-4 text-gray-400 font-medium">Title</th>
+                      <th className="text-left py-3 px-4 text-gray-400 font-medium">Requirement</th>
+                      <th className="text-left py-3 px-4 text-gray-400 font-medium">Status</th>
+                      <th className="text-left py-3 px-4 text-gray-400 font-medium">Evidence</th>
+                      <th className="text-left py-3 px-4 text-gray-400 font-medium">Verified By</th>
+                      <th className="text-left py-3 px-4 text-gray-400 font-medium">Date</th>
+                      <th className="text-center py-3 px-4 text-gray-400 font-medium">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {mockComplianceItems.filter((item) => complianceFilterStatus === 'all' || item.status === complianceFilterStatus).map((item) => {
+                      const statusColor = item.status === 'Compliant' ? 'text-green-400 bg-green-500/10' : item.status === 'Non-Compliant' ? 'text-red-400 bg-red-500/10' : item.status === 'Pending' ? 'text-amber-400 bg-amber-500/10' : 'text-gray-400 bg-gray-500/10';
+                      return (
+                        <tr key={item.id} className="border-b border-gray-700/50 hover:bg-gray-800/30">
+                          <td className="py-3 px-4 font-mono text-orange-400 text-xs">{item.section_number}</td>
+                          <td className="py-3 px-4 text-white font-medium">{item.title}</td>
+                          <td className="py-3 px-4 text-gray-300 text-xs">{item.requirement}</td>
+                          <td className="py-3 px-4">
+                            <span className={`px-2 py-1 rounded text-xs font-medium ${statusColor}`}>{item.status}</span>
+                          </td>
+                          <td className="py-3 px-4 text-gray-300 text-xs">{item.evidence}</td>
+                          <td className="py-3 px-4 text-gray-300">{item.verified_by}</td>
+                          <td className="py-3 px-4 text-gray-300">{item.date}</td>
+                          <td className="py-3 px-4 text-center">
+                            <button
+                              type="button"
+                              onClick={() => setShowComplianceModal(true)}
+                              className="text-blue-400 hover:text-blue-300 text-xs font-medium"
+                            >
+                              Update
+                            </button>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -542,6 +608,170 @@ export default function Specifications() {
                   </h4>
                   <p className="text-gray-300 text-sm">92% of specifications have final sign-off from PM & QA</p>
                 </div>
+              </div>
+            </div>
+          )}
+
+          {activeTab === 'substitutions' && (
+            <div className="space-y-4">
+              <button
+                type="button"
+                onClick={() => setShowSubstitutionModal(true)}
+                className="flex items-center gap-2 px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg font-semibold mb-4"
+              >
+                <Plus size={18} /> Submit Substitution
+              </button>
+
+              <div className="cb-table-scroll touch-pan-x">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="border-b border-gray-700">
+                      <th className="text-left py-3 px-4 text-gray-400 font-medium">Request #</th>
+                      <th className="text-left py-3 px-4 text-gray-400 font-medium">Original Spec</th>
+                      <th className="text-left py-3 px-4 text-gray-400 font-medium">Proposed Substitute</th>
+                      <th className="text-left py-3 px-4 text-gray-400 font-medium">Requestor</th>
+                      <th className="text-left py-3 px-4 text-gray-400 font-medium">Date</th>
+                      <th className="text-left py-3 px-4 text-gray-400 font-medium">Status</th>
+                      <th className="text-center py-3 px-4 text-gray-400 font-medium">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {mockSubstitutionRequests.map((request) => {
+                      const statusColor = request.status === 'Approved' ? 'text-green-400 bg-green-500/10' : request.status === 'Rejected' ? 'text-red-400 bg-red-500/10' : 'text-amber-400 bg-amber-500/10';
+                      return (
+                        <tr key={request.id} className="border-b border-gray-700/50 hover:bg-gray-800/30">
+                          <td className="py-3 px-4 font-mono text-orange-400 text-xs">{request.request_number}</td>
+                          <td className="py-3 px-4 text-gray-300 text-xs">{request.original_spec}</td>
+                          <td className="py-3 px-4 text-white font-medium text-xs">{request.proposed_substitute}</td>
+                          <td className="py-3 px-4 text-gray-300">{request.requestor}</td>
+                          <td className="py-3 px-4 text-gray-300">{request.date}</td>
+                          <td className="py-3 px-4">
+                            <span className={`px-2 py-1 rounded text-xs font-medium ${statusColor}`}>{request.status}</span>
+                          </td>
+                          <td className="py-3 px-4 text-center space-x-2">
+                            {request.status === 'Pending' && (
+                              <>
+                                <button
+                                  type="button"
+                                  onClick={() => toast.success('Substitution approved')}
+                                  className="text-green-400 hover:text-green-300 text-xs font-medium"
+                                  title="Approve"
+                                >
+                                  <ThumbsUp size={14} className="inline" />
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => toast.error('Substitution rejected')}
+                                  className="text-red-400 hover:text-red-300 text-xs font-medium"
+                                  title="Reject"
+                                >
+                                  <ThumbsDown size={14} className="inline" />
+                                </button>
+                              </>
+                            )}
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+
+          {activeTab === 'history' && (
+            <div className="space-y-4">
+              <div className="grid grid-cols-2 gap-4 mb-4">
+                <div>
+                  <label className="block text-gray-400 text-xs mb-2">Spec Document</label>
+                  <select
+                    value={selectedRevisionSpec}
+                    onChange={(e) => setSelectedRevisionSpec(e.target.value)}
+                    className="w-full px-3 py-2 input input-bordered text-white"
+                  >
+                    <option value="all">All Documents</option>
+                    <option value="SPEC-E10">SPEC-E10 - In-situ Concrete Foundations</option>
+                    <option value="SPEC-F10">SPEC-F10 - Masonry Materials</option>
+                    <option value="SPEC-H30">SPEC-H30 - Roof Coverings</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-gray-400 text-xs mb-2">Date Range</label>
+                  <div className="flex gap-2">
+                    <input
+                      type="date"
+                      value={historyDateRange.from}
+                      onChange={(e) => setHistoryDateRange(r => ({ ...r, from: e.target.value }))}
+                      className="flex-1 px-3 py-2 input input-bordered text-white text-sm"
+                    />
+                    <input
+                      type="date"
+                      value={historyDateRange.to}
+                      onChange={(e) => setHistoryDateRange(r => ({ ...r, to: e.target.value }))}
+                      className="flex-1 px-3 py-2 input input-bordered text-white text-sm"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <div className="space-y-3">
+                {mockRevisions.map((revision) => {
+                  const specMatches = selectedRevisionSpec === 'all' || revision.spec_ref === selectedRevisionSpec;
+                  const dateInRange = new Date(revision.date) >= new Date(historyDateRange.from) && new Date(revision.date) <= new Date(historyDateRange.to);
+                  if (!specMatches || !dateInRange) return null;
+
+                  return (
+                    <div key={revision.id} className="border border-gray-700 rounded-lg p-4 hover:border-orange-500/50">
+                      <div className="flex items-start justify-between cursor-pointer" onClick={() => setExpandedRevision(expandedRevision === revision.id ? null : revision.id)}>
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2 mb-2">
+                            <span className="font-mono text-sm text-orange-400">{revision.spec_ref}</span>
+                            <span className="text-white font-medium">{revision.spec_title}</span>
+                            <span className="px-2 py-0.5 rounded text-xs bg-blue-500/10 text-blue-400">Rev {revision.rev_number}</span>
+                          </div>
+                          <div className="grid grid-cols-3 gap-4 text-sm">
+                            <div>
+                              <p className="text-gray-400 text-xs">Date</p>
+                              <p className="text-white">{revision.date}</p>
+                            </div>
+                            <div>
+                              <p className="text-gray-400 text-xs">Author</p>
+                              <p className="text-white">{revision.author}</p>
+                            </div>
+                            <div>
+                              <p className="text-gray-400 text-xs">Changed Sections</p>
+                              <p className="text-white">{revision.changed_sections.join(', ')}</p>
+                            </div>
+                          </div>
+                        </div>
+                        <button className="text-gray-400 hover:text-white ml-4">
+                          {expandedRevision === revision.id ? <ChevronDown size={20} /> : <ChevronRight size={20} />}
+                        </button>
+                      </div>
+                      {expandedRevision === revision.id && (
+                        <div className="mt-4 pt-4 border-t border-gray-700 space-y-4">
+                          <div>
+                            <p className="text-gray-400 text-xs mb-2">Description of Changes</p>
+                            <p className="text-white text-sm">{revision.description}</p>
+                          </div>
+                          <div>
+                            <p className="text-gray-400 text-xs mb-2">Changed Sections Detail</p>
+                            <div className="grid grid-cols-2 gap-4">
+                              <div className="border border-gray-700 rounded p-3 bg-gray-800/30">
+                                <p className="text-gray-400 text-xs mb-2 font-mono">Old Text (Rev {parseFloat(revision.rev_number) - 0.1})</p>
+                                <p className="text-gray-300 text-sm line-through">Previous specification text for section {revision.changed_sections[0]}...</p>
+                              </div>
+                              <div className="border border-orange-700/30 rounded p-3 bg-orange-900/10">
+                                <p className="text-orange-400 text-xs mb-2 font-mono">New Text (Rev {revision.rev_number})</p>
+                                <p className="text-white text-sm">Updated specification text with new requirements and clarifications...</p>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
               </div>
             </div>
           )}
@@ -607,6 +837,87 @@ export default function Specifications() {
                 <button type="button" onClick={() => setShowCreateModal(false)} className="px-4 py-2 text-gray-400 hover:text-white">Cancel</button>
                 <button type="button" onClick={handleCreate} disabled={createMutation.isPending || !form.title || !form.project} className="px-4 py-2 bg-orange-500 hover:bg-orange-600 text-white rounded-lg font-semibold disabled:opacity-50">
                   {createMutation.isPending ? 'Creating...' : 'Create Specification'}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {showComplianceModal && (
+          <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
+            <div className="bg-gray-900 border border-gray-700 rounded-xl w-full max-w-lg">
+              <div className="p-6 border-b border-gray-700 flex items-center justify-between">
+                <h3 className="text-xl font-display text-white">Update Compliance Status</h3>
+                <button type="button" onClick={() => setShowComplianceModal(false)} className="text-gray-400 hover:text-white"><X size={20} /></button>
+              </div>
+              <div className="p-6 space-y-4">
+                <div>
+                  <label htmlFor="comp-status" className="block text-gray-400 text-xs mb-1">Compliance Status *</label>
+                  <select id="comp-status" className="w-full px-3 py-2 input input-bordered text-white">
+                    <option value="Compliant">Compliant</option>
+                    <option value="Non-Compliant">Non-Compliant</option>
+                    <option value="Pending">Pending</option>
+                    <option value="N/A">N/A</option>
+                  </select>
+                </div>
+                <div>
+                  <label htmlFor="comp-evidence" className="block text-gray-400 text-xs mb-1">Evidence/Notes</label>
+                  <textarea id="comp-evidence" placeholder="Add evidence notes supporting this status..." rows={3} className="w-full px-3 py-2 input input-bordered text-white placeholder-gray-500" />
+                </div>
+                <div>
+                  <label className="block text-gray-400 text-xs mb-2">Reference Documents</label>
+                  <input type="file" className="w-full px-3 py-2 input input-bordered text-white text-sm" accept=".pdf,.doc,.docx" />
+                </div>
+              </div>
+              <div className="p-6 border-t border-gray-700 flex justify-end gap-3">
+                <button type="button" onClick={() => setShowComplianceModal(false)} className="px-4 py-2 text-gray-400 hover:text-white">Cancel</button>
+                <button type="button" onClick={() => { toast.success('Compliance status updated'); setShowComplianceModal(false); }} className="px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg font-semibold">
+                  Save Status
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {showSubstitutionModal && (
+          <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
+            <div className="bg-gray-900 border border-gray-700 rounded-xl w-full max-w-lg">
+              <div className="p-6 border-b border-gray-700 flex items-center justify-between">
+                <h3 className="text-xl font-display text-white">Submit Substitution Request</h3>
+                <button type="button" onClick={() => setShowSubstitutionModal(false)} className="text-gray-400 hover:text-white"><X size={20} /></button>
+              </div>
+              <div className="p-6 space-y-4">
+                <div>
+                  <label htmlFor="sub-spec" className="block text-gray-400 text-xs mb-1">Original Spec Section *</label>
+                  <select id="sub-spec" className="w-full px-3 py-2 input input-bordered text-white">
+                    <option value="">Select spec...</option>
+                    <option value="E10">E10 - In-situ Concrete Foundations</option>
+                    <option value="F10">F10 - Masonry Materials</option>
+                    <option value="G10">G10 - Structural Steel</option>
+                    <option value="H30">H30 - Roof Coverings</option>
+                  </select>
+                </div>
+                <div>
+                  <label htmlFor="sub-product" className="block text-gray-400 text-xs mb-1">Proposed Product/Material *</label>
+                  <input id="sub-product" type="text" placeholder="e.g. Grade S275 with reinforced sections" className="w-full px-3 py-2 input input-bordered text-white placeholder-gray-500" />
+                </div>
+                <div>
+                  <label htmlFor="sub-mfg" className="block text-gray-400 text-xs mb-1">Manufacturer</label>
+                  <input id="sub-mfg" type="text" placeholder="e.g. ArcelorMittal" className="w-full px-3 py-2 input input-bordered text-white placeholder-gray-500" />
+                </div>
+                <div>
+                  <label className="block text-gray-400 text-xs mb-2">Technical Data Sheet</label>
+                  <input type="file" className="w-full px-3 py-2 input input-bordered text-white text-sm" accept=".pdf,.doc,.docx" />
+                </div>
+                <div>
+                  <label htmlFor="sub-justification" className="block text-gray-400 text-xs mb-1">Technical Justification *</label>
+                  <textarea id="sub-justification" placeholder="Explain why this substitution maintains or improves performance..." rows={4} className="w-full px-3 py-2 input input-bordered text-white placeholder-gray-500" />
+                </div>
+              </div>
+              <div className="p-6 border-t border-gray-700 flex justify-end gap-3">
+                <button type="button" onClick={() => setShowSubstitutionModal(false)} className="px-4 py-2 text-gray-400 hover:text-white">Cancel</button>
+                <button type="button" onClick={() => { toast.success('Substitution submitted for review'); setShowSubstitutionModal(false); }} className="px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg font-semibold">
+                  Submit Request
                 </button>
               </div>
             </div>

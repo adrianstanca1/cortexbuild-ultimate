@@ -1,8 +1,9 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
   MapPin, Users, AlertTriangle, CheckCircle, Clock, Building2, Layers,
   Navigation2, CloudRain, Sun, Cloud, FileText, ShieldAlert, Wind,
-  Map, FileCheck, CheckSquare, Square, Trash2
+  Map, FileCheck, CheckSquare, Square, Trash2, Calendar, Edit3, Lock,
+  Download, Play, Pause, AlertCircle, Droplet, Thermometer, Eye, BarChart3
 } from 'lucide-react';
 import { useProjects, useDailyReports, useSafety, useSitePermits } from '../../hooks/useData';
 import { BulkActionsBar, useBulkSelection } from '../ui/BulkActions';
@@ -45,13 +46,16 @@ function WeatherIcon({ weather }: { weather: string }) {
   return <>{WEATHER_ICONS[weather] ?? <Cloud size={16} className="text-gray-400" />}</>;
 }
 
-type SubTab = 'live' | 'map' | 'weather' | 'permits' | 'reports' | 'safety';
+type SubTab = 'live' | 'map' | 'weather' | 'permits' | 'reports' | 'safety' | 'diary' | 'feed' | 'conditions';
 
 const TABS: { key: SubTab; label: string; icon: React.ElementType }[] = [
   { key: 'live', label: 'Live View', icon: Layers },
   { key: 'map', label: 'Site Map', icon: Map },
   { key: 'weather', label: 'Weather', icon: Cloud },
   { key: 'permits', label: 'Permits', icon: FileCheck },
+  { key: 'diary', label: 'Site Diary', icon: Calendar },
+  { key: 'feed', label: 'Live Feed', icon: AlertCircle },
+  { key: 'conditions', label: 'Conditions', icon: Thermometer },
   { key: 'reports', label: 'Daily Reports', icon: FileText },
   { key: 'safety', label: 'Safety', icon: ShieldAlert },
 ];
@@ -61,6 +65,29 @@ const STATUS_BADGE_COLORS: Record<string, string> = {
   'On Hold': 'bg-yellow-500/20 text-yellow-300 border-yellow-500/30',
   'Completed': 'bg-gray-500/20 text-gray-300 border-gray-500/30',
 };
+
+interface DiaryEntry {
+  id: string;
+  date: string;
+  weather: string;
+  temp: number;
+  labour: { trade: string; headcount: number }[];
+  plant: string[];
+  visitors: string[];
+  workCompleted: string;
+  issues: string[];
+  instructionsReceived: string;
+  locked: boolean;
+}
+
+interface LiveFeedEvent {
+  id: string;
+  timestamp: string;
+  type: 'check-in' | 'check-out' | 'vehicle' | 'delivery' | 'safety-alert' | 'equipment';
+  description: string;
+  location: string;
+  acknowledged: boolean;
+}
 
 export function FieldView() {
   const { data: rawProjects = [] } = useProjects.useList();
@@ -79,11 +106,19 @@ export function FieldView() {
     to: (p as AnyRow).to_date,
   })) as AnyRow[];
 
+  const today = new Date().toISOString().slice(0, 10);
   const [subTab, setSubTab] = useState<SubTab>('live');
   const [selectedProject, setSelectedProject] = useState<string>('all');
   const [selectedWeatherProject, setSelectedWeatherProject] = useState<string>('london');
   const [showPermitModal, setShowPermitModal] = useState(false);
   const [permitForm, setPermitForm] = useState({ type: '', site: '', issuedBy: '', from_date: '', to_date: '', status: 'Active' });
+  const [diaryDate, setDiaryDate] = useState(today);
+  const [diaryEntries, setDiaryEntries] = useState<DiaryEntry[]>([]);
+  const [editingDiary, setEditingDiary] = useState<DiaryEntry | null>(null);
+  const [showDiaryModal, setShowDiaryModal] = useState(false);
+  const [feedEvents, setFeedEvents] = useState<LiveFeedEvent[]>([]);
+  const [feedPaused, setFeedPaused] = useState(false);
+  const [feedFilter, setFeedFilter] = useState<LiveFeedEvent['type'] | 'all'>('all');
 
   const { selectedIds, toggle, clearSelection } = useBulkSelection();
 
@@ -107,9 +142,45 @@ export function FieldView() {
     } catch { toast.error('Failed to issue permit'); }
   };
 
-  const today = new Date().toISOString().slice(0, 10);
   const activeProjects = projects.filter(p => !['Completed', 'Cancelled'].includes(String(p.status ?? '')));
   const displayProjects = selectedProject === 'all' ? activeProjects : activeProjects.filter(p => String(p.id) === selectedProject);
+
+  // Generate mock live feed events
+  useEffect(() => {
+    const generateFeedEvents = () => {
+      const now = new Date();
+      const events: LiveFeedEvent[] = [
+        { id: '1', timestamp: new Date(now.getTime() - 5 * 60000).toISOString(), type: 'check-in', description: 'Site foreman John Smith', location: 'Main Gate', acknowledged: true },
+        { id: '2', timestamp: new Date(now.getTime() - 12 * 60000).toISOString(), type: 'vehicle', description: 'Concrete delivery truck arrived', location: 'Site A', acknowledged: true },
+        { id: '3', timestamp: new Date(now.getTime() - 18 * 60000).toISOString(), type: 'safety-alert', description: 'Hard hat required in Zone B', location: 'Zone B', acknowledged: false },
+        { id: '4', timestamp: new Date(now.getTime() - 25 * 60000).toISOString(), type: 'equipment', description: 'Crane safety inspection completed', location: 'Crane Area', acknowledged: true },
+        { id: '5', timestamp: new Date(now.getTime() - 35 * 60000).toISOString(), type: 'delivery', description: 'Steel reinforcement delivered', location: 'Warehouse', acknowledged: true },
+      ];
+      setFeedEvents(events);
+    };
+
+    if (!feedPaused) {
+      generateFeedEvents();
+      const interval = setInterval(generateFeedEvents, 30000);
+      return () => clearInterval(interval);
+    }
+    return undefined;
+  }, [feedPaused]);
+
+  // Mock diary entry
+  const currentDiaryEntry = diaryEntries.find(d => d.date === diaryDate) || {
+    id: `diary-${diaryDate}`,
+    date: diaryDate,
+    weather: 'Partly Cloudy',
+    temp: 12,
+    labour: [{ trade: 'Carpenters', headcount: 4 }, { trade: 'Plasterers', headcount: 3 }],
+    plant: ['Scaffolding', '20 tonne Crane'],
+    visitors: [],
+    workCompleted: 'Foundation concrete pour completed',
+    issues: [],
+    instructionsReceived: '',
+    locked: false,
+  };
 
   function getProjectReport(projectId: string) {
     return reports.find(r => String(r.project_id ?? '') === projectId && String(r.report_date ?? '') === today);
@@ -665,6 +736,333 @@ export function FieldView() {
             </div>
           </div>
         )
+      )}
+
+      {/* SITE DIARY */}
+      {subTab === 'diary' && (
+        <div className="space-y-6">
+          <div className="bg-gray-800 rounded-xl border border-gray-700 p-6">
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-lg font-semibold text-white">Site Diary</h2>
+              <div className="flex items-center gap-3">
+                <input
+                  type="date"
+                  value={diaryDate}
+                  onChange={(e) => setDiaryDate(e.target.value)}
+                  className="text-sm border border-gray-700 bg-gray-700 text-white rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-orange-500"
+                />
+                <button onClick={() => setShowDiaryModal(true)} className="px-3 py-2 text-xs bg-orange-600 hover:bg-orange-700 text-white rounded-lg font-medium transition-colors flex items-center gap-1">
+                  <Edit3 size={14} />
+                  Edit Entry
+                </button>
+              </div>
+            </div>
+
+            {currentDiaryEntry.locked ? (
+              <div className="bg-gray-700/50 rounded-lg p-6 border border-gray-600">
+                <div className="flex items-center gap-2 mb-4">
+                  <Lock size={16} className="text-yellow-400" />
+                  <p className="text-sm font-medium text-yellow-300">Entry Locked</p>
+                </div>
+                <p className="text-xs text-gray-400">This diary entry is locked and cannot be edited.</p>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                {/* Weather */}
+                <div className="bg-gray-700 rounded-lg p-4 border border-gray-600">
+                  <h3 className="text-sm font-semibold text-white mb-3">Weather</h3>
+                  <div className="flex items-center gap-3 mb-3">
+                    <WeatherIcon weather={currentDiaryEntry.weather} />
+                    <div>
+                      <p className="text-sm font-medium text-white">{currentDiaryEntry.weather}</p>
+                      <p className="text-xs text-gray-400">{currentDiaryEntry.temp}°C</p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Labour */}
+                <div className="bg-gray-700 rounded-lg p-4 border border-gray-600">
+                  <h3 className="text-sm font-semibold text-white mb-3">Labour on Site</h3>
+                  <div className="space-y-2">
+                    {currentDiaryEntry.labour.map((l, i) => (
+                      <div key={i} className="flex justify-between text-xs text-gray-300">
+                        <span>{l.trade}</span>
+                        <span className="font-medium">{l.headcount} workers</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Plant */}
+                <div className="bg-gray-700 rounded-lg p-4 border border-gray-600">
+                  <h3 className="text-sm font-semibold text-white mb-3">Plant on Site</h3>
+                  <div className="space-y-1">
+                    {currentDiaryEntry.plant.length > 0 ? (
+                      currentDiaryEntry.plant.map((p, i) => (
+                        <div key={i} className="text-xs text-gray-300 flex items-center gap-2">
+                          <div className="w-1.5 h-1.5 bg-orange-400 rounded-full" />
+                          {p}
+                        </div>
+                      ))
+                    ) : (
+                      <p className="text-xs text-gray-500">None</p>
+                    )}
+                  </div>
+                </div>
+
+                {/* Visitors */}
+                <div className="bg-gray-700 rounded-lg p-4 border border-gray-600">
+                  <h3 className="text-sm font-semibold text-white mb-3">Visitors</h3>
+                  <div className="space-y-1">
+                    {currentDiaryEntry.visitors.length > 0 ? (
+                      currentDiaryEntry.visitors.map((v, i) => (
+                        <div key={i} className="text-xs text-gray-300">{v}</div>
+                      ))
+                    ) : (
+                      <p className="text-xs text-gray-500">None</p>
+                    )}
+                  </div>
+                </div>
+
+                {/* Work Completed */}
+                <div className="lg:col-span-2 bg-gray-700 rounded-lg p-4 border border-gray-600">
+                  <h3 className="text-sm font-semibold text-white mb-3">Work Completed</h3>
+                  <p className="text-sm text-gray-300">{currentDiaryEntry.workCompleted}</p>
+                </div>
+
+                {/* Issues */}
+                <div className="lg:col-span-2 bg-gray-700 rounded-lg p-4 border border-gray-600">
+                  <h3 className="text-sm font-semibold text-white mb-3">Issues Encountered</h3>
+                  {currentDiaryEntry.issues.length > 0 ? (
+                    <div className="space-y-2">
+                      {currentDiaryEntry.issues.map((issue, i) => (
+                        <div key={i} className="text-xs bg-red-500/10 border border-red-500/30 rounded p-2 text-red-300 flex items-start gap-2">
+                          <AlertTriangle size={12} className="flex-shrink-0 mt-0.5" />
+                          {issue}
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="text-xs text-gray-500">None reported</p>
+                  )}
+                </div>
+
+                {/* Instructions */}
+                <div className="lg:col-span-2 bg-gray-700 rounded-lg p-4 border border-gray-600">
+                  <h3 className="text-sm font-semibold text-white mb-3">Instructions Received</h3>
+                  <p className="text-sm text-gray-300">{currentDiaryEntry.instructionsReceived || 'None'}</p>
+                </div>
+              </div>
+            )}
+
+            <div className="flex gap-2 mt-6 pt-6 border-t border-gray-700">
+              <button className="flex-1 px-4 py-2 text-sm bg-blue-600/20 hover:bg-blue-600/30 text-blue-300 rounded-lg border border-blue-600/30 transition-colors flex items-center justify-center gap-1">
+                <Download size={14} />
+                Export as PDF
+              </button>
+              {!currentDiaryEntry.locked && (
+                <button className="flex-1 px-4 py-2 text-sm bg-gray-700 hover:bg-gray-600 text-gray-300 rounded-lg border border-gray-600 transition-colors flex items-center justify-center gap-1">
+                  <Lock size={14} />
+                  Lock Entry
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* DIARY EDIT MODAL */}
+      {showDiaryModal && (
+        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50" onClick={() => setShowDiaryModal(false)}>
+          <div className="bg-gray-900 rounded-xl border border-gray-700 w-full max-w-2xl max-h-[90vh] p-6 overflow-y-auto" onClick={e => e.stopPropagation()}>
+            <h3 className="text-lg font-semibold text-white mb-4">Edit Diary Entry</h3>
+            <div className="space-y-4">
+              <div>
+                <label className="block text-xs text-gray-400 mb-1">Work Completed</label>
+                <textarea className="w-full bg-gray-800 border border-gray-600 rounded-lg px-3 py-2 text-white text-sm h-20 resize-none" defaultValue={currentDiaryEntry.workCompleted} />
+              </div>
+              <div>
+                <label className="block text-xs text-gray-400 mb-1">Issues Encountered</label>
+                <textarea className="w-full bg-gray-800 border border-gray-600 rounded-lg px-3 py-2 text-white text-sm h-16 resize-none" placeholder="Describe any issues…" />
+              </div>
+              <div>
+                <label className="block text-xs text-gray-400 mb-1">Instructions Received</label>
+                <textarea className="w-full bg-gray-800 border border-gray-600 rounded-lg px-3 py-2 text-white text-sm h-16 resize-none" defaultValue={currentDiaryEntry.instructionsReceived} />
+              </div>
+            </div>
+            <div className="flex gap-3 mt-5 justify-end">
+              <button onClick={() => setShowDiaryModal(false)} className="px-4 py-2 text-sm text-gray-400 hover:text-white">Cancel</button>
+              <button onClick={() => { setShowDiaryModal(false); toast.success('Diary entry saved'); }} className="px-4 py-2 text-sm bg-orange-600 hover:bg-orange-700 text-white rounded-lg">
+                Save Entry
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* LIVE FEED */}
+      {subTab === 'feed' && (
+        <div className="bg-gray-800 rounded-xl border border-gray-700 p-6">
+          <div className="flex items-center justify-between mb-6">
+            <div className="flex items-center gap-3">
+              <h2 className="text-lg font-semibold text-white">Live Activity Feed</h2>
+              <span className="text-xs bg-orange-500/20 text-orange-300 px-2 py-1 rounded-full border border-orange-500/30">{feedEvents.length} events</span>
+              {feedEvents.some(e => !e.acknowledged) && (
+                <span className="text-xs bg-red-500/20 text-red-300 px-2 py-1 rounded-full border border-red-500/30">{feedEvents.filter(e => !e.acknowledged).length} unacknowledged</span>
+              )}
+            </div>
+            <button onClick={() => setFeedPaused(!feedPaused)} className="flex items-center gap-2 px-3 py-2 text-xs bg-gray-700 hover:bg-gray-600 text-gray-300 rounded-lg transition-colors">
+              {feedPaused ? <Play size={14} /> : <Pause size={14} />}
+              {feedPaused ? 'Resume' : 'Pause'}
+            </button>
+          </div>
+
+          {/* Filter */}
+          <div className="mb-4 flex gap-2 flex-wrap">
+            {(['all', 'check-in', 'check-out', 'vehicle', 'delivery', 'safety-alert', 'equipment'] as const).map(f => (
+              <button
+                key={f}
+                onClick={() => setFeedFilter(f)}
+                className={`px-3 py-1.5 text-xs rounded-lg border transition-colors ${
+                  feedFilter === f
+                    ? 'bg-orange-600 border-orange-500 text-white'
+                    : 'bg-gray-700 border-gray-600 text-gray-300 hover:bg-gray-600'
+                }`}
+              >
+                {f === 'all' ? 'All Events' : f.replace('-', ' ').toUpperCase()}
+              </button>
+            ))}
+          </div>
+
+          {/* Events */}
+          <div className="space-y-2">
+            {feedEvents
+              .filter(e => feedFilter === 'all' || e.type === feedFilter)
+              .map(event => (
+                <div key={event.id} className={`p-4 rounded-lg border flex items-start gap-3 ${event.acknowledged ? 'bg-gray-700/50 border-gray-600' : 'bg-red-500/10 border-red-500/30'}`}>
+                  <div className={`w-2 h-2 rounded-full flex-shrink-0 mt-1.5 ${
+                    event.type === 'safety-alert' ? 'bg-red-400' : 'bg-orange-400'
+                  }`} />
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-baseline gap-2">
+                      <p className="text-sm font-medium text-white">{event.description}</p>
+                      <span className="text-xs text-gray-500 whitespace-nowrap">
+                        {new Date(event.timestamp).toLocaleTimeString()}
+                      </span>
+                    </div>
+                    <p className="text-xs text-gray-400 mt-1 flex items-center gap-1">
+                      <MapPin size={10} />
+                      {event.location}
+                    </p>
+                  </div>
+                  {!event.acknowledged && (
+                    <button className="px-2 py-1 text-xs bg-red-600 hover:bg-red-700 text-white rounded transition-colors flex-shrink-0">
+                      Acknowledge
+                    </button>
+                  )}
+                </div>
+              ))}
+          </div>
+        </div>
+      )}
+
+      {/* CONDITIONS DASHBOARD */}
+      {subTab === 'conditions' && (
+        <div className="space-y-6">
+          {/* Current Conditions */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div className="bg-gray-800 rounded-xl border border-gray-700 p-4">
+              <p className="text-xs text-gray-400 mb-2">Temperature</p>
+              <p className="text-2xl font-display text-white">12°C</p>
+              <p className="text-xs text-gray-500 mt-1">Clear conditions</p>
+            </div>
+            <div className="bg-gray-800 rounded-xl border border-gray-700 p-4">
+              <p className="text-xs text-gray-400 mb-2">Humidity</p>
+              <p className="text-2xl font-display text-white">68%</p>
+              <p className="text-xs text-gray-500 mt-1">Moderate</p>
+            </div>
+            <div className="bg-gray-800 rounded-xl border border-gray-700 p-4">
+              <p className="text-xs text-gray-400 mb-2">Wind Speed</p>
+              <p className="text-2xl font-display text-white">8 mph</p>
+              <p className="text-xs text-gray-500 mt-1">Light breeze</p>
+            </div>
+            <div className="bg-gray-800 rounded-xl border border-gray-700 p-4">
+              <p className="text-xs text-gray-400 mb-2">UV Index</p>
+              <p className="text-2xl font-display text-white">3</p>
+              <p className="text-xs text-gray-500 mt-1">Moderate</p>
+            </div>
+          </div>
+
+          {/* 5-Day Forecast */}
+          <div className="bg-gray-800 rounded-xl border border-gray-700 p-6">
+            <h3 className="text-lg font-semibold text-white mb-4">5-Day Forecast</h3>
+            <div className="grid grid-cols-1 md:grid-cols-5 gap-3">
+              {get7DayForecast().slice(0, 5).map((day, idx) => (
+                <div key={idx} className="bg-gray-700 rounded-lg p-3 text-center border border-gray-600">
+                  <p className="text-xs font-medium text-gray-300 mb-2">{day.day}</p>
+                  <div className="flex justify-center mb-2">
+                    <WeatherIcon weather={day.weather} />
+                  </div>
+                  <p className="text-xs text-gray-300 mb-1">{day.weather}</p>
+                  <p className="text-lg font-display text-white">{day.temp}°C</p>
+                  <div className={`text-xs px-1.5 py-0.5 rounded mt-2 border ${day.suitable ? 'bg-green-500/20 text-green-300 border-green-500/30' : 'bg-red-500/20 text-red-300 border-red-500/30'}`}>
+                    {day.suitable ? 'OK' : 'Risky'}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Ground Conditions */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <div className="bg-gray-800 rounded-xl border border-gray-700 p-6">
+              <h3 className="text-lg font-semibold text-white mb-4">Ground Conditions</h3>
+              <div className="space-y-3">
+                <div className="flex items-center justify-between p-3 bg-gray-700 rounded-lg border border-gray-600">
+                  <span className="text-sm text-gray-300">Frost Risk</span>
+                  <span className="text-sm font-medium text-green-400">Low</span>
+                </div>
+                <div className="flex items-center justify-between p-3 bg-gray-700 rounded-lg border border-gray-600">
+                  <span className="text-sm text-gray-300">Water Table Level</span>
+                  <span className="text-sm font-medium text-blue-400">0.8m below surface</span>
+                </div>
+                <div className="flex items-center justify-between p-3 bg-gray-700 rounded-lg border border-gray-600">
+                  <span className="text-sm text-gray-300">Contamination Zones</span>
+                  <span className="text-sm font-medium text-orange-400">Zone A active</span>
+                </div>
+              </div>
+            </div>
+
+            <div className="bg-gray-800 rounded-xl border border-gray-700 p-6">
+              <h3 className="text-lg font-semibold text-white mb-4">Working Restrictions</h3>
+              <div className="space-y-2">
+                <div className="p-3 bg-green-500/10 border border-green-500/30 rounded-lg text-sm text-green-300">
+                  ✓ Concrete pours allowed (temp {'>'} 5°C)
+                </div>
+                <div className="p-3 bg-green-500/10 border border-green-500/30 rounded-lg text-sm text-green-300">
+                  ✓ Scaffolding work safe
+                </div>
+                <div className="p-3 bg-yellow-500/10 border border-yellow-500/30 rounded-lg text-sm text-yellow-300">
+                  ⚠ Roof work caution (wind {'>'} 8 mph)
+                </div>
+                <div className="p-3 bg-yellow-500/10 border border-yellow-500/30 rounded-lg text-sm text-yellow-300">
+                  ⚠ Excavation restricted in Zone A
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Historical Chart Placeholder */}
+          <div className="bg-gray-800 rounded-xl border border-gray-700 p-6">
+            <h3 className="text-lg font-semibold text-white mb-4">30-Day Temperature Trend</h3>
+            <div className="h-64 bg-gray-700 rounded-lg border border-gray-600 flex items-center justify-center text-gray-500">
+              <div className="text-center">
+                <BarChart3 size={32} className="mx-auto mb-2 opacity-30" />
+                <p className="text-sm">Temperature chart</p>
+              </div>
+            </div>
+          </div>
+        </div>
       )}
 
       <BulkActionsBar

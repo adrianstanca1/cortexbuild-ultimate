@@ -9,8 +9,15 @@ import {
   Filter,
   Download,
   MessageSquare,
-  Eye
+  Eye,
+  BarChart3,
+  LineChart as LineChartIcon,
+  Plus,
+  Send,
+  TrendingUp,
+  X,
 } from 'lucide-react';
+import { BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { submittalsApi } from '../../services/api';
 import { toast } from 'sonner';
 import { ModuleBreadcrumbs } from '../ui/Breadcrumbs';
@@ -31,6 +38,20 @@ interface Submittal {
   comments: number;
   revisionNumber: number;
   trade: string;
+  specSection?: string;
+  discipline?: string;
+  reviewDays?: number;
+  requiredBy?: Date;
+}
+
+interface Transmittal {
+  id: string;
+  number: string;
+  date: Date;
+  to: string;
+  subject: string;
+  submittalIds: string[];
+  status: 'draft' | 'sent' | 'received' | 'archived';
 }
 
 // API response shape maps to Submittal interface
@@ -72,6 +93,10 @@ const MOCK_SUBMITTALS: Submittal[] = [
     comments: 3,
     revisionNumber: 2,
     trade: 'Structural',
+    specSection: '05120',
+    discipline: 'Structural Steel',
+    reviewDays: 5,
+    requiredBy: new Date('2026-04-05'),
   },
   {
     id: '2',
@@ -89,6 +114,10 @@ const MOCK_SUBMITTALS: Submittal[] = [
     comments: 5,
     revisionNumber: 1,
     trade: 'HVAC',
+    specSection: '23050',
+    discipline: 'HVAC',
+    reviewDays: 3,
+    requiredBy: new Date('2026-04-02'),
   },
   {
     id: '3',
@@ -106,6 +135,10 @@ const MOCK_SUBMITTALS: Submittal[] = [
     comments: 0,
     revisionNumber: 1,
     trade: 'Exterior',
+    specSection: '08800',
+    discipline: 'Glazing',
+    reviewDays: 7,
+    requiredBy: new Date('2026-04-10'),
   },
   {
     id: '4',
@@ -123,6 +156,10 @@ const MOCK_SUBMITTALS: Submittal[] = [
     comments: 2,
     revisionNumber: 1,
     trade: 'Fire Safety',
+    specSection: '07840',
+    discipline: 'Fire Protection',
+    reviewDays: 3,
+    requiredBy: new Date('2026-03-28'),
   },
   {
     id: '5',
@@ -140,15 +177,32 @@ const MOCK_SUBMITTALS: Submittal[] = [
     comments: 7,
     revisionNumber: 3,
     trade: 'Concrete',
+    specSection: '03300',
+    discipline: 'Concrete',
+    reviewDays: 4,
+    requiredBy: new Date('2026-03-25'),
   },
 ];
 
+const MOCK_TRANSMITTALS: Transmittal[] = [
+  { id: '1', number: 'TM-001', date: new Date('2026-04-26'), to: 'Main Contractor', subject: 'Submittal Package - Week 17', submittalIds: ['1', '2'], status: 'sent' },
+  { id: '2', number: 'TM-002', date: new Date('2026-04-22'), to: 'Design Architect', subject: 'Review Cycle 2 - Structural & HVAC', submittalIds: ['1'], status: 'received' },
+  { id: '3', number: 'TM-003', date: new Date('2026-04-19'), to: 'Main Contractor', subject: 'Fire Safety Approval', submittalIds: ['4'], status: 'archived' },
+];
+
 export const SubmittalManagement: React.FC = () => {
-  const [activeTab, setActiveTab] = useState<'all' | 'pending' | 'approved' | 'rejected'>('all');
+  const [activeTab, setActiveTab] = useState<'log' | 'review' | 'schedule' | 'analytics' | 'transmittals'>('log');
+  const [filterTab, setFilterTab] = useState<'all' | 'pending' | 'approved' | 'rejected'>('all');
   const [selectedSubmittal, setSelectedSubmittal] = useState<Submittal | null>(null);
+  const [showTransmittalModal, setShowTransmittalModal] = useState(false);
   const [_showFilters, _setShowFilters] = useState(false);
   const [submittals, setSubmittals] = useState<Submittal[]>([]);
+  const [transmittals, setTransmittals] = useState<Transmittal[]>([]);
   const [_loading, setLoading] = useState(true);
+  const [selectedForTransmittal, setSelectedForTransmittal] = useState<Set<string>>(new Set());
+  const [filterStatus, setFilterStatus] = useState('');
+  const [filterDiscipline, setFilterDiscipline] = useState('');
+  const [filterSpecSection, setFilterSpecSection] = useState('');
 
   useEffect(() => {
     async function loadSubmittals() {
@@ -161,9 +215,11 @@ export const SubmittalManagement: React.FC = () => {
             ? (data as Record<string, unknown>).submittals as Record<string, unknown>[]
             : [];
         setSubmittals(items.map((item) => mapApiToSubmittal(item)));
+        setTransmittals(MOCK_TRANSMITTALS);
       } catch {
         toast.error('Failed to load submittals — using offline data');
         setSubmittals(MOCK_SUBMITTALS);
+        setTransmittals(MOCK_TRANSMITTALS);
       } finally {
         setLoading(false);
       }
@@ -221,10 +277,17 @@ export const SubmittalManagement: React.FC = () => {
   };
 
   const filteredSubmittals = submittals.filter(submittal => {
-    if (activeTab === 'all') return true;
-    if (activeTab === 'pending') return ['pending', 'under-review'].includes(submittal.status);
-    if (activeTab === 'approved') return ['approved', 'approved-with-comments'].includes(submittal.status);
-    if (activeTab === 'rejected') return ['rejected', 'resubmit-required'].includes(submittal.status);
+    if (filterTab === 'all') return true;
+    if (filterTab === 'pending') return ['pending', 'under-review'].includes(submittal.status);
+    if (filterTab === 'approved') return ['approved', 'approved-with-comments'].includes(submittal.status);
+    if (filterTab === 'rejected') return ['rejected', 'resubmit-required'].includes(submittal.status);
+    return true;
+  });
+
+  const logFilteredSubmittals = submittals.filter(submittal => {
+    if (filterStatus && submittal.status !== filterStatus) return false;
+    if (filterDiscipline && submittal.discipline !== filterDiscipline) return false;
+    if (filterSpecSection && submittal.specSection !== filterSpecSection) return false;
     return true;
   });
 
@@ -316,15 +379,16 @@ export const SubmittalManagement: React.FC = () => {
         </div>
       </div>
 
-      {/* Tabs */}
+      {/* Main Tabs */}
       <div className="card">
         <div className="card-header">
           <div className="flex space-x-1 bg-gray-100 rounded-lg p-1">
             {[
-              { key: 'all', label: `All (${statusCounts.total})` },
-              { key: 'pending', label: `Pending (${statusCounts.pending})` },
-              { key: 'approved', label: `Approved (${statusCounts.approved})` },
-              { key: 'rejected', label: `Rejected (${statusCounts.rejected})` }
+              { key: 'log', label: 'Log' },
+              { key: 'review', label: 'Review' },
+              { key: 'schedule', label: 'Schedule' },
+              { key: 'analytics', label: 'Analytics' },
+              { key: 'transmittals', label: 'Transmittals' }
             ].map(({ key, label }) => (
               <button
                 key={key}
@@ -333,7 +397,7 @@ export const SubmittalManagement: React.FC = () => {
                     ? 'bg-white text-gray-900 shadow-sm'
                     : 'text-gray-600 hover:text-gray-900'
                 }`}
-                onClick={() => setActiveTab(key as 'all' | 'pending' | 'approved' | 'rejected')}
+                onClick={() => setActiveTab(key as 'log' | 'review' | 'schedule' | 'analytics' | 'transmittals')}
               >
                 {label}
               </button>
@@ -342,93 +406,307 @@ export const SubmittalManagement: React.FC = () => {
         </div>
 
         <div className="card-content">
-          <div className="cb-table-scroll touch-pan-x">
-            <table className="w-full">
-              <thead>
-                <tr className="border-b border-gray-200">
-                  <th className="text-left py-3 px-4 font-semibold text-gray-700">Submittal</th>
-                  <th className="text-left py-3 px-4 font-semibold text-gray-700">Type</th>
-                  <th className="text-left py-3 px-4 font-semibold text-gray-700">Submitted By</th>
-                  <th className="text-left py-3 px-4 font-semibold text-gray-700">Due Date</th>
-                  <th className="text-center py-3 px-4 font-semibold text-gray-700">Priority</th>
-                  <th className="text-center py-3 px-4 font-semibold text-gray-700">Status</th>
-                  <th className="text-center py-3 px-4 font-semibold text-gray-700">Comments</th>
-                  <th className="text-center py-3 px-4 font-semibold text-gray-700">Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {filteredSubmittals.map((submittal) => {
-                  const daysUntilDue = getDaysUntilDue(submittal.dueDate);
-                  const isOverdue = daysUntilDue < 0;
-                  const isDueSoon = daysUntilDue <= 3 && daysUntilDue >= 0;
-
-                  return (
-                    <tr
-                      key={submittal.id}
-                      className="border-b border-gray-100 hover:bg-gray-50 cursor-pointer"
-                      onClick={() => setSelectedSubmittal(submittal)}
-                    >
-                      <td className="py-4 px-4">
-                        <div>
-                          <div className="font-medium text-gray-900">{submittal.number}</div>
-                          <div className="text-sm text-gray-600">{submittal.title}</div>
-                          <div className="text-xs text-gray-500">{submittal.trade}</div>
-                        </div>
-                      </td>
-                      <td className="py-4 px-4">
-                        <span className="px-2 py-1 bg-gray-100 text-gray-800 rounded text-xs font-medium">
-                          {submittal.type}
-                        </span>
-                      </td>
-                      <td className="py-4 px-4">
-                        <div className="text-sm">{submittal.submittedBy}</div>
-                        <div className="text-xs text-gray-500">Rev {submittal.revisionNumber}</div>
-                      </td>
-                      <td className="py-4 px-4">
-                        <div className={`text-sm ${isOverdue ? 'text-red-600' : isDueSoon ? 'text-yellow-600' : 'text-gray-900'}`}>
-                          {submittal.dueDate.toLocaleDateString()}
-                        </div>
-                        <div className={`text-xs ${isOverdue ? 'text-red-600' : isDueSoon ? 'text-yellow-600' : 'text-gray-500'}`}>
-                          {isOverdue ? `${Math.abs(daysUntilDue)} days overdue` : 
-                           isDueSoon ? `${daysUntilDue} days left` : 
-                           `${daysUntilDue} days`}
-                        </div>
-                      </td>
-                      <td className="py-4 px-4 text-center">
-                        <span className={`px-2 py-1 rounded text-xs font-medium ${getPriorityColor(submittal.priority)}`}>
-                          {submittal.priority}
-                        </span>
-                      </td>
-                      <td className="py-4 px-4 text-center">
-                        <div className="flex items-center justify-center gap-1">
-                          {getStatusIcon(submittal.status)}
+          {/* LOG TAB */}
+          {activeTab === 'log' && (
+            <div className="space-y-4">
+              <div className="grid grid-cols-3 gap-3 mb-4">
+                <select value={filterStatus} onChange={(e) => setFilterStatus(e.target.value)} className="select select-bordered select-sm">
+                  <option value="">All Statuses</option>
+                  <option value="pending">Pending</option>
+                  <option value="under-review">Under Review</option>
+                  <option value="approved">Approved</option>
+                  <option value="rejected">Rejected</option>
+                </select>
+                <select value={filterDiscipline} onChange={(e) => setFilterDiscipline(e.target.value)} className="select select-bordered select-sm">
+                  <option value="">All Disciplines</option>
+                  <option value="Structural Steel">Structural Steel</option>
+                  <option value="HVAC">HVAC</option>
+                  <option value="Glazing">Glazing</option>
+                  <option value="Fire Protection">Fire Protection</option>
+                  <option value="Concrete">Concrete</option>
+                </select>
+                <select value={filterSpecSection} onChange={(e) => setFilterSpecSection(e.target.value)} className="select select-bordered select-sm">
+                  <option value="">All Spec Sections</option>
+                  <option value="05120">05120</option>
+                  <option value="23050">23050</option>
+                  <option value="08800">08800</option>
+                  <option value="07840">07840</option>
+                  <option value="03300">03300</option>
+                </select>
+              </div>
+              <div className="cb-table-scroll touch-pan-x">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="border-b border-gray-200">
+                      <th className="text-left py-3 px-4 font-semibold">#</th>
+                      <th className="text-left py-3 px-4 font-semibold">Title</th>
+                      <th className="text-left py-3 px-4 font-semibold">Spec Section</th>
+                      <th className="text-left py-3 px-4 font-semibold">Discipline</th>
+                      <th className="text-left py-3 px-4 font-semibold">Submitted</th>
+                      <th className="text-left py-3 px-4 font-semibold">Due</th>
+                      <th className="text-center py-3 px-4 font-semibold">Status</th>
+                      <th className="text-center py-3 px-4 font-semibold">Reviewer</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {logFilteredSubmittals.map((submittal) => (
+                      <tr key={submittal.id} className="border-b border-gray-100 hover:bg-gray-50 cursor-pointer" onClick={() => setSelectedSubmittal(submittal)}>
+                        <td className="py-3 px-4 font-medium">{submittal.number}</td>
+                        <td className="py-3 px-4">
+                          <div className="font-medium">{submittal.title}</div>
+                          <div className="text-xs text-gray-500">{submittal.type}</div>
+                        </td>
+                        <td className="py-3 px-4">{submittal.specSection}</td>
+                        <td className="py-3 px-4">{submittal.discipline}</td>
+                        <td className="py-3 px-4 text-xs">{submittal.submittedDate.toLocaleDateString()}</td>
+                        <td className="py-3 px-4 text-xs">{submittal.dueDate.toLocaleDateString()}</td>
+                        <td className="py-3 px-4 text-center">
                           <span className={`px-2 py-1 rounded text-xs font-medium ${getStatusColor(submittal.status)}`}>
                             {submittal.status.replace('-', ' ')}
                           </span>
-                        </div>
-                      </td>
-                      <td className="py-4 px-4 text-center">
-                        <div className="flex items-center justify-center gap-1">
-                          <MessageSquare className="h-4 w-4 text-gray-500" />
-                          <span className="text-sm">{submittal.comments}</span>
-                        </div>
-                      </td>
-                      <td className="py-4 px-4 text-center">
-                        <div className="flex items-center justify-center gap-2">
-                          <button className="text-gray-600 hover:text-gray-800">
-                            <Eye className="h-4 w-4" />
-                          </button>
-                          <button className="text-gray-600 hover:text-gray-800">
-                            <Download className="h-4 w-4" />
-                          </button>
-                        </div>
-                      </td>
+                        </td>
+                        <td className="py-3 px-4 text-center text-xs">{submittal.reviewer}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+
+          {/* REVIEW TAB */}
+          {activeTab === 'review' && (
+            <div className="space-y-4 p-4">
+              {submittals
+                .filter(s => ['pending', 'under-review'].includes(s.status))
+                .map((submittal) => (
+                  <div key={submittal.id} className="border border-gray-200 rounded-lg p-4 space-y-3">
+                    <div className="flex justify-between items-start">
+                      <div>
+                        <h4 className="font-bold text-gray-900">{submittal.number}: {submittal.title}</h4>
+                        <p className="text-sm text-gray-600">Submitted by {submittal.submittedBy}</p>
+                      </div>
+                      <span className={`px-2 py-1 rounded text-xs font-medium ${getPriorityColor(submittal.priority)}`}>
+                        {submittal.priority}
+                      </span>
+                    </div>
+                    <textarea placeholder="Add comments..." className="textarea textarea-bordered textarea-sm w-full" rows={2} />
+                    <div className="flex gap-2 justify-end">
+                      <button className="btn btn-sm btn-error gap-1">
+                        <XCircle className="h-4 w-4" />
+                        Reject
+                      </button>
+                      <button className="btn btn-sm btn-warning gap-1">
+                        <AlertCircle className="h-4 w-4" />
+                        Revisions
+                      </button>
+                      <button className="btn btn-sm btn-success gap-1">
+                        <CheckCircle className="h-4 w-4" />
+                        Approve
+                      </button>
+                    </div>
+                  </div>
+                ))}
+            </div>
+          )}
+
+          {/* SCHEDULE TAB */}
+          {activeTab === 'schedule' && (
+            <div className="cb-table-scroll touch-pan-x">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b border-gray-200">
+                    <th className="text-left py-3 px-4 font-semibold">Submittal</th>
+                    <th className="text-center py-3 px-4 font-semibold">Submit By</th>
+                    <th className="text-center py-3 px-4 font-semibold">Review Days</th>
+                    <th className="text-center py-3 px-4 font-semibold">Required By</th>
+                    <th className="text-center py-3 px-4 font-semibold">Status</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {submittals.map((submittal) => {
+                    const daysUntilDue = getDaysUntilDue(submittal.requiredBy || submittal.dueDate);
+                    const isOverdue = daysUntilDue < 0;
+                    const isAtRisk = daysUntilDue < 2 && daysUntilDue >= 0;
+                    const onTrack = daysUntilDue >= 2;
+
+                    return (
+                      <tr key={submittal.id} className="border-b border-gray-100">
+                        <td className="py-3 px-4 font-medium">{submittal.number}: {submittal.title}</td>
+                        <td className="py-3 px-4 text-center text-xs">{submittal.submittedDate.toLocaleDateString()}</td>
+                        <td className="py-3 px-4 text-center text-xs font-medium">{submittal.reviewDays} days</td>
+                        <td className="py-3 px-4 text-center text-xs">{(submittal.requiredBy || submittal.dueDate).toLocaleDateString()}</td>
+                        <td className="py-3 px-4 text-center">
+                          {isOverdue && <span className="px-2 py-1 rounded text-xs font-medium bg-red-100 text-red-800">Overdue</span>}
+                          {isAtRisk && <span className="px-2 py-1 rounded text-xs font-medium bg-yellow-100 text-yellow-800">At Risk</span>}
+                          {onTrack && <span className="px-2 py-1 rounded text-xs font-medium bg-green-100 text-green-800">On Track</span>}
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          )}
+
+          {/* ANALYTICS TAB */}
+          {activeTab === 'analytics' && (
+            <div className="space-y-6 p-4">
+              <div className="grid grid-cols-4 gap-4">
+                <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-lg p-4">
+                  <div className="text-sm text-gray-700">On-Time Rate</div>
+                  <div className="text-3xl font-bold text-blue-600">92%</div>
+                </div>
+                <div className="bg-gradient-to-br from-green-50 to-green-100 rounded-lg p-4">
+                  <div className="text-sm text-gray-700">Avg Review Days</div>
+                  <div className="text-3xl font-bold text-green-600">4.2</div>
+                </div>
+                <div className="bg-gradient-to-br from-yellow-50 to-yellow-100 rounded-lg p-4">
+                  <div className="text-sm text-gray-700">This Month</div>
+                  <div className="text-3xl font-bold text-yellow-600">{submittals.length}</div>
+                </div>
+                <div className="bg-gradient-to-br from-purple-50 to-purple-100 rounded-lg p-4">
+                  <div className="text-sm text-gray-700">Avg Comments</div>
+                  <div className="text-3xl font-bold text-purple-600">3.4</div>
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <h4 className="font-semibold">By Discipline</h4>
+                <ResponsiveContainer width="100%" height={300}>
+                  <BarChart data={[
+                    { name: 'Structural', count: 8 },
+                    { name: 'HVAC', count: 6 },
+                    { name: 'Glazing', count: 4 },
+                    { name: 'Fire Protection', count: 3 },
+                    { name: 'Concrete', count: 5 },
+                  ]}>
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis dataKey="name" />
+                    <YAxis />
+                    <Tooltip />
+                    <Bar dataKey="count" fill="#3b82f6" />
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+
+              <div className="space-y-2">
+                <h4 className="font-semibold">Monthly Trend</h4>
+                <ResponsiveContainer width="100%" height={300}>
+                  <LineChart data={[
+                    { month: 'Jan', submittals: 8 },
+                    { month: 'Feb', submittals: 12 },
+                    { month: 'Mar', submittals: 15 },
+                    { month: 'Apr', submittals: 10 },
+                  ]}>
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis dataKey="month" />
+                    <YAxis />
+                    <Tooltip />
+                    <Line type="monotone" dataKey="submittals" stroke="#10b981" strokeWidth={2} />
+                  </LineChart>
+                </ResponsiveContainer>
+              </div>
+            </div>
+          )}
+
+          {/* TRANSMITTALS TAB */}
+          {activeTab === 'transmittals' && (
+            <div className="space-y-4 p-4">
+              <button onClick={() => setShowTransmittalModal(true)} className="btn btn-primary btn-sm gap-2">
+                <Plus className="h-4 w-4" />
+                New Transmittal
+              </button>
+
+              <div className="cb-table-scroll touch-pan-x">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="border-b border-gray-200">
+                      <th className="text-left py-3 px-4 font-semibold">Transmittal #</th>
+                      <th className="text-left py-3 px-4 font-semibold">Date</th>
+                      <th className="text-left py-3 px-4 font-semibold">To</th>
+                      <th className="text-left py-3 px-4 font-semibold">Subject</th>
+                      <th className="text-center py-3 px-4 font-semibold"># Submittals</th>
+                      <th className="text-center py-3 px-4 font-semibold">Status</th>
                     </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
+                  </thead>
+                  <tbody>
+                    {transmittals.map((tm) => (
+                      <tr key={tm.id} className="border-b border-gray-100 hover:bg-gray-50">
+                        <td className="py-3 px-4 font-medium">{tm.number}</td>
+                        <td className="py-3 px-4 text-xs">{tm.date.toLocaleDateString()}</td>
+                        <td className="py-3 px-4">{tm.to}</td>
+                        <td className="py-3 px-4">{tm.subject}</td>
+                        <td className="py-3 px-4 text-center font-medium">{tm.submittalIds.length}</td>
+                        <td className="py-3 px-4 text-center">
+                          <span className={`px-2 py-1 rounded text-xs font-medium ${
+                            tm.status === 'sent' ? 'bg-blue-100 text-blue-800' :
+                            tm.status === 'received' ? 'bg-green-100 text-green-800' :
+                            'bg-gray-100 text-gray-800'
+                          }`}>
+                            {tm.status}
+                          </span>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+
+              {showTransmittalModal && (
+                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+                  <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full p-6">
+                    <div className="flex justify-between items-center mb-4">
+                      <h3 className="text-xl font-bold">New Transmittal</h3>
+                      <button onClick={() => setShowTransmittalModal(false)} className="text-gray-400">
+                        <X className="h-6 w-6" />
+                      </button>
+                    </div>
+
+                    <div className="space-y-4">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">To</label>
+                        <input type="text" placeholder="Recipient" className="input input-bordered w-full" />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Subject</label>
+                        <input type="text" placeholder="Subject line" className="input input-bordered w-full" />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">Select Submittals</label>
+                        <div className="space-y-2 max-h-48 overflow-y-auto border border-gray-200 rounded-lg p-3">
+                          {submittals.map((s) => (
+                            <label key={s.id} className="flex items-center gap-2 cursor-pointer">
+                              <input type="checkbox" className="checkbox checkbox-sm" onChange={(e) => {
+                                if (e.target.checked) {
+                                  setSelectedForTransmittal(new Set([...selectedForTransmittal, s.id]));
+                                } else {
+                                  const newSet = new Set(selectedForTransmittal);
+                                  newSet.delete(s.id);
+                                  setSelectedForTransmittal(newSet);
+                                }
+                              }} />
+                              <span className="text-sm">{s.number}: {s.title}</span>
+                            </label>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="flex justify-end gap-3 mt-6">
+                      <button onClick={() => setShowTransmittalModal(false)} className="btn btn-ghost">
+                        Cancel
+                      </button>
+                      <button className="btn btn-primary gap-2">
+                        <Send className="h-4 w-4" />
+                        Create & Send
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
         </div>
       </div>
 
