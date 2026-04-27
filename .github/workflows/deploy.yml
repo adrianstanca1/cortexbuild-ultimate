@@ -359,6 +359,43 @@ jobs:
               sleep 2
             done
 
+            # Apply pending SQL migrations (idempotent via migration_log).
+            # Tracks applied migrations by filename — robust against duplicate
+            # numeric prefixes in early migrations (e.g. two 002_*, two 003_*).
+            echo "=== Applying database migrations ==="
+            MIGRATIONS_DIR="$PROJECT_DIR/server/migrations"
+            if [ ! -d "$MIGRATIONS_DIR" ]; then
+              echo "WARN: migrations dir not found at $MIGRATIONS_DIR; skipping"
+            else
+              # Ensure migration_log table exists (no-op if already created by 056_).
+              # Idempotency: explicit pre-check below + workflow concurrency group serializes
+              # deploys, so we don't need a UNIQUE constraint (which could conflict with
+              # pre-existing duplicate rows from earlier hand-applied migrations).
+              docker exec -i cortexbuild-db psql -U cortexbuild -d cortexbuild -v ON_ERROR_STOP=1 -c "CREATE TABLE IF NOT EXISTS migration_log (id SERIAL PRIMARY KEY, migration_name TEXT NOT NULL, applied_at TIMESTAMPTZ DEFAULT NOW());" >/dev/null
+              applied_before=$(docker exec -i cortexbuild-db psql -U cortexbuild -d cortexbuild -tAc "SELECT count(*) FROM migration_log;" 2>/dev/null || echo "?")
+              echo "  migrations already applied: $applied_before"
+              for migration in $(ls "$MIGRATIONS_DIR"/*.sql 2>/dev/null | sort); do
+                filename=$(basename "$migration")
+                already=$(docker exec -i cortexbuild-db psql -U cortexbuild -d cortexbuild -tAc "SELECT 1 FROM migration_log WHERE migration_name='$filename' LIMIT 1;" 2>/dev/null || true)
+                if [ "$already" = "1" ]; then
+                  continue
+                fi
+                echo "  ▶ applying $filename"
+                if docker exec -i cortexbuild-db psql -U cortexbuild -d cortexbuild -v ON_ERROR_STOP=1 -1 < "$migration" >/dev/null; then
+                  # No ON CONFLICT — there's no UNIQUE constraint on migration_log.migration_name;
+                  # the pre-check above + serialized deploys guarantee we only INSERT once per filename.
+                  docker exec -i cortexbuild-db psql -U cortexbuild -d cortexbuild -tAc "INSERT INTO migration_log (migration_name) VALUES ('$filename');" >/dev/null
+                  echo "    ✓ $filename"
+                else
+                  echo "    ✗ FAILED: $filename — aborting deploy"
+                  exit 1
+                fi
+              done
+              applied_after=$(docker exec -i cortexbuild-db psql -U cortexbuild -d cortexbuild -tAc "SELECT count(*) FROM migration_log;" 2>/dev/null || echo "?")
+              new_count=$(( ${applied_after:-0} - ${applied_before:-0} ))
+              echo "=== Migrations done. Newly applied this run: $new_count (total: $applied_after) ==="
+            fi
+
             # Validate required secrets are present
             if [ -z "${JWT_SECRET:-}" ]; then
               echo "FATAL: JWT_SECRET not set in $PROJECT_DIR/.env or $PROJECT_DIR/server/.env"
