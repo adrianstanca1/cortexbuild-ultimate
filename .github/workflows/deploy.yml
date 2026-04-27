@@ -137,8 +137,10 @@ jobs:
               echo "WARN: local HEAD ($LOCAL_HEAD) diverged from origin/main ($ORIGIN_HEAD); saved to '$rescue'"
             fi
             # 2. Rescue any uncommitted working-tree drift (manual edits on the VPS)
-            if ! git diff --quiet --ignore-submodules HEAD 2>/dev/null \
-               || [ -n "$(git ls-files --others --exclude-standard 2>/dev/null)" ]; then
+            tracked_drift=0
+            git diff --quiet --ignore-submodules HEAD 2>/dev/null || tracked_drift=1
+            untracked="$(git ls-files --others --exclude-standard 2>/dev/null || true)"
+            if [ "$tracked_drift" = "1" ] || [ -n "$untracked" ]; then
               stash_msg="local-drift-$(date -u +%Y%m%d-%H%M%S)"
               git stash push --include-untracked -m "$stash_msg" || true
               echo "WARN: working-tree drift saved to stash '$stash_msg' (inspect with 'git stash list')"
@@ -155,7 +157,6 @@ jobs:
                     | head -n -10 | wc -l)
             if [ "$stale" -gt 0 ]; then
               echo "INFO: $stale rescue branches older than the last 10 — clean up periodically with: git branch -D \$(git for-each-ref --format='%(refname:short)' 'refs/heads/local-rescue-*' | head -n -10)"
-            fi
             fi
             npm ci --ignore-scripts
             npm run build
@@ -234,8 +235,10 @@ jobs:
               echo "WARN: local HEAD ($LOCAL_HEAD) diverged from origin/main ($ORIGIN_HEAD); saved to '$rescue'"
             fi
             # 2. Rescue any uncommitted working-tree drift (manual edits on the VPS)
-            if ! git diff --quiet --ignore-submodules HEAD 2>/dev/null \
-               || [ -n "$(git ls-files --others --exclude-standard 2>/dev/null)" ]; then
+            tracked_drift=0
+            git diff --quiet --ignore-submodules HEAD 2>/dev/null || tracked_drift=1
+            untracked="$(git ls-files --others --exclude-standard 2>/dev/null || true)"
+            if [ "$tracked_drift" = "1" ] || [ -n "$untracked" ]; then
               stash_msg="local-drift-$(date -u +%Y%m%d-%H%M%S)"
               git stash push --include-untracked -m "$stash_msg" || true
               echo "WARN: working-tree drift saved to stash '$stash_msg' (inspect with 'git stash list')"
@@ -252,7 +255,6 @@ jobs:
                     | head -n -10 | wc -l)
             if [ "$stale" -gt 0 ]; then
               echo "INFO: $stale rescue branches older than the last 10 — clean up periodically with: git branch -D \$(git for-each-ref --format='%(refname:short)' 'refs/heads/local-rescue-*' | head -n -10)"
-            fi
             fi
 
             # Load environment variables BEFORE docker commands
