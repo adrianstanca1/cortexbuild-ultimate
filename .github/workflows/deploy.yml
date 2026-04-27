@@ -372,12 +372,30 @@ jobs:
               # deploys, so we don't need a UNIQUE constraint (which could conflict with
               # pre-existing duplicate rows from earlier hand-applied migrations).
               docker exec -i cortexbuild-db psql -U cortexbuild -d cortexbuild -v ON_ERROR_STOP=1 -c "CREATE TABLE IF NOT EXISTS migration_log (id SERIAL PRIMARY KEY, migration_name TEXT NOT NULL, applied_at TIMESTAMPTZ DEFAULT NOW());" >/dev/null
-              applied_before=$(docker exec -i cortexbuild-db psql -U cortexbuild -d cortexbuild -tAc "SELECT count(*) FROM migration_log;" 2>/dev/null || echo "?")
+              applied_before=$(docker exec -i cortexbuild-db psql -U cortexbuild -d cortexbuild -tAc "SELECT count(*) FROM migration_log;" 2>/dev/null || echo "0")
               echo "  migrations already applied: $applied_before"
+
+              # Legacy baseline: this DB was originally built piecemeal without using
+              # migration_log; the current schema is clearly past migration 068 (live
+              # features depend on tables created by 056-068, and many early migrations
+              # would now conflict with the established schema, e.g. 004 tries to add
+              # a FK with mismatched column types). Treat any migration with number
+              # < LEGACY_BASELINE_CUTOFF as already-applied. Record it in migration_log
+              # if missing, but never EXECUTE it — the schema is already past it.
+              LEGACY_BASELINE_CUTOFF=70
+
               for migration in $(ls "$MIGRATIONS_DIR"/*.sql 2>/dev/null | sort); do
                 filename=$(basename "$migration")
+                num=$(echo "$filename" | grep -oE '^[0-9]+' | sed 's/^0*//')
+                num=${num:-0}
                 already=$(docker exec -i cortexbuild-db psql -U cortexbuild -d cortexbuild -tAc "SELECT 1 FROM migration_log WHERE migration_name='$filename' LIMIT 1;" 2>/dev/null || true)
                 if [ "$already" = "1" ]; then
+                  continue
+                fi
+                if [ "$num" -lt "$LEGACY_BASELINE_CUTOFF" ]; then
+                  # Legacy: assume the schema is already past this migration; record only.
+                  docker exec -i cortexbuild-db psql -U cortexbuild -d cortexbuild -tAc "INSERT INTO migration_log (migration_name) VALUES ('$filename');" >/dev/null
+                  echo "  ⤳ baseline: $filename (recorded as applied, not executed)"
                   continue
                 fi
                 echo "  ▶ applying $filename"

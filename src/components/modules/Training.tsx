@@ -1,6 +1,6 @@
 import { useState, useRef } from 'react';
-import { Plus, GraduationCap, Award, AlertCircle, Trash2, X, Edit, Download, BarChart3, Users, CheckCircle2, TrendingUp, Bell, FileDown } from 'lucide-react';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
+import { Plus, GraduationCap, Award, AlertCircle, Trash2, X, Edit, Download, BarChart3, Users, CheckCircle2, TrendingUp, Bell, FileDown, Calendar, Clock, Filter, ChevronRight, Eye, EyeOff } from 'lucide-react';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, LineChart, Line } from 'recharts';
 import { EmptyState } from '../ui/EmptyState';
 import { ModuleBreadcrumbs } from '../ui/Breadcrumbs';
 import { DataImporter, ExportButton, ColumnMapping } from '../ui/DataImportExport';
@@ -55,6 +55,33 @@ interface ExpiringCert {
   status: 'critical'|'warning'|'ok';
 }
 
+interface Certificate {
+  id: string;
+  course: string;
+  completionDate: string;
+  expiryDate: string;
+  certNumber: string;
+  holder: string;
+}
+
+interface Assessment {
+  id: string;
+  course: string;
+  dueDate: string;
+  status: 'pending' | 'passed' | 'failed';
+  score?: number;
+}
+
+interface LearningPath {
+  id: string;
+  name: string;
+  role: string;
+  courses: number;
+  completed: number;
+  progress: number;
+  duration: string;
+}
+
 export default function Training() {
   const { data: training = [] } = useTraining.useList();
   const createMutation = useTraining.useCreate();
@@ -67,12 +94,16 @@ export default function Training() {
   const [_selectedId, setSelectedId] = useState<string | null>(null);
   const _fileInputRef = useRef<HTMLInputElement>(null);
   const [showCreateModal, setShowCreateModal] = useState(false);
-  const [activeTab, setActiveTab] = useState<'courses' | 'learning' | 'team' | 'compliance'>('courses');
+  const [activeTab, setActiveTab] = useState<'courses' | 'learning' | 'team' | 'compliance' | 'certificates' | 'assessments' | 'report' | 'paths'>('courses');
   const [form, setForm] = useState({ title: '', provider: '', type: 'formal_course', status: 'scheduled', scheduledDate: '', completedDate: '', duration: '', location: '', certification: 'no', certName: '', attendees: '' });
   const [editItem, setEditItem] = useState<(TrainingRecord & { scheduledDate?: string; completedDate?: string }) | null>(null);
   const [showBulkImport, setShowBulkImport] = useState(false);
   const [courseSearch, setCourseSearch] = useState('');
   const [teamDeptFilter, setTeamDeptFilter] = useState('');
+  const [certExpiryFilter, setCertExpiryFilter] = useState<'valid' | 'expiring' | 'expired'>('valid');
+  const [showAssessmentModal, setShowAssessmentModal] = useState(false);
+  const [selectedAssessmentId, setSelectedAssessmentId] = useState<string | null>(null);
+  const [assessmentAnswers, setAssessmentAnswers] = useState<Record<string, number>>({});
 
   const { selectedIds, clearSelection } = useBulkSelection();
 
@@ -105,6 +136,50 @@ export default function Training() {
     { department:'Safety', compliance:98 },
     { department:'Plant', compliance:62 },
     { department:'Admin', compliance:95 },
+  ];
+
+  const CERTIFICATES: Certificate[] = [
+    { id: 'cert1', course: 'CSCS Health & Safety', completionDate: '2025-12-15', expiryDate: '2027-12-15', certNumber: 'CSCS-2025-001234', holder: 'You' },
+    { id: 'cert2', course: 'Manual Handling', completionDate: '2025-11-20', expiryDate: '2026-11-20', certNumber: 'MH-2025-005678', holder: 'You' },
+    { id: 'cert3', course: 'First Aid Level 3', completionDate: '2025-10-10', expiryDate: '2028-10-10', certNumber: 'FA3-2025-009876', holder: 'You' },
+    { id: 'cert4', course: 'Site Safety Induction', completionDate: '2026-01-05', expiryDate: '2027-01-05', certNumber: 'SSI-2026-001111', holder: 'You' },
+  ];
+
+  const ASSESSMENTS: Assessment[] = [
+    { id: 'assess1', course: 'Confined Spaces Awareness', dueDate: '2026-04-15', status: 'pending' },
+    { id: 'assess2', course: 'IPAF Refresher', dueDate: '2026-04-28', status: 'pending' },
+    { id: 'assess3', course: 'CSCS Health & Safety', dueDate: '2026-03-25', status: 'passed', score: 92 },
+    { id: 'assess4', course: 'Manual Handling', dueDate: '2026-03-20', status: 'passed', score: 87 },
+  ];
+
+  const LEARNING_PATHS: LearningPath[] = [
+    { id: 'path1', name: 'Site Manager Core', role: 'Site Manager', courses: 8, completed: 5, progress: 62, duration: '24 hours' },
+    { id: 'path2', name: 'Quality Surveyor Path', role: 'QS', courses: 6, completed: 2, progress: 33, duration: '18 hours' },
+    { id: 'path3', name: 'Health & Safety Specialist', role: 'H&S Officer', courses: 10, completed: 10, progress: 100, duration: '40 hours' },
+  ];
+
+  const COMPLIANCE_MATRIX = [
+    { person: 'John Smith', 'CSCS H&S': 'pass', 'Manual Handling': 'pass', 'Site Induction': 'due', 'First Aid': 'pass' },
+    { person: 'Sarah Johnson', 'CSCS H&S': 'pass', 'Manual Handling': 'pass', 'Site Induction': 'pass', 'First Aid': 'pass' },
+    { person: 'Mike Davis', 'CSCS H&S': 'fail', 'Manual Handling': 'pass', 'Site Induction': 'pass', 'First Aid': 'due' },
+    { person: 'Emma Wilson', 'CSCS H&S': 'pass', 'Manual Handling': 'pass', 'Site Induction': 'pass', 'First Aid': 'pass' },
+    { person: 'David Brown', 'CSCS H&S': 'pass', 'Manual Handling': 'pass', 'Site Induction': 'pass', 'First Aid': 'pass' },
+  ];
+
+  const ASSESSMENT_QUESTIONS = [
+    { id: 1, text: 'What is the maximum working height before fall protection is required?' },
+    { id: 2, text: 'Which of the following is NOT a PPE requirement on site?' },
+    { id: 3, text: 'What should be done when discovering a hazard?' },
+    { id: 4, text: 'How often should safety inductions be refreshed?' },
+    { id: 5, text: 'What does COSHH stand for?' },
+  ];
+
+  const ASSESSMENT_OPTIONS = [
+    { id: 1, options: ['1.5m', '2m', '2.5m', '3m'] },
+    { id: 2, options: ['Hard hat', 'Safety shoes', 'Sunscreen', 'High visibility vest'] },
+    { id: 3, options: ['Ignore it', 'Report to supervisor', 'Continue working', 'Tell colleagues'] },
+    { id: 4, options: ['Quarterly', 'Annually', 'Every 2 years', 'Every 3 years'] },
+    { id: 5, options: ['Control Of Serious Health Hazards', 'Control Of Substance Hazardous to Health', 'Chemical & Occupational Safety Handbook', 'Control Of Site Health Warnings'] },
   ];
 
   const trainingData = training as unknown as TrainingRecord[];
@@ -225,6 +300,28 @@ export default function Training() {
     toast.success(`${data.length - failed} training record(s) imported`);
   }
 
+  const handleSubmitAssessment = () => {
+    if (Object.keys(assessmentAnswers).length < ASSESSMENT_QUESTIONS.length) {
+      toast.error('Please answer all questions');
+      return;
+    }
+    const score = Math.floor(Math.random() * 20 + 80);
+    toast.success(`Assessment submitted! Score: ${score}%`);
+    setShowAssessmentModal(false);
+    setAssessmentAnswers({});
+    setSelectedAssessmentId(null);
+  };
+
+  const handleDownloadCert = (certNumber: string) => {
+    toast.success(`Downloaded certificate ${certNumber}`);
+  };
+
+  const complianceByDept = [
+    { department: 'Operations', compliance: 89 },
+    { department: 'Engineering', compliance: 76 },
+    { department: 'Safety', compliance: 98 },
+    { department: 'Plant', compliance: 62 },
+  ];
 
   return (
     <>
@@ -247,12 +344,12 @@ export default function Training() {
         </div>
 
 
-        <div className="flex border-b border-gray-700">
-          {(['courses', 'learning', 'team', 'compliance'] as const).map(tab => (
+        <div className="flex border-b border-gray-700 cb-table-scroll touch-pan-x">
+          {(['courses', 'learning', 'team', 'compliance', 'certificates', 'assessments', 'report', 'paths'] as const).map(tab => (
             <button
               key={tab}
               onClick={() => setActiveTab(tab)}
-              className={`px-4 py-3 font-semibold text-sm border-b-2 transition-colors ${
+              className={`px-4 py-3 font-semibold text-sm border-b-2 transition-colors whitespace-nowrap ${
                 activeTab === tab
                   ? 'border-amber-500 text-amber-400'
                   : 'border-transparent text-gray-400 hover:text-gray-300'
@@ -262,6 +359,10 @@ export default function Training() {
               {tab === 'learning' && 'My Learning'}
               {tab === 'team' && 'Team Progress'}
               {tab === 'compliance' && 'Compliance'}
+              {tab === 'certificates' && 'Certificates'}
+              {tab === 'assessments' && 'Assessments'}
+              {tab === 'report' && 'Compliance Report'}
+              {tab === 'paths' && 'Learning Paths'}
             </button>
           ))}
         </div>
@@ -509,6 +610,311 @@ export default function Training() {
               </div>
             </div>
           )}
+
+          {activeTab === 'certificates' && (
+            <div className="space-y-6">
+              <div className="flex items-center gap-2">
+                <Filter className="h-4 w-4 text-gray-400" />
+                <button
+                  onClick={() => setCertExpiryFilter('valid')}
+                  className={`px-3 py-1 text-xs rounded-full font-medium transition-colors ${
+                    certExpiryFilter === 'valid'
+                      ? 'bg-green-900/40 text-green-400'
+                      : 'bg-gray-800 text-gray-400 hover:text-gray-300'
+                  }`}
+                >
+                  Valid
+                </button>
+                <button
+                  onClick={() => setCertExpiryFilter('expiring')}
+                  className={`px-3 py-1 text-xs rounded-full font-medium transition-colors ${
+                    certExpiryFilter === 'expiring'
+                      ? 'bg-amber-900/40 text-amber-400'
+                      : 'bg-gray-800 text-gray-400 hover:text-gray-300'
+                  }`}
+                >
+                  Expiring Soon
+                </button>
+                <button
+                  onClick={() => setCertExpiryFilter('expired')}
+                  className={`px-3 py-1 text-xs rounded-full font-medium transition-colors ${
+                    certExpiryFilter === 'expired'
+                      ? 'bg-red-900/40 text-red-400'
+                      : 'bg-gray-800 text-gray-400 hover:text-gray-300'
+                  }`}
+                >
+                  Expired
+                </button>
+              </div>
+
+              <button className="flex items-center gap-2 px-4 py-2 bg-blue-900/40 hover:bg-blue-800 text-blue-400 rounded font-medium text-sm transition-colors">
+                <Download className="w-4 h-4" /> Bulk Download All
+              </button>
+
+              <div className="space-y-3">
+                {CERTIFICATES.map(cert => {
+                  const isExpired = new Date(cert.expiryDate) < new Date();
+                  const isExpiringSoon = new Date(cert.expiryDate).getTime() - new Date().getTime() < 30 * 24 * 60 * 60 * 1000;
+                  const status = isExpired ? 'expired' : isExpiringSoon ? 'expiring' : 'valid';
+
+                  if (certExpiryFilter !== status) return null;
+
+                  return (
+                    <div key={cert.id} className="bg-gray-800 border border-gray-700 rounded-lg p-4">
+                      <div className="flex items-start justify-between mb-3">
+                        <div>
+                          <h5 className="text-white font-semibold">{cert.course}</h5>
+                          <p className="text-xs text-gray-500">Cert #: {cert.certNumber}</p>
+                        </div>
+                        <span className={`text-xs px-2 py-1 rounded-full font-medium ${
+                          isExpired ? 'bg-red-900/40 text-red-400' :
+                          isExpiringSoon ? 'bg-amber-900/40 text-amber-400' :
+                          'bg-green-900/40 text-green-400'
+                        }`}>
+                          {isExpired ? 'Expired' : isExpiringSoon ? 'Expiring Soon' : 'Valid'}
+                        </span>
+                      </div>
+                      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4 text-xs">
+                        <div>
+                          <p className="text-gray-500">Completion</p>
+                          <p className="text-gray-300">{cert.completionDate}</p>
+                        </div>
+                        <div>
+                          <p className="text-gray-500">Expiry</p>
+                          <p className="text-gray-300">{cert.expiryDate}</p>
+                        </div>
+                        <div>
+                          <p className="text-gray-500">Holder</p>
+                          <p className="text-gray-300">{cert.holder}</p>
+                        </div>
+                        <div className="flex justify-end">
+                          <button
+                            onClick={() => handleDownloadCert(cert.certNumber)}
+                            className="px-3 py-1 bg-blue-900/40 hover:bg-blue-800 text-blue-400 rounded text-xs font-medium transition-colors flex items-center gap-1"
+                          >
+                            <Download className="w-3 h-3" /> PDF
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
+          {activeTab === 'assessments' && (
+            <div className="space-y-6">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="card p-4 bg-blue-900/30 border border-blue-700">
+                  <p className="text-gray-400 text-xs uppercase mb-2">Pending</p>
+                  <p className="text-2xl font-display text-blue-400">{ASSESSMENTS.filter(a => a.status === 'pending').length}</p>
+                </div>
+                <div className="card p-4 bg-green-900/30 border border-green-700">
+                  <p className="text-gray-400 text-xs uppercase mb-2">Passed</p>
+                  <p className="text-2xl font-display text-green-400">{ASSESSMENTS.filter(a => a.status === 'passed').length}</p>
+                </div>
+                <div className="card p-4 bg-red-900/30 border border-red-700">
+                  <p className="text-gray-400 text-xs uppercase mb-2">Failed</p>
+                  <p className="text-2xl font-display text-red-400">{ASSESSMENTS.filter(a => a.status === 'failed').length}</p>
+                </div>
+              </div>
+
+              <div>
+                <h4 className="text-white font-semibold mb-4">Pending Assessments</h4>
+                <div className="space-y-3">
+                  {ASSESSMENTS.filter(a => a.status === 'pending').map(assess => (
+                    <div key={assess.id} className="bg-gray-800 border border-gray-700 rounded-lg p-4 flex items-center justify-between">
+                      <div>
+                        <h5 className="text-white font-semibold">{assess.course}</h5>
+                        <div className="flex items-center gap-4 mt-2 text-xs text-gray-400">
+                          <span className="flex items-center gap-1">
+                            <Calendar className="w-3 h-3" /> Due {assess.dueDate}
+                          </span>
+                        </div>
+                      </div>
+                      <button
+                        onClick={() => {
+                          setSelectedAssessmentId(assess.id);
+                          setShowAssessmentModal(true);
+                        }}
+                        className="px-4 py-2 bg-orange-500 hover:bg-orange-600 text-white rounded-lg text-sm font-medium transition-colors flex items-center gap-2"
+                      >
+                        Take Assessment
+                        <ChevronRight className="w-4 h-4" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div>
+                <h4 className="text-white font-semibold mb-4">Assessment History</h4>
+                <div className="cb-table-scroll touch-pan-x">
+                  <table className="w-full text-sm">
+                    <thead className="bg-gray-900/50 border-b border-gray-700">
+                      <tr>
+                        <th className="px-4 py-3 text-left text-xs font-display text-gray-400">Course</th>
+                        <th className="px-4 py-3 text-left text-xs font-display text-gray-400">Status</th>
+                        <th className="px-4 py-3 text-center text-xs font-display text-gray-400">Score</th>
+                        <th className="px-4 py-3 text-left text-xs font-display text-gray-400">Date</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-700">
+                      {ASSESSMENTS.filter(a => a.status !== 'pending').map(assess => (
+                        <tr key={assess.id} className="hover:bg-gray-900/30">
+                          <td className="px-4 py-3 text-white font-medium">{assess.course}</td>
+                          <td className="px-4 py-3">
+                            <span className={`text-xs px-2 py-1 rounded-full font-medium ${
+                              assess.status === 'passed'
+                                ? 'bg-green-900/40 text-green-400'
+                                : 'bg-red-900/40 text-red-400'
+                            }`}>
+                              {assess.status === 'passed' ? 'Passed' : 'Failed'}
+                            </span>
+                          </td>
+                          <td className="px-4 py-3 text-center text-white font-semibold">{assess.score}%</td>
+                          <td className="px-4 py-3 text-gray-400">2026-03-{Math.floor(Math.random() * 20) + 1}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {activeTab === 'report' && (
+            <div className="space-y-6">
+              <div className="flex items-center justify-between">
+                <h3 className="text-lg font-display text-white">Team Compliance Matrix</h3>
+                <button className="flex items-center gap-2 px-4 py-2 bg-green-900/40 hover:bg-green-800 text-green-400 rounded font-medium text-sm transition-colors">
+                  <Download className="w-4 h-4" /> Export to Excel
+                </button>
+              </div>
+
+              <div className="bg-gray-800 border border-gray-700 rounded-lg p-6">
+                <h4 className="text-white font-semibold mb-4">Compliance by Department</h4>
+                <ResponsiveContainer width="100%" height={300}>
+                  <BarChart data={complianceByDept}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
+                    <XAxis dataKey="department" stroke="#9ca3af" />
+                    <YAxis stroke="#9ca3af" />
+                    <Tooltip contentStyle={{ backgroundColor: '#1f2937', border: '1px solid #374151', borderRadius: 8 }} />
+                    <Legend />
+                    <Bar dataKey="compliance" fill="#8b5cf6" radius={[4, 4, 0, 0]} />
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+
+              <div className="cb-table-scroll touch-pan-x">
+                <table className="w-full text-xs">
+                  <thead className="bg-gray-900/50 border-b border-gray-700">
+                    <tr>
+                      <th className="px-4 py-3 text-left font-display text-gray-400 whitespace-nowrap">Person</th>
+                      <th className="px-4 py-3 text-center font-display text-gray-400">CSCS H&S</th>
+                      <th className="px-4 py-3 text-center font-display text-gray-400">Manual Handling</th>
+                      <th className="px-4 py-3 text-center font-display text-gray-400">Site Induction</th>
+                      <th className="px-4 py-3 text-center font-display text-gray-400">First Aid</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-700">
+                    {COMPLIANCE_MATRIX.map((row: Record<string, unknown>, idx) => (
+                      <tr key={idx} className="hover:bg-gray-900/30">
+                        <td className="px-4 py-3 text-white font-semibold whitespace-nowrap">{String(row.person)}</td>
+                        {['CSCS H&S', 'Manual Handling', 'Site Induction', 'First Aid'].map(course => {
+                          const status = String(row[course]);
+                          const statusColor = status === 'pass' ? 'bg-green-900/40 text-green-400' : status === 'fail' ? 'bg-red-900/40 text-red-400' : 'bg-amber-900/40 text-amber-400';
+                          return (
+                            <td key={course} className="px-4 py-3 text-center">
+                              <span className={`px-2 py-1 rounded text-xs font-medium ${statusColor}`}>
+                                {status === 'pass' ? '✓' : status === 'fail' ? '✗' : 'Due'}
+                              </span>
+                            </td>
+                          );
+                        })}
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+
+          {activeTab === 'paths' && (
+            <div className="space-y-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {LEARNING_PATHS.map(path => (
+                  <div key={path.id} className="bg-gray-800 border border-gray-700 rounded-lg p-5 space-y-4">
+                    <div>
+                      <h4 className="text-white font-semibold mb-1">{path.name}</h4>
+                      <p className="text-xs text-gray-500">{path.role}</p>
+                    </div>
+
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between text-xs">
+                        <span className="text-gray-400">{path.completed} of {path.courses} courses</span>
+                        <span className="text-amber-400 font-semibold">{path.progress}%</span>
+                      </div>
+                      <div className="w-full bg-gray-700 rounded-full h-2">
+                        <div
+                          className="h-2 rounded-full bg-amber-500 transition-all"
+                          style={{ width: `${path.progress}%` }}
+                        />
+                      </div>
+                    </div>
+
+                    <div className="pt-2 border-t border-gray-700 flex items-center justify-between text-xs">
+                      <span className="text-gray-500 flex items-center gap-1">
+                        <Clock className="w-3 h-3" /> {path.duration}
+                      </span>
+                      {path.progress === 100 ? (
+                        <span className="text-green-400 font-medium flex items-center gap-1">
+                          <CheckCircle2 className="w-3 h-3" /> Completed
+                        </span>
+                      ) : (
+                        <button className="text-blue-400 hover:text-blue-300 font-medium flex items-center gap-1">
+                          Enrol
+                          <ChevronRight className="w-3 h-3" />
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              <div className="bg-gray-800 border border-gray-700 rounded-lg p-6">
+                <h4 className="text-white font-semibold mb-4">Learning Path Details</h4>
+                <div className="space-y-4">
+                  {LEARNING_PATHS.map(path => (
+                    <div key={path.id} className="border-b border-gray-700 pb-4">
+                      <div className="flex items-start justify-between mb-2">
+                        <div>
+                          <p className="text-white font-semibold">{path.name}</p>
+                          <p className="text-xs text-gray-500">For {path.role}</p>
+                        </div>
+                        <span className={`text-xs px-2 py-1 rounded-full font-medium ${
+                          path.progress === 100
+                            ? 'bg-green-900/40 text-green-400'
+                            : path.progress > 50
+                            ? 'bg-blue-900/40 text-blue-400'
+                            : 'bg-gray-700 text-gray-300'
+                        }`}>
+                          {path.progress}% Complete
+                        </span>
+                      </div>
+                      <p className="text-sm text-gray-400 mb-3">{path.completed} of {path.courses} mandatory courses completed</p>
+                      {path.progress < 100 && (
+                        <button className="text-xs px-3 py-1 bg-blue-900/40 hover:bg-blue-800 text-blue-400 rounded font-medium transition-colors">
+                          Continue Path
+                        </button>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
         </div>
 
         <BulkActionsBar
@@ -677,6 +1083,45 @@ export default function Training() {
                   format="csv"
                   exampleData={{ title: '', provider: '', type: '', date: '', status: '', notes: '' }}
                 />
+              </div>
+            </div>
+          </div>
+        )}
+
+        {showAssessmentModal && selectedAssessmentId && (
+          <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
+            <div className="bg-gray-900 border border-gray-700 rounded-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+              <div className="p-6 border-b border-gray-700 flex items-center justify-between sticky top-0 bg-gray-900">
+                <h3 className="text-xl font-display text-white">Assessment: {ASSESSMENTS.find(a => a.id === selectedAssessmentId)?.course}</h3>
+                <button type="button" onClick={() => setShowAssessmentModal(false)} className="text-gray-400 hover:text-white"><X size={20} /></button>
+              </div>
+              <div className="p-6 space-y-6">
+                {ASSESSMENT_QUESTIONS.map(q => (
+                  <div key={q.id} className="space-y-3">
+                    <p className="text-white font-semibold">Q{q.id}. {q.text}</p>
+                    <div className="space-y-2">
+                      {ASSESSMENT_OPTIONS[q.id - 1].options.map((opt, idx) => (
+                        <label key={idx} className="flex items-center gap-3 p-3 bg-gray-800 border border-gray-700 rounded-lg cursor-pointer hover:bg-gray-700/50 transition">
+                          <input
+                            type="radio"
+                            name={`q${q.id}`}
+                            value={idx}
+                            checked={assessmentAnswers[`q${q.id}`] === idx}
+                            onChange={() => setAssessmentAnswers({ ...assessmentAnswers, [`q${q.id}`]: idx })}
+                            className="w-4 h-4"
+                          />
+                          <span className="text-gray-300 text-sm">{opt}</span>
+                        </label>
+                      ))}
+                    </div>
+                  </div>
+                ))}
+              </div>
+              <div className="p-6 border-t border-gray-700 flex justify-end gap-3 sticky bottom-0 bg-gray-900">
+                <button type="button" onClick={() => setShowAssessmentModal(false)} className="px-4 py-2 text-gray-400 hover:text-white">Cancel</button>
+                <button type="button" onClick={handleSubmitAssessment} className="px-4 py-2 bg-orange-500 hover:bg-orange-600 text-white rounded-lg font-semibold">
+                  Submit Assessment
+                </button>
               </div>
             </div>
           </div>

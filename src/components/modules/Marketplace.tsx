@@ -24,11 +24,17 @@ import {
   Settings,
   Code,
   Upload,
+  Eye,
+  EyeOff,
+  Copy,
+  RefreshCw,
+  Zap as ZapIcon,
 } from 'lucide-react';
 import { BulkActionsBar, useBulkSelection } from '../ui/BulkActions';
 import { ModuleBreadcrumbs } from '../ui/Breadcrumbs';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 
-type SubTab = 'apps' | 'integrations' | 'templates' | 'training' | 'support';
+type SubTab = 'apps' | 'integrations' | 'templates' | 'training' | 'support' | 'reviews' | 'my-integrations' | 'api-keys';
 type _AnyRow = Record<string, unknown>;
 
 const TABS: { key: SubTab; label: string; icon: React.ElementType }[] = [
@@ -37,6 +43,9 @@ const TABS: { key: SubTab; label: string; icon: React.ElementType }[] = [
   { key: 'templates', label: 'Templates', icon: LayoutTemplate },
   { key: 'training', label: 'Training', icon: BookOpen },
   { key: 'support', label: 'Support', icon: MessageCircle },
+  { key: 'reviews', label: 'Reviews', icon: Star },
+  { key: 'my-integrations', label: 'My Integrations', icon: Plug },
+  { key: 'api-keys', label: 'API Keys', icon: Code },
 ];
 
 const APPS = [
@@ -109,11 +118,43 @@ const TRAINING_COURSES = [
   { id: 'mobile', title: 'Mobile App Guide', duration: '45 min', level: 'Beginner', rating: 4.7, enrolled: 4320, citb: false, progress: 0, status: 'not-started' },
 ];
 
+const APP_REVIEWS = [
+  { id: 'rev1', appId: 'xero', author: 'John Smith', rating: 5, date: '2026-03-18', comment: 'Excellent integration, saves hours on invoicing' },
+  { id: 'rev2', appId: 'xero', author: 'Sarah Johnson', rating: 4, date: '2026-03-15', comment: 'Good but API could be faster' },
+  { id: 'rev3', appId: 'revit', author: 'Mike Davis', rating: 5, date: '2026-03-20', comment: 'Perfect for BIM coordination' },
+  { id: 'rev4', appId: 'ms365', author: 'Emma Wilson', rating: 4, date: '2026-03-19', comment: 'Reliable and integrates well' },
+  { id: 'rev5', appId: 'bluebeam', author: 'David Brown', rating: 5, date: '2026-03-17', comment: 'Industry standard, essential tool' },
+  { id: 'rev6', appId: 'autocad', author: 'James Taylor', rating: 4, date: '2026-03-14', comment: 'Solid integration, some lag issues' },
+];
+
+const MY_INSTALLED = [
+  { id: 'xero', name: 'Xero Accounting', status: 'connected', lastSync: '2026-03-20 14:32', apiCallsToday: 124, syncInterval: '2 hours' },
+  { id: 'revit', name: 'Revit BIM', status: 'connected', lastSync: '2026-03-20 10:15', apiCallsToday: 89, syncInterval: '4 hours' },
+  { id: 'ms365', name: 'Microsoft 365', status: 'connected', lastSync: '2026-03-20 15:45', apiCallsToday: 342, syncInterval: '1 hour' },
+  { id: 'google', name: 'Google Workspace', status: 'connected', lastSync: '2026-03-20 14:20', apiCallsToday: 256, syncInterval: '2 hours' },
+  { id: 'docusign', name: 'DocuSign', status: 'connected', lastSync: '2026-03-20 09:10', apiCallsToday: 34, syncInterval: '6 hours' },
+  { id: 'hseq', name: 'HSEQ Manager', status: 'warning', lastSync: '2026-03-19 16:40', apiCallsToday: 12, syncInterval: '12 hours' },
+  { id: 'bluebeam', name: 'Bluebeam Revu', status: 'connected', lastSync: '2026-03-20 13:25', apiCallsToday: 178, syncInterval: '3 hours' },
+];
+
+const API_KEYS = [
+  { id: 'key1', name: 'Production API Key', keyPreview: 'sk_live_4eC39HqL***', scope: 'Full Access', created: '2026-01-15', lastUsed: '2026-03-20' },
+  { id: 'key2', name: 'Development Key', keyPreview: 'sk_test_51H***', scope: 'Read-Only', created: '2026-02-01', lastUsed: '2026-03-18' },
+  { id: 'key3', name: 'Webhook Key', keyPreview: 'whk_secret_***', scope: 'Webhook Events', created: '2026-01-20', lastUsed: '2026-03-20' },
+];
+
 export function Marketplace() {
   const [subTab, setSubTab] = useState<SubTab>('apps');
   const [installedApps, setInstalledApps] = useState(['xero', 'revit', 'ms365', 'google', 'docusign', 'hseq', 'bluebeam']);
   const [searchQuery, setSearchQuery] = useState('');
   const [categoryFilter, setCategoryFilter] = useState<string>('All');
+  const [userReview, setUserReview] = useState({ rating: 5, comment: '' });
+  const [showReviewModal, setShowReviewModal] = useState(false);
+  const [selectedAppForReview, setSelectedAppForReview] = useState<string | null>(null);
+  const [showGenerateKeyModal, setShowGenerateKeyModal] = useState(false);
+  const [newKeyName, setNewKeyName] = useState('');
+  const [showKeyValue, setShowKeyValue] = useState<string | null>(null);
+  const [apiKeys, setApiKeys] = useState(API_KEYS);
   const { selectedIds, toggle, clearSelection } = useBulkSelection();
 
   async function handleBulkDelete(ids: string[]) {
@@ -131,6 +172,7 @@ export function Marketplace() {
     switch (status) {
       case 'connected': return 'bg-emerald-500/20 text-emerald-400';
       case 'available': return 'bg-blue-500/20 text-blue-400';
+      case 'warning': return 'bg-amber-500/20 text-amber-400';
       case 'coming-soon': return 'bg-amber-500/20 text-amber-400';
       default: return 'bg-gray-500/20 text-gray-400';
     }
@@ -140,6 +182,7 @@ export function Marketplace() {
     switch (status) {
       case 'connected': return '✓ Connected';
       case 'available': return 'Available';
+      case 'warning': return '⚠ Sync Issue';
       case 'coming-soon': return 'Scheduled';
       default: return status;
     }
@@ -166,6 +209,55 @@ export function Marketplace() {
   const inProgressCourses = TRAINING_COURSES.filter(c => c.status === 'in-progress');
   const completedCourses = TRAINING_COURSES.filter(c => c.status === 'completed');
 
+  const handleSubmitReview = () => {
+    if (userReview.comment.trim()) {
+      toast.success('Review submitted successfully');
+      setUserReview({ rating: 5, comment: '' });
+      setShowReviewModal(false);
+      setSelectedAppForReview(null);
+    }
+  };
+
+  const ratingBreakdown = [
+    { name: '5★', value: 45 },
+    { name: '4★', value: 30 },
+    { name: '3★', value: 15 },
+    { name: '2★', value: 7 },
+    { name: '1★', value: 3 },
+  ];
+
+  const COLORS = ['#10b981', '#3b82f6', '#f59e0b', '#ef4444', '#6b7280'];
+
+  const usageData = [
+    { name: 'Xero', calls: 124 },
+    { name: 'Revit', calls: 89 },
+    { name: 'MS365', calls: 342 },
+    { name: 'Google', calls: 256 },
+    { name: 'DocuSign', calls: 34 },
+  ];
+
+  const handleGenerateKey = () => {
+    if (!newKeyName.trim()) return;
+    const newKey = {
+      id: `key${apiKeys.length + 1}`,
+      name: newKeyName,
+      keyPreview: 'sk_live_' + Math.random().toString(36).substring(2, 15) + '***',
+      scope: 'Full Access',
+      created: new Date().toISOString().split('T')[0],
+      lastUsed: 'Never',
+    };
+    setApiKeys([...apiKeys, newKey]);
+    setNewKeyName('');
+    setShowGenerateKeyModal(false);
+    toast.success('API key generated successfully');
+  };
+
+  const handleRevokeKey = (id: string) => {
+    if (!confirm('Revoke this API key? This action cannot be undone.')) return;
+    setApiKeys(apiKeys.filter(k => k.id !== id));
+    toast.success('API key revoked');
+  };
+
   return (
     <>
       <ModuleBreadcrumbs currentModule="marketplace" />
@@ -176,7 +268,7 @@ export function Marketplace() {
         <p className="text-gray-400 text-sm">Browse apps, integrations, templates, training and support resources</p>
 
         {/* KPI Stats */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
           <div className="input input-bordered p-4">
             <p className="text-sm text-gray-400 mb-1">Active Apps</p>
             <p className="text-2xl font-display text-white">{installedApps.length}</p>
@@ -188,6 +280,10 @@ export function Marketplace() {
           <div className="input input-bordered p-4">
             <p className="text-sm text-gray-400 mb-1">Available Templates</p>
             <p className="text-2xl font-display text-white">{TEMPLATES.length}</p>
+          </div>
+          <div className="input input-bordered p-4">
+            <p className="text-sm text-gray-400 mb-1">API Calls Today</p>
+            <p className="text-2xl font-display text-white">{MY_INSTALLED.reduce((sum, i) => sum + i.apiCallsToday, 0)}</p>
           </div>
         </div>
 
@@ -570,6 +666,246 @@ export function Marketplace() {
           </div>
         )}
 
+        {/* REVIEWS TAB */}
+        {subTab === 'reviews' && (
+          <div className="space-y-6">
+            {/* Rating Breakdown */}
+            <div className="bg-gray-900 border border-gray-700 rounded-xl p-6">
+              <h3 className="text-lg font-display text-white mb-4">Integration Reviews & Ratings</h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                <div>
+                  <h4 className="text-white font-semibold mb-4">Rating Distribution</h4>
+                  <ResponsiveContainer width="100%" height={250}>
+                    <PieChart>
+                      <Pie
+                        data={ratingBreakdown}
+                        cx="50%"
+                        cy="50%"
+                        labelLine={false}
+                        label={({ name, value }) => `${name}: ${value}%`}
+                        outerRadius={80}
+                        fill="#8884d8"
+                        dataKey="value"
+                      >
+                        {ratingBreakdown.map((entry, index) => (
+                          <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                        ))}
+                      </Pie>
+                    </PieChart>
+                  </ResponsiveContainer>
+                </div>
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between p-3 bg-gray-800 rounded-lg">
+                    <span className="text-gray-300 text-sm">Average Rating</span>
+                    <div className="flex items-center gap-2">
+                      <Star className="h-4 w-4 text-amber-400" />
+                      <span className="text-2xl font-display text-white">4.7</span>
+                    </div>
+                  </div>
+                  <div className="flex items-center justify-between p-3 bg-gray-800 rounded-lg">
+                    <span className="text-gray-300 text-sm">Total Reviews</span>
+                    <span className="text-2xl font-display text-white">{APP_REVIEWS.length}</span>
+                  </div>
+                  <button
+                    onClick={() => {
+                      setShowReviewModal(true);
+                      setSelectedAppForReview(installedApps[0] || 'xero');
+                    }}
+                    className="w-full px-4 py-2 btn btn-primary rounded-lg font-semibold text-sm"
+                  >
+                    Write a Review
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            {/* Reviews List */}
+            <div className="space-y-3">
+              <h3 className="text-sm font-semibold text-gray-400 uppercase">Recent Reviews</h3>
+              <div className="space-y-3">
+                {APP_REVIEWS.map(review => (
+                  <div key={review.id} className="bg-gray-900 border border-gray-700 rounded-lg p-4">
+                    <div className="flex items-start justify-between mb-2">
+                      <div>
+                        <p className="text-white font-semibold">{review.author}</p>
+                        <p className="text-xs text-gray-500">{review.date}</p>
+                      </div>
+                      <div className="flex items-center gap-1">
+                        {[...Array(review.rating)].map((_, i) => (
+                          <Star key={i} className="h-4 w-4 text-amber-400 fill-amber-400" />
+                        ))}
+                      </div>
+                    </div>
+                    <p className="text-gray-300 text-sm">{review.comment}</p>
+                    <p className="text-xs text-blue-400 mt-2">
+                      {APPS.find(a => a.id === review.appId)?.name}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* MY INTEGRATIONS TAB */}
+        {subTab === 'my-integrations' && (
+          <div className="space-y-6">
+            {/* Usage Chart */}
+            <div className="bg-gray-900 border border-gray-700 rounded-xl p-6">
+              <h3 className="text-white font-semibold mb-4">API Calls by Integration (Today)</h3>
+              <ResponsiveContainer width="100%" height={300}>
+                <BarChart data={usageData}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
+                  <XAxis dataKey="name" stroke="#9ca3af" />
+                  <YAxis stroke="#9ca3af" />
+                  <Tooltip contentStyle={{ backgroundColor: '#1f2937', border: '1px solid #374151', borderRadius: 8 }} />
+                  <Legend />
+                  <Bar dataKey="calls" fill="#3b82f6" radius={[4, 4, 0, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+
+            {/* Integrations Table */}
+            <div className="bg-gray-900 border border-gray-700 rounded-xl overflow-hidden">
+              <div className="p-6 border-b border-gray-700">
+                <h3 className="text-white font-semibold">Installed Integrations</h3>
+              </div>
+              <div className="cb-table-scroll touch-pan-x">
+                <table className="w-full text-sm">
+                  <thead className="bg-gray-800 border-b border-gray-700">
+                    <tr>
+                      <th className="px-6 py-3 text-left text-xs font-display text-gray-400">Name</th>
+                      <th className="px-6 py-3 text-left text-xs font-display text-gray-400">Status</th>
+                      <th className="px-6 py-3 text-left text-xs font-display text-gray-400">Last Sync</th>
+                      <th className="px-6 py-3 text-center text-xs font-display text-gray-400">API Calls</th>
+                      <th className="px-6 py-3 text-center text-xs font-display text-gray-400">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-700">
+                    {MY_INSTALLED.map(intg => (
+                      <tr key={intg.id} className="hover:bg-gray-800/50">
+                        <td className="px-6 py-4 text-white font-semibold">{intg.name}</td>
+                        <td className="px-6 py-4">
+                          <span className={`text-xs px-2 py-1 rounded-full font-medium ${statusColor(intg.status)}`}>
+                            {statusLabel(intg.status)}
+                          </span>
+                        </td>
+                        <td className="px-6 py-4 text-gray-300 text-sm">{intg.lastSync}</td>
+                        <td className="px-6 py-4 text-center text-white font-semibold">{intg.apiCallsToday}</td>
+                        <td className="px-6 py-4 text-center">
+                          <div className="flex items-center justify-center gap-2">
+                            <button className="p-2 bg-gray-800 hover:bg-gray-700 rounded transition text-gray-400 hover:text-white" title="Sync now">
+                              <RefreshCw className="h-4 w-4" />
+                            </button>
+                            <button className="p-2 bg-gray-800 hover:bg-gray-700 rounded transition text-gray-400 hover:text-white" title="Configure">
+                              <Settings className="h-4 w-4" />
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* API KEYS TAB */}
+        {subTab === 'api-keys' && (
+          <div className="space-y-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <h3 className="text-lg font-display text-white">API Key Management</h3>
+                <p className="text-sm text-gray-400 mt-1">Manage your API keys and credentials</p>
+              </div>
+              <button
+                onClick={() => setShowGenerateKeyModal(true)}
+                className="flex items-center gap-2 px-4 py-2 btn btn-primary rounded-lg font-semibold text-sm"
+              >
+                <ZapIcon className="h-4 w-4" />
+                Generate Key
+              </button>
+            </div>
+
+            {/* Keys Table */}
+            <div className="bg-gray-900 border border-gray-700 rounded-xl overflow-hidden">
+              <div className="cb-table-scroll touch-pan-x">
+                <table className="w-full text-sm">
+                  <thead className="bg-gray-800 border-b border-gray-700">
+                    <tr>
+                      <th className="px-6 py-3 text-left text-xs font-display text-gray-400">Name</th>
+                      <th className="px-6 py-3 text-left text-xs font-display text-gray-400">Key Preview</th>
+                      <th className="px-6 py-3 text-left text-xs font-display text-gray-400">Scope</th>
+                      <th className="px-6 py-3 text-left text-xs font-display text-gray-400">Created</th>
+                      <th className="px-6 py-3 text-left text-xs font-display text-gray-400">Last Used</th>
+                      <th className="px-6 py-3 text-center text-xs font-display text-gray-400">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-700">
+                    {apiKeys.map(key => (
+                      <tr key={key.id} className="hover:bg-gray-800/50">
+                        <td className="px-6 py-4 text-white font-semibold">{key.name}</td>
+                        <td className="px-6 py-4">
+                          <div className="flex items-center gap-2">
+                            <code className="text-xs text-gray-400 font-mono bg-gray-800 px-2 py-1 rounded">
+                              {showKeyValue === key.id ? 'sk_live_' + Math.random().toString(36).substring(2, 20) : key.keyPreview}
+                            </code>
+                            <button
+                              onClick={() => setShowKeyValue(showKeyValue === key.id ? null : key.id)}
+                              className="text-gray-400 hover:text-white"
+                              title={showKeyValue === key.id ? 'Hide' : 'Show'}
+                            >
+                              {showKeyValue === key.id ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                            </button>
+                            <button
+                              onClick={() => {
+                                navigator.clipboard.writeText('sk_live_' + Math.random().toString(36).substring(2, 20));
+                                toast.success('Key copied to clipboard');
+                              }}
+                              className="text-gray-400 hover:text-white"
+                              title="Copy"
+                            >
+                              <Copy className="h-4 w-4" />
+                            </button>
+                          </div>
+                        </td>
+                        <td className="px-6 py-4">
+                          <span className="text-xs px-2 py-1 bg-blue-900/40 text-blue-400 rounded-full font-medium">
+                            {key.scope}
+                          </span>
+                        </td>
+                        <td className="px-6 py-4 text-gray-300">{key.created}</td>
+                        <td className="px-6 py-4 text-gray-300">{key.lastUsed}</td>
+                        <td className="px-6 py-4 text-center">
+                          <button
+                            onClick={() => handleRevokeKey(key.id)}
+                            className="px-3 py-1 text-xs bg-red-900/40 hover:bg-red-800 text-red-400 rounded font-medium transition-colors"
+                          >
+                            Revoke
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            {/* API Documentation */}
+            <div className="bg-gray-900 border border-gray-700 rounded-xl p-6">
+              <h4 className="text-white font-semibold mb-4">API Documentation</h4>
+              <div className="space-y-2">
+                <p className="text-gray-300 text-sm">Base URL: <code className="text-amber-400 font-mono">https://api.cortexbuild.com/v1</code></p>
+                <p className="text-gray-300 text-sm">Authentication: Bearer token in Authorization header</p>
+                <a href="#" className="text-blue-400 hover:text-blue-300 text-sm flex items-center gap-1">
+                  View API Reference <ExternalLink className="h-3 w-3" />
+                </a>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* SUPPORT TAB */}
         {subTab === 'support' && (
           <div className="space-y-6">
@@ -679,6 +1015,109 @@ export function Marketplace() {
           </div>
         )}
       </div>
+
+      {/* Review Modal */}
+      {showReviewModal && (
+        <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
+          <div className="bg-gray-900 border border-gray-700 rounded-xl w-full max-w-md">
+            <div className="p-6 border-b border-gray-700 flex items-center justify-between">
+              <h3 className="text-xl font-display text-white">Write a Review</h3>
+              <button onClick={() => setShowReviewModal(false)} className="text-gray-400 hover:text-white">
+                <X size={20} />
+              </button>
+            </div>
+            <div className="p-6 space-y-4">
+              <div>
+                <label className="block text-gray-400 text-sm mb-2">Select App</label>
+                <select
+                  value={selectedAppForReview || ''}
+                  onChange={e => setSelectedAppForReview(e.target.value)}
+                  className="w-full input input-bordered text-white"
+                >
+                  {installedApps.map(id => {
+                    const app = APPS.find(a => a.id === id);
+                    return <option key={id} value={id}>{app?.name}</option>;
+                  })}
+                </select>
+              </div>
+              <div>
+                <label className="block text-gray-400 text-sm mb-2">Rating (out of 5)</label>
+                <div className="flex gap-2">
+                  {[1, 2, 3, 4, 5].map(r => (
+                    <button
+                      key={r}
+                      onClick={() => setUserReview({ ...userReview, rating: r })}
+                      className="transition"
+                    >
+                      <Star className={`h-6 w-6 ${userReview.rating >= r ? 'fill-amber-400 text-amber-400' : 'text-gray-500'}`} />
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <div>
+                <label className="block text-gray-400 text-sm mb-2">Comment</label>
+                <textarea
+                  value={userReview.comment}
+                  onChange={e => setUserReview({ ...userReview, comment: e.target.value })}
+                  placeholder="Share your experience..."
+                  className="w-full input input-bordered text-white resize-none"
+                  rows={4}
+                />
+              </div>
+            </div>
+            <div className="p-6 border-t border-gray-700 flex gap-3 justify-end">
+              <button onClick={() => setShowReviewModal(false)} className="px-4 py-2 text-gray-400 hover:text-white">
+                Cancel
+              </button>
+              <button onClick={handleSubmitReview} className="px-4 py-2 btn btn-primary rounded-lg font-semibold">
+                Submit Review
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Generate API Key Modal */}
+      {showGenerateKeyModal && (
+        <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
+          <div className="bg-gray-900 border border-gray-700 rounded-xl w-full max-w-md">
+            <div className="p-6 border-b border-gray-700 flex items-center justify-between">
+              <h3 className="text-xl font-display text-white">Generate API Key</h3>
+              <button onClick={() => setShowGenerateKeyModal(false)} className="text-gray-400 hover:text-white">
+                <X size={20} />
+              </button>
+            </div>
+            <div className="p-6 space-y-4">
+              <div>
+                <label className="block text-gray-400 text-sm mb-2">Key Name</label>
+                <input
+                  type="text"
+                  value={newKeyName}
+                  onChange={e => setNewKeyName(e.target.value)}
+                  placeholder="e.g. Production API Key"
+                  className="w-full input input-bordered text-white"
+                />
+              </div>
+              <div>
+                <label className="block text-gray-400 text-sm mb-2">Scope</label>
+                <select className="w-full input input-bordered text-white">
+                  <option>Full Access</option>
+                  <option>Read-Only</option>
+                  <option>Webhook Events</option>
+                </select>
+              </div>
+            </div>
+            <div className="p-6 border-t border-gray-700 flex gap-3 justify-end">
+              <button onClick={() => setShowGenerateKeyModal(false)} className="px-4 py-2 text-gray-400 hover:text-white">
+                Cancel
+              </button>
+              <button onClick={handleGenerateKey} className="px-4 py-2 btn btn-primary rounded-lg font-semibold">
+                Generate
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </>
   );
 }
