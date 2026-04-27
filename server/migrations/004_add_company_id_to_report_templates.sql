@@ -1,8 +1,21 @@
--- Migration 004: Add company_id and organization_id to report_templates
--- Fixes multi-tenancy gap in report templates schema
+-- Migration 004: SUPERSEDED — DO NOTHING.
+--
+-- This migration originally declared:
+--   ALTER TABLE report_templates ADD COLUMN company_id INTEGER REFERENCES companies(id);
+--   ALTER TABLE report_templates ADD COLUMN organization_id INTEGER REFERENCES organizations(id);
+--
+-- That was always broken: companies.id and organizations.id are UUID (see 000),
+-- so the foreign-key types didn't match and the ALTERs failed at apply time.
+-- It was never actually applied in production until the deploy automation
+-- started running migrations idempotently (commit 858ebd6 on 2026-04-27).
+-- That run surfaced the type mismatch and broke the deploy pipeline.
+--
+-- Migration 039_fix_report_templates_and_projects.sql later rebuilt
+-- report_templates with the correct UUID columns, so the original intent of
+-- this migration is fully covered there.
+--
+-- The file is kept (with the same name + numeric prefix) so any environment
+-- that thinks it already ran 004 stays consistent — but the body is now a
+-- no-op. New work belongs in a new migration, not in here.
 
-ALTER TABLE report_templates ADD COLUMN IF NOT EXISTS company_id INTEGER REFERENCES companies(id);
-ALTER TABLE report_templates ADD COLUMN IF NOT EXISTS organization_id INTEGER REFERENCES organizations(id);
-
--- Backfill existing rows: set to NULL (existing templates will be orphaned until assigned by an admin)
-UPDATE report_templates SET company_id = NULL, organization_id = NULL WHERE company_id IS NULL;
+SELECT 1 WHERE FALSE;
