@@ -82,8 +82,12 @@ function createWebhookRouter(options = {}) {
   /**
    * POST /api/billing/webhook
    * Receives and processes Stripe events.
+   *
+   * The router is mounted at "/api/billing/webhook" in server/index.js, so
+   * the route path here is "/" — NOT "/webhook" (which would expose the
+   * endpoint as "/api/billing/webhook/webhook" and 404 on real deliveries).
    */
-  router.post("/webhook", async (req, res) => {
+  router.post("/", async (req, res) => {
     let event;
 
     try {

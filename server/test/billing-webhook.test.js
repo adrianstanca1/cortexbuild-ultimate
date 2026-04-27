@@ -41,12 +41,14 @@ describe("Billing Webhook Handler", () => {
       next();
     });
 
-    // Create router with mocked dependencies
+    // Create router with mocked dependencies. Mount path matches production
+    // (server/index.js mounts the router AT "/api/billing/webhook"), and the
+    // route inside the router is "/" — so the public URL is "/api/billing/webhook".
     const router = createWebhookRouter({
       db: mockDb,
       stripe: mockStripe,
     });
-    app.use("/api/billing", router);
+    app.use("/api/billing/webhook", router);
 
     process.env.STRIPE_WEBHOOK_SECRET = "whsec_test";
   });
