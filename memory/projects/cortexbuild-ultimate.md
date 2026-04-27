@@ -53,21 +53,15 @@ Node v24, npm 11.9, Python 3.9, Docker 28.5, Git 2.50
 
 **Phase 1 (active)**
 
+- Settings persistence (company, users endpoints)
 - Teams sub-tabs UI (Skills / Inductions / Availability)
 - Zod request validation on critical endpoints
 - Error message sanitization in generic routes
-
-**Phase 1 (shipped, closed 2026-04-27)**
-
-- Settings persistence — `server/routes/company.js` (`PUT /api/company`, user CRUD)
-- Progressive account lockout — `068_add_lockout_columns.sql`, route enforcement via `066_auth_hardening.sql`
-- MFA (TOTP) — `070_add_mfa.sql`, `server/lib/mfa.js`, `MfaChallenge.tsx`, `SettingsMfa.tsx`
-- Workflow automation engine (foundation) — `072_add_workflows.sql`, `server/lib/workflow/*`, `server/routes/workflows.js`; visual builder still deferred
-- Stripe billing (scaffold) — `071_add_subscriptions.sql`, `074_billing_webhook_idempotency.sql`, `075_subscriptions_org_unique.sql`, `stripe-client.js`, `billing.js`, `billing-webhook.js`, `BillingPage.tsx`; live keys + UI promotion still required
+- Progressive account lockout
 
 **Deferred**
 
-- Workflow visual builder UI (engine shipped)
+- MFA (TOTP), workflow automation engine, Stripe billing
 - Procore / QuickBooks / Slack integrations wiring
 - Drawing revision tracking (drawing_revisions table)
 - Offline-first PWA for field apps
