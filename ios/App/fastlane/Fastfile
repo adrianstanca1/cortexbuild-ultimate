@@ -5,7 +5,7 @@ platform :ios do
   desc "Run tests on simulator"
   lane :test do
     run_tests(
-      workspace: "App.xcworkspace",
+      project: "App.xcodeproj",
       scheme: "App",
       devices: ["iPhone 16"]
     )
@@ -14,7 +14,7 @@ platform :ios do
   desc "Build debug IPA for simulator (no signing)"
   lane :build_debug do
     build_app(
-      workspace: "App.xcworkspace",
+      project: "App.xcodeproj",
       scheme: "App",
       configuration: "Debug",
       sdk: "iphonesimulator",
@@ -39,7 +39,7 @@ platform :ios do
     next_build_number
 
     build_app(
-      workspace: "App.xcworkspace",
+      project: "App.xcodeproj",
       scheme: "App",
       configuration: "Release",
       export_method: "app-store",
@@ -60,7 +60,7 @@ platform :ios do
     next_build_number
 
     build_app(
-      workspace: "App.xcworkspace",
+      project: "App.xcodeproj",
       scheme: "App",
       configuration: "Release",
       export_method: "app-store",
