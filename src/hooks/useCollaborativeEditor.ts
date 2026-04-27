@@ -53,7 +53,7 @@ export function useCollaborativeEditor(
 
   const wsRef = useRef<WebSocket | null>(null);
   const clientIdRef = useRef<string>("");
-  const heartbeatRef = useRef<NodeJS.Timeout | null>(null);
+  const heartbeatRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   // Load document content and version history
   useEffect(() => {
