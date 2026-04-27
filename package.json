@@ -37,7 +37,8 @@
     "doctor": "bash scripts/full-stack-doctor.sh",
     "server:build": "cd server && npm run build",
     "format": "prettier --write \"src/**/*.{ts,tsx,json,css,md}\"",
-    "format:check": "prettier --check \"src/**/*.{ts,tsx,json,css,md}\""
+    "format:check": "prettier --check \"src/**/*.{ts,tsx,json,css,md}\"",
+    "postinstall": "patch-package"
   },
   "dependencies": {
     "@capacitor/camera": "^8.1.0",
@@ -113,6 +114,7 @@
     "husky": "^9.1.7",
     "jsdom": "^29.0.2",
     "mock-socket": "^9.3.1",
+    "patch-package": "^8.0.1",
     "postcss": "^8.5.10",
     "prettier": "^3.8.3",
     "rollup-plugin-visualizer": "^7.0.1",

@@ -1,0 +1,13 @@
+diff --git a/node_modules/@capacitor/push-notifications/ios/Sources/PushNotificationsPlugin/PushNotificationsHandler.swift b/node_modules/@capacitor/push-notifications/ios/Sources/PushNotificationsPlugin/PushNotificationsHandler.swift
+index f3972b6..c3bb892 100644
+--- a/node_modules/@capacitor/push-notifications/ios/Sources/PushNotificationsPlugin/PushNotificationsHandler.swift
++++ b/node_modules/@capacitor/push-notifications/ios/Sources/PushNotificationsPlugin/PushNotificationsHandler.swift
+@@ -29,7 +29,7 @@ public class PushNotificationsHandler: NSObject, NotificationHandlerProtocol {
+             }
+         }
+ 
+-        if let optionsArray = self.plugin?.getConfig().getArray("presentationOptions") as? [String] {
++        if let optionsArray = self.plugin?.getConfig().getConfigJSON()["presentationOptions"] as? [String] {
+             var presentationOptions = UNNotificationPresentationOptions.init()
+ 
+             optionsArray.forEach { option in
