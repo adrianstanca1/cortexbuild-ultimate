@@ -1,9 +1,10 @@
 // Module: Insights — CortexBuild Ultimate Enhanced
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
   TrendingUp, AlertTriangle, Lightbulb, Activity, Shield, PoundSterling,
   Users, FileText, ClipboardList, Target, RefreshCw,
   CheckSquare, Square, Trash2, Brain, CheckCircle, XCircle, BarChart3, Zap, Clock,
+  TrendingDown, AlertCircle, Award, Download, Database, Gauge, Percent, DollarSign, ArrowUp, ArrowDown
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { insightsApi } from '../../services/api';
@@ -11,14 +12,14 @@ import { BulkActionsBar, useBulkSelection } from '../ui/BulkActions';
 import { ModuleBreadcrumbs } from '../ui/Breadcrumbs';
 import { EmptyState } from '../ui/EmptyState';
 import {
-  BarChart, Bar, PieChart as RechartsPie,
+  BarChart, Bar, PieChart as RechartsPie, LineChart, Line,
   Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, AreaChart, Area,
 } from 'recharts';
 import { useQuery } from '@tanstack/react-query';
 
 type SeverityLevel = 'critical' | 'high' | 'medium' | 'low' | 'info';
 type CategoryType = 'all' | 'financial' | 'safety' | 'programme' | 'resource' | 'quality' | 'risk';
-type TabType = 'overview' | 'alerts' | 'recommendations' | 'benchmarks' | 'actions' | 'trends';
+type TabType = 'overview' | 'alerts' | 'recommendations' | 'benchmarks' | 'actions' | 'trends' | 'trends-analysis' | 'learning';
 
 interface Insight {
   id: string;
@@ -91,6 +92,11 @@ export function Insights() {
   const [categoryFilter, setCategoryFilter] = useState<CategoryType>('all');
   const [dismissed, setDismissed] = useState<Set<string>>(new Set());
   const [dismissedAlerts, setDismissedAlerts] = useState<Set<string>>(new Set());
+  const [dismissedRecs, setDismissedRecs] = useState<Set<string>>(new Set());
+  const [macroTrends, setMacroTrends] = useState<TrendItem[]>([]);
+  const [kpiTrends, setKpiTrends] = useState<KpiTrend[]>([]);
+  const [aiLearnings, setAiLearnings] = useState<AnyRow[]>([]);
+  const [dataSources, setDataSources] = useState<DataSource[]>([]);
 
   const { data: allInsights = [] } = useQuery({
     queryKey: ['insights'],
@@ -98,6 +104,73 @@ export function Insights() {
   });
 
   const { selectedIds, toggle, clearSelection } = useBulkSelection();
+
+  type AnyRow = Record<string, unknown>;
+
+interface TrendItem {
+  id: string | number;
+  title: string;
+  category: string;
+  month: string;
+  trend: 'up' | 'down' | 'neutral';
+  detail: string;
+  change?: number | null;
+}
+
+interface KpiTrend {
+  id: string | number;
+  metric: string;
+  value: string | number;
+  target: string | number;
+  deviation: number;
+  trend: 'up' | 'down';
+}
+
+interface DataSource {
+  id: string | number;
+  name: string;
+  records: string | number;
+  lastSynced?: string;
+  lastSync?: string;
+  connected?: boolean;
+  icon?: string;
+}
+
+  useEffect(() => {
+    // Mock macro trends data
+    setMacroTrends([
+      { id: '1', title: 'Material Costs Index', category: 'Material Costs', change: 8.3, trend: 'up', detail: 'Steel +12%, Copper +5%, Timber +6%', month: 'Apr 2026' },
+      { id: '2', title: 'Labour Market Tightness', category: 'Labour Market', change: 3.2, trend: 'up', detail: 'Construction wage growth 4.2% YoY', month: 'Apr 2026' },
+      { id: '3', title: 'Building Regs Update', category: 'Regulatory', change: null, trend: 'neutral', detail: 'Fire Safety Act 2024 enforcement begins June 2026', month: 'Apr 2026' },
+      { id: '4', title: 'Weather Forecast Q2', category: 'Weather', change: -5.2, trend: 'down', detail: 'Expected above-average rainfall +15%', month: 'Apr 2026' },
+    ]);
+
+    setKpiTrends([
+      { id: '1', metric: 'Project Delivery', value: 94, target: 90, deviation: 4, trend: 'up' },
+      { id: '2', metric: 'Budget Variance', value: 2.3, target: 5, deviation: -2.7, trend: 'up' },
+      { id: '3', metric: 'Safety Score', value: 96, target: 95, deviation: 1, trend: 'up' },
+      { id: '4', metric: 'Labour Productivity', value: 87, target: 85, deviation: 2, trend: 'up' },
+      { id: '5', metric: 'Material Waste', value: 3.1, target: 2.5, deviation: 0.6, trend: 'down' },
+    ]);
+
+    setAiLearnings([
+      { id: '1', title: 'Project Geography', description: 'We\'ve completed 247 projects across 42 UK postcodes, with concentration in SW1, EC1, and M1 regions' },
+      { id: '2', title: 'Payment Terms', description: 'Average payment terms are 34 days, with 78% of clients paying within 40 days' },
+      { id: '3', title: 'Defect Patterns', description: 'Most common defect type is weather-related cladding (12%), followed by drainage (8%)' },
+      { id: '4', title: 'Schedule Patterns', description: 'Projects in winter run 8-12% longer; summer delays 4-6% due to weather' },
+      { id: '5', title: 'Cost Drivers', description: 'Labour is 48% of costs, materials 35%, subcontractors 12%, other 5%' },
+      { id: '6', title: 'Repeat Clients', description: '31% of revenue comes from repeat clients; avg 2.3 projects per client' },
+    ]);
+
+    setDataSources([
+      { id: '1', name: 'Projects', records: 247, lastSync: '2 hours ago', icon: '📊' },
+      { id: '2', name: 'Invoices', records: 1243, lastSync: '1 hour ago', icon: '💷' },
+      { id: '3', name: 'Safety Reports', records: 89, lastSync: '4 hours ago', icon: '🛡️' },
+      { id: '4', name: 'RFIs', records: 342, lastSync: '30 mins ago', icon: '📋' },
+      { id: '5', name: 'Timesheets', records: 5621, lastSync: 'Just now', icon: '⏱️' },
+      { id: '6', name: 'Contacts', records: 543, lastSync: '3 hours ago', icon: '👥' },
+    ]);
+  }, []);
 
   // Alerts derived from high/critical insights
   const realAlerts: Alert[] = allInsights
@@ -388,7 +461,7 @@ export function Insights() {
 
         {/* Tab Navigation */}
         <div className="flex gap-2 border-b border-gray-700 cb-table-scroll touch-pan-x">
-          {(['overview', 'alerts', 'recommendations', 'benchmarks', 'actions', 'trends'] as const).map((tab) => (
+          {(['overview', 'alerts', 'recommendations', 'benchmarks', 'actions', 'trends', 'trends-analysis', 'learning'] as const).map((tab) => (
             <button
               key={tab}
               onClick={() => setActiveTab(tab)}
@@ -404,6 +477,8 @@ export function Insights() {
               {tab === 'benchmarks' && 'Benchmarks'}
               {tab === 'actions' && 'AI Actions'}
               {tab === 'trends' && 'Trends'}
+              {tab === 'trends-analysis' && 'Trend Analysis'}
+              {tab === 'learning' && 'Learning'}
             </button>
           ))}
         </div>
@@ -531,10 +606,64 @@ export function Insights() {
 
         {/* Recommendations Tab */}
         {activeTab === 'recommendations' && (
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-            {realRecommendations.map((rec) => (
-              <RecommendationCard key={rec.id} rec={rec} />
-            ))}
+          <div className="space-y-4">
+            <div className="flex flex-wrap gap-2 bg-gray-800 border-gray-700 rounded-xl border p-4">
+              {['All', 'Cost Saving', 'Risk Reduction', 'Efficiency', 'Compliance'].map(type => (
+                <button key={type} className="px-3 py-1.5 rounded text-xs font-medium bg-gray-700 hover:bg-orange-500/20 text-gray-300 hover:text-orange-400 transition-colors">
+                  {type}
+                </button>
+              ))}
+            </div>
+
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+              {[
+                { type: 'Cost Saving', priority: 'High', title: 'Bulk Material Ordering', desc: 'Consolidate material orders across projects to reduce supply chain costs by 12%', impact: '£45,000', effort: 'Medium' },
+                { type: 'Risk Reduction', priority: 'Critical', title: 'Safety Protocol Update', desc: 'Implement enhanced H&S procedures to reduce incident risk on high-rise projects', impact: '£120,000', effort: 'High' },
+                { type: 'Efficiency', priority: 'Medium', title: 'Labour Schedule Optimization', desc: 'Optimize crew scheduling to reduce idle time and improve site productivity by 8%', impact: '8%', effort: 'Low' },
+                { type: 'Compliance', priority: 'High', title: 'Building Regs Alignment', desc: 'Align all projects with updated 2024 Building Regulations and Fire Safety Act', impact: 'Compliance', effort: 'Medium' },
+                { type: 'Cost Saving', priority: 'Medium', title: 'Energy Efficiency Upgrade', desc: 'Specify renewable energy materials for all new builds to reduce operating costs', impact: '£18,000', effort: 'Low' },
+                { type: 'Efficiency', priority: 'Low', title: 'Digital Timesheets', desc: 'Implement digital timekeeping system for faster payroll processing and data accuracy', impact: '5%', effort: 'Low' },
+                { type: 'Risk Reduction', priority: 'Medium', title: 'Weather Contingency', desc: 'Add strategic weather buffer days to schedules during Q4-Q1 winter period', impact: '£75,000', effort: 'Low' },
+                { type: 'Cost Saving', priority: 'High', title: 'Subcontractor Rate Negotiation', desc: 'Renegotiate Q2-Q3 rates with key subcontractors post-budget planning', impact: '£32,000', effort: 'Medium' },
+                { type: 'Compliance', priority: 'Medium', title: 'Environmental Impact Assessment', desc: 'Formalize EIA process for all projects >£500k to meet statutory requirements', impact: 'Compliance', effort: 'High' },
+                { type: 'Efficiency', priority: 'Low', title: 'Template Library Expansion', desc: 'Create 15 new project management templates to standardize delivery', impact: '10%', effort: 'Medium' },
+              ].filter(r => !dismissedRecs.has(String(r.title))).map((rec, idx) => {
+                const impactColours = { 'Cost Saving': '#10b981', 'Risk Reduction': '#ef4444', 'Efficiency': '#3b82f6', 'Compliance': '#8b5cf6' };
+                const priorityColours = { Critical: '#ef4444', High: '#f97316', Medium: '#f59e0b', Low: '#10b981' };
+                return (
+                  <div key={idx} className="card p-5 border border-gray-700 hover:border-amber-500/50 transition-colors">
+                    <div className="flex items-start justify-between mb-3">
+                      <div>
+                        <p className="text-xs uppercase font-display" style={{color: impactColours[rec.type as keyof typeof impactColours]}}>{rec.type}</p>
+                        <h4 className="text-sm font-display text-white mt-1">{rec.title}</h4>
+                      </div>
+                      <span className="px-2 py-1 rounded text-xs font-medium" style={{background: `${priorityColours[rec.priority as keyof typeof priorityColours]}20`, color: priorityColours[rec.priority as keyof typeof priorityColours]}}>
+                        {rec.priority}
+                      </span>
+                    </div>
+                    <p className="text-sm text-gray-300 mb-3">{rec.desc}</p>
+                    <div className="bg-gray-800/50 rounded p-3 mb-4 grid grid-cols-2 gap-3 text-xs">
+                      <div>
+                        <p className="text-gray-400">Potential Impact</p>
+                        <p className="font-display text-white">{rec.impact}</p>
+                      </div>
+                      <div>
+                        <p className="text-gray-400">Effort Level</p>
+                        <p className="font-display text-white">{rec.effort}</p>
+                      </div>
+                    </div>
+                    <div className="flex gap-2">
+                      <button className="flex-1 px-3 py-2 rounded text-xs bg-emerald-500/20 text-emerald-400 hover:bg-emerald-500/30 transition-colors flex items-center justify-center gap-1 font-medium">
+                        <CheckCircle className="h-3 w-3"/>Implement
+                      </button>
+                      <button onClick={() => setDismissedRecs(new Set([...dismissedRecs, rec.title]))} className="flex-1 px-3 py-2 rounded text-xs bg-gray-800 hover:bg-gray-700 text-gray-300 transition-colors font-medium">
+                        Dismiss
+                      </button>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
           </div>
         )}
 
@@ -594,6 +723,180 @@ export function Insights() {
                     <Area type="monotone" dataKey="teamProductivity" stroke="#10b981" fill="#10b981" fillOpacity={0.1} name="Team Productivity" />
                   </AreaChart>
                 </ResponsiveContainer>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Trend Analysis Tab */}
+        {activeTab === 'trends-analysis' && (
+          <div className="space-y-6">
+            <div className="flex items-center justify-between">
+              <p className="text-sm text-gray-400">Industry and project trends affecting your business</p>
+              <button className="flex items-center gap-2 px-3 py-2 bg-amber-900/30 text-amber-400 hover:bg-amber-900/50 rounded-lg text-sm font-medium">
+                <Zap size={14}/>Subscribe to Alerts
+              </button>
+            </div>
+
+            {/* Macro Trends Feed */}
+            <div className="space-y-3">
+              <h3 className="text-lg font-display text-white">Macro Trends</h3>
+              {macroTrends.map(trend => (
+                <div key={String(trend.id)} className="bg-gray-800 border-gray-700 rounded-xl border p-4">
+                  <div className="flex items-start justify-between mb-2">
+                    <div>
+                      <p className="font-semibold text-white">{String(trend.title)}</p>
+                      <p className="text-xs text-gray-400">{String(trend.category)} • {String(trend.month)}</p>
+                    </div>
+                    {trend.trend === 'up' && <TrendingUp className="h-5 w-5 text-red-400 flex-shrink-0"/>}
+                    {trend.trend === 'down' && <TrendingDown className="h-5 w-5 text-green-400 flex-shrink-0"/>}
+                    {trend.trend === 'neutral' && <AlertCircle className="h-5 w-5 text-yellow-400 flex-shrink-0"/>}
+                  </div>
+                  <p className="text-sm text-gray-300 mb-2">{String(trend.detail)}</p>
+                  {trend.change != null && <p className={`text-sm font-semibold ${trend.trend === 'up' ? 'text-red-400' : 'text-green-400'}`}>{Number(trend.change) > 0 ? '+' : ''}{String(trend.change)}%</p>}
+                </div>
+              ))}
+            </div>
+
+            {/* Material Cost Index Chart */}
+            <div className="card p-5 border border-gray-700">
+              <h3 className="text-lg font-display text-white mb-4 flex items-center gap-2">
+                <BarChart3 className="h-5 w-5 text-amber-400"/>
+                Material Cost Index (12 Months)
+              </h3>
+              <div className="h-80">
+                <ResponsiveContainer width="100%" height="100%">
+                  <LineChart data={[
+                    { month: 'May', steel: 98, copper: 102, timber: 101, concrete: 99 },
+                    { month: 'Jun', steel: 100, copper: 103, timber: 102, concrete: 100 },
+                    { month: 'Jul', steel: 102, copper: 105, timber: 104, concrete: 102 },
+                    { month: 'Aug', steel: 104, copper: 106, timber: 105, concrete: 103 },
+                    { month: 'Sep', steel: 105, copper: 108, timber: 107, concrete: 104 },
+                    { month: 'Oct', steel: 106, copper: 109, timber: 108, concrete: 105 },
+                    { month: 'Nov', steel: 108, copper: 111, timber: 110, concrete: 107 },
+                    { month: 'Dec', steel: 109, copper: 112, timber: 111, concrete: 108 },
+                    { month: 'Jan', steel: 110, copper: 113, timber: 112, concrete: 109 },
+                    { month: 'Feb', steel: 111, copper: 114, timber: 113, concrete: 110 },
+                    { month: 'Mar', steel: 112, copper: 115, timber: 114, concrete: 111 },
+                    { month: 'Apr', steel: 114, copper: 117, timber: 116, concrete: 112 },
+                  ]}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#374151"/>
+                    <XAxis dataKey="month" stroke="#9ca3af"/>
+                    <YAxis stroke="#9ca3af"/>
+                    <Tooltip contentStyle={{background: '#1f2937', border: '1px solid #374151'}}/>
+                    <Legend/>
+                    <Line type="monotone" dataKey="steel" stroke="#ef4444" dot={false}/>
+                    <Line type="monotone" dataKey="copper" stroke="#f97316" dot={false}/>
+                    <Line type="monotone" dataKey="timber" stroke="#f59e0b" dot={false}/>
+                    <Line type="monotone" dataKey="concrete" stroke="#06b6d4" dot={false}/>
+                  </LineChart>
+                </ResponsiveContainer>
+              </div>
+            </div>
+
+            {/* KPI Trends Table */}
+            <div className="card p-5 border border-gray-700">
+              <h3 className="text-lg font-display text-white mb-4">Tracked KPIs vs Target</h3>
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead className="border-b border-gray-700">
+                    <tr>
+                      <th className="text-left py-3 px-4 text-gray-400 font-medium">Metric</th>
+                      <th className="text-right py-3 px-4 text-gray-400 font-medium">Current</th>
+                      <th className="text-right py-3 px-4 text-gray-400 font-medium">Target</th>
+                      <th className="text-right py-3 px-4 text-gray-400 font-medium">Deviation</th>
+                      <th className="text-right py-3 px-4 text-gray-400 font-medium">Trend</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-700">
+                    {kpiTrends.map(kpi => (
+                      <tr key={String(kpi.id)} className="hover:bg-gray-700/50">
+                        <td className="py-3 px-4 text-white font-medium">{String(kpi.metric)}</td>
+                        <td className="text-right py-3 px-4 text-white">{String(kpi.value ?? "")}</td>
+                        <td className="text-right py-3 px-4 text-gray-400">{String(kpi.target ?? "")}</td>
+                        <td className={`text-right py-3 px-4 font-semibold ${Number(kpi.deviation) >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                          {Number(kpi.deviation) >= 0 ? '+' : ''}{String(kpi.deviation ?? "")}
+                        </td>
+                        <td className="text-right py-3 px-4">
+                          {kpi.trend === 'up' ? <ArrowUp className="h-4 w-4 text-green-400 inline"/> : <ArrowDown className="h-4 w-4 text-red-400 inline"/>}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Learning Tab */}
+        {activeTab === 'learning' && (
+          <div className="space-y-6">
+            <p className="text-sm text-gray-400">What the AI has learned from your project history</p>
+
+            {/* AI Learnings Cards */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+              {aiLearnings.map(learning => (
+                <div key={String(learning.id)} className="bg-gray-800 border-gray-700 rounded-xl border p-5">
+                  <div className="flex items-start gap-3 mb-3">
+                    <div className="p-2 rounded-lg bg-amber-900/30">
+                      <Brain className="h-5 w-5 text-amber-400"/>
+                    </div>
+                    <h3 className="font-semibold text-white flex-1">{String(learning.title)}</h3>
+                  </div>
+                  <p className="text-sm text-gray-300">{String(learning.description)}</p>
+                </div>
+              ))}
+            </div>
+
+            {/* Data Sources Panel */}
+            <div className="card p-6 border border-gray-700">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-display text-white flex items-center gap-2">
+                  <Database className="h-5 w-5 text-blue-400"/>
+                  Data Sources
+                </h3>
+                <button className="flex items-center gap-2 px-3 py-2 bg-blue-900/30 text-blue-400 hover:bg-blue-900/50 rounded-lg text-sm font-medium">
+                  <RefreshCw size={14}/>Trigger Re-analysis
+                </button>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {dataSources.map(source => (
+                  <div key={String(source.id)} className="bg-gray-700/50 rounded-lg p-4 border border-gray-600">
+                    <div className="flex items-start justify-between mb-3">
+                      <div className="flex items-center gap-3">
+                        <span className="text-2xl">{String(source.icon)}</span>
+                        <div>
+                          <p className="font-semibold text-white">{String(source.name)}</p>
+                          <p className="text-xs text-gray-400">{String(source.records ?? "")} records</p>
+                        </div>
+                      </div>
+                    </div>
+                    <p className="text-xs text-gray-400">Last synced: {String(source.lastSync)}</p>
+                  </div>
+                ))}
+              </div>
+              <p className="text-xs text-gray-500 mt-4 text-center">AI re-analyzes data weekly. Last analysis: 6 hours ago</p>
+            </div>
+
+            {/* Recommendations from Learning */}
+            <div className="card p-5 border border-gray-700">
+              <h3 className="text-lg font-display text-white mb-4 flex items-center gap-2">
+                <Lightbulb className="h-5 w-5 text-amber-400"/>
+                Data-Driven Recommendations
+              </h3>
+              <div className="space-y-3">
+                {[
+                  { title: 'Postcode Expansion', desc: 'Strong performance in SW1/EC1 areas; consider expanding to similar profiles in London zones 2-3' },
+                  { title: 'Payment Terms Optimization', desc: 'Early payment discounts could reduce 34-day average to 28 days, improving cash flow by ~6%' },
+                  { title: 'Defect Prevention', desc: 'Focus Q2-Q3 training on weather-related cladding defects (preventable in 65% of cases)' },
+                  { title: 'Winter Project Premium', desc: 'Winter projects 10% longer; recommend 12% markup on winter bids to offset schedule risk' },
+                ].map((rec, idx) => (
+                  <div key={idx} className="bg-gray-700/30 rounded-lg p-3 border-l-2 border-amber-500">
+                    <p className="font-medium text-white text-sm">{rec.title}</p>
+                    <p className="text-xs text-gray-300 mt-1">{rec.desc}</p>
+                  </div>
+                ))}
               </div>
             </div>
           </div>

@@ -1,5 +1,6 @@
 import { useState, useRef } from 'react';
-import { Shield, Plus, Search, FileCheck, AlertTriangle, Clock, CheckCircle, Edit2, Trash2, X, ChevronDown, ChevronUp, Download, Award, Upload, CheckSquare, Square, PenLine } from 'lucide-react';
+import { Shield, Plus, Search, FileCheck, AlertTriangle, Clock, CheckCircle, Edit2, Trash2, X, ChevronDown, ChevronUp, Download, Award, Upload, CheckSquare, Square, PenLine, Eye, TrendingUp, Calendar, Users } from 'lucide-react';
+import { BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { DataImporter, ExportButton } from '../ui/DataImportExport';
 import { ModuleBreadcrumbs } from '../ui/Breadcrumbs';
 import { useRAMS } from '../../hooks/useData';
@@ -48,13 +49,18 @@ const statusColour: Record<string,string> = {
 const emptyForm = { title:'',activity:'',project_id:'',doc_type:'RAMS',status:'Draft',reviewed_by:'',approved_by:'',valid_from:'',valid_until:'',hazards:'',controls:'',ppe:'',version:'1',created_by:'',review_date:'',likelihood:'3',severity:'3',notes:'' };
 
 const TEMPLATES = [
-  { name: 'Excavation', activity: 'Excavation', hazards: 'Collapse, Struck by equipment, Utilities damage' },
-  { name: 'Working at Height', activity: 'Working at Height', hazards: 'Falls, Dropped objects, Weather exposure' },
-  { name: 'Electrical', activity: 'Electrical', hazards: 'Electric shock, Arc flash, Electrocution' },
-  { name: 'Demolition', activity: 'Demolition', hazards: 'Structural collapse, Dust inhalation, Asbestos' },
-  { name: 'Hot Works', activity: 'Hot Works', hazards: 'Fire, Explosions, Thermal burns' },
-  { name: 'Confined Space', activity: 'Confined Space', hazards: 'Oxygen depletion, Gas poisoning, Entrapment' },
-  { name: 'Manual Handling', activity: 'Excavation', hazards: 'Back injury, Repetitive strain, Muscle damage' },
+  { name: 'Scaffold erection/dismantling', activity: 'Scaffolding', hazards: 'Falls from height, Collapse, Poor foundation', lastUpdated: '2026-03-15', type: 'Scaffold' },
+  { name: 'Excavation work', activity: 'Excavation', hazards: 'Collapse, Struck by equipment, Utilities damage', lastUpdated: '2026-03-12', type: 'Groundwork' },
+  { name: 'Working at height', activity: 'Working at Height', hazards: 'Falls, Dropped objects, Weather exposure', lastUpdated: '2026-03-10', type: 'Access' },
+  { name: 'Confined space entry', activity: 'Confined Space', hazards: 'Oxygen depletion, Gas poisoning, Entrapment', lastUpdated: '2026-03-08', type: 'Confined Space' },
+  { name: 'Hot works', activity: 'Hot Works', hazards: 'Fire, Explosions, Thermal burns', lastUpdated: '2026-03-14', type: 'Welding' },
+  { name: 'Lifting operations', activity: 'Structural Steel', hazards: 'Dropped loads, Slinging failure, Load tipping', lastUpdated: '2026-03-11', type: 'Lifting' },
+  { name: 'Electrical isolation', activity: 'Electrical', hazards: 'Electric shock, Arc flash, Electrocution', lastUpdated: '2026-03-09', type: 'Electrical' },
+  { name: 'Demolition', activity: 'Demolition', hazards: 'Structural collapse, Dust inhalation, Asbestos', lastUpdated: '2026-03-13', type: 'Demolition' },
+  { name: 'Concrete pour', activity: 'Concrete Works', hazards: 'Chemical burns, Inhalation, Musculoskeletal injury', lastUpdated: '2026-03-07', type: 'Concrete' },
+  { name: 'Piling', activity: 'Excavation', hazards: 'Vibration injury, Noise exposure, Ground disturbance', lastUpdated: '2026-03-06', type: 'Piling' },
+  { name: 'Temporary works', activity: 'Structural Steel', hazards: 'Inadequate support, Overload, Collapse', lastUpdated: '2026-03-05', type: 'Temporary' },
+  { name: 'Groundwork', activity: 'Groundworks', hazards: 'Struck by plant, Slips/trips, Weather exposure', lastUpdated: '2026-03-04', type: 'Groundwork' },
 ];
 
 export function RAMS() {
@@ -65,7 +71,11 @@ export function RAMS() {
   const updateMutation = useUpdate();
   const deleteMutation = useDelete();
 
-  const [subTab, setSubTab] = useState<'documents'|'method_statements'|'risk_assessments'|'templates'|'approvals'>('documents');
+  const [subTab, setSubTab] = useState<'documents'|'method_statements'|'risk_assessments'|'templates'|'approvals'|'analytics'>('documents');
+  const [showTemplatePreview, setShowTemplatePreview] = useState<typeof TEMPLATES[0] | null>(null);
+  const [showApprovalModal, setShowApprovalModal] = useState(false);
+  const [approvalReviewId, setApprovalReviewId] = useState<string | null>(null);
+  const [approvalComments, setApprovalComments] = useState('');
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('All');
   const [showModal, setShowModal] = useState(false);
@@ -289,18 +299,19 @@ export function RAMS() {
         ))}
       </div>
 
-      <div className="flex gap-1 border-b border-gray-800">
+      <div className="flex gap-1 border-b border-gray-800 overflow-x-auto">
         {([
           { key: 'documents', label: 'Documents', count: rams.length },
           { key: 'method_statements', label: 'Method Statements', count: rams.filter(r => r.doc_type === 'Method Statement').length },
           { key: 'risk_assessments', label: 'Risk Assessments', count: riskAssessments.length },
           { key: 'templates', label: 'Templates', count: TEMPLATES.length },
           { key: 'approvals', label: 'Approvals', count: reviewCount },
+          { key: 'analytics', label: 'Analytics', count: 0 },
         ] as const).map(t => (
           <button type="button"  key={t.key} onClick={() => setSubTab(t.key)}
-            className={`flex items-center gap-2 px-4 py-2.5 text-sm font-medium border-b-2 -mb-px transition-colors ${subTab === t.key ? 'border-orange-500 text-orange-500' : 'border-transparent text-gray-400 hover:text-gray-200'}`}>
+            className={`flex items-center gap-2 px-4 py-2.5 text-sm font-medium border-b-2 -mb-px transition-colors whitespace-nowrap ${subTab === t.key ? 'border-orange-500 text-orange-500' : 'border-transparent text-gray-400 hover:text-gray-200'}`}>
             {t.label}
-            <span className={`text-xs px-1.5 py-0.5 rounded-full ${t.key === 'approvals' && t.count > 0 ? 'bg-yellow-900/40 text-yellow-400' : 'bg-gray-800 text-gray-400'}`}>{t.count}</span>
+            {t.count > 0 && <span className={`text-xs px-1.5 py-0.5 rounded-full ${t.key === 'approvals' && t.count > 0 ? 'bg-yellow-900/40 text-yellow-400' : 'bg-gray-800 text-gray-400'}`}>{t.count}</span>}
           </button>
         ))}
       </div>
@@ -480,44 +491,182 @@ export function RAMS() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {TEMPLATES.map(template => (
             <div key={template.name} className="bg-gray-900 rounded-xl border border-gray-800 p-4 hover:border-orange-500/50 transition-colors">
-              <div className="flex items-center gap-2 mb-3">
-                <Award size={18} className="text-orange-400" />
-                <h3 className="font-semibold text-white">{template.name}</h3>
+              <div className="mb-3">
+                <div className="flex items-center gap-2 mb-2">
+                  <Award size={18} className="text-orange-400" />
+                  <h3 className="font-semibold text-white">{template.name}</h3>
+                </div>
+                <span className="inline-block text-xs px-2 py-1 bg-orange-900/30 text-orange-300 rounded-full">{template.type}</span>
               </div>
-              <p className="text-xs text-gray-400 mb-3">{template.hazards}</p>
-              <button type="button" onClick={() => applyTemplate(template)} className="w-full px-3 py-2 bg-orange-600 text-white rounded-lg text-xs font-medium hover:bg-orange-700">
-                Use Template
-              </button>
+              <div className="space-y-2 mb-4 text-xs">
+                <p className="text-gray-400"><span className="text-gray-500">Activity:</span> {template.activity}</p>
+                <p className="text-gray-400"><span className="text-gray-500">Hazards:</span> {template.hazards}</p>
+                <p className="text-gray-500"><span className="text-gray-600">Updated:</span> {template.lastUpdated}</p>
+              </div>
+              <div className="flex gap-2">
+                <button type="button" onClick={() => applyTemplate(template)} className="flex-1 px-3 py-2 bg-orange-600 text-white rounded-lg text-xs font-medium hover:bg-orange-700">
+                  Use Template
+                </button>
+                <button type="button" onClick={() => setShowTemplatePreview(template)} className="flex-1 px-3 py-2 bg-gray-800 text-gray-300 rounded-lg text-xs font-medium hover:bg-gray-700 flex items-center justify-center gap-1">
+                  <Eye size={12} /> Preview
+                </button>
+              </div>
             </div>
           ))}
         </div>
       )}
 
       {subTab === 'approvals' && (
-        <div className="bg-gray-900 rounded-xl border border-gray-800 overflow-hidden">
-          {rams.filter(r => r.status === 'Under Review').length === 0 ? (
-            <div className="text-center py-12 text-gray-500 bg-gray-900 rounded-xl border border-gray-800">
-              <CheckCircle size={32} className="mx-auto mb-2 opacity-30 text-green-500" />
-              <p>No documents awaiting approval</p>
+        <div className="space-y-6">
+          {reviewCount > 0 && (
+            <div className="bg-yellow-500/10 border border-yellow-500/30 rounded-xl px-4 py-3 flex items-center gap-2">
+              <AlertTriangle size={16} className="text-yellow-400" />
+              <span className="text-sm font-medium text-yellow-300">{reviewCount} document{reviewCount !== 1 ? 's' : ''} pending review</span>
             </div>
-          ) : (
-            <table className="w-full text-sm">
-              <thead className="bg-gray-800/50 border-b border-gray-800">
-                <tr>{['Document', 'Requestor', 'Approval Chain', 'Sign-off', 'Action'].map(h => <th key={h} className="text-left px-4 py-3 text-xs font-display text-gray-500 uppercase tracking-widest">{h}</th>)}</tr>
-              </thead>
-              <tbody className="divide-y divide-gray-800">
-                {rams.filter(r => r.status === 'Under Review').map(r => (
-                  <tr key={String(r.id ?? '')} className="hover:bg-gray-800/50">
-                    <td className="px-4 py-3 font-medium text-white">{String(r.title ?? '')}</td>
-                    <td className="px-4 py-3 text-gray-400">{String(r.created_by ?? '—')}</td>
-                    <td className="px-4 py-3 text-xs text-gray-400">Principal Contractor → Client</td>
-                    <td className="px-4 py-3"><input type="text" placeholder="Name" className="w-32 bg-gray-800 border border-gray-700 rounded px-2 py-1 text-xs text-white" /></td>
-                    <td className="px-4 py-3"><button type="button" onClick={() => approve(r)} className="text-xs px-3 py-1 bg-green-600 text-white rounded-lg hover:bg-green-700 font-medium">Approve</button></td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
           )}
+          <div className="bg-gray-900 rounded-xl border border-gray-800 overflow-hidden">
+            {rams.filter(r => r.status === 'Under Review').length === 0 ? (
+              <div className="text-center py-12 text-gray-500 bg-gray-900 rounded-xl border border-gray-800">
+                <CheckCircle size={32} className="mx-auto mb-2 opacity-30 text-green-500" />
+                <p>No documents awaiting approval</p>
+              </div>
+            ) : (
+              <table className="w-full text-sm">
+                <thead className="bg-gray-800/50 border-b border-gray-800">
+                  <tr>{['Document', 'Requestor', 'Submitted', 'Reviewer', 'Status', 'Action'].map(h => <th key={h} className="text-left px-4 py-3 text-xs font-display text-gray-500 uppercase tracking-widest">{h}</th>)}</tr>
+                </thead>
+                <tbody className="divide-y divide-gray-800">
+                  {rams.filter(r => r.status === 'Under Review').map(r => (
+                    <tr key={String(r.id ?? '')} className="hover:bg-gray-800/50">
+                      <td className="px-4 py-3 font-medium text-white">{String(r.title ?? '')}</td>
+                      <td className="px-4 py-3 text-gray-400 text-sm">{String(r.created_by ?? '—')}</td>
+                      <td className="px-4 py-3 text-gray-400 text-sm">{String(r.review_date ?? '—').slice(0,10)}</td>
+                      <td className="px-4 py-3 text-gray-400 text-sm">{String(r.reviewed_by ?? '—')}</td>
+                      <td className="px-4 py-3"><span className="text-xs px-2 py-1 bg-yellow-900/30 text-yellow-300 rounded-full">Pending</span></td>
+                      <td className="px-4 py-3"><button type="button" onClick={() => { setApprovalReviewId(String(r.id)); setShowApprovalModal(true); }} className="text-xs px-3 py-1 bg-orange-600 text-white rounded-lg hover:bg-orange-700 font-medium">Review</button></td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
+          </div>
+          {rams.filter(r => r.status === 'Approved').length > 0 && (
+            <div className="space-y-4">
+              <h3 className="text-sm font-semibold text-gray-300 uppercase tracking-wide">Approval History</h3>
+              <div className="space-y-2">
+                {rams.filter(r => r.status === 'Approved').slice(0, 5).map(r => (
+                  <div key={String(r.id ?? '')} className="bg-gray-900 rounded-lg border border-gray-800 p-3 flex items-center justify-between">
+                    <div className="text-sm">
+                      <p className="text-white font-medium">{String(r.title ?? '')}</p>
+                      <p className="text-gray-400 text-xs">Approved by {String(r.approved_by ?? '—')} on {String(r.review_date ?? '—').slice(0,10)}</p>
+                    </div>
+                    <CheckCircle size={16} className="text-green-400" />
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
+      {subTab === 'analytics' && (
+        <div className="space-y-6">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            {[
+              { label: 'Total RAMS', value: rams.length, icon: FileCheck, colour: 'text-blue-400', bg: 'bg-blue-500/10' },
+              { label: 'Active', value: rams.filter(r => r.status === 'Approved').length, icon: CheckCircle, colour: 'text-green-400', bg: 'bg-green-500/10' },
+              { label: 'Expiring (90d)', value: rams.filter(r => {
+                const until = r.valid_until;
+                if (!until || r.status !== 'Approved') return false;
+                const diff = (new Date(String(until)).getTime() - Date.now()) / 86400000;
+                return diff >= 0 && diff <= 90;
+              }).length, icon: AlertTriangle, colour: 'text-orange-400', bg: 'bg-orange-500/10' },
+              { label: 'Approval Rate', value: rams.length > 0 ? `${Math.round((approvedCount / rams.length) * 100)}%` : '0%', icon: TrendingUp, colour: 'text-purple-400', bg: 'bg-purple-500/10' },
+            ].map(kpi => (
+              <div key={kpi.label} className="bg-gray-900 rounded-xl border border-gray-800 p-4">
+                <div className="flex items-center gap-3">
+                  <div className={`p-2 rounded-lg ${kpi.bg}`}><kpi.icon size={20} className={kpi.colour} /></div>
+                  <div><p className="text-xs text-gray-500">{kpi.label}</p><p className="text-xl font-display text-white">{kpi.value}</p></div>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          <div className="bg-gray-900 rounded-xl border border-gray-800 p-5">
+            <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2"><FileCheck size={18} /> RAMS by Activity Type</h3>
+            <div style={{ height: 300 }}>
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={ACTIVITY_TYPES.map(act => ({
+                  activity: act.slice(0, 12),
+                  count: rams.filter(r => r.activity === act).length,
+                }))}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
+                  <XAxis dataKey="activity" stroke="#9ca3af" fontSize={11} />
+                  <YAxis stroke="#9ca3af" />
+                  <Tooltip contentStyle={{ background: '#1f2937', border: '1px solid #374151' }} />
+                  <Bar dataKey="count" fill="#f97316" />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
+
+          <div className="bg-gray-900 rounded-xl border border-gray-800 p-5">
+            <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2"><Calendar size={18} /> RAMS Created per Month (12 months)</h3>
+            <div style={{ height: 300 }}>
+              <ResponsiveContainer width="100%" height="100%">
+                <LineChart data={Array.from({ length: 12 }, (_, i) => ({
+                  month: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'][i],
+                  count: Math.floor(Math.random() * 8) + 2,
+                }))}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
+                  <XAxis dataKey="month" stroke="#9ca3af" />
+                  <YAxis stroke="#9ca3af" />
+                  <Tooltip contentStyle={{ background: '#1f2937', border: '1px solid #374151' }} />
+                  <Line type="monotone" dataKey="count" stroke="#10b981" strokeWidth={2} dot={{ fill: '#10b981', r: 4 }} />
+                </LineChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
+
+          <div className="space-y-3">
+            <h3 className="text-lg font-semibold text-white flex items-center gap-2"><Calendar size={18} /> RAMS Expiry Tracker (Next 90 Days)</h3>
+            <div className="bg-gray-900 rounded-xl border border-gray-800 overflow-hidden">
+              {rams.filter(r => {
+                const until = r.valid_until;
+                if (!until || r.status !== 'Approved') return false;
+                const diff = (new Date(String(until)).getTime() - Date.now()) / 86400000;
+                return diff >= 0 && diff <= 90;
+              }).length === 0 ? (
+                <div className="text-center py-8 text-gray-500">No RAMS expiring in next 90 days</div>
+              ) : (
+                <table className="w-full text-sm">
+                  <thead className="bg-gray-800/50 border-b border-gray-800">
+                    <tr>{['Document', 'Activity', 'Expires', 'Days Left', 'Action'].map(h => <th key={h} className="text-left px-4 py-3 text-xs font-display text-gray-500 uppercase tracking-widest">{h}</th>)}</tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-800">
+                    {rams.filter(r => {
+                      const until = r.valid_until;
+                      if (!until || r.status !== 'Approved') return false;
+                      const diff = (new Date(String(until)).getTime() - Date.now()) / 86400000;
+                      return diff >= 0 && diff <= 90;
+                    }).map(r => {
+                      const until = r.valid_until;
+                      const daysLeft = until ? Math.floor((new Date(String(until)).getTime() - Date.now()) / 86400000) : 0;
+                      return (
+                        <tr key={String(r.id ?? '')} className="hover:bg-gray-800/50">
+                          <td className="px-4 py-3 font-medium text-white">{String(r.title ?? '')}</td>
+                          <td className="px-4 py-3 text-gray-400">{String(r.activity ?? '')}</td>
+                          <td className="px-4 py-3 text-gray-400">{String(until ?? '—')}</td>
+                          <td className="px-4 py-3"><span className={`text-xs px-2 py-1 rounded-full font-semibold ${daysLeft <= 15 ? 'bg-red-900/30 text-red-300' : daysLeft <= 30 ? 'bg-yellow-900/30 text-yellow-300' : 'bg-green-900/30 text-green-300'}`}>{daysLeft} days</span></td>
+                          <td className="px-4 py-3"><button type="button" className="text-xs px-3 py-1 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium">Renew</button></td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              )}
+            </div>
+          </div>
         </div>
       )}
 
@@ -650,6 +799,155 @@ export function RAMS() {
                 onCancel={() => { setShowSignModal(false); setSigningDoc(null); }}
                 signerName={user?.name || user?.email}
               />
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showTemplatePreview && (
+        <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
+          <div className="bg-gray-900 rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto border border-gray-700">
+            <div className="flex items-center justify-between p-6 border-b border-gray-800 sticky top-0 bg-gray-900 z-10">
+              <h2 className="text-lg font-semibold text-white">Template Preview: {showTemplatePreview.name}</h2>
+              <button type="button" onClick={() => setShowTemplatePreview(null)} className="p-2 hover:bg-gray-800 rounded-lg text-gray-400"><X size={18} /></button>
+            </div>
+            <div className="p-6 space-y-6">
+              <div>
+                <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Activity Type</h3>
+                <p className="text-white">{showTemplatePreview.activity}</p>
+              </div>
+              <div>
+                <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Category</h3>
+                <span className="inline-block px-3 py-1 bg-orange-900/30 text-orange-300 rounded-full text-sm">{showTemplatePreview.type}</span>
+              </div>
+              <div>
+                <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Hazards Identified</h3>
+                <div className="space-y-1 text-gray-300">
+                  {showTemplatePreview.hazards.split(', ').map((hazard, i) => (
+                    <p key={i} className="flex items-center gap-2">
+                      <span className="w-1.5 h-1.5 bg-orange-400 rounded-full" />
+                      {hazard}
+                    </p>
+                  ))}
+                </div>
+              </div>
+              <div>
+                <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Control Measures (Template)</h3>
+                <div className="space-y-1 text-gray-300">
+                  {['Use appropriate PPE', 'Provide training and supervision', 'Implement access controls', 'Regular inspections and risk assessments'].map((control, i) => (
+                    <p key={i} className="flex items-center gap-2">
+                      <span className="w-1.5 h-1.5 bg-green-400 rounded-full" />
+                      {control}
+                    </p>
+                  ))}
+                </div>
+              </div>
+              <div>
+                <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Last Updated</h3>
+                <p className="text-gray-400 text-sm">{showTemplatePreview.lastUpdated}</p>
+              </div>
+              <div className="flex gap-3 pt-4 border-t border-gray-800">
+                <button type="button" onClick={() => setShowTemplatePreview(null)} className="flex-1 px-4 py-2 border border-gray-700 rounded-lg text-sm text-gray-300 hover:bg-gray-800">Close</button>
+                <button type="button" onClick={() => { applyTemplate(showTemplatePreview); setShowTemplatePreview(null); }} className="flex-1 px-4 py-2 bg-orange-600 text-white rounded-lg text-sm font-medium hover:bg-orange-700">Use This Template</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showApprovalModal && approvalReviewId && (
+        <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
+          <div className="bg-gray-900 rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto border border-gray-700">
+            <div className="flex items-center justify-between p-6 border-b border-gray-800 sticky top-0 bg-gray-900 z-10">
+              <h2 className="text-lg font-semibold text-white">Review RAMS Document</h2>
+              <button type="button" onClick={() => { setShowApprovalModal(false); setApprovalReviewId(null); setApprovalComments(''); }} className="p-2 hover:bg-gray-800 rounded-lg text-gray-400"><X size={18} /></button>
+            </div>
+            <div className="p-6 space-y-6">
+              {(() => {
+                const doc = rams.find(r => String(r.id) === approvalReviewId);
+                if (!doc) return null;
+                return (
+                  <>
+                    <div className="space-y-4 p-4 bg-gray-800/30 rounded-lg border border-gray-800">
+                      <div>
+                        <p className="text-xs text-gray-500 uppercase">Document Title</p>
+                        <p className="text-white font-semibold">{String(doc.title ?? '')}</p>
+                      </div>
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <p className="text-xs text-gray-500 uppercase">Activity</p>
+                          <p className="text-gray-300">{String(doc.activity ?? '—')}</p>
+                        </div>
+                        <div>
+                          <p className="text-xs text-gray-500 uppercase">Submitted By</p>
+                          <p className="text-gray-300">{String(doc.created_by ?? '—')}</p>
+                        </div>
+                      </div>
+                      <div>
+                        <p className="text-xs text-gray-500 uppercase">Hazards</p>
+                        <p className="text-gray-300 text-sm">{String(doc.hazards ?? '—')}</p>
+                      </div>
+                      <div>
+                        <p className="text-xs text-gray-500 uppercase">Controls</p>
+                        <p className="text-gray-300 text-sm">{String(doc.controls ?? '—')}</p>
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-300 mb-2">Comments</label>
+                      <textarea
+                        value={approvalComments}
+                        onChange={e => setApprovalComments(e.target.value)}
+                        placeholder="Add comments or conditions for approval..."
+                        rows={4}
+                        className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-gray-200 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-orange-500 resize-none"
+                      />
+                    </div>
+
+                    <div className="flex gap-3">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          updateMutation.mutateAsync({ id: approvalReviewId, data: { status: 'Rejected' } });
+                          setShowApprovalModal(false);
+                          setApprovalReviewId(null);
+                          setApprovalComments('');
+                          toast.success('Document rejected');
+                        }}
+                        className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg text-sm font-medium hover:bg-red-700"
+                      >
+                        Reject
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          updateMutation.mutateAsync({ id: approvalReviewId, data: { status: 'Under Review' } });
+                          setShowApprovalModal(false);
+                          setApprovalReviewId(null);
+                          setApprovalComments('');
+                          toast.info('Requested changes from author');
+                        }}
+                        className="flex-1 px-4 py-2 bg-yellow-600 text-white rounded-lg text-sm font-medium hover:bg-yellow-700"
+                      >
+                        Request Changes
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          updateMutation.mutateAsync({ id: approvalReviewId, data: { status: 'Approved' } });
+                          setShowApprovalModal(false);
+                          setApprovalReviewId(null);
+                          setApprovalComments('');
+                          toast.success('Document approved');
+                        }}
+                        className="flex-1 px-4 py-2 bg-green-600 text-white rounded-lg text-sm font-medium hover:bg-green-700"
+                      >
+                        Accept
+                      </button>
+                    </div>
+                  </>
+                );
+              })()}
             </div>
           </div>
         </div>

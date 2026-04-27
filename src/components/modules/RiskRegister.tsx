@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect } from 'react';
-import { AlertTriangle, Plus, Search, AlertOctagon, Edit2, Trash2, X, ChevronDown, ChevronUp, TrendingUp, BarChart3, CheckCircle2, Clock, Users, Target, Calendar, CheckSquare, Square } from 'lucide-react';
+import { AlertTriangle, Plus, Search, AlertOctagon, Edit2, Trash2, X, ChevronDown, ChevronUp, TrendingUp, BarChart3, CheckCircle2, Clock, Users, Target, Calendar, CheckSquare, Square, Download, Mail, ArrowUp, ArrowDown } from 'lucide-react';
 import { EmptyState } from '../ui/EmptyState';
 import { ModuleBreadcrumbs } from '../ui/Breadcrumbs';
 import { useRiskRegister } from '../../hooks/useData';
@@ -21,6 +21,29 @@ const statusColour: Record<string,string> = {
   'Open':'bg-red-900/40 text-red-300 border border-red-700','Mitigated':'bg-yellow-900/40 text-yellow-300 border border-yellow-700',
   'Closed':'bg-green-900/40 text-green-300 border border-green-700','Accepted':'bg-blue-900/40 text-blue-300 border border-blue-700','Transferred':'bg-purple-900/40 text-purple-300 border border-purple-700',
 };
+
+const pastRiskReports = [
+  { id: 'RR-2026-Q1', period: 'Q1 2026', submittedDate: '2026-04-10', totalRisks: 28, criticalCount: 2, newRisks: 5, closedRisks: 3 },
+  { id: 'RR-2025-Q4', period: 'Q4 2025', submittedDate: '2026-01-08', totalRisks: 26, criticalCount: 3, newRisks: 4, closedRisks: 2 },
+  { id: 'RR-2025-Q3', period: 'Q3 2025', submittedDate: '2025-10-09', totalRisks: 24, criticalCount: 2, newRisks: 6, closedRisks: 4 },
+  { id: 'RR-2025-Q2', period: 'Q2 2025', submittedDate: '2025-07-11', totalRisks: 22, criticalCount: 1, newRisks: 3, closedRisks: 2 },
+  { id: 'RR-2025-Q1', period: 'Q1 2025', submittedDate: '2025-04-10', totalRisks: 21, criticalCount: 2, newRisks: 5, closedRisks: 3 },
+  { id: 'RR-2024-Q4', period: 'Q4 2024', submittedDate: '2025-01-09', totalRisks: 19, criticalCount: 1, newRisks: 4, closedRisks: 2 },
+];
+
+const treatmentPlansMock = [
+  { riskId: 'R-001', riskName: 'Supply chain delay', actions: [
+    { id: 'A-001', description: 'Engage alternative suppliers', owner: 'John Smith', dueDate: '2026-05-15', status: 'In Progress', effectiveness: 0 },
+    { id: 'A-002', description: 'Establish supplier backup list', owner: 'Jane Doe', dueDate: '2026-06-01', status: 'Not Started', effectiveness: 0 },
+  ]},
+  { riskId: 'R-002', riskName: 'Cost overrun', actions: [
+    { id: 'A-003', description: 'Monthly budget reviews', owner: 'Mike Johnson', dueDate: '2026-05-30', status: 'In Progress', effectiveness: 0 },
+  ]},
+  { riskId: 'R-003', riskName: 'Weather impact', actions: [
+    { id: 'A-004', description: 'Install weatherproofing', owner: 'Sarah Williams', dueDate: '2026-04-30', status: 'Complete', effectiveness: 85 },
+    { id: 'A-005', description: 'Create weather contingency schedule', owner: 'Tom Davis', dueDate: '2026-05-20', status: 'In Progress', effectiveness: 0 },
+  ]},
+];
 
 function riskScore(likelihood: string, impact: string): number {
   return Number(RATINGS[likelihood]??1)*Number(RATINGS[impact]??1);
@@ -50,7 +73,7 @@ export function RiskRegister() {
   const updateMutation = useUpdate();
   const deleteMutation = useDelete();
 
-  const [subTab, setSubTab] = useState<'register'|'matrix'|'actions'|'trends'>('register');
+  const [subTab, setSubTab] = useState<'register'|'matrix'|'actions'|'trends'|'heatmap'|'treatment'|'reporting'>('register');
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('All');
   const [categoryFilter, setCategoryFilter] = useState('All');
@@ -187,8 +210,9 @@ export function RiskRegister() {
       <div className="flex gap-1 border-b border-gray-700 cb-table-scroll touch-pan-x">
         {([
           { key:'register', label:'Risk Register', count:filtered.length },
-          { key:'matrix',   label:'Risk Matrix',   count:null },
-          { key:'actions',  label:'Mitigation Actions', count:null },
+          { key:'heatmap',   label:'Heat Map',   count:null },
+          { key:'treatment',  label:'Treatment Plans', count:null },
+          { key:'reporting',  label:'Reporting',        count:null },
           { key:'trends',   label:'Trends',        count:null },
         ] as const).map(t=>(
           <button type="button"  key={t.key} onClick={()=>setSubTab(t.key)}
@@ -198,6 +222,278 @@ export function RiskRegister() {
           </button>
         ))}
       </div>
+
+      {/* ── HEAT MAP tab ─────────────────────────────────── */}
+      {subTab==='heatmap' && (
+        <div className="space-y-6">
+          <div className="bg-gray-800 rounded-xl border border-gray-700 p-6 cb-table-scroll touch-pan-x">
+            <h3 className="font-display text-white mb-4">Risk Heat Map (5×5 Matrix)</h3>
+            <div className="text-xs text-gray-400 mb-2 ml-20">Impact ⟶</div>
+            <div className="flex gap-3">
+              <div className="flex flex-col justify-around text-xs text-gray-400 text-right w-20 flex-shrink-0 font-display">
+                <div>Almost Certain (5)</div>
+                <div>Likely (4)</div>
+                <div>Possible (3)</div>
+                <div>Unlikely (2)</div>
+                <div>Rare (1)</div>
+              </div>
+              <div className="flex flex-col gap-1 flex-1 min-w-0">
+                <div className="flex gap-1 mb-1 px-0.5">
+                  {IMPACT.map((imp, idx) => <div key={imp} className="flex-1 text-center text-xs text-gray-400 font-display tracking-widest truncate">({idx+1})<br/>{imp}</div>)}
+                </div>
+                {[...LIKELIHOOD].reverse().map(lik=>(
+                  <div key={lik} className="flex gap-1">
+                    {IMPACT.map(imp=>{
+                      const score = Number(RATINGS[lik]??1)*Number(RATINGS[imp]??1);
+                      const cellRisks = risks.filter(r=>r.likelihood===lik&&r.impact===imp);
+                      const bgClass = score >= 15 ? 'bg-red-900/40 border-red-700 cursor-pointer hover:bg-red-900/60'
+                        : score >= 9 ? 'bg-orange-900/40 border-orange-700 cursor-pointer hover:bg-orange-900/60'
+                        : score >= 4 ? 'bg-yellow-900/40 border-yellow-700 cursor-pointer hover:bg-yellow-900/60'
+                        : 'bg-green-900/40 border-green-700 cursor-pointer hover:bg-green-900/60';
+                      const isSelected = selectedMatrixCell?.lik === lik && selectedMatrixCell?.imp === imp;
+                      return (
+                        <button
+                          key={imp}
+                          onClick={() => setSelectedMatrixCell(isSelected ? null : { lik, imp })}
+                          className={`flex-1 h-14 rounded border transition-all ${bgClass} ${isSelected ? 'ring-2 ring-orange-500' : 'border'} flex flex-col items-center justify-center relative group`}
+                          title={`${lik}×${imp}: Score ${score}`}
+                        >
+                          <span className="text-sm font-display text-white">{score}</span>
+                          {cellRisks.length>0 && (
+                            <span className="absolute -top-2 -right-2 w-6 h-6 bg-orange-500 text-white text-xs rounded-full flex items-center justify-center font-display">{cellRisks.length}</span>
+                          )}
+                        </button>
+                      );
+                    })}
+                  </div>
+                ))}
+              </div>
+            </div>
+            <div className="flex flex-wrap gap-4 mt-6 text-xs">
+              {[
+                {label:'Low (1–4)',colour:'bg-green-900/40 border border-green-700'},
+                {label:'Medium (5–9)',colour:'bg-yellow-900/40 border border-yellow-700'},
+                {label:'High (10–15)',colour:'bg-orange-900/40 border border-orange-700'},
+                {label:'Critical (16–25)',colour:'bg-red-900/40 border border-red-700'}
+              ].map(l=>(
+                <div key={l.label} className="flex items-center gap-1.5">
+                  <span className={`w-3 h-3 rounded ${l.colour}`}/>
+                  <span className="text-gray-400">{l.label}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {selectedMatrixCell && (
+            <div className="bg-gray-800 rounded-xl border border-gray-700 p-6">
+              <h4 className="font-display text-white mb-4">Risks in {selectedMatrixCell.lik} × {selectedMatrixCell.imp} cell (Score: {Number(RATINGS[selectedMatrixCell.lik]??1)*Number(RATINGS[selectedMatrixCell.imp]??1)})</h4>
+              <div className="space-y-2">
+                {risks.filter(r=>r.likelihood===selectedMatrixCell.lik&&r.impact===selectedMatrixCell.imp).length === 0 ? (
+                  <p className="text-gray-400 text-sm">No risks in this cell</p>
+                ) : (
+                  risks.filter(r=>r.likelihood===selectedMatrixCell.lik&&r.impact===selectedMatrixCell.imp).map(r => {
+                    const score = riskScore(String(r.likelihood??''), String(r.impact??''));
+                    const level = riskLevel(score);
+                    return (
+                      <div key={String(r.id??'')} className="flex items-center justify-between gap-3 p-3 bg-gray-900/50 rounded border border-gray-700">
+                        <div>
+                          <p className="text-sm font-medium text-white">{String(r.title??'Untitled')}</p>
+                          <p className="text-xs text-gray-400">{String(r.category??'')} • Owner: {String(r.owner??'Unassigned')}</p>
+                        </div>
+                        <div className={`px-2 py-1 rounded text-xs font-display whitespace-nowrap ${level.bg}`}>{level.label}</div>
+                      </div>
+                    );
+                  })
+                )}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* ── TREATMENT PLANS tab ────────────────────────────── */}
+      {subTab==='treatment' && (
+        <div className="space-y-4">
+          {treatmentPlansMock.map((plan) => (
+            <div key={plan.riskId} className="bg-gray-800 rounded-xl border border-gray-700 overflow-hidden">
+              <div className="p-4 bg-gray-900/50 border-b border-gray-700">
+                <h4 className="font-display text-white text-sm">{plan.riskName}</h4>
+                <p className="text-gray-400 text-xs mt-1">Risk ID: {plan.riskId}</p>
+              </div>
+              <div className="p-6">
+                <div className="space-y-3">
+                  {plan.actions.map((action) => {
+                    const isOverdue = new Date(action.dueDate) < new Date() && action.status !== 'Complete';
+                    const completedActions = plan.actions.filter(a => a.status === 'Complete').length;
+                    const progressPercent = Math.round((completedActions / plan.actions.length) * 100);
+                    return (
+                      <div key={action.id} className={`border border-gray-700 rounded-lg p-4 ${isOverdue ? 'bg-red-900/10' : 'bg-gray-700/20'}`}>
+                        <div className="flex items-start justify-between gap-3 mb-3">
+                          <div>
+                            <p className="text-white font-medium text-sm">{action.description}</p>
+                            <p className="text-gray-400 text-xs mt-1">Owner: {action.owner} • Due: {action.dueDate}</p>
+                          </div>
+                          <span className={`px-2 py-1 rounded text-xs font-medium whitespace-nowrap ${
+                            action.status === 'Complete' ? 'bg-green-900/40 text-green-300 border border-green-700' :
+                            action.status === 'In Progress' ? 'bg-blue-900/40 text-blue-300 border border-blue-700' :
+                            'bg-gray-800 text-gray-300'
+                          }`}>
+                            {action.status}
+                          </span>
+                        </div>
+                        {action.status === 'Complete' && action.effectiveness > 0 && (
+                          <div className="flex items-center gap-2">
+                            <div className="w-24 h-2 bg-gray-700 rounded-full overflow-hidden">
+                              <div className="h-full bg-green-500" style={{ width: `${action.effectiveness}%` }} />
+                            </div>
+                            <p className="text-xs text-green-400 font-medium">{action.effectiveness}% effective</p>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+                <div className="mt-4 pt-4 border-t border-gray-700">
+                  <div className="flex items-center justify-between mb-2">
+                    <p className="text-gray-400 text-xs font-display">Progress</p>
+                    <p className="text-gray-300 text-xs font-medium">{Math.round((plan.actions.filter(a => a.status === 'Complete').length / plan.actions.length) * 100)}%</p>
+                  </div>
+                  <div className="w-full h-2 bg-gray-700 rounded-full overflow-hidden">
+                    <div
+                      className="h-full bg-orange-500 transition-all"
+                      style={{ width: `${Math.round((plan.actions.filter(a => a.status === 'Complete').length / plan.actions.length) * 100)}%` }}
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* ── REPORTING tab ────────────────────────────────────── */}
+      {subTab==='reporting' && (
+        <div className="space-y-6">
+          <div className="bg-gray-800 rounded-xl border border-gray-700 p-6">
+            <div className="flex items-center justify-between mb-4">
+              <div>
+                <h3 className="font-display text-white">Risk Report Generator</h3>
+                <p className="text-gray-400 text-xs mt-1">Generate and export periodic risk reports</p>
+              </div>
+              <div className="flex gap-2">
+                <button type="button" className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium">
+                  <Download size={16} /> Export PDF
+                </button>
+                <button type="button" className="flex items-center gap-2 px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg text-sm font-medium">
+                  <Mail size={16} /> Subscribe Digest
+                </button>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+              <div className="bg-gray-900/50 border border-gray-700 rounded-lg p-4">
+                <p className="text-gray-400 text-xs mb-2">Total Risks</p>
+                <p className="text-2xl font-display text-white">28</p>
+              </div>
+              <div className="bg-gray-900/50 border border-gray-700 rounded-lg p-4">
+                <p className="text-gray-400 text-xs mb-2">Critical Risks</p>
+                <p className="text-2xl font-display text-red-400">2</p>
+              </div>
+              <div className="bg-gray-900/50 border border-gray-700 rounded-lg p-4">
+                <p className="text-gray-400 text-xs mb-2">New This Period</p>
+                <div className="flex items-center gap-2">
+                  <ArrowUp size={16} className="text-red-400" />
+                  <p className="text-2xl font-display text-white">5</p>
+                </div>
+              </div>
+              <div className="bg-gray-900/50 border border-gray-700 rounded-lg p-4">
+                <p className="text-gray-400 text-xs mb-2">Closed This Period</p>
+                <div className="flex items-center gap-2">
+                  <ArrowDown size={16} className="text-green-400" />
+                  <p className="text-2xl font-display text-white">3</p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="card bg-base-200 p-6">
+            <h3 className="font-display text-white mb-4">Risk Trend (6-Month)</h3>
+            <ResponsiveContainer width="100%" height={250}>
+              <LineChart data={[
+                { month: 'Nov', total: 18, critical: 1 },
+                { month: 'Dec', total: 20, critical: 2 },
+                { month: 'Jan', total: 22, critical: 1 },
+                { month: 'Feb', total: 25, critical: 3 },
+                { month: 'Mar', total: 27, critical: 2 },
+                { month: 'Apr', total: 28, critical: 2 },
+              ]}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#374151"/>
+                <XAxis stroke="#9ca3af" style={{fontSize: '12px'}}/>
+                <YAxis stroke="#9ca3af" style={{fontSize: '12px'}}/>
+                <Tooltip contentStyle={{backgroundColor: '#1f2937', border: '1px solid #4b5563'}}/>
+                <Legend wrapperStyle={{paddingTop: '16px'}}/>
+                <Line type="monotone" dataKey="total" stroke="#ea580c" strokeWidth={2} name="Total Risks" dot={{fill:'#ea580c'}}/>
+                <Line type="monotone" dataKey="critical" stroke="#dc2626" strokeWidth={2} name="Critical Risks" dot={{fill:'#dc2626'}}/>
+              </LineChart>
+            </ResponsiveContainer>
+          </div>
+
+          <div className="card bg-base-200 overflow-hidden">
+            <div className="p-6 border-b border-gray-700">
+              <h3 className="font-display text-white">Past Risk Reports</h3>
+            </div>
+            <div className="cb-table-scroll touch-pan-x">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b border-gray-700 bg-gray-900/50">
+                    <th className="text-left px-4 py-3 text-gray-400 font-display tracking-widest">Report ID</th>
+                    <th className="text-left px-4 py-3 text-gray-400 font-display tracking-widest">Period</th>
+                    <th className="text-left px-4 py-3 text-gray-400 font-display tracking-widest">Submitted</th>
+                    <th className="text-center px-4 py-3 text-gray-400 font-display tracking-widest">Total Risks</th>
+                    <th className="text-center px-4 py-3 text-gray-400 font-display tracking-widest">Critical</th>
+                    <th className="text-center px-4 py-3 text-gray-400 font-display tracking-widest">New</th>
+                    <th className="text-center px-4 py-3 text-gray-400 font-display tracking-widest">Closed</th>
+                    <th className="text-center px-4 py-3 text-gray-400 font-display tracking-widest">Actions</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-700">
+                  {pastRiskReports.map((report) => (
+                    <tr key={report.id} className="border-b border-gray-700 hover:bg-gray-800/30 transition-colors">
+                      <td className="px-4 py-3 text-orange-400 font-mono font-medium">{report.id}</td>
+                      <td className="px-4 py-3 text-gray-300">{report.period}</td>
+                      <td className="px-4 py-3 text-gray-300">{report.submittedDate}</td>
+                      <td className="px-4 py-3 text-center text-white font-medium">{report.totalRisks}</td>
+                      <td className="px-4 py-3 text-center">
+                        <span className="px-2 py-1 rounded text-xs font-medium bg-red-900/40 text-red-300">{report.criticalCount}</span>
+                      </td>
+                      <td className="px-4 py-3 text-center text-orange-400 font-medium">+{report.newRisks}</td>
+                      <td className="px-4 py-3 text-center text-green-400 font-medium">−{report.closedRisks}</td>
+                      <td className="px-4 py-3 text-center">
+                        <button className="p-1 hover:bg-blue-900/30 rounded inline-block">
+                          <Download size={14} className="text-blue-400" />
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <div className="bg-blue-900/20 border border-blue-700/30 rounded-xl p-6">
+            <div className="flex items-start gap-4">
+              <Mail className="text-blue-400 flex-shrink-0 mt-1" size={20} />
+              <div>
+                <h4 className="font-display text-blue-300 mb-2">Weekly Risk Digest</h4>
+                <p className="text-sm text-gray-300 mb-3">Subscribe to receive a weekly email summary of critical risks, new items, and mitigation progress.</p>
+                <button className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium">
+                  Subscribe Now
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* ── RISK MATRIX tab ─────────────────────────────────── */}
       {subTab==='matrix' && (

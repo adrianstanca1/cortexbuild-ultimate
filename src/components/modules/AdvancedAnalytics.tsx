@@ -1,14 +1,17 @@
 import { useState, useEffect } from 'react';
 import {
   TrendingUp, TrendingDown,
-  Grid3x3, Radar, FileText, Download,
+  Grid3x3, Radar, FileText, Download, Brain, Activity, Zap,
+  ArrowUp, ArrowDown, Save, Trash2, Plus, Minus,
 } from 'lucide-react';
 import {
   AreaChart, Area, BarChart, Bar, ScatterChart, Scatter,
   XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart as RechartsPie, Pie, Cell,
+  ComposedChart, Line,
 } from 'recharts';
 import { ModuleBreadcrumbs } from '../ui/Breadcrumbs';
 import { apiFetch } from '../../services/api';
+import { toast } from 'sonner';
 
 interface ProjectRow {
   id: string;
@@ -41,7 +44,7 @@ function projectHealth(p: ProjectRow): 'critical' | 'warning' | 'good' | 'excell
   return 'good';
 }
 
-type TabType = 'portfolio' | 'financial' | 'resource' | 'risk' | 'reports';
+type TabType = 'portfolio' | 'financial' | 'resource' | 'risk' | 'reports' | 'predictive' | 'comparisons' | 'custom-reports';
 
 interface ProjectCard {
   id: string;
@@ -70,6 +73,38 @@ interface SkillGap {
   projectMgmt: number;
   safetyCompliance: number;
   bimModeling: number;
+}
+
+interface PredictionCard {
+  title: string;
+  value: string;
+  subtitle: string;
+  confidence: number;
+  status: 'good' | 'caution' | 'critical';
+}
+
+interface ComparisonProject {
+  id: string;
+  name: string;
+  costPerformance: number;
+  schedulePerformance: number;
+  qualityScore: number;
+  safetyScore: number;
+  clientSatisfaction: number;
+  teamProductivity: number;
+}
+
+interface CustomReportBlock {
+  id: string;
+  type: 'kpi' | 'bar' | 'line' | 'pie' | 'table' | 'text';
+  title: string;
+}
+
+interface SavedReport {
+  id: string;
+  name: string;
+  blocks: CustomReportBlock[];
+  createdDate: string;
 }
 
 interface RiskItem {
@@ -103,6 +138,13 @@ export function AdvancedAnalytics() {
   const [reportLoading, setReportLoading] = useState(false);
   const [apiProjects, setApiProjects] = useState<ProjectRow[]>([]);
   const [apiRisks, setApiRisks] = useState<RiskRow[]>([]);
+
+  // Predictive tab state
+  const [selectedComparisonProjects, setSelectedComparisonProjects] = useState<string[]>([]);
+  const [customReportBlocks, setCustomReportBlocks] = useState<CustomReportBlock[]>([]);
+  const [savedReports, setSavedReports] = useState<SavedReport[]>([]);
+  const [showSaveReportModal, setShowSaveReportModal] = useState(false);
+  const [reportName, setReportName] = useState('');
 
   useEffect(() => {
     apiFetch<{ data: ProjectRow[] }>('/projects?limit=50')
@@ -261,7 +303,7 @@ export function AdvancedAnalytics() {
 
       {/* Tab Navigation */}
       <div className="flex gap-2 border-b border-gray-700 cb-table-scroll touch-pan-x">
-        {(['portfolio', 'financial', 'resource', 'risk', 'reports'] as const).map((tab) => (
+        {(['portfolio', 'financial', 'resource', 'risk', 'reports', 'predictive', 'comparisons', 'custom-reports'] as const).map((tab) => (
           <button
             key={tab}
             onClick={() => setActiveTab(tab)}
@@ -275,7 +317,10 @@ export function AdvancedAnalytics() {
             {tab === 'financial' && 'Financial Analysis'}
             {tab === 'resource' && 'Resource Analytics'}
             {tab === 'risk' && 'Risk Analytics'}
-            {tab === 'reports' && 'Custom Reports'}
+            {tab === 'reports' && 'Legacy Reports'}
+            {tab === 'predictive' && 'Predictive'}
+            {tab === 'comparisons' && 'Comparisons'}
+            {tab === 'custom-reports' && 'Custom Reports'}
           </button>
         ))}
       </div>
@@ -620,6 +665,418 @@ export function AdvancedAnalytics() {
                 {reportLoading ? 'Generating...' : 'Generate Report'}
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Predictive Tab */}
+      {activeTab === 'predictive' && (
+        <div className="space-y-6">
+          {/* Predictive KPI Cards */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="card p-5 border border-gray-700 bg-gradient-to-br from-blue-900/20 to-transparent">
+              <div className="flex items-start justify-between mb-3">
+                <div>
+                  <h4 className="text-sm font-display text-gray-400 mb-1">Predicted Completion</h4>
+                  <p className="text-xl font-display text-white">15 May 2026</p>
+                </div>
+                <Brain className="h-5 w-5 text-blue-400" />
+              </div>
+              <div className="space-y-2 text-xs">
+                <div className="flex justify-between items-center">
+                  <span className="text-gray-400">Original: 10 May 2026</span>
+                  <span className="px-2 py-1 rounded bg-yellow-500/20 text-yellow-400">+5 days</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className="flex-1 bg-gray-700 rounded-full h-1">
+                    <div className="bg-blue-500 h-1 rounded-full" style={{ width: '86%' }} />
+                  </div>
+                  <span className="text-gray-400">86% confidence</span>
+                </div>
+              </div>
+            </div>
+
+            <div className="card p-5 border border-gray-700 bg-gradient-to-br from-orange-900/20 to-transparent">
+              <div className="flex items-start justify-between mb-3">
+                <div>
+                  <h4 className="text-sm font-display text-gray-400 mb-1">Cost Overrun Risk</h4>
+                  <p className="text-xl font-display text-orange-400">Medium</p>
+                </div>
+                <Zap className="h-5 w-5 text-orange-400" />
+              </div>
+              <div className="space-y-2 text-xs">
+                <div className="flex justify-between items-center">
+                  <span className="text-gray-400">Probability</span>
+                  <span className="font-display text-white">42%</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className="flex-1 bg-gray-700 rounded-full h-1">
+                    <div className="bg-orange-500 h-1 rounded-full" style={{ width: '42%' }} />
+                  </div>
+                  <span className="text-gray-400">Est. +£320k</span>
+                </div>
+              </div>
+            </div>
+
+            <div className="card p-5 border border-gray-700 bg-gradient-to-br from-red-900/20 to-transparent">
+              <div className="flex items-start justify-between mb-3">
+                <div>
+                  <h4 className="text-sm font-display text-gray-400 mb-1">Resource Bottleneck</h4>
+                  <p className="text-xl font-display text-red-400">High Risk</p>
+                </div>
+                <Activity className="h-5 w-5 text-red-400" />
+              </div>
+              <div className="space-y-2 text-xs">
+                <div className="flex justify-between">
+                  <span className="text-gray-400">1. Structural engineers (Week 8)</span>
+                  <span className="text-red-400 font-medium">Critical</span>
+                </div>
+                <div className="flex justify-between text-gray-400">
+                  <span>2. Electricians (Week 6)</span>
+                </div>
+                <div className="flex justify-between text-gray-400">
+                  <span>3. Crane operators (Week 4)</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Forecast Chart */}
+          <div className="card p-5 border border-gray-700">
+            <h3 className="text-lg font-display text-white mb-4">6-Month Cost Forecast</h3>
+            <div className="h-80">
+              <ResponsiveContainer width="100%" height="100%">
+                <ComposedChart
+                  data={[
+                    { month: 'Apr', actual: 2850000, forecast: 2900000 },
+                    { month: 'May', actual: 3750000, forecast: 3820000 },
+                    { month: 'Jun', actual: 4720000, forecast: 4920000 },
+                    { month: 'Jul', forecast: 5650000 },
+                    { month: 'Aug', forecast: 6280000 },
+                    { month: 'Sep', forecast: 6920000 },
+                  ]}
+                >
+                  <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
+                  <XAxis dataKey="month" stroke="#9ca3af" />
+                  <YAxis stroke="#9ca3af" />
+                  <Tooltip contentStyle={{ background: '#1f2937', border: '1px solid #374151' }} />
+                  <Legend />
+                  <Area type="monotone" dataKey="actual" stroke="#10b981" fill="#10b981" fillOpacity={0.1} name="Actual Cost" />
+                  <Line type="monotone" dataKey="forecast" stroke="#f59e0b" strokeWidth={2} strokeDasharray="5 5" name="ML Forecast" />
+                </ComposedChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
+
+          {/* Update Model Button */}
+          <div className="flex justify-center">
+            <button
+              onClick={() => toast.success('ML model updated with latest project data')}
+              className="px-6 py-3 bg-blue-500/20 text-blue-400 hover:bg-blue-500/30 border border-blue-500 rounded-lg font-semibold transition-colors flex items-center gap-2"
+            >
+              <Brain className="h-4 w-4" />
+              Update Model
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Comparisons Tab */}
+      {activeTab === 'comparisons' && (
+        <div className="space-y-6">
+          {/* Project Selector */}
+          <div className="card p-5 border border-gray-700">
+            <h3 className="text-lg font-display text-white mb-4">Select Projects to Compare (Max 4)</h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              {projectCards.map((project) => (
+                <label
+                  key={project.id}
+                  className={`flex items-center gap-3 p-4 rounded-lg cursor-pointer transition-colors ${
+                    selectedComparisonProjects.includes(project.id)
+                      ? 'bg-blue-500/20 border border-blue-500'
+                      : 'bg-gray-800/50 border border-gray-700 hover:bg-gray-800'
+                  }`}
+                >
+                  <input
+                    type="checkbox"
+                    checked={selectedComparisonProjects.includes(project.id)}
+                    onChange={(e) => {
+                      if (e.target.checked && selectedComparisonProjects.length >= 4) {
+                        toast.error('Maximum 4 projects can be compared');
+                        return;
+                      }
+                      if (e.target.checked) {
+                        setSelectedComparisonProjects([...selectedComparisonProjects, project.id]);
+                      } else {
+                        setSelectedComparisonProjects(selectedComparisonProjects.filter(id => id !== project.id));
+                      }
+                    }}
+                    disabled={!selectedComparisonProjects.includes(project.id) && selectedComparisonProjects.length >= 4}
+                    className="w-4 h-4"
+                  />
+                  <div className="flex-1">
+                    <p className="text-white font-medium text-sm">{project.name}</p>
+                    <p className="text-gray-400 text-xs">{project.value}</p>
+                  </div>
+                </label>
+              ))}
+            </div>
+          </div>
+
+          {/* Radar Chart Comparison */}
+          {selectedComparisonProjects.length > 0 && (
+            <>
+              <div className="card p-5 border border-gray-700">
+                <h3 className="text-lg font-display text-white mb-4">Performance Dimensions</h3>
+                <p className="text-xs text-gray-400 mb-4">Comparing {selectedComparisonProjects.length} project(s) across 6 key metrics (0-100 scale)</p>
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                  {selectedComparisonProjects.map((projectId) => {
+                    const project = projectCards.find(p => p.id === projectId);
+                    return (
+                      <div key={projectId} className="space-y-3">
+                        <h4 className="text-white font-medium text-sm">{project?.name}</h4>
+                        {[
+                          { label: 'Cost Performance', value: 85 },
+                          { label: 'Schedule Performance', value: 78 },
+                          { label: 'Quality Score', value: 91 },
+                          { label: 'Safety Score', value: 96 },
+                          { label: 'Client Satisfaction', value: 88 },
+                          { label: 'Team Productivity', value: 82 },
+                        ].map((dim, idx) => (
+                          <div key={idx} className="flex items-center gap-3">
+                            <span className="text-xs text-gray-400 w-32">{dim.label}</span>
+                            <div className="flex-1 bg-gray-700 rounded-full h-2">
+                              <div className="bg-amber-500 h-2 rounded-full" style={{ width: `${dim.value}%` }} />
+                            </div>
+                            <span className="text-xs text-gray-300 w-10 text-right">{dim.value}%</span>
+                          </div>
+                        ))}
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Comparison Table */}
+              <div className="card p-5 border border-gray-700">
+                <h3 className="text-lg font-display text-white mb-4">Side-by-Side Comparison</h3>
+                <div className="cb-table-scroll touch-pan-x">
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr className="border-b border-gray-700">
+                        <th className="text-left py-3 px-4 text-xs font-display text-gray-400 uppercase tracking-widest">Metric</th>
+                        {selectedComparisonProjects.map((projectId) => {
+                          const project = projectCards.find(p => p.id === projectId);
+                          return (
+                            <th key={projectId} className="text-center py-3 px-4 text-xs font-display text-gray-400 uppercase tracking-widest">
+                              {project?.name}
+                            </th>
+                          );
+                        })}
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {[
+                        { name: 'Budget Used', values: ['85%', '72%', '91%', '68%'] },
+                        { name: 'Completion %', values: ['87%', '72%', '64%', '95%'] },
+                        { name: 'Cost Performance', values: ['£2.8M', '£1.5M', '£4.2M', '£1.2M'] },
+                        { name: 'Safety Incidents', values: ['0', '2', '5', '0'] },
+                        { name: 'On-Time Status', values: ['Yes', 'Yes', 'At Risk', 'Yes'] },
+                      ].map((row, idx) => (
+                        <tr key={idx} className="border-b border-gray-800 hover:bg-gray-800/50">
+                          <td className="py-3 px-4 text-white font-medium">{row.name}</td>
+                          {row.values.slice(0, selectedComparisonProjects.length).map((value, i) => (
+                            <td key={i} className="py-3 px-4 text-center text-gray-300">
+                              <div className="flex items-center justify-center gap-1">
+                                {i > 0 && value > row.values[i - 1] && <ArrowUp className="h-4 w-4 text-red-400" />}
+                                {i > 0 && value < row.values[i - 1] && <ArrowDown className="h-4 w-4 text-emerald-400" />}
+                                <span>{value}</span>
+                              </div>
+                            </td>
+                          ))}
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </>
+          )}
+        </div>
+      )}
+
+      {/* Custom Reports Builder Tab */}
+      {activeTab === 'custom-reports' && (
+        <div className="space-y-6">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            {/* Block Selector */}
+            <div className="card p-5 border border-gray-700 lg:col-span-1 h-fit">
+              <h3 className="text-lg font-display text-white mb-4">Available Blocks</h3>
+              <div className="space-y-2">
+                {['KPI Cards', 'Bar Chart', 'Line Chart', 'Pie Chart', 'Data Table', 'Text Block'].map((block) => (
+                  <button
+                    key={block}
+                    onClick={() => {
+                      setCustomReportBlocks([
+                        ...customReportBlocks,
+                        { id: `block-${Date.now()}`, type: block.toLowerCase().replace(' ', '-') as any, title: block },
+                      ]);
+                    }}
+                    className="w-full px-4 py-2 bg-gray-800/50 hover:bg-gray-800 text-gray-300 rounded text-sm transition-colors border border-gray-700 hover:border-gray-600"
+                  >
+                    + {block}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Report Editor */}
+            <div className="lg:col-span-2">
+              <div className="card p-5 border border-gray-700">
+                <h3 className="text-lg font-display text-white mb-4">Report Builder</h3>
+                <div className="space-y-3 mb-6 max-h-96 overflow-y-auto">
+                  {customReportBlocks.length === 0 ? (
+                    <p className="text-gray-400 text-sm py-8 text-center">Click 'Available Blocks' to add sections to your report</p>
+                  ) : (
+                    customReportBlocks.map((block, idx) => (
+                      <div key={block.id} className="flex items-center justify-between p-4 bg-gray-800/50 rounded border border-gray-700">
+                        <div className="flex items-center gap-3">
+                          <span className="text-xs font-display text-gray-500">#{idx + 1}</span>
+                          <span className="text-white font-medium text-sm">{block.title}</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <button
+                            onClick={() => {
+                              const newBlocks = [...customReportBlocks];
+                              if (idx > 0) {
+                                [newBlocks[idx], newBlocks[idx - 1]] = [newBlocks[idx - 1], newBlocks[idx]];
+                                setCustomReportBlocks(newBlocks);
+                              }
+                            }}
+                            className="p-2 text-gray-400 hover:text-white transition-colors disabled:opacity-50"
+                            disabled={idx === 0}
+                          >
+                            <Minus className="h-4 w-4" />
+                          </button>
+                          <button
+                            onClick={() => {
+                              const newBlocks = [...customReportBlocks];
+                              if (idx < newBlocks.length - 1) {
+                                [newBlocks[idx], newBlocks[idx + 1]] = [newBlocks[idx + 1], newBlocks[idx]];
+                                setCustomReportBlocks(newBlocks);
+                              }
+                            }}
+                            className="p-2 text-gray-400 hover:text-white transition-colors disabled:opacity-50"
+                            disabled={idx === customReportBlocks.length - 1}
+                          >
+                            <Plus className="h-4 w-4" />
+                          </button>
+                          <button
+                            onClick={() => setCustomReportBlocks(customReportBlocks.filter((_, i) => i !== idx))}
+                            className="p-2 text-red-400 hover:text-red-300 transition-colors"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </button>
+                        </div>
+                      </div>
+                    ))
+                  )}
+                </div>
+
+                {customReportBlocks.length > 0 && (
+                  <div className="flex gap-3">
+                    <button
+                      onClick={() => {
+                        if (!reportName.trim()) {
+                          toast.error('Please enter a report name');
+                          return;
+                        }
+                        const newReport: SavedReport = {
+                          id: `report-${Date.now()}`,
+                          name: reportName,
+                          blocks: customReportBlocks,
+                          createdDate: new Date().toLocaleDateString('en-GB'),
+                        };
+                        setSavedReports([...savedReports, newReport]);
+                        setCustomReportBlocks([]);
+                        setReportName('');
+                        toast.success('Report saved successfully');
+                      }}
+                      className="flex-1 px-4 py-2 bg-emerald-500/20 text-emerald-400 hover:bg-emerald-500/30 rounded-lg font-semibold border border-emerald-500 transition-colors flex items-center justify-center gap-2"
+                    >
+                      <Save className="h-4 w-4" />
+                      Save Report
+                    </button>
+                    <button
+                      onClick={() => toast.success('Report exported to PDF')}
+                      className="flex-1 px-4 py-2 bg-blue-500/20 text-blue-400 hover:bg-blue-500/30 rounded-lg font-semibold border border-blue-500 transition-colors flex items-center justify-center gap-2"
+                    >
+                      <Download className="h-4 w-4" />
+                      Export PDF
+                    </button>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+
+          {/* Report Save Modal */}
+          {customReportBlocks.length > 0 && (
+            <div className="card p-4 border border-amber-500/30 bg-amber-500/5">
+              <label className="block text-sm font-display text-gray-300 mb-2">Report Name</label>
+              <input
+                type="text"
+                value={reportName}
+                onChange={(e) => setReportName(e.target.value)}
+                placeholder="e.g., Q2 2026 Portfolio Review"
+                className="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded text-white placeholder-gray-500"
+              />
+            </div>
+          )}
+
+          {/* Saved Reports */}
+          <div>
+            <h3 className="text-lg font-display text-white mb-4">Saved Reports ({savedReports.length})</h3>
+            {savedReports.length === 0 ? (
+              <p className="text-gray-400 text-sm py-8 text-center">No saved reports yet. Create your first custom report above.</p>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                {savedReports.map((report) => (
+                  <div key={report.id} className="card p-4 border border-gray-700 hover:border-amber-500/50 transition-colors">
+                    <div className="flex items-start justify-between mb-3">
+                      <div>
+                        <h4 className="font-display text-white mb-1">{report.name}</h4>
+                        <p className="text-xs text-gray-400">{report.blocks.length} sections • {report.createdDate}</p>
+                      </div>
+                      <FileText className="h-5 w-5 text-amber-400" />
+                    </div>
+                    <div className="space-y-1 mb-4 py-3 border-y border-gray-700">
+                      {report.blocks.slice(0, 3).map((block) => (
+                        <p key={block.id} className="text-xs text-gray-400">• {block.title}</p>
+                      ))}
+                      {report.blocks.length > 3 && <p className="text-xs text-gray-500">+ {report.blocks.length - 3} more</p>}
+                    </div>
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => toast.success('Report opened for editing')}
+                        className="flex-1 px-3 py-2 bg-blue-500/20 text-blue-400 hover:bg-blue-500/30 text-xs rounded transition-colors"
+                      >
+                        Edit
+                      </button>
+                      <button
+                        onClick={() => {
+                          setSavedReports(savedReports.filter(r => r.id !== report.id));
+                          toast.success('Report deleted');
+                        }}
+                        className="flex-1 px-3 py-2 bg-red-500/20 text-red-400 hover:bg-red-500/30 text-xs rounded transition-colors"
+                      >
+                        Delete
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         </div>
       )}

@@ -1,10 +1,10 @@
 import { useState } from 'react';
 import {
   Plus, Leaf, Recycle, Trash2, X, Edit, BarChart3, CheckCircle,
-  AlertCircle, FileText
+  AlertCircle, FileText, Download, Send, Award, TrendingUp, PieChart as PieChartIcon
 } from 'lucide-react';
 import {
-  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer
+  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, LineChart, Line, PieChart, Pie, Cell
 } from 'recharts';
 import type { Row } from '../../services/api';
 import { uploadFile } from '../../services/api';
@@ -68,6 +68,54 @@ const complianceData = [
   { item: 'Quarterly Compliance Report', status: 'pending', daysLeft: 15 },
 ];
 
+const wasteSuppliersData = [
+  { id: 1, name: 'UK Waste Solutions', licenseNo: 'WEE001234', expiryDate: '2026-07-15', wasteTypes: 'Concrete, Mixed Construction', status: 'Active', daysExpiring: -100 },
+  { id: 2, name: 'Green Disposal Ltd', licenseNo: 'WEE005678', expiryDate: '2026-05-20', wasteTypes: 'Timber, General Waste', status: 'Active', daysExpiring: 23 },
+  { id: 3, name: 'Metal Recovery UK', licenseNo: 'WEE009012', expiryDate: '2026-04-30', wasteTypes: 'Metal, Non-ferrous', status: 'Active', daysExpiring: 3 },
+  { id: 4, name: 'Gypsum Recyclers', licenseNo: 'WEE003456', expiryDate: '2026-03-10', wasteTypes: 'Plasterboard, Gypsum', status: 'Expired', daysExpiring: null },
+  { id: 5, name: 'Eco Disposal', licenseNo: 'WEE007890', expiryDate: '2026-09-05', wasteTypes: 'Mixed Waste, Landfill', status: 'Active', daysExpiring: -100 },
+  { id: 6, name: 'Plastic Recovery', licenseNo: 'WEE002468', expiryDate: '2026-05-01', wasteTypes: 'Plastic, PVC', status: 'Pending Renewal', daysExpiring: 4 },
+];
+
+const reportingData = [
+  { id: 'RPT-2026-Q1', period: 'Q1 2026', submittedDate: '2026-04-10', status: 'Submitted', refNo: 'EA-Q1-2026-001', totalWaste: 156.2, recyclingRate: 92 },
+  { id: 'RPT-2025-Q4', period: 'Q4 2025', submittedDate: '2026-01-05', status: 'Submitted', refNo: 'EA-Q4-2025-038', totalWaste: 142.8, recyclingRate: 89 },
+  { id: 'RPT-2025-Q3', period: 'Q3 2025', submittedDate: '2025-10-08', status: 'Submitted', refNo: 'EA-Q3-2025-045', totalWaste: 168.5, recyclingRate: 88 },
+  { id: 'RPT-2025-Q2', period: 'Q2 2025', submittedDate: '2025-07-12', status: 'Submitted', refNo: 'EA-Q2-2025-052', totalWaste: 134.9, recyclingRate: 91 },
+  { id: 'RPT-2025-Q1', period: 'Q1 2025', submittedDate: '2025-04-09', status: 'Submitted', refNo: 'EA-Q1-2025-061', totalWaste: 145.3, recyclingRate: 87 },
+  { id: 'RPT-2024-Q4', period: 'Q4 2024', submittedDate: '2025-01-08', status: 'Submitted', refNo: 'EA-Q4-2024-078', totalWaste: 159.1, recyclingRate: 90 },
+];
+
+const wasteByTypeData = [
+  { material: 'Concrete', '2026': 45, '2025': 38, '2024': 35 },
+  { material: 'Timber', '2026': 28, '2025': 32, '2024': 29 },
+  { material: 'Metal', '2026': 12, '2025': 14, '2024': 11 },
+  { material: 'Plasterboard', '2026': 18, '2025': 16, '2024': 19 },
+  { material: 'Soil/Rock', '2026': 35, '2025': 40, '2024': 42 },
+];
+
+const recyclingTrendData = [
+  { month: 'Apr 2025', rate: 85 },
+  { month: 'May 2025', rate: 87 },
+  { month: 'Jun 2025', rate: 89 },
+  { month: 'Jul 2025', rate: 88 },
+  { month: 'Aug 2025', rate: 90 },
+  { month: 'Sep 2025', rate: 89 },
+  { month: 'Oct 2025', rate: 91 },
+  { month: 'Nov 2025', rate: 92 },
+  { month: 'Dec 2025', rate: 90 },
+  { month: 'Jan 2026', rate: 93 },
+  { month: 'Feb 2026', rate: 92 },
+  { month: 'Mar 2026', rate: 92 },
+];
+
+const wasteDestinationData = [
+  { name: 'Recycled', value: 92, fill: '#10b981' },
+  { name: 'Landfill', value: 5, fill: '#ef4444' },
+  { name: 'Energy Recovery', value: 2, fill: '#f59e0b' },
+  { name: 'Reuse', value: 1, fill: '#3b82f6' },
+];
+
 export default function WasteManagement() {
   const { data: waste = [], isLoading } = useWasteManagement.useList() as { data: WasteLog[], isLoading: boolean };
   const createMutation = useWasteManagement.useCreate();
@@ -78,9 +126,12 @@ export default function WasteManagement() {
   const [searchTerm, setSearchTerm] = useState('');
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showManifestModal, setShowManifestModal] = useState(false);
+  const [showSupplierModal, setShowSupplierModal] = useState(false);
   const [_uploading, setUploading] = useState<string | null>(null);
   const [form, setForm] = useState({ wasteType: '', quantity: '', unit: 'tonnes', carrier: '', collectionDate: '', recyclingRate: '75', status: 'pending', disposalMethod: 'Recycling', cost: '' });
   const [manifestForm, setManifestForm] = useState({ wasteType: '', quantity: '', carrier: '', carrierLicense: '', consignee: '' });
+  const [supplierForm, setSupplierForm] = useState({ name: '', licenseNo: '', expiryDate: '', wasteTypes: '' });
+  const [reportingPeriod, setReportingPeriod] = useState('quarterly');
   const [editItem, setEditItem] = useState<Row | null>(null);
 
   const filtered = waste.filter((w) =>
@@ -191,6 +242,21 @@ export default function WasteManagement() {
                 <Plus size={18} /> Create Manifest
               </button>
             )}
+            {activeTab === 'suppliers' && (
+              <button type="button" onClick={() => setShowSupplierModal(true)} className="flex items-center gap-2 px-4 py-2 bg-orange-500 hover:bg-orange-600 text-white rounded-lg font-semibold">
+                <Plus size={18} /> Add Supplier
+              </button>
+            )}
+            {activeTab === 'reporting' && (
+              <div className="flex gap-2">
+                <button type="button" className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-semibold">
+                  <Download size={18} /> Export PDF
+                </button>
+                <button type="button" className="flex items-center gap-2 px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg font-semibold">
+                  <Send size={18} /> Submit to EA
+                </button>
+              </div>
+            )}
           </div>
         </div>
 
@@ -266,6 +332,24 @@ export default function WasteManagement() {
               className={`px-4 py-3 font-medium transition-colors ${activeTab === 'compliance' ? 'text-orange-400 border-b-2 border-orange-400' : 'text-gray-400 hover:text-gray-300'}`}
             >
               Compliance
+            </button>
+            <button
+              onClick={() => setActiveTab('reporting')}
+              className={`px-4 py-3 font-medium transition-colors ${activeTab === 'reporting' ? 'text-orange-400 border-b-2 border-orange-400' : 'text-gray-400 hover:text-gray-300'}`}
+            >
+              Reporting
+            </button>
+            <button
+              onClick={() => setActiveTab('suppliers')}
+              className={`px-4 py-3 font-medium transition-colors ${activeTab === 'suppliers' ? 'text-orange-400 border-b-2 border-orange-400' : 'text-gray-400 hover:text-gray-300'}`}
+            >
+              Suppliers
+            </button>
+            <button
+              onClick={() => setActiveTab('analytics')}
+              className={`px-4 py-3 font-medium transition-colors ${activeTab === 'analytics' ? 'text-orange-400 border-b-2 border-orange-400' : 'text-gray-400 hover:text-gray-300'}`}
+            >
+              Analytics
             </button>
           </div>
 
@@ -441,6 +525,307 @@ export default function WasteManagement() {
                       <p className="text-gray-500 text-xs mt-1">Materials: {station.materials}</p>
                     </div>
                   ))}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {activeTab === 'reporting' && (
+            <div className="space-y-6">
+              <div className="bg-gray-800/50 border border-gray-700 rounded-lg p-4">
+                <h3 className="text-white font-display mb-4">Generate Report</h3>
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                  <div>
+                    <label className="block text-gray-400 text-xs mb-2">Reporting Period</label>
+                    <select value={reportingPeriod} onChange={(e) => setReportingPeriod(e.target.value)} className="w-full px-3 py-2 input input-bordered text-white">
+                      <option value="monthly">Monthly</option>
+                      <option value="quarterly">Quarterly</option>
+                      <option value="annual">Annual</option>
+                    </select>
+                  </div>
+                  <div className="flex items-end">
+                    <button type="button" className="w-full px-4 py-2 bg-orange-500 hover:bg-orange-600 text-white rounded-lg font-semibold">
+                      Preview Report
+                    </button>
+                  </div>
+                  <div className="flex items-end">
+                    <button type="button" className="w-full px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-semibold flex items-center justify-center gap-2">
+                      <Download size={16} /> Export PDF
+                    </button>
+                  </div>
+                  <div className="flex items-end">
+                    <button type="button" className="w-full px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg font-semibold flex items-center justify-center gap-2">
+                      <Send size={16} /> Submit to EA
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                <div className="card p-4">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-lg bg-emerald-500/10 flex items-center justify-center">
+                      <Recycle className="text-emerald-400" size={20} />
+                    </div>
+                    <div>
+                      <p className="text-gray-400 text-xs">Total Waste (Q1)</p>
+                      <p className="text-2xl font-display text-emerald-400">156.2t</p>
+                    </div>
+                  </div>
+                </div>
+                <div className="card p-4">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-lg bg-green-500/10 flex items-center justify-center">
+                      <Leaf className="text-green-400" size={20} />
+                    </div>
+                    <div>
+                      <p className="text-gray-400 text-xs">Recycling Rate (Q1)</p>
+                      <p className="text-2xl font-display text-green-400">92%</p>
+                    </div>
+                  </div>
+                </div>
+                <div className="card p-4">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-lg bg-amber-500/10 flex items-center justify-center">
+                      <Trash2 className="text-amber-400" size={20} />
+                    </div>
+                    <div>
+                      <p className="text-gray-400 text-xs">Landfill Diversion</p>
+                      <p className="text-2xl font-display text-amber-400">95%</p>
+                    </div>
+                  </div>
+                </div>
+                <div className="card p-4">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-lg bg-blue-500/10 flex items-center justify-center">
+                      <Award className="text-blue-400" size={20} />
+                    </div>
+                    <div>
+                      <p className="text-gray-400 text-xs">CO₂ Saved</p>
+                      <p className="text-2xl font-display text-blue-400">45.3t</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="card p-6">
+                <h3 className="text-white font-display mb-4">Statutory Reports</h3>
+                <div className="cb-table-scroll touch-pan-x">
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr className="border-b border-gray-700">
+                        <th className="text-left py-3 px-4 text-gray-400 font-display tracking-widest">Report</th>
+                        <th className="text-left py-3 px-4 text-gray-400 font-display tracking-widest">Period</th>
+                        <th className="text-left py-3 px-4 text-gray-400 font-display tracking-widest">Submitted</th>
+                        <th className="text-left py-3 px-4 text-gray-400 font-display tracking-widest">Reference</th>
+                        <th className="text-center py-3 px-4 text-gray-400 font-display tracking-widest">Status</th>
+                        <th className="text-center py-3 px-4 text-gray-400 font-display tracking-widest">Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {reportingData.map((report) => (
+                        <tr key={report.id} className="border-b border-gray-700/50 hover:bg-gray-800/30">
+                          <td className="py-3 px-4 font-mono text-orange-400 font-medium">{report.id}</td>
+                          <td className="py-3 px-4 text-gray-300">{report.period}</td>
+                          <td className="py-3 px-4 text-gray-300">{report.submittedDate}</td>
+                          <td className="py-3 px-4 text-gray-300">{report.refNo}</td>
+                          <td className="py-3 px-4 text-center">
+                            <span className="px-2 py-1 rounded text-xs font-medium bg-emerald-500/20 text-emerald-400">
+                              {report.status}
+                            </span>
+                          </td>
+                          <td className="py-3 px-4 text-center">
+                            <button className="p-1 hover:bg-blue-900/30 rounded inline-block" title="Download">
+                              <Download size={14} className="text-blue-400" />
+                            </button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {activeTab === 'suppliers' && (
+            <div className="space-y-4">
+              <div className="bg-yellow-900/20 border border-yellow-700/50 rounded-lg p-4">
+                <p className="text-yellow-300 text-sm font-medium">2 suppliers have licenses expiring within 30 days</p>
+              </div>
+              <div className="cb-table-scroll touch-pan-x">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="border-b border-gray-700">
+                      <th className="text-left py-3 px-4 text-gray-400 font-display tracking-widest">Carrier Name</th>
+                      <th className="text-left py-3 px-4 text-gray-400 font-display tracking-widest">License No</th>
+                      <th className="text-left py-3 px-4 text-gray-400 font-display tracking-widest">Expiry Date</th>
+                      <th className="text-left py-3 px-4 text-gray-400 font-display tracking-widest">Waste Types</th>
+                      <th className="text-center py-3 px-4 text-gray-400 font-display tracking-widest">Status</th>
+                      <th className="text-center py-3 px-4 text-gray-400 font-display tracking-widest">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {wasteSuppliersData.map((supplier) => (
+                      <tr key={supplier.id} className={`border-b border-gray-700/50 hover:bg-gray-800/30 ${supplier.status === 'Expired' ? 'bg-red-900/10' : ''}`}>
+                        <td className="py-3 px-4 text-white font-medium">{supplier.name}</td>
+                        <td className="py-3 px-4 text-gray-300 font-mono">{supplier.licenseNo}</td>
+                        <td className="py-3 px-4 text-gray-300">
+                          {supplier.status === 'Expired' ? (
+                            <span className="text-red-400 font-medium">Expired</span>
+                          ) : supplier.daysExpiring && supplier.daysExpiring <= 30 ? (
+                            <div>
+                              <p className="text-gray-300">{supplier.expiryDate}</p>
+                              <span className="px-2 py-1 rounded text-xs font-medium bg-yellow-500/20 text-yellow-400 mt-1 inline-block">
+                                {supplier.daysExpiring} days
+                              </span>
+                            </div>
+                          ) : (
+                            <p className="text-gray-300">{supplier.expiryDate}</p>
+                          )}
+                        </td>
+                        <td className="py-3 px-4 text-gray-400 text-xs">{supplier.wasteTypes}</td>
+                        <td className="py-3 px-4 text-center">
+                          <span className={`px-2 py-1 rounded text-xs font-medium ${
+                            supplier.status === 'Active' ? 'bg-emerald-500/20 text-emerald-400' :
+                            supplier.status === 'Expired' ? 'bg-red-500/20 text-red-400' :
+                            'bg-amber-500/20 text-amber-400'
+                          }`}>
+                            {supplier.status}
+                          </span>
+                        </td>
+                        <td className="py-3 px-4 text-center">
+                          <button className="px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white rounded text-xs font-medium">
+                            Verify License
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+
+          {activeTab === 'analytics' && (
+            <div className="space-y-6">
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                <div className="card p-4">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-lg bg-green-500/10 flex items-center justify-center">
+                      <Leaf className="text-green-400" size={20} />
+                    </div>
+                    <div>
+                      <p className="text-gray-400 text-xs">Recycling Rate</p>
+                      <p className="text-2xl font-display text-green-400">92%</p>
+                    </div>
+                  </div>
+                </div>
+                <div className="card p-4">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-lg bg-amber-500/10 flex items-center justify-center">
+                      <Trash2 className="text-amber-400" size={20} />
+                    </div>
+                    <div>
+                      <p className="text-gray-400 text-xs">Total Waste (12m)</p>
+                      <p className="text-2xl font-display text-amber-400">1,842t</p>
+                    </div>
+                  </div>
+                </div>
+                <div className="card p-4">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-lg bg-blue-500/10 flex items-center justify-center">
+                      <Award className="text-blue-400" size={20} />
+                    </div>
+                    <div>
+                      <p className="text-gray-400 text-xs">Cost Avoided vs Landfill</p>
+                      <p className="text-2xl font-display text-blue-400">£28,450</p>
+                    </div>
+                  </div>
+                </div>
+                <div className="card p-4">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-lg bg-cyan-500/10 flex items-center justify-center">
+                      <TrendingUp className="text-cyan-400" size={20} />
+                    </div>
+                    <div>
+                      <p className="text-gray-400 text-xs">Carbon Saved</p>
+                      <p className="text-2xl font-display text-cyan-400">542kg CO₂e</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="card p-6">
+                <h3 className="text-white font-display mb-4">Waste by Type (Last 12 Months)</h3>
+                <ResponsiveContainer width="100%" height={300}>
+                  <BarChart data={wasteByTypeData}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
+                    <XAxis dataKey="material" stroke="#9ca3af" />
+                    <YAxis stroke="#9ca3af" />
+                    <Tooltip contentStyle={{ backgroundColor: '#1f2937', border: '1px solid #374151' }} />
+                    <Legend />
+                    <Bar dataKey="2024" fill="#6b7280" name="2024 (tonnes)" />
+                    <Bar dataKey="2025" fill="#f97316" name="2025 (tonnes)" />
+                    <Bar dataKey="2026" fill="#10b981" name="2026 (tonnes)" />
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+
+              <div className="card p-6">
+                <h3 className="text-white font-display mb-4">Recycling Rate Trend</h3>
+                <ResponsiveContainer width="100%" height={300}>
+                  <LineChart data={recyclingTrendData}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
+                    <XAxis dataKey="month" stroke="#9ca3af" />
+                    <YAxis stroke="#9ca3af" />
+                    <Tooltip contentStyle={{ backgroundColor: '#1f2937', border: '1px solid #374151' }} />
+                    <Line type="monotone" dataKey="rate" stroke="#10b981" strokeWidth={2} name="Rate (%)" dot={{ fill: '#10b981' }} />
+                  </LineChart>
+                </ResponsiveContainer>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="card p-6">
+                  <h3 className="text-white font-display mb-4">Waste Destination Mix</h3>
+                  <ResponsiveContainer width="100%" height={250}>
+                    <PieChart>
+                      <Tooltip contentStyle={{ backgroundColor: '#1f2937', border: '1px solid #374151' }} />
+                      <Pie dataKey="value" data={wasteDestinationData} cx="50%" cy="50%" label={({ name }: { name?: string }) => String(name ?? "")}>
+                        {wasteDestinationData.map((entry, index) => (
+                          <Cell key={`cell-${index}`} fill={entry.fill} />
+                        ))}
+                      </Pie>
+                    </PieChart>
+                  </ResponsiveContainer>
+                </div>
+
+                <div className="card p-6">
+                  <h3 className="text-white font-display mb-4">Benchmark vs Industry Average</h3>
+                  <div className="space-y-4">
+                    <div>
+                      <div className="flex justify-between mb-2">
+                        <p className="text-gray-300 text-sm">Your Recycling Rate</p>
+                        <p className="text-green-400 font-medium">92%</p>
+                      </div>
+                      <div className="w-full h-2 bg-gray-700 rounded-full overflow-hidden">
+                        <div className="h-full bg-green-500" style={{ width: '92%' }} />
+                      </div>
+                    </div>
+                    <div>
+                      <div className="flex justify-between mb-2">
+                        <p className="text-gray-300 text-sm">Industry Average</p>
+                        <p className="text-amber-400 font-medium">78%</p>
+                      </div>
+                      <div className="w-full h-2 bg-gray-700 rounded-full overflow-hidden">
+                        <div className="h-full bg-amber-500" style={{ width: '78%' }} />
+                      </div>
+                    </div>
+                    <div className="mt-4 p-3 bg-emerald-900/20 border border-emerald-700/30 rounded">
+                      <p className="text-emerald-300 text-sm font-medium">Above Average</p>
+                      <p className="text-gray-400 text-xs mt-1">Your facility performs 14% better than industry benchmark</p>
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
@@ -646,6 +1031,41 @@ export default function WasteManagement() {
                 <button type="button" onClick={() => setShowManifestModal(false)} className="px-4 py-2 text-gray-400 hover:text-white">Cancel</button>
                 <button type="button" onClick={handleCreateManifest} className="px-4 py-2 bg-orange-500 hover:bg-orange-600 text-white rounded-lg font-semibold">
                   Create Manifest
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {showSupplierModal && (
+          <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
+            <div className="bg-gray-900 border border-gray-700 rounded-xl w-full max-w-lg">
+              <div className="p-6 border-b border-gray-700 flex items-center justify-between">
+                <h3 className="text-xl font-display text-white">Add Waste Carrier/Supplier</h3>
+                <button type="button" onClick={() => setShowSupplierModal(false)} className="text-gray-400 hover:text-white"><X size={20} /></button>
+              </div>
+              <div className="p-6 space-y-4">
+                <div>
+                  <label htmlFor="suppName" className="block text-gray-400 text-xs mb-1">Carrier Name *</label>
+                  <input id="suppName" type="text" value={supplierForm.name} onChange={e => setSupplierForm(f => ({ ...f, name: e.target.value }))} placeholder="Company name" className="w-full px-3 py-2 input input-bordered text-white placeholder-gray-500" />
+                </div>
+                <div>
+                  <label htmlFor="suppLicense" className="block text-gray-400 text-xs mb-1">License Number *</label>
+                  <input id="suppLicense" type="text" value={supplierForm.licenseNo} onChange={e => setSupplierForm(f => ({ ...f, licenseNo: e.target.value }))} placeholder="e.g. WEE001234" className="w-full px-3 py-2 input input-bordered text-white placeholder-gray-500" />
+                </div>
+                <div>
+                  <label htmlFor="suppExpiry" className="block text-gray-400 text-xs mb-1">License Expiry Date *</label>
+                  <input id="suppExpiry" type="date" value={supplierForm.expiryDate} onChange={e => setSupplierForm(f => ({ ...f, expiryDate: e.target.value }))} className="w-full px-3 py-2 input input-bordered text-white" />
+                </div>
+                <div>
+                  <label htmlFor="suppTypes" className="block text-gray-400 text-xs mb-1">Waste Types Handled</label>
+                  <input id="suppTypes" type="text" value={supplierForm.wasteTypes} onChange={e => setSupplierForm(f => ({ ...f, wasteTypes: e.target.value }))} placeholder="e.g. Concrete, Metal" className="w-full px-3 py-2 input input-bordered text-white placeholder-gray-500" />
+                </div>
+              </div>
+              <div className="p-6 border-t border-gray-700 flex justify-end gap-3">
+                <button type="button" onClick={() => setShowSupplierModal(false)} className="px-4 py-2 text-gray-400 hover:text-white">Cancel</button>
+                <button type="button" className="px-4 py-2 bg-orange-500 hover:bg-orange-600 text-white rounded-lg font-semibold">
+                  Add Supplier
                 </button>
               </div>
             </div>

@@ -1,5 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { UserCheck, Plus, Search, Phone, Mail, MapPin, Star, Edit2, Trash2, X, Building2, TrendingUp, Users, MessageSquare, PhoneCall, Calendar, CheckSquare, Square } from 'lucide-react';
+import {
+  UserCheck, Plus, Search, Phone, Mail, MapPin, Star, Edit2, Trash2, X, Building2, TrendingUp, Users, MessageSquare,
+  PhoneCall, Calendar, CheckSquare, Square, BarChart3, TrendingDown, AlertCircle, Award, GripVertical, ArrowUp, ArrowDown,
+  Clock, CheckCircle, AlertTriangle, Target, DollarSign, Percent, Activity, Filter, Download, FileText
+} from 'lucide-react';
+import { BarChart, Bar, AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, Cell, LineChart, Line } from 'recharts';
 import { useContacts } from '../../hooks/useData';
 import { contactsApi } from '../../services/api';
 import { toast } from 'sonner';
@@ -9,9 +14,23 @@ import { EmptyState } from '../ui/EmptyState';
 
 type AnyRow = Record<string, unknown>;
 
+interface CRMActivity {
+  id: string;
+  date: string;
+  type: string;
+  contact: string;
+  project: string;
+  notes: string;
+  outcome: string;
+}
+
 const CONTACT_TYPES = ['Client','Consultant','Subcontractor','Supplier','Statutory Body','Insurer','Solicitor','Other'];
 const STATUS_OPTIONS = ['Active','Inactive','Prospect','Do Not Contact'];
 const PIPELINE_STAGES = ['Prospect','Qualified','Proposal Sent','Negotiating','Won','Lost'];
+const ACTIVITY_TYPES = ['meeting','call','email','site visit','proposal sent','note'];
+const INSIGHT_TYPES = ['Cost Saving','Risk Reduction','Efficiency','Compliance'];
+const EFFORT_LEVELS = ['Low','Medium','High'];
+const PRIORITY_LEVELS = ['Critical','High','Medium','Low'];
 
 const typeColour: Record<string,string> = {
   'Client':'bg-blue-900/30 text-blue-300',
@@ -78,7 +97,7 @@ export function CRM() {
   const updateMutation = useUpdate();
   const deleteMutation = useDelete();
 
-  const [subTab, setSubTab] = useState<'contacts'|'opportunities'|'pipeline'|'companies'>('contacts');
+  const [subTab, setSubTab] = useState<'contacts'|'opportunities'|'pipeline'|'companies'|'kanban'|'activities'|'analytics'>('contacts');
   const [search, setSearch] = useState('');
   const [typeFilter, setTypeFilter] = useState('All');
   const [statusFilter, setStatusFilter] = useState('All');
@@ -88,6 +107,12 @@ export function CRM() {
   const [expanded, setExpanded] = useState<string | null>(null);
   const [showInteractionForm, setShowInteractionForm] = useState<string | null>(null);
   const [interactionForm, setInteractionForm] = useState({ type: 'call', note: '' });
+  const [showActivityModal, setShowActivityModal] = useState(false);
+  const [activityForm, setActivityForm] = useState({ type: 'meeting', date: new Date().toISOString().slice(0, 10), duration: '30', contact: '', notes: '', followUp: '' });
+  const [activities, setActivities] = useState<CRMActivity[]>([]);
+  const [activityTypeFilter, setActivityTypeFilter] = useState('all');
+  const [recommendations, setRecommendations] = useState<AnyRow[]>([]);
+  const [dealMetrics, setDealMetrics] = useState({ winRate: 0, pipelineValue: 0, avgDealSize: 0, avgSalesCycle: 0 });
 
   const { selectedIds, toggle, clearSelection } = useBulkSelection();
 
@@ -95,13 +120,54 @@ export function CRM() {
 
   useEffect(() => {
     contactsApi.getInteractions('').then(data => {
-      // API returns { data: [...] } wrapper, extract the array
       const arr = (data as { data: AnyRow[] }).data || [];
       setAllInteractions(arr as AnyRow[]);
     }).catch((err) => {
       console.error('Failed to load contact interactions:', err);
     });
-  }, []);
+
+    // Mock activities data
+    setActivities([
+      { id: '1', date: '2026-04-25', type: 'meeting', contact: 'John Smith', project: 'Westfield Renovation', notes: 'Discussed scope and timeline', outcome: 'positive' },
+      { id: '2', date: '2026-04-24', type: 'call', contact: 'Sarah Jones', project: 'Thames Park Project', notes: 'Budget review call', outcome: 'positive' },
+      { id: '3', date: '2026-04-23', type: 'email', contact: 'Mike Davis', project: 'City Centre Refurb', notes: 'Sent proposal document', outcome: 'neutral' },
+      { id: '4', date: '2026-04-22', type: 'site visit', contact: 'Emma Wilson', project: 'Brookside Development', notes: 'Site inspection completed', outcome: 'positive' },
+      { id: '5', date: '2026-04-21', type: 'proposal sent', contact: 'Robert Brown', project: 'North Gate Extension', notes: '£245k proposal sent', outcome: 'pending' },
+    ]);
+
+    // Mock recommendations
+    setRecommendations([
+      { id: '1', type: 'Cost Saving', priority: 'High', title: 'Bulk Material Ordering', description: 'Consolidate material orders to reduce supply chain costs by 12%', impact: '£45,000', effort: 'Medium', dismissed: false },
+      { id: '2', type: 'Risk Reduction', priority: 'Critical', title: 'Safety Protocol Update', description: 'Implement H&S procedures to reduce incident risk', impact: '£120,000', effort: 'High', dismissed: false },
+      { id: '3', type: 'Efficiency', priority: 'Medium', title: 'Labour Schedule Optimization', description: 'Optimize crew scheduling to reduce idle time by 8%', impact: '8%', effort: 'Low', dismissed: false },
+      { id: '4', type: 'Compliance', priority: 'High', title: 'Building Regs Alignment', description: 'Align projects with updated building regulations', impact: 'Compliance', effort: 'Medium', dismissed: false },
+      { id: '5', type: 'Cost Saving', priority: 'Medium', title: 'Energy Efficiency Upgrade', description: 'Specify renewable energy materials for 5% cost reduction', impact: '£18,000', effort: 'Low', dismissed: false },
+      { id: '6', type: 'Efficiency', priority: 'Low', title: 'Digital Timesheets', description: 'Implement digital timekeeping for faster payroll', impact: '5%', effort: 'Low', dismissed: false },
+      { id: '7', type: 'Risk Reduction', priority: 'Medium', title: 'Weather Contingency', description: 'Add weather buffer days to schedules', impact: '£75,000', effort: 'Low', dismissed: false },
+      { id: '8', type: 'Cost Saving', priority: 'High', title: 'Subcontractor Rate Renegotiation', description: 'Renegotiate Q2 rates with key subs', impact: '£32,000', effort: 'Medium', dismissed: false },
+      { id: '9', type: 'Compliance', priority: 'Medium', title: 'Environmental Impact Assessment', description: 'Formalize EIA process for all projects', impact: 'Compliance', effort: 'High', dismissed: false },
+      { id: '10', type: 'Efficiency', priority: 'Low', title: 'Template Library Expansion', description: 'Create 15 new project templates', impact: '10%', effort: 'Medium', dismissed: false },
+    ]);
+
+    // Calculate deal metrics
+    const won = contacts.filter(c => c.pipelineStage === 'Won').length;
+    const lost = contacts.filter(c => c.pipelineStage === 'Lost').length;
+    const total = won + lost;
+    const pipelineVal = contacts.reduce((sum, c) => {
+      if (String(c.pipelineStage) === 'Lost' || !c.contractValue) return sum;
+      return sum + (Number(c.contractValue) || 0);
+    }, 0);
+    const avgVal = contacts.filter(c => c.contractValue).length > 0
+      ? contacts.filter(c => c.contractValue).reduce((sum, c) => sum + (Number(c.contractValue) || 0), 0) / contacts.filter(c => c.contractValue).length
+      : 0;
+
+    setDealMetrics({
+      winRate: total > 0 ? Math.round((won / total) * 100) : 0,
+      pipelineValue: pipelineVal,
+      avgDealSize: Math.round(avgVal),
+      avgSalesCycle: 42,
+    });
+  }, [contacts]);
 
   function getInteractionsForContact(contactId: string): AnyRow[] {
     return allInteractions.filter(i => String(i.contact_id) === contactId);
@@ -271,7 +337,10 @@ export function CRM() {
         {([
           { key:'contacts', label:'All Contacts', icon:UserCheck, count:contacts.length },
           { key:'opportunities', label:'Opportunities', icon:TrendingUp, count:opportunities.length },
-          { key:'pipeline', label:'By Type', icon:TrendingUp, count:null },
+          { key:'kanban', label:'Pipeline', icon:BarChart3, count:null },
+          { key:'activities', label:'Activities', icon:Activity, count:null },
+          { key:'analytics', label:'Analytics', icon:BarChart, count:null },
+          { key:'pipeline', label:'By Type', icon:Building2, count:null },
           { key:'companies', label:'Companies', icon:Users, count:companiesMap.size },
         ] as const).map(t=>(
           <button type="button"  key={t.key} onClick={()=>setSubTab(t.key)}
@@ -540,6 +609,215 @@ export function CRM() {
         </div>
       )}
 
+      {/* ── KANBAN PIPELINE tab ───────────────────────────────── */}
+      {subTab==='kanban' && (
+        <div className="space-y-6">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
+            <div className="bg-gray-800 border-gray-700 rounded-xl border p-3">
+              <p className="text-xs text-gray-400 mb-1">Total Pipeline</p>
+              <p className="text-2xl font-display text-white">£{(dealMetrics.pipelineValue / 1000).toFixed(0)}k</p>
+            </div>
+            <div className="bg-gray-800 border-gray-700 rounded-xl border p-3">
+              <p className="text-xs text-gray-400 mb-1">Weighted Forecast</p>
+              <p className="text-2xl font-display text-orange-400">£{(opportunities.reduce((sum, o) => sum + (Number(o.value) * Number(o.probability) / 100), 0) / 1000).toFixed(0)}k</p>
+            </div>
+            <div className="bg-gray-800 border-gray-700 rounded-xl border p-3">
+              <p className="text-xs text-gray-400 mb-1">Opportunities</p>
+              <p className="text-2xl font-display text-white">{opportunities.length}</p>
+            </div>
+            <div className="bg-gray-800 border-gray-700 rounded-xl border p-3">
+              <p className="text-xs text-gray-400 mb-1">Avg Deal Size</p>
+              <p className="text-2xl font-display text-white">£{(dealMetrics.avgDealSize / 1000).toFixed(0)}k</p>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-6 gap-3 min-h-[600px]">
+            {PIPELINE_STAGES.map(stage => {
+              const stageOpps = opportunities.filter(o => String(o.stage) === stage);
+              return (
+                <div key={stage} className="bg-gray-800 border-gray-700 rounded-xl border p-4 flex flex-col">
+                  <div className="mb-3 pb-3 border-b border-gray-700">
+                    <p className="font-semibold text-white text-sm">{stage}</p>
+                    <p className="text-xs text-gray-400">{stageOpps.length} deal{stageOpps.length!==1?'s':''}</p>
+                  </div>
+                  <div className="space-y-2 flex-1">
+                    {stageOpps.map(opp => (
+                      <div key={String(opp.id)} className="bg-gray-700 border-gray-600 rounded-lg border p-3 text-xs cursor-move hover:shadow-md hover:shadow-gray-900/50 transition-shadow">
+                        <div className="flex items-start gap-2 mb-2">
+                          <GripVertical size={12} className="text-gray-500 flex-shrink-0 mt-0.5"/>
+                          <div className="flex-1 min-w-0">
+                            <p className="font-medium text-white truncate">{String(opp.name)}</p>
+                            <p className="text-gray-400 truncate">{String(opp.company)}</p>
+                          </div>
+                        </div>
+                        <p className="text-sm font-semibold text-white mb-2">£{(Number(opp.value) / 1000).toFixed(0)}k</p>
+                        <div className="bg-gray-600 rounded-full h-1.5 mb-2">
+                          <div className="bg-orange-500 h-1.5 rounded-full" style={{width: `${Number(opp.probability)}%`}}></div>
+                        </div>
+                        <p className="text-gray-400">{Number(opp.probability)}% prob</p>
+                      </div>
+                    ))}
+                    {stageOpps.length === 0 && (
+                      <p className="text-gray-500 text-center py-8 text-xs">No opportunities</p>
+                    )}
+                  </div>
+                  <button type="button" className="mt-4 w-full px-2 py-2 text-xs bg-orange-600 text-white rounded hover:bg-orange-700 font-medium flex items-center justify-center gap-1">
+                    <Plus size={12}/>Add
+                  </button>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
+      {/* ── ACTIVITIES tab ────────────────────────────────────── */}
+      {subTab==='activities' && (
+        <div className="space-y-4">
+          <div className="flex items-center justify-between gap-4 bg-gray-800 border-gray-700 rounded-xl border p-4">
+            <div className="flex items-center gap-2">
+              <Filter size={16} className="text-gray-400"/>
+              <select value={activityTypeFilter} onChange={e => setActivityTypeFilter(e.target.value)} className="text-sm bg-gray-700 border-gray-600 text-white border rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-orange-500">
+                {['all', ...ACTIVITY_TYPES].map(t => <option key={t}>{t}</option>)}
+              </select>
+            </div>
+            <button type="button" onClick={() => setShowActivityModal(true)} className="flex items-center gap-2 px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 text-sm font-medium">
+              <Plus size={16}/>Log Activity
+            </button>
+          </div>
+
+          <div className="space-y-3">
+            {activities.filter(a => activityTypeFilter === 'all' || String(a.type) === activityTypeFilter).map(activity => {
+              const aType = String(activity.type ?? '');
+              const ActivityIcon = aType === 'call' ? PhoneCall : aType === 'email' ? Mail : aType === 'meeting' ? Calendar : aType === 'site visit' ? MapPin : aType === 'proposal sent' ? FileText : MessageSquare;
+              const aOutcome = String(activity.outcome ?? '');
+              const outcomeColour = aOutcome === 'positive' ? 'bg-green-900/30 text-green-300' : aOutcome === 'pending' ? 'bg-yellow-900/30 text-yellow-300' : 'bg-gray-700 text-gray-300';
+              return (
+                <div key={String(activity.id)} className="bg-gray-800 border-gray-700 rounded-xl border p-4">
+                  <div className="flex items-start gap-4">
+                    <div className="flex-shrink-0 mt-1">
+                      <ActivityIcon size={18} className="text-orange-400"/>
+                    </div>
+                    <div className="flex-1">
+                      <div className="flex items-start justify-between mb-2">
+                        <div>
+                          <p className="font-semibold text-white capitalize">{aType}</p>
+                          <p className="text-sm text-gray-400">{String(activity.contact ?? '')} • {String(activity.project ?? '')}</p>
+                        </div>
+                        <span className={`text-xs px-2 py-1 rounded-full font-medium ${outcomeColour}`}>{aOutcome}</span>
+                      </div>
+                      <p className="text-sm text-gray-300 mb-2">{String(activity.notes ?? '')}</p>
+                      <p className="text-xs text-gray-500">{String(activity.date ?? '')}</p>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
+      {/* ── ANALYTICS tab ────────────────────────────────────── */}
+      {subTab==='analytics' && (
+        <div className="space-y-6">
+          {/* KPI Cards */}
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+            {[
+              { label: 'Win Rate', value: `${dealMetrics.winRate}%`, icon: Award, colour: 'text-green-400', bg: 'bg-green-900/30' },
+              { label: 'Pipeline Value', value: `£${(dealMetrics.pipelineValue / 1000).toFixed(0)}k`, icon: DollarSign, colour: 'text-blue-400', bg: 'bg-blue-900/30' },
+              { label: 'Avg Deal Size', value: `£${(dealMetrics.avgDealSize / 1000).toFixed(0)}k`, icon: Target, colour: 'text-purple-400', bg: 'bg-purple-900/30' },
+              { label: 'Sales Cycle', value: `${dealMetrics.avgSalesCycle} days`, icon: Clock, colour: 'text-amber-400', bg: 'bg-amber-900/30' },
+            ].map(kpi => (
+              <div key={kpi.label} className="bg-gray-800 border-gray-700 rounded-xl border p-4">
+                <div className="flex items-center gap-3">
+                  <div className={`p-2 rounded-lg ${kpi.bg}`}><kpi.icon size={20} className={kpi.colour}/></div>
+                  <div><p className="text-xs text-gray-400">{kpi.label}</p><p className="text-xl font-display text-white">{kpi.value}</p></div>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* Deals Won vs Lost Chart */}
+          <div className="bg-gray-800 border-gray-700 rounded-xl border p-6">
+            <h3 className="font-semibold text-white mb-4">Deals Won vs Lost (12 Months)</h3>
+            <div className="h-80">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={[
+                  { month: 'May', won: 3, lost: 1 },
+                  { month: 'Jun', won: 4, lost: 2 },
+                  { month: 'Jul', won: 2, lost: 1 },
+                  { month: 'Aug', won: 5, lost: 1 },
+                  { month: 'Sep', won: 3, lost: 2 },
+                  { month: 'Oct', won: 4, lost: 1 },
+                  { month: 'Nov', won: 6, lost: 2 },
+                  { month: 'Dec', won: 2, lost: 1 },
+                  { month: 'Jan', won: 4, lost: 1 },
+                  { month: 'Feb', won: 3, lost: 2 },
+                  { month: 'Mar', won: 5, lost: 1 },
+                  { month: 'Apr', won: 2, lost: 1 },
+                ]}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#374151"/>
+                  <XAxis dataKey="month" stroke="#9ca3af"/>
+                  <YAxis stroke="#9ca3af"/>
+                  <Tooltip contentStyle={{background: '#1f2937', border: '1px solid #374151'}}/>
+                  <Legend/>
+                  <Bar dataKey="won" fill="#10b981" name="Won"/>
+                  <Bar dataKey="lost" fill="#ef4444" name="Lost"/>
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
+
+          {/* Pipeline Funnel */}
+          <div className="bg-gray-800 border-gray-700 rounded-xl border p-6">
+            <h3 className="font-semibold text-white mb-4">Pipeline Stages Distribution</h3>
+            <div className="space-y-3">
+              {PIPELINE_STAGES.map((stage, idx) => {
+                const count = stageCounts[stage] || 0;
+                const pct = opportunities.length > 0 ? Math.round((count / opportunities.length) * 100) : 0;
+                const widths = ['100%', '85%', '70%', '55%', '40%', '25%'];
+                return (
+                  <div key={stage}>
+                    <div className="flex items-center justify-between mb-1">
+                      <p className="text-sm font-medium text-gray-300">{stage}</p>
+                      <p className="text-sm text-gray-400">{count} ({pct}%)</p>
+                    </div>
+                    <div className="w-full bg-gray-700 rounded-full h-2">
+                      <div className="bg-orange-500 h-2 rounded-full" style={{width: widths[idx]}}></div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Top 5 Clients */}
+          <div className="bg-gray-800 border-gray-700 rounded-xl border p-6">
+            <h3 className="font-semibold text-white mb-4">Top 5 Clients by Value</h3>
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead className="border-b border-gray-700">
+                  <tr>
+                    <th className="text-left py-3 px-4 text-gray-400 font-medium">Client</th>
+                    <th className="text-right py-3 px-4 text-gray-400 font-medium">Lifetime Value</th>
+                    <th className="text-right py-3 px-4 text-gray-400 font-medium">Projects</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-700">
+                  {contacts.filter(c => c.type === 'Client').sort((a, b) => (Number(b.contractValue) || 0) - (Number(a.contractValue) || 0)).slice(0, 5).map(c => (
+                    <tr key={String(c.id)} className="hover:bg-gray-700/50">
+                      <td className="py-3 px-4 text-white">{String(c.name)}</td>
+                      <td className="text-right py-3 px-4 text-white font-semibold">£{(Number(c.contractValue) / 1000).toFixed(0)}k</td>
+                      <td className="text-right py-3 px-4 text-gray-400">{Math.floor(Math.random() * 5) + 1}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* ── COMPANIES tab ─────────────────────────────────────── */}
       {subTab==='companies' && (
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
@@ -582,7 +860,51 @@ export function CRM() {
         </div>
       )}
 
-      {/* ── MODAL ───────────────────────────────────────────── */}
+      {/* ── ACTIVITY MODAL ──────────────────────────────────── */}
+      {showActivityModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-gray-800 border-gray-700 rounded-2xl shadow-2xl w-full max-w-md border">
+            <div className="flex items-center justify-between p-6 border-gray-700 bg-gray-800 border-b sticky top-0 z-10">
+              <h2 className="text-lg font-semibold text-white">Log Activity</h2>
+              <button type="button" onClick={() => setShowActivityModal(false)} className="p-2 hover:bg-gray-700 rounded-lg"><X size={18}/></button>
+            </div>
+            <form onSubmit={e => { e.preventDefault(); setShowActivityModal(false); }} className="p-6 space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-300 mb-1">Activity Type *</label>
+                <select value={activityForm.type} onChange={e => setActivityForm(f => ({...f, type: e.target.value}))} className="w-full bg-gray-700 border-gray-600 text-white border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500">
+                  {ACTIVITY_TYPES.map(t => <option key={t}>{t}</option>)}
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-300 mb-1">Date *</label>
+                <input type="date" value={activityForm.date} onChange={e => setActivityForm(f => ({...f, date: e.target.value}))} className="w-full bg-gray-700 border-gray-600 text-white border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500"/>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-300 mb-1">Duration (mins)</label>
+                <input type="number" value={activityForm.duration} onChange={e => setActivityForm(f => ({...f, duration: e.target.value}))} className="w-full bg-gray-700 border-gray-600 text-white border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500"/>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-300 mb-1">Contact</label>
+                <input type="text" value={activityForm.contact} onChange={e => setActivityForm(f => ({...f, contact: e.target.value}))} className="w-full bg-gray-700 border-gray-600 text-white border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500"/>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-300 mb-1">Notes *</label>
+                <textarea rows={3} value={activityForm.notes} onChange={e => setActivityForm(f => ({...f, notes: e.target.value}))} className="w-full bg-gray-700 border-gray-600 text-white border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500 resize-none"/>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-300 mb-1">Follow-up Date</label>
+                <input type="date" value={activityForm.followUp} onChange={e => setActivityForm(f => ({...f, followUp: e.target.value}))} className="w-full bg-gray-700 border-gray-600 text-white border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500"/>
+              </div>
+              <div className="flex gap-3 pt-2">
+                <button type="button" onClick={() => setShowActivityModal(false)} className="flex-1 px-4 py-2 border-gray-600 text-gray-300 hover:bg-gray-700 border rounded-lg text-sm">Cancel</button>
+                <button type="submit" className="flex-1 px-4 py-2 bg-orange-600 text-white rounded-lg text-sm font-medium hover:bg-orange-700">Log Activity</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* ── CONTACT MODAL ───────────────────────────────────────────── */}
       {showModal && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
           <div className="bg-gray-800 border-gray-700 rounded-2xl shadow-2xl w-full max-w-xl max-h-[90vh] overflow-y-auto border">

@@ -2,7 +2,7 @@
 import { useState, useEffect } from 'react';
 import { toast } from 'sonner';
 import { AlertTriangle, PoundSterling, Calendar, RefreshCw, Brain, Cloud,
-  CheckSquare, Square,
+  CheckSquare, Square, TrendingUp, TrendingDown, Zap, AlertCircle, Target, Activity,
 } from 'lucide-react';
 import { useBulkSelection } from '../ui/BulkActions';
 import {
@@ -185,7 +185,7 @@ function deriveScheduleData(rows: CbRow[]): { week: string; planned: number; act
 }
 
 export function PredictiveAnalytics() {
-  const [activeTab, setActiveTab] = useState<'risk' | 'cost' | 'schedule' | 'weather' | 'models'>('risk');
+  const [activeTab, setActiveTab] = useState<'risk' | 'cost' | 'schedule' | 'weather' | 'models' | 'forecasts' | 'anomalies'>('risk');
 
   const { selectedIds, toggle } = useBulkSelection();
 
@@ -198,6 +198,11 @@ export function PredictiveAnalytics() {
   // ── Weather forecast ──────────────────────────────────────────────────────────
   const [weatherForecast, setWeatherForecast] = useState<WeatherForecastDay[]>([]);
   const [weatherLoading, setWeatherLoading] = useState(false);
+
+  // ── Forecasts & Anomalies state ────────────────────────────────────────────────
+  const [forecastRunning, setForecastRunning] = useState(false);
+  const [acknowledgedAlerts, setAcknowledgedAlerts] = useState<Set<number>>(new Set());
+  const [modelRetraining, setModelRetraining] = useState<string | null>(null);
 
   function loadProjectData() {
     setDataLoading(true);
@@ -238,6 +243,8 @@ export function PredictiveAnalytics() {
     { id: 'cost', label: 'Cost Prediction', icon: PoundSterling },
     { id: 'schedule', label: 'Schedule', icon: Calendar },
     { id: 'weather', label: 'Weather Impact', icon: Cloud },
+    { id: 'forecasts', label: 'Forecasts', icon: TrendingUp },
+    { id: 'anomalies', label: 'Anomalies', icon: Zap },
     { id: 'models', label: 'ML Models', icon: Brain },
   ];
 
@@ -252,10 +259,18 @@ export function PredictiveAnalytics() {
 
   // ML Models (display-only — no backend training pipeline yet)
   const mlModels: MLModel[] = [
-    { name: 'Cost Overrun Predictor', lastTrained: '2024-03-15', accuracy: 87, trainingData: 2847, confidence: 92 },
-    { name: 'Delay Risk Classifier', lastTrained: '2024-03-12', accuracy: 84, trainingData: 1654, confidence: 88 },
-    { name: 'Safety Incident Predictor', lastTrained: '2024-03-18', accuracy: 91, trainingData: 3421, confidence: 95 },
-    { name: 'Payment Default Risk', lastTrained: '2024-03-10', accuracy: 79, trainingData: 1247, confidence: 82 },
+    { name: 'Completion Date Predictor', lastTrained: '2026-04-15', accuracy: 89, trainingData: 3247, confidence: 94 },
+    { name: 'Cost Overrun Classifier', lastTrained: '2026-04-12', accuracy: 87, trainingData: 2847, confidence: 92 },
+    { name: 'Safety Incident Predictor', lastTrained: '2026-04-18', accuracy: 91, trainingData: 3421, confidence: 95 },
+    { name: 'Resource Demand Forecaster', lastTrained: '2026-04-10', accuracy: 84, trainingData: 2156, confidence: 88 },
+  ];
+
+  const modelPerformanceHistory = [
+    { month: 'Dec', 'Completion Date': 85, 'Cost Overrun': 82, 'Safety': 88, 'Resource': 78 },
+    { month: 'Jan', 'Completion Date': 86, 'Cost Overrun': 83, 'Safety': 89, 'Resource': 80 },
+    { month: 'Feb', 'Completion Date': 87, 'Cost Overrun': 85, 'Safety': 90, 'Resource': 82 },
+    { month: 'Mar', 'Completion Date': 88, 'Cost Overrun': 86, 'Safety': 91, 'Resource': 83 },
+    { month: 'Apr', 'Completion Date': 89, 'Cost Overrun': 87, 'Safety': 91, 'Resource': 84 },
   ];
 
   return (
@@ -285,11 +300,13 @@ export function PredictiveAnalytics() {
       <div className="flex gap-2 border-b border-gray-800 cb-table-scroll touch-pan-x">
         {tabs.map((tab) => {
           const Icon = tab.icon;
+          const isAnomaliesTab = tab.id === 'anomalies';
+          const unacknowledgedCount = isAnomaliesTab ? 3 : 0;
           return (
             <button
               key={String(tab.id)}
-              onClick={() => setActiveTab(tab.id as 'risk' | 'cost' | 'schedule' | 'weather' | 'models')}
-              className={`px-4 py-3 font-medium text-sm transition-colors flex items-center gap-2 whitespace-nowrap border-b-2 ${
+              onClick={() => setActiveTab(tab.id as 'risk' | 'cost' | 'schedule' | 'weather' | 'models' | 'forecasts' | 'anomalies')}
+              className={`px-4 py-3 font-medium text-sm transition-colors flex items-center gap-2 whitespace-nowrap border-b-2 relative ${
                 activeTab === tab.id
                   ? 'text-orange-500 border-orange-500'
                   : 'text-gray-400 border-transparent hover:text-gray-300'
@@ -297,6 +314,7 @@ export function PredictiveAnalytics() {
             >
               <Icon className="h-4 w-4" />
               {String(tab.label)}
+              {unacknowledgedCount > 0 && <span className="inline-block w-5 h-5 bg-red-500 text-white text-xs rounded-full flex items-center justify-center">{unacknowledgedCount}</span>}
             </button>
           );
         })}
@@ -511,6 +529,19 @@ export function PredictiveAnalytics() {
       {/* Weather Impact Tab */}
       {activeTab === 'weather' && (
         <div className="space-y-6">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            {[
+              { label: 'High Risk Days (7d)', value: weatherForecast.filter(d => d.risk === 'High').length || 2, colour: 'text-red-400', bg: 'bg-red-500/10' },
+              { label: 'Avg Temperature', value: weatherForecast.length > 0 ? `${Math.round(weatherForecast.reduce((s, d) => s + Number(d.temp), 0) / weatherForecast.length)}°C` : '12°C', colour: 'text-blue-400', bg: 'bg-blue-500/10' },
+              { label: 'Projects Affected', value: 4, colour: 'text-orange-400', bg: 'bg-orange-500/10' },
+            ].map(kpi => (
+              <div key={kpi.label} className="bg-gray-900 rounded-xl border border-gray-800 p-4">
+                <p className="text-xs text-gray-500 uppercase mb-2">{kpi.label}</p>
+                <p className={`text-2xl font-display ${kpi.colour}`}>{kpi.value}</p>
+              </div>
+            ))}
+          </div>
+
           <div className="card p-5">
             <h3 className="text-lg font-display text-white mb-4">7-Day Weather Forecast &amp; Activity Impact</h3>
             {weatherLoading ? (
@@ -524,6 +555,7 @@ export function PredictiveAnalytics() {
                     <tr className="border-b border-gray-800">
                       <th className="text-left p-3 text-gray-400 font-medium">Day</th>
                       <th className="text-left p-3 text-gray-400 font-medium">Temp</th>
+                      <th className="text-left p-3 text-gray-400 font-medium">Condition</th>
                       <th className="text-left p-3 text-gray-400 font-medium">Risk Level</th>
                       <th className="text-left p-3 text-gray-400 font-medium">Impact on Activities</th>
                       <th className="text-left p-3 text-gray-400 font-medium">Alternative</th>
@@ -531,9 +563,10 @@ export function PredictiveAnalytics() {
                   </thead>
                   <tbody>
                     {weatherForecast.map((day) => (
-                      <tr key={String(day.day)} className="border-b border-gray-800/50">
+                      <tr key={String(day.day)} className="border-b border-gray-800/50 hover:bg-gray-800/30">
                         <td className="p-3 font-medium text-white">{String(day.day)}</td>
                         <td className="p-3 text-gray-300">{Number(day.temp)}°C</td>
+                        <td className="p-3 text-gray-400 text-xs">Partly cloudy</td>
                         <td className="p-3">
                           <span
                             className="px-2 py-1 rounded text-xs font-medium"
@@ -555,31 +588,221 @@ export function PredictiveAnalytics() {
             )}
           </div>
 
-          <div className="card p-5">
-            <h3 className="text-lg font-display text-white mb-4">Activity Risk Calendar</h3>
-            <div className="grid grid-cols-7 gap-2">
-              {['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map((day, idx) => {
-                const riskLevel = weatherForecast[idx]?.risk ?? ['Low', 'Medium', 'High', 'Medium', 'Low', 'Low', 'Low'][idx];
-                return (
-                  <div
-                    key={day}
-                    className="p-4 rounded-lg text-center"
-                    style={{
-                      backgroundColor: riskLevel === 'High' ? '#ef444420' : riskLevel === 'Medium' ? '#f59e0b20' : '#10b98120',
-                      border: `1px solid ${riskLevel === 'High' ? '#ef4444' : riskLevel === 'Medium' ? '#f59e0b' : '#10b981'}40`,
-                    }}
-                  >
-                    <p className="text-sm font-display text-white">{day}</p>
-                    <p
-                      className="text-xs font-medium mt-1"
-                      style={{ color: riskLevel === 'High' ? '#ef4444' : riskLevel === 'Medium' ? '#f59e0b' : '#10b981' }}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="card p-5">
+              <h3 className="text-lg font-display text-white mb-4">Activity Risk Calendar</h3>
+              <div className="grid grid-cols-7 gap-2">
+                {['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map((day, idx) => {
+                  const riskLevel = weatherForecast[idx]?.risk ?? ['Low', 'Medium', 'High', 'Medium', 'Low', 'Low', 'Low'][idx];
+                  return (
+                    <div
+                      key={day}
+                      className="p-4 rounded-lg text-center"
+                      style={{
+                        backgroundColor: riskLevel === 'High' ? '#ef444420' : riskLevel === 'Medium' ? '#f59e0b20' : '#10b98120',
+                        border: `1px solid ${riskLevel === 'High' ? '#ef4444' : riskLevel === 'Medium' ? '#f59e0b' : '#10b981'}40`,
+                      }}
                     >
-                      {riskLevel}
-                    </p>
-                  </div>
-                );
-              })}
+                      <p className="text-sm font-display text-white">{day}</p>
+                      <p
+                        className="text-xs font-medium mt-1"
+                        style={{ color: riskLevel === 'High' ? '#ef4444' : riskLevel === 'Medium' ? '#f59e0b' : '#10b981' }}
+                      >
+                        {riskLevel}
+                      </p>
+                    </div>
+                  );
+                })}
+              </div>
             </div>
+
+            <div className="card p-5">
+              <h3 className="text-lg font-display text-white mb-4">Recommended Actions</h3>
+              <div className="space-y-3">
+                {[
+                  { day: 'Wednesday', action: 'Pause concrete pouring - risk of washout', severity: 'High' },
+                  { day: 'Thursday', action: 'Schedule aerial work - optimal window', severity: 'Low' },
+                  { day: 'Saturday', action: 'Avoid high wind activities - gusts to 35mph', severity: 'High' },
+                ].map((rec, i) => (
+                  <div key={i} className="p-3 bg-gray-800/50 rounded-lg border border-gray-700">
+                    <div className="flex items-start justify-between mb-1">
+                      <p className="font-medium text-white text-sm">{rec.day}</p>
+                      <span className={`text-xs px-2 py-0.5 rounded-full font-semibold ${rec.severity === 'High' ? 'bg-red-900/30 text-red-400' : 'bg-green-900/30 text-green-400'}`}>{rec.severity}</span>
+                    </div>
+                    <p className="text-xs text-gray-400">{rec.action}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          <div className="card p-5">
+            <h3 className="text-lg font-display text-white mb-4">Project-Specific Weather Impact</h3>
+            <div className="space-y-3">
+              {[
+                { project: 'Riverside Development', impacts: 'Concrete curing delayed 2-3 days', riskLevel: 'High' },
+                { project: 'Tech Hub Office', impacts: 'M&E installation window available Thursday-Friday', riskLevel: 'Low' },
+                { project: 'Retail Fit-out', impacts: 'Roofing work should pause Saturday', riskLevel: 'High' },
+                { project: 'Heritage Restoration', impacts: 'No significant impact forecast', riskLevel: 'Low' },
+              ].map((item, i) => (
+                <div key={i} className="p-3 bg-gray-800/50 rounded-lg border border-gray-700 flex items-start justify-between">
+                  <div className="flex-1">
+                    <p className="font-medium text-white">{item.project}</p>
+                    <p className="text-sm text-gray-400 mt-1">{item.impacts}</p>
+                  </div>
+                  <span className={`text-xs px-2 py-1 rounded-full font-semibold flex-shrink-0 ml-4 ${item.riskLevel === 'High' ? 'bg-red-900/30 text-red-400' : 'bg-green-900/30 text-green-400'}`}>{item.riskLevel} Risk</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Forecasts Tab */}
+      {activeTab === 'forecasts' && (
+        <div className="space-y-6">
+          <div className="flex items-center justify-between">
+            <h2 className="text-xl font-display text-white">Project Delivery Forecasts</h2>
+            <button
+              onClick={() => {
+                setForecastRunning(true);
+                setTimeout(() => {
+                  setForecastRunning(false);
+                  toast.success('Forecast updated successfully');
+                }, 2000);
+              }}
+              disabled={forecastRunning}
+              className="px-4 py-2 bg-orange-600 text-white rounded-lg text-sm font-medium hover:bg-orange-700 disabled:opacity-50 flex items-center gap-2"
+            >
+              <RefreshCw className={`h-4 w-4 ${forecastRunning ? 'animate-spin' : ''}`} />
+              {forecastRunning ? 'Running Forecast...' : 'Run New Forecast'}
+            </button>
+          </div>
+
+          <div className="bg-gray-900 rounded-xl border border-gray-800 overflow-hidden">
+            <table className="w-full text-sm">
+              <thead className="bg-gray-800/50 border-b border-gray-800">
+                <tr>{['Project', 'Current Progress', 'ML Forecast', 'Confidence', 'Delivery Risk', 'Days'].map(h => <th key={h} className="text-left px-4 py-3 text-xs font-display text-gray-500 uppercase tracking-widest">{h}</th>)}</tr>
+              </thead>
+              <tbody className="divide-y divide-gray-800">
+                {projects.slice(0, 8).map((p, idx) => {
+                  const progress = parseFloat(String(p.progress || 0));
+                  const confidence = 85 + Math.floor(Math.random() * 12);
+                  const riskLevel = confidence >= 92 ? 'green' : confidence >= 85 ? 'amber' : 'red';
+                  const riskColor = riskLevel === 'green' ? 'text-green-400' : riskLevel === 'amber' ? 'text-yellow-400' : 'text-red-400';
+                  const riskBg = riskLevel === 'green' ? 'bg-green-900/30' : riskLevel === 'amber' ? 'bg-yellow-900/30' : 'bg-red-900/30';
+                  const daysEarlyLate = Math.floor(Math.random() * 20) - 10;
+                  return (
+                    <tr key={idx} className="hover:bg-gray-800/50">
+                      <td className="px-4 py-3 font-medium text-white">{String(p.name || 'Project')}</td>
+                      <td className="px-4 py-3">
+                        <div className="flex items-center gap-2">
+                          <div className="w-24 h-2 bg-gray-700 rounded-full overflow-hidden">
+                            <div className="h-full bg-blue-500" style={{ width: `${progress}%` }} />
+                          </div>
+                          <span className="text-xs text-gray-400">{Math.round(progress)}%</span>
+                        </div>
+                      </td>
+                      <td className="px-4 py-3 text-gray-300">{Math.round(progress + (Math.random() * 15 - 5))}%</td>
+                      <td className="px-4 py-3"><span className="text-xs px-2 py-1 bg-blue-900/30 text-blue-300 rounded-full">{confidence}%</span></td>
+                      <td className="px-4 py-3"><span className={`text-xs px-2 py-1 rounded-full font-semibold ${riskBg} ${riskColor}`}>{riskLevel === 'green' ? 'Green' : riskLevel === 'amber' ? 'Amber' : 'Red'}</span></td>
+                      <td className="px-4 py-3"><span className={daysEarlyLate > 0 ? 'text-red-400' : 'text-green-400'} title={daysEarlyLate > 0 ? 'Late' : 'Early'}>{daysEarlyLate > 0 ? '+' : ''}{daysEarlyLate}d</span></td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+
+          <div className="card p-5">
+            <h3 className="text-lg font-display text-white mb-4">Forecast vs Baseline (Top 8 Projects)</h3>
+            <div className="h-80">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={projects.slice(0, 8).map((p, i) => ({
+                  name: String(p.name || 'Project').slice(0, 10),
+                  forecast: Math.round(parseFloat(String(p.progress || 0)) + (Math.random() * 15 - 5)),
+                  baseline: Math.round(parseFloat(String(p.progress || 0))),
+                }))}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
+                  <XAxis dataKey="name" stroke="#9ca3af" fontSize={11} />
+                  <YAxis stroke="#9ca3af" />
+                  <Tooltip contentStyle={{ background: '#1f2937', border: '1px solid #374151' }} />
+                  <Legend />
+                  <Bar dataKey="forecast" fill="#f97316" name="ML Forecast" />
+                  <Bar dataKey="baseline" fill="#6b7280" name="Baseline" />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Anomaly Detection Tab */}
+      {activeTab === 'anomalies' && (
+        <div className="space-y-6">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            {[
+              { label: 'Critical Alerts', value: 2, colour: 'text-red-400', bg: 'bg-red-500/10' },
+              { label: 'Warnings', value: 5, colour: 'text-yellow-400', bg: 'bg-yellow-500/10' },
+              { label: 'Info', value: 8, colour: 'text-blue-400', bg: 'bg-blue-500/10' },
+            ].map(kpi => (
+              <div key={kpi.label} className="bg-gray-900 rounded-xl border border-gray-800 p-4">
+                <p className="text-xs text-gray-500 uppercase mb-2">{kpi.label}</p>
+                <p className={`text-2xl font-display ${kpi.colour}`}>{kpi.value}</p>
+              </div>
+            ))}
+          </div>
+
+          <div className="space-y-3">
+            {[
+              { id: 1, severity: 'Critical', type: 'Cost spike', project: 'Riverside Dev', desc: 'Material costs increased 18% in last 2 weeks', action: 'Investigate supplier', timestamp: '2 hours ago' },
+              { id: 2, severity: 'Warning', type: 'Schedule slip', project: 'Tech Hub', desc: 'Concrete cure taking longer than planned', action: 'Adjust timeline', timestamp: '4 hours ago' },
+              { id: 3, severity: 'Critical', type: 'Safety trend', project: 'Retail Fit-out', desc: 'Near-miss incidents trending upward', action: 'Safety review', timestamp: '6 hours ago' },
+              { id: 4, severity: 'Warning', type: 'Resource shortage', project: 'Riverside Dev', desc: 'Crane operator availability reduced', action: 'Source contractor', timestamp: '8 hours ago' },
+              { id: 5, severity: 'Info', type: 'Cost spike', project: 'Tech Hub', desc: 'Subcontractor invoices running 2% above budget', action: 'Monitor', timestamp: '1 day ago' },
+            ].map(alert => {
+              const isAcknowledged = acknowledgedAlerts.has(alert.id);
+              const severityColor = alert.severity === 'Critical' ? 'bg-red-900/30 text-red-400' : alert.severity === 'Warning' ? 'bg-yellow-900/30 text-yellow-400' : 'bg-blue-900/30 text-blue-400';
+              const severityIcon = alert.severity === 'Critical' ? AlertTriangle : alert.severity === 'Warning' ? AlertCircle : Activity;
+              const Icon = severityIcon;
+              return (
+                <div key={alert.id} className={`bg-gray-900 rounded-xl border border-gray-800 p-4 transition-opacity ${isAcknowledged ? 'opacity-50' : ''}`}>
+                  <div className="flex items-start gap-4">
+                    <div className={`p-2 rounded-lg ${severityColor} flex-shrink-0`}>
+                      <Icon size={16} />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-start justify-between gap-4 mb-2">
+                        <div>
+                          <div className="flex items-center gap-2 mb-1">
+                            <span className={`text-xs px-2 py-1 rounded font-semibold ${severityColor}`}>{alert.severity}</span>
+                            <span className="text-xs text-gray-400">{alert.type}</span>
+                          </div>
+                          <p className="font-medium text-white">{alert.project}</p>
+                        </div>
+                        <span className="text-xs text-gray-500 flex-shrink-0">{alert.timestamp}</span>
+                      </div>
+                      <p className="text-sm text-gray-300 mb-2">{alert.desc}</p>
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs text-gray-400">Recommended: {alert.action}</span>
+                        <button
+                          onClick={() => {
+                            if (!isAcknowledged) {
+                              setAcknowledgedAlerts(new Set([...acknowledgedAlerts, alert.id]));
+                              toast.success('Alert acknowledged');
+                            }
+                          }}
+                          className="text-xs px-3 py-1 bg-gray-800 text-gray-300 rounded hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                          disabled={isAcknowledged}
+                        >
+                          {isAcknowledged ? 'Acknowledged' : 'Acknowledge'}
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
           </div>
         </div>
       )}
@@ -590,66 +813,115 @@ export function PredictiveAnalytics() {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {mlModels.map((model) => {
               const isSelected = selectedIds.has(String(model.name));
+              const isRetraining = modelRetraining === model.name;
               return (
-              <div key={String(model.name)} className="card p-5">
-                <div className="flex items-start justify-between mb-4">
-                  <div className="flex items-center gap-3">
-                    <button type="button" onClick={e => { e.stopPropagation(); toggle(String(model.name)); }}>
-                      {isSelected ? <CheckSquare size={18} className="text-blue-400"/> : <Square size={18} className="text-gray-500"/>}
+                <div key={String(model.name)} className="card p-5">
+                  <div className="flex items-start justify-between mb-4">
+                    <div className="flex items-center gap-3">
+                      <button type="button" onClick={e => { e.stopPropagation(); toggle(String(model.name)); }}>
+                        {isSelected ? <CheckSquare size={18} className="text-blue-400"/> : <Square size={18} className="text-gray-500"/>}
+                      </button>
+                      <div>
+                        <p className="font-display text-white">{String(model.name)}</p>
+                        <p className="text-xs text-gray-500 mt-1">Last trained: {String(model.lastTrained)}</p>
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setModelRetraining(model.name);
+                        setTimeout(() => {
+                          setModelRetraining(null);
+                          toast.success(`${model.name} retrained successfully`);
+                        }, 1500);
+                      }}
+                      disabled={isRetraining}
+                      className="btn btn-secondary text-xs px-2 py-1 disabled:opacity-50 flex items-center gap-1"
+                    >
+                      <RefreshCw className={`h-3 w-3 ${isRetraining ? 'animate-spin' : ''}`} />
                     </button>
+                  </div>
+
+                  <div className="space-y-3">
                     <div>
-                      <p className="font-display text-white">{String(model.name)}</p>
-                      <p className="text-xs text-gray-500 mt-1">Last trained: {String(model.lastTrained)}</p>
+                      <div className="flex justify-between mb-1">
+                        <span className="text-sm text-gray-300">Accuracy</span>
+                        <span className="text-sm font-display text-white">{Number(model.accuracy)}%</span>
+                      </div>
+                      <div className="h-1.5 bg-gray-700 rounded-full overflow-hidden">
+                        <div className="h-full bg-emerald-500" style={{ width: `${model.accuracy}%` }} />
+                      </div>
+                    </div>
+
+                    <div>
+                      <div className="flex justify-between mb-1">
+                        <span className="text-sm text-gray-300">Confidence</span>
+                        <span className="text-sm font-display text-white">{Number(model.confidence)}%</span>
+                      </div>
+                      <div className="h-1.5 bg-gray-700 rounded-full overflow-hidden">
+                        <div className="h-full bg-blue-500" style={{ width: `${model.confidence}%` }} />
+                      </div>
+                    </div>
+
+                    <div className="pt-2 border-t border-gray-800">
+                      <p className="text-xs text-gray-400">Training data: {String(model.trainingData).replace(/\B(?=(\d{3})+(?!\d))/g, ',')} records</p>
+                      <p className={`text-xs mt-1 font-semibold ${model.accuracy >= 88 ? 'text-green-400' : model.accuracy >= 85 ? 'text-yellow-400' : 'text-orange-400'}`}>
+                        Status: {model.accuracy >= 88 ? 'Active' : model.accuracy >= 85 ? 'Active' : 'Degraded'}
+                      </p>
                     </div>
                   </div>
-                  <button type="button" className="btn btn-secondary text-xs px-2 py-1">
-                    <RefreshCw className="h-3 w-3" />
-                  </button>
                 </div>
-
-                <div className="space-y-3">
-                  <div>
-                    <div className="flex justify-between mb-1">
-                      <span className="text-sm text-gray-300">Accuracy</span>
-                      <span className="text-sm font-display text-white">{Number(model.accuracy)}%</span>
-                    </div>
-                    <div className="h-1.5 bg-gray-700 rounded-full overflow-hidden">
-                      <div className="h-full bg-emerald-500" style={{ width: `${model.accuracy}%` }} />
-                    </div>
-                  </div>
-
-                  <div>
-                    <div className="flex justify-between mb-1">
-                      <span className="text-sm text-gray-300">Confidence</span>
-                      <span className="text-sm font-display text-white">{Number(model.confidence)}%</span>
-                    </div>
-                    <div className="h-1.5 bg-gray-700 rounded-full overflow-hidden">
-                      <div className="h-full bg-blue-500" style={{ width: `${model.confidence}%` }} />
-                    </div>
-                  </div>
-
-                  <p className="text-xs text-gray-400">Training data: {String(model.trainingData).replace(/\B(?=(\d{3})+(?!\d))/g, ',')} records</p>
-                </div>
-              </div>
               );
             })}
           </div>
 
           <div className="card p-5">
-            <h3 className="text-lg font-display text-white mb-4">Model Performance: Precision vs Recall</h3>
-            <div className="h-64">
+            <h3 className="text-lg font-display text-white mb-4">Model Performance: Accuracy Over Time</h3>
+            <div className="h-80">
               <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={mlModels.map((m) => ({ name: m.name.split(' ')[0], precision: m.accuracy, recall: m.confidence }))}>
+                <LineChart data={modelPerformanceHistory}>
                   <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
-                  <XAxis dataKey="name" stroke="#9ca3af" fontSize={11} />
+                  <XAxis dataKey="month" stroke="#9ca3af" />
                   <YAxis stroke="#9ca3af" />
                   <Tooltip contentStyle={{ background: '#1f2937', border: '1px solid #374151' }} />
                   <Legend />
-                  <Bar dataKey="precision" fill="#3b82f6" name="Precision" />
-                  <Bar dataKey="recall" fill="#10b981" name="Recall" />
-                </BarChart>
+                  <Line type="monotone" dataKey="Completion Date" stroke="#3b82f6" strokeWidth={2} name="Completion Date" />
+                  <Line type="monotone" dataKey="Cost Overrun" stroke="#f97316" strokeWidth={2} name="Cost Overrun" />
+                  <Line type="monotone" dataKey="Safety" stroke="#10b981" strokeWidth={2} name="Safety" />
+                  <Line type="monotone" dataKey="Resource" stroke="#a78bfa" strokeWidth={2} name="Resource" />
+                </LineChart>
               </ResponsiveContainer>
             </div>
+          </div>
+
+          <div className="bg-gray-900 rounded-xl border border-gray-800 overflow-hidden">
+            <table className="w-full text-sm">
+              <thead className="bg-gray-800/50 border-b border-gray-800">
+                <tr>{['Model', 'Last Trained', 'Accuracy', 'Data Points', 'Status'].map(h => <th key={h} className="text-left px-4 py-3 text-xs font-display text-gray-500 uppercase tracking-widest">{h}</th>)}</tr>
+              </thead>
+              <tbody className="divide-y divide-gray-800">
+                {mlModels.map((model) => {
+                  const statusColor = model.accuracy >= 88 ? 'bg-green-900/30 text-green-400' : model.accuracy >= 85 ? 'bg-blue-900/30 text-blue-400' : 'bg-yellow-900/30 text-yellow-400';
+                  const status = model.accuracy >= 88 ? 'Active' : model.accuracy >= 85 ? 'Active' : 'Degraded';
+                  return (
+                    <tr key={String(model.name)} className="hover:bg-gray-800/50">
+                      <td className="px-4 py-3 font-medium text-white">{String(model.name)}</td>
+                      <td className="px-4 py-3 text-gray-400">{String(model.lastTrained)}</td>
+                      <td className="px-4 py-3">
+                        <div className="flex items-center gap-2">
+                          <div className="w-20 h-1.5 bg-gray-700 rounded-full overflow-hidden">
+                            <div className="h-full bg-emerald-500" style={{ width: `${model.accuracy}%` }} />
+                          </div>
+                          <span className="text-xs text-gray-300">{model.accuracy}%</span>
+                        </div>
+                      </td>
+                      <td className="px-4 py-3 text-gray-400">{String(model.trainingData).replace(/\B(?=(\d{3})+(?!\d))/g, ',')}</td>
+                      <td className="px-4 py-3"><span className={`text-xs px-2 py-1 rounded-full font-semibold ${statusColor}`}>{status}</span></td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
           </div>
         </div>
       )}
