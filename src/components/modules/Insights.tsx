@@ -753,7 +753,7 @@ interface DataSource {
                     {trend.trend === 'neutral' && <AlertCircle className="h-5 w-5 text-yellow-400 flex-shrink-0"/>}
                   </div>
                   <p className="text-sm text-gray-300 mb-2">{String(trend.detail)}</p>
-                  {trend.change != null && <p className={`text-sm font-semibold ${trend.trend === 'up' ? 'text-red-400' : 'text-green-400'}`}>{Number(trend.change) > 0 ? '+' : ''}{String(trend.change)}%</p>}
+                  {trend.change !== null && trend.change !== undefined && <p className={`text-sm font-semibold ${trend.trend === 'up' ? 'text-red-400' : 'text-green-400'}`}>{Number(trend.change) > 0 ? '+' : ''}{String(trend.change)}%</p>}
                 </div>
               ))}
             </div>
