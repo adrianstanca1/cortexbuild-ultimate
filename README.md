@@ -9,6 +9,15 @@
 [![License](https://img.shields.io/badge/License-Proprietary-red)](LICENSE)
 [![Docker](https://img.shields.io/badge/Docker-Ready-blue)](Dockerfile.api)
 
+## Build for iPhone / App Store
+
+```bash
+./scripts/prep-ios.sh       # one-shot prep
+open ios/App/App.xcodeproj  # then build/run from Xcode
+```
+
+See [docs/INSTALL-ON-IPHONE.md](docs/INSTALL-ON-IPHONE.md) for the three install paths and [docs/APPSTORE-DEPLOY.md](docs/APPSTORE-DEPLOY.md) for the full TestFlight pipeline.
+
 ## Quick Start
 
 ```bash
