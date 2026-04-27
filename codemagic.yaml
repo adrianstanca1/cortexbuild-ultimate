@@ -40,7 +40,7 @@ workflows:
           set -euo pipefail
           cd ios/App
           xcodebuild -resolvePackageDependencies \
-            -workspace App.xcworkspace \
+            -project App.xcodeproj \
             -scheme App
 
       - name: Increment build number
@@ -65,7 +65,7 @@ workflows:
           set -o pipefail
           cd ios/App
           xcodebuild \
-            -workspace App.xcworkspace \
+            -project App.xcodeproj \
             -scheme App \
             -configuration Release \
             -sdk iphoneos \
@@ -147,7 +147,7 @@ workflows:
           set -o pipefail
           cd ios/App
           xcodebuild \
-            -workspace App.xcworkspace \
+            -project App.xcodeproj \
             -scheme App \
             -configuration Debug \
             -sdk iphonesimulator \
