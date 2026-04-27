@@ -104,14 +104,16 @@ jobs:
         working-directory: ios/App
         run: |
           set -euo pipefail
-          APP_PATH=$(find DerivedData -name "*.app" -not -path "*/Test*" | head -1)
+          # Use -print -quit instead of '| head -1' so find doesn't receive
+          # SIGPIPE when head closes early (would abort under pipefail).
+          APP_PATH=$(find DerivedData -name "*.app" -not -path "*/Test*" -print -quit)
           if [ -n "$APP_PATH" ]; then
             mkdir -p artifacts
             zip -r artifacts/CortexBuild-iOS-debug.zip "$APP_PATH"
             echo "Packaged $APP_PATH"
           else
             echo "No .app bundle found" >&2
-            find DerivedData -name "*.app" | head -10
+            find DerivedData -name "*.app" -print
             exit 1
           fi
 
