@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import {
   Calendar, Plus, Search, Clock, CheckCircle2, Users, Edit2, Trash2, X,
-  ChevronDown, ChevronUp, Video, AlertCircle, FileText, MoreVertical, Building2, CheckSquare, Square
+  ChevronDown, ChevronUp, Video, AlertCircle, FileText, MoreVertical, Building2, CheckSquare, Square, Download
 } from 'lucide-react';
 import { BulkActionsBar, useBulkSelection } from '../ui/BulkActions';
 import { ModuleBreadcrumbs } from '../ui/Breadcrumbs';
@@ -46,7 +46,7 @@ export function Meetings() {
   const updateMutation = useUpdate();
   const deleteMutation = useDelete();
 
-  const [activeTab, setActiveTab] = useState<'meetings'|'actions'|'calendar'>('meetings');
+  const [activeTab, setActiveTab] = useState<'meetings'|'actions'|'calendar'|'minutes'>('meetings');
   const [search, setSearch] = useState('');
   const [filterType, setFilterType] = useState('All');
   const [showModal, setShowModal] = useState(false);
@@ -235,10 +235,11 @@ export function Meetings() {
       <div className="flex gap-2 border-b border-gray-700">
         {[
           { id:'meetings', label:'Meetings', count:filteredMeetings.length },
+          { id:'minutes', label:'Minutes', count:meetings.filter(m=>m.minutes).length },
           { id:'actions', label:'Action Tracker', count:allActionItems.filter(a=>a.status!=='Completed').length },
           { id:'calendar', label:'Calendar', count:'' },
         ].map(tab=>(
-          <button type="button"  key={tab.id} onClick={()=>setActiveTab(tab.id as 'meetings'|'actions'|'calendar')}
+          <button type="button"  key={tab.id} onClick={()=>setActiveTab(tab.id as 'meetings'|'actions'|'calendar'|'minutes')}
             className={`flex items-center gap-2 px-4 py-2.5 text-sm font-medium border-b-2 -mb-px transition-colors ${
               activeTab===tab.id?'border-orange-600 text-orange-400':'border-transparent text-gray-400 hover:text-gray-300'
             }`}>
@@ -330,6 +331,11 @@ export function Meetings() {
             </div>
           )}
         </div>
+      )}
+
+      {/* Minutes Tab */}
+      {activeTab === 'minutes' && (
+        <MeetingMinutesTab meetings={meetings} updateMutation={updateMutation} />
       )}
 
       {/* Action Tracker Tab */}
@@ -577,4 +583,222 @@ export function Meetings() {
     </>
   );
 }
+function MeetingMinutesTab({ meetings, updateMutation }: { meetings: AnyRow[]; updateMutation: any }) {
+  const [selectedMeetingId, setSelectedMeetingId] = useState<string | null>(null);
+  const [minutesContent, setMinutesContent] = useState('');
+  const [actionItems, setActionItems] = useState<Array<{ id: string; who: string; what: string; byWhen: string }>>([]);
+  const [newAction, setNewAction] = useState({ who: '', what: '', byWhen: '' });
+
+  const meetingsWithMinutes = meetings.filter(m => String(m.minutes ?? '').trim());
+
+  const handleSelectMeeting = (meetingId: string) => {
+    const meeting = meetings.find(m => String(m.id) === meetingId);
+    if (meeting) {
+      setSelectedMeetingId(meetingId);
+      setMinutesContent(String(meeting.minutes ?? ''));
+      const actions: Array<{ id: string; who: string; what: string; byWhen: string }> = [];
+      const actionLines = String(meeting.actions ?? '').split('\n').filter(l => l.trim());
+      actionLines.forEach((line, idx) => {
+        const parts = line.split('|').map(p => p.trim());
+        actions.push({
+          id: `${meetingId}-action-${idx}`,
+          what: parts[0] || '',
+          who: parts[1] || '',
+          byWhen: parts[2] || '',
+        });
+      });
+      setActionItems(actions);
+    }
+  };
+
+  const handleAddAction = () => {
+    if (!newAction.who.trim() || !newAction.what.trim() || !newAction.byWhen.trim()) {
+      toast.error('All action fields are required');
+      return;
+    }
+    setActionItems([...actionItems, {
+      id: `action-${Date.now()}`,
+      ...newAction,
+    }]);
+    setNewAction({ who: '', what: '', byWhen: '' });
+  };
+
+  const handleRemoveAction = (id: string) => {
+    setActionItems(actionItems.filter(a => a.id !== id));
+  };
+
+  const handleSaveMinutes = async () => {
+    if (!selectedMeetingId) return;
+    const actionStr = actionItems.map(a => `${a.what}|${a.who}|${a.byWhen}|Open|High`).join('\n');
+    try {
+      await updateMutation.mutateAsync({
+        id: selectedMeetingId,
+        data: { minutes: minutesContent, actions: actionStr },
+      });
+      toast.success('Minutes saved');
+    } catch {
+      toast.error('Failed to save minutes');
+    }
+  };
+
+  const handleFinaliseAndSend = () => {
+    if (!selectedMeetingId) return;
+    toast.success('Minutes finalised and sent to attendees');
+    handleSaveMinutes();
+  };
+
+  if (!selectedMeetingId) {
+    return (
+      <div className="space-y-4">
+        <div className="bg-gray-800 rounded-xl border border-gray-700 overflow-hidden">
+          {meetingsWithMinutes.length === 0 ? (
+            <div className="p-8 text-center text-gray-400">
+              <FileText size={40} className="mx-auto mb-3 opacity-30" />
+              <p>No meetings with minutes yet</p>
+            </div>
+          ) : (
+            <div className="divide-y divide-gray-700">
+              {meetingsWithMinutes.map(m => (
+                <button
+                  key={String(m.id)}
+                  onClick={() => handleSelectMeeting(String(m.id))}
+                  className="w-full text-left p-4 hover:bg-gray-700/50 transition-colors flex items-center justify-between"
+                >
+                  <div>
+                    <h4 className="font-semibold text-gray-100">{String(m.title ?? '')}</h4>
+                    <p className="text-sm text-gray-400 mt-1">{String(m.date ?? '')} · {String(m.location ?? 'Online')}</p>
+                  </div>
+                  <span className="px-2 py-1 bg-green-900/30 text-green-300 text-xs rounded-full">Finalised</span>
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  }
+
+  const currentMeeting = meetings.find(m => String(m.id) === selectedMeetingId);
+
+  return (
+    <div className="space-y-4">
+      <button
+        onClick={() => setSelectedMeetingId(null)}
+        className="text-blue-400 hover:text-blue-300 text-sm flex items-center gap-1"
+      >
+        <ChevronDown className="h-4 w-4 rotate-90" />
+        Back to Minutes List
+      </button>
+
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+        {/* Main Content Area */}
+        <div className="lg:col-span-2 space-y-4">
+          <div className="bg-gray-800 rounded-xl border border-gray-700 p-6">
+            <div className="mb-4">
+              <h3 className="text-lg font-semibold text-gray-100">{String(currentMeeting?.title ?? '')}</h3>
+              <p className="text-sm text-gray-400 mt-1">{String(currentMeeting?.date ?? '')} · Attendees: {String(currentMeeting?.attendees ?? 'N/A')}</p>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-300 mb-2">Meeting Minutes</label>
+              <textarea
+                value={minutesContent}
+                onChange={e => setMinutesContent(e.target.value)}
+                placeholder="Document the key points, decisions, and outcomes from the meeting..."
+                className="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-3 text-gray-100 text-sm h-80 resize-none focus:outline-none focus:ring-2 focus:ring-orange-500"
+              />
+            </div>
+          </div>
+
+          {/* Export Buttons */}
+          <div className="flex gap-2">
+            <button className="flex-1 px-4 py-2 bg-gray-800 border border-gray-700 text-gray-300 rounded-lg text-sm font-medium hover:bg-gray-700 transition-colors flex items-center justify-center gap-2">
+              <Download size={16} />
+              Export to Word
+            </button>
+            <button className="flex-1 px-4 py-2 bg-gray-800 border border-gray-700 text-gray-300 rounded-lg text-sm font-medium hover:bg-gray-700 transition-colors flex items-center justify-center gap-2">
+              <Download size={16} />
+              Export to PDF
+            </button>
+          </div>
+        </div>
+
+        {/* Action Items Sidebar */}
+        <div className="bg-gray-800 rounded-xl border border-gray-700 p-4 h-fit">
+          <h4 className="font-semibold text-gray-100 mb-3">Action Items</h4>
+          <div className="space-y-3 max-h-96 overflow-y-auto">
+            {actionItems.map(action => (
+              <div key={action.id} className="bg-gray-700/50 rounded p-3 border border-gray-600">
+                <div className="flex items-start justify-between gap-2 mb-1">
+                  <p className="text-sm font-medium text-gray-200">{action.what}</p>
+                  <button
+                    onClick={() => handleRemoveAction(action.id)}
+                    className="text-gray-400 hover:text-red-400 text-xs"
+                  >
+                    <X size={14} />
+                  </button>
+                </div>
+                <p className="text-xs text-gray-400 mb-1">Owner: <span className="text-gray-300">{action.who}</span></p>
+                <p className="text-xs text-gray-400">Due: <span className="text-gray-300">{action.byWhen}</span></p>
+              </div>
+            ))}
+          </div>
+
+          <div className="border-t border-gray-700 mt-4 pt-4 space-y-2">
+            <label className="block text-xs text-gray-400 font-semibold mb-2">ADD ACTION ITEM</label>
+            <input
+              type="text"
+              value={newAction.what}
+              onChange={e => setNewAction({ ...newAction, what: e.target.value })}
+              placeholder="What needs to be done?"
+              className="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2 text-sm text-gray-100 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-orange-500"
+            />
+            <input
+              type="text"
+              value={newAction.who}
+              onChange={e => setNewAction({ ...newAction, who: e.target.value })}
+              placeholder="Who is responsible?"
+              className="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2 text-sm text-gray-100 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-orange-500"
+            />
+            <input
+              type="date"
+              value={newAction.byWhen}
+              onChange={e => setNewAction({ ...newAction, byWhen: e.target.value })}
+              className="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2 text-sm text-gray-100 focus:outline-none focus:ring-2 focus:ring-orange-500"
+            />
+            <button
+              onClick={handleAddAction}
+              className="w-full px-3 py-2 bg-gray-600 hover:bg-gray-500 rounded text-sm font-medium text-white transition-colors flex items-center justify-center gap-1"
+            >
+              <Plus size={14} />
+              Add
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* Save Buttons */}
+      <div className="flex gap-2 justify-end">
+        <button
+          onClick={() => setSelectedMeetingId(null)}
+          className="px-4 py-2 border border-gray-600 rounded-lg text-sm text-gray-300 hover:bg-gray-700 transition-colors"
+        >
+          Cancel
+        </button>
+        <button
+          onClick={handleSaveMinutes}
+          className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors"
+        >
+          Save Minutes
+        </button>
+        <button
+          onClick={handleFinaliseAndSend}
+          className="px-4 py-2 bg-green-600 text-white rounded-lg text-sm font-medium hover:bg-green-700 transition-colors"
+        >
+          Finalise & Send
+        </button>
+      </div>
+    </div>
+  );
+}
+
 export default React.memo(Meetings);

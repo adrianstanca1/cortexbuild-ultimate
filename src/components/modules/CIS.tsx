@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Receipt, Plus, Search, PoundSterling, Calculator, CheckCircle, Clock, Edit2, Trash2, X, AlertCircle, CheckSquare, Square } from 'lucide-react';
+import { Receipt, Plus, Search, PoundSterling, Calculator, CheckCircle, Clock, Edit2, Trash2, X, AlertCircle, CheckSquare, Square, Download, ArrowRight, Check } from 'lucide-react';
 import { useCIS } from '../../hooks/useData';
 import { toast } from 'sonner';
 import { BulkActionsBar, useBulkSelection } from '../ui/BulkActions';
@@ -7,6 +7,24 @@ import { ModuleBreadcrumbs } from '../ui/Breadcrumbs';
 import { EmptyState } from '../ui/EmptyState';
 
 type AnyRow = Record<string, unknown>;
+
+interface VerificationState {
+  utr: string;
+  ni_number: string;
+  company_name: string;
+  rate?: string;
+  status?: string;
+}
+
+interface StatementData {
+  subcontractor: string;
+  period: string;
+  gross_payment: number;
+  deduction_rate: number;
+  deduction_amount: number;
+  net_payment: number;
+  hmrc_ref: string;
+}
 
 const CIS_RATES = [{ label:'Standard 20%', value:20 },{ label:'Higher Rate 30%', value:30 },{ label:'Gross (0% - Verified)', value:0 }];
 const STATUS_OPTIONS = ['Draft','Submitted','Verified','Overdue'];
@@ -47,7 +65,7 @@ export function CIS() {
   const updateMutation = useUpdate();
   const deleteMutation = useDelete();
 
-  const [mainTab, setMainTab] = useState<'returns'|'register'|'calculator'|'submissions'>('returns');
+  const [mainTab, setMainTab] = useState<'returns'|'register'|'calculator'|'submissions'|'verification'|'monthly'|'statements'>('returns');
   const [subTab, setSubTab] = useState('all');
   function setTab(key: string, filter: string) { setSubTab(key); setStatusFilter(filter); }
   const [search, setSearch] = useState('');
@@ -60,6 +78,23 @@ export function CIS() {
   const [calcGross, setCalcGross] = useState('');
   const [calcMaterials, setCalcMaterials] = useState('');
   const [calcRate, setCalcRate] = useState('20');
+
+  // Verification state
+  const [showVerificationModal, setShowVerificationModal] = useState(false);
+  const [verifyingSubcontractor, setVerifyingSubcontractor] = useState<string | null>(null);
+  const [verificationForm, setVerificationForm] = useState<VerificationState>({ utr: '', ni_number: '', company_name: '' });
+  const [verificationResults, setVerificationResults] = useState<Record<string, VerificationState>>({});
+
+  // Monthly return wizard state
+  const [showMonthlyWizard, setShowMonthlyWizard] = useState(false);
+  const [monthlyStep, setMonthlyStep] = useState(1);
+  const [selectedPeriod, setSelectedPeriod] = useState('');
+  const [monthlySubmissionRef, setMonthlySubmissionRef] = useState<string | null>(null);
+
+  // Statements state
+  const [showStatementModal, setShowStatementModal] = useState(false);
+  const [selectedSubcontractorForStatement, setSelectedSubcontractorForStatement] = useState<string | null>(null);
+  const [statementData, setStatementData] = useState<StatementData | null>(null);
 
   const { selectedIds, toggle, clearSelection } = useBulkSelection();
 
@@ -196,15 +231,18 @@ export function CIS() {
       </div>
 
       {/* Main Tabs */}
-      <div className="flex gap-2 border-b border-gray-700 pb-2">
+      <div className="flex gap-2 border-b border-gray-700 pb-2 overflow-x-auto">
         {[
           {id:'returns', label:'Monthly Returns'},
           {id:'register', label:'Subcontractor Register'},
           {id:'calculator', label:'Deduction Calculator'},
           {id:'submissions', label:'Submission History'},
+          {id:'verification', label:'Verification'},
+          {id:'monthly', label:'Monthly Wizard'},
+          {id:'statements', label:'Statements'},
         ].map(t=>(
-          <button type="button"  key={t.id} onClick={()=>setMainTab(t.id as 'returns'|'register'|'calculator'|'submissions')}
-            className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${mainTab===t.id?'bg-orange-600 text-white':'bg-gray-800 text-gray-400 hover:bg-gray-700 hover:text-white'}`}>
+          <button type="button"  key={t.id} onClick={()=>setMainTab(t.id as any)}
+            className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors whitespace-nowrap ${mainTab===t.id?'bg-orange-600 text-white':'bg-gray-800 text-gray-400 hover:bg-gray-700 hover:text-white'}`}>
             {t.label}
           </button>
         ))}
@@ -438,7 +476,168 @@ export function CIS() {
         </div>
       )}
 
-      {/* MODAL */}
+      {/* VERIFICATION TAB */}
+      {mainTab==='verification' && (
+        <div className="space-y-6">
+          <h3 className="text-lg font-display text-white">HMRC Subcontractor Verification</h3>
+          <div className="card bg-base-200 overflow-hidden">
+            <table className="w-full text-sm">
+              <thead className="bg-gray-900 border-b border-gray-700">
+                <tr>{['Subcontractor','Current Status','UTR','Verified Date','Action'].map(h=><th key={h} className="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">{h}</th>)}</tr>
+              </thead>
+              <tbody className="divide-y divide-gray-700">
+                {SUBCONTRACTORS_REGISTER.map((sc, idx)=>(
+                  <tr key={idx} className="hover:bg-gray-900/40 transition-colors">
+                    <td className="px-4 py-3 font-medium text-white">{sc.name}</td>
+                    <td className="px-4 py-3"><span className={`text-xs px-2 py-1 rounded-full font-medium ${sc.cisStatus.includes('Unverified')?'bg-yellow-900/40 text-yellow-300':sc.cisStatus.includes('Gross')?'bg-green-900/40 text-green-300':sc.cisStatus.includes('Standard')?'bg-blue-900/40 text-blue-300':'bg-orange-900/40 text-orange-300'}`}>{sc.cisStatus}</span></td>
+                    <td className="px-4 py-3 text-gray-400 font-mono text-xs">****{sc.utr.slice(-4)}</td>
+                    <td className="px-4 py-3 text-gray-400">{sc.verified}</td>
+                    <td className="px-4 py-3">
+                      {sc.cisStatus.includes('Unverified')?
+                        <button onClick={()=>{setVerifyingSubcontractor(sc.name);setShowVerificationModal(true)}} className="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded text-xs font-medium">Verify</button>
+                        :<button className="px-3 py-1.5 bg-gray-700 text-gray-300 rounded text-xs font-medium cursor-not-allowed">Verified</button>
+                      }
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+
+      {/* MONTHLY RETURN WIZARD TAB */}
+      {mainTab==='monthly' && (
+        <div className="space-y-6">
+          <button onClick={()=>{setMonthlyStep(1);setShowMonthlyWizard(true)}} className="px-4 py-2 bg-orange-600 hover:bg-orange-700 text-white rounded-lg text-sm font-medium">Start Monthly Return</button>
+
+          {showMonthlyWizard && (
+            <div className="card bg-base-200 p-6 max-w-2xl">
+              {monthlyStep === 1 && (
+                <div className="space-y-4">
+                  <h3 className="text-lg font-semibold text-white">Step 1: Select Tax Period</h3>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-300 mb-2">Tax Period</label>
+                    <select value={selectedPeriod} onChange={e=>setSelectedPeriod(e.target.value)} className="w-full border border-gray-700 rounded-lg px-3 py-2 text-sm bg-gray-900 text-white focus:outline-none focus:ring-2 focus:ring-orange-500">
+                      <option value="">Select period…</option>{TAX_PERIOD_OPTIONS.map(p=><option key={p} value={p}>{p}</option>)}
+                    </select>
+                  </div>
+                  <div className="flex gap-3 pt-4">
+                    <button onClick={()=>setShowMonthlyWizard(false)} className="flex-1 px-4 py-2 border border-gray-700 rounded-lg text-sm text-gray-300 hover:bg-gray-700">Cancel</button>
+                    <button onClick={()=>setMonthlyStep(2)} disabled={!selectedPeriod} className="flex-1 px-4 py-2 bg-orange-600 hover:bg-orange-700 disabled:opacity-40 text-white rounded-lg text-sm font-medium">Next <ArrowRight className="inline ml-1" size={14}/></button>
+                  </div>
+                </div>
+              )}
+
+              {monthlyStep === 2 && (
+                <div className="space-y-4">
+                  <h3 className="text-lg font-semibold text-white">Step 2: Verify Payments</h3>
+                  <p className="text-sm text-gray-400 mb-3">Review payments made in period {selectedPeriod}</p>
+                  <div className="bg-gray-900 rounded-lg overflow-hidden">
+                    <table className="w-full text-sm">
+                      <thead className="bg-gray-800 border-b border-gray-700">
+                        <tr>{['Subcontractor','Gross Payment','Materials','Net Subject','Rate','Deduction'].map(h=><th key={h} className="px-3 py-2 text-left text-xs font-medium text-gray-400">{h}</th>)}</tr>
+                      </thead>
+                      <tbody className="divide-y divide-gray-700">
+                        {returns.slice(0,3).map((r,idx)=>{
+                          const ded = calcDeduction(r);
+                          const netSubj = Number(r.gross_payment??0) - Number(r.materials??0);
+                          return (
+                            <tr key={idx} className="hover:bg-gray-900/40">
+                              <td className="px-3 py-2 text-white font-medium text-xs">{String(r.subcontractor_name??'—')}</td>
+                              <td className="px-3 py-2 text-gray-300 text-xs">£{Number(r.gross_payment??0).toLocaleString()}</td>
+                              <td className="px-3 py-2 text-gray-400 text-xs">£{Number(r.materials??0).toLocaleString()}</td>
+                              <td className="px-3 py-2 text-blue-400 font-semibold text-xs">£{netSubj.toLocaleString()}</td>
+                              <td className="px-3 py-2 text-gray-400 text-xs">{Number(r.cis_rate??20)}%</td>
+                              <td className="px-3 py-2 text-red-400 font-semibold text-xs">-£{Math.round(ded).toLocaleString()}</td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+                  <div className="flex gap-3 pt-4">
+                    <button onClick={()=>setMonthlyStep(1)} className="flex-1 px-4 py-2 border border-gray-700 rounded-lg text-sm text-gray-300 hover:bg-gray-700">Back</button>
+                    <button onClick={()=>setMonthlyStep(3)} className="flex-1 px-4 py-2 bg-orange-600 hover:bg-orange-700 text-white rounded-lg text-sm font-medium">Next <ArrowRight className="inline ml-1" size={14}/></button>
+                  </div>
+                </div>
+              )}
+
+              {monthlyStep === 3 && (
+                <div className="space-y-4">
+                  <h3 className="text-lg font-semibold text-white">Step 3: Review Summary</h3>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="bg-blue-900/30 border border-blue-700 rounded-lg p-4">
+                      <p className="text-xs text-blue-300 mb-1">Tax Period</p>
+                      <p className="text-lg font-bold text-blue-200">{selectedPeriod}</p>
+                    </div>
+                    <div className="bg-blue-900/30 border border-blue-700 rounded-lg p-4">
+                      <p className="text-xs text-blue-300 mb-1">Total Gross Payments</p>
+                      <p className="text-lg font-bold text-blue-200">£{returns.slice(0,3).reduce((s,r)=>s+Number(r.gross_payment??0),0).toLocaleString()}</p>
+                    </div>
+                    <div className="bg-red-900/30 border border-red-700 rounded-lg p-4">
+                      <p className="text-xs text-red-300 mb-1">Total CIS Deductions</p>
+                      <p className="text-lg font-bold text-red-200">£{Math.round(returns.slice(0,3).reduce((s,r)=>s+calcDeduction(r),0)).toLocaleString()}</p>
+                    </div>
+                    <div className="bg-green-900/30 border border-green-700 rounded-lg p-4">
+                      <p className="text-xs text-green-300 mb-1">Payments to Make</p>
+                      <p className="text-lg font-bold text-green-200">£{Math.round(returns.slice(0,3).reduce((s,r)=>s+calcNet(r),0)).toLocaleString()}</p>
+                    </div>
+                  </div>
+                  <div className="flex gap-3 pt-4">
+                    <button onClick={()=>setMonthlyStep(2)} className="flex-1 px-4 py-2 border border-gray-700 rounded-lg text-sm text-gray-300 hover:bg-gray-700">Back</button>
+                    <button onClick={()=>{setMonthlySubmissionRef('HMRC-2026-'+Math.random().toString(36).slice(2,8).toUpperCase());setMonthlyStep(4);toast.success('Return submitted to HMRC')}} className="flex-1 px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg text-sm font-medium">Submit to HMRC</button>
+                  </div>
+                </div>
+              )}
+
+              {monthlyStep === 4 && (
+                <div className="space-y-4 text-center">
+                  <div className="flex justify-center">
+                    <div className="w-16 h-16 bg-green-900/30 border border-green-700 rounded-full flex items-center justify-center">
+                      <Check size={32} className="text-green-400"/>
+                    </div>
+                  </div>
+                  <h3 className="text-lg font-semibold text-white">Return Submitted Successfully</h3>
+                  <div className="bg-green-900/20 border border-green-700 rounded-lg p-4">
+                    <p className="text-sm text-green-300 mb-1">Reference Number</p>
+                    <p className="text-lg font-mono font-bold text-green-200">{monthlySubmissionRef}</p>
+                  </div>
+                  <button onClick={()=>{setShowMonthlyWizard(false);setMonthlyStep(1);setSelectedPeriod('')}} className="w-full px-4 py-2 bg-orange-600 hover:bg-orange-700 text-white rounded-lg text-sm font-medium">Close</button>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* STATEMENTS TAB */}
+      {mainTab==='statements' && (
+        <div className="space-y-6">
+          <h3 className="text-lg font-display text-white">CIS Deduction Statements</h3>
+          <div className="card bg-base-200 overflow-hidden">
+            <table className="w-full text-sm">
+              <thead className="bg-gray-900 border-b border-gray-700">
+                <tr>{['Subcontractor','Last Payment','Status','Action'].map(h=><th key={h} className="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">{h}</th>)}</tr>
+              </thead>
+              <tbody className="divide-y divide-gray-700">
+                {SUBCONTRACTORS_REGISTER.map((sc, idx)=>(
+                  <tr key={idx} className="hover:bg-gray-900/40 transition-colors">
+                    <td className="px-4 py-3 font-medium text-white">{sc.name}</td>
+                    <td className="px-4 py-3 text-gray-400">{sc.verified}</td>
+                    <td className="px-4 py-3"><span className={`text-xs px-2 py-1 rounded-full font-medium ${sc.cisStatus.includes('Unverified')?'bg-yellow-900/40 text-yellow-300':'bg-green-900/40 text-green-300'}`}>Ready</span></td>
+                    <td className="px-4 py-3">
+                      <button onClick={()=>{setSelectedSubcontractorForStatement(sc.name);setStatementData({subcontractor:sc.name,period:'Jan 2026',gross_payment:8500,deduction_rate:20,deduction_amount:1700,net_payment:6800,hmrc_ref:sc.hmrcRef});setShowStatementModal(true)}} className="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded text-xs font-medium">Generate</button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+
+      {/* CIS RETURN MODAL */}
       {showModal && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
           <div className="bg-gray-800 border border-gray-700 rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
@@ -505,6 +704,114 @@ export function CIS() {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* VERIFICATION MODAL */}
+      {showVerificationModal && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-gray-800 border border-gray-700 rounded-2xl shadow-2xl w-full max-w-md">
+            <div className="flex items-center justify-between p-6 border-b border-gray-700">
+              <h2 className="text-lg font-semibold text-white">Verify Subcontractor</h2>
+              <button type="button" onClick={()=>setShowVerificationModal(false)} className="p-2 hover:bg-gray-700 rounded-lg text-gray-400 hover:text-white"><X size={18}/></button>
+            </div>
+            <div className="p-6 space-y-4">
+              {!verificationResults[verifyingSubcontractor||'']?(
+                <>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-300 mb-1">Unique Taxpayer Reference (UTR)</label>
+                    <input type="text" value={verificationForm.utr} onChange={e=>setVerificationForm({...verificationForm,utr:e.target.value})} placeholder="10 digits" className="w-full border border-gray-700 rounded-lg px-3 py-2 text-sm bg-gray-900 text-white focus:outline-none focus:ring-2 focus:ring-orange-500"/>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-300 mb-1">National Insurance Number</label>
+                    <input type="text" value={verificationForm.ni_number} onChange={e=>setVerificationForm({...verificationForm,ni_number:e.target.value})} placeholder="AA 12 34 56 A" className="w-full border border-gray-700 rounded-lg px-3 py-2 text-sm bg-gray-900 text-white focus:outline-none focus:ring-2 focus:ring-orange-500"/>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-300 mb-1">Company Name</label>
+                    <input type="text" value={verificationForm.company_name} onChange={e=>setVerificationForm({...verificationForm,company_name:e.target.value})} placeholder="Company name" className="w-full border border-gray-700 rounded-lg px-3 py-2 text-sm bg-gray-900 text-white focus:outline-none focus:ring-2 focus:ring-orange-500"/>
+                  </div>
+                  <div className="flex gap-3 pt-4">
+                    <button type="button" onClick={()=>setShowVerificationModal(false)} className="flex-1 px-4 py-2 border border-gray-700 rounded-lg text-sm text-gray-300 hover:bg-gray-700">Cancel</button>
+                    <button type="button" onClick={()=>{const rates=['Gross (0%)','Standard (20%)','Higher (30%)'];setVerificationResults({...verificationResults,[verifyingSubcontractor||'']:{...verificationForm,rate:rates[Math.floor(Math.random()*3)],status:'Verified'}});toast.success('Verification successful')}} className="flex-1 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium">Verify with HMRC</button>
+                  </div>
+                </>
+              ):(
+                <>
+                  <div className="bg-green-900/30 border border-green-700 rounded-lg p-4 space-y-3">
+                    <div className="flex items-center gap-2">
+                      <CheckCircle size={20} className="text-green-400"/>
+                      <span className="font-medium text-green-300">Verification Successful</span>
+                    </div>
+                    <div className="space-y-2 text-sm">
+                      <div className="flex justify-between">
+                        <span className="text-gray-400">UTR:</span>
+                        <span className="text-white font-medium">****{verificationResults[verifyingSubcontractor||'']?.utr.slice(-4)}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-gray-400">CIS Rate:</span>
+                        <span className="text-white font-medium">{verificationResults[verifyingSubcontractor||'']?.rate}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-gray-400">Status:</span>
+                        <span className="text-green-300 font-medium">{verificationResults[verifyingSubcontractor||'']?.status}</span>
+                      </div>
+                    </div>
+                  </div>
+                  <button type="button" onClick={()=>{setShowVerificationModal(false);setVerifyingSubcontractor(null);setVerificationForm({utr:'',ni_number:'',company_name:''})}} className="w-full px-4 py-2 bg-orange-600 hover:bg-orange-700 text-white rounded-lg text-sm font-medium">Done</button>
+                </>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* STATEMENT MODAL */}
+      {showStatementModal && statementData && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-gray-800 border border-gray-700 rounded-2xl shadow-2xl w-full max-w-md">
+            <div className="flex items-center justify-between p-6 border-b border-gray-700">
+              <h2 className="text-lg font-semibold text-white">CIS Deduction Statement</h2>
+              <button type="button" onClick={()=>setShowStatementModal(false)} className="p-2 hover:bg-gray-700 rounded-lg text-gray-400 hover:text-white"><X size={18}/></button>
+            </div>
+            <div className="p-6 space-y-4">
+              <div className="space-y-3 bg-gray-900 rounded-lg p-4 border border-gray-700">
+                <div className="flex justify-between">
+                  <span className="text-gray-400">Subcontractor</span>
+                  <span className="text-white font-medium">{statementData.subcontractor}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-gray-400">Period</span>
+                  <span className="text-white font-medium">{statementData.period}</span>
+                </div>
+                <div className="border-t border-gray-700 pt-3 mt-3"/>
+                <div className="flex justify-between text-lg">
+                  <span className="text-gray-300">Gross Payment</span>
+                  <span className="text-blue-400 font-bold">£{statementData.gross_payment.toLocaleString()}</span>
+                </div>
+                <div className="flex justify-between text-lg">
+                  <span className="text-gray-300">Deduction Rate</span>
+                  <span className="text-orange-400 font-bold">{statementData.deduction_rate}%</span>
+                </div>
+                <div className="flex justify-between text-lg">
+                  <span className="text-gray-300">CIS Deduction</span>
+                  <span className="text-red-400 font-bold">-£{statementData.deduction_amount.toLocaleString()}</span>
+                </div>
+                <div className="border-t border-gray-700 pt-3 mt-3"/>
+                <div className="flex justify-between text-xl">
+                  <span className="text-gray-300 font-semibold">Net Payment</span>
+                  <span className="text-green-400 font-bold">£{statementData.net_payment.toLocaleString()}</span>
+                </div>
+                <div className="flex justify-between text-sm">
+                  <span className="text-gray-500">HMRC Reference</span>
+                  <span className="text-gray-400 font-mono">{statementData.hmrc_ref}</span>
+                </div>
+              </div>
+              <div className="flex gap-3">
+                <button type="button" onClick={()=>setShowStatementModal(false)} className="flex-1 px-4 py-2 border border-gray-700 rounded-lg text-sm text-gray-300 hover:bg-gray-700">Close</button>
+                <button type="button" onClick={()=>{toast.success('Statement downloaded as PDF');setShowStatementModal(false)}} className="flex-1 px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg text-sm font-medium flex items-center justify-center gap-2"><Download size={14}/>PDF</button>
+              </div>
+            </div>
           </div>
         </div>
       )}

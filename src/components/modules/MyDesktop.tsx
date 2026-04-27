@@ -1,10 +1,14 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { 
-  X, Minus, Square, Terminal, Activity, FileText, 
+import {
+  X, Minus, Square, Terminal, Activity, FileText,
   Settings, Calculator, Folder, Globe, Code, Search,
   Wifi, Battery, Volume2, Grid,
-  MessageSquare, HardHat, Layers, Shield
+  MessageSquare, HardHat, Layers, Shield,
+  CheckSquare, Clock, TrendingUp, Bell, Cloud, AlertTriangle,
+  ChevronUp, ChevronDown, Plus, Eye, EyeOff, Edit3,
+  Upload, Calendar
 } from 'lucide-react';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { ModuleBreadcrumbs } from '../ui/Breadcrumbs';
 interface AppInfo {
   id: string;
@@ -26,6 +30,38 @@ interface WindowState {
   position: { x: number; y: number };
   size: { w: number; h: number };
   zIndex: number;
+}
+
+interface Widget {
+  id: 'tasks' | 'activity' | 'quickActions' | 'weather' | 'kpis';
+  name: string;
+  enabled: boolean;
+  order: number;
+}
+
+interface DashboardTask {
+  id: string;
+  title: string;
+  project: string;
+  priority: 'high' | 'medium' | 'low';
+  dueDate: string;
+  completed: boolean;
+}
+
+interface ActivityEvent {
+  id: string;
+  type: 'upload' | 'rfi' | 'invoice' | 'meeting' | 'incident';
+  description: string;
+  user: string;
+  timestamp: string;
+}
+
+interface QuickActionButton {
+  id: string;
+  label: string;
+  icon: React.ElementType;
+  color: string;
+  action: () => void;
 }
 
 
@@ -61,7 +97,33 @@ export const MyDesktop: React.FC = () => {
   const [maxZIndex, setMaxZIndex] = useState(10);
   const [searchQuery, setSearchQuery] = useState('');
   const [showSystemStats, setShowSystemStats] = useState(false);
-  
+  const [showCustomizeModal, setShowCustomizeModal] = useState(false);
+  const [dashboardMode, setDashboardMode] = useState(true);
+
+  const [widgets, setWidgets] = useState<Widget[]>([
+    { id: 'tasks', name: 'My Tasks', enabled: true, order: 0 },
+    { id: 'activity', name: 'Activity Feed', enabled: true, order: 1 },
+    { id: 'quickActions', name: 'Quick Actions', enabled: true, order: 2 },
+    { id: 'weather', name: 'Weather', enabled: true, order: 3 },
+    { id: 'kpis', name: 'KPIs', enabled: true, order: 4 }
+  ]);
+
+  const [tasks, setTasks] = useState<DashboardTask[]>([
+    { id: '1', title: 'Review structural drawings', project: 'Project Alpha', priority: 'high', dueDate: new Date(Date.now() + 86400000).toISOString(), completed: false },
+    { id: '2', title: 'Approve safety plan', project: 'Project Alpha', priority: 'high', dueDate: new Date(Date.now() + 172800000).toISOString(), completed: false },
+    { id: '3', title: 'Update budget forecast', project: 'Project Beta', priority: 'medium', dueDate: new Date(Date.now() + 259200000).toISOString(), completed: false },
+    { id: '4', title: 'Schedule site inspection', project: 'Project Gamma', priority: 'low', dueDate: new Date(Date.now() + 345600000).toISOString(), completed: true }
+  ]);
+
+  const [activityEvents, setActivityEvents] = useState<ActivityEvent[]>([
+    { id: '1', type: 'upload', description: 'Structural drawings uploaded', user: 'John Smith', timestamp: new Date(Date.now() - 3600000).toISOString() },
+    { id: '2', type: 'rfi', description: 'RFI-2024-001 raised', user: 'Alice Johnson', timestamp: new Date(Date.now() - 7200000).toISOString() },
+    { id: '3', type: 'invoice', description: 'Invoice INV-2024-042 approved', user: 'Bob Wilson', timestamp: new Date(Date.now() - 10800000).toISOString() },
+    { id: '4', type: 'meeting', description: 'Site meeting scheduled for tomorrow', user: 'Carol Davis', timestamp: new Date(Date.now() - 14400000).toISOString() }
+  ]);
+
+  const [newQuickTask, setNewQuickTask] = useState('');
+
   const desktopRef = useRef<HTMLDivElement>(null);
   const dragRef = useRef<{ id: string, startX: number, startY: number, initX: number, initY: number, currentX?: number, currentY?: number } | null>(null);
 
@@ -342,6 +404,337 @@ export const MyDesktop: React.FC = () => {
     productivity: 'Productivity',
     system: 'System'
   };
+
+  const handleAddTask = () => {
+    if (!newQuickTask.trim()) return;
+    const task: DashboardTask = {
+      id: String(Date.now()),
+      title: newQuickTask,
+      project: 'Inbox',
+      priority: 'medium',
+      dueDate: new Date(Date.now() + 86400000).toISOString(),
+      completed: false
+    };
+    setTasks(prev => [...prev, task]);
+    setNewQuickTask('');
+  };
+
+  const handleToggleTask = (id: string) => {
+    setTasks(prev => prev.map(t => t.id === id ? { ...t, completed: !t.completed } : t));
+  };
+
+  const handleMoveWidget = (id: string, direction: 'up' | 'down') => {
+    const index = widgets.findIndex(w => w.id === id);
+    if ((direction === 'up' && index === 0) || (direction === 'down' && index === widgets.length - 1)) return;
+    const newWidgets = [...widgets];
+    const swapIndex = direction === 'up' ? index - 1 : index + 1;
+    [newWidgets[index].order, newWidgets[swapIndex].order] = [newWidgets[swapIndex].order, newWidgets[index].order];
+    newWidgets.sort((a, b) => a.order - b.order);
+    setWidgets(newWidgets);
+  };
+
+  const handleToggleWidget = (id: string) => {
+    setWidgets(prev => prev.map(w => w.id === id ? { ...w, enabled: !w.enabled } : w));
+  };
+
+  const weatherData = {
+    location: 'London, UK',
+    temperature: 15,
+    condition: 'Partly Cloudy',
+    windSpeed: 18,
+    rainfall: 25,
+    advisory: 'High wind advisory — check scaffold safety',
+    forecast: [
+      { day: 'Thu', temp: 16, condition: 'Cloudy' },
+      { day: 'Fri', temp: 14, condition: 'Rainy' },
+      { day: 'Sat', temp: 13, condition: 'Rainy' },
+      { day: 'Sun', temp: 15, condition: 'Partly Cloudy' },
+      { day: 'Mon', temp: 17, condition: 'Sunny' }
+    ]
+  };
+
+  const kpiData = [
+    { label: 'Budget Spent', value: 68, max: 100, unit: '%' },
+    { label: 'Schedule Progress', value: 75, max: 100, unit: '%' },
+    { label: 'Safety Incidents', value: 0, max: 5, unit: '' },
+    { label: 'Quality Score', value: 92, max: 100, unit: '%' }
+  ];
+
+  const quickActions: QuickActionButton[] = [
+    { id: 'rfi', label: 'New RFI', icon: MessageSquare, color: 'bg-blue-600 hover:bg-blue-700', action: () => {} },
+    { id: 'invoice', label: 'New Invoice', icon: FileText, color: 'bg-green-600 hover:bg-green-700', action: () => {} },
+    { id: 'document', label: 'Upload Doc', icon: Upload, color: 'bg-purple-600 hover:bg-purple-700', action: () => {} },
+    { id: 'report', label: 'Daily Report', icon: FileText, color: 'bg-amber-600 hover:bg-amber-700', action: () => {} },
+    { id: 'incident', label: 'Incident', icon: AlertTriangle, color: 'bg-red-600 hover:bg-red-700', action: () => {} },
+    { id: 'leave', label: 'Request Leave', icon: Calendar, color: 'bg-indigo-600 hover:bg-indigo-700', action: () => {} }
+  ];
+
+  const getActivityIcon = (type: string) => {
+    switch (type) {
+      case 'upload': return FileText;
+      case 'rfi': return MessageSquare;
+      case 'invoice': return Calculator;
+      case 'meeting': return Clock;
+      case 'incident': return AlertTriangle;
+      default: return Activity;
+    }
+  };
+
+  const getActivityColor = (type: string) => {
+    switch (type) {
+      case 'upload': return 'text-blue-400';
+      case 'rfi': return 'text-amber-400';
+      case 'invoice': return 'text-green-400';
+      case 'meeting': return 'text-purple-400';
+      case 'incident': return 'text-red-400';
+      default: return 'text-slate-400';
+    }
+  };
+
+  const getTimeAgo = (timestamp: string) => {
+    const now = Date.now();
+    const diff = now - new Date(timestamp).getTime();
+    const minutes = Math.floor(diff / 60000);
+    const hours = Math.floor(diff / 3600000);
+    const days = Math.floor(diff / 86400000);
+    if (minutes < 60) return `${minutes}m ago`;
+    if (hours < 24) return `${hours}h ago`;
+    return `${days}d ago`;
+  };
+
+  const enabledWidgets = widgets.filter(w => w.enabled).sort((a, b) => a.order - b.order);
+
+  const _Upload = FileText;
+  const _Calendar = Clock;
+
+  if (dashboardMode) {
+    return (
+      <>
+        <ModuleBreadcrumbs currentModule="my-desktop" />
+        <div className="min-h-screen bg-slate-950 p-6 space-y-6">
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-3xl font-display text-white">My Dashboard</h1>
+              <p className="text-sm text-slate-400 mt-1">Welcome back, Adrian</p>
+            </div>
+            <button
+              onClick={() => setShowCustomizeModal(true)}
+              className="btn-secondary flex items-center gap-2"
+            >
+              <Edit3 className="w-4 h-4" /> Customise
+            </button>
+          </div>
+
+          <div className="grid gap-6">
+            {enabledWidgets.includes(widgets.find(w => w.id === 'tasks')!) && (
+              <div className="card p-6">
+                <div className="flex items-center justify-between mb-4">
+                  <h2 className="text-lg font-medium text-white flex items-center gap-2">
+                    <CheckSquare className="w-5 h-5 text-amber-400" /> My Tasks
+                  </h2>
+                  <span className="text-sm text-slate-400">{tasks.filter(t => !t.completed).length} pending</span>
+                </div>
+                <div className="space-y-2">
+                  {tasks.map(task => (
+                    <div key={task.id} className="flex items-center gap-3 p-3 bg-slate-800 rounded hover:bg-slate-700 transition-colors">
+                      <button
+                        onClick={() => handleToggleTask(task.id)}
+                        className={`flex-shrink-0 w-5 h-5 rounded border-2 flex items-center justify-center transition-colors ${
+                          task.completed ? 'bg-green-500 border-green-500' : 'border-slate-600 hover:border-slate-500'
+                        }`}
+                      >
+                        {task.completed && <CheckSquare className="w-3 h-3 text-white" />}
+                      </button>
+                      <div className="flex-1">
+                        <p className={`text-sm font-medium ${task.completed ? 'text-slate-500 line-through' : 'text-slate-200'}`}>
+                          {task.title}
+                        </p>
+                        <p className="text-xs text-slate-500">{task.project}</p>
+                      </div>
+                      <span className={`text-xs font-medium px-2 py-1 rounded ${
+                        task.priority === 'high' ? 'bg-red-500/20 text-red-400' :
+                        task.priority === 'medium' ? 'bg-amber-500/20 text-amber-400' :
+                        'bg-blue-500/20 text-blue-400'
+                      }`}>
+                        {task.priority}
+                      </span>
+                      <span className="text-xs text-slate-500">{getTimeAgo(task.dueDate)}</span>
+                    </div>
+                  ))}
+                </div>
+                <div className="mt-4 pt-4 border-t border-slate-800 flex gap-2">
+                  <input
+                    type="text"
+                    placeholder="Add quick task..."
+                    value={newQuickTask}
+                    onChange={e => setNewQuickTask(e.target.value)}
+                    onKeyPress={e => e.key === 'Enter' && handleAddTask()}
+                    className="input flex-1 py-2"
+                  />
+                  <button onClick={handleAddTask} className="btn-secondary py-2"><Plus className="w-4 h-4" /></button>
+                </div>
+              </div>
+            )}
+
+            {enabledWidgets.includes(widgets.find(w => w.id === 'activity')!) && (
+              <div className="card p-6">
+                <h2 className="text-lg font-medium text-white flex items-center gap-2 mb-4">
+                  <Activity className="w-5 h-5 text-blue-400" /> Activity Feed
+                </h2>
+                <div className="space-y-3">
+                  {activityEvents.map(event => {
+                    const IconComp = getActivityIcon(event.type);
+                    return (
+                      <div key={event.id} className="flex gap-3 p-3 bg-slate-800 rounded hover:bg-slate-700 transition-colors">
+                        <div className={`flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center ${getActivityColor(event.type)} bg-slate-900`}>
+                          <IconComp className="w-4 h-4" />
+                        </div>
+                        <div className="flex-1">
+                          <p className="text-sm text-slate-200">{event.description}</p>
+                          <p className="text-xs text-slate-500">{event.user} • {getTimeAgo(event.timestamp)}</p>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+                <button className="w-full mt-4 btn-secondary text-sm">Load more</button>
+              </div>
+            )}
+
+            {enabledWidgets.includes(widgets.find(w => w.id === 'quickActions')!) && (
+              <div className="card p-6">
+                <h2 className="text-lg font-medium text-white flex items-center gap-2 mb-4">
+                  <Grid className="w-5 h-5 text-purple-400" /> Quick Actions
+                </h2>
+                <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                  {quickActions.map(action => {
+                    const IconComp = action.icon;
+                    return (
+                      <button
+                        key={action.id}
+                        onClick={action.action}
+                        className={`${action.color} rounded-lg p-4 text-white font-medium transition-colors flex flex-col items-center justify-center gap-2`}
+                      >
+                        <IconComp className="w-6 h-6" />
+                        <span className="text-sm">{action.label}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
+            {enabledWidgets.includes(widgets.find(w => w.id === 'weather')!) && (
+              <div className="card p-6">
+                <h2 className="text-lg font-medium text-white flex items-center gap-2 mb-4">
+                  <Cloud className="w-5 h-5 text-cyan-400" /> Weather
+                </h2>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <p className="text-sm text-slate-400 mb-1">Location</p>
+                    <p className="text-2xl font-bold text-white">{weatherData.location}</p>
+                    <p className="text-4xl font-bold text-white mt-2">{weatherData.temperature}°C</p>
+                    <p className="text-sm text-slate-400 mt-1">{weatherData.condition}</p>
+                    <div className="space-y-1 mt-3 text-sm text-slate-400">
+                      <p>Wind: {weatherData.windSpeed} mph</p>
+                      <p>Rainfall: {weatherData.rainfall}%</p>
+                    </div>
+                  </div>
+                  <div className="bg-slate-800 rounded p-4">
+                    <p className="text-xs font-semibold text-slate-400 mb-3 uppercase">5-Day Forecast</p>
+                    <div className="space-y-2">
+                      {weatherData.forecast.map((day, idx) => (
+                        <div key={idx} className="flex items-center justify-between text-sm">
+                          <span className="text-slate-400 w-12">{day.day}</span>
+                          <span className="text-slate-300">{day.condition}</span>
+                          <span className="text-white font-medium w-12 text-right">{day.temp}°C</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+                {weatherData.advisory && (
+                  <div className="mt-4 p-3 bg-red-500/20 border border-red-500/40 rounded flex gap-2">
+                    <AlertTriangle className="w-5 h-5 text-red-400 flex-shrink-0" />
+                    <p className="text-sm text-red-400">{weatherData.advisory}</p>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {enabledWidgets.includes(widgets.find(w => w.id === 'kpis')!) && (
+              <div className="card p-6">
+                <h2 className="text-lg font-medium text-white flex items-center gap-2 mb-4">
+                  <TrendingUp className="w-5 h-5 text-green-400" /> KPIs
+                </h2>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                  {kpiData.map((kpi, idx) => (
+                    <div key={idx} className="bg-slate-800 rounded p-4">
+                      <p className="text-sm text-slate-400 mb-2">{kpi.label}</p>
+                      <p className="text-2xl font-bold text-white">{kpi.value}{kpi.unit}</p>
+                      <div className="mt-2 bg-slate-700 h-2 rounded overflow-hidden">
+                        <div
+                          className="h-full bg-gradient-to-r from-blue-500 to-amber-500"
+                          style={{ width: `${(kpi.value / kpi.max) * 100}%` }}
+                        ></div>
+                      </div>
+                      <p className="text-xs text-slate-500 mt-2">of {kpi.max}{kpi.unit}</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+
+          {showCustomizeModal && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+              <div className="dialog-overlay absolute inset-0" onClick={() => setShowCustomizeModal(false)} />
+              <div className="dialog-content p-6 w-full max-w-2xl relative z-10">
+                <div className="flex items-center justify-between mb-6">
+                  <h3 className="text-lg font-display">Customise Widgets</h3>
+                  <button onClick={() => setShowCustomizeModal(false)} className="p-2 hover:bg-slate-700 rounded"><X className="w-5 h-5" /></button>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {widgets.map(widget => (
+                    <div key={widget.id} className="flex items-center gap-3 p-4 bg-slate-800 rounded border border-slate-700">
+                      <button
+                        onClick={() => handleToggleWidget(widget.id)}
+                        className={`flex-shrink-0 w-5 h-5 rounded border-2 flex items-center justify-center transition-colors ${
+                          widget.enabled ? 'bg-amber-500 border-amber-500' : 'border-slate-600'
+                        }`}
+                      >
+                        {widget.enabled && <CheckSquare className="w-3 h-3 text-white" />}
+                      </button>
+                      <span className="flex-1 text-slate-200">{widget.name}</span>
+                      <div className="flex gap-1">
+                        <button
+                          onClick={() => handleMoveWidget(widget.id, 'up')}
+                          disabled={widgets.indexOf(widget) === 0}
+                          className="p-1 hover:bg-slate-700 rounded disabled:opacity-50"
+                        >
+                          <ChevronUp className="w-4 h-4" />
+                        </button>
+                        <button
+                          onClick={() => handleMoveWidget(widget.id, 'down')}
+                          disabled={widgets.indexOf(widget) === widgets.length - 1}
+                          className="p-1 hover:bg-slate-700 rounded disabled:opacity-50"
+                        >
+                          <ChevronDown className="w-4 h-4" />
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                <div className="flex justify-end gap-3 mt-6">
+                  <button onClick={() => setShowCustomizeModal(false)} className="btn-primary">Done</button>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+      </>
+    );
+  }
 
   return (
     <div

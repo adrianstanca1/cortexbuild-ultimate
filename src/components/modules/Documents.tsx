@@ -2,10 +2,13 @@ import React from 'react';
 import { useState, useEffect, useCallback } from 'react';
 import {
   FileText, Search, Download, Eye, Edit2, Trash2, X, Upload, FileCheck, Image, FolderOpen,
-  BarChart3, Grid, List, FileIcon as FileIconDefault, History, UploadCloud, PenLine, Sparkles, Loader2
+  BarChart3, Grid, List, FileIcon as FileIconDefault, History, UploadCloud, PenLine, Sparkles, Loader2,
+  Send, Users, Mail, Clock, CheckCircle, AlertCircle, ChevronDown, TrendingUp, PieChart as PieChartIcon,
+  RefreshCw, User
 } from 'lucide-react';
 import { toast } from 'sonner';
 import clsx from 'clsx';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell, LineChart, Line } from 'recharts';
 import { EmptyState } from '../ui/EmptyState';
 import { ModuleBreadcrumbs } from '../ui/Breadcrumbs';
 import { API_BASE } from '@/lib/auth-storage';
@@ -43,6 +46,30 @@ interface Document {
   ai_extracted_snippet?: string | null;
   ai_analysis_cache?: AnalyzeDocumentResponse | Record<string, unknown> | null;
   ai_analysis_at?: string | null;
+}
+
+interface Transmittal {
+  id: string;
+  number: string;
+  date: string;
+  to: string[];
+  subject: string;
+  purpose: 'For Approval' | 'For Information' | 'For Construction';
+  documents: string[];
+  status: 'Draft' | 'Sent' | 'Acknowledged' | 'Rejected';
+  responses: { recipient: string; status: string; date: string }[];
+}
+
+interface ControlledDocument {
+  id: string;
+  number: string;
+  title: string;
+  currentRevision: string;
+  dateIssued: string;
+  author: string;
+  status: 'Current' | 'Superseded' | 'Obsolete';
+  purpose: string;
+  revisionHistory: { revision: string; date: string; changes: string }[];
 }
 
 const CATEGORIES = ['PLANS', 'DRAWINGS', 'PERMITS', 'RAMS', 'CONTRACTS', 'REPORTS', 'SPECS', 'PHOTOS'];
@@ -100,6 +127,55 @@ export function Documents() {
   const [docIntel, setDocIntel] = useState<AnalyzeDocumentResponse | null>(null);
   const [intelLoading, setIntelLoading] = useState(false);
   const [intelRefreshing, setIntelRefreshing] = useState(false);
+  const [activeTab, setActiveTab] = useState<'library' | 'transmittals' | 'controlled' | 'analytics'>('library');
+  const [transmittals, setTransmittals] = useState<Transmittal[]>([
+    {
+      id: '1',
+      number: 'TM-001',
+      date: new Date(Date.now() - 86400000).toISOString(),
+      to: ['client@example.com', 'architect@example.com'],
+      subject: 'Structural drawings for review',
+      purpose: 'For Approval',
+      documents: ['DOC-STR-001', 'DOC-STR-002'],
+      status: 'Sent',
+      responses: [
+        { recipient: 'client@example.com', status: 'Acknowledged', date: new Date(Date.now() - 43200000).toISOString() }
+      ]
+    }
+  ]);
+  const [controlledDocuments, setControlledDocuments] = useState<ControlledDocument[]>([
+    {
+      id: '1',
+      number: 'DOC-001',
+      title: 'Health & Safety Policy',
+      currentRevision: 'Rev 4',
+      dateIssued: new Date(Date.now() - 2592000000).toISOString(),
+      author: 'Safety Manager',
+      status: 'Current',
+      purpose: 'Compliance',
+      revisionHistory: [
+        { revision: 'Rev 4', date: new Date(Date.now() - 2592000000).toISOString(), changes: 'Updated incident reporting procedure' },
+        { revision: 'Rev 3', date: new Date(Date.now() - 5184000000).toISOString(), changes: 'Added new PPE requirements' }
+      ]
+    },
+    {
+      id: '2',
+      number: 'DOC-002',
+      title: 'Site Safety Plan',
+      currentRevision: 'Rev 2',
+      dateIssued: new Date(Date.now() - 1296000000).toISOString(),
+      author: 'Site Manager',
+      status: 'Current',
+      purpose: 'Project Safety',
+      revisionHistory: [
+        { revision: 'Rev 2', date: new Date(Date.now() - 1296000000).toISOString(), changes: 'Updated for Phase 2' }
+      ]
+    }
+  ]);
+  const [showTransmittalModal, setShowTransmittalModal] = useState(false);
+  const [transmittalForm, setTransmittalForm] = useState({ recipients: '', subject: '', purpose: 'For Information' as const, selectedDocs: [] as string[] });
+  const [expandedControlled, setExpandedControlled] = useState<string | null>(null);
+  const [controlledFilter, setControlledFilter] = useState<string>('ALL');
 
   const { user } = useAuth();
 
@@ -280,86 +356,336 @@ export function Documents() {
   const isImage = (type: string) => ['JPG', 'JPEG', 'PNG', 'GIF', 'WEBP'].includes(type.toUpperCase());
   const isPdf = (type: string) => type.toUpperCase() === 'PDF';
 
+  const handleCreateTransmittal = () => {
+    const newTransmittal: Transmittal = {
+      id: String(Date.now()),
+      number: `TM-${String(transmittals.length + 1).padStart(3, '0')}`,
+      date: new Date().toISOString(),
+      to: transmittalForm.recipients.split(',').map(r => r.trim()),
+      subject: transmittalForm.subject,
+      purpose: transmittalForm.purpose,
+      documents: transmittalForm.selectedDocs,
+      status: 'Sent',
+      responses: []
+    };
+    setTransmittals(prev => [...prev, newTransmittal]);
+    setShowTransmittalModal(false);
+    setTransmittalForm({ recipients: '', subject: '', purpose: 'For Information', selectedDocs: [] });
+    toast.success('Transmittal sent successfully');
+  };
+
+  const analyticsData = {
+    byCategory: [
+      { name: 'PLANS', value: documents.filter(d => d.category === 'PLANS').length },
+      { name: 'DRAWINGS', value: documents.filter(d => d.category === 'DRAWINGS').length },
+      { name: 'PERMITS', value: documents.filter(d => d.category === 'PERMITS').length },
+      { name: 'RAMS', value: documents.filter(d => d.category === 'RAMS').length },
+      { name: 'CONTRACTS', value: documents.filter(d => d.category === 'CONTRACTS').length },
+      { name: 'REPORTS', value: documents.filter(d => d.category === 'REPORTS').length }
+    ].filter(d => d.value > 0),
+    byType: [
+      { name: 'PDF', value: documents.filter(d => d.type === 'PDF').length, fill: '#ef4444' },
+      { name: 'DOCX', value: documents.filter(d => d.type === 'DOCX').length, fill: '#3b82f6' },
+      { name: 'XLSX', value: documents.filter(d => d.type === 'XLSX').length, fill: '#22c55e' },
+      { name: 'Images', value: documents.filter(d => ['JPG', 'PNG', 'JPEG'].includes(d.type.toUpperCase())).length, fill: '#a855f7' },
+      { name: 'Other', value: documents.filter(d => !['PDF', 'DOCX', 'XLSX', 'JPG', 'PNG', 'JPEG'].includes(d.type.toUpperCase())).length, fill: '#64748b' }
+    ].filter(d => d.value > 0),
+    uploadTrend: [
+      { week: 'W1', uploads: 3 },
+      { week: 'W2', uploads: 5 },
+      { week: 'W3', uploads: 2 },
+      { week: 'W4', uploads: 7 },
+      { week: 'W5', uploads: 4 },
+      { week: 'W6', uploads: 6 },
+      { week: 'W7', uploads: 8 },
+      { week: 'W8', uploads: documents.length }
+    ],
+    topContributors: [
+      { name: 'John Smith', uploads: 12 },
+      { name: 'Alice Johnson', uploads: 9 },
+      { name: 'Bob Wilson', uploads: 7 },
+      { name: 'Carol Davis', uploads: 5 }
+    ]
+  };
+
+  const pendingApproval = documents.filter(d => d.status === 'pending_approval').length;
+  const expiringDocs = 0;
+
   return (
     <>
       <ModuleBreadcrumbs currentModule="documents" />
       <div className="min-h-screen bg-slate-950 p-6 space-y-6">
       <div className="flex items-center justify-between flex-wrap gap-4">
         <div><h1 className="text-3xl font-display text-white">Documents</h1><p className="text-sm text-slate-400 mt-1">{documents.length} files</p></div>
-        <button onClick={() => setShowUploadModal(true)} className="btn-primary flex items-center gap-2"><UploadCloud className="w-4 h-4" /> Upload</button>
-      </div>
-
-      <div className="flex items-center gap-3 flex-wrap">
-        <div className="relative flex-1" style={{minWidth: '200px'}}>
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-          <input type="text" placeholder="Search documents..." value={searchQuery} onChange={e => setSearchQuery(e.target.value)} className="input pl-10 w-full" />
-        </div>
-        <select value={categoryFilter} onChange={e => setCategoryFilter(e.target.value)} className="input w-auto">
-          <option value="ALL">All Categories</option>
-          {CATEGORIES.map(cat => <option key={cat} value={cat}>{cat}</option>)}
-        </select>
-        <div className="flex gap-1">
-          <button onClick={() => setViewMode('grid')} className={clsx('btn-secondary p-2', viewMode === 'grid' && 'bg-slate-600')}><Grid className="w-4 h-4" /></button>
-          <button onClick={() => setViewMode('list')} className={clsx('btn-secondary p-2', viewMode === 'list' && 'bg-slate-600')}><List className="w-4 h-4" /></button>
+        <div className="flex gap-2">
+          {activeTab === 'transmittals' && <button onClick={() => setShowTransmittalModal(true)} className="btn-primary flex items-center gap-2"><Send className="w-4 h-4" /> New Transmittal</button>}
+          {activeTab === 'library' && <button onClick={() => setShowUploadModal(true)} className="btn-primary flex items-center gap-2"><UploadCloud className="w-4 h-4" /> Upload</button>}
         </div>
       </div>
 
-      {loading ? (
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
-          {[1,2,3,4,5,6,7,8].map(i => <div key={i} className="card p-4 animate-pulse"><div className="h-20 bg-slate-800 rounded mb-3"></div><div className="h-4 bg-slate-800 rounded w-3/4 mb-2"></div><div className="h-3 bg-slate-800 rounded w-1/2"></div></div>)}
-        </div>
-      ) : viewMode === 'grid' ? (
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
-          {filteredDocs.map(doc => {
-            const FileIcon = getFileIcon(doc.type);
-            return (
-              <div key={doc.id} className="card p-4 cursor-pointer hover:border-amber-500/50 transition-all" onClick={() => setSelectedDoc(doc)}>
-                <div className="flex items-start justify-between mb-3">
-                  <div className={clsx('w-12 h-12 rounded-lg flex items-center justify-center', getTypeColor(doc.type))}><FileIcon className="w-6 h-6" /></div>
-                  <span className="badge bg-slate-700 text-slate-300 text-xs">{doc.category}</span>
-                </div>
-                <h4 className="font-medium text-slate-200 text-sm mb-1 truncate" title={doc.name}>{doc.name}</h4>
-                <p className="text-xs text-slate-500 mb-2">{doc.type} - {doc.size} - v{doc.version}</p>
-                <div className="flex items-center justify-between">
-                  <span className={clsx('text-xs', ACCESS_LEVELS.find(al => al.value === doc.access_level)?.color || 'text-slate-500')}>{doc.access_level}</span>
-                  <div className="flex gap-1">
-                    <button onClick={(e) => { e.stopPropagation(); handlePreview(doc); }} className="p-1.5 hover:bg-slate-700 rounded text-slate-400"><Eye className="w-3.5 h-3.5" /></button>
-                    <button onClick={(e) => { e.stopPropagation(); handleDownload(doc); }} className="p-1.5 hover:bg-slate-700 rounded text-slate-400"><Download className="w-3.5 h-3.5" /></button>
+      <div className="flex gap-2 border-b border-slate-800 overflow-x-auto">
+        {(['library', 'transmittals', 'controlled', 'analytics'] as const).map(tab => (
+          <button
+            key={tab}
+            onClick={() => setActiveTab(tab)}
+            className={clsx(
+              'px-4 py-3 font-medium text-sm border-b-2 transition-colors whitespace-nowrap',
+              activeTab === tab
+                ? 'border-amber-500 text-amber-400'
+                : 'border-transparent text-slate-400 hover:text-slate-300'
+            )}
+          >
+            {tab === 'library' && 'Document Library'}
+            {tab === 'transmittals' && 'Transmittals'}
+            {tab === 'controlled' && 'Controlled Documents'}
+            {tab === 'analytics' && 'Analytics'}
+          </button>
+        ))}
+      </div>
+
+      {activeTab === 'library' && (
+        <div className="space-y-4">
+          <div className="flex items-center gap-3 flex-wrap">
+            <div className="relative flex-1" style={{minWidth: '200px'}}>
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+              <input type="text" placeholder="Search documents..." value={searchQuery} onChange={e => setSearchQuery(e.target.value)} className="input pl-10 w-full" />
+            </div>
+            <select value={categoryFilter} onChange={e => setCategoryFilter(e.target.value)} className="input w-auto">
+              <option value="ALL">All Categories</option>
+              {CATEGORIES.map(cat => <option key={cat} value={cat}>{cat}</option>)}
+            </select>
+            <div className="flex gap-1">
+              <button onClick={() => setViewMode('grid')} className={clsx('btn-secondary p-2', viewMode === 'grid' && 'bg-slate-600')}><Grid className="w-4 h-4" /></button>
+              <button onClick={() => setViewMode('list')} className={clsx('btn-secondary p-2', viewMode === 'list' && 'bg-slate-600')}><List className="w-4 h-4" /></button>
+            </div>
+          </div>
+
+          {loading ? (
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+              {[1,2,3,4,5,6,7,8].map(i => <div key={i} className="card p-4 animate-pulse"><div className="h-20 bg-slate-800 rounded mb-3"></div><div className="h-4 bg-slate-800 rounded w-3/4 mb-2"></div><div className="h-3 bg-slate-800 rounded w-1/2"></div></div>)}
+            </div>
+          ) : viewMode === 'grid' ? (
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+              {filteredDocs.map(doc => {
+                const FileIcon = getFileIcon(doc.type);
+                return (
+                  <div key={doc.id} className="card p-4 cursor-pointer hover:border-amber-500/50 transition-all" onClick={() => setSelectedDoc(doc)}>
+                    <div className="flex items-start justify-between mb-3">
+                      <div className={clsx('w-12 h-12 rounded-lg flex items-center justify-center', getTypeColor(doc.type))}><FileIcon className="w-6 h-6" /></div>
+                      <span className="badge bg-slate-700 text-slate-300 text-xs">{doc.category}</span>
+                    </div>
+                    <h4 className="font-medium text-slate-200 text-sm mb-1 truncate" title={doc.name}>{doc.name}</h4>
+                    <p className="text-xs text-slate-500 mb-2">{doc.type} - {doc.size} - v{doc.version}</p>
+                    <div className="flex items-center justify-between">
+                      <span className={clsx('text-xs', ACCESS_LEVELS.find(al => al.value === doc.access_level)?.color || 'text-slate-500')}>{doc.access_level}</span>
+                      <div className="flex gap-1">
+                        <button onClick={(e) => { e.stopPropagation(); handlePreview(doc); }} className="p-1.5 hover:bg-slate-700 rounded text-slate-400"><Eye className="w-3.5 h-3.5" /></button>
+                        <button onClick={(e) => { e.stopPropagation(); handleDownload(doc); }} className="p-1.5 hover:bg-slate-700 rounded text-slate-400"><Download className="w-3.5 h-3.5" /></button>
+                      </div>
+                    </div>
                   </div>
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      ) : (
-        <div className="card overflow-hidden">
-          <table className="data-table">
-            <thead><tr><th>Name</th><th>Type</th><th>Category</th><th>Access</th><th>Version</th><th>Size</th><th className="w-24">Actions</th></tr></thead>
-            <tbody>
-              {filteredDocs.map(doc => (
-                <tr key={doc.id} className="cursor-pointer" onClick={() => setSelectedDoc(doc)}>
-                  <td><div className="flex items-center gap-2">{React.createElement(getFileIcon(doc.type), { className: 'w-4 h-4 text-slate-400' })}<span className="truncate max-w-xs">{doc.name}</span></div></td>
-                  <td>{doc.type}</td><td><span className="badge bg-slate-700 text-slate-300 text-xs">{doc.category}</span></td>
-                  <td><span className={clsx('text-xs', ACCESS_LEVELS.find(al => al.value === doc.access_level)?.color)}>{doc.access_level}</span></td>
-                  <td>v{doc.version}</td><td>{doc.size}</td>
-                  <td><div className="flex gap-1">
-                    <button onClick={(e) => { e.stopPropagation(); handlePreview(doc); }} className="p-1.5 hover:bg-slate-700 rounded"><Eye className="w-4 h-4" /></button>
-                    <button onClick={(e) => { e.stopPropagation(); handleDownload(doc); }} className="p-1.5 hover:bg-slate-700 rounded"><Download className="w-4 h-4" /></button>
-                    <button onClick={(e) => { e.stopPropagation(); setShowVersionHistory(true); setSelectedDoc(doc); }} className="p-1.5 hover:bg-slate-700 rounded"><History className="w-4 h-4" /></button>
-                  </div></td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+                );
+              })}
+            </div>
+          ) : (
+            <div className="card overflow-hidden">
+              <table className="data-table">
+                <thead><tr><th>Name</th><th>Type</th><th>Category</th><th>Access</th><th>Version</th><th>Size</th><th className="w-24">Actions</th></tr></thead>
+                <tbody>
+                  {filteredDocs.map(doc => (
+                    <tr key={doc.id} className="cursor-pointer" onClick={() => setSelectedDoc(doc)}>
+                      <td><div className="flex items-center gap-2">{React.createElement(getFileIcon(doc.type), { className: 'w-4 h-4 text-slate-400' })}<span className="truncate max-w-xs">{doc.name}</span></div></td>
+                      <td>{doc.type}</td><td><span className="badge bg-slate-700 text-slate-300 text-xs">{doc.category}</span></td>
+                      <td><span className={clsx('text-xs', ACCESS_LEVELS.find(al => al.value === doc.access_level)?.color)}>{doc.access_level}</span></td>
+                      <td>v{doc.version}</td><td>{doc.size}</td>
+                      <td><div className="flex gap-1">
+                        <button onClick={(e) => { e.stopPropagation(); handlePreview(doc); }} className="p-1.5 hover:bg-slate-700 rounded"><Eye className="w-4 h-4" /></button>
+                        <button onClick={(e) => { e.stopPropagation(); handleDownload(doc); }} className="p-1.5 hover:bg-slate-700 rounded"><Download className="w-4 h-4" /></button>
+                        <button onClick={(e) => { e.stopPropagation(); setShowVersionHistory(true); setSelectedDoc(doc); }} className="p-1.5 hover:bg-slate-700 rounded"><History className="w-4 h-4" /></button>
+                      </div></td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+
+          {filteredDocs.length === 0 && !loading && (
+            <EmptyState
+              icon={FolderOpen}
+              title="No documents found"
+              description="Upload your first document to get started."
+            />
+          )}
         </div>
       )}
 
-      {filteredDocs.length === 0 && !loading && (
-        <EmptyState
-          icon={FolderOpen}
-          title="No documents found"
-          description="Upload your first document to get started."
-        />
+      {activeTab === 'transmittals' && (
+        <div className="space-y-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="card p-4">
+              <p className="text-sm text-slate-400">Total Transmittals</p>
+              <p className="text-3xl font-bold text-white mt-1">{transmittals.length}</p>
+            </div>
+            <div className="card p-4">
+              <p className="text-sm text-slate-400">Awaiting Response</p>
+              <p className="text-3xl font-bold text-amber-400 mt-1">{transmittals.filter(t => t.status === 'Sent').length}</p>
+            </div>
+          </div>
+          <div className="card overflow-hidden">
+            <table className="data-table">
+              <thead><tr><th>Transmittal #</th><th>Date</th><th>To</th><th>Subject</th><th># Docs</th><th>Purpose</th><th>Status</th><th className="w-24">Action</th></tr></thead>
+              <tbody>
+                {transmittals.map(t => (
+                  <tr key={t.id}>
+                    <td className="font-medium text-amber-400">{t.number}</td>
+                    <td className="text-sm text-slate-400">{new Date(t.date).toLocaleDateString('en-GB')}</td>
+                    <td className="text-sm">{t.to.length} recipient{t.to.length !== 1 ? 's' : ''}</td>
+                    <td className="truncate">{t.subject}</td>
+                    <td>{t.documents.length}</td>
+                    <td><span className="badge bg-slate-700 text-slate-300 text-xs">{t.purpose}</span></td>
+                    <td><span className={clsx('badge text-xs', t.status === 'Sent' ? 'bg-blue-500/20 text-blue-400' : 'bg-green-500/20 text-green-400')}>{t.status}</span></td>
+                    <td><button onClick={() => setSelectedDoc(null)} className="p-1.5 hover:bg-slate-700 rounded"><Eye className="w-4 h-4" /></button></td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+
+      {activeTab === 'controlled' && (
+        <div className="space-y-4">
+          <div className="flex gap-3">
+            <select value={controlledFilter} onChange={e => setControlledFilter(e.target.value)} className="input w-auto">
+              <option value="ALL">All Documents</option>
+              <option value="Current">Current</option>
+              <option value="Superseded">Superseded</option>
+              <option value="Obsolete">Obsolete</option>
+            </select>
+          </div>
+          <div className="card overflow-hidden">
+            <table className="data-table">
+              <thead><tr><th>Document #</th><th>Title</th><th>Revision</th><th>Date Issued</th><th>Author</th><th>Status</th><th>Purpose</th><th className="w-8"></th></tr></thead>
+              <tbody>
+                {controlledDocuments.filter(d => controlledFilter === 'ALL' || d.status === controlledFilter).map(doc => (
+                  <React.Fragment key={doc.id}>
+                    <tr className="cursor-pointer hover:bg-slate-800" onClick={() => setExpandedControlled(expandedControlled === doc.id ? null : doc.id)}>
+                      <td className="font-medium text-amber-400">{doc.number}</td>
+                      <td>{doc.title}</td>
+                      <td className="text-sm font-mono text-slate-400">{doc.currentRevision}</td>
+                      <td className="text-sm text-slate-400">{new Date(doc.dateIssued).toLocaleDateString('en-GB')}</td>
+                      <td className="text-sm">{doc.author}</td>
+                      <td><span className={clsx('badge text-xs', doc.status === 'Current' ? 'bg-green-500/20 text-green-400' : doc.status === 'Superseded' ? 'bg-yellow-500/20 text-yellow-400' : 'bg-red-500/20 text-red-400')}>{doc.status}</span></td>
+                      <td className="text-sm text-slate-400">{doc.purpose}</td>
+                      <td><ChevronDown className={clsx('w-4 h-4 transition-transform', expandedControlled === doc.id && 'rotate-180')} /></td>
+                    </tr>
+                    {expandedControlled === doc.id && (
+                      <tr>
+                        <td colSpan={8} className="bg-slate-800/50 p-4">
+                          <div className="space-y-2">
+                            <p className="text-sm font-medium text-slate-300">Revision History</p>
+                            {doc.revisionHistory.map((rev, idx) => (
+                              <div key={idx} className="text-sm text-slate-400 pl-4 border-l border-slate-600">
+                                <p className="font-mono text-amber-400">{rev.revision}</p>
+                                <p className="text-xs text-slate-500">{new Date(rev.date).toLocaleDateString('en-GB')} — {rev.changes}</p>
+                              </div>
+                            ))}
+                          </div>
+                        </td>
+                      </tr>
+                    )}
+                  </React.Fragment>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+
+      {activeTab === 'analytics' && (
+        <div className="space-y-6">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <div className="card p-4">
+              <p className="text-sm text-slate-400">Total Documents</p>
+              <p className="text-3xl font-bold text-white mt-1">{documents.length}</p>
+            </div>
+            <div className="card p-4">
+              <p className="text-sm text-slate-400">Uploaded This Month</p>
+              <p className="text-3xl font-bold text-blue-400 mt-1">12</p>
+            </div>
+            <div className="card p-4">
+              <p className="text-sm text-slate-400">Pending Approval</p>
+              <p className="text-3xl font-bold text-amber-400 mt-1">{pendingApproval}</p>
+            </div>
+            <div className="card p-4">
+              <p className="text-sm text-slate-400">Expiring Soon</p>
+              <p className="text-3xl font-bold text-red-400 mt-1">{expiringDocs}</p>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <div className="card p-6">
+              <h3 className="font-medium text-white mb-4">Documents by Category</h3>
+              <ResponsiveContainer width="100%" height={300}>
+                <BarChart data={analyticsData.byCategory}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#475569" />
+                  <XAxis dataKey="name" stroke="#94a3b8" />
+                  <YAxis stroke="#94a3b8" />
+                  <Tooltip contentStyle={{ backgroundColor: '#1e293b', border: '1px solid #475569', color: '#fff' }} />
+                  <Bar dataKey="value" fill="#f59e0b" />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+
+            <div className="card p-6">
+              <h3 className="font-medium text-white mb-4">Documents by Type</h3>
+              <ResponsiveContainer width="100%" height={300}>
+                <PieChart>
+                  <Pie data={analyticsData.byType} cx="50%" cy="50%" labelLine={false} label={({ name, value }) => `${name}: ${value}`} outerRadius={80} fill="#8884d8" dataKey="value">
+                    {analyticsData.byType.map((entry, index) => <Cell key={`cell-${index}`} fill={entry.fill} />)}
+                  </Pie>
+                  <Tooltip contentStyle={{ backgroundColor: '#1e293b', border: '1px solid #475569', color: '#fff' }} />
+                </PieChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
+
+          <div className="card p-6">
+            <h3 className="font-medium text-white mb-4">Upload Trend (8 Weeks)</h3>
+            <ResponsiveContainer width="100%" height={300}>
+              <LineChart data={analyticsData.uploadTrend}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#475569" />
+                <XAxis dataKey="week" stroke="#94a3b8" />
+                <YAxis stroke="#94a3b8" />
+                <Tooltip contentStyle={{ backgroundColor: '#1e293b', border: '1px solid #475569', color: '#fff' }} />
+                <Legend />
+                <Line type="monotone" dataKey="uploads" stroke="#f59e0b" strokeWidth={2} dot={{ fill: '#f59e0b', r: 4 }} />
+              </LineChart>
+            </ResponsiveContainer>
+          </div>
+
+          <div className="card overflow-hidden">
+            <div className="p-6 border-b border-slate-800">
+              <h3 className="font-medium text-white">Top Contributors</h3>
+            </div>
+            <table className="data-table">
+              <thead><tr><th>Contributor</th><th className="text-right">Documents Uploaded</th><th className="text-right">% of Total</th></tr></thead>
+              <tbody>
+                {analyticsData.topContributors.map((contributor, idx) => {
+                  const percentage = ((contributor.uploads / documents.length) * 100).toFixed(0);
+                  return (
+                    <tr key={idx}>
+                      <td className="flex items-center gap-2"><div className="w-8 h-8 bg-amber-500/20 rounded-full flex items-center justify-center text-amber-400 text-xs font-bold">{contributor.name.charAt(0)}</div>{contributor.name}</td>
+                      <td className="text-right font-medium text-amber-400">{contributor.uploads}</td>
+                      <td className="text-right text-slate-400">{percentage}%</td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        </div>
       )}
 
       {selectedDoc && (
@@ -573,6 +899,59 @@ export function Documents() {
                   {existingSignatures.map(sig => <SignatureDisplay key={sig.id} signature={sig} compact />)}
                 </div>
               )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showTransmittalModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div className="dialog-overlay absolute inset-0" onClick={() => setShowTransmittalModal(false)} />
+          <div className="dialog-content p-6 w-full max-w-2xl relative z-10 max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between mb-6"><h3 className="text-lg font-display">Create Transmittal</h3><button onClick={() => setShowTransmittalModal(false)} className="p-2 hover:bg-slate-700 rounded"><X className="w-5 h-5" /></button></div>
+            <div className="space-y-4">
+              <div>
+                <label className="text-sm text-slate-400 mb-1 block">Recipients (comma-separated)</label>
+                <input type="text" placeholder="client@example.com, architect@example.com" value={transmittalForm.recipients} onChange={e => setTransmittalForm({...transmittalForm, recipients: e.target.value})} className="input w-full" />
+              </div>
+              <div>
+                <label className="text-sm text-slate-400 mb-1 block">Subject</label>
+                <input type="text" placeholder="Structural drawings for review" value={transmittalForm.subject} onChange={e => setTransmittalForm({...transmittalForm, subject: e.target.value})} className="input w-full" />
+              </div>
+              <div>
+                <label className="text-sm text-slate-400 mb-1 block">Purpose</label>
+                <select value={transmittalForm.purpose} onChange={e => setTransmittalForm({...transmittalForm, purpose: e.target.value as any})} className="input w-full">
+                  <option value="For Information">For Information</option>
+                  <option value="For Approval">For Approval</option>
+                  <option value="For Construction">For Construction</option>
+                </select>
+              </div>
+              <div>
+                <label className="text-sm text-slate-400 mb-2 block">Select Documents</label>
+                <div className="space-y-2 max-h-48 overflow-y-auto bg-slate-800 rounded p-3">
+                  {documents.slice(0, 8).map(doc => (
+                    <label key={doc.id} className="flex items-center gap-2 cursor-pointer p-2 hover:bg-slate-700 rounded">
+                      <input
+                        type="checkbox"
+                        checked={transmittalForm.selectedDocs.includes(doc.id)}
+                        onChange={e => {
+                          if (e.target.checked) {
+                            setTransmittalForm({...transmittalForm, selectedDocs: [...transmittalForm.selectedDocs, doc.id]});
+                          } else {
+                            setTransmittalForm({...transmittalForm, selectedDocs: transmittalForm.selectedDocs.filter(id => id !== doc.id)});
+                          }
+                        }}
+                        className="w-4 h-4"
+                      />
+                      <span className="text-sm">{doc.name}</span>
+                    </label>
+                  ))}
+                </div>
+              </div>
+            </div>
+            <div className="flex justify-end gap-3 mt-6">
+              <button onClick={() => setShowTransmittalModal(false)} className="btn-secondary">Cancel</button>
+              <button onClick={() => handleCreateTransmittal()} disabled={!transmittalForm.recipients || !transmittalForm.subject || transmittalForm.selectedDocs.length === 0} className="btn-primary disabled:opacity-50 disabled:cursor-not-allowed">Send Transmittal</button>
             </div>
           </div>
         </div>

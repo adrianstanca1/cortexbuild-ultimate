@@ -1,5 +1,6 @@
 import { useState, useRef } from 'react';
-import { Plus, GraduationCap, Award, AlertCircle, Trash2, X, Edit, Download } from 'lucide-react';
+import { Plus, GraduationCap, Award, AlertCircle, Trash2, X, Edit, Download, BarChart3, Users, CheckCircle2, TrendingUp, Bell, FileDown } from 'lucide-react';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { EmptyState } from '../ui/EmptyState';
 import { ModuleBreadcrumbs } from '../ui/Breadcrumbs';
 import { DataImporter, ExportButton, ColumnMapping } from '../ui/DataImportExport';
@@ -25,6 +26,35 @@ interface TrainingRecord {
   cert_name?: string;
 }
 
+interface CourseRecord {
+  id: string;
+  title: string;
+  provider: string;
+  duration: number;
+  mandatory: boolean;
+  completionRate: number;
+}
+
+interface TeamMember {
+  id: string;
+  name: string;
+  role: string;
+  requiredCourses: number;
+  completed: number;
+  compliancePercent: number;
+  lastActivity: string;
+  department: string;
+}
+
+interface ExpiringCert {
+  id: string;
+  name: string;
+  holder: string;
+  expiryDate: string;
+  daysUntilExpiry: number;
+  status: 'critical'|'warning'|'ok';
+}
+
 export default function Training() {
   const { data: training = [] } = useTraining.useList();
   const createMutation = useTraining.useCreate();
@@ -37,12 +67,45 @@ export default function Training() {
   const [_selectedId, setSelectedId] = useState<string | null>(null);
   const _fileInputRef = useRef<HTMLInputElement>(null);
   const [showCreateModal, setShowCreateModal] = useState(false);
-  const [activeTab, setActiveTab] = useState<'register' | 'schedule' | 'matrix' | 'providers' | 'reports'>('register');
+  const [activeTab, setActiveTab] = useState<'courses' | 'learning' | 'team' | 'compliance'>('courses');
   const [form, setForm] = useState({ title: '', provider: '', type: 'formal_course', status: 'scheduled', scheduledDate: '', completedDate: '', duration: '', location: '', certification: 'no', certName: '', attendees: '' });
   const [editItem, setEditItem] = useState<(TrainingRecord & { scheduledDate?: string; completedDate?: string }) | null>(null);
   const [showBulkImport, setShowBulkImport] = useState(false);
+  const [courseSearch, setCourseSearch] = useState('');
+  const [teamDeptFilter, setTeamDeptFilter] = useState('');
 
   const { selectedIds, clearSelection } = useBulkSelection();
+
+  const COURSES: CourseRecord[] = [
+    { id:'c1', title:'CSCS Health & Safety', provider:'CITB', duration:5, mandatory:true, completionRate:92 },
+    { id:'c2', title:'Manual Handling', provider:'Red Cross', duration:3, mandatory:true, completionRate:87 },
+    { id:'c3', title:'First Aid Level 3', provider:'Red Cross', duration:8, mandatory:false, completionRate:65 },
+    { id:'c4', title:'IPAF 3A+3B', provider:'IPAF', duration:4, mandatory:true, completionRate:78 },
+    { id:'c5', title:'Site Safety Induction', provider:'CortexBuild', duration:2, mandatory:true, completionRate:99 },
+    { id:'c6', title:'Confined Spaces', provider:'CITB', duration:6, mandatory:false, completionRate:45 },
+  ];
+
+  const TEAM_MEMBERS: TeamMember[] = [
+    { id:'m1', name:'John Smith', role:'Site Manager', requiredCourses:6, completed:5, compliancePercent:83, lastActivity:'2026-03-18', department:'Operations' },
+    { id:'m2', name:'Sarah Johnson', role:'Health & Safety', requiredCourses:6, completed:6, compliancePercent:100, lastActivity:'2026-03-20', department:'Safety' },
+    { id:'m3', name:'Mike Davis', role:'Plant Operator', requiredCourses:4, completed:2, compliancePercent:50, lastActivity:'2026-03-10', department:'Plant' },
+    { id:'m4', name:'Emma Wilson', role:'Site Engineer', requiredCourses:6, completed:4, compliancePercent:67, lastActivity:'2026-03-15', department:'Engineering' },
+    { id:'m5', name:'David Brown', role:'Foreman', requiredCourses:5, completed:5, compliancePercent:100, lastActivity:'2026-03-20', department:'Operations' },
+  ];
+
+  const EXPIRING_CERTS: ExpiringCert[] = [
+    { id:'ex1', name:'CSCS Card', holder:'Mike Davis', expiryDate:'2026-04-15', daysUntilExpiry:19, status:'critical' },
+    { id:'ex2', name:'First Aid', holder:'John Smith', expiryDate:'2026-05-10', daysUntilExpiry:43, status:'warning' },
+    { id:'ex3', name:'IPAF 3A+3B', holder:'Emma Wilson', expiryDate:'2026-06-30', daysUntilExpiry:64, status:'ok' },
+  ];
+
+  const COMPLIANCE_DATA = [
+    { department:'Operations', compliance:89 },
+    { department:'Engineering', compliance:76 },
+    { department:'Safety', compliance:98 },
+    { department:'Plant', compliance:62 },
+    { department:'Admin', compliance:95 },
+  ];
 
   const trainingData = training as unknown as TrainingRecord[];
 
@@ -162,233 +225,6 @@ export default function Training() {
     toast.success(`${data.length - failed} training record(s) imported`);
   }
 
-  // Training Register Tab
-  const registerTab = (
-    <div className="space-y-4">
-      <input type="text" placeholder="Search training records..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="w-full px-4 py-2 input input-bordered text-white mb-4" />
-      {filtered.length === 0 ? (
-        <EmptyState icon={GraduationCap} title="No training records found" description="Add training records to track workforce qualifications." />
-      ) : (
-        <div className="cb-table-scroll touch-pan-x">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b border-gray-700">
-                <th className="px-4 py-2 text-left text-gray-400 font-semibold">Title</th>
-                <th className="px-4 py-2 text-left text-gray-400 font-semibold">Type</th>
-                <th className="px-4 py-2 text-left text-gray-400 font-semibold">Provider</th>
-                <th className="px-4 py-2 text-left text-gray-400 font-semibold">Attendees</th>
-                <th className="px-4 py-2 text-left text-gray-400 font-semibold">Date</th>
-                <th className="px-4 py-2 text-left text-gray-400 font-semibold">Duration</th>
-                <th className="px-4 py-2 text-left text-gray-400 font-semibold">Status</th>
-                <th className="px-4 py-2 text-left text-gray-400 font-semibold">Certification</th>
-                <th className="px-4 py-2 text-right text-gray-400 font-semibold">Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filtered.map((t: TrainingRecord) => (
-                <tr key={t.id} className="border-b border-gray-700 hover:bg-gray-800/50">
-                  <td className="px-4 py-3 text-white font-medium">{t.title}</td>
-                  <td className="px-4 py-3 text-gray-300">{t.type.replace(/_/g, ' ')}</td>
-                  <td className="px-4 py-3 text-gray-300">{t.provider}</td>
-                  <td className="px-4 py-3 text-gray-300">{Array.isArray(t.attendees) ? t.attendees.length : 0}</td>
-                  <td className="px-4 py-3 text-gray-300">{t.completed_date || t.scheduled_date || 'N/A'}</td>
-                  <td className="px-4 py-3 text-gray-300">{t.duration ? `${t.duration}h` : 'N/A'}</td>
-                  <td className="px-4 py-3"><span className={`px-2 py-1 rounded text-xs font-medium ${t.status === 'completed' ? 'bg-green-500/10 text-green-400' : t.status === 'scheduled' ? 'bg-amber-500/10 text-amber-400' : 'bg-gray-500/10 text-gray-400'}`}>{t.status}</span></td>
-                  <td className="px-4 py-3"><span className={`px-2 py-1 rounded text-xs font-medium ${t.certification === 'yes' ? 'bg-green-500/10 text-green-400' : 'bg-gray-500/10 text-gray-400'}`}>{t.certification === 'yes' ? 'Yes' : 'No'}</span></td>
-                  <td className="px-4 py-3 text-right flex items-center justify-end gap-2">
-                    <button type="button" onClick={() => setEditItem({ ...t, scheduledDate: t.scheduled_date || '', completedDate: t.completed_date || '' })} className="p-1 hover:bg-gray-700 rounded"><Edit size={16} className="text-gray-400" /></button>
-                    <button type="button" onClick={() => handleDelete(String(t.id))} className="p-1 hover:bg-red-900/30 rounded"><Trash2 size={16} className="text-red-400" /></button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      )}
-    </div>
-  );
-
-  // Schedule Tab (Timeline view)
-  const scheduleTab = (
-    <div className="space-y-4">
-      {(() => {
-        const sorted = [...trainingData].sort((a: TrainingRecord, b: TrainingRecord) => new Date(a.scheduled_date || a.completed_date || 0).getTime() - new Date(b.scheduled_date || b.completed_date || 0).getTime());
-        const grouped = new Map<string, TrainingRecord[]>();
-
-        sorted.forEach(t => {
-          const dateStr = t.scheduled_date || t.completed_date || '';
-          if (!dateStr) return;
-          const date = new Date(dateStr);
-          const weekStart = new Date(date);
-          weekStart.setDate(weekStart.getDate() - weekStart.getDay());
-          const weekKey = weekStart.toLocaleDateString('en-GB', { month: 'short', day: 'numeric', year: 'numeric' });
-          if (!grouped.has(weekKey)) grouped.set(weekKey, []);
-          grouped.get(weekKey)!.push(t);
-        });
-
-        return Array.from(grouped.entries()).map(([week, items]) => (
-          <div key={week}>
-            <h3 className="text-gray-300 font-semibold mb-3 text-sm">{week}</h3>
-            <div className="space-y-2 ml-4 border-l-2 border-amber-500/30 pl-4">
-              {items.map(t => (
-                <div key={t.id} className="card p-3 border border-gray-700">
-                  <div className="flex items-start justify-between">
-                    <div className="flex-1">
-                      <p className="text-white font-semibold">{t.title}</p>
-                      <p className="text-gray-400 text-sm">{t.provider} - {t.scheduled_date || t.completed_date}</p>
-                      <div className="flex gap-2 mt-2">
-                        <span className={`px-2 py-1 rounded text-xs font-medium ${t.status === 'completed' ? 'bg-green-500/10 text-green-400' : 'bg-amber-500/10 text-amber-400'}`}>{t.status}</span>
-                        {Array.isArray(t.attendees) && (
-                          <span className="px-2 py-1 rounded text-xs font-medium bg-blue-500/10 text-blue-400">{t.attendees.length} attendees</span>
-                        )}
-                      </div>
-                    </div>
-                    {t.status === 'completed' ? (
-                      <button type="button" className="px-3 py-1 bg-green-500/10 text-green-400 text-xs rounded font-medium">Completed</button>
-                    ) : (
-                      <button type="button" className="px-3 py-1 bg-amber-500/10 text-amber-400 text-xs rounded font-medium">Mark Complete</button>
-                    )}
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        ));
-      })()}
-    </div>
-  );
-
-  // Matrix Tab (Compliance matrix)
-  const matrixTab = (
-    <div className="space-y-4">
-      <div className="cb-table-scroll touch-pan-x">
-        <table className="w-full text-xs">
-          <thead>
-            <tr className="border-b border-gray-700 bg-gray-800/50">
-              <th className="px-4 py-2 text-left text-gray-400 font-semibold">Team Member</th>
-              <th className="px-4 py-2 text-center text-gray-400 font-semibold">Manual Handling</th>
-              <th className="px-4 py-2 text-center text-gray-400 font-semibold">First Aid</th>
-              <th className="px-4 py-2 text-center text-gray-400 font-semibold">CSCS</th>
-              <th className="px-4 py-2 text-center text-gray-400 font-semibold">Site Induction</th>
-              <th className="px-4 py-2 text-center text-gray-400 font-semibold">Compliance %</th>
-            </tr>
-          </thead>
-          <tbody>
-            {['John Smith', 'Sarah Johnson', 'Mike Davis', 'Emma Wilson'].map(name => (
-              <tr key={name} className="border-b border-gray-700 hover:bg-gray-800/50">
-                <td className="px-4 py-2 text-white font-medium">{name}</td>
-                <td className="px-4 py-2 text-center"><span className="inline-block px-2 py-1 bg-green-500/10 text-green-400 rounded text-xs">✓</span></td>
-                <td className="px-4 py-2 text-center"><span className="inline-block px-2 py-1 bg-amber-500/10 text-amber-400 rounded text-xs">~</span></td>
-                <td className="px-4 py-2 text-center"><span className="inline-block px-2 py-1 bg-green-500/10 text-green-400 rounded text-xs">✓</span></td>
-                <td className="px-4 py-2 text-center"><span className="inline-block px-2 py-1 bg-green-500/10 text-green-400 rounded text-xs">✓</span></td>
-                <td className="px-4 py-2 text-center text-white font-semibold">75%</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-    </div>
-  );
-
-  // Providers Tab
-  const providers = [
-    { id: '1', name: 'CITB', accreditation: 'CITB Approved', contact: 'info@citb.co.uk', courses: 'SMSTS, SSSTS, Manual Handling', cost: '£500-£2000' },
-    { id: '2', name: 'Red Cross', accreditation: 'HSE Approved', contact: 'training@redcross.org', courses: 'First Aid', cost: '£50-£150' },
-    { id: '3', name: 'IPAF', accreditation: 'IPAF Certified', contact: 'courses@ipaf.org', courses: 'IPAF 3a+3b, IPAF 1a+1b', cost: '£400-£600' },
-  ];
-
-  const providersTab = (
-    <div className="space-y-4">
-      <button type="button" className="flex items-center gap-2 px-4 py-2 bg-orange-500 hover:bg-orange-600 text-white rounded-lg font-semibold">
-        <Plus size={16} /> Add Provider
-      </button>
-      {providers.map(p => (
-        <div key={p.id} className="card p-4 border border-gray-700">
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <p className="text-gray-400 text-xs">Provider Name</p>
-              <p className="text-white font-semibold">{p.name}</p>
-            </div>
-            <div>
-              <p className="text-gray-400 text-xs">Accreditation</p>
-              <p className="text-white font-semibold">{p.accreditation}</p>
-            </div>
-            <div>
-              <p className="text-gray-400 text-xs">Contact</p>
-              <p className="text-gray-300 text-sm">{p.contact}</p>
-            </div>
-            <div>
-              <p className="text-gray-400 text-xs">Courses Offered</p>
-              <p className="text-gray-300 text-sm">{p.courses}</p>
-            </div>
-            <div className="col-span-2">
-              <p className="text-gray-400 text-xs">Cost Range</p>
-              <p className="text-white font-semibold">{p.cost}</p>
-            </div>
-          </div>
-        </div>
-      ))}
-    </div>
-  );
-
-  // Reports Tab
-  const reportsTab = (
-    <div className="space-y-6">
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div className="card p-4"><div className="text-gray-400 text-xs mb-2">Total Training Hours</div><div className="text-3xl font-display text-white">{Math.round(trainingData.reduce((sum: number, t: TrainingRecord) => sum + (t.duration || 0), 0))}</div></div>
-        <div className="card p-4"><div className="text-gray-400 text-xs mb-2">Completion Rate</div><div className="text-3xl font-display text-green-400">{Math.round((completedCount / totalCount) * 100)}%</div></div>
-        <div className="card p-4"><div className="text-gray-400 text-xs mb-2">Scheduled</div><div className="text-3xl font-display text-amber-400">{scheduledCount}</div></div>
-      </div>
-
-      <div className="card p-6">
-        <h3 className="text-white font-semibold mb-4">Training by Type</h3>
-        <div className="space-y-3">
-          {(() => {
-            const types = new Map<string, number>();
-            trainingData.forEach(t => {
-              const typeKey = (t.type || 'unknown').replace(/_/g, ' ');
-              types.set(typeKey, (types.get(typeKey) || 0) + 1);
-            });
-            const total = trainingData.length;
-            return Array.from(types.entries())
-              .sort((a, b) => b[1] - a[1])
-              .map(([type, count]) => {
-                const percentage = Math.round((count / total) * 100);
-                return (
-                  <div key={type}>
-                    <div className="flex justify-between items-center mb-1">
-                      <span className="text-gray-300 text-sm">{type}</span>
-                      <span className="text-gray-400 text-xs">{count} ({percentage}%)</span>
-                    </div>
-                    <div className="w-full bg-gray-700 rounded-full h-2">
-                      <div className="bg-amber-500 h-2 rounded-full" style={{ width: `${percentage}%` }}></div>
-                    </div>
-                  </div>
-                );
-              });
-          })()}
-        </div>
-      </div>
-
-      <div className="card p-6">
-        <h3 className="text-white font-semibold mb-4">Budget Status</h3>
-        <div className="space-y-3">
-          <div className="flex items-center justify-between p-3 bg-gray-800/50 rounded">
-            <span className="text-gray-300">Budget Allocated</span>
-            <span className="text-white font-semibold">£15,000</span>
-          </div>
-          <div className="flex items-center justify-between p-3 bg-gray-800/50 rounded">
-            <span className="text-gray-300">Spent to Date</span>
-            <span className="text-amber-400 font-semibold">£8,450</span>
-          </div>
-          <div className="w-full bg-gray-700 rounded h-3 mt-4">
-            <div className="bg-amber-500 h-3 rounded" style={{ width: '56%' }}></div>
-          </div>
-          <p className="text-gray-400 text-xs">Remaining: £6,550 (44%)</p>
-        </div>
-      </div>
-    </div>
-  );
 
   return (
     <>
@@ -410,16 +246,9 @@ export default function Training() {
           </div>
         </div>
 
-        {activeTab === 'register' && (
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div className="card p-4"><div className="flex items-center gap-3"><div className="w-10 h-10 rounded-lg bg-green-500/10 flex items-center justify-center"><Award className="text-green-400" size={20} /></div><div><p className="text-gray-400 text-xs">Completed</p><p className="text-2xl font-display text-green-400">{completedCount}</p></div></div></div>
-            <div className="card p-4"><div className="flex items-center gap-3"><div className="w-10 h-10 rounded-lg bg-amber-500/10 flex items-center justify-center"><AlertCircle className="text-amber-400" size={20} /></div><div><p className="text-gray-400 text-xs">Scheduled</p><p className="text-2xl font-display text-amber-400">{scheduledCount}</p></div></div></div>
-            <div className="card p-4"><div className="flex items-center gap-3"><div className="w-10 h-10 rounded-lg bg-blue-500/10 flex items-center justify-center"><GraduationCap className="text-blue-400" size={20} /></div><div><p className="text-gray-400 text-xs">Total Records</p><p className="text-2xl font-display text-blue-400">{totalCount}</p></div></div></div>
-          </div>
-        )}
 
         <div className="flex border-b border-gray-700">
-          {(['register', 'schedule', 'matrix', 'providers', 'reports'] as const).map(tab => (
+          {(['courses', 'learning', 'team', 'compliance'] as const).map(tab => (
             <button
               key={tab}
               onClick={() => setActiveTab(tab)}
@@ -429,21 +258,257 @@ export default function Training() {
                   : 'border-transparent text-gray-400 hover:text-gray-300'
               }`}
             >
-              {tab === 'register' && 'Training Register'}
-              {tab === 'schedule' && 'Schedule'}
-              {tab === 'matrix' && 'Compliance Matrix'}
-              {tab === 'providers' && 'Providers'}
-              {tab === 'reports' && 'Reports'}
+              {tab === 'courses' && 'Course Catalog'}
+              {tab === 'learning' && 'My Learning'}
+              {tab === 'team' && 'Team Progress'}
+              {tab === 'compliance' && 'Compliance'}
             </button>
           ))}
         </div>
 
         <div className="card p-6">
-          {activeTab === 'register' && registerTab}
-          {activeTab === 'schedule' && scheduleTab}
-          {activeTab === 'matrix' && matrixTab}
-          {activeTab === 'providers' && providersTab}
-          {activeTab === 'reports' && reportsTab}
+          {activeTab === 'courses' && (
+            <div className="space-y-6">
+              <div>
+                <input
+                  type="text"
+                  placeholder="Search courses…"
+                  value={courseSearch}
+                  onChange={(e) => setCourseSearch(e.target.value.toLowerCase())}
+                  className="w-full px-4 py-2 input input-bordered text-white mb-4"
+                />
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {COURSES.filter(c => c.title.toLowerCase().includes(courseSearch) || c.provider.toLowerCase().includes(courseSearch)).map(course => (
+                  <div key={course.id} className="card bg-gray-800 border border-gray-700 p-4">
+                    <div className="flex items-start justify-between mb-3">
+                      <h4 className="text-white font-semibold flex-1">{course.title}</h4>
+                      {course.mandatory && <span className="text-xs px-2 py-1 bg-red-900/40 text-red-400 rounded font-medium">Mandatory</span>}
+                    </div>
+                    <p className="text-gray-400 text-sm mb-3">{course.provider}</p>
+                    <div className="mb-4">
+                      <div className="flex justify-between text-xs text-gray-400 mb-1">
+                        <span>Completion Rate</span>
+                        <span>{course.completionRate}%</span>
+                      </div>
+                      <div className="w-full bg-gray-700 rounded-full h-2">
+                        <div className="bg-amber-500 h-2 rounded-full" style={{width:`${course.completionRate}%`}}></div>
+                      </div>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs text-gray-400">{course.duration}h duration</span>
+                      <button type="button" onClick={() => toast.success(`Enrolled in ${course.title}`)} className="px-3 py-1 bg-orange-500 hover:bg-orange-600 text-white rounded text-xs font-medium transition-colors">
+                        Enrol
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {activeTab === 'learning' && (
+            <div className="space-y-6">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="card p-4 bg-gradient-to-br from-blue-900/30 to-blue-900/10 border border-blue-700">
+                  <div className="flex items-center gap-3">
+                    <TrendingUp className="w-5 h-5 text-blue-400"/>
+                    <div>
+                      <p className="text-gray-400 text-xs">Learning Streak</p>
+                      <p className="text-2xl font-display text-blue-400">12 days</p>
+                    </div>
+                  </div>
+                </div>
+                <div className="card p-4 bg-gradient-to-br from-green-900/30 to-green-900/10 border border-green-700">
+                  <div className="flex items-center gap-3">
+                    <CheckCircle2 className="w-5 h-5 text-green-400"/>
+                    <div>
+                      <p className="text-gray-400 text-xs">Courses Completed</p>
+                      <p className="text-2xl font-display text-green-400">8</p>
+                    </div>
+                  </div>
+                </div>
+                <div className="card p-4 bg-gradient-to-br from-purple-900/30 to-purple-900/10 border border-purple-700">
+                  <div className="flex items-center gap-3">
+                    <Award className="w-5 h-5 text-purple-400"/>
+                    <div>
+                      <p className="text-gray-400 text-xs">Certificates Earned</p>
+                      <p className="text-2xl font-display text-purple-400">5</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div>
+                <h4 className="text-white font-semibold mb-4">Enrolled Courses</h4>
+                <div className="space-y-3">
+                  {[
+                    { title:'CSCS Health & Safety', progress:100, dueDate:null, cert:true },
+                    { title:'Manual Handling', progress:75, dueDate:'2026-04-15', cert:false },
+                    { title:'First Aid Level 3', progress:40, dueDate:'2026-05-20', cert:false },
+                  ].map((course,idx) => (
+                    <div key={idx} className="bg-gray-800 border border-gray-700 rounded-lg p-4">
+                      <div className="flex items-start justify-between mb-2">
+                        <h5 className="text-white font-medium">{course.title}</h5>
+                        {course.cert && <span className="text-xs px-2 py-1 bg-green-900/40 text-green-400 rounded font-medium">Completed</span>}
+                      </div>
+                      <div className="w-full bg-gray-700 rounded-full h-2 mb-2">
+                        <div className="bg-amber-500 h-2 rounded-full" style={{width:`${course.progress}%`}}></div>
+                      </div>
+                      <div className="flex items-center justify-between text-xs">
+                        <span className="text-gray-400">{course.progress}% complete</span>
+                        {course.dueDate && <span className="text-amber-400 font-medium">Due {course.dueDate}</span>}
+                        {course.cert && <button type="button" onClick={() => toast.success('Certificate downloaded')} className="text-blue-400 hover:text-blue-300 flex items-center gap-1"><Download className="w-3 h-3"/> Download</button>}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div>
+                <h4 className="text-white font-semibold mb-4">Upcoming Training</h4>
+                <div className="space-y-2">
+                  {[
+                    { date:'2026-04-15', title:'Confined Spaces Awareness' },
+                    { date:'2026-04-28', title:'IPAF Refresher' },
+                    { date:'2026-05-10', title:'Fire Safety' },
+                  ].map((event,idx) => (
+                    <div key={idx} className="flex items-center gap-3 p-3 bg-gray-800 border border-gray-700 rounded">
+                      <div className="text-amber-400 font-semibold text-sm min-w-fit">{event.date}</div>
+                      <div className="text-gray-300">{event.title}</div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {activeTab === 'team' && (
+            <div className="space-y-6">
+              <div>
+                <select value={teamDeptFilter} onChange={(e) => setTeamDeptFilter(e.target.value)} className="px-3 py-2 input input-bordered text-white mb-4">
+                  <option value="">All Departments</option>
+                  <option value="Operations">Operations</option>
+                  <option value="Engineering">Engineering</option>
+                  <option value="Safety">Safety</option>
+                  <option value="Plant">Plant</option>
+                </select>
+              </div>
+
+              <button type="button" onClick={() => {
+                const csv = 'Name,Role,Compliance%,Last Activity\n' + TEAM_MEMBERS.filter(m => !teamDeptFilter || m.department === teamDeptFilter).map(m => `${m.name},${m.role},${m.compliancePercent}%,${m.lastActivity}`).join('\n');
+                toast.success('CSV exported');
+              }} className="flex items-center gap-2 px-4 py-2 bg-blue-900/40 hover:bg-blue-800 text-blue-400 rounded font-medium text-sm transition-colors">
+                <FileDown className="w-4 h-4"/> Export to CSV
+              </button>
+
+              <div className="cb-table-scroll touch-pan-x">
+                <table className="w-full text-sm">
+                  <thead className="bg-gray-900/50 border-b border-gray-700">
+                    <tr>
+                      <th className="px-4 py-3 text-left text-xs font-display text-gray-400">Employee</th>
+                      <th className="px-4 py-3 text-left text-xs font-display text-gray-400">Role</th>
+                      <th className="px-4 py-3 text-center text-xs font-display text-gray-400">Required</th>
+                      <th className="px-4 py-3 text-center text-xs font-display text-gray-400">Completed</th>
+                      <th className="px-4 py-3 text-center text-xs font-display text-gray-400">Compliance</th>
+                      <th className="px-4 py-3 text-left text-xs font-display text-gray-400">Last Activity</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-700">
+                    {TEAM_MEMBERS.filter(m => !teamDeptFilter || m.department === teamDeptFilter).map(member => (
+                      <tr key={member.id} className={`hover:bg-gray-900/30 ${member.compliancePercent < 80 ? 'bg-red-900/10' : ''}`}>
+                        <td className="px-4 py-3 text-white font-medium">{member.name}</td>
+                        <td className="px-4 py-3 text-gray-300">{member.role}</td>
+                        <td className="px-4 py-3 text-center text-gray-300">{member.requiredCourses}</td>
+                        <td className="px-4 py-3 text-center text-white font-semibold">{member.completed}</td>
+                        <td className="px-4 py-3 text-center">
+                          <span className={`text-sm font-semibold ${member.compliancePercent >= 90 ? 'text-green-400' : member.compliancePercent >= 80 ? 'text-amber-400' : 'text-red-400'}`}>
+                            {member.compliancePercent}%
+                          </span>
+                        </td>
+                        <td className="px-4 py-3 text-gray-400">{member.lastActivity}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+
+          {activeTab === 'compliance' && (
+            <div className="space-y-6">
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                <div className="card p-4 bg-blue-900/30 border border-blue-700">
+                  <p className="text-gray-400 text-xs uppercase mb-2">Overall Compliance</p>
+                  <p className="text-3xl font-display text-blue-400">84%</p>
+                </div>
+                <div className="card p-4 bg-amber-900/30 border border-amber-700">
+                  <p className="text-gray-400 text-xs uppercase mb-2">Due This Month</p>
+                  <p className="text-3xl font-display text-amber-400">5</p>
+                </div>
+                <div className="card p-4 bg-red-900/30 border border-red-700">
+                  <p className="text-gray-400 text-xs uppercase mb-2">Expired Certs</p>
+                  <p className="text-3xl font-display text-red-400">0</p>
+                </div>
+                <div className="card p-4 bg-orange-900/30 border border-orange-700">
+                  <p className="text-gray-400 text-xs uppercase mb-2">At-Risk Staff</p>
+                  <p className="text-3xl font-display text-orange-400">2</p>
+                </div>
+              </div>
+
+              <div className="card bg-gray-800 p-6 border border-gray-700">
+                <h4 className="text-white font-semibold mb-4">Compliance by Department</h4>
+                <ResponsiveContainer width="100%" height={300}>
+                  <BarChart data={COMPLIANCE_DATA}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#374151"/>
+                    <XAxis dataKey="department" stroke="#9ca3af"/>
+                    <YAxis stroke="#9ca3af"/>
+                    <Tooltip contentStyle={{backgroundColor:'#1f2937',border:'1px solid #374151',borderRadius:8}}/>
+                    <Legend/>
+                    <Bar dataKey="compliance" name="Compliance %" fill="#f59e0b" radius={[4,4,0,0]}/>
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+
+              <div>
+                <h4 className="text-white font-semibold mb-4">Expiring Certifications (Next 90 Days)</h4>
+                <div className="cb-table-scroll touch-pan-x">
+                  <table className="w-full text-sm">
+                    <thead className="bg-gray-900/50 border-b border-gray-700">
+                      <tr>
+                        <th className="px-4 py-3 text-left text-xs font-display text-gray-400">Certification</th>
+                        <th className="px-4 py-3 text-left text-xs font-display text-gray-400">Holder</th>
+                        <th className="px-4 py-3 text-left text-xs font-display text-gray-400">Expiry Date</th>
+                        <th className="px-4 py-3 text-center text-xs font-display text-gray-400">Days</th>
+                        <th className="px-4 py-3 text-left text-xs font-display text-gray-400">Status</th>
+                        <th className="px-4 py-3 text-left text-xs font-display text-gray-400">Action</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-700">
+                      {EXPIRING_CERTS.map(cert => (
+                        <tr key={cert.id} className="hover:bg-gray-900/30">
+                          <td className="px-4 py-3 text-white font-medium">{cert.name}</td>
+                          <td className="px-4 py-3 text-gray-300">{cert.holder}</td>
+                          <td className="px-4 py-3 text-gray-300">{cert.expiryDate}</td>
+                          <td className="px-4 py-3 text-center text-white font-semibold">{cert.daysUntilExpiry}</td>
+                          <td className="px-4 py-3">
+                            <span className={`text-xs px-2 py-1 rounded-full font-medium ${cert.status === 'critical' ? 'bg-red-900/40 text-red-400' : cert.status === 'warning' ? 'bg-amber-900/40 text-amber-400' : 'bg-green-900/40 text-green-400'}`}>
+                              {cert.status}
+                            </span>
+                          </td>
+                          <td className="px-4 py-3">
+                            <button type="button" onClick={() => toast.success(`Reminder sent to ${cert.holder}`)} className="text-xs px-3 py-1 bg-blue-900/40 hover:bg-blue-800 text-blue-400 rounded font-medium transition-colors flex items-center gap-1">
+                              <Bell className="w-3 h-3"/> Send Reminder
+                            </button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
 
         <BulkActionsBar

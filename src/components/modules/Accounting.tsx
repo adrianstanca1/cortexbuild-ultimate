@@ -4,7 +4,7 @@ import {
   BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid,
   Tooltip, Legend, ResponsiveContainer,
 } from 'recharts';
-import { FileText, AlertCircle, Plus, Edit2, Trash2, X, CheckCircle2, PoundSterling, CheckSquare, Square } from 'lucide-react';
+import { FileText, AlertCircle, Plus, Edit2, Trash2, X, CheckCircle2, PoundSterling, CheckSquare, Square, Download, Link2, Send } from 'lucide-react';
 import { useProjects, useInvoices } from '../../hooks/useData';
 import { BulkActionsBar, useBulkSelection } from '../ui/BulkActions';
 import { ModuleBreadcrumbs } from '../ui/Breadcrumbs';
@@ -26,6 +26,28 @@ const BUDGET_CHART_DATA = [
   { project:'Smith Complex', budget:680000, spent:510000, remaining:170000 },
   { project:'Green Park', budget:320000, spent:210000, remaining:110000 },
   { project:'Riverside Phase 2', budget:920000, spent:690000, remaining:230000 },
+];
+
+const VAT_PERIODS = [
+  { period:'Q1 2026 (Jan-Mar)', box1:967000, box2:193400, box4:156800, box6:4850000, box7:970000, box8:240000, dueDate:'2026-04-30', status:'draft' },
+  { period:'Q4 2025 (Oct-Dec)', box1:845000, box2:169000, box4:134800, box6:4225000, box7:845000, box8:185000, dueDate:'2026-01-31', status:'submitted' },
+  { period:'Q3 2025 (Jul-Sep)', box1:721000, box2:144200, box4:114800, box6:3605000, box7:721000, box8:162000, dueDate:'2025-10-31', status:'submitted' },
+];
+
+const PURCHASE_INVOICES = [
+  { id:'PI-001', supplier:'BuildCo Materials', description:'Structural steel - Acme Tower', invDate:'2026-03-15', dueDate:'2026-04-15', amount:45000, vat:9000, total:54000, status:'unpaid' },
+  { id:'PI-002', supplier:'SteelWorks Ltd', description:'Reinforcement bars', invDate:'2026-03-10', dueDate:'2026-04-10', amount:28500, vat:5700, total:34200, status:'paid' },
+  { id:'PI-003', supplier:'Plant Hire Specialists', description:'Crane rental - 3 months', invDate:'2026-02-01', dueDate:'2026-03-01', amount:36000, vat:7200, total:43200, status:'overdue' },
+  { id:'PI-004', supplier:'ElectroSupply UK', description:'Electrical components', invDate:'2026-03-18', dueDate:'2026-04-18', amount:12500, vat:2500, total:15000, status:'unpaid' },
+  { id:'PI-005', supplier:'Concrete Direct', description:'Premix concrete - Smith Complex', invDate:'2026-03-05', dueDate:'2026-04-05', amount:52000, vat:10400, total:62400, status:'disputed' },
+];
+
+const BANK_STATEMENT = [
+  { date:'2026-03-20', description:'Deposit - Client PAY-001', amount:45000, reconciled:true },
+  { date:'2026-03-19', description:'Cheque 003421', amount:-28500, reconciled:true },
+  { date:'2026-03-18', description:'BACS - SC-042 Payment', amount:-18000, reconciled:true },
+  { date:'2026-03-17', description:'Standing Order - Rent', amount:-6500, reconciled:false },
+  { date:'2026-03-16', description:'Deposit - Client PAY-003', amount:52000, reconciled:true },
 ];
 
 const STATUS_COLOUR: Record<string,string> = {
@@ -54,7 +76,7 @@ function fmt(n:number) {
 }
 
 export function Accounting() {
-  const [tab, setTab] = useState<'pl'|'invoices'|'cash'|'budget'|'vat'|'bank'>('pl');
+  const [tab, setTab] = useState<'pl'|'invoices'|'cash'|'budget'|'vat'|'bank'|'purchases'|'reconcile'>('pl');
   const [showModal, setShowModal] = useState(false);
   const [editId, setEditId]       = useState<string|null>(null);
   const [fNum, setFNum]           = useState('');
@@ -64,6 +86,10 @@ export function Accounting() {
   const [fStatus, setFStatus]     = useState('draft');
   const [fDue, setFDue]           = useState('');
   const [fDesc, setFDesc]         = useState('');
+  const [vatScheme, setVatScheme] = useState<'standard'|'flat'|'cash'>('standard');
+  const [flatRatePercent, setFlatRatePercent] = useState('14.5');
+  const [purStatusFilter, setPurStatusFilter] = useState<string>('');
+  const [reconciledItems, setReconciledItems] = useState<Set<string>>(new Set());
 
   const { selectedIds, toggle, clearSelection } = useBulkSelection();
 
@@ -162,7 +188,16 @@ export function Accounting() {
   const totalPaymentsOut = Math.abs(BANK_TRANSACTIONS.filter(t=>t.type==='credit').reduce((s,t)=>s+Number(t.amount??0),0));
   const closingBalance = openingBalance + totalReceiptsIn - totalPaymentsOut;
 
-  const TABS=[{id:'pl',label:'P&L Statement'},{id:'vat',label:'VAT Return'},{id:'bank',label:'Bank Rec'},{id:'invoices',label:'Invoices'},{id:'cash',label:'Cash Flow'},{id:'budget',label:'Budget'}] as const;
+  const TABS=[
+    {id:'pl',label:'P&L Statement'},
+    {id:'vat',label:'VAT Return'},
+    {id:'purchases',label:'Purchase Ledger'},
+    {id:'reconcile',label:'Bank Reconciliation'},
+    {id:'invoices',label:'Invoices'},
+    {id:'cash',label:'Cash Flow'},
+    {id:'budget',label:'Budget'},
+    {id:'bank',label:'Bank Transactions'},
+  ] as const;
 
   return (
     <>
@@ -294,65 +329,256 @@ export function Accounting() {
       )}
 
       {tab==='vat' && (
-        <div className="card bg-base-200 p-6">
-          <h3 className="text-lg font-display text-white mb-4">VAT Return Calculator</h3>
+        <div className="space-y-6">
+          <div className="card bg-base-200 p-6">
+            <h3 className="text-lg font-display text-white mb-6">VAT Returns — MTD Reporting</h3>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-            <div className="bg-gray-900 rounded-lg p-4 border border-gray-700">
-              <h4 className="text-sm font-semibold text-gray-300 mb-4">Tax Period</h4>
-              <p className="text-2xl font-display text-white">Jan - Mar 2026</p>
-              <p className="text-sm text-gray-400 mt-1">Quarter 4 (FY 2025-26)</p>
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
+              <div className="bg-blue-900/30 border border-blue-700 rounded-lg p-4">
+                <p className="text-gray-400 text-xs uppercase mb-2">VAT Due</p>
+                <p className="text-2xl font-display text-blue-400">{fmt(vatPayable)}</p>
+              </div>
+              <div className="bg-green-900/30 border border-green-700 rounded-lg p-4">
+                <p className="text-gray-400 text-xs uppercase mb-2">Input VAT</p>
+                <p className="text-2xl font-display text-green-400">{fmt(vatPurchasesInputTax)}</p>
+              </div>
+              <div className="bg-purple-900/30 border border-purple-700 rounded-lg p-4">
+                <p className="text-gray-400 text-xs uppercase mb-2">Output VAT</p>
+                <p className="text-2xl font-display text-purple-400">{fmt(vatSalesOutputTax)}</p>
+              </div>
+              <div className="bg-amber-900/30 border border-amber-700 rounded-lg p-4">
+                <p className="text-gray-400 text-xs uppercase mb-2">Next Due</p>
+                <p className="text-lg font-display text-amber-400">30 Apr 2026</p>
+              </div>
             </div>
 
-            <div className="bg-gray-900 rounded-lg p-4 border border-gray-700">
-              <h4 className="text-sm font-semibold text-gray-300 mb-4">Submission Status</h4>
-              <div className="flex items-center gap-3">
-                <div className="w-3 h-3 rounded-full bg-yellow-500"/>
-                <span className="text-white font-semibold">Draft</span>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+              <div className="bg-gray-900 rounded-lg p-4 border border-gray-700">
+                <h4 className="text-sm font-semibold text-gray-300 mb-4">VAT Scheme</h4>
+                <select value={vatScheme} onChange={e=>setVatScheme(e.target.value as typeof vatScheme)} className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-blue-500 mb-4">
+                  <option value="standard">Standard Rate (20%)</option>
+                  <option value="flat">Flat Rate Scheme</option>
+                  <option value="cash">Cash Accounting</option>
+                </select>
+                {vatScheme==='flat' && (
+                  <div>
+                    <label className="block text-xs font-medium text-gray-400 mb-2">Flat Rate %</label>
+                    <input type="number" value={flatRatePercent} onChange={e=>setFlatRatePercent(e.target.value)} step="0.1" className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-blue-500"/>
+                  </div>
+                )}
               </div>
-              <p className="text-sm text-gray-400 mt-2">Due: 30 April 2026</p>
+
+              <div className="bg-gray-900 rounded-lg p-4 border border-gray-700">
+                <h4 className="text-sm font-semibold text-gray-300 mb-4">Submission Info</h4>
+                <div className="space-y-2 text-sm">
+                  <p className="text-gray-300"><span className="text-gray-400">Scheme:</span> {vatScheme==='standard'?'Standard Rate':vatScheme==='flat'?'Flat Rate':' Cash Accounting'}</p>
+                  <p className="text-gray-300"><span className="text-gray-400">Period:</span> Jan - Mar 2026</p>
+                  <p className="text-gray-300"><span className="text-gray-400">Status:</span> <span className="text-yellow-400 font-medium">Draft</span></p>
+                </div>
+              </div>
+            </div>
+
+            <h4 className="text-sm font-semibold text-gray-300 mb-4">VAT Return Periods</h4>
+            <div className="cb-table-scroll touch-pan-x">
+              <table className="w-full text-sm">
+                <thead className="bg-gray-900/50 border-b border-gray-700">
+                  <tr>
+                    <th className="px-4 py-3 text-left text-xs font-display text-gray-400">Period</th>
+                    <th className="px-4 py-3 text-right text-xs font-display text-gray-400">Box 1 (Output)</th>
+                    <th className="px-4 py-3 text-right text-xs font-display text-gray-400">Box 2 (Input)</th>
+                    <th className="px-4 py-3 text-right text-xs font-display text-gray-400">Due Date</th>
+                    <th className="px-4 py-3 text-left text-xs font-display text-gray-400">Status</th>
+                    <th className="px-4 py-3 text-left text-xs font-display text-gray-400">Action</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-700">
+                  {VAT_PERIODS.map((vat,idx)=>(
+                    <tr key={idx} className="hover:bg-gray-900/30">
+                      <td className="px-4 py-3 text-white font-medium">{vat.period}</td>
+                      <td className="px-4 py-3 text-right text-purple-400">{fmt(vat.box1)}</td>
+                      <td className="px-4 py-3 text-right text-green-400">{fmt(vat.box2)}</td>
+                      <td className="px-4 py-3 text-gray-300">{vat.dueDate}</td>
+                      <td className="px-4 py-3">
+                        <span className={`text-xs px-2 py-1 rounded-full font-medium ${vat.status==='submitted'?'bg-green-900/40 text-green-400':'bg-yellow-900/40 text-yellow-400'}`}>
+                          {vat.status}
+                        </span>
+                      </td>
+                      <td className="px-4 py-3">
+                        {vat.status!=='submitted' && (
+                          <button type="button" onClick={()=>toast.success(`VAT return for ${vat.period} submitted to HMRC`)} className="text-xs px-3 py-1 bg-blue-900/40 hover:bg-blue-800 text-blue-400 rounded font-medium transition-colors flex items-center gap-1">
+                            <Send className="w-3 h-3"/> Submit
+                          </button>
+                        )}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {tab==='purchases' && (
+        <div className="space-y-6">
+          <div className="card bg-base-200 p-6">
+            <h3 className="text-lg font-display text-white mb-6">Purchase Ledger</h3>
+
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+              <div className="bg-gray-900 rounded-lg p-4 border border-gray-700">
+                <p className="text-gray-400 text-xs uppercase mb-1">0-30 Days</p>
+                <p className="text-xl font-display text-white">{fmt(34200)}</p>
+              </div>
+              <div className="bg-amber-900/30 border border-amber-700 rounded-lg p-4">
+                <p className="text-gray-400 text-xs uppercase mb-1">31-60 Days</p>
+                <p className="text-xl font-display text-amber-400">{fmt(62400)}</p>
+              </div>
+              <div className="bg-orange-900/30 border border-orange-700 rounded-lg p-4">
+                <p className="text-gray-400 text-xs uppercase mb-1">61-90 Days</p>
+                <p className="text-xl font-display text-orange-400">{fmt(43200)}</p>
+              </div>
+              <div className="bg-red-900/30 border border-red-700 rounded-lg p-4">
+                <p className="text-gray-400 text-xs uppercase mb-1">90+ Days</p>
+                <p className="text-xl font-display text-red-400">{fmt(0)}</p>
+              </div>
+            </div>
+
+            <div className="flex gap-2 mb-4">
+              <select value={purStatusFilter} onChange={e=>setPurStatusFilter(e.target.value)} className="px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white text-sm focus:outline-none focus:border-blue-500">
+                <option value="">All Statuses</option>
+                <option value="unpaid">Unpaid</option>
+                <option value="paid">Paid</option>
+                <option value="overdue">Overdue</option>
+                <option value="disputed">Disputed</option>
+              </select>
+              <button type="button" onClick={()=>toast.success('Batch payment processed')} className="flex items-center gap-2 px-4 py-2 bg-green-900/40 hover:bg-green-800 text-green-400 rounded font-medium text-sm transition-colors">
+                <PoundSterling className="w-4 h-4"/> Batch Pay
+              </button>
+            </div>
+
+            <div className="cb-table-scroll touch-pan-x">
+              <table className="w-full text-sm">
+                <thead className="bg-gray-900/50 border-b border-gray-700">
+                  <tr>
+                    <th className="px-4 py-3 text-left text-xs font-display text-gray-400">Invoice #</th>
+                    <th className="px-4 py-3 text-left text-xs font-display text-gray-400">Supplier</th>
+                    <th className="px-4 py-3 text-left text-xs font-display text-gray-400">Description</th>
+                    <th className="px-4 py-3 text-left text-xs font-display text-gray-400">Date</th>
+                    <th className="px-4 py-3 text-left text-xs font-display text-gray-400">Due</th>
+                    <th className="px-4 py-3 text-right text-xs font-display text-gray-400">Amount</th>
+                    <th className="px-4 py-3 text-right text-xs font-display text-gray-400">VAT</th>
+                    <th className="px-4 py-3 text-right text-xs font-display text-gray-400">Total</th>
+                    <th className="px-4 py-3 text-left text-xs font-display text-gray-400">Status</th>
+                    <th className="px-4 py-3 text-left text-xs font-display text-gray-400">Action</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-700">
+                  {PURCHASE_INVOICES.filter(p=>!purStatusFilter||p.status===purStatusFilter).map(pi=>(
+                    <tr key={pi.id} className="hover:bg-gray-900/30">
+                      <td className="px-4 py-3 font-mono text-xs text-blue-400">{pi.id}</td>
+                      <td className="px-4 py-3 text-gray-300">{pi.supplier}</td>
+                      <td className="px-4 py-3 text-white max-w-[180px] truncate">{pi.description}</td>
+                      <td className="px-4 py-3 text-gray-300">{pi.invDate}</td>
+                      <td className="px-4 py-3 text-gray-300">{pi.dueDate}</td>
+                      <td className="px-4 py-3 text-right text-white">{fmt(pi.amount)}</td>
+                      <td className="px-4 py-3 text-right text-gray-400">{fmt(pi.vat)}</td>
+                      <td className="px-4 py-3 text-right text-white font-semibold">{fmt(pi.total)}</td>
+                      <td className="px-4 py-3">
+                        <span className={`text-xs px-2 py-1 rounded-full font-medium ${pi.status==='paid'?'bg-green-900/40 text-green-400':pi.status==='unpaid'?'bg-blue-900/40 text-blue-400':pi.status==='overdue'?'bg-red-900/40 text-red-400':'bg-yellow-900/40 text-yellow-400'}`}>
+                          {pi.status}
+                        </span>
+                      </td>
+                      <td className="px-4 py-3">
+                        {pi.status!=='paid' && (
+                          <button type="button" onClick={()=>toast.success(`Payment authorised for ${pi.id}`)} className="text-xs px-2 py-1 bg-green-900/40 hover:bg-green-800 text-green-400 rounded font-medium transition-colors">
+                            Pay
+                          </button>
+                        )}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {tab==='reconcile' && (
+        <div className="card bg-base-200 p-6">
+          <h3 className="text-lg font-display text-white mb-6">Bank Reconciliation</h3>
+
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mb-8">
+            <div className="bg-gray-900 rounded-lg p-4 border border-gray-700">
+              <p className="text-gray-400 text-xs uppercase mb-1">Book Balance</p>
+              <p className="text-xl font-display text-white">{fmt(1454000)}</p>
+            </div>
+            <div className="bg-gray-900 rounded-lg p-4 border border-gray-700">
+              <p className="text-gray-400 text-xs uppercase mb-1">Statement Balance</p>
+              <p className="text-xl font-display text-white">{fmt(1467800)}</p>
+            </div>
+            <div className="bg-green-900/30 border border-green-700 rounded-lg p-4">
+              <p className="text-gray-400 text-xs uppercase mb-1">Reconciled %</p>
+              <p className="text-xl font-display text-green-400">{Math.round((reconciledItems.size/BANK_STATEMENT.length)*100)}%</p>
             </div>
           </div>
 
-          <div className="space-y-4">
-            <div className="bg-blue-900/30 border border-blue-700 rounded-lg p-4">
-              <div className="flex justify-between items-center">
-                <div>
-                  <p className="text-gray-300 text-sm">Sales (Output Tax at 20%)</p>
-                  <p className="text-2xl font-display text-blue-400 mt-1">{fmt(vatSalesOutputTax)}</p>
-                </div>
-                <div className="text-right">
-                  <p className="text-gray-400 text-xs">On sales of</p>
-                  <p className="text-white font-semibold">{fmt(totalRevenue)}</p>
-                </div>
+          <div className="w-full bg-gray-800 rounded-lg h-3 mb-6 border border-gray-700">
+            <div className="bg-green-500 h-3 rounded-lg transition-all" style={{width:`${Math.round((reconciledItems.size/BANK_STATEMENT.length)*100)}%`}}></div>
+          </div>
+
+          <div className="mb-6">
+            <button type="button" onClick={()=>toast.success('Bank statement import started')} className="flex items-center gap-2 px-4 py-2 bg-blue-900/40 hover:bg-blue-800 text-blue-400 rounded font-medium transition-colors">
+              <Download className="w-4 h-4"/> Import Bank Statement
+            </button>
+          </div>
+
+          <h4 className="text-sm font-semibold text-gray-300 mb-3">Unreconciled vs Statement</h4>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div>
+              <h5 className="text-xs font-semibold text-gray-400 mb-3 uppercase">Unreconciled</h5>
+              <div className="space-y-2">
+                {BANK_STATEMENT.filter(b=>!reconciledItems.has(b.date)).map(b=>(
+                  <div key={b.date} className="bg-gray-900 border border-gray-700 rounded p-3 flex items-center justify-between">
+                    <div className="flex-1 min-w-0">
+                      <p className="text-white text-sm font-medium truncate">{b.description}</p>
+                      <p className="text-gray-400 text-xs">{b.date}</p>
+                    </div>
+                    <p className={`text-right font-mono font-semibold ml-2 ${b.amount>0?'text-green-400':'text-red-400'}`}>{b.amount>0?'+':''}{fmt(b.amount)}</p>
+                  </div>
+                ))}
               </div>
             </div>
 
-            <div className="bg-red-900/30 border border-red-700 rounded-lg p-4">
-              <div className="flex justify-between items-center">
-                <div>
-                  <p className="text-gray-300 text-sm">Purchases (Input Tax at 20%)</p>
-                  <p className="text-2xl font-display text-red-400 mt-1">-{fmt(vatPurchasesInputTax)}</p>
-                </div>
-                <div className="text-right">
-                  <p className="text-gray-400 text-xs">On costs of</p>
-                  <p className="text-white font-semibold">{fmt(totalCosts)}</p>
-                </div>
+            <div>
+              <h5 className="text-xs font-semibold text-gray-400 mb-3 uppercase">Match</h5>
+              <div className="space-y-2">
+                {BANK_STATEMENT.filter(b=>!reconciledItems.has(b.date)).map(b=>(
+                  <button
+                    key={b.date}
+                    type="button"
+                    onClick={()=>{
+                      setReconciledItems(s=>new Set([...s,b.date]));
+                      toast.success(`Matched ${b.description}`);
+                    }}
+                    className="w-full bg-gray-900 border border-gray-700 hover:border-blue-500 rounded p-3 flex items-center justify-between transition-colors group"
+                  >
+                    <Link2 className="w-4 h-4 text-gray-500 group-hover:text-blue-400"/>
+                  </button>
+                ))}
               </div>
             </div>
+          </div>
 
-            <div className="bg-gradient-to-r from-amber-900/40 to-amber-900/20 border border-amber-700 rounded-lg p-4">
-              <p className="text-gray-300 text-sm mb-2">Net VAT Payable</p>
-              <p className="text-3xl font-display text-amber-300">{fmt(vatPayable)}</p>
-              <p className="text-xs text-gray-400 mt-3">Submit to HMRC by 30 April 2026</p>
-            </div>
+          <div className="bg-green-900/20 border border-green-700 rounded-lg p-4 mt-8">
+            <p className="text-green-300 font-medium">Reconciliation summary ready. Review matched transactions above.</p>
           </div>
         </div>
       )}
 
       {tab==='bank' && (
         <div className="card bg-base-200 p-6">
-          <h3 className="text-lg font-display text-white mb-6">Bank Reconciliation</h3>
+          <h3 className="text-lg font-display text-white mb-6">Bank Transactions</h3>
 
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
             <div className="bg-gray-900 rounded-lg p-4 border border-gray-700">
