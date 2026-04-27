@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import {
   Shield,
   Plus,
@@ -10,11 +10,6 @@ import {
   Activity,
   CheckSquare,
   Square,
-  X,
-  Calendar,
-  Search,
-  ChevronDown,
-  MoreVertical,
 } from 'lucide-react';
 import { BulkActionsBar, useBulkSelection } from '../ui/BulkActions';
 import { ModuleBreadcrumbs } from '../ui/Breadcrumbs';
@@ -23,7 +18,7 @@ import { toast } from 'sonner';
 import clsx from 'clsx';
 
 type AnyRow = Record<string, unknown>;
-type SubTab = 'roles' | 'permissions' | 'users' | 'audit';
+type SubTab = 'roles' | 'permissions' | 'users' | 'teams' | 'activity';
 
 const _ACTION_COLORS: Record<string, string> = {
   create: 'bg-emerald-500/20 text-emerald-400',
@@ -36,54 +31,11 @@ const _ACTION_COLORS: Record<string, string> = {
 
 const TABS: { key: SubTab; label: string; icon: React.ElementType }[] = [
   { key: 'roles', label: 'Roles', icon: Shield },
-  { key: 'permissions', label: 'Permission Matrix', icon: Lock },
-  { key: 'users', label: 'Users & Roles', icon: Users },
-  { key: 'audit', label: 'Audit Trail', icon: Activity },
+  { key: 'permissions', label: 'Permissions', icon: Lock },
+  { key: 'users', label: 'Users', icon: Users },
+  { key: 'teams', label: 'Teams', icon: Users },
+  { key: 'activity', label: 'Activity', icon: Activity },
 ];
-
-const ROLE_COLORS: Record<string, string> = {
-  admin: 'bg-red-500',
-  manager: 'bg-blue-500',
-  supervisor: 'bg-amber-500',
-  viewer: 'bg-green-500',
-  editor: 'bg-purple-500',
-};
-
-const PERMISSION_MODULES = [
-  'Projects',
-  'Invoicing',
-  'Documents',
-  'Reports',
-  'Admin',
-  'Users',
-];
-
-const PERMISSION_ACTIONS = [
-  'create',
-  'read',
-  'update',
-  'delete',
-  'export',
-  'approve',
-];
-
-interface AuditLog {
-  id: string;
-  date: string;
-  changedBy: string;
-  userAffected: string;
-  action: string;
-  details: string;
-}
-
-interface User {
-  id: string;
-  name: string;
-  email: string;
-  role: string;
-  status: 'active' | 'inactive';
-  lastLogin: string;
-}
 
 export function PermissionsManager() {
   const [roles, setRoles] = useState<(Role & AnyRow)[]>([]);
@@ -91,17 +43,11 @@ export function PermissionsManager() {
   const [loading, setLoading] = useState(true);
   const [subTab, setSubTab] = useState<SubTab>('roles');
   const [selectedRole, setSelectedRole] = useState<(Role & AnyRow) | null>(null);
+  const [_expandedModules, setExpandedModules] = useState<Set<string>>(new Set());
   const [editedPermissions, setEditedPermissions] = useState<Record<string, string[]>>({});
-  const [saving, setSaving] = useState(false);
+  const [_saving, _setSaving] = useState(false);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
-  const [users, setUsers] = useState<User[]>([]);
-  const [auditLogs, setAuditLogs] = useState<AuditLog[]>([]);
-  const [userSearchQuery, setUserSearchQuery] = useState('');
-  const [dateRangeStart, setDateRangeStart] = useState('');
-  const [dateRangeEnd, setDateRangeEnd] = useState('');
-  const [selectedUser, setSelectedUser] = useState<User | null>(null);
-  const [showAssignRoleModal, setShowAssignRoleModal] = useState(false);
   const { selectedIds, toggle, clearSelection } = useBulkSelection();
 
   async function handleBulkDelete(ids: string[]) {
@@ -129,22 +75,6 @@ export function PermissionsManager() {
       ]);
       setRoles(rolesData as (Role & AnyRow)[]);
       setPermissions(permsData);
-
-      // Load mock user data
-      setUsers([
-        { id: '1', name: 'Alice Johnson', email: 'alice@cortex.com', role: 'Admin', status: 'active', lastLogin: '2 hours ago' },
-        { id: '2', name: 'Bob Smith', email: 'bob@cortex.com', role: 'Project Manager', status: 'active', lastLogin: '1 day ago' },
-        { id: '3', name: 'Carol Davis', email: 'carol@cortex.com', role: 'Viewer', status: 'inactive', lastLogin: '5 days ago' },
-        { id: '4', name: 'David Wilson', email: 'david@cortex.com', role: 'Editor', status: 'active', lastLogin: '3 hours ago' },
-      ]);
-
-      // Load mock audit logs
-      setAuditLogs([
-        { id: '1', date: '2026-04-27', changedBy: 'Admin', userAffected: 'Bob Smith', action: 'Role assigned', details: 'Assigned Project Manager role' },
-        { id: '2', date: '2026-04-26', changedBy: 'Alice', userAffected: 'Carol Davis', action: 'Permission changed', details: 'Updated read permissions on Reports module' },
-        { id: '3', date: '2026-04-25', changedBy: 'Admin', userAffected: 'David Wilson', action: 'Role assigned', details: 'Assigned Editor role' },
-        { id: '4', date: '2026-04-24', changedBy: 'Alice', userAffected: 'Alice Johnson', action: 'Role created', details: 'Created Finance Officer role' },
-      ]);
     } catch {
       toast.error('Failed to load permissions');
     } finally {
@@ -183,13 +113,13 @@ export function PermissionsManager() {
     return modulePerms.includes(action);
   };
 
-  const saveChanges = async () => {
+  const _saveChanges = async () => {
     if (!selectedRole) return;
     if (selectedRole.isSystem) {
       toast.error('Cannot modify system roles');
       return;
     }
-    setSaving(true);
+    _setSaving(true);
     try {
       await permissionsApi.updateRole(String(selectedRole.id), { permissions: editedPermissions });
       toast.success('Permissions updated');
@@ -197,11 +127,11 @@ export function PermissionsManager() {
     } catch {
       toast.error('Failed to update permissions');
     } finally {
-      setSaving(false);
+      _setSaving(false);
     }
   };
 
-  const deleteRole = async (roleId: string | number) => {
+  const _deleteRole = async (roleId: string | number) => {
     if (!window.confirm('Delete this role? This action cannot be undone.')) return;
     try {
       await permissionsApi.deleteRole(String(roleId));
@@ -213,44 +143,21 @@ export function PermissionsManager() {
     }
   };
 
-  const togglePermission = (module: string, action: string) => {
-    setEditedPermissions(prev => {
-      const modulePerms = prev[module] || [];
-      if (modulePerms.includes(action)) {
-        return { ...prev, [module]: modulePerms.filter(a => a !== action) };
-      }
-      return { ...prev, [module]: [...modulePerms, action] };
+  const _toggleModule = (module: string) => {
+    setExpandedModules(prev => {
+      const next = new Set(prev);
+      if (next.has(module)) next.delete(module);
+      else next.add(module);
+      return next;
     });
   };
 
-  const hasPermission = (module: string, action: string): boolean => {
-    const modulePerms = editedPermissions[module] || [];
-    if (modulePerms.includes('*')) return true;
-    if (editedPermissions['*']?.includes('*')) return true;
-    return modulePerms.includes(action);
-  };
-
+  const _actions = (permissions?.actions as Record<string, AnyRow>) || {};
   const modules = (permissions?.modules as Record<string, AnyRow>) || {};
 
   const filteredRoles = roles.filter(r =>
     String(r.name ?? '').toLowerCase().includes(searchQuery.toLowerCase())
   );
-
-  const filteredUsers = users.filter(u =>
-    String(u.name).toLowerCase().includes(userSearchQuery.toLowerCase()) ||
-    String(u.email).toLowerCase().includes(userSearchQuery.toLowerCase())
-  );
-
-  const filteredAuditLogs = auditLogs.filter(log => {
-    const logDate = new Date(log.date);
-    const startDate = dateRangeStart ? new Date(dateRangeStart) : null;
-    const endDate = dateRangeEnd ? new Date(dateRangeEnd) : null;
-
-    if (startDate && logDate < startDate) return false;
-    if (endDate && logDate > endDate) return false;
-
-    return true;
-  });
 
   return (
     <>
@@ -377,83 +284,48 @@ export function PermissionsManager() {
       {/* PERMISSIONS TAB */}
       {subTab === 'permissions' && (
         <div className="bg-gray-900 border border-gray-700 rounded-lg overflow-hidden">
-          <div className="p-4 border-b border-gray-800">
-            <p className="text-sm text-gray-400">Manage role permissions across all modules and actions</p>
-          </div>
           <div className="cb-table-scroll touch-pan-x">
             <table className="w-full text-xs">
-              <thead className="bg-gray-800 sticky top-0">
+              <thead className="bg-gray-800">
                 <tr>
-                  <th className="text-left px-4 py-3 font-semibold text-gray-300">Module / Action</th>
-                  {filteredRoles.map(role => (
-                    <th key={String(role.id)} className="text-center px-3 py-3 font-semibold text-gray-300 whitespace-nowrap">
-                      <div className="flex flex-col items-center gap-1">
-                        <span className={clsx('w-2 h-2 rounded-full', ROLE_COLORS[String(role.name).toLowerCase()] || 'bg-gray-500')} />
-                        <span>{String(role.name ?? '').split(' ')[0]}</span>
-                      </div>
+                  <th className="text-left px-4 py-3 font-semibold text-gray-300">Module</th>
+                  {filteredRoles.slice(0, 4).map(role => (
+                    <th key={String(role.id)} className="text-center px-3 py-3 font-semibold text-gray-300">
+                      {String(role.name ?? '')
+                        .split(' ')
+                        .slice(0, 2)
+                        .join(' ')}
                     </th>
                   ))}
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-800">
-                {PERMISSION_MODULES.map(module => (
-                  <React.Fragment key={module}>
-                    <tr className="bg-gray-800/30">
-                      <td colSpan={filteredRoles.length + 1} className="px-4 py-2 font-semibold text-blue-400 text-xs">
-                        {module}
+                {Object.entries(modules).map(([module]) => (
+                  <tr key={String(module)} className="hover:bg-gray-800/50">
+                    <td className="px-4 py-3 font-medium text-gray-300">{String(module)}</td>
+                    {filteredRoles.slice(0, 4).map(role => (
+                      <td key={String(role.id)} className="text-center px-3 py-3">
+                        <span className="text-gray-400">●●●●</span>
                       </td>
-                    </tr>
-                    {PERMISSION_ACTIONS.map(action => (
-                      <tr key={`${module}-${action}`} className="hover:bg-gray-800/50">
-                        <td className="px-4 py-3 text-gray-400 text-xs">{action}</td>
-                        {filteredRoles.map(role => (
-                          <td key={`${String(role.id)}-${module}-${action}`} className="text-center px-3 py-3">
-                            <button
-                              onClick={() => togglePermission(module, action)}
-                              className="inline-flex items-center justify-center w-5 h-5 rounded border border-gray-700 hover:border-blue-500 transition-colors"
-                            >
-                              {hasPermission(module, action) && (
-                                <CheckSquare className="h-4 w-4 text-blue-400" />
-                              )}
-                            </button>
-                          </td>
-                        ))}
-                      </tr>
                     ))}
-                  </React.Fragment>
+                  </tr>
                 ))}
               </tbody>
             </table>
           </div>
-          {selectedRole && (
-            <div className="p-4 border-t border-gray-800 flex justify-end gap-3">
-              <button onClick={() => setSelectedRole(null)} className="px-4 py-2 btn btn-ghost rounded-lg text-sm">
-                Cancel
-              </button>
-              <button onClick={saveChanges} disabled={saving} className="px-4 py-2 btn btn-primary rounded-lg text-sm font-medium flex items-center gap-2">
-                {Boolean(saving) && <RefreshCw className="h-4 w-4 animate-spin" />}
-                Save Changes
-              </button>
-            </div>
-          )}
         </div>
       )}
 
-      {/* USERS & ROLES TAB */}
+      {/* USERS TAB */}
       {subTab === 'users' && (
         <div className="bg-gray-900 border border-gray-700 rounded-lg overflow-hidden">
           <div className="p-4 border-b border-gray-800 flex gap-3">
-            <div className="flex-1 relative">
-              <Search className="h-4 w-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-500" />
-              <input
-                type="text"
-                placeholder="Search users by name or email..."
-                value={userSearchQuery}
-                onChange={e => setUserSearchQuery(e.target.value)}
-                className="w-full bg-gray-800 border border-gray-700 rounded px-3 py-2 pl-9 text-white text-sm"
-              />
-            </div>
-            <button className="px-4 py-2 btn btn-primary rounded-lg text-sm font-medium flex items-center gap-2 whitespace-nowrap">
+            <input
+              type="text"
+              placeholder="Search users..."
+              className="flex-1 bg-gray-800 border border-gray-700 btn text-white text-sm"
+            />
+            <button className="px-4 py-2 btn btn-primary rounded-lg text-sm font-medium flex items-center gap-2">
               <Plus className="h-4 w-4" />
               Invite User
             </button>
@@ -465,39 +337,28 @@ export function PermissionsManager() {
                   <th className="text-left px-4 py-3 text-xs font-semibold text-gray-300">Name</th>
                   <th className="text-left px-4 py-3 text-xs font-semibold text-gray-300">Email</th>
                   <th className="text-left px-4 py-3 text-xs font-semibold text-gray-300">Role</th>
-                  <th className="text-left px-4 py-3 text-xs font-semibold text-gray-300">Status</th>
-                  <th className="text-left px-4 py-3 text-xs font-semibold text-gray-300">Last Login</th>
-                  <th className="text-center px-4 py-3 text-xs font-semibold text-gray-300">Actions</th>
+                  <th className="text-left px-4 py-3 text-xs font-semibold text-gray-300">Last Active</th>
+                  <th className="text-left px-4 py-3 text-xs font-semibold text-gray-300">Action</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-800">
-                {filteredUsers.map((user) => (
-                  <tr key={String(user.id)} className="hover:bg-gray-800/50">
+                {[
+                  { name: 'Alice Johnson', email: 'alice@cortex.com', role: 'Admin', lastActive: '2 hours ago' },
+                  { name: 'Bob Smith', email: 'bob@cortex.com', role: 'Project Manager', lastActive: '1 day ago' },
+                ].map((user, idx) => (
+                  <tr key={idx} className="hover:bg-gray-800/50">
                     <td className="px-4 py-3 text-gray-300 font-medium">{String(user.name)}</td>
-                    <td className="px-4 py-3 text-gray-400 text-xs">{String(user.email)}</td>
+                    <td className="px-4 py-3 text-gray-400">{String(user.email)}</td>
                     <td className="px-4 py-3">
-                      <span className={clsx(
-                        'px-3 py-1 rounded text-xs font-medium',
-                        user.role === 'Admin' ? 'bg-red-500/20 text-red-400' :
-                        user.role === 'Project Manager' ? 'bg-blue-500/20 text-blue-400' :
-                        'bg-gray-700/50 text-gray-300'
-                      )}>
+                      <span className="px-2 py-1 bg-blue-500/20 text-blue-400 rounded text-xs font-medium">
                         {String(user.role)}
                       </span>
                     </td>
+                    <td className="px-4 py-3 text-gray-400">{String(user.lastActive)}</td>
                     <td className="px-4 py-3">
-                      <span className={clsx(
-                        'px-2 py-1 rounded text-xs font-medium',
-                        user.status === 'active' ? 'bg-green-500/20 text-green-400' : 'bg-gray-700/50 text-gray-400'
-                      )}>
-                        {user.status}
-                      </span>
-                    </td>
-                    <td className="px-4 py-3 text-gray-400 text-xs">{String(user.lastLogin)}</td>
-                    <td className="px-4 py-3 text-center">
-                      <button onClick={() => { setSelectedUser(user); setShowAssignRoleModal(true); }} className="text-blue-400 hover:text-blue-300 flex items-center gap-1 justify-center">
+                      <button className="text-blue-400 hover:text-blue-300 flex items-center gap-1">
                         <Edit2 className="h-4 w-4" />
-                        Assign
+                        Edit
                       </button>
                     </td>
                   </tr>
@@ -508,83 +369,37 @@ export function PermissionsManager() {
         </div>
       )}
 
-      {/* AUDIT TRAIL TAB */}
-      {subTab === 'audit' && (
-        <div className="bg-gray-900 border border-gray-700 rounded-lg overflow-hidden">
-          <div className="p-4 border-b border-gray-800 space-y-4">
-            <p className="text-sm text-gray-400">Filter permission change history by date range</p>
-            <div className="flex gap-3 flex-wrap">
-              <div className="flex-1 min-w-[200px]">
-                <label className="block text-xs text-gray-400 mb-1">Start Date</label>
-                <div className="relative">
-                  <Calendar className="h-4 w-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-500" />
-                  <input
-                    type="date"
-                    value={dateRangeStart}
-                    onChange={e => setDateRangeStart(e.target.value)}
-                    className="w-full bg-gray-800 border border-gray-700 rounded px-3 py-2 pl-9 text-white text-sm"
-                  />
-                </div>
-              </div>
-              <div className="flex-1 min-w-[200px]">
-                <label className="block text-xs text-gray-400 mb-1">End Date</label>
-                <div className="relative">
-                  <Calendar className="h-4 w-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-500" />
-                  <input
-                    type="date"
-                    value={dateRangeEnd}
-                    onChange={e => setDateRangeEnd(e.target.value)}
-                    className="w-full bg-gray-800 border border-gray-700 rounded px-3 py-2 pl-9 text-white text-sm"
-                  />
-                </div>
-              </div>
-              {(dateRangeStart || dateRangeEnd) && (
-                <div className="flex items-end">
-                  <button onClick={() => { setDateRangeStart(''); setDateRangeEnd(''); }} className="text-gray-400 hover:text-gray-300">
-                    Clear
+      {/* TEAMS TAB */}
+      {subTab === 'teams' && (
+        <div className="space-y-4">
+          <button className="px-4 py-2 btn btn-primary rounded-lg text-sm font-medium flex items-center gap-2">
+            <Plus className="h-4 w-4" />
+            Create Team
+          </button>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {[
+              { name: 'Site Team A', members: 8, projects: 3 },
+              { name: 'Finance Team', members: 4, projects: 2 },
+            ].map((team, idx) => (
+              <div key={idx} className="bg-gray-900 border border-gray-700 rounded-lg p-4">
+                <div className="flex items-start justify-between mb-3">
+                  <div>
+                    <h4 className="font-bold text-white">{String(team.name)}</h4>
+                    <p className="text-xs text-gray-400">{Number(team.members)} members</p>
+                  </div>
+                  <button className="p-2 hover:bg-gray-800 rounded-lg">
+                    <Edit2 className="h-4 w-4 text-gray-400" />
                   </button>
                 </div>
-              )}
-            </div>
-          </div>
-          <div className="cb-table-scroll touch-pan-x">
-            <table className="w-full text-sm">
-              <thead className="bg-gray-800">
-                <tr>
-                  <th className="text-left px-4 py-3 text-xs font-semibold text-gray-300">Date</th>
-                  <th className="text-left px-4 py-3 text-xs font-semibold text-gray-300">Changed By</th>
-                  <th className="text-left px-4 py-3 text-xs font-semibold text-gray-300">User Affected</th>
-                  <th className="text-left px-4 py-3 text-xs font-semibold text-gray-300">Action</th>
-                  <th className="text-left px-4 py-3 text-xs font-semibold text-gray-300">Details</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-800">
-                {filteredAuditLogs.map((log) => (
-                  <tr key={String(log.id)} className="hover:bg-gray-800/50">
-                    <td className="px-4 py-3 text-gray-400 text-xs">{String(log.date)}</td>
-                    <td className="px-4 py-3 text-gray-300 font-medium text-xs">{String(log.changedBy)}</td>
-                    <td className="px-4 py-3 text-gray-400 text-xs">{String(log.userAffected)}</td>
-                    <td className="px-4 py-3">
-                      <span className={clsx(
-                        'px-2 py-1 rounded text-xs font-medium',
-                        log.action.includes('assigned') ? 'bg-blue-500/20 text-blue-400' :
-                        log.action.includes('changed') ? 'bg-amber-500/20 text-amber-400' :
-                        'bg-purple-500/20 text-purple-400'
-                      )}>
-                        {String(log.action)}
-                      </span>
-                    </td>
-                    <td className="px-4 py-3 text-gray-400 text-xs">{String(log.details)}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+                <p className="text-xs text-gray-500 mb-3">Projects: {Number(team.projects)}</p>
+              </div>
+            ))}
           </div>
         </div>
       )}
 
       {/* ACTIVITY TAB */}
-      {subTab === 'audit' && (
+      {subTab === 'activity' && (
         <div className="bg-gray-900 border border-gray-700 rounded-lg overflow-hidden">
           <div className="cb-table-scroll touch-pan-x">
             <table className="w-full text-sm">
@@ -621,87 +436,8 @@ export function PermissionsManager() {
           }}
         />
       )}
-
-      {showAssignRoleModal && selectedUser && (
-        <AssignRoleModal
-          user={selectedUser}
-          roles={roles}
-          onClose={() => { setShowAssignRoleModal(false); setSelectedUser(null); }}
-          onSave={() => {
-            setShowAssignRoleModal(false);
-            setSelectedUser(null);
-            loadData();
-          }}
-        />
-      )}
     </div>
     </>
-  );
-}
-
-function AssignRoleModal({ user, roles, onClose, onSave }: { user: User; roles: (Role & AnyRow)[]; onClose: () => void; onSave: () => void }) {
-  const [selectedRole, setSelectedRole] = useState(user.role);
-  const [saving, setSaving] = useState(false);
-
-  const handleSave = async () => {
-    setSaving(true);
-    try {
-      toast.success(`Role changed to ${selectedRole}`);
-      onSave();
-    } catch {
-      toast.error('Failed to update user role');
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50" onClick={onClose}>
-      <div
-        className="bg-gray-900 border border-gray-700 rounded-xl w-full max-w-md"
-        onClick={e => e.stopPropagation()}
-      >
-        <div className="p-6 border-b border-gray-800">
-          <h3 className="text-lg font-bold text-white">Assign Role</h3>
-          <p className="text-sm text-gray-400 mt-1">{String(user.name)}</p>
-        </div>
-        <div className="p-6 space-y-4">
-          <div>
-            <label className="block text-sm text-gray-400 mb-3">Select Role</label>
-            <div className="space-y-2">
-              {roles.map(role => (
-                <button
-                  key={String(role.id)}
-                  onClick={() => setSelectedRole(String(role.name))}
-                  className={clsx(
-                    'w-full text-left px-4 py-3 rounded-lg border transition-colors',
-                    selectedRole === String(role.name)
-                      ? 'bg-blue-600/20 border-blue-500 text-white'
-                      : 'border-gray-700 text-gray-300 hover:border-gray-600'
-                  )}
-                >
-                  <div className="font-medium">{String(role.name)}</div>
-                  <div className="text-xs text-gray-500 mt-1">{String(role.description ?? '')}</div>
-                </button>
-              ))}
-            </div>
-          </div>
-        </div>
-        <div className="p-6 border-t border-gray-800 flex justify-end gap-3">
-          <button type="button" onClick={onClose} className="px-4 py-2 btn btn-ghost rounded-lg">
-            Cancel
-          </button>
-          <button
-            onClick={handleSave}
-            disabled={saving}
-            className="px-4 py-2 btn btn-primary rounded-lg font-medium flex items-center gap-2"
-          >
-            {Boolean(saving) && <RefreshCw className="h-4 w-4 animate-spin" />}
-            Assign Role
-          </button>
-        </div>
-      </div>
-    </div>
   );
 }
 

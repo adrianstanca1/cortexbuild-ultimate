@@ -3,12 +3,11 @@ import React, { useState, useEffect } from 'react';
 import { ModuleBreadcrumbs } from '../ui/Breadcrumbs';
 import {
   TrendingUp, TrendingDown, DollarSign, Plus, FileText, Calculator, Target,
-  BarChart3, PieChart as PieChartIcon, Activity, Loader2, BrainCircuit, AlertTriangle,
-  X, ChevronRight, Edit2, Trash2, Trees, LineChart as LineChartIcon
+  BarChart3, PieChart as PieChartIcon, Activity, Loader2, BrainCircuit, AlertTriangle
 } from 'lucide-react';
 import {
-  BarChart, Bar, AreaChart, Area, XAxis, YAxis, LineChart, Line,
-  CartesianGrid, Tooltip, Legend, ResponsiveContainer, Pie, Cell, PieChart, ComposedChart
+  BarChart, Bar, AreaChart, Area, XAxis, YAxis,
+  CartesianGrid, Tooltip, Legend, ResponsiveContainer, Pie, Cell, PieChart
 } from 'recharts';
 import { toast } from 'sonner';
 import { costManagementApi, predictiveApi } from '../../services/api';
@@ -33,48 +32,10 @@ interface CostForecast {
   cumulative: number;
 }
 
-interface CommitmentItem {
-  id: string;
-  reference: string;
-  supplier: string;
-  description: string;
-  originalValue: number;
-  approvedVariations: number;
-  revisedValue: number;
-  paidToDate: number;
-  remaining: number;
-}
-
-interface CostCode {
-  id: string;
-  level: number;
-  division: string;
-  category?: string;
-  subCategory?: string;
-  lineItem?: string;
-  budget: number;
-  actual: number;
-  children?: CostCode[];
-}
-
-interface ForecastMetric {
-  workPackage: string;
-  budget: number;
-  actual: number;
-  forecast: number;
-  variance: number;
-}
-
-interface EVMMetric {
-  label: string;
-  value: string;
-  description: string;
-}
-
 const CHART_COLORS = ['#f59e0b', '#3b82f6', '#10b981', '#ef4444', '#8b5cf6', '#06b6d4'];
 
 export function CostManagement() {
-  const [activeTab, setActiveTab] = useState<'budget' | 'forecast' | 'variance' | 'commitments' | 'costcodes' | 'forecasting'>('budget');
+  const [activeTab, setActiveTab] = useState<'budget' | 'forecast' | 'variance'>('budget');
   const [showAddItem, setShowAddItem] = useState(false);
   const [loading, setLoading] = useState(true);
 
@@ -85,83 +46,6 @@ export function CostManagement() {
 
   // Add item form state
   const [newItem, setNewItem] = useState({ category: '', description: '', budgeted: '', committed: '' });
-
-  // Commitments Tab State
-  const [commitments] = useState<CommitmentItem[]>([
-    { id: '1', reference: 'PO-2026-0145', supplier: 'Northern Steel Traders Ltd', description: 'Structural steel - Grade 50, 250 tonnes', originalValue: 195000, approvedVariations: 8500, revisedValue: 203500, paidToDate: 182500, remaining: 21000 },
-    { id: '2', reference: 'PO-2026-0156', supplier: 'Precision Ready Mix', description: 'Concrete delivery - 2000 m³ @ £150/m³', originalValue: 300000, approvedVariations: -15000, revisedValue: 285000, paidToDate: 285000, remaining: 0 },
-    { id: '3', reference: 'SC-2026-0089', supplier: 'Apex Construction Services', description: 'Formwork & falsework labour - 8 weeks', originalValue: 175000, approvedVariations: 12000, revisedValue: 187000, paidToDate: 140000, remaining: 47000 },
-    { id: '4', reference: 'PO-2026-0167', supplier: 'MEP Electrical Supplies', description: 'Main switchboard & distribution boards', originalValue: 85000, approvedVariations: 3200, revisedValue: 88200, paidToDate: 50000, remaining: 38200 },
-    { id: '5', reference: 'PO-2026-0178', supplier: 'Global Cladding Systems', description: 'Facade cladding system - aluminium composite', originalValue: 220000, approvedVariations: 0, revisedValue: 220000, paidToDate: 88000, remaining: 132000 },
-    { id: '6', reference: 'SC-2026-0095', supplier: 'Landscape Contractors UK', description: 'External works & hard landscaping', originalValue: 95000, approvedVariations: 5500, revisedValue: 100500, paidToDate: 50000, remaining: 50500 },
-  ]);
-
-  const [showCreateCommitment, setShowCreateCommitment] = useState(false);
-
-  // Cost Codes Tab State
-  const [costCodes] = useState<CostCode[]>([
-    {
-      id: '1', level: 0, division: 'Preliminaries', budget: 450000, actual: 385200,
-      children: [
-        { id: '1.1', level: 1, division: 'Preliminaries', category: 'Site Management', budget: 180000, actual: 165000 },
-        { id: '1.2', level: 1, division: 'Preliminaries', category: 'Health & Safety', budget: 120000, actual: 98500 },
-        { id: '1.3', level: 1, division: 'Preliminaries', category: 'Temporary Works', budget: 150000, actual: 121700 },
-      ]
-    },
-    {
-      id: '2', level: 0, division: 'Substructure', budget: 580000, actual: 512300,
-      children: [
-        { id: '2.1', level: 1, division: 'Substructure', category: 'Excavation & Earthworks', budget: 180000, actual: 175000 },
-        { id: '2.2', level: 1, division: 'Substructure', category: 'Concrete - Foundations', budget: 280000, actual: 265300 },
-        { id: '2.3', level: 1, division: 'Substructure', category: 'Waterproofing', budget: 120000, actual: 72000 },
-      ]
-    },
-    {
-      id: '3', level: 0, division: 'Superstructure', budget: 950000, actual: 780000,
-      children: [
-        { id: '3.1', level: 1, division: 'Superstructure', category: 'Structural Frame', budget: 450000, actual: 380000 },
-        { id: '3.2', level: 1, division: 'Superstructure', category: 'Floor Slabs', budget: 320000, actual: 280000 },
-        { id: '3.3', level: 1, division: 'Superstructure', category: 'Roof Structure', budget: 180000, actual: 120000 },
-      ]
-    },
-    {
-      id: '4', level: 0, division: 'MEP Systems', budget: 780000, actual: 420000,
-      children: [
-        { id: '4.1', level: 1, division: 'MEP Systems', category: 'Electrical Installation', budget: 320000, actual: 185000 },
-        { id: '4.2', level: 1, division: 'MEP Systems', category: 'Mechanical (HVAC)', budget: 280000, actual: 150000 },
-        { id: '4.3', level: 1, division: 'MEP Systems', category: 'Plumbing & Drainage', budget: 180000, actual: 85000 },
-      ]
-    },
-  ]);
-
-  const [expandedCostCode, setExpandedCostCode] = useState<string | null>(null);
-
-  // Forecasting Tab State
-  const [forecastMetrics] = useState<ForecastMetric[]>([
-    { workPackage: 'Preliminaries', budget: 450000, actual: 385200, forecast: 420000, variance: 30000 },
-    { workPackage: 'Substructure', budget: 580000, actual: 512300, forecast: 575000, variance: -5000 },
-    { workPackage: 'Superstructure', budget: 950000, actual: 780000, forecast: 920000, variance: 30000 },
-    { workPackage: 'MEP Systems', budget: 780000, actual: 420000, forecast: 780000, variance: 0 },
-    { workPackage: 'Internal Works', budget: 520000, actual: 180000, forecast: 525000, variance: -5000 },
-  ]);
-
-  const [sCurveData] = useState([
-    { period: 'W1', budget: 85000, actual: 62000, forecast: 85000 },
-    { period: 'W2', budget: 170000, actual: 125000, forecast: 170000 },
-    { period: 'W4', budget: 340000, actual: 295000, forecast: 340000 },
-    { period: 'W8', budget: 680000, actual: 640000, forecast: 685000 },
-    { period: 'W12', budget: 1020000, actual: 980000, forecast: 1030000 },
-    { period: 'W16', budget: 1360000, actual: 1320000, forecast: 1370000 },
-    { period: 'W20', budget: 2080000, actual: 2050000, forecast: 2090000 },
-    { period: 'W24', budget: 2800000, actual: 2900000, forecast: 2850000 },
-  ]);
-
-  const [evmMetrics] = useState<EVMMetric[]>([
-    { label: 'Schedule Performance Index (SPI)', value: '0.98', description: 'On track (target: ≥1.0)' },
-    { label: 'Cost Performance Index (CPI)', value: '1.02', description: 'Positive variance' },
-    { label: 'Estimate at Completion (EAC)', value: '£2,850,000', description: 'Project final cost projection' },
-    { label: 'Estimate to Complete (ETC)', value: '£650,000', description: 'Remaining budget needed' },
-  ]);
 
   // Load data from API
   useEffect(() => {
@@ -332,23 +216,18 @@ export function CostManagement() {
       </div>
 
       {/* Tabs */}
-      <div className="flex gap-1 border-b border-gray-700 pb-2 overflow-x-auto">
-        {['budget', 'forecast', 'variance', 'commitments', 'costcodes', 'forecasting'].map((tab) => (
+      <div className="flex gap-1 border-b border-gray-700 pb-2">
+        {['budget', 'forecast', 'variance'].map((tab) => (
           <button
             key={tab}
             onClick={() => setActiveTab(tab as typeof activeTab)}
-            className={`px-4 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-colors ${
+            className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
               activeTab === tab
                 ? 'bg-emerald-600 text-white'
                 : 'bg-gray-800 text-gray-400 hover:bg-gray-700 hover:text-white'
             }`}
           >
-            {tab === 'budget' && 'Budget Analysis'}
-            {tab === 'forecast' && 'Forecast'}
-            {tab === 'variance' && 'Variance'}
-            {tab === 'commitments' && 'Commitments'}
-            {tab === 'costcodes' && 'Cost Codes'}
-            {tab === 'forecasting' && 'Forecasting'}
+            {tab.charAt(0).toUpperCase() + tab.slice(1)} Analysis
           </button>
         ))}
       </div>
@@ -608,202 +487,6 @@ export function CostManagement() {
         </div>
       )}
 
-      {/* Commitments Tab */}
-      {activeTab === 'commitments' && (
-        <div className="space-y-6">
-          {/* Summary KPIs */}
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-            {[
-              { label: 'Total Commitments', value: fmt(commitments.reduce((sum, c) => sum + c.revisedValue, 0)), icon: Target, color: 'text-blue-400', bg: 'bg-blue-900/30' },
-              { label: 'Paid to Date', value: fmt(commitments.reduce((sum, c) => sum + c.paidToDate, 0)), icon: Calculator, color: 'text-green-400', bg: 'bg-green-900/30' },
-              { label: 'Remaining', value: fmt(commitments.reduce((sum, c) => sum + c.remaining, 0)), icon: Activity, color: 'text-amber-400', bg: 'bg-amber-900/30' },
-              { label: 'Variations', value: fmt(commitments.reduce((sum, c) => sum + c.approvedVariations, 0)), icon: TrendingUp, color: 'text-purple-400', bg: 'bg-purple-900/30' },
-            ].map((item) => (
-              <div key={item.label} className="card bg-base-200 p-5">
-                <div className="flex items-start justify-between mb-3">
-                  <div>
-                    <p className="text-gray-400 text-sm">{item.label}</p>
-                    <p className="text-2xl font-bold text-white mt-1">{item.value}</p>
-                  </div>
-                  <div className={`p-2 rounded-lg ${item.bg}`}>
-                    <item.icon className={`w-5 h-5 ${item.color}`} />
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-
-          {/* Commitments Table */}
-          <div className="card bg-base-200 overflow-hidden">
-            <div className="flex items-center justify-between px-6 py-4 border-b border-gray-700">
-              <h3 className="text-lg font-semibold text-white">Committed Costs</h3>
-              <button onClick={() => setShowCreateCommitment(true)} className="flex items-center gap-2 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg transition-colors text-sm">
-                <Plus className="h-4 w-4" />
-                New Commitment
-              </button>
-            </div>
-            <div className="cb-table-scroll touch-pan-x">
-              <table className="w-full text-sm">
-                <thead className="bg-gray-900 border-b border-gray-700">
-                  <tr>
-                    {['Reference', 'Supplier', 'Description', 'Original Value', 'Variations', 'Revised Value', 'Paid to Date', 'Remaining'].map(h => (
-                      <th key={h} className="px-4 py-3 text-left text-xs font-display tracking-widest text-gray-400 uppercase">{h}</th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-700">
-                  {commitments.map((commitment) => (
-                    <tr key={commitment.id} className="hover:bg-gray-900/40 transition-colors">
-                      <td className="px-4 py-4 font-medium text-white">{commitment.reference}</td>
-                      <td className="px-4 py-4 text-gray-300">{commitment.supplier}</td>
-                      <td className="px-4 py-4 text-gray-300">{commitment.description}</td>
-                      <td className="px-4 py-4 text-right font-medium text-white">{fmt(commitment.originalValue)}</td>
-                      <td className="px-4 py-4 text-right font-medium text-amber-400">{commitment.approvedVariations >= 0 ? '+' : '-'}{fmt(Math.abs(commitment.approvedVariations))}</td>
-                      <td className="px-4 py-4 text-right font-medium text-white">{fmt(commitment.revisedValue)}</td>
-                      <td className="px-4 py-4 text-right text-green-400 font-medium">{fmt(commitment.paidToDate)}</td>
-                      <td className="px-4 py-4 text-right font-medium text-orange-400">{fmt(commitment.remaining)}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Cost Codes Tab */}
-      {activeTab === 'costcodes' && (
-        <div className="space-y-6">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {/* Cost Code Tree */}
-            <div className="card bg-base-200 p-6">
-              <h3 className="text-white font-semibold mb-4 flex items-center gap-2">
-                <Trees className="w-4 h-4" />
-                Cost Code Structure
-              </h3>
-              <div className="space-y-2">
-                {costCodes.map((code) => (
-                  <div key={code.id} className="space-y-2">
-                    <button
-                      onClick={() => setExpandedCostCode(expandedCostCode === code.id ? null : code.id)}
-                      className="w-full flex items-center gap-2 p-3 bg-gray-900 rounded-lg hover:bg-gray-800 transition-colors text-left"
-                    >
-                      <ChevronRight className={`h-4 w-4 transition-transform ${expandedCostCode === code.id ? 'rotate-90' : ''}`} />
-                      <span className="font-medium text-white flex-1">{code.division}</span>
-                      <span className="text-xs text-gray-400">{fmt(code.budget)} / {fmt(code.actual)}</span>
-                    </button>
-                    {expandedCostCode === code.id && code.children && (
-                      <div className="ml-4 space-y-1">
-                        {code.children.map((child) => (
-                          <div key={child.id} className="p-3 bg-gray-900/50 rounded-lg border border-gray-700">
-                            <div className="flex justify-between items-start">
-                              <div>
-                                <p className="text-sm font-medium text-gray-300">{child.category}</p>
-                              </div>
-                              <div className="text-right text-xs">
-                                <p className="text-gray-400">Budget: {fmt(child.budget)}</p>
-                                <p className="text-gray-400">Actual: {fmt(child.actual)}</p>
-                              </div>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {/* Budget vs Actual by Division */}
-            <div className="card bg-base-200 p-6">
-              <h3 className="text-white font-semibold mb-4 flex items-center gap-2">
-                <BarChart3 className="w-4 h-4" />
-                Budget vs Actual by Division
-              </h3>
-              <ResponsiveContainer width="100%" height={300}>
-                <BarChart data={costCodes}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
-                  <XAxis dataKey="division" stroke="#9ca3af" fontSize={12} />
-                  <YAxis stroke="#9ca3af" fontSize={12} tickFormatter={(v) => `£${(v / 1000).toFixed(0)}K`} />
-                  <Tooltip contentStyle={{ backgroundColor: '#1f2937', border: '1px solid #374151', color: '#fff' }} formatter={(v) => fmt(v as number)} />
-                  <Legend />
-                  <Bar dataKey="budget" name="Budget (£)" fill="#3b82f6" radius={[4, 4, 0, 0]} />
-                  <Bar dataKey="actual" name="Actual (£)" fill="#ef4444" radius={[4, 4, 0, 0]} />
-                </BarChart>
-              </ResponsiveContainer>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Forecasting Tab */}
-      {activeTab === 'forecasting' && (
-        <div className="space-y-6">
-          {/* S-Curve Chart */}
-          <div className="card bg-base-200 p-6 lg:col-span-2">
-            <h3 className="text-white font-semibold mb-4 flex items-center gap-2">
-              <LineChartIcon className="w-4 h-4" />
-              Cost S-Curve: Budget vs Actual vs Forecast
-            </h3>
-            <ResponsiveContainer width="100%" height={350}>
-              <ComposedChart data={sCurveData}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
-                <XAxis dataKey="period" stroke="#9ca3af" />
-                <YAxis stroke="#9ca3af" tickFormatter={(v) => `£${(v / 1000000).toFixed(1)}M`} />
-                <Tooltip contentStyle={{ backgroundColor: '#1f2937', border: '1px solid #374151' }} formatter={(v) => fmt(v as number)} />
-                <Legend />
-                <Line type="monotone" dataKey="budget" stroke="#3b82f6" strokeWidth={2} name="Budget" />
-                <Line type="monotone" dataKey="actual" stroke="#10b981" strokeWidth={2} name="Actual" />
-                <Line type="monotone" dataKey="forecast" stroke="#f59e0b" strokeWidth={2} strokeDasharray="5 5" name="Forecast" />
-              </ComposedChart>
-            </ResponsiveContainer>
-          </div>
-
-          {/* EVM Metrics */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            {evmMetrics.map((metric, idx) => (
-              <div key={idx} className="card bg-base-200 p-5">
-                <p className="text-gray-400 text-xs font-medium uppercase mb-2">{metric.label}</p>
-                <p className="text-2xl font-bold text-white mb-1">{metric.value}</p>
-                <p className="text-xs text-gray-500">{metric.description}</p>
-              </div>
-            ))}
-          </div>
-
-          {/* Cost Variance by Work Package */}
-          <div className="card bg-base-200 p-6">
-            <h3 className="text-white font-semibold mb-4">Cost Variance by Work Package</h3>
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead className="bg-gray-900 border-b border-gray-700">
-                  <tr>
-                    {['Work Package', 'Budget', 'Actual', 'Forecast', 'Variance', '%'].map(h => (
-                      <th key={h} className="px-4 py-3 text-left text-xs font-display tracking-widest text-gray-400 uppercase">{h}</th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-700">
-                  {forecastMetrics.map((metric) => (
-                    <tr key={metric.workPackage} className="hover:bg-gray-900/40 transition-colors">
-                      <td className="px-4 py-4 font-medium text-white">{metric.workPackage}</td>
-                      <td className="px-4 py-4 text-right text-gray-300">{fmt(metric.budget)}</td>
-                      <td className="px-4 py-4 text-right text-gray-300">{fmt(metric.actual)}</td>
-                      <td className="px-4 py-4 text-right text-gray-300">{fmt(metric.forecast)}</td>
-                      <td className={`px-4 py-4 text-right font-medium ${metric.variance >= 0 ? 'text-green-400' : 'text-red-400'}`}>
-                        {metric.variance >= 0 ? '+' : '-'}{fmt(Math.abs(metric.variance))}
-                      </td>
-                      <td className={`px-4 py-4 text-right font-medium ${metric.variance >= 0 ? 'text-green-400' : 'text-red-400'}`}>
-                        {((metric.variance / metric.budget) * 100).toFixed(1)}%
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        </div>
-      )}
-
       {/* Add Item Modal */}
       {showAddItem && (
         <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
@@ -837,50 +520,6 @@ export function CostManagement() {
                 Add Item
               </button>
               <button onClick={() => setShowAddItem(false)} className="flex-1 btn btn-ghost rounded-lg py-2 text-sm font-semibold">
-                Cancel
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Create Commitment Modal */}
-      {showCreateCommitment && (
-        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-gray-800 border border-gray-700 rounded-2xl w-full max-w-lg shadow-2xl">
-            <div className="flex items-center justify-between px-6 py-4 border-b border-gray-700">
-              <h2 className="text-lg font-bold text-white">Create New Commitment</h2>
-              <button onClick={() => setShowCreateCommitment(false)} className="text-gray-400 hover:text-white"><X className="w-5 h-5" /></button>
-            </div>
-            <div className="p-6 space-y-4">
-              <div>
-                <label className="block text-xs font-medium text-gray-400 mb-1">Reference</label>
-                <input placeholder="e.g., PO-2026-0200" className="w-full bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-emerald-500" />
-              </div>
-              <div>
-                <label className="block text-xs font-medium text-gray-400 mb-1">Supplier</label>
-                <input placeholder="Supplier name" className="w-full bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-emerald-500" />
-              </div>
-              <div>
-                <label className="block text-xs font-medium text-gray-400 mb-1">Description</label>
-                <textarea placeholder="Item description" rows={2} className="w-full bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-white text-sm resize-none focus:outline-none focus:border-emerald-500" />
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-xs font-medium text-gray-400 mb-1">Value (£)</label>
-                  <input type="number" placeholder="0.00" className="w-full bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-emerald-500" />
-                </div>
-                <div>
-                  <label className="block text-xs font-medium text-gray-400 mb-1">Variations (£)</label>
-                  <input type="number" placeholder="0.00" className="w-full bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-emerald-500" />
-                </div>
-              </div>
-            </div>
-            <div className="flex gap-3 px-6 py-4 border-t border-gray-700">
-              <button onClick={() => { setShowCreateCommitment(false); toast.success('Commitment created'); }} className="flex-1 btn btn-primary rounded-lg py-2 text-sm font-semibold">
-                Create Commitment
-              </button>
-              <button onClick={() => setShowCreateCommitment(false)} className="flex-1 btn btn-ghost rounded-lg py-2 text-sm font-semibold">
                 Cancel
               </button>
             </div>
