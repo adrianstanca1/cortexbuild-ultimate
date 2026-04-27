@@ -82,7 +82,7 @@ jobs:
             build \
             | xcpretty
 
-      - name: Build iOS Release (unsigned)
+      - name: Build iOS Release (unsigned archive)
         if: ${{ github.event.inputs.build_type == 'release' }}
         working-directory: ios/App
         run: |
@@ -91,7 +91,7 @@ jobs:
             -project App.xcodeproj \
             -scheme App \
             -configuration Release \
-            -sdk iphoneos \
+            -destination 'generic/platform=iOS' \
             -archivePath ./build/CortexBuild.xcarchive \
             archive \
             CODE_SIGNING_ALLOWED=NO \
