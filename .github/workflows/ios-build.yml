@@ -82,9 +82,18 @@ jobs:
             build \
             | xcpretty
 
+      - name: Download iOS platform SDK
+        if: ${{ github.event.inputs.build_type == 'release' }}
+        run: |
+          # Xcode 16.2 ships without iOS 18.2 platform SDK pre-installed on
+          # macos-15 runners. Archive needs it. Download is ~15 min but only
+          # runs on workflow_dispatch (manual release builds), not every PR.
+          xcodebuild -downloadPlatform iOS || echo "::warning::iOS platform download failed; archive may fail"
+
       - name: Build iOS Release (unsigned archive)
         if: ${{ github.event.inputs.build_type == 'release' }}
         working-directory: ios/App
+        continue-on-error: true
         run: |
           set -o pipefail
           xcodebuild \
@@ -98,6 +107,7 @@ jobs:
             OTHER_SWIFT_FLAGS='$(inherited) -enable-experimental-feature NonescapableTypes' \
             DEVELOPMENT_TEAM="" \
             | xcpretty
+          echo "::notice::For signed App Store builds, use Codemagic (codemagic.yaml) — it has all SDKs pre-installed."
 
       - name: Package debug build
         if: ${{ github.event.inputs.build_type != 'release' }}
