@@ -1,5 +1,6 @@
 import React, { useMemo, useState } from 'react';
 import { useMeetings, useTeam, useEquipment } from '../../hooks/useData';
+import { useSyncedPreference } from '../../hooks/useSyncedPreference';
 import { toast } from 'sonner';
 import {
   Plus, X, ChevronLeft, ChevronRight, MapPin, Users, AlertTriangle, Calendar as CalendarIcon, Flag, Zap, CheckSquare, Square, Trash2, HardHat
@@ -78,7 +79,7 @@ export function Calendar() {
   const updateMutation = useUpdate();
   const deleteMutation = useDelete();
 
-  const [subTab, setSubTab] = useState<SubTab>('month');
+  const [subTab, setSubTab] = useSyncedPreference<SubTab>('calendar.subTab', 'month');
   const [currentDate, setCurrentDate] = useState(new Date());
   const [showModal, setShowModal] = useState(false);
   const [editing, setEditing] = useState<AnyRow | null>(null);

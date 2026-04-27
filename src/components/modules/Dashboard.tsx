@@ -1,6 +1,7 @@
 // Module: Dashboard — CortexBuild Ultimate
 // Command Centre — live construction intelligence dashboard
 import React, { useState, useEffect, useRef, useMemo } from 'react';
+import { useSyncedPreference } from '../../hooks/useSyncedPreference';
 import {
   TrendingUp, TrendingDown, Activity, DollarSign,
   Users, AlertTriangle, Download, FileText, RefreshCw, ShieldCheck, Briefcase,
@@ -208,7 +209,10 @@ const ActivityItem = React.memo(({ user, action, module, time, accent, delay = 0
 
 // ─── Main Dashboard ───────────────────────────────────────────────────────
 function DashboardComponent() {
-  const [activeTab, setActiveTab] = useState<'overview' | 'projects' | 'finance' | 'safety' | 'activity'>('overview');
+  const [activeTab, setActiveTab] = useSyncedPreference<'overview' | 'projects' | 'finance' | 'safety' | 'activity'>(
+    'dashboard.activeTab',
+    'overview',
+  );
   const [dashboardKpi, setDashboardKpi] = useState<{
     activeProjects?: number; totalRevenue?: number; outstanding?: number;
     openRfis?: number; hsScore?: number; workforce?: number;

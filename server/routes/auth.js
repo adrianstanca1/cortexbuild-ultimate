@@ -1012,6 +1012,84 @@ router.put("/preferences", authMiddleware, async (req, res) => {
   }
 });
 
+// ─── UI preferences (cross-device sync for tabs/views/filters) ──────────────
+// Modules call PUT /api/auth/ui-preferences/<key> with the value, GET to read.
+// Keys are arbitrary strings the client picks (e.g. 'dashboard.activeTab').
+// Values must be JSON-serialisable; size guarded at 256KB to stop runaway blobs.
+
+const UI_PREF_KEY_RE = /^[a-zA-Z][\w.\-]{0,63}$/;
+
+router.get("/ui-preferences", authMiddleware, async (req, res) => {
+  try {
+    const { rows } = await pool.query(
+      "SELECT ui_preferences FROM users WHERE id = $1",
+      [req.user.id],
+    );
+    res.json(rows[0]?.ui_preferences ?? {});
+  } catch (err) {
+    console.error("[auth/ui-preferences GET]", err);
+    res.status(500).json({ message: "Server error" });
+  }
+});
+
+router.put("/ui-preferences/:key", authMiddleware, async (req, res) => {
+  const { key } = req.params;
+  if (!UI_PREF_KEY_RE.test(key)) {
+    return res
+      .status(400)
+      .json({ message: "Invalid key (alphanumeric, underscore, dot, hyphen; max 64 chars)" });
+  }
+  let serialized;
+  try {
+    serialized = JSON.stringify(req.body);
+  } catch {
+    return res.status(400).json({ message: "Value must be JSON-serialisable" });
+  }
+  if (serialized.length > 256 * 1024) {
+    return res.status(413).json({ message: "Preference value too large (256KB max)" });
+  }
+  try {
+    // jsonb_set patches a single key without overwriting unrelated module
+    // preferences — important when two devices write different keys at once.
+    const { rows } = await pool.query(
+      `UPDATE users
+          SET ui_preferences = jsonb_set(
+            COALESCE(ui_preferences, '{}'::jsonb),
+            ARRAY[$1]::text[],
+            $2::jsonb,
+            true
+          )
+        WHERE id = $3
+        RETURNING ui_preferences`,
+      [key, serialized, req.user.id],
+    );
+    res.json(rows[0]?.ui_preferences ?? {});
+  } catch (err) {
+    console.error("[auth/ui-preferences PUT]", err);
+    res.status(500).json({ message: "Server error" });
+  }
+});
+
+router.delete("/ui-preferences/:key", authMiddleware, async (req, res) => {
+  const { key } = req.params;
+  if (!UI_PREF_KEY_RE.test(key)) {
+    return res.status(400).json({ message: "Invalid key" });
+  }
+  try {
+    const { rows } = await pool.query(
+      `UPDATE users
+          SET ui_preferences = ui_preferences - $1
+        WHERE id = $2
+        RETURNING ui_preferences`,
+      [key, req.user.id],
+    );
+    res.json(rows[0]?.ui_preferences ?? {});
+  } catch (err) {
+    console.error("[auth/ui-preferences DELETE]", err);
+    res.status(500).json({ message: "Server error" });
+  }
+});
+
 // GET /api/auth/users
 router.get("/users", authMiddleware, async (req, res) => {
   if (!["super_admin", "company_owner", "admin"].includes(req.user.role)) {

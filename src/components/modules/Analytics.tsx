@@ -1,6 +1,7 @@
 // Module: Analytics — CortexBuild Ultimate
 // Comprehensive analytics dashboard with 6 tabs: Overview, Financial, Projects, Safety, Labour
 import React, { useState, useEffect } from 'react';
+import { useSyncedPreference } from '../../hooks/useSyncedPreference';
 import {
   AreaChart, Area, BarChart, Bar, LineChart, Line, PieChart, Pie, Cell, ScatterChart, Scatter,
   XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer,
@@ -89,7 +90,10 @@ const HEADCOUNT_TREND = [
 ];
 
 export function Analytics() {
-  const [activeTab, setActiveTab] = useState<'overview'|'financial'|'projects'|'safety'|'labour'>('overview');
+  const [activeTab, setActiveTab] = useSyncedPreference<'overview'|'financial'|'projects'|'safety'|'labour'>(
+    'analytics.activeTab',
+    'overview',
+  );
 
   const { data: rawProjects = [], isError: projectsError, error: projectsErr } = useProjects.useList();
   const { data: rawSafety   = [], isError: safetyError, error: safetyErr } = useSafety.useList();
