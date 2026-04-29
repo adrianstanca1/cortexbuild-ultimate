@@ -1,0 +1,41 @@
+name: One-Time SSH Key Setup
+
+# Run this ONCE to install the ed25519 public key on the VPS.
+# After it completes, add the private key (VPS_SSH_KEY secret) and
+# this workflow can be deleted.
+on:
+  workflow_dispatch:
+
+jobs:
+  install-key:
+    name: Install SSH public key on VPS
+    runs-on: ubuntu-latest
+    steps:
+      - name: Install key via password SSH
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          password: ${{ secrets.VPS_PASSWORD }}
+          script: |
+            set -e
+            mkdir -p /root/.ssh
+            chmod 700 /root/.ssh
+
+            PUB_KEY="ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIL/1Bpko4Ve1Fh9eSmy4Dhp/m7Jfh5+bfqxw9mRUmmMC ci@cortexbuildpro"
+
+            if grep -qF "$PUB_KEY" /root/.ssh/authorized_keys 2>/dev/null; then
+              echo "Key already present"
+            else
+              echo "$PUB_KEY" >> /root/.ssh/authorized_keys
+              chmod 600 /root/.ssh/authorized_keys
+              echo "Key installed"
+            fi
+
+            # Harden sshd: enable pubkey auth, keep password auth on for now
+            sed -i 's/^#*PubkeyAuthentication.*/PubkeyAuthentication yes/' /etc/ssh/sshd_config
+            grep -q "^PubkeyAuthentication" /etc/ssh/sshd_config || echo "PubkeyAuthentication yes" >> /etc/ssh/sshd_config
+            systemctl reload sshd 2>/dev/null || service sshd reload 2>/dev/null || true
+
+            echo "Done. Verify with: ssh -i id_ed25519_vps root@${{ secrets.SSH_HOST }} 'echo OK'"
+            echo "Then add VPS_SSH_KEY secret and remove VPS_PASSWORD."
