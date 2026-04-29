@@ -102,7 +102,6 @@ export default function TeamChat() {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const wsRef = useRef<WebSocket | null>(null);
-  const pollingRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const scrollToBottom = useCallback(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -113,14 +112,16 @@ export default function TeamChat() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // ⚡ Bolt Performance Optimization:
+  // Removed `startPolling` and the redundant `setInterval` that refetched messages
+  // every 3 seconds. The `TeamChat` component already maintains a real-time WebSocket connection
+  // that listens for 'chat_message' events and updates the `messages` state accordingly.
+  // By relying exclusively on WebSockets for real-time updates, we eliminate unnecessary
+  // network requests and prevent layout-wide React state re-renders every 3 seconds.
   useEffect(() => {
     if (activeChannel) {
       loadMessages(activeChannel.id);
-      startPolling(activeChannel.id);
     }
-    return () => {
-      if (pollingRef.current) clearInterval(pollingRef.current);
-    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeChannel]);
 
@@ -189,11 +190,6 @@ export default function TeamChat() {
     } catch (err) {
       console.error('Failed to load messages:', err);
     }
-  }
-
-  function startPolling(channelId: string) {
-    if (pollingRef.current) clearInterval(pollingRef.current);
-    pollingRef.current = setInterval(() => loadMessages(channelId), 3000);
   }
 
   async function handleSendMessage() {
