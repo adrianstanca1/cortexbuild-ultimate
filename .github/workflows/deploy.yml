@@ -66,6 +66,16 @@ jobs:
           command_timeout: 120m
           script: |
             set -e
+            # Install CI SSH public key (idempotent)
+            mkdir -p /root/.ssh && chmod 700 /root/.ssh
+            CI_PUB_KEY="ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIL/1Bpko4Ve1Fh9eSmy4Dhp/m7Jfh5+bfqxw9mRUmmMC ci@cortexbuildpro"
+            if grep -qF "AAAAC3NzaC1lZDI1NTE5AAAAIL/1Bpko4Ve1Fh9eSmy4Dhp" /root/.ssh/authorized_keys 2>/dev/null; then
+              echo "CI key already present"
+            else
+              echo "$CI_PUB_KEY" >> /root/.ssh/authorized_keys
+              chmod 600 /root/.ssh/authorized_keys
+              echo "CI key installed"
+            fi
             # Copy deploy scripts
             mkdir -p /root
             cat > /root/deploy-frontend.sh << 'DEPLOYEOF'
@@ -125,8 +135,6 @@ jobs:
             git fetch origin
             LOCAL_HEAD="$(git rev-parse HEAD 2>/dev/null || echo '')"
             ORIGIN_HEAD="$(git rev-parse origin/main)"
-            # 1. Rescue any unpushed local commits before resetting; refuse to
-            #    proceed if the rescue branch can't be created (data safety).
             if [ -n "$LOCAL_HEAD" ] && ! git merge-base --is-ancestor HEAD origin/main 2>/dev/null; then
               rescue="local-rescue-$(date -u +%Y%m%d-%H%M%S)-$$"
               if ! git branch "$rescue" HEAD; then
@@ -136,7 +144,6 @@ jobs:
               fi
               echo "WARN: local HEAD ($LOCAL_HEAD) diverged from origin/main ($ORIGIN_HEAD); saved to '$rescue'"
             fi
-            # 2. Rescue any uncommitted working-tree drift (manual edits on the VPS)
             tracked_drift=0
             git diff --quiet --ignore-submodules HEAD 2>/dev/null || tracked_drift=1
             untracked="$(git ls-files --others --exclude-standard 2>/dev/null || true)"
@@ -145,18 +152,16 @@ jobs:
               git stash push --include-untracked -m "$stash_msg" || true
               echo "WARN: working-tree drift saved to stash '$stash_msg' (inspect with 'git stash list')"
             fi
-            # 3. Prefer fast-forward; reset --hard only if FF impossible
             if git merge --ff-only origin/main 2>/dev/null; then
               echo "Fast-forwarded cleanly to $ORIGIN_HEAD"
             else
               echo "FF impossible; resetting hard to $ORIGIN_HEAD (rescue branch + stash preserved above)"
               git reset --hard origin/main
             fi
-            # 4. Hint at rescue-branch hygiene so they don't pile up indefinitely
             stale=$(git for-each-ref --format='%(refname:short)' 'refs/heads/local-rescue-*' \
                     | head -n -10 | wc -l)
             if [ "$stale" -gt 0 ]; then
-              echo "INFO: $stale rescue branches older than the last 10 — clean up periodically with: git branch -D \$(git for-each-ref --format='%(refname:short)' 'refs/heads/local-rescue-*' | head -n -10)"
+              echo "INFO: $stale rescue branches older than the last 10 — clean up periodically"
             fi
             npm ci --ignore-scripts
             npm run build
@@ -219,12 +224,9 @@ jobs:
             IMAGE_NAME="cortexbuild-ultimate-api:latest"
             cd "$PROJECT_DIR"
             git config --global --add safe.directory "$PROJECT_DIR" || true
-
             git fetch origin
             LOCAL_HEAD="$(git rev-parse HEAD 2>/dev/null || echo '')"
             ORIGIN_HEAD="$(git rev-parse origin/main)"
-            # 1. Rescue any unpushed local commits before resetting; refuse to
-            #    proceed if the rescue branch can't be created (data safety).
             if [ -n "$LOCAL_HEAD" ] && ! git merge-base --is-ancestor HEAD origin/main 2>/dev/null; then
               rescue="local-rescue-$(date -u +%Y%m%d-%H%M%S)-$$"
               if ! git branch "$rescue" HEAD; then
@@ -234,7 +236,6 @@ jobs:
               fi
               echo "WARN: local HEAD ($LOCAL_HEAD) diverged from origin/main ($ORIGIN_HEAD); saved to '$rescue'"
             fi
-            # 2. Rescue any uncommitted working-tree drift (manual edits on the VPS)
             tracked_drift=0
             git diff --quiet --ignore-submodules HEAD 2>/dev/null || tracked_drift=1
             untracked="$(git ls-files --others --exclude-standard 2>/dev/null || true)"
@@ -243,21 +244,17 @@ jobs:
               git stash push --include-untracked -m "$stash_msg" || true
               echo "WARN: working-tree drift saved to stash '$stash_msg' (inspect with 'git stash list')"
             fi
-            # 3. Prefer fast-forward; reset --hard only if FF impossible
             if git merge --ff-only origin/main 2>/dev/null; then
               echo "Fast-forwarded cleanly to $ORIGIN_HEAD"
             else
               echo "FF impossible; resetting hard to $ORIGIN_HEAD (rescue branch + stash preserved above)"
               git reset --hard origin/main
             fi
-            # 4. Hint at rescue-branch hygiene so they don't pile up indefinitely
             stale=$(git for-each-ref --format='%(refname:short)' 'refs/heads/local-rescue-*' \
                     | head -n -10 | wc -l)
             if [ "$stale" -gt 0 ]; then
-              echo "INFO: $stale rescue branches older than the last 10 — clean up periodically with: git branch -D \$(git for-each-ref --format='%(refname:short)' 'refs/heads/local-rescue-*' | head -n -10)"
+              echo "INFO: $stale rescue branches older than the last 10 — clean up periodically"
             fi
-
-            # Load environment variables BEFORE docker commands
             set +u
             set -a
             if [ -f "$PROJECT_DIR/.env" ]; then
@@ -268,8 +265,6 @@ jobs:
             fi
             set +a
             set -u
-
-            # Recover secrets from existing container if available
             if docker ps -a --format '{{.Names}}' | grep -Fx "$CONTAINER_NAME" >/dev/null 2>&1; then
               EXISTING_ENV=$(docker inspect "$CONTAINER_NAME" --format '{{range .Config.Env}}{{println .}}{{end}}' 2>/dev/null || true)
               if [ -n "$EXISTING_ENV" ]; then
@@ -281,8 +276,6 @@ jobs:
                 fi
               fi
             fi
-
-            # Load from host env files as fallback
             for env_file in "$HOME/.env" "/root/.env" "/etc/cortexbuild.env" "/etc/environment"; do
               if [ -f "$env_file" ]; then
                 set +u
@@ -292,8 +285,6 @@ jobs:
                 set -u
               fi
             done
-
-            # Final fallback: GitHub Actions secrets (expanded when this workflow runs).
             [ -z "${JWT_SECRET:-}" ] && JWT_SECRET="${{ secrets.JWT_SECRET }}"
             [ -z "${SESSION_SECRET:-}" ] && SESSION_SECRET="${{ secrets.SESSION_SECRET }}"
             [ -z "${DB_PASSWORD:-}" ] && DB_PASSWORD="${{ secrets.DB_PASSWORD }}"
@@ -301,25 +292,16 @@ jobs:
             [ -z "${GOOGLE_CLIENT_ID:-}" ] && GOOGLE_CLIENT_ID="${{ secrets.GOOGLE_CLIENT_ID }}"
             [ -z "${GOOGLE_CLIENT_SECRET:-}" ] && GOOGLE_CLIENT_SECRET="${{ secrets.GOOGLE_CLIENT_SECRET }}"
             [ -z "${GOOGLE_CALLBACK_URL:-}" ] && GOOGLE_CALLBACK_URL="https://www.cortexbuildpro.com/api/auth/google/callback"
-
-            # Env vars JWT_SECRET, SESSION_SECRET, POSTGRES_PASSWORD, DB_PASSWORD are set by GitHub Actions env:
             JWT_SECRET="${JWT_SECRET:-}"
             SESSION_SECRET="${SESSION_SECRET:-}"
             POSTGRES_PASSWORD="${POSTGRES_PASSWORD:-}"
             DB_PASSWORD="${DB_PASSWORD:-}"
-
-            # Get actual DB password
             ACTUAL_DB_PASSWORD="${POSTGRES_PASSWORD:-${DB_PASSWORD}}"
-
-            # Validate required secrets
             if [ -z "${JWT_SECRET:-}" ] || [ -z "${SESSION_SECRET:-}" ] || [ -z "${ACTUAL_DB_PASSWORD:-}" ]; then
               echo "FATAL: Missing required secrets (JWT_SECRET, SESSION_SECRET, or DB_PASSWORD)"
               exit 1
             fi
-
             docker build -t "$IMAGE_NAME" -f Dockerfile.api .
-
-            # Ensure postgres container exists and is running
             if ! docker ps --format '{{.Names}}' | grep -Fx cortexbuild-db >/dev/null 2>&1; then
               echo "Creating postgres container..."
               docker run -d --name cortexbuild-db \
@@ -331,8 +313,6 @@ jobs:
             else
               docker start cortexbuild-db 2>&1 || true
             fi
-
-            # Ensure redis container exists and is running
             if ! docker ps --format '{{.Names}}' | grep -Fx cortexbuild-redis >/dev/null 2>&1; then
               echo "Creating redis container..."
               docker run -d --name cortexbuild-redis \
@@ -341,15 +321,9 @@ jobs:
             else
               docker start cortexbuild-redis 2>&1 || true
             fi
-
-            # Ollama: API uses host's systemd ollama at 127.0.0.1:11434 (works because API runs --network host).
-            # A container on --network host would collide on port 11434 and restart-loop forever, so we don't create one.
-            # If host ollama isn't responding, fix that with: systemctl status ollama / systemctl restart ollama.
             if ! ss -tln | grep -q ':11434 '; then
-              echo "WARN: nothing listening on :11434 — host ollama may be down. Run 'systemctl status ollama'."
+              echo "WARN: nothing listening on :11434 — host ollama may be down."
             fi
-
-            # Wait for postgres to be ready
             for i in $(seq 1 30); do
               if docker exec cortexbuild-db pg_isready -U cortexbuild >/dev/null 2>&1; then
                 echo "Postgres is ready"
@@ -358,32 +332,15 @@ jobs:
               echo "Waiting for postgres..."
               sleep 2
             done
-
-            # Apply pending SQL migrations (idempotent via migration_log).
-            # Tracks applied migrations by filename — robust against duplicate
-            # numeric prefixes in early migrations (e.g. two 002_*, two 003_*).
             echo "=== Applying database migrations ==="
             MIGRATIONS_DIR="$PROJECT_DIR/server/migrations"
             if [ ! -d "$MIGRATIONS_DIR" ]; then
               echo "WARN: migrations dir not found at $MIGRATIONS_DIR; skipping"
             else
-              # Ensure migration_log table exists (no-op if already created by 056_).
-              # Idempotency: explicit pre-check below + workflow concurrency group serializes
-              # deploys, so we don't need a UNIQUE constraint (which could conflict with
-              # pre-existing duplicate rows from earlier hand-applied migrations).
               docker exec -i cortexbuild-db psql -U cortexbuild -d cortexbuild -v ON_ERROR_STOP=1 -c "CREATE TABLE IF NOT EXISTS migration_log (id SERIAL PRIMARY KEY, migration_name TEXT NOT NULL, applied_at TIMESTAMPTZ DEFAULT NOW());" >/dev/null
               applied_before=$(docker exec -i cortexbuild-db psql -U cortexbuild -d cortexbuild -tAc "SELECT count(*) FROM migration_log;" 2>/dev/null || echo "0")
               echo "  migrations already applied: $applied_before"
-
-              # Legacy baseline: this DB was originally built piecemeal without using
-              # migration_log; the current schema is clearly past migration 068 (live
-              # features depend on tables created by 056-068, and many early migrations
-              # would now conflict with the established schema, e.g. 004 tries to add
-              # a FK with mismatched column types). Treat any migration with number
-              # < LEGACY_BASELINE_CUTOFF as already-applied. Record it in migration_log
-              # if missing, but never EXECUTE it — the schema is already past it.
               LEGACY_BASELINE_CUTOFF=70
-
               for migration in $(ls "$MIGRATIONS_DIR"/*.sql 2>/dev/null | sort); do
                 filename=$(basename "$migration")
                 num=$(echo "$filename" | grep -oE '^[0-9]+' | sed 's/^0*//')
@@ -393,42 +350,34 @@ jobs:
                   continue
                 fi
                 if [ "$num" -lt "$LEGACY_BASELINE_CUTOFF" ]; then
-                  # Legacy: assume the schema is already past this migration; record only.
                   docker exec -i cortexbuild-db psql -U cortexbuild -d cortexbuild -tAc "INSERT INTO migration_log (migration_name) VALUES ('$filename');" >/dev/null
-                  echo "  ⤳ baseline: $filename (recorded as applied, not executed)"
+                  echo "  baseline: $filename (recorded as applied, not executed)"
                   continue
                 fi
-                echo "  ▶ applying $filename"
+                echo "  applying $filename"
                 if docker exec -i cortexbuild-db psql -U cortexbuild -d cortexbuild -v ON_ERROR_STOP=1 -1 < "$migration" >/dev/null; then
-                  # No ON CONFLICT — there's no UNIQUE constraint on migration_log.migration_name;
-                  # the pre-check above + serialized deploys guarantee we only INSERT once per filename.
                   docker exec -i cortexbuild-db psql -U cortexbuild -d cortexbuild -tAc "INSERT INTO migration_log (migration_name) VALUES ('$filename');" >/dev/null
-                  echo "    ✓ $filename"
+                  echo "    done: $filename"
                 else
-                  echo "    ✗ FAILED: $filename — aborting deploy"
+                  echo "    FAILED: $filename — aborting deploy"
                   exit 1
                 fi
               done
               applied_after=$(docker exec -i cortexbuild-db psql -U cortexbuild -d cortexbuild -tAc "SELECT count(*) FROM migration_log;" 2>/dev/null || echo "?")
               new_count=$(( ${applied_after:-0} - ${applied_before:-0} ))
-              echo "=== Migrations done. Newly applied this run: $new_count (total: $applied_after) ==="
+              echo "=== Migrations done. Newly applied: $new_count (total: $applied_after) ==="
             fi
-
-            # Validate required secrets are present
             if [ -z "${JWT_SECRET:-}" ]; then
-              echo "FATAL: JWT_SECRET not set in $PROJECT_DIR/.env or $PROJECT_DIR/server/.env"
+              echo "FATAL: JWT_SECRET not set"
               exit 1
             fi
             if [ -z "${SESSION_SECRET:-}" ]; then
-              echo "FATAL: SESSION_SECRET not set in $PROJECT_DIR/.env or $PROJECT_DIR/server/.env"
+              echo "FATAL: SESSION_SECRET not set"
               exit 1
             fi
             echo "Deploying with secure credentials from .env"
-
             docker stop "$CONTAINER_NAME" 2>/dev/null || true
             docker rm "$CONTAINER_NAME" 2>/dev/null || true
-
-            # Free conflicting port bindings from stale containers/processes.
             CONFLICTING_CONTAINERS="$(docker ps -aq --filter 'publish=3001' 2>/dev/null || true)"
             if [ -n "${CONFLICTING_CONTAINERS:-}" ]; then
               echo "$CONFLICTING_CONTAINERS" | xargs -r docker stop >/dev/null 2>&1 || true
@@ -441,7 +390,6 @@ jobs:
                 sleep 2
               fi
             fi
-
             docker run -d \
               --name "$CONTAINER_NAME" \
               --restart always \
@@ -484,13 +432,9 @@ jobs:
               docker logs --tail 50 "$CONTAINER_NAME" || true
               exit 1
             fi
-
-            # Restart nginx to refresh DNS resolution for new container
             echo "Restarting nginx..."
             systemctl restart nginx || service nginx restart || nginx -s reload || true
             sleep 5
-
-            # Final local + public checks
             if ! check_cortex_health; then
               echo "FATAL: API no longer healthy after nginx restart"
               exit 1
@@ -503,11 +447,6 @@ jobs:
               fi
               sleep 3
             done
-            if ! external_payload=$(curl --connect-timeout 5 --max-time 10 -fsS https://www.cortexbuildpro.com/api/health 2>/dev/null || true) || ! [ -n "$external_payload" ] || ! python3 -c "import json,sys; d=json.loads(sys.argv[1]); c=d.get('checks') or {}; assert d.get('status')=='ok'; assert c.get('postgres') is True; assert c.get('redis') is True" "$external_payload" >/dev/null 2>&1; then
-              echo "FATAL: External HTTPS health contract failed after deploy"
-              exit 1
-            fi
-
             echo "=== API Deploy Complete ==="
             DEPLOYEOF
             chmod +x /root/deploy-frontend.sh /root/deploy-api.sh
@@ -521,9 +460,6 @@ jobs:
       - name: Verify deployment
         run: |
           set -euo pipefail
-
-          # Rely on HTTPS + /api/health. Retry full verification a few times: nginx/DNS
-          # can be briefly inconsistent right after a deploy even when the API is healthy.
           check_https_health_contract() {
             local domain="$1"
             local attempts=36
@@ -531,23 +467,22 @@ jobs:
             for i in $(seq 1 "$attempts"); do
               payload=$(curl --connect-timeout 8 --max-time 15 -fsS "https://${domain}/api/health" 2>/dev/null || true)
               if [ -n "$payload" ] && python3 -c "import json,sys; d=json.loads(sys.argv[1]); c=d.get('checks') or {}; assert d.get('status')=='ok'; assert c.get('postgres') is True; assert c.get('redis') is True" "$payload" >/dev/null 2>&1; then
-                echo "✅ ${domain} HTTPS API health contract verified"
+                echo "${domain} HTTPS API health contract verified"
                 return 0
               fi
               sleep 5
             done
-            echo "❌ ${domain} HTTPS API health contract failed"
+            echo "${domain} HTTPS API health contract failed"
             return 1
           }
-
           for round in 1 2 3; do
             echo "=== Post-deploy verify round ${round}/3 ==="
             if check_https_health_contract cortexbuildpro.com && check_https_health_contract www.cortexbuildpro.com; then
-              echo "✅ All external health checks passed"
+              echo "All external health checks passed"
               exit 0
             fi
             echo "Round ${round} failed; waiting 45s before retry..."
             sleep 45
           done
-          echo "❌ Post-deploy verify failed after 3 rounds"
+          echo "Post-deploy verify failed after 3 rounds"
           exit 1
