@@ -32,3 +32,8 @@
 
 **Learning:** Using `setInterval` in high-level feature components like `MobileTimesheet.tsx` to drive localized states (like `elapsed` or `billableHours`) forces top-level re-renders and degrades app performance.
 **Action:** Always extract high-frequency timers/clocks (e.g., those tracking elapsed time) into dedicated leaf components (`<ElapsedTimer />`, `<LiveBillableHours />`). This limits UI update recalculations to small string DOM nodes rather than the full component subtree.
+
+## 2024-05-22 - Redundant HTTP Polling with WebSockets (TeamChat.tsx)
+
+**Learning:** Running an HTTP polling interval (`setInterval`) to refresh data in a component that already maintains a real-time WebSocket connection for updates creates unnecessary network overhead and causes layout-wide React re-renders.
+**Action:** When a WebSocket connection is correctly established and updating state (like `chat_message` events in `TeamChat`), remove any active HTTP polling fallbacks to ensure the component only re-renders when actual real-time events occur.
