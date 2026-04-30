@@ -838,6 +838,13 @@ export function useNotificationCenter(
 
     // Poll for updates
     const pollInterval = setInterval(() => {
+      // ⚡ Bolt Performance Optimization:
+      // Redundant HTTP Polling with WebSockets
+      // If the WebSocket is successfully connected, it receives real-time updates.
+      // We skip the HTTP polling to prevent unnecessary network requests and React re-renders.
+      if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
+        return;
+      }
       fetchUnreadCount(controller.signal);
     }, pollingInterval);
 
