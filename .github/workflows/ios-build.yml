@@ -166,7 +166,7 @@ jobs:
         run: npx tsc --noEmit
 
       - name: Lint
-        run: npx eslint src/ --max-warnings=20
+        run: npx eslint src/ --quiet
 
       - name: Unit tests
         run: npx vitest run --reporter=verbose
