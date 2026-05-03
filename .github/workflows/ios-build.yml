@@ -65,6 +65,12 @@ jobs:
             -project App.xcodeproj \
             -scheme App
 
+      - name: Download iOS platform SDK
+        run: |
+          # Xcode 16.2 ships without iOS 18.2 platform SDK pre-installed on
+          # macos-15 runners. Both debug build and release archive need it.
+          xcodebuild -downloadPlatform iOS || echo "::warning::iOS platform download failed; archive may fail"
+
       - name: Build iOS Debug (compile-only, generic device)
         if: ${{ github.event.inputs.build_type != 'release' }}
         working-directory: ios/App
@@ -81,14 +87,6 @@ jobs:
             OTHER_SWIFT_FLAGS='$(inherited) -enable-experimental-feature NonescapableTypes' \
             build \
             | xcpretty
-
-      - name: Download iOS platform SDK
-        if: ${{ github.event.inputs.build_type == 'release' }}
-        run: |
-          # Xcode 16.2 ships without iOS 18.2 platform SDK pre-installed on
-          # macos-15 runners. Archive needs it. Download is ~15 min but only
-          # runs on workflow_dispatch (manual release builds), not every PR.
-          xcodebuild -downloadPlatform iOS || echo "::warning::iOS platform download failed; archive may fail"
 
       - name: Build iOS Release (unsigned archive)
         if: ${{ github.event.inputs.build_type == 'release' }}
