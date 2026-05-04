@@ -173,7 +173,13 @@ export function useNotifications(
       connectWebSocket();
 
       // Auto-refresh every 60 seconds
-      const interval = setInterval(fetchNotificationsData, 1000 * 60);
+      const interval = setInterval(() => {
+        // ⚡ Bolt: Skip redundant HTTP polling if WebSocket is already connected and receiving real-time updates
+        if (ws.current && ws.current.readyState === WebSocket.OPEN) {
+          return;
+        }
+        fetchNotificationsData();
+      }, 1000 * 60);
 
       return () => {
         clearInterval(interval);
