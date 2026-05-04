@@ -1,5 +1,5 @@
 diff --git a/node_modules/@capacitor/push-notifications/ios/Sources/PushNotificationsPlugin/PushNotificationsHandler.swift b/node_modules/@capacitor/push-notifications/ios/Sources/PushNotificationsPlugin/PushNotificationsHandler.swift
-index f3972b6..48b0049 100644
+index f3972b6..c3bb892 100644
 --- a/node_modules/@capacitor/push-notifications/ios/Sources/PushNotificationsPlugin/PushNotificationsHandler.swift
 +++ b/node_modules/@capacitor/push-notifications/ios/Sources/PushNotificationsPlugin/PushNotificationsHandler.swift
 @@ -29,7 +29,7 @@ public class PushNotificationsHandler: NSObject, NotificationHandlerProtocol {
@@ -11,15 +11,6 @@ index f3972b6..48b0049 100644
              var presentationOptions = UNNotificationPresentationOptions.init()
  
              optionsArray.forEach { option in
-@@ -83,7 +83,7 @@ public class PushNotificationsHandler: NSObject, NotificationHandlerProtocol {
-             "subtitle": request.content.subtitle,
-             "badge": request.content.badge ?? 1,
-             "body": request.content.body,
--            "data": JSTypes.coerceDictionaryToJSObject(request.content.userInfo) ?? [:]
-+            "data": JSTypes.coerceDictionaryToJSObject(request.content.userInfo.reduce(into: [String: Any]()) { result, entry in if let key = entry.key as? String { result[key] = entry.value } }) ?? [:]
-         ]
-     }
- }
 diff --git a/node_modules/@capacitor/push-notifications/ios/Sources/PushNotificationsPlugin/PushNotificationsPlugin.swift b/node_modules/@capacitor/push-notifications/ios/Sources/PushNotificationsPlugin/PushNotificationsPlugin.swift
 index 9044c74..0efbf83 100644
 --- a/node_modules/@capacitor/push-notifications/ios/Sources/PushNotificationsPlugin/PushNotificationsPlugin.swift

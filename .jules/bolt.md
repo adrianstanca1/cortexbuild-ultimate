@@ -37,6 +37,8 @@
 
 **Learning:** Running an HTTP polling interval (`setInterval`) to refresh data in a component that already maintains a real-time WebSocket connection for updates creates unnecessary network overhead and causes layout-wide React re-renders.
 **Action:** When a WebSocket connection is correctly established and updating state (like `chat_message` events in `TeamChat`), remove any active HTTP polling fallbacks to ensure the component only re-renders when actual real-time events occur.
+
 ## 2026-05-04 - Redundant HTTP Polling with WebSockets (useNotifications.ts)
+
 **Learning:** Running an HTTP polling interval (`setInterval`) to refresh data in a hook that already maintains a real-time WebSocket connection for updates creates unnecessary network overhead and causes layout-wide React re-renders.
 **Action:** When a WebSocket connection is correctly established and updating state, skip the execution of any active HTTP polling fallbacks (e.g. by returning early if `ws.current && ws.current.readyState === WebSocket.OPEN`) to ensure the component only re-renders when actual real-time events occur.
