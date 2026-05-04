@@ -1,5 +1,5 @@
 diff --git a/node_modules/@capacitor/push-notifications/ios/Sources/PushNotificationsPlugin/PushNotificationsHandler.swift b/node_modules/@capacitor/push-notifications/ios/Sources/PushNotificationsPlugin/PushNotificationsHandler.swift
-index f3972b6..c3bb892 100644
+index f3972b6..48b0049 100644
 --- a/node_modules/@capacitor/push-notifications/ios/Sources/PushNotificationsPlugin/PushNotificationsHandler.swift
 +++ b/node_modules/@capacitor/push-notifications/ios/Sources/PushNotificationsPlugin/PushNotificationsHandler.swift
 @@ -29,7 +29,7 @@ public class PushNotificationsHandler: NSObject, NotificationHandlerProtocol {
@@ -21,53 +21,15 @@ index f3972b6..c3bb892 100644
      }
  }
 diff --git a/node_modules/@capacitor/push-notifications/ios/Sources/PushNotificationsPlugin/PushNotificationsPlugin.swift b/node_modules/@capacitor/push-notifications/ios/Sources/PushNotificationsPlugin/PushNotificationsPlugin.swift
-index 3b7c268..462725e 100644
+index 9044c74..0efbf83 100644
 --- a/node_modules/@capacitor/push-notifications/ios/Sources/PushNotificationsPlugin/PushNotificationsPlugin.swift
 +++ b/node_modules/@capacitor/push-notifications/ios/Sources/PushNotificationsPlugin/PushNotificationsPlugin.swift
-@@ -78,11 +78,11 @@ public class PushNotificationsPlugin: CAPPlugin, CAPBridgedPlugin {
-         self.notificationDelegateHandler.requestPermissions { granted, error in
-             guard error == nil else {
-                 if let err = error {
--                    call.reject(err.localizedDescription)
-+                    call.reject(err.localizedDescription, nil, nil, [:])
-                     return
-                 }
-
--                call.reject("unknown error in permissions request")
-+                call.reject("unknown error in permissions request", nil, nil, [:])
-                 return
-             }
-
-@@ -123,7 +123,7 @@ public class PushNotificationsPlugin: CAPPlugin, CAPBridgedPlugin {
-      */
-     @objc func getDeliveredNotifications(_ call: CAPPluginCall) {
-         if !appDelegateRegistrationCalled {
--            call.reject("event capacitorDidRegisterForRemoteNotifications not called.  Visit https://capacitorjs.com/docs/apis/push-notifications for more information")
-+            call.reject("event capacitorDidRegisterForRemoteNotifications not called.  Visit https://capacitorjs.com/docs/apis/push-notifications for more information", nil, nil, [:])
-             return
-         }
-         UNUserNotificationCenter.current().getDeliveredNotifications(completionHandler: { (notifications) in
-@@ -141,11 +141,11 @@ public class PushNotificationsPlugin: CAPPlugin, CAPBridgedPlugin {
-      */
-     @objc func removeDeliveredNotifications(_ call: CAPPluginCall) {
-         if !appDelegateRegistrationCalled {
--            call.reject("event capacitorDidRegisterForRemoteNotifications not called.  Visit https://capacitorjs.com/docs/apis/push-notifications for more information")
-+            call.reject("event capacitorDidRegisterForRemoteNotifications not called.  Visit https://capacitorjs.com/docs/apis/push-notifications for more information", nil, nil, [:])
+@@ -144,7 +144,7 @@ public class PushNotificationsPlugin: CAPPlugin, CAPBridgedPlugin {
+             call.reject("event capacitorDidRegisterForRemoteNotifications not called.  Visit https://capacitorjs.com/docs/apis/push-notifications for more information")
              return
          }
 -        guard let notifications = call.getArray("notifications", JSObject.self) else {
--            call.reject("Must supply notifications to remove")
 +        guard let notifications = call.getArray("notifications") as? [JSObject] else {
-+            call.reject("Must supply notifications to remove", nil, nil, [:])
+             call.reject("Must supply notifications to remove")
              return
          }
-
-@@ -159,7 +159,7 @@ public class PushNotificationsPlugin: CAPPlugin, CAPBridgedPlugin {
-      */
-     @objc func removeAllDeliveredNotifications(_ call: CAPPluginCall) {
-         if !appDelegateRegistrationCalled {
--            call.reject("event capacitorDidRegisterForRemoteNotifications not called.  Visit https://capacitorjs.com/docs/apis/push-notifications for more information")
-+            call.reject("event capacitorDidRegisterForRemoteNotifications not called.  Visit https://capacitorjs.com/docs/apis/push-notifications for more information", nil, nil, [:])
-             return
-         }
-         UNUserNotificationCenter.current().removeAllDeliveredNotifications()
