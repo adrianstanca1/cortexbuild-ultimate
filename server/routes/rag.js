@@ -153,7 +153,13 @@ router.get('/context', async (req, res) => {
 
     const { filter, params: filterParams } = tenantFilter(req);
     // Context endpoint queries source tables (not rag_embeddings), so COALESCE filter is correct
-    const context = [];
+
+    // ⚡ Bolt Performance Optimization:
+    // N+1 Query in RAG Context Retrieval
+    // Instead of querying the database once per row, we group row IDs by table
+    // and fetch all required rows for each table in a single batch query using ANY($1).
+    const tableGroups = {};
+    const validPairs = [];
 
     for (const pair of pairs) {
       const [tableName, rowId] = pair.split(':');
@@ -161,28 +167,48 @@ router.get('/context', async (req, res) => {
       if (!manifest[tableName] || manifest[tableName].skip) continue;
       // Extra defense: validate against known manifest keys only
       if (!(tableName in manifest)) continue;
-
       if (!ALLOWED_RAG_TABLES.has(tableName)) continue;
+
+      validPairs.push({ tableName, rowId });
+
+      if (!tableGroups[tableName]) {
+        tableGroups[tableName] = [];
+      }
+      tableGroups[tableName].push(rowId);
+    }
+
+    const fetchedData = {}; // Format: "tableName:rowId" -> row data
+
+    for (const [tableName, rowIds] of Object.entries(tableGroups)) {
       let query, params;
       if (filter) {
-        query = `SELECT * FROM ${tableName} WHERE id = $1 AND COALESCE(organization_id, company_id) = $2`;
-        params = [rowId, filterParams[0]];
+        query = `SELECT * FROM ${tableName} WHERE id = ANY($1) AND COALESCE(organization_id, company_id) = $2`;
+        params = [rowIds, filterParams[0]];
       } else {
-        query = `SELECT * FROM ${tableName} WHERE id = $1`;
-        params = [rowId];
+        query = `SELECT * FROM ${tableName} WHERE id = ANY($1)`;
+        params = [rowIds];
       }
 
       try {
         const { rows } = await pool.query(query, params);
-        if (rows[0]) {
-          context.push({
-            table: tableName,
-            row_id: rowId,
-            data: rows[0],
-          });
+        for (const row of rows) {
+          fetchedData[`${tableName}:${row.id}`] = row;
         }
       } catch (e) {
-        console.warn(`[rag/context] ${tableName}/${rowId}: ${e.message}`);
+        console.warn(`[rag/context] ${tableName} batch fetch error: ${e.message}`);
+      }
+    }
+
+    // Construct final ordered context based on original sequence
+    const context = [];
+    for (const { tableName, rowId } of validPairs) {
+      const data = fetchedData[`${tableName}:${rowId}`];
+      if (data) {
+        context.push({
+          table: tableName,
+          row_id: rowId,
+          data,
+        });
       }
     }
 
