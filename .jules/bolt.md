@@ -42,3 +42,8 @@
 
 **Learning:** Running an HTTP polling interval (`setInterval`) to refresh data in a hook that already maintains a real-time WebSocket connection for updates creates unnecessary network overhead and causes layout-wide React re-renders.
 **Action:** When a WebSocket connection is correctly established and updating state, skip the execution of any active HTTP polling fallbacks (e.g. by returning early if `ws.current && ws.current.readyState === WebSocket.OPEN`) to ensure the component only re-renders when actual real-time events occur.
+
+## 2024-06-03 - Layout-Wide Re-renders from Sandbox Logs Simulation
+
+**Learning:** Running an active `setInterval` in a massive top-level component (`DevSandbox.tsx`) to push mock data into local state (`setLogs`) causes severe layout-wide React re-renders every tick, severely degrading performance even when the user is simply idling in the Sandbox.
+**Action:** Extract high-frequency simulation state (`logs`, `setInterval`) into a dedicated leaf component (e.g. `SandboxLogsPanel`) and expose its API to the parent via `forwardRef`/`useImperativeHandle`. This ensures that only the localized Logs UI re-renders, rather than the entire `DevSandbox` module.

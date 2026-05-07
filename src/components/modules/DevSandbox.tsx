@@ -1,4 +1,4 @@
-import React, { useState, useRef, useCallback, useEffect } from 'react';
+import React, { useState, useRef, useCallback, useEffect, forwardRef, useImperativeHandle } from 'react';
 import {
   Terminal, Play, AlertCircle, CheckCircle,
   Activity, Code, Settings, X, Upload, Download, RefreshCw, Copy, FileText,
@@ -15,6 +15,175 @@ interface LogEntry {
   message: string;
   source?: string;
 }
+
+export interface SandboxLogsRef {
+  addLog: (level: LogLevel, message: string, source?: string) => void;
+}
+
+// ⚡ Bolt Performance Optimization:
+// Extracted the high-frequency logs simulation (`setInterval`) and its associated state
+// into a dedicated `SandboxLogsPanel` leaf component.
+// Previously, the log generation ran every 5 seconds and called `setLogs` in the main
+// `DevSandbox` component. Because `DevSandbox` is a massive ~1100 line top-level container,
+// this single interval was causing layout-wide re-renders of the entire module constantly.
+// By isolating it via `forwardRef`, only the Logs Tab updates itself internally.
+const SandboxLogsPanel = forwardRef<SandboxLogsRef>((_, ref) => {
+  const [logs, setLogs] = useState<LogEntry[]>(() => {
+    return [
+      { timestamp: new Date().toLocaleTimeString(), level: 'info', source: 'System', message: 'DevSandbox initialized' },
+      { timestamp: new Date().toLocaleTimeString(), level: 'info', source: 'API', message: 'API Connection: Ready' },
+    ];
+  });
+  const [logFilter, setLogFilter] = useState<LogLevel | 'ALL'>('ALL');
+  const [autoScroll, setAutoScroll] = useState(true);
+  const logsEndRef = useRef<HTMLDivElement>(null);
+
+  const addLog = useCallback((level: LogLevel, message: string, source?: string) => {
+    const entry: LogEntry = {
+      timestamp: new Date().toLocaleTimeString(),
+      level,
+      message,
+      source,
+    };
+    setLogs(prev => [entry, ...prev.slice(0, 99)]);
+  }, []);
+
+  useImperativeHandle(ref, () => ({
+    addLog
+  }));
+
+  // Simulate log growth every 5 seconds
+  useEffect(() => {
+    const interval = setInterval(() => {
+      const levels: LogLevel[] = ['info', 'warn', 'error', 'debug', 'success'];
+      const sources = ['System', 'API', 'WebSocket', 'AI', 'Database'];
+      const messages = [
+        'Request processed successfully',
+        'Cache hit on endpoint',
+        'Database query completed',
+        'Model inference completed',
+        'Webhook triggered',
+        'Session updated',
+        'Health check passed',
+      ];
+      const randomLevel = levels[Math.floor(Math.random() * levels.length)];
+      const randomSource = sources[Math.floor(Math.random() * sources.length)];
+      const randomMessage = messages[Math.floor(Math.random() * messages.length)];
+
+      addLog(randomLevel, randomMessage, randomSource);
+    }, 5000);
+
+    return () => clearInterval(interval);
+  }, [addLog]);
+
+  // Auto-scroll logs
+  useEffect(() => {
+    if (autoScroll && logsEndRef.current) {
+      logsEndRef.current.scrollIntoView({ behavior: 'smooth' });
+    }
+  }, [logs, autoScroll]);
+
+  const clearLogs = useCallback(() => {
+    setLogs([]);
+    addLog('info', 'Logs cleared', 'System');
+  }, [addLog]);
+
+  const exportLogs = useCallback(() => {
+    const logData = logs.map(log => `[${log.timestamp}] [${log.level.toUpperCase()}] [${log.source || 'System'}] ${log.message}`).join('\n');
+    const blob = new Blob([logData], { type: 'text/plain' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `devsandbox-logs-${Date.now()}.txt`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  }, [logs]);
+
+  const getLogColor = (level: LogLevel): string => {
+    switch (level) {
+      case 'error': return 'text-red-400';
+      case 'warn': return 'text-amber-400';
+      case 'success': return 'text-green-400';
+      case 'debug': return 'text-gray-400';
+      default: return 'text-blue-400';
+    }
+  };
+
+  const filteredLogs = logFilter === 'ALL' ? logs : logs.filter(log => log.level === logFilter.toLowerCase());
+
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center justify-between">
+        <div className="flex gap-2">
+          {['ALL', 'ERROR', 'WARN', 'INFO', 'DEBUG'].map(level => (
+            <button
+              key={level}
+              onClick={() => setLogFilter(level as any)}
+              className={`px-3 py-1 rounded-lg text-xs font-medium transition-colors ${
+                logFilter === level || (logFilter === 'ALL' && level === 'ALL')
+                  ? 'bg-amber-600 text-white'
+                  : 'bg-gray-800 text-gray-300 hover:bg-gray-700'
+              }`}
+            >
+              {level}
+            </button>
+          ))}
+        </div>
+        <div className="flex gap-2">
+          <label className="flex items-center gap-2 text-sm text-gray-400">
+            <input
+              type="checkbox"
+              checked={autoScroll}
+              onChange={(e) => setAutoScroll(e.target.checked)}
+              className="w-4 h-4 rounded"
+            />
+            Auto-scroll
+          </label>
+          <button
+            onClick={exportLogs}
+            className="px-3 py-1 bg-gray-800 hover:bg-gray-700 text-gray-300 rounded text-sm"
+          >
+            <Download className="h-4 w-4 inline mr-1" />
+            Export
+          </button>
+          <button
+            onClick={clearLogs}
+            className="px-3 py-1 bg-gray-800 hover:bg-gray-700 text-gray-300 rounded text-sm"
+          >
+            Clear
+          </button>
+        </div>
+      </div>
+
+      <div className="bg-black border border-gray-800 rounded-lg p-4 h-96 overflow-y-auto font-mono text-xs">
+        {filteredLogs.length === 0 ? (
+          <div className="text-center text-gray-500 py-12">
+            No logs
+          </div>
+        ) : (
+          filteredLogs.map((log, idx) => (
+            <div key={idx} className="mb-1">
+              <span className="text-gray-600">[{log.timestamp}]</span>
+              {' '}
+              <span className={`font-semibold ${getLogColor(log.level)}`}>
+                [{log.level.toUpperCase()}]
+              </span>
+              {' '}
+              <span className="text-blue-400">[{log.source || 'System'}]</span>
+              {' '}
+              <span className="text-gray-300">{log.message}</span>
+            </div>
+          ))
+        )}
+        <div ref={logsEndRef} />
+      </div>
+    </div>
+  );
+});
+
+SandboxLogsPanel.displayName = 'SandboxLogsPanel';
 
 interface ApiResponse {
   success: boolean;
@@ -138,62 +307,14 @@ export const DevSandbox: React.FC = () => {
   // Feature Flags State
   const [featureFlags, setFeatureFlags] = useState<FeatureFlag[]>(DEFAULT_FEATURE_FLAGS);
 
-  // Logs State
-  const [logs, setLogs] = useState<LogEntry[]>(() => {
-    const initialLogs: LogEntry[] = [
-      { timestamp: new Date().toLocaleTimeString(), level: 'info', source: 'System', message: 'DevSandbox initialized' },
-      { timestamp: new Date().toLocaleTimeString(), level: 'info', source: 'API', message: 'API Connection: Ready' },
-    ];
-    return initialLogs;
-  });
-  const [logFilter, setLogFilter] = useState<LogLevel | 'ALL'>('ALL');
-  const [autoScroll, setAutoScroll] = useState(true);
-
   // Configuration State
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [environment, setEnvironment] = useState<'development' | 'staging' | 'production'>('development');
-  const logsEndRef = useRef<HTMLDivElement>(null);
-
-  // Simulate log growth every 5 seconds
-  useEffect(() => {
-    const interval = setInterval(() => {
-      const levels: LogLevel[] = ['info', 'warn', 'error', 'debug', 'success'];
-      const sources = ['System', 'API', 'WebSocket', 'AI', 'Database'];
-      const messages = [
-        'Request processed successfully',
-        'Cache hit on endpoint',
-        'Database query completed',
-        'Model inference completed',
-        'Webhook triggered',
-        'Session updated',
-        'Health check passed',
-      ];
-      const randomLevel = levels[Math.floor(Math.random() * levels.length)];
-      const randomSource = sources[Math.floor(Math.random() * sources.length)];
-      const randomMessage = messages[Math.floor(Math.random() * messages.length)];
-
-      addLog(randomLevel, randomMessage, randomSource);
-    }, 5000);
-
-    return () => clearInterval(interval);
-  }, []);
-
-  // Auto-scroll logs
-  useEffect(() => {
-    if (autoScroll && logsEndRef.current) {
-      logsEndRef.current.scrollIntoView({ behavior: 'smooth' });
-    }
-  }, [logs, autoScroll]);
+  const logsRef = useRef<SandboxLogsRef>(null);
 
   const addLog = useCallback((level: LogLevel, message: string, source?: string) => {
-    const entry: LogEntry = {
-      timestamp: new Date().toLocaleTimeString(),
-      level,
-      message,
-      source,
-    };
-    setLogs(prev => [entry, ...prev.slice(0, 99)]);
+    logsRef.current?.addLog(level, message, source);
   }, []);
 
   const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -351,45 +472,6 @@ export const DevSandbox: React.FC = () => {
     }, 200);
   }, [wsConnected, wsTestPayload, addLog]);
 
-  const filteredLogs = logFilter === 'ALL' ? logs : logs.filter(log => log.level === logFilter);
-
-  const getLogColor = (level: LogLevel): string => {
-    switch (level) {
-      case 'error': return 'text-red-400';
-      case 'warn': return 'text-amber-400';
-      case 'success': return 'text-green-400';
-      case 'debug': return 'text-gray-400';
-      default: return 'text-blue-400';
-    }
-  };
-
-  const clearLogs = useCallback(() => {
-    setLogs([]);
-    addLog('info', 'Logs cleared', 'System');
-  }, [addLog]);
-
-  const exportLogs = useCallback(() => {
-    const logData = logs.map(log => `[${log.timestamp}] [${log.level.toUpperCase()}] [${log.source || 'System'}] ${log.message}`).join('\n');
-    const blob = new Blob([logData], { type: 'text/plain' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `devsandbox-logs-${Date.now()}.txt`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
-  }, [logs]);
-
-  const getLogIcon = (level: LogLevel) => {
-    switch (level) {
-      case 'error': return <AlertCircle className="h-3 w-3 text-red-500" />;
-      case 'warn': return <AlertCircle className="h-3 w-3 text-amber-500" />;
-      case 'success': return <CheckCircle className="h-3 w-3 text-green-500" />;
-      case 'debug': return <Code className="h-3 w-3 text-gray-500" />;
-      default: return <Activity className="h-3 w-3 text-blue-500" />;
-    }
-  };
 
   const QUICK_API_REQUESTS = [
     { label: 'List Projects', method: 'GET', endpoint: '/api/projects' },
@@ -1068,74 +1150,11 @@ export const DevSandbox: React.FC = () => {
         )}
 
         {/* LOGS TAB */}
-        {activeTab === 'logs' && (
-          <div className="space-y-4">
-            <div className="flex items-center justify-between">
-              <div className="flex gap-2">
-                {['ALL', 'ERROR', 'WARN', 'INFO', 'DEBUG'].map(level => (
-                  <button
-                    key={level}
-                    onClick={() => setLogFilter(level as any)}
-                    className={`px-3 py-1 rounded-lg text-xs font-medium transition-colors ${
-                      logFilter === level
-                        ? 'bg-amber-600 text-white'
-                        : 'bg-gray-800 text-gray-300 hover:bg-gray-700'
-                    }`}
-                  >
-                    {level}
-                  </button>
-                ))}
-              </div>
-              <div className="flex gap-2">
-                <label className="flex items-center gap-2 text-sm text-gray-400">
-                  <input
-                    type="checkbox"
-                    checked={autoScroll}
-                    onChange={(e) => setAutoScroll(e.target.checked)}
-                    className="w-4 h-4 rounded"
-                  />
-                  Auto-scroll
-                </label>
-                <button
-                  onClick={exportLogs}
-                  className="px-3 py-1 bg-gray-800 hover:bg-gray-700 text-gray-300 rounded text-sm"
-                >
-                  <Download className="h-4 w-4 inline mr-1" />
-                  Export
-                </button>
-                <button
-                  onClick={clearLogs}
-                  className="px-3 py-1 bg-gray-800 hover:bg-gray-700 text-gray-300 rounded text-sm"
-                >
-                  Clear
-                </button>
-              </div>
-            </div>
-
-            <div className="bg-black border border-gray-800 rounded-lg p-4 h-96 overflow-y-auto font-mono text-xs">
-              {filteredLogs.length === 0 ? (
-                <div className="text-center text-gray-500 py-12">
-                  No logs
-                </div>
-              ) : (
-                filteredLogs.map((log, idx) => (
-                  <div key={idx} className="mb-1">
-                    <span className="text-gray-600">[{log.timestamp}]</span>
-                    {' '}
-                    <span className={`font-semibold ${getLogColor(log.level)}`}>
-                      [{log.level.toUpperCase()}]
-                    </span>
-                    {' '}
-                    <span className="text-blue-400">[{log.source || 'System'}]</span>
-                    {' '}
-                    <span className="text-gray-300">{log.message}</span>
-                  </div>
-                ))
-              )}
-              <div ref={logsEndRef} />
-            </div>
-          </div>
-        )}
+        {/* We mount SandboxLogsPanel conditionally, but since logs state is inside it,
+            we need it to stay mounted but hidden so `logsRef` works for background processes. */}
+        <div style={{ display: activeTab === 'logs' ? 'block' : 'none' }}>
+          <SandboxLogsPanel ref={logsRef} />
+        </div>
       </div>
     </div>
   );
