@@ -42,3 +42,6 @@
 
 **Learning:** Running an HTTP polling interval (`setInterval`) to refresh data in a hook that already maintains a real-time WebSocket connection for updates creates unnecessary network overhead and causes layout-wide React re-renders.
 **Action:** When a WebSocket connection is correctly established and updating state, skip the execution of any active HTTP polling fallbacks (e.g. by returning early if `ws.current && ws.current.readyState === WebSocket.OPEN`) to ensure the component only re-renders when actual real-time events occur.
+## 2026-05-06 - N+1 Query Fix via ANY() with ordering
+**Learning:** When replacing an N+1 query loop with a batch `ANY($1)` lookup to improve database performance, the ordered structure of the originally requested items is lost if not explicitly re-constructed using a JavaScript lookup map (keyed by the request parameters).
+**Action:** Group and batch queries using `ANY($1)`, populate an intermediate JS object map with the results, and map over the original request array to return the correctly ordered structure.
