@@ -80,8 +80,8 @@ jobs:
             -project App.xcodeproj \
             -scheme App \
             -configuration Debug \
-            -sdk iphoneos \
-            -destination 'generic/platform=iOS' \
+            -sdk iphonesimulator \
+            -destination 'platform=iOS Simulator,name=iPhone 16 Pro,OS=latest' \
             -derivedDataPath ./DerivedData \
             CODE_SIGNING_ALLOWED=NO \
             OTHER_SWIFT_FLAGS='$(inherited) -enable-experimental-feature NonescapableTypes' \
@@ -98,7 +98,8 @@ jobs:
             -project App.xcodeproj \
             -scheme App \
             -configuration Release \
-            -destination 'generic/platform=iOS' \
+            -sdk iphonesimulator \
+            -destination 'platform=iOS Simulator,name=iPhone 16 Pro,OS=latest' \
             -archivePath ./build/CortexBuild.xcarchive \
             archive \
             CODE_SIGNING_ALLOWED=NO \
@@ -127,7 +128,7 @@ jobs:
 
       - name: Upload debug build artifact
         if: ${{ github.event.inputs.build_type != 'release' }}
-        uses: actions/upload-artifact@v7
+        uses: actions/upload-artifact@v4
         with:
           name: CortexBuild-iOS-Debug-${{ github.sha }}
           path: ios/App/artifacts/CortexBuild-iOS-debug.zip
@@ -136,7 +137,7 @@ jobs:
 
       - name: Upload release archive artifact
         if: ${{ github.event.inputs.build_type == 'release' }}
-        uses: actions/upload-artifact@v7
+        uses: actions/upload-artifact@v4
         with:
           name: CortexBuild-xcarchive-${{ github.sha }}
           path: ios/App/build/CortexBuild.xcarchive
