@@ -155,6 +155,8 @@ router.get('/context', async (req, res) => {
     // Context endpoint queries source tables (not rag_embeddings), so COALESCE filter is correct
     const context = [];
 
+    // Group row IDs by table to batch queries and prevent N+1 DB roundtrips
+    const tableToRowIds = {};
     for (const pair of pairs) {
       const [tableName, rowId] = pair.split(':');
       if (!tableName || !rowId) continue;
@@ -163,26 +165,63 @@ router.get('/context', async (req, res) => {
       if (!(tableName in manifest)) continue;
 
       if (!ALLOWED_RAG_TABLES.has(tableName)) continue;
+
+      if (!tableToRowIds[tableName]) tableToRowIds[tableName] = [];
+      tableToRowIds[tableName].push(rowId);
+    }
+
+    const dataMap = {};
+
+    for (const tableName of Object.keys(tableToRowIds)) {
+      const rowIds = tableToRowIds[tableName];
       let query, params;
       if (filter) {
-        query = `SELECT * FROM ${tableName} WHERE id = $1 AND COALESCE(organization_id, company_id) = $2`;
-        params = [rowId, filterParams[0]];
+        query = `SELECT * FROM ${tableName} WHERE id = ANY($1) AND COALESCE(organization_id, company_id) = $2`;
+        params = [rowIds, filterParams[0]];
       } else {
-        query = `SELECT * FROM ${tableName} WHERE id = $1`;
-        params = [rowId];
+        query = `SELECT * FROM ${tableName} WHERE id = ANY($1)`;
+        params = [rowIds];
       }
 
       try {
         const { rows } = await pool.query(query, params);
-        if (rows[0]) {
-          context.push({
-            table: tableName,
-            row_id: rowId,
-            data: rows[0],
-          });
+        for (const row of rows) {
+          dataMap[`${tableName}:${row.id}`] = row;
         }
       } catch (e) {
-        console.warn(`[rag/context] ${tableName}/${rowId}: ${e.message}`);
+        // Fallback to individual queries to maintain partial success behavior if batch query fails
+        console.warn(`[rag/context] Batch fetch failed for ${tableName}: ${e.message}. Falling back to individual fetches.`);
+        for (const rowId of rowIds) {
+          let singleQuery, singleParams;
+          if (filter) {
+            singleQuery = `SELECT * FROM ${tableName} WHERE id = $1 AND COALESCE(organization_id, company_id) = $2`;
+            singleParams = [rowId, filterParams[0]];
+          } else {
+            singleQuery = `SELECT * FROM ${tableName} WHERE id = $1`;
+            singleParams = [rowId];
+          }
+          try {
+            const { rows: singleRows } = await pool.query(singleQuery, singleParams);
+            if (singleRows[0]) {
+              dataMap[`${tableName}:${singleRows[0].id}`] = singleRows[0];
+            }
+          } catch (singleErr) {
+             console.warn(`[rag/context] ${tableName}/${rowId}: ${singleErr.message}`);
+          }
+        }
+      }
+    }
+
+    // Reconstruct ordered array from original pairs
+    for (const pair of pairs) {
+      const [tableName, rowId] = pair.split(':');
+      const data = dataMap[`${tableName}:${rowId}`];
+      if (data) {
+        context.push({
+          table: tableName,
+          row_id: rowId,
+          data,
+        });
       }
     }
 
