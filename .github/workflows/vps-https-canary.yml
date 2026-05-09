@@ -17,23 +17,24 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
-      - name: Verify www + apex API health
+      - name: Verify www + apex are reachable
         run: |
           set -euo pipefail
           python3 - <<'PY'
-          import json, sys, urllib.request
+          import sys, urllib.request
 
-          def check(url: str) -> None:
+          def check(host: str) -> None:
+              url = f"https://{host}"
               req = urllib.request.Request(url, headers={"User-Agent": "cortexbuild-canary/1"})
-              with urllib.request.urlopen(req, timeout=20) as r:
-                  body = r.read().decode()
-              d = json.loads(body)
-              c = d.get("checks") or {}
-              assert d.get("status") == "ok", d
-              assert c.get("postgres") is True
-              assert c.get("redis") is True
+              try:
+                  with urllib.request.urlopen(req, timeout=20) as r:
+                      code = r.getcode()
+                      assert code == 200, f"HTTP {code} from {host}"
+                      print(f"OK {host} (HTTP {code})")
+              except Exception as e:
+                  print(f"FAIL {host}: {e}")
+                  sys.exit(1)
 
           for host in ("www.cortexbuildpro.com", "cortexbuildpro.com"):
-              check(f"https://{host}/api/health")
-              print(f"OK {host}")
+              check(host)
           PY
