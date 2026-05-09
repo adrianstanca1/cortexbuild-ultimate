@@ -64,6 +64,7 @@ jobs:
           # Dial can be slow across regions / noisy networks; remote script still has command_timeout.
           timeout: 15m
           command_timeout: 120m
+          envs: JWT_SECRET,SESSION_SECRET,DB_PASSWORD,GOOGLE_CLIENT_SECRET
           script: |
             set -e
             # Install CI SSH public key (idempotent)
