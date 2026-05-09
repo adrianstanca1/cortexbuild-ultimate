@@ -9,8 +9,8 @@ importers:
   .:
     dependencies:
       '@capacitor/camera':
-        specifier: ^8.1.0
-        version: 8.1.0(@capacitor/core@8.3.1)
+        specifier: ^8.2.0
+        version: 8.2.0(@capacitor/core@8.3.1)
       '@capacitor/core':
         specifier: ^8.3.0
         version: 8.3.1
@@ -802,8 +802,8 @@ packages:
   '@canvas/image-data@1.1.0':
     resolution: {integrity: sha512-QdObRRjRbcXGmM1tmJ+MrHcaz1MftF2+W7YI+MsphnsCrmtyfS0d5qJbk0MeSbUeyM/jCb0hmnkXPsy026L7dA==}
 
-  '@capacitor/camera@8.1.0':
-    resolution: {integrity: sha512-ep12soG6c6HbfsEelLIM5Ip/YlWvd6H8pZsXg1gzjLNbTN6P/URUxO0Lv08bHyaDQVJkjLKthF7gaOG++TP4NQ==}
+  '@capacitor/camera@8.2.0':
+    resolution: {integrity: sha512-hYfrT6xpL936qoEkIpJzSnb0fQCaTkOux1cXzGBfH8QLOGqr6gSLiWZlZz/fqMPmMKJMNRBqlTQkj5fuMhVZog==}
     peerDependencies:
       '@capacitor/core': '>=8.0.0'
 
@@ -5597,7 +5597,7 @@ snapshots:
 
   '@canvas/image-data@1.1.0': {}
 
-  '@capacitor/camera@8.1.0(@capacitor/core@8.3.1)':
+  '@capacitor/camera@8.2.0(@capacitor/core@8.3.1)':
     dependencies:
       '@capacitor/core': 8.3.1
 
