@@ -245,8 +245,8 @@ importers:
         version: 3.2.4(@types/node@25.6.0)(happy-dom@20.9.0)(jiti@2.6.1)(jsdom@29.1.1(@noble/hashes@1.8.0))(lightningcss@1.32.0)(terser@5.46.2)(yaml@2.8.3)
     optionalDependencies:
       '@rolldown/binding-linux-arm64-gnu':
-        specifier: ^1.0.0-rc.17
-        version: 1.0.0-rc.17
+        specifier: ^1.0.0-rc.18
+        version: 1.0.0-rc.18
 
 packages:
 
@@ -1661,6 +1661,12 @@ packages:
 
   '@rolldown/binding-linux-arm64-gnu@1.0.0-rc.17':
     resolution: {integrity: sha512-e6usGaHKW5BMNZOymS1UcEYGowQMWcgZ71Z17Sl/h2+ZziNJ1a9n3Zvcz6LdRyIW5572wBCTH/Z+bKuZouGk9Q==}
+    engines: {node: ^20.19.0 || >=22.12.0}
+    cpu: [arm64]
+    os: [linux]
+
+  '@rolldown/binding-linux-arm64-gnu@1.0.0-rc.18':
+    resolution: {integrity: sha512-SOrT/cT4ukTmgnrEz/Hg3m7LBnuCLW9psDeMKrimRWY4I8DmnO7Lco8W2vtqPmMkbVu8iJ+g4GFLVLLOVjJ9DQ==}
     engines: {node: ^20.19.0 || >=22.12.0}
     cpu: [arm64]
     os: [linux]
@@ -6260,6 +6266,9 @@ snapshots:
     optional: true
 
   '@rolldown/binding-linux-arm64-gnu@1.0.0-rc.17':
+    optional: true
+
+  '@rolldown/binding-linux-arm64-gnu@1.0.0-rc.18':
     optional: true
 
   '@rolldown/binding-linux-arm64-musl@1.0.0-rc.17':
