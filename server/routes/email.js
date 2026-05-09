@@ -332,19 +332,30 @@ router.post('/bulk', checkPermission('email', 'send'), async (req, res) => {
     });
 
     const orgId = req.user?.organization_id;
-    const results = [];
+    let results = [];
     let hasFailure = false;
-    for (const recipient of recipients) {
-      try {
-        const { rows } = await pool.query(
-          `INSERT INTO email_logs (recipient, subject, body, email_type, status, created_by, organization_id, company_id)
-           VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING *`,
-          [recipient, emailSubject, body || '', type || 'bulk', 'queued', req.user?.id || 'system', orgId, req.user?.company_id]
-        );
-        results.push({ recipient, success: true, id: rows[0].id });
-      } catch (err) {
-        hasFailure = true;
-        results.push({ recipient, success: false, error: 'Failed to send' });
+
+    try {
+      const { rows } = await pool.query(
+        `INSERT INTO email_logs (recipient, subject, body, email_type, status, created_by, organization_id, company_id)
+         SELECT unnest($1::text[]), $2, $3, $4, $5, $6, $7, $8 RETURNING *`,
+        [recipients, emailSubject, body || '', type || 'bulk', 'queued', req.user?.id || 'system', orgId, req.user?.company_id]
+      );
+      results = rows.map(r => ({ recipient: r.recipient, success: true, id: r.id }));
+    } catch (bulkErr) {
+      // Fallback to individual inserts if bulk insert fails
+      for (const recipient of recipients) {
+        try {
+          const { rows } = await pool.query(
+            `INSERT INTO email_logs (recipient, subject, body, email_type, status, created_by, organization_id, company_id)
+             VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING *`,
+            [recipient, emailSubject, body || '', type || 'bulk', 'queued', req.user?.id || 'system', orgId, req.user?.company_id]
+          );
+          results.push({ recipient, success: true, id: rows[0].id });
+        } catch (err) {
+          hasFailure = true;
+          results.push({ recipient, success: false, error: 'Failed to send' });
+        }
       }
     }
 
