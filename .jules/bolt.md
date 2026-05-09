@@ -45,3 +45,6 @@
 ## 2026-05-06 - N+1 Query Fix via ANY() with ordering
 **Learning:** When replacing an N+1 query loop with a batch `ANY($1)` lookup to improve database performance, the ordered structure of the originally requested items is lost if not explicitly re-constructed using a JavaScript lookup map (keyed by the request parameters).
 **Action:** Group and batch queries using `ANY($1)`, populate an intermediate JS object map with the results, and map over the original request array to return the correctly ordered structure.
+## 2025-03-09 - N+1 Query in Email Bulk Route
+**Learning:** Found a major N+1 query loop in `server/routes/email.js` where bulk emails were inserted one-by-one inside a for-loop. When dealing with bulk insertions, passing an array parameter and using PostgreSQL's `SELECT unnest($1::text[])` is a massive performance win.
+**Action:** When implementing bulk database inserts, always check for row-by-row iteration anti-patterns and prefer single batch insert queries using `unnest()`, combined with a `try...catch` fallback to individual queries if granular error tracking is strictly required.
