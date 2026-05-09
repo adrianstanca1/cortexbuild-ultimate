@@ -63,6 +63,14 @@ jobs:
           passphrase: ""
           # Dial can be slow across regions / noisy networks; remote script still has command_timeout.
           timeout: 15m
+      env:
+        JWT_SECRET: ${{ secrets.JWT_SECRET }}
+        SESSION_SECRET: ${{ secrets.SESSION_SECRET }}
+        DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
+        GOOGLE_CLIENT_SECRET: ${{ secrets.GOOGLE_CLIENT_SECRET }}
+        GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_CLIENT_ID }}
+        GOOGLE_CALLBACK_URL: ${{ secrets.GOOGLE_CALLBACK_URL }}
+        POSTGRES_PASSWORD: ${{ secrets.POSTGRES_PASSWORD }}
           command_timeout: 120m
           envs: JWT_SECRET,SESSION_SECRET,DB_PASSWORD,GOOGLE_CLIENT_SECRET
           script: |
