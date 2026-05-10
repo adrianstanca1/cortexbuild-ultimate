@@ -2,6 +2,9 @@
 # even when GitHub Actions cannot reach the VPS on port 22.
 name: VPS HTTPS canary
 
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
 on:
   schedule:
     - cron: '25 */6 * * *'
