@@ -87,105 +87,124 @@ router.get('/', async (req, res) => {
     const searchTerm = `%${q.toLowerCase().replace(/[%_\\]/g, '\\$&')}%`;
     const results = { projects: [], invoices: [], contacts: [], rfis: [], documents: [], team: [] };
     const limitNum = parseInt(limit, 10);
+    // We will start the semantic search concurrently with the DB queries
+    let embeddingPromise = null;
+    const doSemantic = req.query.semantic !== 'false' && q && q.length >= 2;
+    if (doSemantic) {
+      embeddingPromise = getEmbedding(q).catch(err => {
+        console.warn('[Search] Embedding error:', err.message);
+        return null;
+      });
+    }
 
     // Super_admin sees everything, others are scoped by tenant
     if (isSuperAdmin(req)) {
-      const projectResults = await pool.query(
-        `SELECT id, name, client, status, type FROM projects
-         WHERE (LOWER(name) LIKE $1 OR LOWER(client) LIKE $1)
-         ORDER BY created_at DESC LIMIT $2`,
-        [searchTerm, limitNum]
-      );
+      const [
+        projectResults,
+        invoiceResults,
+        contactResults,
+        rfiResults,
+        docResults,
+        teamResults
+      ] = await Promise.all([
+        pool.query(
+          `SELECT id, name, client, status, type FROM projects
+           WHERE (LOWER(name) LIKE $1 OR LOWER(client) LIKE $1)
+           ORDER BY created_at DESC LIMIT $2`,
+          [searchTerm, limitNum]
+        ),
+        pool.query(
+          `SELECT id, number, client, amount, status FROM invoices
+           WHERE (LOWER(number) LIKE $1 OR LOWER(client) LIKE $1)
+           ORDER BY created_at DESC LIMIT $2`,
+          [searchTerm, limitNum]
+        ),
+        pool.query(
+          `SELECT id, name, company, email, role FROM contacts
+           WHERE (LOWER(name) LIKE $1 OR LOWER(company) LIKE $1 OR LOWER(email) LIKE $1)
+           ORDER BY created_at DESC LIMIT $2`,
+          [searchTerm, limitNum]
+        ),
+        pool.query(
+          `SELECT id, number, subject, status, project FROM rfis
+           WHERE (LOWER(number) LIKE $1 OR LOWER(subject) LIKE $1)
+           ORDER BY created_at DESC LIMIT $2`,
+          [searchTerm, limitNum]
+        ),
+        pool.query(
+          `SELECT id, name, type, category, project FROM documents
+           WHERE (LOWER(name) LIKE $1 OR LOWER(category) LIKE $1)
+           ORDER BY created_at DESC LIMIT $2`,
+          [searchTerm, limitNum]
+        ),
+        pool.query(
+          `SELECT id, name, role, trade FROM team_members
+           WHERE (LOWER(name) LIKE $1 OR LOWER(role) LIKE $1 OR LOWER(trade) LIKE $1)
+           ORDER BY created_at DESC LIMIT $2`,
+          [searchTerm, limitNum]
+        )
+      ]);
+
       results.projects = projectResults.rows;
-
-      const invoiceResults = await pool.query(
-        `SELECT id, number, client, amount, status FROM invoices
-         WHERE (LOWER(number) LIKE $1 OR LOWER(client) LIKE $1)
-         ORDER BY created_at DESC LIMIT $2`,
-        [searchTerm, limitNum]
-      );
       results.invoices = invoiceResults.rows;
-
-      const contactResults = await pool.query(
-        `SELECT id, name, company, email, role FROM contacts
-         WHERE (LOWER(name) LIKE $1 OR LOWER(company) LIKE $1 OR LOWER(email) LIKE $1)
-         ORDER BY created_at DESC LIMIT $2`,
-        [searchTerm, limitNum]
-      );
       results.contacts = contactResults.rows;
-
-      const rfiResults = await pool.query(
-        `SELECT id, number, subject, status, project FROM rfis
-         WHERE (LOWER(number) LIKE $1 OR LOWER(subject) LIKE $1)
-         ORDER BY created_at DESC LIMIT $2`,
-        [searchTerm, limitNum]
-      );
       results.rfis = rfiResults.rows;
-
-      const docResults = await pool.query(
-        `SELECT id, name, type, category, project FROM documents
-         WHERE (LOWER(name) LIKE $1 OR LOWER(category) LIKE $1)
-         ORDER BY created_at DESC LIMIT $2`,
-        [searchTerm, limitNum]
-      );
       results.documents = docResults.rows;
-
-      const teamResults = await pool.query(
-        `SELECT id, name, role, trade FROM team_members
-         WHERE (LOWER(name) LIKE $1 OR LOWER(role) LIKE $1 OR LOWER(trade) LIKE $1)
-         ORDER BY created_at DESC LIMIT $2`,
-        [searchTerm, limitNum]
-      );
       results.team = teamResults.rows;
     } else {
       const { clause: tenantClause, params: tenantParams } = buildTenantFilter(req, 'AND');
 
-      const projectResults = await pool.query(
-        `SELECT id, name, client, status, type FROM projects
-         WHERE 1=1${tenantClause} AND (LOWER(name) LIKE $${tenantParams.length + 1} OR LOWER(client) LIKE $${tenantParams.length + 1})
-         ORDER BY created_at DESC LIMIT $${tenantParams.length + 2}`,
-        [...tenantParams, searchTerm, limitNum]
-      );
+      const [
+        projectResults,
+        invoiceResults,
+        contactResults,
+        rfiResults,
+        docResults,
+        teamResults
+      ] = await Promise.all([
+        pool.query(
+          `SELECT id, name, client, status, type FROM projects
+           WHERE 1=1${tenantClause} AND (LOWER(name) LIKE $${tenantParams.length + 1} OR LOWER(client) LIKE $${tenantParams.length + 1})
+           ORDER BY created_at DESC LIMIT $${tenantParams.length + 2}`,
+          [...tenantParams, searchTerm, limitNum]
+        ),
+        pool.query(
+          `SELECT id, number, client, amount, status FROM invoices
+           WHERE 1=1${tenantClause} AND (LOWER(number) LIKE $${tenantParams.length + 1} OR LOWER(client) LIKE $${tenantParams.length + 1})
+           ORDER BY created_at DESC LIMIT $${tenantParams.length + 2}`,
+          [...tenantParams, searchTerm, limitNum]
+        ),
+        pool.query(
+          `SELECT id, name, company, email, role FROM contacts
+           WHERE 1=1${tenantClause} AND (LOWER(name) LIKE $${tenantParams.length + 1} OR LOWER(company) LIKE $${tenantParams.length + 1} OR LOWER(email) LIKE $${tenantParams.length + 1})
+           ORDER BY created_at DESC LIMIT $${tenantParams.length + 2}`,
+          [...tenantParams, searchTerm, limitNum]
+        ),
+        pool.query(
+          `SELECT id, number, subject, status, project FROM rfis
+           WHERE 1=1${tenantClause} AND (LOWER(number) LIKE $${tenantParams.length + 1} OR LOWER(subject) LIKE $${tenantParams.length + 1})
+           ORDER BY created_at DESC LIMIT $${tenantParams.length + 2}`,
+          [...tenantParams, searchTerm, limitNum]
+        ),
+        pool.query(
+          `SELECT id, name, type, category, project FROM documents
+           WHERE 1=1${tenantClause} AND (LOWER(name) LIKE $${tenantParams.length + 1} OR LOWER(category) LIKE $${tenantParams.length + 1})
+           ORDER BY created_at DESC LIMIT $${tenantParams.length + 2}`,
+          [...tenantParams, searchTerm, limitNum]
+        ),
+        pool.query(
+          `SELECT id, name, role, trade FROM team_members
+           WHERE 1=1${tenantClause} AND (LOWER(name) LIKE $${tenantParams.length + 1} OR LOWER(role) LIKE $${tenantParams.length + 1} OR LOWER(trade) LIKE $${tenantParams.length + 1})
+           ORDER BY created_at DESC LIMIT $${tenantParams.length + 2}`,
+          [...tenantParams, searchTerm, limitNum]
+        )
+      ]);
+
       results.projects = projectResults.rows;
-
-      const invoiceResults = await pool.query(
-        `SELECT id, number, client, amount, status FROM invoices
-         WHERE 1=1${tenantClause} AND (LOWER(number) LIKE $${tenantParams.length + 1} OR LOWER(client) LIKE $${tenantParams.length + 1})
-         ORDER BY created_at DESC LIMIT $${tenantParams.length + 2}`,
-        [...tenantParams, searchTerm, limitNum]
-      );
       results.invoices = invoiceResults.rows;
-
-      const contactResults = await pool.query(
-        `SELECT id, name, company, email, role FROM contacts
-         WHERE 1=1${tenantClause} AND (LOWER(name) LIKE $${tenantParams.length + 1} OR LOWER(company) LIKE $${tenantParams.length + 1} OR LOWER(email) LIKE $${tenantParams.length + 1})
-         ORDER BY created_at DESC LIMIT $${tenantParams.length + 2}`,
-        [...tenantParams, searchTerm, limitNum]
-      );
       results.contacts = contactResults.rows;
-
-      const rfiResults = await pool.query(
-        `SELECT id, number, subject, status, project FROM rfis
-         WHERE 1=1${tenantClause} AND (LOWER(number) LIKE $${tenantParams.length + 1} OR LOWER(subject) LIKE $${tenantParams.length + 1})
-         ORDER BY created_at DESC LIMIT $${tenantParams.length + 2}`,
-        [...tenantParams, searchTerm, limitNum]
-      );
       results.rfis = rfiResults.rows;
-
-      const docResults = await pool.query(
-        `SELECT id, name, type, category, project FROM documents
-         WHERE 1=1${tenantClause} AND (LOWER(name) LIKE $${tenantParams.length + 1} OR LOWER(category) LIKE $${tenantParams.length + 1})
-         ORDER BY created_at DESC LIMIT $${tenantParams.length + 2}`,
-        [...tenantParams, searchTerm, limitNum]
-      );
       results.documents = docResults.rows;
-
-      const teamResults = await pool.query(
-        `SELECT id, name, role, trade FROM team_members
-         WHERE 1=1${tenantClause} AND (LOWER(name) LIKE $${tenantParams.length + 1} OR LOWER(role) LIKE $${tenantParams.length + 1} OR LOWER(trade) LIKE $${tenantParams.length + 1})
-         ORDER BY created_at DESC LIMIT $${tenantParams.length + 2}`,
-        [...tenantParams, searchTerm, limitNum]
-      );
       results.team = teamResults.rows;
     }
 
@@ -193,10 +212,9 @@ router.get('/', async (req, res) => {
 
     // ── Semantic search with Ollama ────────────────────────────────────────
     let semanticResults = [];
-    const doSemantic = req.query.semantic !== 'false' && q && q.length >= 2;
-    if (doSemantic) {
+    if (embeddingPromise) {
       try {
-        const queryEmbedding = await getEmbedding(q);
+        const queryEmbedding = await embeddingPromise;
         if (queryEmbedding) {
           // Try to fetch stored embeddings and compute cosine similarity
           const semFilter = buildTenantFilter(req, 'AND', 'd');
