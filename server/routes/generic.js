@@ -33,6 +33,11 @@ const WEBHOOK_EVENT_MAP = {
     create: "subcontractor.created",
     update: "subcontractor.updated",
   },
+  submittals: {
+    create: "submittal.created",
+    update: "submittal.updated",
+    statusMap: { approved: "submittal.approved", rejected: "submittal.rejected" },
+  },
 };
 
 /**
@@ -768,6 +773,32 @@ const ALLOWED_COLUMNS = {
     "analysis_result",
     "confidence_score",
     "processed_at",
+  ],
+  submittals: [
+    "project_id",
+    "number",
+    "title",
+    "description",
+    "type",
+    "status",
+    "ball_in_court",
+    "responsible_company",
+    "responsible_person",
+    "due_date",
+    "submitted_date",
+    "approved_date",
+    "reviewer",
+    "linked_drawing_id",
+    "linked_spec_id",
+    "linked_rfi_id",
+    "attachments",
+    "comments",
+    "distribution_list",
+    "official_response",
+    "created_by",
+    "updated_by",
+    "organization_id",
+    "company_id",
   ],
 };
 

@@ -486,6 +486,7 @@ app.use("/api/materials", makeRouter("materials"));
 app.use("/api/punch-list", makeRouter("punch_list"));
 app.use("/api/inspections", makeRouter("inspections"));
 app.use("/api/rams", makeRouter("rams"));
+app.use("/api/submittals", makeRouter("submittals"));
 app.use("/api/cis", makeRouter("cis_returns"));
 app.use("/api/tenders/ai", require("./routes/tender-ai"));
 app.use("/api/tenders", makeRouter("tenders"));
