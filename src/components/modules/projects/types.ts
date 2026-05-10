@@ -42,7 +42,7 @@ export const defaultForm = { name: '', client: '', location: '', type: 'Commerci
 export type FormData = typeof defaultForm;
 
 // ─── Workspace types ───────────────────────────────────────────────────────
-export type WorkspaceTab = 'overview' | 'timeline' | 'milestones' | 'tasks' | 'gallery' | 'financials' | 'team' | 'documents' | 'rfis' | 'safety' | 'reports';
+export type WorkspaceTab = 'overview' | 'activity' | 'timeline' | 'milestones' | 'tasks' | 'gallery' | 'financials' | 'team' | 'documents' | 'rfis' | 'safety' | 'reports';
 
 export interface WorkspaceProps {
   project: AnyRow;
