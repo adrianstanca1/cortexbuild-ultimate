@@ -39,6 +39,7 @@ const rateLimit = require("express-rate-limit");
 const { RedisStore: RateLimitRedisStore } = require("rate-limit-redis");
 const cookieParser = require("cookie-parser");
 const redis = require("redis");
+const auditLogMiddleware = require("./middleware/auditLog");
 const { RedisStore: RedisSessionStore } = require("connect-redis");
 
 const app = express();
@@ -405,6 +406,7 @@ plansRouter.get("/plans", (req, res) => {
 app.use("/api/billing", plansRouter);
 
 app.use("/api", authMiddleware);
+app.use("/api", auditLogMiddleware); // Auto-record all mutations after auth
 
 // ─── Protected routes ────────────────────────────────────────────────────────
 

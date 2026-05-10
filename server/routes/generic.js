@@ -1,7 +1,6 @@
 const express = require("express");
 const authMiddleware = require("../middleware/auth");
 const pool = require("../db");
-const { logAudit } = require("./audit-helper");
 const { broadcastDashboardUpdate } = require("../lib/ws-broadcast");
 const { validateRequiredFields } = require("./validation");
 const { safeParse, buildCrudPayloadSchema } = require("../lib/zod-validation");
@@ -1019,13 +1018,6 @@ function makeRouter(tableName, orderCol = "created_at") {
         `INSERT INTO ${tableName} (${cols}${colSuffix}) VALUES (${placeholders}${valSuffix}) RETURNING *`,
         [...values, ...tenantValues],
       );
-      logAudit({
-        auth: req.user,
-        action: "create",
-        entityType: tableName,
-        entityId: rows[0]?.id,
-        newData: rows[0],
-      });
       broadcastDashboardUpdate("create", tableName, rows[0]);
       // Emit webhook asynchronously (non-blocking)
       const orgId = req.user?.organization_id;
@@ -1068,13 +1060,6 @@ function makeRouter(tableName, orderCol = "created_at") {
         values,
       );
       if (!rows[0]) return res.status(404).json({ message: "Not found" });
-      logAudit({
-        auth: req.user,
-        action: "update",
-        entityType: tableName,
-        entityId: rows[0]?.id,
-        newData: rows[0],
-      });
       broadcastDashboardUpdate("update", tableName, rows[0]);
       // Emit webhook asynchronously (non-blocking)
       const orgId = req.user?.organization_id;
@@ -1103,13 +1088,6 @@ function makeRouter(tableName, orderCol = "created_at") {
         `DELETE FROM ${tableName}${filter}`,
         params,
       );
-      logAudit({
-        auth: req.user,
-        action: "delete",
-        entityType: tableName,
-        entityId: req.params.id,
-        oldData: oldRows.rows[0],
-      });
       broadcastDashboardUpdate("delete", tableName, oldRows.rows[0]);
       res.json({ message: "Deleted successfully" });
     } catch (err) {
