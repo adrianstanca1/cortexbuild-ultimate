@@ -184,11 +184,13 @@ router.get('/:id', authMiddleware, async (req, res) => {
       [req.params.id, req.user.company_id]
     );
 
-    // Get comments (tenant-scoped via centralized filter)
-    const { clause: commentClause, params: commentParams } = buildTenantFilter(req, 'AND', null, 2);
+    // Get comments (tenant-scoped)
     const comments = await pool.query(
-      `SELECT * FROM submittal_comments WHERE submittal_id = $1${commentClause} ORDER BY created_at ASC`,
-      [req.params.id, ...commentParams]
+      `SELECT sc.* FROM submittal_comments sc
+       JOIN submittals s ON sc.submittal_id = s.id
+       WHERE sc.submittal_id = $1 AND COALESCE(s.organization_id, s.company_id) = $2
+       ORDER BY sc.created_at ASC`,
+      [req.params.id, req.user.company_id]
     );
 
     res.json({
@@ -241,7 +243,7 @@ router.post('/', authMiddleware, upload.array('files'), async (req, res) => {
         reviewerId || null,
         priority || 'medium',
         dueDate || null,
-        req.user.company_name || 'Unknown'
+        null
       ]
     );
 
