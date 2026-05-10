@@ -51,6 +51,7 @@ import {
   sitePermitsApi,
   siteInspectionsApi,
   reportTemplatesApi,
+  submittalsApi,
   auditApi,
   ReportTemplate,
   type Row,
@@ -498,6 +499,12 @@ export const useReportTemplates = makeHooks<ReportTemplate>(
       ) as Promise<ReportTemplate | null>,
     delete: (id) => reportTemplatesApi.delete(id),
   },
+);
+
+export const useSubmittals = makeHooks(
+  "submittals",
+  "submittals",
+  submittalsApi,
 );
 
 export function useDuplicateTemplate() {

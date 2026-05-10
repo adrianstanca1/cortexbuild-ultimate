@@ -459,11 +459,9 @@ export const submittalsApi = {
     return apiFetch<Row[]>(`/submittals${qs}`);
   },
   getById: (id: string) => apiFetch<Row>(`/submittals/${id}`),
-  create: (data: FormData) => apiFetch<Row>('/submittals', { method: 'POST', body: data }),
+  create: (data: Row) => apiFetch<Row>('/submittals', { method: 'POST', body: JSON.stringify(data) }),
   update: (id: string, data: Row) => apiFetch<Row>(`/submittals/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
   delete: (id: string) => apiFetch<void>(`/submittals/${id}`, { method: 'DELETE' }),
-  addComment: (id: string, data: Row) => apiFetch<Row>(`/submittals/${id}/comments`, { method: 'POST', body: JSON.stringify(data) }),
-  getStats: () => apiFetch<Row>('/submittals/stats/summary'),
 };
 
 export interface AppSettings {

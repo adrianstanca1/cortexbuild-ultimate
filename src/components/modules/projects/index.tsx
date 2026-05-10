@@ -5,7 +5,7 @@ import {
   Plus, X, Trash2, Edit2, Search, ChevronRight, MapPin, Users, Calendar,
   PoundSterling, AlertTriangle, CheckCircle2,
   BarChart3, FileText, Shield, ClipboardList, ArrowLeft,
-  Loader2, RefreshCw, MessageSquare, CheckSquare, Square, Circle,
+  Loader2, RefreshCw, MessageSquare, CheckSquare, Square, Circle, Clock,
 } from 'lucide-react';
 import { BulkActionsBar, useBulkSelection } from '../../ui/BulkActions';
 import { EmptyState } from '../../ui/EmptyState';
@@ -16,10 +16,12 @@ import {
 import {
   useProjects, useInvoices, useTeam, useDocuments,
   useRFIs, useChangeOrders, useSafety, useDailyReports,
+  useSubmittals, usePunchList, useInspections, useSpecifications,
 } from '../../../hooks/useData';
 import { GalleryTab } from './GalleryTab';
 import { DocumentsTab } from './DocumentsTab';
 import { TasksTab } from './TasksTab';
+import { ActivityTimeline } from './ActivityTimeline';
 import {
   STATUS_CFG, PROJECT_PHASES, PROJECT_TYPES, defaultForm,
   fmtM, daysDiff, getBudgetHealth,
@@ -48,6 +50,10 @@ function ProjectWorkspace({ project, onBack, onEdit }: WorkspaceProps) {
   const { data: rawCOs = [] } = useChangeOrders.useList();
   const { data: rawSafe = [] } = useSafety.useList();
   const { data: rawReps = [] } = useDailyReports.useList();
+  const { data: rawSubmittals = [] } = useSubmittals.useList();
+  const { data: rawPunch = [] } = usePunchList.useList();
+  const { data: rawSpecs = [] } = useSpecifications.useList();
+  const { data: rawInsp = [] } = useInspections.useList();
 
   const invoices = (rawInv as AnyRow[]).filter(i => String(i.project ?? '').toLowerCase().includes(pName.toLowerCase().split(' ')[0]));
   const teamAll = (rawTeam as AnyRow[]);
@@ -56,6 +62,10 @@ function ProjectWorkspace({ project, onBack, onEdit }: WorkspaceProps) {
   const cos = (rawCOs as AnyRow[]).filter(c => String(c.project ?? '').toLowerCase().includes(pName.toLowerCase().split(' ')[0]));
   const safety = (rawSafe as AnyRow[]).filter(s => String(s.project ?? '').toLowerCase().includes(pName.toLowerCase().split(' ')[0]));
   const reports = (rawReps as AnyRow[]).filter(r => String(r.project ?? '').toLowerCase().includes(pName.toLowerCase().split(' ')[0]));
+  const submittals = (rawSubmittals as AnyRow[]).filter(s => String(s.project_id ?? s.project ?? '') === pId || String(s.project_name ?? '').toLowerCase().includes(pName.toLowerCase().split(' ')[0]));
+  const punchList = (rawPunch as AnyRow[]).filter(p => String(p.project_id ?? p.project ?? '') === pId || String(p.project ?? '').toLowerCase().includes(pName.toLowerCase().split(' ')[0]));
+  const inspections = (rawInsp as AnyRow[]).filter(i => String(i.project_id ?? i.project ?? '') === pId || String(i.project ?? '').toLowerCase().includes(pName.toLowerCase().split(' ')[0]));
+  const drawings = (rawSpecs as AnyRow[]).filter(s => String(s.project_id ?? s.project ?? '') === pId);
 
   const budget = Number(project.budget ?? 0);
   const spent = Number(project.spent ?? 0);
@@ -83,6 +93,7 @@ function ProjectWorkspace({ project, onBack, onEdit }: WorkspaceProps) {
 
   const TABS = [
     { id: 'overview', label: 'Overview', icon: BarChart3 },
+    { id: 'activity', label: 'Activity', icon: Clock },
     { id: 'timeline', label: 'Timeline', icon: Calendar },
     { id: 'milestones', label: 'Milestones', icon: CheckCircle2 },
     { id: 'tasks', label: 'Tasks', icon: ClipboardList },
@@ -90,7 +101,7 @@ function ProjectWorkspace({ project, onBack, onEdit }: WorkspaceProps) {
     { id: 'financials', label: 'Financials', icon: PoundSterling },
     { id: 'team', label: 'Team', icon: Users },
     { id: 'documents', label: 'Documents', icon: FileText },
-    { id: 'rfis', label: 'RFIs & COs', icon: MessageSquare },
+    { id: 'rfis', label: 'RFIs \u0026 COs', icon: MessageSquare },
     { id: 'safety', label: 'Safety', icon: Shield },
     { id: 'reports', label: 'Daily Reports', icon: ClipboardList },
   ] as const;
@@ -244,6 +255,20 @@ function ProjectWorkspace({ project, onBack, onEdit }: WorkspaceProps) {
               <p className="text-gray-300 text-sm leading-relaxed">{String(project.description)}</p>
             </div>
           )}
+        </div>
+      )}
+
+      {tab === 'activity' && (
+        <div className="space-y-4">
+          <ActivityTimeline
+            drawings={drawings}
+            rfis={rfis}
+            submittals={submittals}
+            punchList={punchList}
+            inspections={inspections}
+            dailyReports={reports}
+            changeOrders={cos}
+          />
         </div>
       )}
 
