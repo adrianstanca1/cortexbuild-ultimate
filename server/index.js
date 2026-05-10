@@ -231,7 +231,7 @@ async function checkHealth() {
     checks.postgres = false;
   }
   try {
-    if (redisAvailable && redisClient) {
+    if (redisClient) {
       await redisClient.ping();
       checks.redis = true;
     } else {
@@ -246,7 +246,44 @@ async function checkHealth() {
 }
 
 app.get("/api/health", async (_req, res) => {
-  const checks = await checkHealth();
+  // Use a lightweight TCP probe for Redis to avoid blocking on reconnecting client
+  const checks = { postgres: false, redis: false, status: "degraded" };
+  try {
+    const pool = require("./db");
+    await pool.query("SELECT 1");
+    checks.postgres = true;
+  } catch (err) {
+    console.error("[Health] PostgreSQL check failed:", err.message);
+    checks.postgres = false;
+  }
+  try {
+    const net = require("net");
+    const redisHost = (process.env.REDIS_URL || "").replace(/^redis:\/\//, "").split(":")[0] || "127.0.0.1";
+    const redisPort = parseInt((process.env.REDIS_URL || "").split(":")[2], 10) || 6379;
+    await new Promise((resolve, reject) => {
+      const s = new net.Socket();
+      s.setTimeout(2000);
+      s.connect(redisPort, redisHost, () => {
+        s.write("PING\r\n");
+      });
+      s.on("data", (d) => {
+        if (d.toString().includes("PONG")) {
+          s.end();
+          resolve(true);
+        }
+      });
+      s.on("error", reject);
+      s.on("timeout", () => {
+        s.destroy();
+        reject(new Error("timeout"));
+      });
+    });
+    checks.redis = true;
+  } catch (_err) {
+    // Redis optional — don’t block health if it’s down
+    checks.redis = false;
+  }
+  checks.status = checks.postgres ? "ok" : "degraded";
   const statusCode = checks.status === "ok" ? 200 : 503;
   res
     .status(statusCode)
