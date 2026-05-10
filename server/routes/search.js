@@ -2,11 +2,7 @@ const express = require('express');
 const pool = require('../db');
 const authMiddleware = require('../middleware/auth');
 const { buildTenantFilter, isSuperAdmin } = require('../middleware/tenantFilter');
-const https = require('https');
-const http = require('http');
-
-const OLLAMA_HOST = process.env.OLLAMA_HOST || 'http://localhost:11434';
-const EMBEDDING_MODEL = process.env.EMBEDDING_MODEL || 'nomic-embed-text:latest';
+const { getEmbedding } = require('../lib/unified-ai-client-v2');
 
 // Cosine similarity helper
 function cosineSimilarity(a, b) {
@@ -18,38 +14,6 @@ function cosineSimilarity(a, b) {
     normB += b[i] * b[i];
   }
   return dot / (Math.sqrt(normA) * Math.sqrt(normB) + 1e-8);
-}
-
-// Fetch embedding from Ollama
-async function getEmbedding(text) {
-  return new Promise((resolve, reject) => {
-    const body = JSON.stringify({ model: EMBEDDING_MODEL, prompt: text });
-    const url = new URL(OLLAMA_HOST + '/api/embeddings');
-    const isHttps = url.protocol === 'https:';
-    const lib = isHttps ? https : http;
-
-    const req = lib.request({
-      hostname: url.hostname,
-      port: url.port || (isHttps ? 443 : 11434),
-      path: '/api/embeddings',
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'Content-Length': Buffer.byteLength(body) },
-      timeout: 5000,
-    }, (res) => {
-      let data = '';
-      res.on('data', chunk => data += chunk);
-      res.on('end', () => {
-        try {
-          const parsed = JSON.parse(data);
-          resolve(parsed.embedding || null);
-        } catch { resolve(null); }
-      });
-    });
-    req.on('error', () => resolve(null));
-    req.on('timeout', () => { req.destroy(); resolve(null); });
-    req.write(body);
-    req.end();
-  });
 }
 
 const router = express.Router();

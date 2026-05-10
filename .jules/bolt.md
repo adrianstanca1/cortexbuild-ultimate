@@ -49,6 +49,6 @@
 **Learning:** Found a major N+1 query loop in `server/routes/email.js` where bulk emails were inserted one-by-one inside a for-loop. When dealing with bulk insertions, passing an array parameter and using PostgreSQL's `SELECT unnest($1::text[])` is a massive performance win.
 **Action:** When implementing bulk database inserts, always check for row-by-row iteration anti-patterns and prefer single batch insert queries using `unnest()`, combined with a `try...catch` fallback to individual queries if granular error tracking is strictly required.
 
-## 2024-05-10 - String.prototype.replace() and $$ SQL parameters
+## 2026-05-10 - String.prototype.replace() and $$ SQL parameters
 **Learning:** When using `String.prototype.replace()` to refactor backend code containing template literal PostgreSQL parameters (e.g., `$$`), the JavaScript string replacement engine interprets `$$` as a special replacement pattern for a single `$`. This inadvertently corrupts query strings by dropping the `$` prefix, resulting in runtime SQL syntax errors (e.g., `LIKE ${tenantParams}` instead of `LIKE $${tenantParams}`).
 **Action:** When programmatically modifying backend SQL query code with node ad-hoc scripts, pass a function as the second argument to `replace()` (e.g., `content.replace(oldStr, () => newStr)`) or use file diffing/patching tools to preserve double dollar signs.
