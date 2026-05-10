@@ -1,6 +1,15 @@
 -- 079_seed_submittals.sql
 -- Demo submittals for testing the new API.
 
+-- Defensive check: abort if projects table is empty (nothing to link to)
+DO $$
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM projects LIMIT 1) THEN
+    RAISE NOTICE 'No projects found; skipping submittal seed.';
+    RETURN;
+  END IF;
+END $$;
+
 INSERT INTO submittals (
   project_id, number, title, description, type, status,
   ball_in_court, responsible_company, responsible_person,

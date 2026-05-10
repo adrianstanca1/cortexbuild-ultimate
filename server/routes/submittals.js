@@ -4,10 +4,31 @@ const path = require('path');
 const fs = require('fs');
 const pool = require('../db');
 const authMiddleware = require('../middleware/auth');
+const { buildTenantFilter } = require('../middleware/tenantFilter');
 const { logAudit } = require('./audit-helper');
 const { fileTypeFromBuffer } = require('file-type');
 
 const router = express.Router();
+
+const UPLOAD_BASE = path.join(__dirname, '../uploads/submittals');
+
+/**
+ * Resolve a stored (possibly relative) file path safely within the upload dir.
+ * Rejects paths that escape the upload directory.
+ * @param {string} storedPath — raw path from DB or trusted source
+ * @returns {string} safe absolute path
+ * @throws {Error} if path traversal detected
+ */
+function resolveSafePath(storedPath) {
+  if (!storedPath || typeof storedPath !== 'string') {
+    throw new Error('Invalid file path');
+  }
+  const resolved = path.resolve(UPLOAD_BASE, storedPath);
+  if (!resolved.startsWith(UPLOAD_BASE + path.sep)) {
+    throw new Error('Path traversal detected');
+  }
+  return resolved;
+}
 
 // Allowed MIME types for submittals
 const ALLOWED_MIME_TYPES = new Set([
@@ -38,11 +59,7 @@ const ALLOWED_EXTENSIONS = new Set([
 // Configure multer for file uploads
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
-    const uploadDir = path.join(__dirname, '../uploads/submittals');
-    if (!fs.existsSync(uploadDir)) {
-      fs.mkdirSync(uploadDir, { recursive: true });
-    }
-    cb(null, uploadDir);
+    cb(null, UPLOAD_BASE);
   },
   filename: (req, file, cb) => {
     const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
@@ -177,20 +194,22 @@ router.get('/:id', authMiddleware, async (req, res) => {
     }
 
     // Get attachments
+    const { clause: attClause, params: attParams } = buildTenantFilter(req, 'AND', 's', 2);
     const attachments = await pool.query(
       `SELECT sa.* FROM submittal_attachments sa
        JOIN submittals s ON sa.submittal_id = s.id
-       WHERE sa.submittal_id = $1 AND COALESCE(s.organization_id, s.company_id) = $2`,
-      [req.params.id, req.user.company_id]
+       WHERE sa.submittal_id = $1${attClause}`,
+      [req.params.id, ...attParams]
     );
 
     // Get comments (tenant-scoped)
+    const { clause: commentClause, params: commentParams } = buildTenantFilter(req, 'AND', 's', 2);
     const comments = await pool.query(
       `SELECT sc.* FROM submittal_comments sc
        JOIN submittals s ON sc.submittal_id = s.id
-       WHERE sc.submittal_id = $1 AND COALESCE(s.organization_id, s.company_id) = $2
+       WHERE sc.submittal_id = $1${commentClause}
        ORDER BY sc.created_at ASC`,
-      [req.params.id, req.user.company_id]
+      [req.params.id, ...commentParams]
     );
 
     res.json({
@@ -398,11 +417,15 @@ router.delete('/:id', authMiddleware, async (req, res) => {
     // Delete physical files
     for (const attachment of attachments.rows) {
       try {
-        if (fs.existsSync(attachment.file_path)) {
-          fs.unlinkSync(attachment.file_path);
+        try {
+          const safePath = resolveSafePath(attachment.file_path);
+          if (fs.existsSync(safePath)) {
+            fs.unlinkSync(safePath);
+          }
+        } catch (safeErr) {
         }
       } catch (err) {
-        console.error('[submittals DELETE] Failed to delete file:', attachment.file_path, err);
+        console.error('[submittals DELETE] Failed to delete file:', attachment.file_path, safeErr||err);
       }
     }
 
