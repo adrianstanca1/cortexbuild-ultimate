@@ -520,6 +520,9 @@ app.use("/api/notifications", require("./routes/notifications"));
 app.use("/api/push", require("./routes/push")());
 app.use("/api/team-member-data", require("./routes/team-member-data"));
 app.use("/api/site-permits", makeRouter("site_permits"));
+app.use("/api/safety-permits", makeRouter("safety_permits"));
+app.use("/api/permit-renewals", makeRouter("permit_renewals"));
+app.use("/api/permit-inspections", makeRouter("permit_inspections"));
 app.use("/api/equipment", makeRouter("equipment"));
 app.use("/api/project-templates", makeRouter("project_templates"));
 app.use("/api/maintenance-schedules", makeRouter("maintenance_schedules"));
@@ -528,7 +531,6 @@ app.use("/api/equipment-service-logs", makeRouter("equipment_service_logs"));
 app.use("/api/risk-mitigation-actions", makeRouter("risk_mitigation_actions"));
 app.use("/api/contact-interactions", makeRouter("contact_interactions"));
 app.use("/api/api-keys", require("./routes/api-keys"));
-app.use("/api/safety-permits", makeRouter("safety_permits"));
 app.use("/api/toolbox-talks", makeRouter("toolbox_talks"));
 app.use("/api/drawing-transmittals", makeRouter("drawing_transmittals"));
 app.use("/api/site-inspections", makeRouter("site_inspections"));
@@ -549,6 +551,7 @@ app.use("/api/weather-forecast", require("./routes/weather-data"));
 app.use("/api/backup", require("./routes/backup"));
 app.use("/api/report-templates", require("./routes/report-templates"));
 app.use("/api/permissions", require("./routes/permissions"));
+app.use("/api", require("./routes/permits"));
 app.use(
   "/api/rag",
   requireFeature("FEATURE_RAG_SEARCH"),

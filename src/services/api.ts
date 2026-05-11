@@ -256,6 +256,11 @@ export const sitePermitsApi = {
   create: (data: Row) => insertRow('site-permits', data),
   update: (id: string, data: Row) => updateRow('site-permits', id, data),
   delete: (id: string) => deleteRow('site-permits', id),
+  getStats: () => apiFetch('/permits/stats') as Promise<{ byStatus: Record<string, number>; expiringSoon: number; overdue: number }>,
+  getExpiring: (days?: number) => apiFetch(`/permits/expiring?days=${days || 30}`) as Promise<Row[]>,
+  getRenewals: (id: string) => apiFetch(`/permits/renewals/${id}`) as Promise<Row[]>,
+  renew: (id: string, data: { new_end_date: string; notes?: string }) => apiFetch(`/permits/${id}/renew`, { method: 'POST', body: JSON.stringify(data) }) as Promise<Row>,
+  remind: (id: string) => apiFetch(`/permits/${id}/remind`, { method: 'POST' }) as Promise<Row>,
 };
 
 export const siteInspectionsApi = {
@@ -264,6 +269,30 @@ export const siteInspectionsApi = {
   create: (data: Row) => insertRow('site-inspections', data),
   update: (id: string, data: Row) => updateRow('site-inspections', id, data),
   delete: (id: string) => deleteRow('site-inspections', id),
+};
+
+export const safetyPermitsApi = {
+  getAll: () => fetchAll<Row>('safety-permits'),
+  getById: (id: string) => apiFetch(`/safety-permits/${id}`),
+  create: (data: Row) => insertRow('safety-permits', data),
+  update: (id: string, data: Row) => updateRow('safety-permits', id, data),
+  delete: (id: string) => deleteRow('safety-permits', id),
+};
+
+export const permitRenewalsApi = {
+  getAll: () => fetchAll<Row>('permit-renewals'),
+  getById: (id: string) => apiFetch(`/permit-renewals/${id}`),
+  create: (data: Row) => insertRow('permit-renewals', data),
+  update: (id: string, data: Row) => updateRow('permit-renewals', id, data),
+  delete: (id: string) => deleteRow('permit-renewals', id),
+};
+
+export const permitInspectionsApi = {
+  getAll: () => fetchAll<Row>('permit-inspections'),
+  getById: (id: string) => apiFetch(`/permit-inspections/${id}`),
+  create: (data: Row) => insertRow('permit-inspections', data),
+  update: (id: string, data: Row) => updateRow('permit-inspections', id, data),
+  delete: (id: string) => deleteRow('permit-inspections', id),
 };
 
 export const subcontractorsApi = {

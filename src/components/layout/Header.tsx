@@ -85,6 +85,7 @@ const MODULE_LABELS: Record<Module, string> = {
   'webhooks':           'Webhooks',
   'carbon-estimating':   'Carbon Estimating',
   'site-inspections':   'Site Inspections',
+  'permits':              'Permits & Licences',
   'bim-4d':            '4D BIM',
   'billing':            'Billing & Plans',
   'maintenance-schedules': 'Maintenance Schedules',

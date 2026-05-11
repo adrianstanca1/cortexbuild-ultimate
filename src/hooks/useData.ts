@@ -49,7 +49,10 @@ import {
   measuringApi,
   valuationsApi,
   sitePermitsApi,
+  safetyPermitsApi,
   siteInspectionsApi,
+  permitRenewalsApi,
+  permitInspectionsApi,
   reportTemplatesApi,
   submittalsApi,
   maintenanceSchedulesApi,
@@ -475,15 +478,33 @@ export const useValuations = makeHooks<ValuationRow>(
   "valuations",
   valuationsApi,
 );
+export const useSiteInspections = makeHooks(
+  "site-inspections",
+  "site_inspections",
+  siteInspectionsApi,
+);
+
 export const useSitePermits = makeHooks(
   "site-permits",
   "site-permits",
   sitePermitsApi,
 );
-export const useSiteInspections = makeHooks(
-  "site-inspections",
-  "site_inspections",
-  siteInspectionsApi,
+export const useSafetyPermits = makeHooks(
+  "safety-permits",
+  "safety_permits",
+  safetyPermitsApi,
+);
+
+export const usePermitRenewals = makeHooks(
+  "permit-renewals",
+  "permit_renewals",
+  permitRenewalsApi,
+);
+
+export const usePermitInspections = makeHooks(
+  "permit-inspections",
+  "permit_inspections",
+  permitInspectionsApi,
 );
 export const useReportTemplates = makeHooks<ReportTemplate>(
   "report-templates",

@@ -109,6 +109,7 @@ const NAV_GROUPS: { id: string; label: string; accent: string; items: NavItem[] 
     items: [
       { id: 'safety',          label: 'Safety & HSE',         icon: AlertTriangle,  badge: null },
       { id: 'site-inspections',label: 'Site Inspections',      icon: ClipboardCheck, badge: 'NEW' },
+      { id: 'permits',          label: 'Permits & Licences',      icon: ShieldCheck,    badge: 'NEW' },
       { id: 'rams',            label: 'RAMS',                   icon: ShieldCheck,    badge: 'UK' },
       { id: 'inspections',     label: 'Inspections',            icon: ClipboardCheck, badge: null },
       { id: 'punch-list',      label: 'Punch List',             icon: CheckSquare,    badge: null },

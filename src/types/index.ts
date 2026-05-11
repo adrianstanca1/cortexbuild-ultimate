@@ -108,6 +108,7 @@ export type Module =
   | 'webhooks'
   | 'carbon-estimating'
   | 'site-inspections'
+  | 'permits'
   | 'billing'
   | 'settings-mfa'
   | 'api-keys';
