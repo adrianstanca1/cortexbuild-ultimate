@@ -17,7 +17,7 @@ import {
   PieChart, FileEdit, Coins, FileStack, Construction,
   Signpost, Trash2, Leaf, GraduationCap, Award, BadgeCheck,
   Building, Ruler, Eye, ChevronDown, Mail, Lock, FileEdit as FileTemplate,
-  Box, DollarSign, Upload, Activity,
+  Box, DollarSign, Upload, Activity, LayoutTemplate,
 } from 'lucide-react';
 
 interface SidebarProps {
@@ -63,6 +63,7 @@ const NAV_GROUPS: { id: string; label: string; accent: string; items: NavItem[] 
       { id: 'field-view',     label: 'Field View',      icon: MapPin,         badge: null },
       { id: 'drawings',       label: 'Drawings & Plans',icon: Layers,         badge: null },
       { id: 'meetings',       label: 'Meetings',        icon: MessageSquare,  badge: null },
+      { id: 'project-templates', label: 'Project Templates', icon: LayoutTemplate, badge: 'NEW' },
     ],
   },
   {

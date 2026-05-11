@@ -95,6 +95,7 @@ export type Module =
   | 'bim-4d'
   | 'submittal-management'
   | 'maintenance-schedules'
+  | 'project-templates'
   | 'dev-sandbox'
   | 'ai-vision'
   | 'my-desktop'

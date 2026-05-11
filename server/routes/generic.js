@@ -830,6 +830,23 @@ const ALLOWED_COLUMNS = {
     "organization_id",
     "company_id",
   ],
+  project_templates: [
+    "name",
+    "description",
+    "type",
+    "default_budget",
+    "default_duration_days",
+    "default_phase_order",
+    "custom_fields",
+    "tasks",
+    "checklists",
+    "is_shared",
+    "is_default",
+    "created_by",
+    "updated_by",
+    "organization_id",
+    "company_id",
+  ],
 };
 
 const VALID_ORDER_COLS = new Set([

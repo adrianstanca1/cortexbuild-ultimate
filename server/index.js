@@ -517,6 +517,7 @@ app.use("/api/push", require("./routes/push")());
 app.use("/api/team-member-data", require("./routes/team-member-data"));
 app.use("/api/site-permits", makeRouter("site_permits"));
 app.use("/api/equipment", makeRouter("equipment"));
+app.use("/api/project-templates", makeRouter("project_templates"));
 app.use("/api/maintenance-schedules", makeRouter("maintenance_schedules"));
 app.use("/api/equipment-hire-logs", makeRouter("equipment_hire_logs"));
 app.use("/api/equipment-service-logs", makeRouter("equipment_service_logs"));

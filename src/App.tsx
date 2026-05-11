@@ -123,6 +123,9 @@ const SubmittalManagement = lazy(
 const MaintenanceSchedules = lazy(
   () => import("./components/modules/MaintenanceSchedules"),
 );
+const ProjectTemplates = lazy(
+  () => import("./components/modules/ProjectTemplates"),
+);
 const DevSandbox = lazy(() => import("./components/modules/DevSandbox"));
 const AIVision = lazy(() => import("./components/modules/AIVision"));
 const ClientPortal = lazy(() => import("./components/modules/ClientPortal"));
@@ -543,6 +546,8 @@ function AppShell() {
         return <SubmittalManagement />;
       case "maintenance-schedules":
         return <MaintenanceSchedules />;
+      case "project-templates":
+        return <ProjectTemplates />;
       case "dev-sandbox":
         return <DevSandbox />;
       case "ai-vision":

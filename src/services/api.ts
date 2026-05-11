@@ -242,6 +242,14 @@ export const maintenanceSchedulesApi = {
   delete: (id: string) => deleteRow('maintenance-schedules', id),
 };
 
+export const projectTemplatesApi = {
+  getAll: () => fetchAll<Row>('project-templates'),
+  getById: (id: string) => apiFetch(`/project-templates/${id}`),
+  create: (data: Row) => insertRow('project-templates', data),
+  update: (id: string, data: Row) => updateRow('project-templates', id, data),
+  delete: (id: string) => deleteRow('project-templates', id),
+};
+
 export const sitePermitsApi = {
   getAll: () => fetchAll<Row>('site-permits'),
   getById: (id: string) => apiFetch(`/site-permits/${id}`),

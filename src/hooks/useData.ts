@@ -53,6 +53,7 @@ import {
   reportTemplatesApi,
   submittalsApi,
   maintenanceSchedulesApi,
+  projectTemplatesApi,
   auditApi,
   ReportTemplate,
   type Row,
@@ -511,6 +512,12 @@ export const useMaintenanceSchedules = makeHooks(
   "maintenance-schedules",
   "maintenance_schedules",
   maintenanceSchedulesApi,
+);
+
+export const useProjectTemplates = makeHooks(
+  "project-templates",
+  "project_templates",
+  projectTemplatesApi,
 );
 
 export function useDuplicateTemplate() {
