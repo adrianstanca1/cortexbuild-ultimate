@@ -89,6 +89,7 @@ const MODULE_LABELS: Record<Module, string> = {
   'site-inspections': 'Site Inspections',
   'bim-4d': '4D BIM',
   'billing': 'Billing',
+  'maintenance-schedules': 'Maintenance Schedules',
   'settings-mfa': 'Two-Factor Auth',
 };
 
