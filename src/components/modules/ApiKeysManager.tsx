@@ -199,7 +199,7 @@ export default function ApiKeysManager() {
                   <td className="px-3 py-3 text-right">
                     <div className="flex items-center justify-end gap-2">
                       {k.key && (
-                        <button onClick={() => { visibleKey === k.key ? setVisibleKey(null) : setVisibleKey(k.key || null); }} className="text-gray-500 hover:text-orange-400" title="Show/Hide key">
+                        <button onClick={() => { if (visibleKey === k.key) setVisibleKey(null); else setVisibleKey(k.key || null); }} className="text-gray-500 hover:text-orange-400" title="Show/Hide key">
                           {visibleKey === k.key ? <EyeOff size={14} /> : <Eye size={14} />}
                         </button>
                       )}
