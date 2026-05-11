@@ -81,6 +81,7 @@ export type Module =
   | 'temp-works'
   | 'signage'
   | 'waste-management'
+  | 'cost-management'
   | 'sustainability'
   | 'training'
   | 'certifications'
@@ -106,7 +107,6 @@ export type Module =
   | 'webhooks'
   | 'carbon-estimating'
   | 'site-inspections'
-  | 'bim-4d'
   | 'billing'
   | 'settings-mfa';
 
