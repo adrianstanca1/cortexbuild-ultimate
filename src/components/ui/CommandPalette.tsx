@@ -160,6 +160,7 @@ const MODULE_LABELS: Record<Module, string> = {
   'bim-4d': 'BIM 4D',
   'billing': 'Billing',
   'maintenance-schedules': 'Maintenance Schedules',
+  'project-templates': 'Project Templates',
   'settings-mfa': 'Two-Factor Auth',
 };
 

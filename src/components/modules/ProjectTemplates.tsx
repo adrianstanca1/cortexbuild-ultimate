@@ -3,9 +3,9 @@ import { toast } from 'sonner';
 import {
   Layers, Plus, Search, X, Trash2, Edit, Copy, CheckCircle,
   BarChart3, Filter, ArrowUpDown, LayoutTemplate, FileText,
-  CheckSquare, Square, Download, Star,
+  CheckSquare, Square, Download, Star, Trash,
 } from 'lucide-react';
-import { BulkActionsBar, useBulkSelection } from '../ui/BulkActions';
+import { BulkActionsBar, useBulkSelection, type BulkAction } from '../ui/BulkActions';
 import { ModuleBreadcrumbs } from '../ui/Breadcrumbs';
 import { EmptyState } from '../ui/EmptyState';
 import {
@@ -305,7 +305,7 @@ export default function ProjectTemplates() {
       {isLoading ? (
         <div className="text-center py-8 text-gray-400 animate-pulse">Loading…</div>
       ) : !filtered.length ? (
-        <EmptyState icon={<LayoutTemplate size={40} />} message="No templates found" />
+        <EmptyState title="No templates found" description="Create a template to kick-start projects." icon={LayoutTemplate} />
       ) : (
         <div className="overflow-x-auto">
           <table className="w-full text-sm text-left text-gray-300">
@@ -358,7 +358,7 @@ export default function ProjectTemplates() {
                       ? `£${Number(row.defaultBudget ?? row.default_budget).toLocaleString()}`
                       : '-'}
                   </td>
-                  <td className="px-4 py-3">{row.defaultDurationDays ?? row.default_duration_days ?? '-'}</td>
+                  <td className="px-4 py-3">{String(row.defaultDurationDays ?? row.default_duration_days ?? '-')}</td>
                   <td className="px-4 py-3">
                     {(row.isDefault ?? row.is_default) ? (
                       <CheckCircle className="text-amber-400" size={18} />
@@ -396,9 +396,18 @@ export default function ProjectTemplates() {
 
       {selectedIds.size > 0 && (
         <BulkActionsBar
-          count={selectedIds.size}
-          onDelete={() => handleBulkDelete(Array.from(selectedIds))}
-          onClear={clearSelection}
+          selectedIds={Array.from(selectedIds)}
+          actions={[
+            {
+              id: 'delete',
+              label: 'Delete',
+              icon: Trash2,
+              variant: 'danger',
+              confirm: 'Delete selected templates?',
+              onClick: (ids) => handleBulkDelete(ids),
+            },
+          ]}
+          onClearSelection={clearSelection}
         />
       )}
 
