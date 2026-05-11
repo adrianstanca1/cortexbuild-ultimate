@@ -1112,6 +1112,15 @@ export const tasksApi = {
   delete: (id: string) => deleteRow('tasks', id),
 };
 
+// ─── API Keys ────────────────────────────────────────────────────────────────
+export const apiKeysApi = {
+  getAll: () => fetchAll<Row>('api-keys'),
+  create: (data: { name: string; scopes?: string[]; expiresAt?: string }) => apiFetch<{ data: Row }>('/api-keys', { method: 'POST', body: JSON.stringify(data) }),
+  update: (id: string, data: Partial<{ name: string; scopes: string[]; isActive: boolean; expiresAt: string }>) =>
+    apiFetch(`/api-keys/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
+  delete: (id: string) => apiFetch(`/api-keys/${id}`, { method: 'DELETE' }),
+};
+
 // ─── Webhooks ────────────────────────────────────────────────────────────────
 export const webhooksApi = {
   getAll: () => apiFetch<{ data: Row[] }>('/webhooks'),

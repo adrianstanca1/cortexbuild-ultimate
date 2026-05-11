@@ -11,6 +11,7 @@ const ROLES = {
     'cost-management': ['read', 'update'],
     'audit-log': ['read'],
     settings: ['read', 'update'],
+    integrations: ['create', 'read', 'update', 'delete'],
   },
   project_manager: {
     projects: ['create', 'read', 'update'],

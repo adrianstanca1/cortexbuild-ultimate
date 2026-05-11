@@ -92,6 +92,7 @@ const MODULE_LABELS: Record<Module, string> = {
   'maintenance-schedules': 'Maintenance Schedules',
   'project-templates': 'Project Templates',
   'settings-mfa': 'Two-Factor Auth',
+  'api-keys': 'API Keys',
 };
 
 export function Breadcrumbs({ items, onNavigate }: BreadcrumbsProps) {

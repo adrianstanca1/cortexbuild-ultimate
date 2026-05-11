@@ -151,6 +151,7 @@ const TeamChat = lazy(() => import("./components/modules/TeamChat"));
 const ActivityFeed = lazy(() => import("./components/modules/ActivityFeed"));
 const BillingPage = lazy(() => import("./pages/BillingPage"));
 const SettingsMfa = lazy(() => import("./pages/SettingsMfa").then(m => ({ default: () => <m.SettingsMfa /> })));
+const ApiKeysManager = lazy(() => import("./components/modules/ApiKeysManager"));
 
 /** Themes that use dark chrome for toasts / loading surfaces */
 const DARK_CHROME_THEMES = new Set([
@@ -574,6 +575,8 @@ function AppShell() {
         return <BillingPage />;
       case "settings-mfa":
         return <SettingsMfa />;
+      case "api-keys":
+        return <ApiKeysManager />;
       default:
         return <Dashboard />;
     }

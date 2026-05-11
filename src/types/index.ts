@@ -109,7 +109,8 @@ export type Module =
   | 'carbon-estimating'
   | 'site-inspections'
   | 'billing'
-  | 'settings-mfa';
+  | 'settings-mfa'
+  | 'api-keys';
 
 export type ProjectStatus = 'planning' | 'active' | 'on_hold' | 'completed' | 'archived';
 export type TaskStatus = 'todo' | 'in_progress' | 'review' | 'done' | 'blocked';

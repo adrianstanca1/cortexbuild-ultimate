@@ -17,7 +17,7 @@ import {
   PieChart, FileEdit, Coins, FileStack, Construction,
   Signpost, Trash2, Leaf, GraduationCap, Award, BadgeCheck,
   Building, Ruler, Eye, ChevronDown, Mail, Lock, FileEdit as FileTemplate,
-  Box, DollarSign, Upload, Activity, LayoutTemplate,
+  Box, DollarSign, Upload, Activity, LayoutTemplate, Key,
 } from 'lucide-react';
 
 interface SidebarProps {
@@ -131,6 +131,7 @@ const NAV_GROUPS: { id: string; label: string; accent: string; items: NavItem[] 
       { id: 'email-history',      label: 'Email History',          icon: Mail,           badge: null },
       { id: 'permissions',        label: 'Permissions',            icon: Lock,           badge: null },
       { id: 'report-templates',   label: 'Report Templates',       icon: FileTemplate,   badge: null },
+      { id: 'api-keys',           label: 'API Keys',               icon: Key,            badge: null },
       { id: 'billing',            label: 'Billing',                icon: DollarSign,     badge: null },
       { id: 'admin-dashboard',    label: 'Admin Dashboard',        icon: ShieldCheck,    badge: 'ADMIN' },
       { id: 'settings',           label: 'Settings',               icon: Settings,       badge: null },
