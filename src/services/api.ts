@@ -227,6 +227,19 @@ export const equipmentApi = {
   createHireLog: (data: Row) => insertRow('equipment-hire-logs', data),
   updateHireLog: (id: string, data: Row) => updateRow('equipment-hire-logs', id, data),
   deleteHireLog: (id: string) => deleteRow('equipment-hire-logs', id),
+  getMaintenanceSchedules: () => fetchAll<Row>('maintenance-schedules'),
+  getMaintenanceScheduleById: (id: string) => apiFetch(`/maintenance-schedules/${id}`),
+  createMaintenanceSchedule: (data: Row) => insertRow('maintenance-schedules', data),
+  updateMaintenanceSchedule: (id: string, data: Row) => updateRow('maintenance-schedules', id, data),
+  deleteMaintenanceSchedule: (id: string) => deleteRow('maintenance-schedules', id),
+};
+
+export const maintenanceSchedulesApi = {
+  getAll: () => fetchAll<Row>('maintenance-schedules'),
+  getById: (id: string) => apiFetch(`/maintenance-schedules/${id}`),
+  create: (data: Row) => insertRow('maintenance-schedules', data),
+  update: (id: string, data: Row) => updateRow('maintenance-schedules', id, data),
+  delete: (id: string) => deleteRow('maintenance-schedules', id),
 };
 
 export const sitePermitsApi = {
