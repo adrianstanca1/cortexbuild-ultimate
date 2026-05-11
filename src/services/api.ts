@@ -1075,6 +1075,41 @@ export const projectTasksApi = {
     apiFetch(`/project-tasks/${taskId}/comments`, { method: 'POST', body: JSON.stringify({ comment }) }),
   bulkUpdateStatus: (ids: string[], status: string) =>
     apiFetch(`/project-tasks/bulk-status`, { method: 'PUT', body: JSON.stringify({ ids, status }) }),
+  getSubtasks: (taskId: string) => fetchAll<Row>(`subtasks?task_id=${taskId}`),
+  createSubtask: (data: Row) => insertRow('subtasks', data),
+  updateSubtask: (id: string, data: Partial<Row>) =>
+    apiFetch(`/subtasks/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
+  deleteSubtask: (id: string) => apiFetch(`/subtasks/${id}`, { method: 'DELETE' }),
+  getDependencies: (taskId: string) => fetchAll<Row>(`task-dependencies?task_id=${taskId}`),
+  createDependency: (data: Row) => apiFetch('/task-dependencies', { method: 'POST', body: JSON.stringify(data) }),
+  deleteDependency: (id: string) => apiFetch(`/task-dependencies/${id}`, { method: 'DELETE' }),
+  getTemplates: () => fetchAll<Row>('task-templates'),
+  getTemplateById: (id: string) => apiFetch(`/task-templates/${id}`),
+  createTemplate: (data: Row) => insertRow('task-templates', data),
+  updateTemplate: (id: string, data: Row) => updateRow('task-templates', id, data),
+  deleteTemplate: (id: string) => deleteRow('task-templates', id),
+  getRecurringTasks: () => fetchAll<Row>('recurring-tasks'),
+  createRecurringTask: (data: Row) => apiFetch('/recurring-tasks', { method: 'POST', body: JSON.stringify(data) }),
+  updateRecurringTask: (id: string, data: Partial<Row>) =>
+    apiFetch(`/recurring-tasks/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
+  deleteRecurringTask: (id: string) => apiFetch(`/recurring-tasks/${id}`, { method: 'DELETE' }),
+};
+
+// ─── Tasks (standalone / global) ────────────────────────────────────────────
+export const tasksApi = {
+  getAll: (filters?: { project_id?: string; status?: string; priority?: string; assigned_to?: string }) => {
+    const params = new URLSearchParams();
+    if (filters?.project_id) params.append('project_id', filters.project_id);
+    if (filters?.status) params.append('status', filters.status);
+    if (filters?.priority) params.append('priority', filters.priority);
+    if (filters?.assigned_to) params.append('assigned_to', filters.assigned_to);
+    const qs = params.toString();
+    return fetchAll<Row>(`tasks${qs ? `?${qs}` : ''}`);
+  },
+  getById: (id: string) => apiFetch(`/tasks/${id}`),
+  create: (data: Row) => insertRow('tasks', data),
+  update: (id: string, data: Partial<Row>) => apiFetch(`/tasks/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
+  delete: (id: string) => deleteRow('tasks', id),
 };
 
 // ─── Webhooks ────────────────────────────────────────────────────────────────

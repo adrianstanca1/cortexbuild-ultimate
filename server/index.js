@@ -431,6 +431,10 @@ app.use(
 );
 app.use("/api/project-tasks", require("./routes/project-tasks"));
 app.use("/api/tasks", require("./routes/tasks"));
+app.use("/api/subtasks", require("./routes/subtasks"));
+app.use("/api/task-dependencies", require("./routes/task-dependencies"));
+app.use("/api/task-templates", require("./routes/task-templates"));
+app.use("/api/recurring-tasks", require("./routes/recurring-tasks"));
 app.use("/api/work-packages", require("./routes/work-packages"));
 
 // ─── AI routes ────────────────────────────────────────────────────────────────
