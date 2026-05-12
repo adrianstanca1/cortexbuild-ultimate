@@ -129,7 +129,7 @@ jobs:
 
       - name: Upload debug build artifact
         if: ${{ github.event.inputs.build_type != 'release' }}
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: CortexBuild-iOS-Debug-${{ github.sha }}
           path: ios/App/artifacts/CortexBuild-iOS-debug.zip
@@ -138,7 +138,7 @@ jobs:
 
       - name: Upload release archive artifact
         if: ${{ github.event.inputs.build_type == 'release' }}
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: CortexBuild-xcarchive-${{ github.sha }}
           path: ios/App/build/CortexBuild.xcarchive
