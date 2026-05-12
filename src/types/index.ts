@@ -98,20 +98,12 @@ export type Module =
   | 'project-templates'
   | 'dev-sandbox'
   | 'ai-vision'
-  | 'my-desktop'
-  | 'advanced-analytics'
-  | 'project-calendar'
-  | 'admin-dashboard'
-  | 'team-chat'
-  | 'activity-feed'
-  | 'client-portal'
-  | 'webhooks'
-  | 'carbon-estimating'
   | 'site-inspections'
   | 'permits'
   | 'billing'
   | 'settings-mfa'
-  | 'api-keys';
+  | 'api-keys'
+  | 'tasks';
 
 export type ProjectStatus = 'planning' | 'active' | 'on_hold' | 'completed' | 'archived';
 export type TaskStatus = 'todo' | 'in_progress' | 'review' | 'done' | 'blocked';

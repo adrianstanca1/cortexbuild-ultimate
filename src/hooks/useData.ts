@@ -58,6 +58,7 @@ import {
   maintenanceSchedulesApi,
   projectTemplatesApi,
   auditApi,
+  tasksApi,
   ReportTemplate,
   type Row,
 } from "../services/api";
@@ -425,6 +426,7 @@ export const useProjectTasks = makeHooks(
   "project_tasks",
   projectTasksApi,
 );
+export const useTasks = makeHooks("tasks", "tasks", tasksApi);
 export const useVariations = makeHooks(
   "variations",
   "variations",

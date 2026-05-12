@@ -64,6 +64,7 @@ const NAV_GROUPS: { id: string; label: string; accent: string; items: NavItem[] 
       { id: 'drawings',       label: 'Drawings & Plans',icon: Layers,         badge: null },
       { id: 'meetings',       label: 'Meetings',        icon: MessageSquare,  badge: null },
       { id: 'project-templates', label: 'Project Templates', icon: LayoutTemplate, badge: 'NEW' },
+      { id: 'tasks',          label: 'Tasks',            icon: CheckSquare,      badge: 'NEW' },
     ],
   },
   {

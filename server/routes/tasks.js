@@ -10,6 +10,14 @@ router.use(authMiddleware);
 const VALID_STATUSES = ['todo', 'in_progress', 'review', 'done', 'blocked'];
 const VALID_PRIORITIES = ['low', 'medium', 'high', 'critical'];
 
+function safeJson(value) {
+  if (value === undefined || value === null) return undefined;
+  if (typeof value === 'string') {
+    try { return JSON.parse(value); } catch { return value; }
+  }
+  return JSON.stringify(value);
+}
+
 // ─── GET /api/tasks?projectId=xxx&status=xxx ───────────────────────────────
 router.get('/', checkPermission('tasks', 'read'), async (req, res) => {
   try {
@@ -153,10 +161,10 @@ router.put('/:id', checkPermission('tasks', 'update'), async (req, res) => {
     const updates = [];
     const queryParams = [];
 
-    const ALLOWED_FIELDS = ['title', 'description', 'status', 'priority', 'assigned_to', 'due_date', 'category', 'estimated_hours', 'tags', 'progress'];
+    const ALLOWED_FIELDS = ['title', 'description', 'status', 'priority', 'assigned_to', 'due_date', 'category', 'estimated_hours', 'tags', 'progress', 'checklist', 'time_spent', 'parent_task_id'];
     const fields = {
       title, description, status, priority, assigned_to,
-      due_date, category, estimated_hours, tags, progress
+      due_date, category, estimated_hours, tags, progress, checklist, time_spent, parent_task_id
     };
 
     for (const [key, value] of Object.entries(fields)) {
@@ -180,10 +188,12 @@ router.put('/:id', checkPermission('tasks', 'update'), async (req, res) => {
         WHERE id = $${queryParams.length}
         RETURNING *`;
     } else {
+      const tfLen = tf.params.length;
       queryParams.push(...tf.params);
+      const idPlaceholder = queryParams.length - tfLen;
       queryText = `UPDATE tasks t SET ${updates.join(', ')}
         FROM projects p
-        WHERE p.id = t.project_id${tf.clause} AND t.id = $${queryParams.length - tf.params.length}
+        WHERE p.id = t.project_id${tf.clause} AND t.id = $${idPlaceholder}
         RETURNING t.*`;
     }
 
@@ -223,6 +233,55 @@ router.delete('/:id', checkPermission('tasks', 'delete'), async (req, res) => {
     res.json({ message: 'Task deleted' });
   } catch (err) {
     console.error('[DELETE /api/tasks/:id]', err.message);
+    res.status(500).json({ message: 'Internal server error' });
+  }
+});
+
+// ─── PATCH /api/tasks/:id/checklist ─────────────────────────────────────────
+router.patch('/:id/checklist', checkPermission('tasks', 'update'), async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { checklist } = req.body;
+    if (!Array.isArray(checklist)) return res.status(400).json({ message: 'checklist must be an array' });
+    const tf = buildTenantFilter(req, 'AND', 'p');
+    let query, params;
+    if (isSuperAdmin(req)) {
+      query = 'UPDATE tasks SET checklist = $1 WHERE id = $2 RETURNING *';
+      params = [JSON.stringify(checklist), id];
+    } else {
+      query = 'UPDATE tasks t SET checklist = $1 FROM projects p WHERE p.id = t.project_id AND t.id = $2' + tf.clause + ' RETURNING t.*';
+      params = [JSON.stringify(checklist), id, ...tf.params];
+    }
+    const { rows } = await pool.query(query, params);
+    if (rows.length === 0) return res.status(404).json({ message: 'Task not found' });
+    res.json(rows[0]);
+  } catch (err) {
+    console.error('[PATCH /api/tasks/:id/checklist]', err.message);
+    res.status(500).json({ message: 'Internal server error' });
+  }
+});
+
+// ─── POST /api/tasks/bulk-status ────────────────────────────────────────────
+router.post('/bulk-status', checkPermission('tasks', 'update'), async (req, res) => {
+  try {
+    const { ids, status } = req.body;
+    if (!Array.isArray(ids) || ids.length === 0) return res.status(400).json({ message: 'ids array required' });
+    if (!VALID_STATUSES.includes(status)) return res.status(400).json({ message: `Invalid status. Valid values: ${VALID_STATUSES.join(', ')}` });
+    const tf = buildTenantFilter(req, 'AND', 'p');
+    let query, params;
+    if (isSuperAdmin(req)) {
+      const placeholders = ids.map((_, i) => `$${i + 2}`).join(',');
+      query = `UPDATE tasks SET status = $1 WHERE id IN (${placeholders}) RETURNING id`;
+      params = [status, ...ids];
+    } else {
+      const placeholders = ids.map((_, i) => `$${i + 3}`).join(',');
+      query = `UPDATE tasks t SET status = $1 FROM projects p WHERE p.id = t.project_id AND t.id IN (${placeholders})` + tf.clause + ' RETURNING t.id';
+      params = [status, ...ids, ...tf.params];
+    }
+    const { rows } = await pool.query(query, params);
+    res.json({ updated: rows.length, ids: rows.map(r => r.id) });
+  } catch (err) {
+    console.error('[POST /api/tasks/bulk-status]', err.message);
     res.status(500).json({ message: 'Internal server error' });
   }
 });

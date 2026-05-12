@@ -1137,8 +1137,10 @@ export const tasksApi = {
   },
   getById: (id: string) => apiFetch(`/tasks/${id}`),
   create: (data: Row) => insertRow('tasks', data),
-  update: (id: string, data: Partial<Row>) => apiFetch(`/tasks/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
+  update: (id: string, data: Partial<Row>) => apiFetch<Row>(`/tasks/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
   delete: (id: string) => deleteRow('tasks', id),
+  updateChecklist: (id: string, checklist: unknown[]) => apiFetch<Row>(`/tasks/${id}/checklist`, { method: 'PATCH', body: JSON.stringify({ checklist }) }),
+  bulkUpdateStatus: (ids: string[], status: string) => apiFetch<{ updated: number; ids: string[] }>('/tasks/bulk-status', { method: 'POST', body: JSON.stringify({ ids, status }) }),
 };
 
 // ─── API Keys ────────────────────────────────────────────────────────────────

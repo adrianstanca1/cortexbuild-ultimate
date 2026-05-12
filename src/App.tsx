@@ -133,6 +133,7 @@ const Webhooks = lazy(() => import("./components/modules/Webhooks"));
 const CarbonEstimating = lazy(
   () => import("./components/modules/CarbonEstimating"),
 );
+const Tasks = lazy(() => import("./components/modules/Tasks"));
 const SiteInspections = lazy(
   () => import("./components/modules/SiteInspections"),
 );
@@ -580,6 +581,8 @@ function AppShell() {
         return <ApiKeysManager />;
       case "permits":
         return <Permits />;
+      case "tasks":
+        return <Tasks />;
       default:
         return <Dashboard />;
     }
