@@ -903,6 +903,27 @@ const ALLOWED_COLUMNS = {
     "organization_id",
     "company_id",
   ],
+  project_phases: [
+    "project_id",
+    "organization_id",
+    "company_id",
+    "name",
+    "description",
+    "sequence_order",
+    "status",
+    "progress",
+    "budget_allocated",
+    "budget_spent",
+    "start_date",
+    "end_date",
+    "actual_start_date",
+    "actual_end_date",
+    "color",
+    "dependencies",
+    "gates",
+    "created_by",
+    "updated_by",
+  ],
 };
 
 const VALID_ORDER_COLS = new Set([
