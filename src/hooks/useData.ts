@@ -59,6 +59,7 @@ import {
   projectTemplatesApi,
   auditApi,
   tasksApi,
+  suppliersApi,
   ReportTemplate,
   type Row,
 } from "../services/api";
@@ -485,6 +486,7 @@ export const useSiteInspections = makeHooks(
   "site_inspections",
   siteInspectionsApi,
 );
+export const useSuppliers = makeHooks("suppliers", "suppliers", suppliersApi);
 
 export const useSitePermits = makeHooks(
   "site-permits",

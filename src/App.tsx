@@ -154,6 +154,7 @@ const BillingPage = lazy(() => import("./pages/BillingPage"));
 const SettingsMfa = lazy(() => import("./pages/SettingsMfa").then(m => ({ default: () => <m.SettingsMfa /> })));
 const ApiKeysManager = lazy(() => import("./components/modules/ApiKeysManager"));
 const Permits = lazy(() => import("./components/modules/Permits"));
+const Suppliers = lazy(() => import("./components/modules/Suppliers"));
 
 /** Themes that use dark chrome for toasts / loading surfaces */
 const DARK_CHROME_THEMES = new Set([
@@ -581,6 +582,8 @@ function AppShell() {
         return <ApiKeysManager />;
       case "permits":
         return <Permits />;
+      case "suppliers":
+        return <Suppliers />;
       case "tasks":
         return <Tasks />;
       default:

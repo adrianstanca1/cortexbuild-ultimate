@@ -96,6 +96,7 @@ const NAV_GROUPS: { id: string; label: string; accent: string; items: NavItem[] 
       { id: 'subcontractors',  label: 'Subcontractors',     icon: UserCheck,      badge: null },
       { id: 'plant',           label: 'Plant & Equipment',   icon: Wrench,        badge: null },
       { id: 'materials',       label: 'Materials',          icon: Package,       badge: null },
+      { id: 'suppliers',       label: 'Suppliers',          icon: Building2,     badge: 'NEW' },
       { id: 'rfis',            label: 'RFIs',               icon: HardHat,       badge: null },
       { id: 'bim-viewer',      label: 'BIM Viewer',         icon: Box,           badge: 'NEW' },
       { id: 'submittal-management', label: 'Submittals',     icon: Upload,        badge: 'NEW' },

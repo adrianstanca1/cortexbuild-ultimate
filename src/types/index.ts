@@ -103,7 +103,8 @@ export type Module =
   | 'billing'
   | 'settings-mfa'
   | 'api-keys'
-  | 'tasks';
+  | 'tasks'
+  | 'suppliers';
 
 export type ProjectStatus = 'planning' | 'active' | 'on_hold' | 'completed' | 'archived';
 export type TaskStatus = 'todo' | 'in_progress' | 'review' | 'done' | 'blocked';

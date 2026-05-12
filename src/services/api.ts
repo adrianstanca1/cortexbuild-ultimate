@@ -411,6 +411,16 @@ export const purchaseOrdersApi = {
   delete: (id: string) => deleteRow('purchase-orders', id),
 };
 
+export const suppliersApi = {
+  getAll: () => fetchAll<Row>('suppliers'),
+  getById: (id: string) => apiFetch(`/suppliers/${id}`),
+  create: (data: Row) => insertRow('suppliers', data),
+  update: (id: string, data: Row) => updateRow('suppliers', id, data),
+  delete: (id: string) => deleteRow('suppliers', id),
+  getAnalytics: () => apiFetch<Record<string, number>>('/suppliers/analytics/summary'),
+  getHistory: (id: string) => apiFetch<{ data: Row[] }>(`/suppliers/${id}/history`),
+};
+
 export const aiApi = {
   chat: (message: string, context?: string) =>
     apiFetch<{ reply: string; data?: unknown; suggestions: string[] }>('/ai/chat', {

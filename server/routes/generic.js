@@ -37,6 +37,11 @@ const WEBHOOK_EVENT_MAP = {
     update: "submittal.updated",
     statusMap: { approved: "submittal.approved", rejected: "submittal.rejected" },
   },
+  suppliers: {
+    create: "supplier.created",
+    update: "supplier.updated",
+    delete: "supplier.deleted",
+  },
 };
 
 /**
@@ -877,6 +882,24 @@ const ALLOWED_COLUMNS = {
     "is_default",
     "created_by",
     "updated_by",
+    "organization_id",
+    "company_id",
+  ],
+  suppliers: [
+    "name",
+    "contact_name",
+    "email",
+    "phone",
+    "address",
+    "website",
+    "tax_id",
+    "status",
+    "rating",
+    "category",
+    "payment_terms",
+    "notes",
+    "insurance_expiry",
+    "compliance_status",
     "organization_id",
     "company_id",
   ],
