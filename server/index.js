@@ -582,6 +582,7 @@ app.use(
 app.use("/api/ai_vision_logs", makeRouter("ai_vision_logs"));
 app.use("/api/reports", require("./routes/reports"));
 app.use("/api/mobile", require("./routes/mobile-summary"));
+app.use("/api/suppliers", require("./routes/suppliers"));
 
 // ─── Global error handler ─────────────────────────────────────────────────────
 app.use((err, _req, res, _next) => {
