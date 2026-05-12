@@ -628,7 +628,7 @@ export function Tasks() {
               <span className={`px-2 py-1 rounded border ${PRIORITY_COLOURS[String(detailTask.priority ?? 'medium')].replace('text-', 'bg-') + '/20 text-gray-200'}`}>
                 {String(detailTask.priority ?? 'medium').toUpperCase()}
               </span>
-              {detailTask.due_date && (
+              {Boolean(detailTask.due_date) && (
                 <span className="px-2 py-1 rounded bg-slate-700 text-gray-200 flex items-center gap-1">
                   <Clock className="w-3 h-3" />
                   {String(detailTask.due_date).split('T')[0]}

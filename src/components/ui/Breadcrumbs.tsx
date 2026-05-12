@@ -94,6 +94,8 @@ const MODULE_LABELS: Record<Module, string> = {
   'project-templates': 'Project Templates',
   'settings-mfa': 'Two-Factor Auth',
   'api-keys': 'API Keys',
+  'tasks': 'Tasks',
+  'suppliers': 'Suppliers',
 };
 
 export function Breadcrumbs({ items, onNavigate }: BreadcrumbsProps) {

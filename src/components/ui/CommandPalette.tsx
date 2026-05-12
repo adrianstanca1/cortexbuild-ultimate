@@ -164,6 +164,8 @@ const MODULE_LABELS: Record<Module, string> = {
   'project-templates': 'Project Templates',
   'settings-mfa': 'Two-Factor Auth',
   'api-keys': 'API Keys',
+  'tasks': 'Tasks',
+  'suppliers': 'Suppliers',
 };
 
 const MODULE_ICON_COMPONENTS: Partial<Record<Module, LucideIcon>> = {
@@ -238,6 +240,8 @@ const MODULE_ICON_COMPONENTS: Partial<Record<Module, LucideIcon>> = {
   'site-inspections': ClipboardCheck,
   'permits': ShieldCheck,
   'bim-4d': Layers,
+  'tasks': 'Tasks',
+  'suppliers': 'Suppliers',
 };
 
 const ICON_CLASS = 'w-4 h-4';

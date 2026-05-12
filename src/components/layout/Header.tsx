@@ -92,6 +92,8 @@ const MODULE_LABELS: Record<Module, string> = {
   'project-templates':    'Project Templates',
   'settings-mfa':       'Two-Factor Authentication',
   'api-keys':           'API Keys',
+  'tasks': 'Tasks',
+  'suppliers': 'Suppliers',
 };
 
 // Module accent colors for the breadcrumb bar
@@ -107,6 +109,8 @@ const MODULE_ACCENTS: Partial<Record<Module, string>> = {
   'rams': '#ef4444',
   'field-view': '#f59e0b',
   'settings': '#64748b',
+  'tasks': 'Tasks',
+  'suppliers': 'Suppliers',
 };
 
 // ⚡ Bolt Performance Optimization:
