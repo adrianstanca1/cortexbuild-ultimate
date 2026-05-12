@@ -67,6 +67,7 @@ import {
   UserCircle,
   CalendarDays,
   Sparkles,
+  Truck,
 } from 'lucide-react';
 import { type Module } from '../../types';
 
@@ -240,8 +241,8 @@ const MODULE_ICON_COMPONENTS: Partial<Record<Module, LucideIcon>> = {
   'site-inspections': ClipboardCheck,
   'permits': ShieldCheck,
   'bim-4d': Layers,
-  'tasks': 'Tasks',
-  'suppliers': 'Suppliers',
+  'tasks': ClipboardList,
+  'suppliers': Truck,
 };
 
 const ICON_CLASS = 'w-4 h-4';
