@@ -104,7 +104,16 @@ export type Module =
   | 'settings-mfa'
   | 'api-keys'
   | 'tasks'
-  | 'suppliers';
+  | 'suppliers'
+  | 'advanced-analytics'
+  | 'project-calendar'
+  | 'my-desktop'
+  | 'client-portal'
+  | 'webhooks'
+  | 'carbon-estimating'
+  | 'admin-dashboard'
+  | 'team-chat'
+  | 'activity-feed';
 
 export type ProjectStatus = 'planning' | 'active' | 'on_hold' | 'completed' | 'archived';
 export type TaskStatus = 'todo' | 'in_progress' | 'review' | 'done' | 'blocked';
