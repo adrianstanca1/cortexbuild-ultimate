@@ -2,7 +2,7 @@
 
 ## 1. Inference Pipeline (Unified AI Client)
 
-- **Centralized Client**: All AI requests (Ollama, Gemini, Embeddings) are routed through `server/lib/unified-ai-client.js`.
+- **Centralized Client**: All AI requests (Ollama, Gemini, Embeddings) are routed through `server/lib/unified-ai-client-v2.js`.
 - **Inference Routing**: Primary: local `qwen3.5:9b`. Secondary: failover to `openrouter`, `ollama-fast`, `ollama-heavy`.
 - **Integrity Verification**: `server/test/unified-ai-v2.test.js` ensures interface consistency.
 
