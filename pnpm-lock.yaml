@@ -136,7 +136,7 @@ importers:
         specifier: ^4.4.3
         version: 4.4.3
       zustand:
-        specifier: ^5.0.12
+        specifier: ^5.0.13
         version: 5.0.13(@types/react@19.2.14)(immer@11.1.7)(react@19.2.6)(use-sync-external-store@1.6.0(react@19.2.6))
     devDependencies:
       '@capacitor/cli':
