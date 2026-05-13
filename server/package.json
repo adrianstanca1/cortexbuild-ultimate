@@ -6,7 +6,8 @@
     "start": "node ./scripts/render-init-db.js && node index.js",
     "dev": "nodemon index.js",
     "db:reset:local": "node ./scripts/reset-local-db.js",
-    "build": "node --check index.js"
+    "build": "node --check index.js",
+    "test": "vitest run"
   },
   "devDependencies": {
     "nodemon": "^3.1.14",
