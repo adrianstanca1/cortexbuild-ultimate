@@ -57,3 +57,8 @@
 
 **Learning:** When calculating multiple aggregate statistics from an array (like total active, total pending, total completed), chaining `.filter().length` calls causes the application to loop over the array multiple times and create unnecessary intermediate arrays. This is an O(K*N) operation (where K is the number of stats) and degrades performance on large datasets. Additionally, `useMemo` hooks can have reference instability if they depend on an expression that creates a new reference on every render (like `(projects || [])`).
 **Action:** Replace multiple `.filter().length` chains with a single `for` loop that computes all metrics in one O(N) pass. When caching the result with `useMemo`, ensure the dependency array references the raw, stable state variables (`[projects, tasks]`) rather than dynamically created fallbacks.
+
+## 2026-05-13 - Capacitor 8 Push Notifications Patch Compilation Failure
+
+**Learning:** When using `patch-package` on iOS plugins like `@capacitor/push-notifications`, ensure patches don't contain incorrect type conversions or missing arguments (e.g. `call.getArray("notifications")` instead of `call.getArray("notifications", JSObject.self)`). Doing so breaks `CAPPluginCall` resolution and leads to opaque compiler errors like `value of type 'CAPPluginCall' has no member 'reject'`.
+**Action:** Always verify `npx cap sync ios` and standard Xcode builds when patching Capacitor plugins to ensure compatibility with Swift compilation targets.
