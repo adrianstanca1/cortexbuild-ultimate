@@ -131,3 +131,7 @@ jobs:
             DEPLOYEOF
             chmod +x /root/deploy-frontend.sh
             bash /root/deploy-frontend.sh
+            # ─── Server Deploy ───────────────────────────────────────────────────
+            if [ -f /var/www/cortexbuild-ultimate/scripts/deploy-vps.sh ]; then
+              bash /var/www/cortexbuild-ultimate/scripts/deploy-vps.sh
+            fi

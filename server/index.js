@@ -1,12 +1,17 @@
 require("dotenv").config({ path: require("path").join(__dirname, ".env") });
 
+const logger = require("./lib/logger");
 // Global error handlers — prevent crashes from Redis or other async errors
 process.on("unhandledRejection", (reason, promise) => {
-  console.error("[UnhandledRejection] Unhandled promise rejection:", reason);
-  // Keep process alive — let express handle it
+  logger.error("[UnhandledRejection] Unhandled promise rejection:", reason);
+  // Graceful shutdown — allow in-flight requests to complete
+  setTimeout(() => {
+    logger.error("[UnhandledRejection] Forcing exit after grace period");
+    process.exit(1);
+  }, 5000);
 });
 process.on("uncaughtException", (err) => {
-  console.error("[UncaughtException]", err);
+  logger.error("[UncaughtException]", err);
   // Attempt graceful shutdown
   process.exit(1);
 });
@@ -55,25 +60,25 @@ const redisUrl = process.env.REDIS_URL || process.env.REDIS_HOST ? `redis://${pr
 if (redisUrl) {
   redisClient = redis.createClient({ url: redisUrl });
   redisClient.on("error", (err) => {
-    console.error("[Redis] connection error:", err.message);
+    logger.error("[Redis] connection error:", err.message);
     redisAvailable = false;
   });
   redisClient.on("connect", () => {
-    console.log("[Redis] connected");
+    logger.info("[Redis] connected");
     redisAvailable = true;
   });
-  redisClient.on("reconnecting", () => console.log("[Redis] reconnecting..."));
-  redisClient.on("ready", () => console.log("[Redis] ready"));
+  redisClient.on("reconnecting", () => logger.info("[Redis] reconnecting..."));
+  redisClient.on("ready", () => logger.info("[Redis] ready"));
   redisClient.on("end", () => {
-    console.log("[Redis] connection closed");
+    logger.info("[Redis] connection closed");
     redisAvailable = false;
   });
   redisClient.connect().catch((err) => {
-    console.error("[Redis] initial connection failed:", err.message);
+    logger.error("[Redis] initial connection failed:", err.message);
     redisAvailable = false;
   });
 } else {
-  console.log("[Redis] REDIS_URL not set — skipping Redis connection");
+  logger.info("[Redis] REDIS_URL not set — skipping Redis connection");
 }
 
 // Initialize WebSocket server (gated by feature flag — skips server creation when disabled)
@@ -87,13 +92,13 @@ const docWSHandlers = isFeatureEnabled("FEATURE_WEBSOCKET")
 // ─── Session & Passport middleware for OAuth ─────────────────────────────────
 const sessionSecret = process.env.SESSION_SECRET || process.env.JWT_SECRET;
 if (!sessionSecret) {
-  console.error(
+  logger.error(
     "[FATAL] SESSION_SECRET or JWT_SECRET environment variable must be set",
   );
   process.exit(1);
 }
 if (sessionSecret.length < 32) {
-  console.error(
+  logger.error(
     "[FATAL] SESSION_SECRET must be at least 32 characters for security",
   );
   process.exit(1);
@@ -152,12 +157,12 @@ const corsOrigins = (process.env.CORS_ORIGIN || "")
   .filter(Boolean);
 if (!corsOrigins.length) {
   if (process.env.NODE_ENV === "production") {
-    console.error(
+    logger.error(
       "[FATAL] CORS_ORIGIN must list at least one comma-separated browser origin in production",
     );
     process.exit(1);
   }
-  console.warn(
+  logger.warn(
     "[CORS] CORS_ORIGIN not set — credentialed browser calls need localhost origins or set CORS_ORIGIN",
   );
 }
@@ -228,7 +233,7 @@ async function checkHealth() {
     await pool.query("SELECT 1");
     checks.postgres = true;
   } catch (err) {
-    console.error("[Health] PostgreSQL check failed:", err.message);
+    logger.error("[Health] PostgreSQL check failed:", err.message);
     checks.postgres = false;
   }
   try {
@@ -239,7 +244,7 @@ async function checkHealth() {
       checks.redis = false;
     }
   } catch (err) {
-    console.error("[Health] Redis check failed:", err.message);
+    logger.error("[Health] Redis check failed:", err.message);
     checks.redis = false;
   }
   checks.status = checks.postgres && checks.redis ? "ok" : "degraded";
@@ -254,7 +259,7 @@ app.get("/api/health", async (_req, res) => {
     await pool.query("SELECT 1");
     checks.postgres = true;
   } catch (err) {
-    console.error("[Health] PostgreSQL check failed:", err.message);
+    logger.error("[Health] PostgreSQL check failed:", err.message);
     checks.postgres = false;
   }
   try {
@@ -356,11 +361,11 @@ if (agentDebugApiEnabled) {
       fs.appendFileSync(AGENT_DEBUG_MIRROR, `${line}\n`);
       res.status(204).end();
     } catch (e) {
-      console.error("[Agent Debug] Write failed:", e);
+      logger.error("[Agent Debug] Write failed:", e);
       res.status(500).json({ message: "Internal server error" });
     }
   });
-  console.log("[agent-debug] POST/GET /api/agent-debug →", AGENT_DEBUG_LOG);
+  logger.info("[agent-debug] POST/GET /api/agent-debug →", AGENT_DEBUG_LOG);
 }
 
 // Rate-limited deploy route (5 requests per hour, Redis-backed if available, otherwise memory)
@@ -399,7 +404,7 @@ plansRouter.get("/plans", (req, res) => {
     }));
     res.json({ plans: sanitized });
   } catch (err) {
-    console.error("[billing/plans]", err.message);
+    logger.error("[billing/plans]", err.message);
     res.status(500).json({ message: "Failed to fetch plans" });
   }
 });
@@ -586,52 +591,43 @@ app.use("/api/mobile", require("./routes/mobile-summary"));
 
 // ─── Global error handler ─────────────────────────────────────────────────────
 app.use((err, _req, res, _next) => {
-  console.error("[UnhandledError]", err.message || err);
+  logger.error("[UnhandledError]", err.message || err);
   res.status(500).json({ message: "Internal server error" });
 });
 
 // ─── 404 ──────────────────────────────────────────────────────────────────────
 app.use((_req, res) => res.status(404).json({ message: "Route not found" }));
 
-// ─── Unhandled rejection safety net ───────────────────────────────────────────
-process.on("unhandledRejection", (reason, promise) => {
-  console.error(
-    "[UnhandledRejection] Unhandled promise rejection at:",
-    promise,
-    "reason:",
-    reason,
-  );
-});
 
 // ─── Graceful shutdown — drain connections before exiting ───────────────────────────
 function gracefulShutdown(signal) {
-  console.log(`\n[${signal}] Graceful shutdown initiated...`);
+  logger.info(`\n[${signal}] Graceful shutdown initiated...`);
   if (docWSHandlers) {
-    try { docWSHandlers.cleanup(); } catch (e) { console.error("[ws-documents] cleanup error:", e.message); }
+    try { docWSHandlers.cleanup(); } catch (e) { logger.error("[ws-documents] cleanup error:", e.message); }
   }
   server.close(async () => {
-    console.log("[HTTP] Server closed");
+    logger.info("[HTTP] Server closed");
     try {
       const pool = require("./db");
       await pool.end();
-      console.log("[PostgreSQL] Pool closed");
+      logger.info("[PostgreSQL] Pool closed");
     } catch (e) {
-      console.error("[PostgreSQL] Error closing pool:", e.message);
+      logger.error("[PostgreSQL] Error closing pool:", e.message);
     }
     try {
       if (redisAvailable && redisClient) {
         await redisClient.quit();
-        console.log("[Redis] Client closed");
+        logger.info("[Redis] Client closed");
       }
     } catch (e) {
-      console.error("[Redis] Error closing client:", e.message);
+      logger.error("[Redis] Error closing client:", e.message);
     }
-    console.log("[Shutdown] Complete");
+    logger.info("[Shutdown] Complete");
     process.exit(0);
   });
   // Force exit after 10s if graceful shutdown hangs
   setTimeout(() => {
-    console.error("[Shutdown] Timeout — forcing exit");
+    logger.error("[Shutdown] Timeout — forcing exit");
     process.exit(1);
   }, 10000);
 }
@@ -647,9 +643,9 @@ startAutoimproveScheduler();
 startAutorepairMonitor();
 
 server.listen(PORT, () => {
-  console.log(`\n🏗  CortexBuild API running on port ${PORT}`);
-  console.log(`   Health: http://localhost:${PORT}/api/health`);
-  console.log(`   WebSocket: ws://localhost:${PORT}/ws\n`);
+  logger.info(`\n🏗  CortexBuild API running on port ${PORT}`);
+  logger.info(`   Health: http://localhost:${PORT}/api/health`);
+  logger.info(`   WebSocket: ws://localhost:${PORT}/ws\n`);
 });
 
 module.exports = app; // Export app for testing
