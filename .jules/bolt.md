@@ -52,3 +52,8 @@
 ## 2024-05-10 - String.prototype.replace() and $$ SQL parameters
 **Learning:** When using `String.prototype.replace()` to refactor backend code containing template literal PostgreSQL parameters (e.g., `$$`), the JavaScript string replacement engine interprets `$$` as a special replacement pattern for a single `$`. This inadvertently corrupts query strings by dropping the `$` prefix, resulting in runtime SQL syntax errors (e.g., `LIKE ${tenantParams}` instead of `LIKE $${tenantParams}`).
 **Action:** When programmatically modifying backend SQL query code with node ad-hoc scripts, pass a function as the second argument to `replace()` (e.g., `content.replace(oldStr, () => newStr)`) or use file diffing/patching tools to preserve double dollar signs.
+
+## 2026-05-13 - Redundant Multiple Array Iterations (QuickStats.tsx)
+
+**Learning:** When calculating multiple aggregate statistics from an array (like total active, total pending, total completed), chaining `.filter().length` calls causes the application to loop over the array multiple times and create unnecessary intermediate arrays. This is an O(K*N) operation (where K is the number of stats) and degrades performance on large datasets. Additionally, `useMemo` hooks can have reference instability if they depend on an expression that creates a new reference on every render (like `(projects || [])`).
+**Action:** Replace multiple `.filter().length` chains with a single `for` loop that computes all metrics in one O(N) pass. When caching the result with `useMemo`, ensure the dependency array references the raw, stable state variables (`[projects, tasks]`) rather than dynamically created fallbacks.

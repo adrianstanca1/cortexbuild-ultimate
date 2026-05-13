@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { FolderOpen, Clock, CheckCircle, AlertTriangle } from 'lucide-react';
 import { useProjects, useProjectTasks } from '../../hooks/useData';
 
@@ -46,15 +46,44 @@ export function QuickStats() {
   const projectList = (projects || []) as { status?: string }[];
   const taskList = (tasks || []) as { status?: string; dueDate?: string }[];
 
-  const activeProjects = projectList.filter((p) => p.status === 'IN_PROGRESS' || p.status === 'ACTIVE').length;
-  const completedTasks = taskList.filter((t) => t.status === 'COMPLETED').length;
-  const pendingTasks = taskList.filter((t) => t.status === 'PENDING' || t.status === 'IN_PROGRESS').length;
-  const overdueTasks = taskList.filter((t) => {
-    if (!t.dueDate || t.status === 'COMPLETED') return false;
-    return new Date(t.dueDate) < new Date();
-  }).length;
+  // ⚡ Bolt Performance Optimization
+  // Replaced multiple O(n) array `.filter().length` passes that created intermediate arrays
+  // with a single O(n) loop calculating all metrics directly.
+  // We use `projects` and `tasks` in the dependency array directly to avoid reference instability from the `|| []` fallback.
+  const stats = useMemo(() => {
+    let activeProjects = 0;
+    let completedTasks = 0;
+    let pendingTasks = 0;
+    let overdueTasks = 0;
 
-  const stats = { activeProjects, completedTasks, pendingTasks, overdueTasks };
+    // Cache Date.now() instead of repeatedly instantiating `new Date()` inside the loop
+    const now = Date.now();
+
+    for (let i = 0; i < projectList.length; i++) {
+      const status = projectList[i].status;
+      if (status === 'IN_PROGRESS' || status === 'ACTIVE') {
+        activeProjects++;
+      }
+    }
+
+    for (let i = 0; i < taskList.length; i++) {
+      const t = taskList[i];
+      const status = t.status;
+
+      if (status === 'COMPLETED') {
+        completedTasks++;
+      } else {
+        if (status === 'PENDING' || status === 'IN_PROGRESS') {
+          pendingTasks++;
+        }
+        if (t.dueDate && new Date(t.dueDate).getTime() < now) {
+          overdueTasks++;
+        }
+      }
+    }
+
+    return { activeProjects, completedTasks, pendingTasks, overdueTasks };
+  }, [projects, tasks]);
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
