@@ -1,7 +1,16 @@
 diff --git a/node_modules/@capacitor/push-notifications/ios/Sources/PushNotificationsPlugin/PushNotificationsHandler.swift b/node_modules/@capacitor/push-notifications/ios/Sources/PushNotificationsPlugin/PushNotificationsHandler.swift
-index f3972b6..f45ef55 100644
+index f3972b6..ab223a4 100644
 --- a/node_modules/@capacitor/push-notifications/ios/Sources/PushNotificationsPlugin/PushNotificationsHandler.swift
 +++ b/node_modules/@capacitor/push-notifications/ios/Sources/PushNotificationsPlugin/PushNotificationsHandler.swift
+@@ -29,7 +29,7 @@ public class PushNotificationsHandler: NSObject, NotificationHandlerProtocol {
+             }
+         }
+
+-        if let optionsArray = self.plugin?.getConfig().getArray("presentationOptions") as? [String] {
++        if let optionsArray = self.plugin?.getConfig().getConfigJSON()["presentationOptions"] as? [String] {
+             var presentationOptions = UNNotificationPresentationOptions.init()
+
+             optionsArray.forEach { option in
 @@ -83,7 +83,7 @@ public class PushNotificationsHandler: NSObject, NotificationHandlerProtocol {
              "subtitle": request.content.subtitle,
              "badge": request.content.badge ?? 1,
@@ -11,3 +20,16 @@ index f3972b6..f45ef55 100644
          ]
      }
  }
+diff --git a/node_modules/@capacitor/push-notifications/ios/Sources/PushNotificationsPlugin/PushNotificationsPlugin.swift b/node_modules/@capacitor/push-notifications/ios/Sources/PushNotificationsPlugin/PushNotificationsPlugin.swift
+index 9044c74..b0b0ab7 100644
+--- a/node_modules/@capacitor/push-notifications/ios/Sources/PushNotificationsPlugin/PushNotificationsPlugin.swift
++++ b/node_modules/@capacitor/push-notifications/ios/Sources/PushNotificationsPlugin/PushNotificationsPlugin.swift
+@@ -144,7 +144,7 @@ public class PushNotificationsPlugin: CAPPlugin, CAPBridgedPlugin {
+             call.reject("event capacitorDidRegisterForRemoteNotifications not called.  Visit https://capacitorjs.com/docs/apis/push-notifications for more information")
+             return
+         }
+-        guard let notifications = call.getArray("notifications", JSObject.self) else {
++        guard let notifications = call.getArray("notifications", [Any].self) as? [JSObject] else {
+             call.reject("Must supply notifications to remove")
+             return
+         }

@@ -62,3 +62,8 @@
 
 **Learning:** When using `patch-package` on iOS plugins like `@capacitor/push-notifications`, ensure patches don't contain incorrect type conversions or missing arguments (e.g. `call.getArray("notifications")` instead of `call.getArray("notifications", JSObject.self)`). Doing so breaks `CAPPluginCall` resolution and leads to opaque compiler errors like `value of type 'CAPPluginCall' has no member 'reject'`.
 **Action:** Always verify `npx cap sync ios` and standard Xcode builds when patching Capacitor plugins to ensure compatibility with Swift compilation targets.
+
+## 2026-05-13 - Capacitor 8 Push Notifications CAPPluginCall Fix
+
+**Learning:** When compiling Capacitor 8 plugins like `@capacitor/push-notifications`, using `call.getArray("notifications", JSObject.self)` causes a Swift compiler error: `cannot convert value of type 'JSObject.Type' to expected argument type 'JSArray'`. This happens because `JSObject` is an alias for `[String: Any]`, which confuses Swift generic resolution.
+**Action:** Always patch it to `call.getArray("notifications", [Any].self) as? [JSObject]` or `call.getArray("notifications", Any.self) as? [JSObject]`.
