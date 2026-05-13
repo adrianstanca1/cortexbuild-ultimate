@@ -67,3 +67,8 @@
 
 **Learning:** When compiling Capacitor 8 plugins like `@capacitor/push-notifications`, using `call.getArray("notifications", JSObject.self)` causes a Swift compiler error: `cannot convert value of type 'JSObject.Type' to expected argument type 'JSArray'`. This happens because `JSObject` is an alias for `[String: Any]`, which confuses Swift generic resolution.
 **Action:** Always patch it to `call.getArray("notifications", [Any].self) as? [JSObject]` or `call.getArray("notifications", Any.self) as? [JSObject]`.
+
+## 2026-05-13 - Xcodebuild Simulator Download Timeout
+
+**Learning:** When configuring GitHub Actions CI for iOS builds using Xcode 16.2 on `macos-15`, the `xcodebuild -downloadPlatform iOS` step often times out or fails, causing downstream builds targeted at a specific simulator (e.g. `name=iPhone 16`) to fail with `Unable to find a device matching the provided destination specifier`.
+**Action:** When a build only requires compilation validation (like a compile-only debug build), always use `-destination 'generic/platform=iOS Simulator'` instead of a specific named simulator. This builds against the SDK rather than a specific runtime simulator, bypassing the need to download the full iOS runtime image.

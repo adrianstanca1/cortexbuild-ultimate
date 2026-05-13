@@ -82,7 +82,7 @@ jobs:
             -scheme App \
             -configuration Debug \
             -sdk iphonesimulator \
-            -destination 'platform=iOS Simulator,name=iPhone 16' \
+            -destination 'generic/platform=iOS Simulator' \
             -derivedDataPath ./DerivedData \
             CODE_SIGNING_ALLOWED=NO \
             OTHER_SWIFT_FLAGS='$(inherited) -enable-experimental-feature NonescapableTypes' \
@@ -100,7 +100,7 @@ jobs:
             -scheme App \
             -configuration Release \
             -sdk iphonesimulator \
-            -destination 'platform=iOS Simulator,name=iPhone 16' \
+            -destination 'generic/platform=iOS Simulator' \
             -archivePath ./build/CortexBuild.xcarchive \
             archive \
             CODE_SIGNING_ALLOWED=NO \
