@@ -1,8 +1,7 @@
 /**
  * One-shot bootstrap for empty Postgres (Docker / local compose).
- * Runs the same SQL sequence as render-init-db.js, but resolves paths for:
- *   - monorepo checkout (server/scripts → repo root)
- *   - Docker image layout (WORKDIR /app with server files at /app)
+ * Dynamically discovers and runs all migrations in server/migrations/
+ * in filename order. Seed runs after prerequisite migrations.
  */
 const { Client } = require('pg');
 const fs = require('fs');
@@ -15,7 +14,7 @@ function resolveSqlPaths() {
     return {
       setup: path.join(repoRoot, 'server', 'scripts', 'setup.sql'),
       seed: path.join(repoRoot, 'server', 'scripts', 'seed.sql'),
-      mig: (name) => path.join(repoRoot, 'server', 'migrations', name),
+      migDir: path.join(repoRoot, 'server', 'migrations'),
     };
   }
   const appRoot = path.join(__dirname, '..');
@@ -23,7 +22,7 @@ function resolveSqlPaths() {
     return {
       setup: path.join(appRoot, 'scripts', 'setup.sql'),
       seed: path.join(appRoot, 'scripts', 'seed.sql'),
-      mig: (name) => path.join(appRoot, 'migrations', name),
+      migDir: path.join(appRoot, 'migrations'),
     };
   }
   throw new Error('[ensure-database] Cannot locate server/migrations (wrong cwd or incomplete image)');
@@ -63,6 +62,7 @@ async function runSqlFile(client, filePath) {
       console.log(`[ensure-database] Missing file, skipping: ${filePath}`);
       return;
     }
+    console.error(`[ensure-database] Error in ${path.basename(filePath)}: ${e.message}`);
     throw e;
   }
 }
@@ -82,6 +82,13 @@ async function isBootstrapped(client) {
   return Boolean(r.rows[0]?.auth_cols && r.rows[0]?.worker_tables);
 }
 
+async function getMigrationFiles(migDir) {
+  return fs
+    .readdirSync(migDir)
+    .filter((f) => f.endsWith('.sql'))
+    .sort((a, b) => a.localeCompare(b, undefined, { numeric: true }));
+}
+
 async function main() {
   const paths = resolveSqlPaths();
   const client = new Client(pgClientConfig());
@@ -96,51 +103,39 @@ async function main() {
 
   console.log('[ensure-database] Bootstrapping schema and seed data...');
 
-  await runSqlFile(client, paths.setup);
-  await runSqlFile(client, paths.mig('000_platform_core.sql'));
-  await runSqlFile(client, paths.mig('001_add_audit_log.sql'));
-  await runSqlFile(client, paths.mig('002_add_email_tables.sql'));
-  await runSqlFile(client, paths.mig('003_add_report_templates.sql'));
-
+  // setup.sql creates the DB if needed; skip if connected directly.
   try {
-    await runSqlFile(client, paths.mig('040_embeddings.sql'));
+    await runSqlFile(client, paths.setup);
   } catch (e) {
-    console.log('[ensure-database] Skipped 040_embeddings.sql:', e.message);
+    console.log('[ensure-database] setup.sql skipped (may already exist):', e.message);
   }
 
-  await runSqlFile(client, paths.mig('005_add_permissions.sql'));
-  await runSqlFile(client, paths.mig('041_add_team_member_data.sql'));
-  await runSqlFile(client, paths.mig('006_add_equipment_permits.sql'));
-  await runSqlFile(client, paths.mig('007_add_risk_mitigation_actions.sql'));
-  await runSqlFile(client, paths.mig('008_add_contact_interactions.sql'));
-  await runSqlFile(client, paths.mig('009_add_safety_permits.sql'));
-  await runSqlFile(client, paths.mig('010_add_toolbox_talks.sql'));
-  await runSqlFile(client, paths.mig('011_add_drawing_transmittals.sql'));
-  await runSqlFile(client, paths.mig('013_enhanced_projects.sql'));
-  await runSqlFile(client, paths.mig('014_add_email_templates.sql'));
-  await runSqlFile(client, paths.mig('035_new_modules_corrected.sql'));
-  // 016 adds users.organization_id / company_id required by seed.sql — must run before seed.
-  await runSqlFile(client, paths.mig('016_local_dev_reconcile.sql'));
-  await runSqlFile(client, paths.seed);
-  await runSqlFile(client, paths.mig('012_seed_audit_log.sql'));
-  await runSqlFile(client, paths.mig('060_add_invoices_payment_fields.sql'));
+  const migrations = await getMigrationFiles(paths.migDir);
+  console.log(`[ensure-database] Discovered ${migrations.length} migrations`);
 
-  try {
-    await runSqlFile(client, paths.mig('015_add_ai_conversation_indexes.sql'));
-  } catch (e) {
-    console.log('[ensure-database] Warning on 015_add_ai_conversation_indexes.sql:', e.message);
+  let seedInserted = false;
+  for (const mig of migrations) {
+    const migPath = path.join(paths.migDir, mig);
+    await runSqlFile(client, migPath);
+
+    // Seed data must run after 016_local_dev_reconcile.sql which adds columns required by seed.
+    if (mig.startsWith('016_') && !seedInserted) {
+      try {
+        await runSqlFile(client, paths.seed);
+        seedInserted = true;
+      } catch (e) {
+        console.log('[ensure-database] seed.sql skipped:', e.message);
+      }
+    }
   }
 
-  // Worker + auth tables expected by runtime (workers poll; /auth/me reads totp_enabled).
-  await runSqlFile(client, paths.mig('025_add_bim_models.sql'));
-  await runSqlFile(client, paths.mig('028_add_bim_processing_queue.sql'));
-  await runSqlFile(client, paths.mig('061_add_autoresearch.sql'));
-  await runSqlFile(client, paths.mig('062_add_autoimprove.sql'));
-  await runSqlFile(client, paths.mig('063_add_autorepair.sql'));
-  await runSqlFile(client, paths.mig('064_harden_schema.sql'));
-  await runSqlFile(client, paths.mig('065_notification_infrastructure.sql'));
-  await runSqlFile(client, paths.mig('066_auth_hardening.sql'));
-  await runSqlFile(client, paths.mig('067_add_project_coordinates.sql'));
+  if (!seedInserted) {
+    try {
+      await runSqlFile(client, paths.seed);
+    } catch (e) {
+      console.log('[ensure-database] seed.sql skipped:', e.message);
+    }
+  }
 
   await client.end();
   console.log('[ensure-database] Bootstrap complete.');

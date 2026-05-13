@@ -11,7 +11,6 @@ if (databaseUrl) {
     connectionString: databaseUrl,
     ssl: useSsl
       ? {
-          // Default false matches prior production config; set DATABASE_SSL_REJECT_UNAUTHORIZED=true for strict verify
           rejectUnauthorized: process.env.DATABASE_SSL_REJECT_UNAUTHORIZED === 'true',
         }
       : false,
@@ -23,7 +22,6 @@ if (databaseUrl) {
     query_timeout: 60000,
   };
 } else {
-  // Local or legacy configuration
   const dbPassword = process.env.DB_PASSWORD;
   if (!dbPassword) {
     console.error('[SECURITY] DB_PASSWORD environment variable is not set — refusing to connect');
@@ -50,5 +48,28 @@ const pool = new Pool(poolConfig);
 pool.on('error', (err) => {
   console.error('[DB] Unexpected error on idle client', err);
 });
+
+// Retry connection with backoff for cold-start scenarios (Docker compose, K8s).
+async function ensureConnection(retries = 10, delayMs = 1000) {
+  for (let i = 0; i < retries; i++) {
+    try {
+      const client = await pool.connect();
+      const result = await client.query('SELECT NOW()');
+      client.release();
+      console.log('[DB] Connected at', result.rows[0].now);
+      return;
+    } catch (err) {
+      const wait = delayMs * Math.pow(2, i);
+      console.error(`[DB] Connection attempt ${i + 1}/${retries} failed: ${err.message}. Retrying in ${wait}ms...`);
+      if (i === retries - 1) {
+        console.error('[DB] Max retries exceeded. Exiting.');
+        process.exit(1);
+      }
+      await new Promise((r) => setTimeout(r, wait));
+    }
+  }
+}
+
+ensureConnection();
 
 module.exports = pool;
