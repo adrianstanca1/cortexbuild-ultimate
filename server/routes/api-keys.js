@@ -2,7 +2,7 @@ const express = require("express");
 const crypto = require("crypto");
 const pool = require("../db");
 const authMiddleware = require("../middleware/auth");
-const { checkPermission } = require("../middleware/permissions");
+const { checkPermission } = require("../middleware/checkPermission");
 
 const router = express.Router();
 
