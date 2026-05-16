@@ -288,7 +288,7 @@ main() {
     docker start cortexbuild-redis >/dev/null 2>&1 || true
     
     if [ -f "$PROJECT_DIR/docker-compose.yml" ]; then
-        docker compose up -d postgres redis >/dev/null 2>&1 || docker-compose up -d postgres redis >/dev/null 2>&1 || true
+        docker start cortexbuild-db cortexbuild-redis >/dev/null 2>&1 || true
     fi
     
     # Detect Docker network
