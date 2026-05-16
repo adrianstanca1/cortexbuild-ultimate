@@ -20,8 +20,8 @@ echo "3. Installing backend dependencies..."
 cd server && npm install --legacy-peer-deps && cd ..
 
 # Start Docker services
-echo "4. Starting Docker services..."
-docker-compose up -d
+docker start cortexbuild-db 2>/dev/null || true
+docker start cortexbuild-redis 2>/dev/null || true
 
 # Wait for DB
 echo "5. Waiting for PostgreSQL..."

@@ -18,9 +18,15 @@ git reset --hard origin/main
 # Build
 docker build -t "$IMAGE_NAME" -f Dockerfile.api .
 
-# Stop + pornire cu docker-compose (păstrează datele postgres/redis)
-docker-compose down api 2>/dev/null || true
-docker-compose up -d api
+# Stop and recreate API container (postgres/redis kept running)
+docker stop cortexbuild-api 2>/dev/null || true
+docker rm cortexbuild-api 2>/dev/null || true
+docker run -d \
+  --name cortexbuild-api \
+  --restart always \
+  -p 127.0.0.1:3001:3001 \
+  --env-file "$PROJECT_DIR/.env" \
+  "$IMAGE_NAME"
 
 # Așteaptă health
 echo "Waiting for API health..."

@@ -251,8 +251,11 @@ echo "🔄 Restarting services with new configuration..."
 read -p "Restart Docker services now? [y/N] " -n 1 -r
 echo
 if [[ $REPLY =~ ^[Yy]$ ]]; then
-    docker-compose down
-    docker-compose up -d
+    docker stop cortexbuild-api 2>/dev/null || true
+    docker start cortexbuild-api 2>/dev/null || true
+    docker start cortexbuild-db 2>/dev/null || true
+    docker start cortexbuild-redis 2>/dev/null || true
+    docker start cortexbuild-nginx 2>/dev/null || true
     
     echo ""
     echo "⏳ Waiting for services to start..."

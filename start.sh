@@ -45,7 +45,8 @@ check_prereqs() {
         echo "  ✅ PostgreSQL (Docker)"
       else
         echo "  ⚠️  PostgreSQL container not running. Starting..."
-        cd "$PROJECT_DIR" && docker-compose up -d postgres redis 2>/dev/null
+        docker start cortexbuild-db 2>/dev/null || true
+        docker start cortexbuild-redis 2>/dev/null || true
         sleep 3
       fi
     fi

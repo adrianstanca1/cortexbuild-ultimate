@@ -51,7 +51,16 @@ ssh $SSH_OPTS "$VPS_HOST" "
     # The issue was the container was started from a different directory
     
     echo 'Restarting nginx with correct mounts...'
-    docker-compose up -d nginx
+    docker stop cortexbuild-nginx 2>/dev/null || true
+    docker rm -f cortexbuild-nginx 2>/dev/null || true
+    docker run -d \
+      --name cortexbuild-nginx \
+      --restart always \
+      -p 80:80 -p 443:443 \
+      -v "$VPS_PATH/dist:/var/www/cortexbuild-ultimate/dist:ro" \
+      -v "$VPS_PATH/nginx/nginx.conf:/etc/nginx/conf.d/default.conf:ro" \
+      -v /etc/letsencrypt:/etc/letsencrypt:ro \
+      nginx:alpine
     
     echo 'Verifying mounts...'
     docker inspect cortexbuild-nginx --format '{{json .HostConfig.Binds}}'

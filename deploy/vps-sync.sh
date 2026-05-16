@@ -123,16 +123,24 @@ ssh $SSH_OPTS "$VPS_HOST" "
     # Start services
     echo '🚀 Starting services...'
     # Force stop all containers and ensure ports are released
-    docker-compose down -t 10 --remove-orphans 2>/dev/null || true
-    # Kill anything still holding port 3001
-    fuser -k 3001/tcp 2>/dev/null || true
-    sleep 3
-    docker-compose up -d --build 2>/dev/null || {
-        echo '⚠️ docker-compose failed, trying docker run commands...'
-        docker network create cortexbuild 2>/dev/null || true
-        docker rm -f cortexbuild-api 2>/dev/null || true
-        docker run -d --name cortexbuild-api --restart always --network cortexbuild -p 127.0.0.1:3001:3001 --env-file $VPS_PATH/.env cortexbuild-ultimate-api:latest
-    }
+    docker stop cortexbuild-api 2>/dev/null || true
+    docker rm -f cortexbuild-api 2>/dev/null || true
+
+    if docker ps --format '{{.Names}}' | grep -Fxq "cortexbuild-db" 2>/dev/null; then
+        docker start cortexbuild-db >/dev/null 2>&1 || true
+    fi
+    if docker ps -a --format '{{.Names}}' | grep -Fxq "cortexbuild-redis" 2>/dev/null; then
+        docker start cortexbuild-redis >/dev/null 2>&1 || true
+    fi
+
+    docker network create cortexbuild 2>/dev/null || true
+    docker run -d \
+      --name cortexbuild-api \
+      --restart always \
+      --network cortexbuild \
+      -p 127.0.0.1:3001:3001 \
+      --env-file "$VPS_PATH/.env" \
+      cortexbuild-ultimate-api:latest
 
     # Health check
     echo '🏥 Waiting for services to start...'

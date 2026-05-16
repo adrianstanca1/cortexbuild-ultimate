@@ -200,8 +200,11 @@ echo ""
 echo "🔄 Restarting services with new environment..."
 ssh $SSH_OPTS "$VPS_HOST" "
 cd $VPS_PATH
-docker-compose down
-docker-compose up -d
+docker stop cortexbuild-api 2>/dev/null || true
+docker start cortexbuild-api 2>/dev/null || true
+docker start cortexbuild-db 2>/dev/null || true
+docker start cortexbuild-redis 2>/dev/null || true
+docker start cortexbuild-nginx 2>/dev/null || true
 
 echo 'Waiting for services to start...'
 sleep 10
