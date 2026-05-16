@@ -66,8 +66,10 @@ function truncateToTokenBudget(messages, userMsgContent, systemContext, maxToken
  * Get response from Ollama for user query.
  * Records AI inference metrics for Prometheus.
  */
-async function getOllamaResponse(userMessage, context = '', conversationHistory = [], summary = null) {
+async function getOllamaResponse(userMessage, context = '', conversationHistory = [], summary = null, opts = {}) {
   const startTime = Date.now();
+  const model = opts.model || LLM_MODEL;
+  const timeoutMs = opts.timeoutMs || 45000;
 
   const systemPrompt = `You are a helpful AI assistant for CortexBuild, a UK construction management platform. You help users manage projects, contracts, safety, and team operations.
 
@@ -96,13 +98,13 @@ Provide a helpful, concise response. Prefer direct answers over repeating menu-l
   messages.push({ role: 'user', content: userMessage });
 
   const body = JSON.stringify({
-    model: LLM_MODEL,
+    model,
     messages,
     stream: false,
     options: {
-      temperature: 0.4,
+      temperature: opts.temperature ?? 0.4,
       top_p: 0.9,
-      num_predict: 512,
+      num_predict: opts.numPredict || 512,
     },
   });
 
@@ -120,7 +122,7 @@ Provide a helpful, concise response. Prefer direct answers over repeating menu-l
         'Content-Type': 'application/json',
         'Content-Length': Buffer.byteLength(body),
       },
-      timeout: 45000,
+      timeout: timeoutMs,
     }, (res) => {
       let data = '';
       res.on('data', chunk => data += chunk);
@@ -129,26 +131,26 @@ Provide a helpful, concise response. Prefer direct answers over repeating menu-l
         try {
           const trimmed = data.trim();
           if (!trimmed) {
-            recordAiInference({ provider: 'ollama', model: LLM_MODEL, status: 'error', durationSeconds: duration, errorType: 'empty_response' });
+            recordAiInference({ provider: 'ollama', model, status: 'error', durationSeconds: duration, errorType: 'empty_response' });
             reject(new Error('Ollama returned empty response'));
             return;
           }
           const parsed = JSON.parse(trimmed);
           if (parsed.message?.content) {
-            recordAiInference({ provider: 'ollama', model: LLM_MODEL, status: 'success', durationSeconds: duration });
+            recordAiInference({ provider: 'ollama', model, status: 'success', durationSeconds: duration });
             resolve(parsed.message.content.trim());
           } else if (parsed.response) {
-            recordAiInference({ provider: 'ollama', model: LLM_MODEL, status: 'success', durationSeconds: duration });
+            recordAiInference({ provider: 'ollama', model, status: 'success', durationSeconds: duration });
             resolve(parsed.response.trim());
           } else if (parsed.error) {
-            recordAiInference({ provider: 'ollama', model: LLM_MODEL, status: 'error', durationSeconds: duration, errorType: 'ollama_error' });
+            recordAiInference({ provider: 'ollama', model, status: 'error', durationSeconds: duration, errorType: 'ollama_error' });
             reject(new Error(parsed.error));
           } else {
-            recordAiInference({ provider: 'ollama', model: LLM_MODEL, status: 'error', durationSeconds: duration, errorType: 'no_content' });
+            recordAiInference({ provider: 'ollama', model, status: 'error', durationSeconds: duration, errorType: 'no_content' });
             reject(new Error('Ollama returned no response content'));
           }
         } catch (e) {
-          recordAiInference({ provider: 'ollama', model: LLM_MODEL, status: 'error', durationSeconds: duration, errorType: 'parse_error' });
+          recordAiInference({ provider: 'ollama', model, status: 'error', durationSeconds: duration, errorType: 'parse_error' });
           reject(e);
         }
       });
@@ -156,12 +158,12 @@ Provide a helpful, concise response. Prefer direct answers over repeating menu-l
 
     req.on('error', e => {
       const duration = (Date.now() - startTime) / 1000;
-      recordAiInference({ provider: 'ollama', model: LLM_MODEL, status: 'error', durationSeconds: duration, errorType: 'network_error' });
+      recordAiInference({ provider: 'ollama', model, status: 'error', durationSeconds: duration, errorType: 'network_error' });
       reject(e);
     });
     req.on('timeout', () => {
       const duration = (Date.now() - startTime) / 1000;
-      recordAiInference({ provider: 'ollama', model: LLM_MODEL, status: 'error', durationSeconds: duration, errorType: 'timeout' });
+      recordAiInference({ provider: 'ollama', model, status: 'error', durationSeconds: duration, errorType: 'timeout' });
       req.destroy();
       reject(new Error('Ollama request timed out'));
     });

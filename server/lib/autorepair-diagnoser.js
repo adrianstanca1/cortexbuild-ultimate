@@ -55,7 +55,13 @@ Respond ONLY with valid JSON (no markdown, no explanation):
       `${prompt}\n\nIncident data:\n${contextText}`,
       '',
       [],
-      null
+      null,
+      {
+        model: process.env.AUTOREPAIR_MODEL || 'kimi-k2.6:cloud',
+        timeoutMs: Number(process.env.AUTOREPAIR_TIMEOUT_MS) || 60000,
+        numPredict: Number(process.env.AUTOREPAIR_NUM_PREDICT) || 2048,
+        temperature: 0.2,
+      }
     );
 
     let parsed;
