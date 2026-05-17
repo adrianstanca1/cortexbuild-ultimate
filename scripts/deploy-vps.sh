@@ -24,11 +24,8 @@ docker rm cortexbuild-api 2>/dev/null || true
 docker run -d \
   --name cortexbuild-api \
   --restart always \
-  --network host \
   -p 127.0.0.1:3009:3001 \
   --env-file "$PROJECT_DIR/.env" \
-  -e DB_HOST=127.0.0.1 \
-  -e DB_PORT=55432 \
   "$IMAGE_NAME"
 
 # Așteaptă health
