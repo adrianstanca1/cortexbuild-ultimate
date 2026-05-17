@@ -78,7 +78,7 @@ services:
       MICROSOFT_TENANT: ${MICROSOFT_TENANT:-common}
       MICROSOFT_CALLBACK_URL: ${MICROSOFT_CALLBACK_URL:-http://localhost:3001/api/auth/microsoft/callback}
     ports:
-      - "127.0.0.1:3001:3001"
+      - "127.0.0.1:3009:3001"
     networks:
       - local
     depends_on:
