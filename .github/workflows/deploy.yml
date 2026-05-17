@@ -118,15 +118,10 @@ jobs:
             if [ -f package.json ]; then
               npm run build
             fi
-            if command -v pm2 >/dev/null 2>&1; then
-              PM2_APP_NAME="cortexbuild-frontend"
-              PM2_RUNNING=$(pm2 list | grep "$PM2_APP_NAME" || true)
-              if [ -n "$PM2_RUNNING" ]; then
-                pm2 reload "$PM2_APP_NAME"
-              else
-                pm2 start npm --name "$PM2_APP_NAME" -- run start
-              fi
-            fi
+            # PM2 cortexbuild-frontend block removed 2026-05-17 (vestigial).
+            # nginx serves the static build at /var/www/cortexbuild-ultimate/ directly;
+            # vite preview on :4173 had no upstream consumer. See workspace-root commit
+            # log around 2026-05-17 for the 5-cycle architectural-failure trace.
             if command -v nginx >/dev/null 2>&1; then
               sudo nginx -t && sudo systemctl reload nginx
             fi
