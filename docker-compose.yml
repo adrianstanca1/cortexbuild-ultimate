@@ -1,61 +1,8 @@
 # =============================================================================
 # CortexBuild Ultimate - Optimized Docker Compose
 # =============================================================================
-# Simplificat pentru deploy rapid și fiabil
-# =============================================================================
 
 services:
-  postgres:
-    image: pgvector/pgvector:pg16
-    container_name: cortexbuild-db
-    restart: unless-stopped
-    environment:
-      POSTGRES_USER: ${POSTGRES_USER:-cortexbuild}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-cortexbuild_dev_password}
-      POSTGRES_DB: ${POSTGRES_DB:-cortexbuild}
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
-    ports:
-      - "127.0.0.1:5432:5432"
-    networks:
-      - cortexbuild
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-cortexbuild}"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-      start_period: 30s
-    deploy:
-      resources:
-        limits:
-          memory: 1G
-        reservations:
-          memory: 256M
-
-  redis:
-    image: redis:7-alpine
-    container_name: cortexbuild-redis
-    restart: unless-stopped
-    command: redis-server --appendonly yes --maxmemory 256mb --maxmemory-policy allkeys-lru
-    volumes:
-      - redis_data:/data
-    ports:
-      - "127.0.0.1:6379:6379"
-    networks:
-      - cortexbuild
-    healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
-      interval: 10s
-      timeout: 5s
-      retries: 3
-      start_period: 10s
-    deploy:
-      resources:
-        limits:
-          memory: 512M
-        reservations:
-          memory: 64M
-
   api:
     build:
       context: .
@@ -66,20 +13,17 @@ services:
     env_file:
       - .env
     environment:
-      # Override pentru network intern Docker
-      DB_HOST: postgres
-      REDIS_HOST: redis
-      REDIS_URL: redis://redis:6379
+      PORT: 3001
+      # DATABASE_URL + POSTGRES_* are loaded from .env via env_file above (kept out of VCS).
+      # Required keys: POSTGRES_USER, POSTGRES_PASSWORD, POSTGRES_DB, DATABASE_URL — see .env.example.
+      DB_HOST: cortexbuild-postgres
+      REDIS_HOST: cortexbuild-redis
+      REDIS_URL: redis://cortexbuild-redis:6379
       OLLAMA_HOST: http://172.28.0.10:11434
     ports:
       - "127.0.0.1:3009:3001"
     networks:
       - cortexbuild
-    depends_on:
-      postgres:
-        condition: service_healthy
-      redis:
-        condition: service_healthy
     volumes:
       - ./server/uploads:/app/uploads
     healthcheck:
@@ -95,28 +39,6 @@ services:
         reservations:
           memory: 256M
 
-  # Ollama opțional — dezactivat implicit
-  # Decomentează pentru a activa AI local
-  # ollama:
-  #   image: ollama/ollama:latest
-  #   container_name: cortexbuild-ollama
-  #   restart: unless-stopped
-  #   volumes:
-  #     - ollama_data:/root/.ollama
-  #   ports:
-  #     - "127.0.0.1:11434:11434"
-  #   networks:
-  #     cortexbuild:
-  #       ipv4_address: 172.28.0.10
-
 networks:
   cortexbuild:
-    driver: bridge
-    ipam:
-      config:
-        - subnet: 172.28.0.0/16
-
-volumes:
-  postgres_data:
-  redis_data:
-  # ollama_data:
+    external: true
