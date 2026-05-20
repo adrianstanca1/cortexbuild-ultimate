@@ -52,3 +52,7 @@
 ## 2024-05-10 - String.prototype.replace() and $$ SQL parameters
 **Learning:** When using `String.prototype.replace()` to refactor backend code containing template literal PostgreSQL parameters (e.g., `$$`), the JavaScript string replacement engine interprets `$$` as a special replacement pattern for a single `$`. This inadvertently corrupts query strings by dropping the `$` prefix, resulting in runtime SQL syntax errors (e.g., `LIKE ${tenantParams}` instead of `LIKE $${tenantParams}`).
 **Action:** When programmatically modifying backend SQL query code with node ad-hoc scripts, pass a function as the second argument to `replace()` (e.g., `content.replace(oldStr, () => newStr)`) or use file diffing/patching tools to preserve double dollar signs.
+
+## 2024-05-19 - N+1 Query in Batched External Service Endpoints
+**Learning:** Found an N+1 query pattern in `server/routes/tender-ai.js` (`/batch/ai-score`) where a batch route iterated over an array of IDs, querying the database inside the loop prior to an external API call (Ollama). Even though the external API call must remain sequential, doing individual database lookups in the loop degrades latency needlessly.
+**Action:** When iterating over a batch of IDs, always hoist the database lookup outside the loop using `WHERE id = ANY($1)`. Construct a JavaScript Map keyed by `id` to quickly restore the correctly ordered payload inside the loop.

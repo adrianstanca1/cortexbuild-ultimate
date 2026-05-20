@@ -572,22 +572,31 @@ router.post('/batch/ai-score', async (req, res) => {
   const isSuper = req.user?.role === 'super_admin';
   const results = [];
 
-  for (const id of tenderIds) {
-    try {
-      let batchWhere = 'WHERE id = $1';
-      let batchParams = [id];
-      if (!isSuper && (orgId || req.user.company_id)) {
-        batchWhere += ' AND COALESCE(organization_id, company_id) = $2';
-        batchParams.push(orgId || req.user.company_id);
-      }
-      const { rows } = await pool.query(
-        `SELECT title, client, value, deadline, status, probability, type, location, notes
-         FROM tenders ${batchWhere} LIMIT 1`,
-        batchParams
-      );
-      if (!rows.length) { results.push({ id, error: 'Not found' }); continue; }
+  try {
+    let fetchWhere = 'WHERE id = ANY($1)';
+    let fetchParams = [tenderIds];
+    if (!isSuper && (orgId || req.user.company_id)) {
+      fetchWhere += ' AND COALESCE(organization_id, company_id) = $2';
+      fetchParams.push(orgId || req.user.company_id);
+    }
+    const { rows: fetchedTenders } = await pool.query(
+      `SELECT id, title, client, value, deadline, status, probability, type, location, notes
+       FROM tenders ${fetchWhere}`,
+      fetchParams
+    );
 
-      const tender = rows[0];
+    // ⚡ Bolt Performance Optimization:
+    // N+1 Query Fix via ANY() with ordering
+    // Batch lookup all required tenders and reconstruct ordering via map
+    const tenderMap = new Map();
+    for (const t of fetchedTenders) {
+      tenderMap.set(t.id, t);
+    }
+
+    for (const id of tenderIds) {
+      try {
+        const tender = tenderMap.get(id);
+        if (!tender) { results.push({ id, error: 'Not found' }); continue; }
       const seeds  = ruleBasedScores(tender);
 
       // Run Ollama (single scoring, fast enough in loop for small batches)
@@ -623,9 +632,13 @@ router.post('/batch/ai-score', async (req, res) => {
       );
 
       results.push({ id, overall });
-    } catch (e) {
-      results.push({ id, error: e.message });
+      } catch (e) {
+        results.push({ id, error: e.message });
+      }
     }
+  } catch (err) {
+    console.error('[tender-ai] Batch scoring error:', err.message);
+    return res.status(500).json({ error: 'Internal server error' });
   }
 
   res.json({ results });
