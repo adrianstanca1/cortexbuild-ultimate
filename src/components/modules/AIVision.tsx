@@ -3,16 +3,16 @@ import {
   Camera, Eye, AlertTriangle, CheckCircle2,
   AlertOctagon, Play, Pause, ScanLine,
   Target, Activity, Upload, Image as ImageIcon,
-  X, ArrowRight, FileText, Download, ChevronRight,
-  Settings, TrendingUp, BarChart3 as BarChartIcon, PieChart as PieChartIcon,
-  ToggleRight, Zap, Shield, Wrench
+  X, ArrowRight, FileText, Download,
+  TrendingUp, BarChart3 as BarChartIcon,
+  Zap, Shield, Wrench
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { ModuleBreadcrumbs } from '../ui/Breadcrumbs';
 import { aiVisionApi } from '../../services/api';
 import {
   BarChart, Bar, LineChart, Line, XAxis, YAxis,
-  CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Cell, Pie
+  CartesianGrid, Tooltip, Legend, ResponsiveContainer
 } from 'recharts';
 
 
@@ -298,8 +298,6 @@ export const AIVision: React.FC = () => {
       case 'PASS': return <CheckCircle2 className="h-4 w-4" />;
     }
   };
-
-  const CHART_COLORS = ['#ef4444', '#f97316', '#eab308', '#22c55e', '#3b82f6'];
 
   const handleDownloadReport = (record: HistoryRecord) => {
     const element = document.createElement('a');

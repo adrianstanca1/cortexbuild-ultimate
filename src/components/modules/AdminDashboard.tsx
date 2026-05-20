@@ -2,26 +2,16 @@
 // Comprehensive administration panel for system management, user oversight,
 // company settings, analytics, audit logs, and backup operations.
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import {
-  Users, Building2, Settings2, BarChart3, FileText, Database,
-  RefreshCw, Activity, TrendingUp, Download, Upload, GitBranch, AlertTriangle,
+  Users, Settings2, BarChart3, FileText,
+  RefreshCw, Activity, TrendingUp, Download, GitBranch, AlertTriangle,
   AlertCircle, CheckCircle2, HardDrive, Cpu, Clock, Zap,
-  Plus, Edit2, Trash2, Mail, Lock, Eye, EyeOff, Search,
-  Filter, ChevronDown, MapPin, Calendar, Phone,
+  Plus, Trash2, Mail, Search,
 } from 'lucide-react';
 import { ModuleBreadcrumbs } from '../ui/Breadcrumbs';
-import { DeploymentDashboard } from '../dashboard/DeploymentDashboard';
 import clsx from 'clsx';
 import { toast } from 'sonner';
-import {
-  BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid,
-  Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell,
-} from 'recharts';
-import {
-  OverviewTab, UsersTab, CompaniesTab, SettingsTab,
-  AnalyticsTab, AuditTab, BackupTab,
-} from '../admin-dashboard';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -112,22 +102,6 @@ const MOCK_INVOICES: Invoice[] = [
   { id: 'INV-004', date: '2026-01-01', amount: 2000, status: 'paid', description: 'January 2026 Standard Plan' },
 ];
 
-const API_USAGE_DATA = [
-  { time: '00:00', calls: 1200 },
-  { time: '04:00', calls: 800 },
-  { time: '08:00', calls: 3200 },
-  { time: '12:00', calls: 4100 },
-  { time: '16:00', calls: 3900 },
-  { time: '20:00', calls: 2800 },
-];
-
-const STORAGE_DATA = [
-  { name: 'Documents', value: 320, fill: '#3b82f6' },
-  { name: 'Media', value: 180, fill: '#f59e0b' },
-  { name: 'Backups', value: 250, fill: '#10b981' },
-  { name: 'Other', value: 50, fill: '#8b5cf6' },
-];
-
 // ─── Tab Definitions ──────────────────────────────────────────────────────────
 
 const TABS: { key: AdminTab; label: string; icon: React.ElementType }[] = [
@@ -141,7 +115,7 @@ const TABS: { key: AdminTab; label: string; icon: React.ElementType }[] = [
 // ─── Overview Tab ─────────────────────────────────────────────────────────────
 
 function OverviewTabContent() {
-  const [events, setEvents] = useState<SystemEvent[]>(MOCK_SYSTEM_EVENTS);
+  const [events] = useState<SystemEvent[]>(MOCK_SYSTEM_EVENTS);
 
   const healthMetrics = [
     { label: 'System Health', value: '94%', icon: Activity, color: 'emerald', subtext: 'All systems operational' },
@@ -541,7 +515,7 @@ function SystemTabContent() {
 // ─── Logs Tab ─────────────────────────────────────────────────────────────────
 
 function LogsTabContent() {
-  const [logs, setLogs] = useState<SystemLog[]>(MOCK_LOGS);
+  const [logs] = useState<SystemLog[]>(MOCK_LOGS);
   const [levelFilter, setLevelFilter] = useState<'all' | 'info' | 'warn' | 'error'>('all');
   const [searchQuery, setSearchQuery] = useState('');
 
@@ -657,7 +631,7 @@ function LogsTabContent() {
 // ─── Billing Tab ──────────────────────────────────────────────────────────────
 
 function BillingTabContent() {
-  const [invoices, setInvoices] = useState<Invoice[]>(MOCK_INVOICES);
+  const [invoices] = useState<Invoice[]>(MOCK_INVOICES);
 
   const currentPlan = {
     name: 'Professional Plan',
